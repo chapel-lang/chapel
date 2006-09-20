@@ -598,7 +598,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 
 FnSymbol::FnSymbol(char* initName) :
   Symbol(SYMBOL_FN, initName, new FnType()),
-  formals(new AList<DefExpr>()),
+  formals(new AList()),
   retType(dtUnknown),
   where(NULL),
   retExprType(NULL),
@@ -758,7 +758,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
         if ((this->formals->length() > 0) &&
             (mt = dynamic_cast<DefExpr*>(this->formals->get(1))) &&
             (mt->sym->type == dtMethodToken) &&
-            (_this == this->formals->get(2)->sym)) {
+            (_this == this->getFormal(2))) {
           call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
         } else {
           if (ts->hasPragma( "sync var"))
@@ -883,9 +883,9 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_promotion_wrap_", cname);
-  AList<DefExpr>* indices = new AList<DefExpr>();
-  AList<Expr>* iterators = new AList<Expr>();
-  AList<Expr>* wrapper_actuals = new AList<Expr>();
+  AList* indices = new AList();
+  AList* iterators = new AList();
+  AList* wrapper_actuals = new AList();
   for_formals(formal, this) {
     Symbol* new_formal = formal->copy();
     if (_this == formal)
@@ -1024,7 +1024,7 @@ static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
   int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
-  Stmt* last = fn->body->body->last();
+  Stmt* last = dynamic_cast<Stmt*>(fn->body->body->last());
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
@@ -1039,7 +1039,7 @@ instantiate_tuple(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
-  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
+  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   return fn;
@@ -1047,10 +1047,10 @@ instantiate_tuple_get(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_set(FnSymbol* fn) {
-  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
+  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
-  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, fn->formals->last()->sym)));
+  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, dynamic_cast<DefExpr*>(fn->formals->last())->sym)));
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name))));
   fn->insertAtHead(new DefExpr(tmp));
   return fn;
@@ -1058,7 +1058,9 @@ instantiate_tuple_set(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_copy(FnSymbol* fn) {
-  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
+  if (fn->formals->length() != 1)
+    INT_FATAL(fn, "tuple copy function has more than one argument");
+  ArgSymbol* arg = fn->getFormal(1);
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
@@ -1070,7 +1072,9 @@ instantiate_tuple_copy(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_init(FnSymbol* fn) {
-  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
+  if (fn->formals->length() != 1)
+    INT_FATAL(fn, "tuple init function has more than one argument");
+  ArgSymbol* arg = fn->getFormal(1);
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
@@ -1251,8 +1255,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       USR_FATAL(where, "Illegal where clause");
   }
 
-  if (newfn->formals->length() > 1 && newfn->formals->get(1)->sym->type == dtMethodToken)
-    newfn->formals->get(2)->sym->type->methods.add(newfn);
+  if (newfn->formals->length() > 1 && newfn->getFormal(1)->type == dtMethodToken)
+    newfn->getFormal(2)->type->methods.add(newfn);
 
   return newfn;
 }
@@ -1347,13 +1351,13 @@ FnSymbol::insertAtTail(BaseAST* ast) {
 
 
 void
-FnSymbol::insertAtHead(AList<Stmt>* ast) {
+FnSymbol::insertAtHead(AList* ast) {
   body->insertAtHead(ast);
 }
 
 
 void
-FnSymbol::insertAtTail(AList<Stmt>* ast) {
+FnSymbol::insertAtTail(AList* ast) {
   body->insertAtTail(ast);
 }
 
@@ -1377,6 +1381,12 @@ FnSymbol::insertFormalAtTail(BaseAST* ast) {
     formals->insertAtTail(def);
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtTail");
+}
+
+
+ArgSymbol*
+FnSymbol::getFormal(int i) {
+  return dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(formals->get(i))->sym);
 }
 
 
@@ -1405,7 +1415,7 @@ void EnumSymbol::codegenDef(FILE* outfile) { }
 ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   Symbol(SYMBOL_MODULE, init_name),
   modtype(init_modtype),
-  stmts(new AList<Stmt>()),
+  stmts(new AList()),
   initFn(NULL),
   modScope(new SymScope(this, rootScope))
 {

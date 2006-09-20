@@ -249,7 +249,7 @@ bool ReturnStmt::returnsVoid() {
 }
 
 
-BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
+BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
   Stmt(STMT_BLOCK),
   blockTag(init_blockTag),
   body(init_body),
@@ -268,7 +268,7 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
 BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   Stmt(STMT_BLOCK),
   blockTag(init_blockTag),
-  body(new AList<Stmt>(init_body)),
+  body(new AList(init_body)),
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL),
@@ -346,7 +346,7 @@ void BlockStmt::print(FILE* outfile) {
 
 
 static void
-codegenCobegin( FILE* outfile, AList<Stmt> *body) {
+codegenCobegin( FILE* outfile, AList *body) {
   int stmt_cnt;
   int num_stmts = body->length();
   // For now, assume all statements will be forked.
@@ -381,7 +381,7 @@ codegenCobegin( FILE* outfile, AList<Stmt> *body) {
   for_alist (Stmt, stmt, body) {
     if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
       if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-        Expr *actuals = cexpr->argList->first();
+        Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first());
         // pass exactly one class object containing ptrs to locals
         fprintf (outfile, "(_chpl_threadarg_t)");
         if (actuals) {
@@ -415,7 +415,7 @@ codegenCobegin( FILE* outfile, AList<Stmt> *body) {
 
 
 static void
-codegenBegin( FILE* outfile, AList<Stmt> *body) {
+codegenBegin( FILE* outfile, AList *body) {
   // Body should be one function call that we fork.
   if (body->length() != 1)
     INT_FATAL("begin codegen - expect only one function call");
@@ -427,7 +427,7 @@ codegenBegin( FILE* outfile, AList<Stmt> *body) {
         if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
           fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
           fprintf (outfile, "(_chpl_threadarg_t) ");
-          if (Expr *actuals = cexpr->argList->first()) {
+          if (Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first())) {
             actuals->codegen (outfile);
           } else {
             fprintf( outfile, "NULL");
@@ -492,13 +492,13 @@ BlockStmt::insertAtTail(BaseAST* ast) {
 
 
 void
-BlockStmt::insertAtHead(AList<Stmt>* ast) {
+BlockStmt::insertAtHead(AList* ast) {
   body->insertAtHead(ast);
 }
 
 
 void
-BlockStmt::insertAtTail(AList<Stmt>* ast) {
+BlockStmt::insertAtTail(AList* ast) {
   body->insertAtTail(ast);
 }
 

@@ -328,7 +328,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 
-static void callExprHelper(CallExpr* call, AList<Expr>* arg) {
+static void callExprHelper(CallExpr* call, AList* arg) {
   call->insertAtTail(arg);
 }
 
@@ -337,7 +337,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -361,7 +361,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(prim),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -376,7 +376,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(primitives[prim]),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -393,7 +393,7 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -407,10 +407,10 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
 }
 
 
-CallExpr::CallExpr(BaseAST* base, AList<Expr>* args) :
+CallExpr::CallExpr(BaseAST* base, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -428,10 +428,10 @@ CallExpr::CallExpr(BaseAST* base, AList<Expr>* args) :
 }
 
 
-CallExpr::CallExpr(PrimitiveOp *prim, AList<Expr>* args) :
+CallExpr::CallExpr(PrimitiveOp *prim, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(prim),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -441,10 +441,10 @@ CallExpr::CallExpr(PrimitiveOp *prim, AList<Expr>* args) :
   argList->parent = this;
 }
 
-CallExpr::CallExpr(PrimitiveTag prim, AList<Expr>* args) :
+CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(primitives[prim]),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -454,10 +454,10 @@ CallExpr::CallExpr(PrimitiveTag prim, AList<Expr>* args) :
   argList->parent = this;
 }
 
-CallExpr::CallExpr(char* name, AList<Expr>* args) :
+CallExpr::CallExpr(char* name, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
-  argList(new AList<Expr>()),
+  argList(new AList()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   methodTag(false),
@@ -544,13 +544,13 @@ CallExpr::insertAtTail(BaseAST* ast) {
 
 
 void
-CallExpr::insertAtHead(AList<Expr>* ast) {
+CallExpr::insertAtHead(AList* ast) {
   argList->insertAtHead(ast);
 }
 
 
 void
-CallExpr::insertAtTail(AList<Expr>* ast) {
+CallExpr::insertAtTail(AList* ast) {
   argList->insertAtTail(ast);
 }
 
@@ -570,7 +570,7 @@ bool CallExpr::isNamed(char* name) {
 
 
 Expr* CallExpr::get(int index) {
-  return argList->get(index);
+  return dynamic_cast<Expr*>(argList->get(index));
 }
 
 
@@ -1194,7 +1194,7 @@ void CallExpr::codegen(FILE* outfile) {
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
       ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->retType);
-      ct->fields->get(2)->sym->type->codegen(outfile);
+      dynamic_cast<DefExpr*>(ct->fields->get(2))->sym->type->codegen(outfile);
       fprintf(outfile, ", ");
     }
   }

@@ -4,6 +4,6 @@
 #include "symbol.h"
 
 ModuleSymbol* ParseFile(char* filename, modType moduletype);
-AList<Stmt>* parse_string(char* string);
+AList* parse_string(char* string);
 
 #endif

@@ -66,9 +66,9 @@ class Type : public BaseAST {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual Symbol* getField(char* name);
 };
 
@@ -86,9 +86,9 @@ class FnType : public Type {
 
 class EnumType : public Type {
  public:
-  AList<DefExpr>* constants; // EnumSymbols
+  AList* constants; // EnumSymbols
 
-  EnumType(AList<DefExpr>* init_constants);
+  EnumType(AList* init_constants);
   ~EnumType();
   virtual void verify(); 
   COPY_DEF(EnumType);
@@ -102,9 +102,9 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
 };
 
 
@@ -129,17 +129,17 @@ enum ClassTag {
 
 class ClassType : public Type {
  public:
-  ClassTag        classTag;
-  bool            isIterator;
-  SymScope       *structScope;
-  AList<DefExpr> *fields;
-  AList<Expr>    *inherits; // used from parsing, sets dispatchParents
+  ClassTag classTag;
+  bool isIterator;
+  SymScope* structScope;
+  AList* fields;
+  AList* inherits; // used from parsing, sets dispatchParents
 
   ClassType(ClassTag initClassTag);
   ~ClassType();
   virtual void verify(); 
   COPY_DEF(ClassType);
-  void addDeclarations(AList<Stmt>* stmts, bool tail = true);
+  void addDeclarations(AList* stmts, bool tail = true);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -151,10 +151,11 @@ class ClassType : public Type {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual Symbol* getField(char* name);
+  virtual Symbol* getField(int i);
 };
 
 

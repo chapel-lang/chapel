@@ -110,7 +110,7 @@ static void handleMUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
     }
     call->parentStmt->insertBefore(
       new CallExpr(PRIMITIVE_MOVE, sym,
-        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->fields->get(i)->sym)));
+        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->getField(i))));
     i++;
   }
   call->parentStmt->remove();
@@ -126,7 +126,7 @@ static void handleMSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       lhs->var->uses.add(lhs);
     }
     call->parentStmt->insertBefore(
-      new CallExpr(PRIMITIVE_SET_MEMBER, lhs, ct->fields->get(i)->sym, sym));
+      new CallExpr(PRIMITIVE_SET_MEMBER, lhs, ct->getField(i), sym));
     i++;
   }
   call->parentStmt->remove();
@@ -165,7 +165,7 @@ static void handleSSUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
     }
     call->parentStmt->insertBefore(
       new CallExpr(PRIMITIVE_SET_MEMBER, _this, sym,
-        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->fields->get(i)->sym)));
+        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->getField(i))));
     i++;
   }
   call->parentStmt->remove();
@@ -189,7 +189,7 @@ static void handleSSSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
     }
     call->parentStmt->insertBefore(
       new CallExpr(PRIMITIVE_SET_MEMBER, _this,
-        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->fields->get(i)->sym), sym));
+        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->getField(i)), sym));
     i++;
   }
   call->parentStmt->remove();
@@ -227,7 +227,7 @@ static void handleGSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
     }
     move->parentStmt->insertBefore(
       new CallExpr(PRIMITIVE_MOVE,
-        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->fields->get(i)->sym),
+        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->getField(i)),
         new CallExpr(PRIMITIVE_GET_MEMBER, _this, sym)));
     i++;
   }

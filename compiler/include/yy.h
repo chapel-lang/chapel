@@ -7,7 +7,7 @@
 #include "symbol.h"
 
 extern Symbol* yypst;
-extern AList<Stmt>* yystmtlist;
+extern AList* yystmtlist;
 extern int yystartlineno;
 
 extern "C" {

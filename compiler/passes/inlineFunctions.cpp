@@ -37,7 +37,7 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   FnSymbol* fn = call->findFnSymbol();
   ASTMap map;
   mapFormalsToActuals(call, &map);
-  AList<Stmt>* fn_body = fn->body->body->copy();
+  AList* fn_body = fn->body->body->copy();
   if (fn->lineno == -1)
     reset_file_info(fn_body, call->lineno, call->filename);
   ReturnStmt* return_stmt = dynamic_cast<ReturnStmt*>(fn_body->last());

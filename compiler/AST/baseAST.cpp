@@ -91,9 +91,6 @@ long BaseAST::getNumIDs(void) {
   return uid;
 }
 
-BaseAST::BaseAST(void) {
-  INT_FATAL("Base AST must be given a type");
-}
 
 BaseAST::BaseAST(astType_t type) :
   astType(type),
@@ -236,7 +233,8 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
     INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
-  new_ast = sibling_ast_wrap(this, new_ast);
+  if (dynamic_cast<Symbol*>(new_ast))
+    INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertBefore");
   new_ast->prev = prev;
   new_ast->next = this;
   prev->next = new_ast;
@@ -252,7 +250,8 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
     INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
-  new_ast = sibling_ast_wrap(this, new_ast);
+  if (dynamic_cast<Symbol*>(new_ast))
+    INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertAfter");
   new_ast->prev = this;
   new_ast->next = next;
   next->prev = new_ast;
@@ -399,6 +398,8 @@ char* astTypeName[AST_TYPE_END+1] = {
   "UserType",
   "ClassType",
 
+  "BASE",
+
   "AST_TYPE_END"
 };
 
@@ -491,6 +492,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case TYPE_CLASS:
     AST_ADD_LIST(ClassType, fields, DefExpr);
     AST_ADD_LIST(ClassType, inherits, Expr);
+    break;
+  case BASE:
+    INT_FATAL(a, "Unexpected case in get_ast_children (BASE)");
     break;
   case AST_TYPE_END:
     INT_FATAL(a, "Unexpected case in get_ast_children (AST_TYPE_END)");

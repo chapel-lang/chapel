@@ -172,8 +172,8 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  return new AList<Stmt>();
+AList* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  return new AList();
 }
 
 
@@ -182,8 +182,8 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  return new AList<Stmt>();
+AList* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  return new AList();
 }
 
 
@@ -235,8 +235,8 @@ void FnType::codegenDef(FILE* outfile) {
 }
 
 
-EnumType::EnumType(AList<DefExpr>* init_constants) :
-  Type(TYPE_ENUM, init_constants->first()->sym),
+EnumType::EnumType(AList* init_constants) :
+  Type(TYPE_ENUM, dynamic_cast<DefExpr*>(init_constants->first())->sym),
   constants(init_constants)
 {
   for_alist(DefExpr, def, constants)
@@ -391,14 +391,14 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+AList* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   CondStmt* body = NULL;
   for_alist(DefExpr, constant, constants) {
     body = new CondStmt(new CallExpr("==", arg, constant->sym),
                         new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(constant->sym->name))),
                         body);
   }
-  return new AList<Stmt>(body);
+  return new AList(body);
 }
 
 
@@ -407,8 +407,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList<Stmt>* body = new AList<Stmt>();
+AList* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  AList* body = new AList();
   Symbol* valString = new VarSymbol("valString");
   body->insertAtTail(new ExprStmt(new DefExpr(valString, new_StringSymbol(""))));
   body->insertAtTail(new ExprStmt(new CallExpr("fread", fileArg, valString)));
@@ -476,8 +476,8 @@ ClassType::ClassType(ClassTag initClassTag) :
   classTag(initClassTag),
   isIterator(false),
   structScope(NULL),
-  fields(new AList<DefExpr>()),
-  inherits(new AList<Expr>())
+  fields(new AList()),
+  inherits(new AList())
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
@@ -528,7 +528,7 @@ ClassType::copyInner(ASTMap* map) {
 }
 
 
-void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
+void ClassType::addDeclarations(AList* stmts, bool tail) {
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, stmts);
 
@@ -542,7 +542,7 @@ void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
           fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }
-      if (def->parentSymbol)
+      if (def->parentSymbol || def->prev)
         def->remove();
       if (tail)
         fields->insertAtTail(def);
@@ -591,7 +591,7 @@ void ClassType::codegenDef(FILE* outfile) {
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
-    fields->get(3)->sym->type->codegen(outfile);
+    dynamic_cast<DefExpr*>(fields->get(3))->sym->type->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {
@@ -621,11 +621,11 @@ bool ClassType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList<Stmt>* body = new AList<Stmt>();
+AList* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  AList* body = new AList();
   if (classTag == CLASS_CLASS) {
-    AList<Stmt>* fwriteNil =
-      new AList<Stmt>(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("nil"))));
+    AList* fwriteNil =
+      new AList(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("nil"))));
     fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Expr* argIsNil = new CallExpr("==", arg, gNil);
@@ -680,8 +680,8 @@ bool ClassType::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList<Stmt>* body = new AList<Stmt>();
+AList* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  AList* body = new AList();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
   body->insertAtTail(new ExprStmt(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue))));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
@@ -733,6 +733,11 @@ Symbol* ClassType::getField(char* name) {
   }
   INT_FATAL(this, "field not in class in getField");
   return NULL;
+}
+
+
+Symbol* ClassType::getField(int i) {
+  return dynamic_cast<DefExpr*>(fields->get(i))->sym;
 }
 
 
@@ -792,7 +797,7 @@ void initPrimitiveTypes(void) {
   dtBool = createPrimitiveType ("bool", "_bool");
 
   // Create initial compiler module and its scope
-  compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
+  compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList());
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;

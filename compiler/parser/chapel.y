@@ -93,9 +93,9 @@ Is this "while x"(i); or "while x(i)";?
   ModuleSymbol* pmodsym;
   EnumSymbol* penumsym;
 
-  AList<Expr>* pexprls;
-  AList<Stmt>* pstmtls;
-  AList<DefExpr>* pdefexprls;
+  AList* pexprls;
+  AList* pstmtls;
+  AList* pdefexprls;
 }
 
 %token TATOMIC
@@ -287,7 +287,7 @@ pragma:
 
 stmt_ls:
   /* nothing */
-    { $$ = new AList<Stmt>(); }
+    { $$ = new AList(); }
 | stmt_ls pragma_ls stmt
     {
       $3->body->first()->addPragmas($2);
@@ -445,7 +445,7 @@ select_stmt:
 
 when_stmt_ls:
   /* nothing */
-    { $$ = new AList<Stmt>(); }
+    { $$ = new AList(); }
 | when_stmt_ls when_stmt
     { $1->insertAtTail($2); }
 ; 
@@ -537,7 +537,7 @@ block_stmt:
 
 class_body_stmt_ls:
   /* nothing */
-    { $$ = new AList<Stmt>(); }
+    { $$ = new AList(); }
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
       $3->body->first()->addPragmas($2);
@@ -558,7 +558,7 @@ class_body_stmt:
 
 decl_stmt_ls:
   /* nothing */
-    { $$ = new AList<Stmt>(); }
+    { $$ = new AList(); }
 | decl_stmt_ls pragma_ls decl_stmt
     {
       $3->body->first()->addPragmas($2);
@@ -636,9 +636,9 @@ opt_formal_ls:
 
 formal_ls:
   /* nothing */
-    { $$ = new AList<DefExpr>(); }
+    { $$ = new AList(); }
 | formal
-    { $$ = new AList<DefExpr>($1); }
+    { $$ = new AList($1); }
 | formal_ls TCOMMA formal
     { $1->insertAtTail($3); }
 ;
@@ -791,7 +791,7 @@ class_tag:
 
 opt_inherit_expr_ls:
   /* nothing */
-    { $$ = new AList<Expr>(); }
+    { $$ = new AList(); }
 | TCOLON nonempty_expr_ls
     { $$ = $2; }
 ;
@@ -812,7 +812,7 @@ enum_decl_stmt:
 
 enum_ls:
   enum_item
-    { $$ = new AList<DefExpr>($1); }
+    { $$ = new AList($1); }
 | enum_ls TCOMMA enum_item
     { $1->insertAtTail($3); }
 ;
@@ -883,7 +883,7 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(var, $3, $2)));
+      $$ = new AList(new ExprStmt(new DefExpr(var, $3, $2)));
     }
 ;
 
@@ -893,7 +893,7 @@ var_decl_stmt_inner:
 
 type_ls:
   type
-    { $$ = new AList<Expr>($1); }
+    { $$ = new AList($1); }
 | type_ls TCOMMA type
     { $1->insertAtTail($3); }
 ;
@@ -1019,14 +1019,14 @@ opt_formal_type:
 
 expr_ls:
   /* nothing */
-    { $$ = new AList<Expr>(); }
+    { $$ = new AList(); }
 | nonempty_expr_ls
 ;
 
 
 nonempty_expr_ls:
   pragma_ls expr_list_item
-    { $2->addPragmas($1); delete $1; $$ = new AList<Expr>($2); }
+    { $2->addPragmas($1); delete $1; $$ = new AList($2); }
 | nonempty_expr_ls TCOMMA pragma_ls expr_list_item
     { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
 ;
@@ -1089,7 +1089,7 @@ tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
       if ($2->length() == 1) {
-        $$ = $2->get(1);
+        $$ = dynamic_cast<Expr*>($2->get(1));
         $$->remove();
       } else {
         CallExpr* tupleCall = new CallExpr("_tuple", $2);

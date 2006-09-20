@@ -181,7 +181,7 @@ begin_mark_locals() {
                                          local->refc,
                                          local->refcMutex));
     BlockStmt *mainfb = dynamic_cast<BlockStmt*>(localdef->parentStmt);
-    Stmt      *laststmt = mainfb->body->last();
+    Stmt      *laststmt = dynamic_cast<Stmt*>(mainfb->body->last());
     if (dynamic_cast<ReturnStmt*>(laststmt)) {
       laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                             local,
@@ -256,7 +256,7 @@ thread_args() {
 
 
                 // add the function args as fields in the class
-                AList<Stmt>* vlist = new AList<Stmt>();
+                AList* vlist = new AList();
                 for_actuals(arg, fcall) {
                   SymExpr *s = dynamic_cast<SymExpr*>(arg);
                   Symbol  *var = s->var; // arg or var

@@ -8,7 +8,7 @@
 #include "type.h"
 
 
-BlockStmt* build_chpl_stmt(AList<Stmt>* stmts) {
+BlockStmt* build_chpl_stmt(AList* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_SCOPELESS;
   return block;
@@ -40,7 +40,7 @@ static bool stmtIsGlob(Stmt* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
     if (block->body->length() != 1)
       return false;
-    stmt = block->body->only();
+    stmt = dynamic_cast<Stmt*>(block->body->only());
   }
   if (ExprStmt* expr = dynamic_cast<ExprStmt*>(stmt))
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr->expr))
@@ -88,7 +88,7 @@ static void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
+ModuleSymbol* build_module(char* name, modType type, AList* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type);
   for_alist(Stmt, stmt, stmts) {
     stmt->remove();
@@ -99,10 +99,10 @@ ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
 }
 
 
-CallExpr* build_primitive_call(AList<Expr>* exprs) {
+CallExpr* build_primitive_call(AList* exprs) {
   if (exprs->length() == 0)
     INT_FATAL("primitive has no name");
-  Expr* expr = exprs->get(1);
+  Expr* expr = dynamic_cast<Expr*>(exprs->get(1));
   expr->remove();
   SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
   if (!symExpr)
@@ -130,7 +130,7 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
 }
 
 
-FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr) {
+FnSymbol* build_let_expr(AList* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
   fn->addPragma("inline");
@@ -148,11 +148,11 @@ static void build_loop_labels(BlockStmt* body) {
 }
 
 
-AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
+AList* build_while_do_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
   stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(new CondStmt(cond, body));
   body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
@@ -161,7 +161,7 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
 }
 
 
-AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
+AList* build_do_while_block(Expr* cond, BlockStmt* body) {
   BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->first());
   if (!block) {
     block = new BlockStmt(body);
@@ -170,7 +170,7 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
   stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(body);
   block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
@@ -180,13 +180,13 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
 
 
 // builds body of for expression
-AList<Stmt>*
-build_for_expr(AList<DefExpr>* indices,
-               AList<Expr>* iterators,
+AList*
+build_for_expr(AList* indices,
+               AList* iterators,
                Expr* expr,
                bool isSquare,
                Expr* cond) {
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
 
   CallExpr* elt_type;
   if (iterators->length() == 1) {
@@ -202,8 +202,8 @@ build_for_expr(AList<DefExpr>* indices,
   LabelSymbol* break_out = new LabelSymbol("type_break");
 
   ASTMap map;
-  AList<DefExpr>* typeindices = indices->copy(&map);
-  AList<Expr>* typeiterators = iterators->copy(&map);
+  AList* typeindices = indices->copy(&map);
+  AList* typeiterators = iterators->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(seq)));
@@ -233,25 +233,25 @@ build_for_expr(AList<DefExpr>* indices,
 }
 
 
-static AList<Stmt>*
+static AList*
 build_cross_block(BlockTag tag,
-                  AList<DefExpr>* indices,
-                  AList<Expr>* iterators,
+                  AList* indices,
+                  AList* iterators,
                   BlockStmt* body) {
   if (indices->length() != iterators->length())
     INT_FATAL("Unexpected arguments to build_cross_block");
   while (indices->length()) {
-    AList<DefExpr>* index = new AList<DefExpr>(indices->first()->remove());
-    AList<Expr>* iterator = new AList<Expr>(iterators->first()->remove());
+    AList* index = new AList(indices->first()->remove());
+    AList* iterator = new AList(iterators->first()->remove());
     body = new BlockStmt(build_for_block(tag, index, iterator, body));
   }
-  return new AList<Stmt>(body);
+  return new AList(body);
 }
 
 
-AList<Stmt>* build_for_block(BlockTag tag,
-                             AList<DefExpr>* indices,
-                             AList<Expr>* iterators,
+AList* build_for_block(BlockTag tag,
+                             AList* indices,
+                             AList* iterators,
                              BlockStmt* body,
                              bool isSquare, // cross product of iterators
                              int only_once) { // execute only once
@@ -263,7 +263,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
   static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
   build_loop_labels(body);
   VarSymbol* index = new VarSymbol(stringcat("_index_", intstring(uid)));
   if (indices->length() > 1) {
@@ -274,7 +274,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
       body->insertAtHead(indexDef);
     }
   } else {
-    DefExpr* indexDef = indices->only();
+    DefExpr* indexDef = dynamic_cast<DefExpr*>(indices->only());
     indexDef->remove();
     indexDef->init = new SymExpr(index);
     body->insertAtHead(indexDef);
@@ -282,7 +282,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
   int numIterators = iterators->length();
   Vec<Symbol*> iterator;
   for (int i = 0; i < numIterators; i++) {
-    Expr* iteratorExpr = iterators->get(1);
+    Expr* iteratorExpr = dynamic_cast<Expr*>(iterators->get(1));
     iteratorExpr->remove();
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iteratorExpr)) {
       iterator.add(symExpr->var);
@@ -327,7 +327,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
 }
 
 
-AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
+AList* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
   block->param_low = low;
@@ -338,14 +338,14 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, B
   BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
   block->insertBefore(new CallExpr("=", index_var, index_var)); // because otherwise it is dead leading to an analysis problem
-  return new AList<Stmt>(outer);
+  return new AList(outer);
 }
 
 
-AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
+AList* build_assignplus(Expr* lhs, Expr* rhs) {
   static int uid = 1;
   FnSymbol* fn;
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
@@ -368,7 +368,7 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
 }
 
 
-CondStmt* build_select(Expr* selectCond, AList<Stmt>* whenstmts) {
+CondStmt* build_select(Expr* selectCond, AList* whenstmts) {
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
@@ -414,10 +414,10 @@ CondStmt* build_select(Expr* selectCond, AList<Stmt>* whenstmts) {
 }
 
 
-AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
+AList* build_type_select(AList* exprs, AList* whenstmts) {
   static int uid = 1;
   FnSymbol* fn;
-  AList<Stmt>* stmts = new AList<Stmt>();
+  AList* stmts = new AList();
   bool has_otherwise = false;
 
   for_alist(Stmt, stmt, whenstmts) {
@@ -508,7 +508,7 @@ FnSymbol* build_scan(Expr* scan, Expr* seq) {
 
 
 void
-backPropagateInitsTypes(AList<Stmt>* stmts) {
+backPropagateInitsTypes(AList* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
   for_alist_backward(Stmt, stmt, stmts) {
@@ -530,7 +530,7 @@ backPropagateInitsTypes(AList<Stmt>* stmts) {
 
 
 void
-setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
+setVarSymbolAttributes(AList* stmts, varType vartag, consType constag) {
   for_alist(Stmt, stmt, stmts) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
@@ -547,7 +547,7 @@ setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
 
 
 DefExpr*
-build_class(char* name, Type* type, AList<Stmt>* decls) {
+build_class(char* name, Type* type, AList* decls) {
   ClassType* ct = dynamic_cast<ClassType*>(type);
 
   if (!ct) {
@@ -577,7 +577,7 @@ build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
 
 
 static void
-exprsToIndicesHelper(AList<DefExpr>* defs,
+exprsToIndicesHelper(AList* defs,
                      Expr* index,
                      Type* type,
                      Expr* exprType = NULL) {
@@ -595,8 +595,8 @@ exprsToIndicesHelper(AList<DefExpr>* defs,
 }
 
 
-AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
-  AList<DefExpr>* defs = new AList<DefExpr>();
+AList* exprsToIndices(AList* indices) {
+  AList* defs = new AList();
   for_alist(Expr, index, indices) {
     exprsToIndicesHelper(defs, index, dtUnknown);
   }

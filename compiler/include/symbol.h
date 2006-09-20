@@ -157,7 +157,7 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  AList<DefExpr>* formals;
+  AList* formals;
   Type* retType;
   BlockStmt* where;
   Expr* retExprType;
@@ -210,11 +210,14 @@ class FnSymbol : public Symbol {
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
-  void insertAtHead(AList<Stmt>* ast);
-  void insertAtTail(AList<Stmt>* ast);
+
+  void insertAtHead(AList* ast);
+  void insertAtTail(AList* ast);
 
   void insertFormalAtHead(BaseAST* ast);
   void insertFormalAtTail(BaseAST* ast);
+
+  ArgSymbol* getFormal(int i); // return ith formal
 };
 
 
@@ -236,7 +239,7 @@ enum modType {
 class ModuleSymbol : public Symbol {
  public:
   modType modtype;
-  AList<Stmt>* stmts;
+  AList* stmts;
   FnSymbol* initFn;
 
   SymScope* modScope;

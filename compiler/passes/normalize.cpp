@@ -204,7 +204,7 @@ iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
 // Create a field in the class for each local variable and replace uses.
 static void
 iterator_create_fields( FnSymbol *fn, ClassType *ic) {
-  AList<Stmt> *classdefs = new AList<Stmt>();
+  AList *classdefs = new AList();
   ArgSymbol   *_this = new ArgSymbol( INTENT_BLANK, "this", ic);
 
   // create a field for each formal
@@ -272,7 +272,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
 
 
 static ArgSymbol*
-iterator_find_arg( char *name, AList<DefExpr> *formals) {
+iterator_find_arg( char *name, AList *formals) {
   for_alist( DefExpr, de, formals) {
     if (ArgSymbol *a = dynamic_cast<ArgSymbol*>(de->sym)) {
       if (!strcmp( name, a->name)) {
@@ -436,9 +436,9 @@ iterator_transform( FnSymbol *fn) {
   m->stmts->insertAtHead(new ExprStmt(new DefExpr( valuef)));
   iterator_formals( valuef, ic, cursor);
   iterator_build_vtable( valuef, cursor, &vals_returned);
-  iterator_update_this_uses( valuef, 
-                             valuef->formals->get(2), 
-                             nextcf->formals->get(2));
+  iterator_update_this_uses(valuef, 
+                            valuef->getFormal(2)->defPoint, 
+                            nextcf->getFormal(2)->defPoint);
 
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
   iterator_method( isvalidcf);
@@ -450,7 +450,7 @@ iterator_transform( FnSymbol *fn) {
   fn->fnClass = FN_FUNCTION;
   fn->retType = dtUnknown;
   fn->retExprType = NULL;
-  AList<Expr> actuals;
+  AList actuals;
   for_alist( DefExpr, formal,  fn->formals) {
     ArgSymbol *a = dynamic_cast<ArgSymbol*>(formal->sym);
     actuals.insertAtTail( new SymExpr( a));
@@ -653,14 +653,14 @@ static void decompose_special_calls(CallExpr* call) {
   if (call->isResolved())
     return;
   if (!call->argList->isEmpty() > 0) {
-    Expr* firstArg = call->argList->get(1);
+    Expr* firstArg = dynamic_cast<Expr*>(call->argList->get(1));
     SymExpr* symArg = dynamic_cast<SymExpr*>(firstArg);
     // don't decompose method calls
     if (symArg && symArg->var == gMethodToken)
       return;
   }
   if (call->isNamed("fread")) {
-    Expr* file = call->argList->get(1);
+    Expr* file = dynamic_cast<Expr*>(call->argList->get(1));
     file->remove();
     decompose_multi_actuals(call, "fread", file);
     call->parentStmt->remove();
@@ -1346,8 +1346,8 @@ expand_var_args(FnSymbol* fn) {
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_64] && n_var->immediate) {
           int n = n_var->immediate->v_int64;
-          AList<Expr>* actual_types = new AList<Expr>();
-          AList<Expr>* actuals = new AList<Expr>();
+          AList* actual_types = new AList();
+          AList* actuals = new AList();
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
@@ -1581,13 +1581,13 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
 static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->formals->length() <= 1)
     return;
-  if (fn->formals->get(1)->sym->type != dtMethodToken)
+  if (fn->getFormal(1)->type != dtMethodToken)
     return;
-  if (fn->formals->get(2)->sym->type == dtUnknown)
+  if (fn->getFormal(2)->type == dtUnknown)
     INT_FATAL(fn, "this argument has unknown type");
-  if (strcmp(fn->formals->get(2)->sym->type->symbol->name, fn->name))
+  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name))
     return;
-  ClassType* ct = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type);
+  ClassType* ct = dynamic_cast<ClassType*>(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
   fn->name = canonicalize_string(stringcat("_construct_", fn->name));
@@ -1596,7 +1596,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
   ASTMap map;
-  map.put(fn->formals->get(2)->sym, fn->_this);
+  map.put(fn->getFormal(2), fn->_this);
   fn->formals->get(2)->remove();
   fn->formals->get(1)->remove();
   update_symbols(fn, &map);

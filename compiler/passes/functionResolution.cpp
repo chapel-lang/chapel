@@ -442,8 +442,7 @@ build_default_wrapper(FnSymbol* fn,
     for_formals(formal, fn) {
       for (int i = 0; i < actual_formals->n; i++) {
         if (actual_formals->v[i] == formal) {
-          DefExpr* newFormalDef = wrapper->formals->get(j);
-          ArgSymbol* newFormal = dynamic_cast<ArgSymbol*>(newFormalDef->sym);
+          ArgSymbol* newFormal = wrapper->getFormal(j);
           actual_formals->v[i] = newFormal;
           j++;
         }
@@ -858,12 +857,10 @@ char* fn2string(FnSymbol* fn) {
     fn = fn->instantiatedFrom;
   if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
-      DefExpr* formalDef = fn->formals->get(1);
-      str = stringcat(":", formalDef->sym->type->symbol->name);
+      str = stringcat(":", fn->getFormal(1)->type->symbol->name);
       start = 1;
     } else {
-      DefExpr* formalDef = fn->formals->get(2);
-      str = stringcat(":", formalDef->sym->type->symbol->name, ".", fn->name);
+      str = stringcat(":", fn->getFormal(2)->type->symbol->name, ".", fn->name);
       start = 2;
     }
   } else if (!strncmp("_construct_", fn->name, 11))
@@ -874,7 +871,7 @@ char* fn2string(FnSymbol* fn) {
     str = stringcat(str, "(");
   bool first = false;
   for (int i = start; i < fn->formals->length(); i++) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->get(i+1)->sym);
+    ArgSymbol* arg = fn->getFormal(i+1);
     if (!first)
       first = true;
     else
@@ -1221,8 +1218,8 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->formals->length() != gn->formals->length())
     return false;
   for (int i = 3; i <= fn->formals->length(); i++) {
-    ArgSymbol* fa = dynamic_cast<ArgSymbol*>(fn->formals->get(i)->sym);
-    ArgSymbol* ga = dynamic_cast<ArgSymbol*>(gn->formals->get(i)->sym);
+    ArgSymbol* fa = fn->getFormal(i);
+    ArgSymbol* ga = gn->getFormal(i);
     if (strcmp(fa->name, ga->name))
       return false;
     if (fa->type != ga->type)
@@ -1239,13 +1236,13 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
       if (ct->isGeneric) {
         ASTMap subs;
         forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {
-          subs.put(cfn->formals->get(2)->sym, cons->retType);
+          subs.put(cfn->getFormal(2), cons->retType);
           for (int i = 3; i <= cfn->formals->length(); i++) {
-            ArgSymbol* arg = dynamic_cast<ArgSymbol*>(cfn->formals->get(i)->sym);
+            ArgSymbol* arg = cfn->getFormal(i);
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
             } else if (arg->type->isGeneric) {
-              subs.put(arg, pfn->formals->get(i)->sym->type);
+              subs.put(arg, pfn->getFormal(i)->type);
             }
           }
           FnSymbol* icfn = cfn->instantiate_generic(&subs);
@@ -1258,11 +1255,11 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
       } else {
         ASTMap subs;
         for (int i = 3; i <= cfn->formals->length(); i++) {
-          ArgSymbol* arg = dynamic_cast<ArgSymbol*>(cfn->formals->get(i)->sym);
+          ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
             INT_FATAL(arg, "unhandled case");
           } else if (arg->type->isGeneric) {
-            subs.put(arg, pfn->formals->get(i)->sym->type);
+            subs.put(arg, pfn->getFormal(i)->type);
           }
         }
         if (subs.n)
@@ -1307,8 +1304,8 @@ build_ddf() {
     if (fn->isWrapper || !resolvedFns.set_in(fn))
       continue;
     if (fn->formals->length() > 1) {
-      if (fn->formals->get(1)->sym->type == dtMethodToken) {
-        if (ClassType* pt = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type)) {
+      if (fn->getFormal(1)->type == dtMethodToken) {
+        if (ClassType* pt = dynamic_cast<ClassType*>(fn->getFormal(2)->type)) {
           if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
             add_all_children_ddf(fn, pt);
           }
@@ -1354,7 +1351,7 @@ resolve() {
     if (FnSymbol* key = call->isResolved()) {
       if (Vec<FnSymbol*>* fns = ddf.get(key)) {
         forv_Vec(FnSymbol, fn, *fns) {
-          Type* type = fn->formals->get(2)->sym->type;
+          Type* type = fn->getFormal(2)->type;
           CallExpr* subcall = call->copy();
           SymExpr* tmp = new SymExpr(gNil);
           FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,

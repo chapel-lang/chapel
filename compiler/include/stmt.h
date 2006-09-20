@@ -81,7 +81,7 @@ enum BlockTag {
 class BlockStmt : public Stmt {
  public:
   BlockTag blockTag;
-  AList<Stmt>* body;
+  AList* body;
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
@@ -90,7 +90,7 @@ class BlockStmt : public Stmt {
   Expr* param_stride;
   Expr* param_index; // for unrolling, index variable
 
-  BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
+  BlockStmt::BlockStmt(AList* init_body = new AList(), 
                        BlockTag init_blockTag = BLOCK_NORMAL);
   BlockStmt::BlockStmt(Stmt* init_body,
                        BlockTag init_blockTag = BLOCK_NORMAL);
@@ -103,8 +103,8 @@ class BlockStmt : public Stmt {
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
-  void insertAtHead(AList<Stmt>* ast);
-  void insertAtTail(AList<Stmt>* ast);
+  void insertAtHead(AList* ast);
+  void insertAtTail(AList* ast);
 
   bool isLoop(void);
 };

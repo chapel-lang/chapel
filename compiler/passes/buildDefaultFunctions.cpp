@@ -49,15 +49,15 @@ static FnSymbol* function_exists(char* name,
         continue;
 
     if (formalTypeName1)
-      if (!type_name_match(formalTypeName1, fn->formals->get(1)->sym))
+      if (!type_name_match(formalTypeName1, fn->getFormal(1)))
         continue;
 
     if (formalTypeName2)
-      if (!type_name_match(formalTypeName2, fn->formals->get(2)->sym))
+      if (!type_name_match(formalTypeName2, fn->getFormal(2)))
         continue;
 
     if (formalTypeName3)
-      if (!type_name_match(formalTypeName3, fn->formals->get(3)->sym))
+      if (!type_name_match(formalTypeName3, fn->getFormal(3)))
         continue;
 
     return fn;
@@ -453,7 +453,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->insertFormalAtTail(fileArg);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      AList<Stmt>* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
+      AList* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
       fn->body = block_stmt;
       DefExpr* def = new DefExpr(fn);
@@ -474,7 +474,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->insertFormalAtTail(fileArg);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      AList<Stmt>* body = type->buildDefaultReadFunctionBody(fileArg, arg);
+      AList* body = type->buildDefaultReadFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
       fn->body = block_stmt;
       DefExpr* def = new DefExpr(fn);

@@ -61,21 +61,21 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 
-void collect_top_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+void collect_top_asts(Vec<BaseAST*>* asts, AList* ast) {
   for_alist(Stmt, stmt, ast) {
     collect_top_asts(asts, stmt);
   }
 }
 
 
-void collect_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+void collect_asts(Vec<BaseAST*>* asts, AList* ast) {
   for_alist(Stmt, stmt, ast) {
     collect_asts(asts, stmt);
   }
 }
 
 
-void collect_asts_postorder(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+void collect_asts_postorder(Vec<BaseAST*>* asts, AList* ast) {
   for_alist(Stmt, stmt, ast) {
     collect_asts_postorder(asts, stmt);
   }
@@ -92,7 +92,7 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
 }
 
 
-void reset_file_info(AList<Stmt>* stmts, int lineno, char* filename) {
+void reset_file_info(AList* stmts, int lineno, char* filename) {
   for_alist(Stmt, stmt, stmts) {
     reset_file_info(stmt, lineno, filename);
   }

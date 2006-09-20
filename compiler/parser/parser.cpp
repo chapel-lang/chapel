@@ -8,7 +8,7 @@
 #include "chapel.tab.h"
 #include "yy.h"
 
-AList<Stmt>* yystmtlist = NULL;
+AList* yystmtlist = NULL;
 char* yyfilename;
 int yylineno;
 int yystartlineno;
@@ -29,10 +29,10 @@ static char* filenameToModulename(char* filename) {
 }
 
 static void
-clearModulesDefPoints(AList<Stmt>* stmts) {
+clearModulesDefPoints(AList* stmts) {
   for_alist(Stmt, stmt, stmts) {
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
-      stmt = block->body->first();
+      stmt = dynamic_cast<Stmt*>(block->body->first());
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
         if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym))
@@ -40,11 +40,11 @@ clearModulesDefPoints(AList<Stmt>* stmts) {
   }
 }
 
-bool containsOnlyModules(AList<Stmt>* stmts) {
+bool containsOnlyModules(AList* stmts) {
   for_alist(Stmt, stmt, stmts) {
     bool isModuleDef = false;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
-      stmt = block->body->first();
+      stmt = dynamic_cast<Stmt*>(block->body->first());
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
         if (dynamic_cast<ModuleSymbol*>(defExpr->sym))

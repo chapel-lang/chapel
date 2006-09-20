@@ -370,7 +370,7 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 static void add_this_formal_to_method(FnSymbol* fn) {
   if (fn->isSetter &&
-      fn->formals->get(fn->formals->length()-1)->sym->type != dtSetterToken)
+      fn->getFormal(fn->formals->length()-1)->type != dtSetterToken)
     fn->formals->last()->insertBefore
       (new DefExpr(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken)));
 }

@@ -59,6 +59,8 @@ enum astType_t {
   TYPE_USER,
   TYPE_CLASS,
 
+  BASE,
+
   AST_TYPE_END 
 };
 
@@ -109,8 +111,7 @@ class BaseAST {
 
   static long getNumIDs(void);
 
-  BaseAST(void);
-  BaseAST(astType_t type);
+  BaseAST(astType_t type = BASE);
   virtual ~BaseAST() { }
   COPY_DEF(BaseAST);
 
