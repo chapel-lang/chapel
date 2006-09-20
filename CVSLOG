@@ -75888,3 +75888,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/06 17:20:09 -- bradc
+
+Log message:
+	Man, in intents do work... Who woulda thunk it?
+	Oh me of little faith... (I didn't even try them).
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+
