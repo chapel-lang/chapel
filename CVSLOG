@@ -75965,3 +75965,14 @@ Modified files:
 Added files:
 	chapel/compiler/AST/: alist.cpp 
 
+---------------------------------------------------------------------------
+
+09/20/06 09:45:56 -- deitz
+
+Log message:
+	Removed a dead routine.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: astutil.h 
+
