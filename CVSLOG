@@ -75942,3 +75942,26 @@ Modified files:
 	chapel/test/functions/waynew/: iterator6.chpl iterator7.chpl 
 	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
 
+---------------------------------------------------------------------------
+
+09/20/06 09:41:54 -- deitz
+
+Log message:
+	Made AList<> non-generic, i.e., into AList.  This has not slowed
+	compiler performance which improves slightly with this checkin.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share astutil.cpp baseAST.cpp 
+	                      build.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: alist.h astutil.h baseAST.h build.h 
+	                          expr.h parser.h stmt.h symbol.h type.h 
+	                          yy.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp 
+Added files:
+	chapel/compiler/AST/: alist.cpp 
+
