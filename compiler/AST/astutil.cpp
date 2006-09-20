@@ -251,12 +251,16 @@ void remove_static_formals() {
 
 
 BaseAST* sibling_ast_wrap(BaseAST* sibling, BaseAST* ast) {
-  if (dynamic_cast<Stmt*>(sibling) && dynamic_cast<Expr*>(ast))
+  if (dynamic_cast<Stmt*>(sibling) && dynamic_cast<Expr*>(ast)) {
+    INT_FATAL("sibling wrap");
     ast = new ExprStmt(dynamic_cast<Expr*>(ast));
-  else if (dynamic_cast<DefExpr*>(sibling) && dynamic_cast<Symbol*>(ast))
+  } else if (dynamic_cast<DefExpr*>(sibling) && dynamic_cast<Symbol*>(ast)) {
+    INT_FATAL("sibling wrap");
     ast = new DefExpr(dynamic_cast<Symbol*>(ast));
-  else if (dynamic_cast<Expr*>(sibling) && dynamic_cast<Symbol*>(ast))
+  } else if (dynamic_cast<Expr*>(sibling) && dynamic_cast<Symbol*>(ast)) {
+    INT_FATAL("sibling wrap");
     ast = new SymExpr(dynamic_cast<Symbol*>(ast));
+  }
   return ast;
 }
 

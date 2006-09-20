@@ -200,12 +200,12 @@ iterator_return_label( uint return_pt) {
 static void
 iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
   fn->formals->clear();
-  fn->formals->insertAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
+  fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
                                                          "_yummyMethodToken",
                                                          dtMethodToken)));
   fn->_this = new ArgSymbol( INTENT_BLANK, "this", t);
-  fn->formals->insertAtTail( new DefExpr( fn->_this));
-  if (cursor) fn->formals->insertAtTail( new DefExpr( cursor));
+  fn->insertFormalAtTail( new DefExpr( fn->_this));
+  if (cursor) fn->insertFormalAtTail( new DefExpr( cursor));
 }
 
 
@@ -224,9 +224,9 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
                                            dtUnknown,
                                            VAR_NORMAL,
                                            const_type);
-      classdefs->insertAtTail( new DefExpr( newfield,
-                                            NULL,
-                                            etype));
+      classdefs->insertAtTail(new ExprStmt( new DefExpr( newfield,
+                                                         NULL,
+                                                         etype)));
       // replace uses in body
       forv_Vec( SymExpr, se, a->uses) {
         se->replace( new CallExpr( ".", _this, new_StringSymbol( se->var->name)));
@@ -243,9 +243,9 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
     if (DefExpr *def = dynamic_cast<DefExpr*>(ast)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(def->sym)) {
         if (Expr *etype = dynamic_cast<Expr*>(def->exprType->remove())) {
-          classdefs->insertAtTail( new DefExpr( v, NULL, etype->copy()));
+          classdefs->insertAtTail(new ExprStmt( new DefExpr( v, NULL, etype->copy())));
         } else {
-          classdefs->insertAtTail( new DefExpr( v, NULL, new CallExpr( PRIMITIVE_TYPEOF, def->init->copy())));
+          classdefs->insertAtTail(new ExprStmt( new DefExpr( v, NULL, new CallExpr( PRIMITIVE_TYPEOF, def->init->copy()))));
         }
 
         // need to reset default value (make re-entrant)
@@ -273,11 +273,11 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
 
   // create formals
   fn->formals->clear();
-  fn->formals->insertAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
+  fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
                                                          "_yummyMethodToken",
                                                          dtMethodToken)));
   fn->_this = _this;
-  fn->formals->insertAtTail( new DefExpr( fn->_this));
+  fn->insertFormalAtTail( new DefExpr( fn->_this));
 }
 
 
@@ -404,7 +404,7 @@ iterator_transform( FnSymbol *fn) {
   ClassType   *ic = new ClassType( CLASS_CLASS);
   TypeSymbol  *ict = new TypeSymbol( classn, ic);
   DefExpr     *ic_def = new DefExpr( ict);
-  m->stmts->insertAtHead( ic_def);
+  m->stmts->insertAtHead(new ExprStmt(ic_def));
 
   ArgSymbol *cursor = new ArgSymbol(INTENT_BLANK, "cursor", dtInt[INT_SIZE_64]);
 
@@ -417,10 +417,10 @@ iterator_transform( FnSymbol *fn) {
   nextcf->global = true;
   nextcf->retType = dtUnknown;
   nextcf->retExprType = NULL;
-  m->stmts->insertAtHead( new DefExpr( nextcf));
+  m->stmts->insertAtHead(new ExprStmt(new DefExpr(nextcf)));
   compute_sym_uses( nextcf);
   iterator_create_fields( nextcf, ic);
-  nextcf->formals->insertAtTail( new DefExpr( cursor));
+  nextcf->insertFormalAtTail( new DefExpr( cursor));
   Vec<ReturnStmt*> vals_returned;
   Vec<LabelSymbol*> labels;
   iterator_replace_yields( nextcf, &vals_returned, &labels);
@@ -431,14 +431,14 @@ iterator_transform( FnSymbol *fn) {
 
   FnSymbol *headcf = new FnSymbol( "getHeadCursor");
   headcf->global = true;
-  m->stmts->insertAtHead( new DefExpr( headcf));
+  m->stmts->insertAtHead(new ExprStmt(new DefExpr( headcf)));
   iterator_formals( headcf, ic);
   headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
   headcf->isMethod = true;
 
   FnSymbol *valuef = new FnSymbol( "getValue");
   valuef->global = true;
-  m->stmts->insertAtHead( new DefExpr( valuef));
+  m->stmts->insertAtHead(new ExprStmt(new DefExpr( valuef)));
   iterator_formals( valuef, ic, cursor);
   iterator_build_vtable( valuef, cursor, &vals_returned);
   iterator_update_this_uses( valuef, 
@@ -449,7 +449,7 @@ iterator_transform( FnSymbol *fn) {
 
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
   isvalidcf->global = true;
-  m->stmts->insertAtHead( new DefExpr( isvalidcf));
+  m->stmts->insertAtHead(new ExprStmt(new DefExpr( isvalidcf)));
   isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
   isvalidcf->isMethod = true;
@@ -524,8 +524,8 @@ static void build_lvalue_function(FnSymbol* fn) {
     exprType = new_fn->retExprType;
     exprType->remove();
   }
-  new_fn->formals->insertAtTail(new DefExpr(setterToken));
-  new_fn->formals->insertAtTail(new DefExpr(lvalue, NULL, exprType));
+  new_fn->insertFormalAtTail(new DefExpr(setterToken));
+  new_fn->insertFormalAtTail(new DefExpr(lvalue, NULL, exprType));
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, new_fn->body);
   forv_Vec(BaseAST, ast, asts) {

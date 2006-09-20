@@ -601,8 +601,12 @@ fn_decl_stmt:
         $2->name = astr("_promoter");
       if (!$3)
         $2->noParens = true;
-      else
-        $2->formals->insertAtTail($3);
+      else {
+        for_alist(DefExpr, def, $3) {
+          def->remove();
+          $2->insertFormalAtTail(def);
+        }
+      }
       $2->buildSetter = $4;
       $2->retExprType = $5;
       if ($6)
@@ -747,17 +751,17 @@ function:
     {
       $$ = new FnSymbol($3);
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
+      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
       if (strcmp("this", $3))
-        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }
 | type_binding_expr TDOT TASSIGN identifier
     {
       $$ = new FnSymbol($4);
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
+      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
       if (strcmp("this", $4))
-        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       $$->isSetter = true;
     }
 ;
@@ -879,7 +883,7 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = new AList<Stmt>(new DefExpr(var, $3, $2));
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(var, $3, $2)));
     }
 ;
 

@@ -90,8 +90,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   if (ct->symbol->hasPragma( "synchronization primitive")) 
     fn->addPragma( "synchronization primitive");
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->formals->insertAtTail(_this);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(_this);
   if (ct->classTag == CLASS_UNION)
     fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringSymbol("illegal union access")))));
   fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
@@ -138,10 +138,10 @@ static void build_setter(ClassType* ct, Symbol* field) {
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->formals->insertAtTail(_this);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken));
-  fn->formals->insertAtTail(fieldArg);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(_this);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken));
+  fn->insertFormalAtTail(fieldArg);
   VarSymbol* val = new VarSymbol("_tmp");
   val->isCompilerTemp = true;
   val->canReference = true;
@@ -231,7 +231,7 @@ static void build_chpl_main(void) {
     if (userModules.n == 1) {
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
-      userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
+      userModules.v[0]->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
       build(chpl_main);
     } else
       USR_FATAL("Code defines multiple modules but no main function.");
@@ -247,8 +247,8 @@ static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
-  fn->formals->insertAtTail(arg1);
-  fn->formals->insertAtTail(arg2);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
   for_fields(tmp, ct) {
@@ -272,8 +272,8 @@ static void build_record_inequality_function(ClassType* ct) {
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
-  fn->formals->insertAtTail(arg1);
-  fn->formals->insertAtTail(arg2);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
   for_fields(tmp, ct) {
@@ -300,8 +300,8 @@ static void build_enum_assignment_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
-  fn->formals->insertAtTail(arg1);
-  fn->formals->insertAtTail(arg2);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
   fn->insertAtTail(new ReturnStmt(arg2));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->parentStmt->insertBefore(def);
@@ -318,16 +318,13 @@ static void build_record_assignment_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
-  fn->formals->insertAtTail(arg1);
-  fn->formals->insertAtTail(arg2);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  AList<Stmt>* body = new AList<Stmt>();
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      body->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
-  body->insertAtTail(new ReturnStmt(arg1));
-  BlockStmt* block_stmt = new BlockStmt(body);
-  fn->body = block_stmt;
+      fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+  fn->insertAtTail(new ReturnStmt(arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
@@ -343,17 +340,14 @@ static void build_union_assignment_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
-  fn->formals->insertAtTail(arg1);
-  fn->formals->insertAtTail(arg2);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  AList<Stmt>* body = new AList<Stmt>();
-  body->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      body->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntSymbol(tmp->id)), new ExprStmt(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))))));
-  body->insertAtTail(new ReturnStmt(arg1));
-  BlockStmt* block_stmt = new BlockStmt(body);
-  fn->body = block_stmt;
+      fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntSymbol(tmp->id)), new ExprStmt(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))))));
+  fn->insertAtTail(new ReturnStmt(arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
@@ -368,7 +362,7 @@ static void build_record_copy_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("_copy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
-  fn->formals->insertAtTail(arg);
+  fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_fields(tmp, ct)
     call->insertAtTail(new CallExpr(".", arg, new_StringSymbol(tmp->name)));
@@ -390,7 +384,7 @@ static void build_record_init_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("_init");
   fn->addPragma("inline");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
-  fn->formals->insertAtTail(arg);
+  fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_fields(tmp, ct) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
@@ -415,7 +409,7 @@ static void build_record_hash_function( ClassType *ct) {
   FnSymbol *fn = new FnSymbol( "_indefinite_hash");
   fn->addPragma( "inline");
   ArgSymbol *arg = new ArgSymbol( INTENT_BLANK, "r", ct);
-  fn->formals->insertAtTail( arg);
+  fn->insertFormalAtTail( arg);
 
   if (ct->fields->length() < 0) {
     fn->insertAtTail( new ReturnStmt( new_UIntSymbol(0)));
@@ -456,8 +450,8 @@ void buildDefaultIOFunctions(Type* type) {
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
-      fn->formals->insertAtTail(fileArg);
-      fn->formals->insertAtTail(arg);
+      fn->insertFormalAtTail(fileArg);
+      fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
@@ -477,8 +471,8 @@ void buildDefaultIOFunctions(Type* type) {
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
-      fn->formals->insertAtTail(fileArg);
-      fn->formals->insertAtTail(arg);
+      fn->insertFormalAtTail(fileArg);
+      fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);

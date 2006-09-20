@@ -297,7 +297,7 @@ static void build_constructor(ClassType* ct) {
     arg->isTypeVariable = tmp->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
-    fn->formals->insertAtTail(defExpr);
+    fn->insertFormalAtTail(defExpr);
   }
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);

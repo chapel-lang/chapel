@@ -1005,7 +1005,7 @@ resolveCall(CallExpr* call) {
       CallExpr* e = new CallExpr(sym->copy(), new_IntSymbol(i));
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
       call->parentStmt->insertBefore(move);
-      call->insertBefore(tmp);
+      call->insertBefore(new SymExpr(tmp));
       callStack.add(e);
       resolveCall(e);
       if (e->isResolved())

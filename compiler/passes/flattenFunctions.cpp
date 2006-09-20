@@ -47,7 +47,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       ArgSymbol* arg = new ArgSymbol(INTENT_REF, sym->name, sym->type);
-      fn->formals->insertAtTail(new DefExpr(arg));
+      fn->insertFormalAtTail(new DefExpr(arg));
       update_map.put(sym, arg);
     }
   }

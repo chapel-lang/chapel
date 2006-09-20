@@ -27,6 +27,8 @@ class Stmt : public BaseAST {
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual ASTContext getContext(void);
   virtual bool inTree();
+  virtual void insertBefore(BaseAST* new_ast);
+  virtual void insertAfter(BaseAST* new_ast);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 

@@ -527,13 +527,19 @@ void CallExpr::print(FILE* outfile) {
 
 void
 CallExpr::insertAtHead(BaseAST* ast) {
-  argList->insertAtHead(ast);
+  if (Symbol* a = dynamic_cast<Symbol*>(ast))
+    argList->insertAtHead(new SymExpr(a));
+  else
+    argList->insertAtHead(ast);
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
-  argList->insertAtTail(ast);
+  if (Symbol* a = dynamic_cast<Symbol*>(ast))
+    argList->insertAtTail(new SymExpr(a));
+  else
+    argList->insertAtTail(ast);
 }
 
 

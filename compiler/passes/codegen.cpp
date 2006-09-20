@@ -48,7 +48,7 @@ convertReturnsToArgs() {
       ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
       if (ct && ct->classTag != CLASS_CLASS) {
         ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ct);
-        fn->formals->insertAtTail(arg);
+        fn->insertFormalAtTail(arg);
         fn->retType = dtVoid;
         ReturnStmt* ret = dynamic_cast<ReturnStmt*>(fn->body->body->last());
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, arg, ret->expr->copy()));

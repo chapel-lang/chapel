@@ -212,6 +212,9 @@ class FnSymbol : public Symbol {
   void insertAtTail(BaseAST* ast);
   void insertAtHead(AList<Stmt>* ast);
   void insertAtTail(AList<Stmt>* ast);
+
+  void insertFormalAtHead(BaseAST* ast);
+  void insertFormalAtTail(BaseAST* ast);
 };
 
 

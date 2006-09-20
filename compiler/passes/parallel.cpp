@@ -65,8 +65,8 @@ cobegin_encapsulation() {
             fn->retType = dtVoid;
             stmt->remove();
             fn->insertAtTail( stmt);            // move stmt to new function
-            newb->body->insertAtHead( new DefExpr (fn));
-            newb->body->insertAtTail( new CallExpr (fname));
+            newb->insertAtHead( new DefExpr (fn));
+            newb->insertAtTail( new CallExpr (fname));
           }
           b->insertBefore (newb);
           b->remove ();
@@ -169,8 +169,8 @@ begin_mark_locals() {
                                         local->refcMutex->name, 
                                         dtMutex);
     FnSymbol  *fn = dynamic_cast<FnSymbol*>( (dynamic_cast<SymExpr*>( ce->baseExpr))->var);
-    fn->formals->insertAtTail(new DefExpr( rc_arg));
-    fn->formals->insertAtTail(new DefExpr( rcm_arg));
+    fn->insertFormalAtTail(new DefExpr( rc_arg));
+    fn->insertFormalAtTail(new DefExpr( rcm_arg));
 
     localdef->insertAfter( new CallExpr( PRIMITIVE_REFC_TOUCH, 
                                          local,
@@ -260,14 +260,14 @@ thread_args() {
                 for_actuals(arg, fcall) {
                   SymExpr *s = dynamic_cast<SymExpr*>(arg);
                   Symbol  *var = s->var; // arg or var
-                  vlist->insertAtTail(new DefExpr(new VarSymbol(var->name,
-                                                                var->type,
-                                                                VAR_NORMAL,
-                                                                VAR_VAR,
-                                                                true)));
+                  vlist->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol(var->name,
+                                                                             var->type,
+                                                                             VAR_NORMAL,
+                                                                             VAR_VAR,
+                                                                             true))));
                 }
                 ctype->addDeclarations( vlist);
-                mod->stmts->insertAtHead( new DefExpr( new_c));
+                mod->stmts->insertAtHead( new ExprStmt(new DefExpr( new_c)));
 
                 // create the class variable instance and allocate it
                 VarSymbol *tempc = new VarSymbol( stringcat( "_args_for", 
@@ -296,8 +296,8 @@ thread_args() {
                 FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
                 DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
                 ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-                wrap_fn->formals->insertAtTail( wrap_c);
-                mod->stmts->insertAtTail( new DefExpr( wrap_fn));
+                wrap_fn->insertFormalAtTail( wrap_c);
+                mod->stmts->insertAtTail(new ExprStmt( new DefExpr( wrap_fn)));
                 b->insertAtHead( new CallExpr( wrap_fn, tempc));
 
                 // translate the original cobegin function
@@ -311,7 +311,7 @@ thread_args() {
                 fcall->parentStmt->remove();               // rm orig. call
                 wrap_fn->insertAtHead( new_cofn);          // add new call
                 fcall_def->parentStmt->remove();           // move orig. def
-                mod->stmts->insertAtTail( fcall_def);      // to top-level
+                mod->stmts->insertAtTail(new ExprStmt(fcall_def));      // to top-level
 
                 build( wrap_fn);
               }

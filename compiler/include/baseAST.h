@@ -131,8 +131,8 @@ class BaseAST {
 
   BaseAST* remove(void);
   void replace(BaseAST* new_ast);
-  void insertBefore(BaseAST* new_ast);
-  void insertAfter(BaseAST* new_ast);
+  virtual void insertBefore(BaseAST* new_ast);
+  virtual void insertAfter(BaseAST* new_ast);
 
   char* stringLoc(void);
   void printLoc(FILE* outfile);

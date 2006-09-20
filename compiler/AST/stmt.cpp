@@ -80,6 +80,20 @@ bool Stmt::inTree(void) {
 }
 
 
+void Stmt::insertBefore(BaseAST* new_ast) {
+  if (Expr* a = dynamic_cast<Expr*>(new_ast))
+    new_ast = new ExprStmt(a);
+  BaseAST::insertBefore(new_ast);
+}
+
+
+void Stmt::insertAfter(BaseAST* new_ast) {
+  if (Expr* a = dynamic_cast<Expr*>(new_ast))
+    new_ast = new ExprStmt(a);
+  BaseAST::insertAfter(new_ast);
+}
+
+
 void Stmt::callReplaceChild(BaseAST* new_ast) {
   if (parentStmt) {
     parentStmt->replaceChild(this, new_ast);
@@ -463,12 +477,16 @@ void BlockStmt::codegen(FILE* outfile) {
 
 void
 BlockStmt::insertAtHead(BaseAST* ast) {
+  if (Expr* a = dynamic_cast<Expr*>(ast))
+    ast = new ExprStmt(a);
   body->insertAtHead(ast);
 }
 
 
 void
 BlockStmt::insertAtTail(BaseAST* ast) {
+  if (Expr* a = dynamic_cast<Expr*>(ast))
+    ast = new ExprStmt(a);
   body->insertAtTail(ast);
 }
 

@@ -666,7 +666,9 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(ASTMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  copy->formals->insertAtTail(COPY_INT(formals));
+  for_formals(formal, this) {
+    copy->insertFormalAtTail(COPY_INT(formal->defPoint));
+  }
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
@@ -747,7 +749,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     Symbol* wrapper_formal = formal->copy();
     if (_this == formal)
       wrapper->_this = wrapper_formal;
-    wrapper->formals->insertAtTail(wrapper_formal);
+    wrapper->insertFormalAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->type;
       if (ts->hasPragma( "synchronization primitive")) {
@@ -799,7 +801,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       if (_this == formal)
         wrapper->_this = wrapper_formal;
       copy_map.put(formal, wrapper_formal);
-      wrapper->formals->insertAtTail(wrapper_formal);
+      wrapper->insertFormalAtTail(wrapper_formal);
       call->insertAtTail(wrapper_formal);
     } else {
       char* temp_name = stringcat("_default_temp_", formal->name);
@@ -861,7 +863,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
     copy_map.put(formal, wrapper_formal);
   }
   for_formals(formal, this) {
-    wrapper->formals->insertAtTail(copy_map.get(order_map->get(formal)));
+    wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
     call->insertAtTail(copy_map.get(formal));
   }
   if (isMethod)
@@ -894,12 +896,12 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
         INT_FATAL(this, "error building promotion wrapper");
       new_formal->type = ts->type;
       Symbol* new_index = new VarSymbol("_index");
-      wrapper->formals->insertAtTail(new DefExpr(new_formal));
+      wrapper->insertFormalAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
       indices->insertAtTail(new DefExpr(new_index));
       wrapper_actuals->insertAtTail(new SymExpr(new_index));
     } else {
-      wrapper->formals->insertAtTail(new DefExpr(new_formal));
+      wrapper->insertFormalAtTail(new DefExpr(new_formal));
       wrapper_actuals->insertAtTail(new SymExpr(new_formal));
     }
   }
@@ -1026,11 +1028,11 @@ instantiate_tuple(FnSymbol* fn) {
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
-    fn->formals->insertAtTail(arg);
+    fn->insertFormalAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringSymbol(name), arg));
     VarSymbol* field = new VarSymbol(name);
-    tuple->fields->insertAtTail(field);
+    tuple->fields->insertAtTail(new DefExpr(field));
   }
   fn->removePragma("tuple");
 }
@@ -1353,6 +1355,28 @@ FnSymbol::insertAtHead(AList<Stmt>* ast) {
 void
 FnSymbol::insertAtTail(AList<Stmt>* ast) {
   body->insertAtTail(ast);
+}
+
+
+void
+FnSymbol::insertFormalAtHead(BaseAST* ast) {
+  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(ast))
+    formals->insertAtHead(new DefExpr(arg));
+  else if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+    formals->insertAtHead(def);
+  else
+    INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtHead");
+}
+
+
+void
+FnSymbol::insertFormalAtTail(BaseAST* ast) {
+  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(ast))
+    formals->insertAtTail(new DefExpr(arg));
+  else if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+    formals->insertAtTail(def);
+  else
+    INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtTail");
 }
 
 

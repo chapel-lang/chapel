@@ -410,8 +410,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
   Symbol* valString = new VarSymbol("valString");
-  body->insertAtTail(new DefExpr(valString, new_StringSymbol("")));
-  body->insertAtTail(new CallExpr("fread", fileArg, valString));
+  body->insertAtTail(new ExprStmt(new DefExpr(valString, new_StringSymbol(""))));
+  body->insertAtTail(new ExprStmt(new CallExpr("fread", fileArg, valString)));
   Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
                                   new_StringSymbol("***Error: Not of "), 
                                   new_StringSymbol(arg->type->symbol->name), 
@@ -535,9 +535,9 @@ void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
         methods.add(fn);
         fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
-        fn->formals->insertAtHead(new DefExpr(fn->_this));
+        fn->insertFormalAtHead(new DefExpr(fn->_this));
         if (strcmp("this", fn->name))
-          fn->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+          fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }
       if (def->parentSymbol)
@@ -623,7 +623,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
     AList<Stmt>* fwriteNil =
-      new AList<Stmt>(new CallExpr("fwrite", fileArg, new_StringSymbol("nil")));
+      new AList<Stmt>(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("nil"))));
     fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Expr* argIsNil = new CallExpr("==", arg, gNil);
@@ -631,9 +631,9 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("{")));
+    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("{"))));
   } else {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("(")));
+    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("("))));
   }
 
   if (classTag == CLASS_UNION) {
@@ -653,20 +653,20 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
       if (tmp->isTypeVariable)
         continue;
       if (!first) {
-        body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(", ")));
+        body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(", "))));
       }
-      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name)));
-      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(" = ")));
-      body->insertAtTail(new CallExpr("fwrite", fileArg, 
-                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name))));
+      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(" = "))));
+      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, 
+                                        new CallExpr(".", arg, new_StringSymbol(tmp->name)))));
       first = false;
     }
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("}")));
+    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("}"))));
   } else {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(")")));
+    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(")"))));
   }
 
   return body;
@@ -681,12 +681,12 @@ bool ClassType::hasDefaultReadFunction(void) {
 AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
-  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
+  body->insertAtTail(new ExprStmt(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue))));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
-  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
+  body->insertAtTail(new ExprStmt(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0))));
   CallExpr* fileArgFP = new CallExpr(".", fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
-  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
+  body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readOpenBrace)));
   CallExpr* notRead = new CallExpr("!", matchingCharWasRead);
   Stmt* readError = new ExprStmt(new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("_get_errno")));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
@@ -697,27 +697,27 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
-      body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
+      body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readComma)));
       body->insertAtTail(readErrorCond->copy());
     }  
     Symbol* fieldName = new VarSymbol("fieldName");
-    body->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
+    body->insertAtTail(new ExprStmt(new DefExpr(fieldName, new_StringSymbol(""))));
     CallExpr* readFieldName = new CallExpr("fread", fileArg, fieldName);
-    body->insertAtTail(readFieldName);
+    body->insertAtTail(new ExprStmt(readFieldName));
     Symbol* name = new_StringSymbol(tmp->name);
     Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
     CondStmt* fieldNameCond = new CondStmt(confirmFieldName, readError->copy());
     body->insertAtTail(fieldNameCond);
     CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("="), ignoreWhiteSpace);
-    body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
+    body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readEqualSign)));
     body->insertAtTail(readErrorCond->copy());
     CallExpr* argName = new CallExpr(".", arg, name);
     CallExpr* readValue = new CallExpr("fread", fileArg, argName);
-    body->insertAtTail(readValue);
+    body->insertAtTail(new ExprStmt(readValue));
     first = false;
   }
   CallExpr* readCloseBrace = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("}"), ignoreWhiteSpace);
-  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
+  body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readCloseBrace)));
   body->insertAtTail(readErrorCond->copy());
   return body;
 }

@@ -57,7 +57,7 @@ static void createInitFn(ModuleSymbol* mod) {
   currentFilename = mod->filename;
 
   mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
-  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
+  mod->stmts->insertAtHead(new ExprStmt(new DefExpr(mod->initFn)));
   mod->initFn->retType = dtVoid;
   mod->initFn->body->blkScope = mod->modScope;
 
@@ -153,10 +153,10 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(new CondStmt(cond, body));
   body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
   return stmts;
 }
 
@@ -171,10 +171,10 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(body);
   block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
   return stmts;
 }
 
@@ -206,7 +206,7 @@ build_for_expr(AList<DefExpr>* indices,
   AList<Expr>* typeiterators = iterators->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
-  stmts->insertAtTail(new DefExpr(seq));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(seq)));
 
   BlockStmt* body = 
     new BlockStmt(
@@ -218,7 +218,7 @@ build_for_expr(AList<DefExpr>* indices,
                                                     typeindices,
                                                     typeiterators,
                                                     body, false, 1)));
-  stmts->insertAtTail(new DefExpr(break_out));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(break_out)));
 
   ExprStmt* append_stmt =
     new ExprStmt(
@@ -288,15 +288,15 @@ AList<Stmt>* build_for_block(BlockTag tag,
       iterator.add(symExpr->var);
     } else {
       iterator.add(new VarSymbol(stringcat("_iterator_", intstring(i), "_", intstring(uid))));
-      stmts->insertAtTail(new DefExpr(iterator.v[i], iteratorExpr));
+      stmts->insertAtTail(new ExprStmt(new DefExpr(iterator.v[i], iteratorExpr)));
     }
   }
   Vec<VarSymbol*> cursor;
   for (int i = 0; i < numIterators; i++) {
     cursor.add(new VarSymbol(stringcat("_cursor_", intstring(i), "_", intstring(uid))));
-    stmts->insertAtTail(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getHeadCursor")))));
+    stmts->insertAtTail(new ExprStmt(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getHeadCursor"))))));
   }
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
 
   for (int i = 0; i < numIterators; i++) {
     stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
@@ -311,17 +311,17 @@ AList<Stmt>* build_for_block(BlockTag tag,
       index_init->insertAtTail(new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getValue")), cursor.v[i]));
     }
   }
-  stmts->insertAtTail(new DefExpr(index, index_init));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(index, index_init)));
   stmts->insertAtTail(body);
 
   if (!only_once) {
     for (int i = 0; i < numIterators; i++) {
-      stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getNextCursor")), cursor.v[i])));
+      stmts->insertAtTail(new ExprStmt(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getNextCursor")), cursor.v[i]))));
     }
     stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
 
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
   uid++;
   return stmts;
 }
@@ -348,21 +348,21 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
   AList<Stmt>* stmts = new AList<Stmt>();
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("+", lhs->copy(), rhs->copy())));
-  stmts->insertAtTail(new DefExpr(fn));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
-  fn->formals->insertAtTail(
+  fn->insertFormalAtTail(
     new DefExpr(
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
       new SymExpr("_domain")));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringSymbol("add")), rhs->copy()));
-  stmts->insertAtTail(new DefExpr(fn));
+  stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
 
-  stmts->insertAtTail(new CallExpr(fn->name, lhs->copy()));
+  stmts->insertAtTail(new ExprStmt(new CallExpr(fn->name, lhs->copy())));
   uid++;
   return stmts;
 }
@@ -434,7 +434,7 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
       for_alist(Expr, expr, exprs) {
-        fn->formals->insertAtTail(
+        fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
                           stringcat("_t", intstring(lid++)),
@@ -442,14 +442,14 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
       }
       fn->addPragma("inline");
       fn->insertAtTail(when->thenStmt->body->copy());
-      stmts->insertAtTail(new DefExpr(fn));
+      stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
     } else {
       if (conds->argList->length() != exprs->length())
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
       for_alist(Expr, expr, conds->argList) {
-        fn->formals->insertAtTail(
+        fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
                           stringcat("_t", intstring(lid++)),
@@ -457,10 +457,10 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
       }
       fn->addPragma("inline");
       fn->insertAtTail(when->thenStmt->body->copy());
-      stmts->insertAtTail(new DefExpr(fn));
+      stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
     }
   }
-  stmts->insertAtTail(new CallExpr(fn->name, exprs));
+  stmts->insertAtTail(new ExprStmt(new CallExpr(fn->name, exprs)));
   return stmts;
 }
 
