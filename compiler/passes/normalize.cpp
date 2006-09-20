@@ -191,7 +191,6 @@ void normalize(BaseAST* base) {
 // Create formals for iterator class methods/functions and set _this.
 static void
 iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
-  fn->formals->clear();
   fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
                                                          "_yummyMethodToken",
                                                          dtMethodToken)));
@@ -262,10 +261,12 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
   ic->addDeclarations( classdefs);
 
   // create formals
-  fn->formals->clear();
+  for_formals(formal, fn)
+    formal->defPoint->remove();
+
   fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
                                                          "_yummyMethodToken",
-                                                         dtMethodToken)));
+                                                        dtMethodToken)));
   fn->_this = _this;
   fn->insertFormalAtTail( new DefExpr( fn->_this));
 }

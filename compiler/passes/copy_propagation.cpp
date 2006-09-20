@@ -19,7 +19,7 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
       if (block->blockTag == BLOCK_COBEGIN ||
           block->blockTag == BLOCK_BEGIN)
         continue;
-      if (block->prev && block->next) {
+      if (block->list) {
         for_alist(Stmt, stmt, block->body)
           block->insertBefore(stmt->remove());
         block->remove();

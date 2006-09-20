@@ -22,7 +22,7 @@ Stmt::Stmt(astType_t astType) :
 
 void Stmt::verify() {
   BaseAST::verify();
-  if (!prev || !next) {
+  if (!list) {
     if (!dynamic_cast<BlockStmt*>(this)) {
       INT_FATAL(this, "Statement is not in a list");
     }
@@ -547,15 +547,15 @@ void CondStmt::verify() {
     INT_FATAL(this, "CondStmt has no thenStmt");
   }
 
-  if (condExpr->next || condExpr->prev) {
+  if (condExpr->list) {
     INT_FATAL(this, "CondStmt::condExpr is a list");
   }
 
-  if (thenStmt->next || thenStmt->prev) {
+  if (thenStmt->list) {
     INT_FATAL(this, "CondStmt::thenStmt is a list");
   }
 
-  if (elseStmt && (elseStmt->next || elseStmt->prev)) {
+  if (elseStmt && elseStmt->list) {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 }

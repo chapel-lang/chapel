@@ -11,6 +11,7 @@ extern void update_symbols(BaseAST* ast, ASTMap* map);
 char* canonicalize_string(char *s);
 char* astr(char* s1, char* s2 = NULL, char* s3 = NULL, char* s4 = NULL);
 
+class AList;
 class Symbol;
 class ModuleSymbol;
 class FnSymbol;
@@ -99,6 +100,7 @@ class BaseAST {
 
   BaseAST* prev;        // List previous pointer
   BaseAST* next;        // List next pointer
+  AList* list;          // List pointer
 
   SymScope* parentScope;
   Symbol* parentSymbol;

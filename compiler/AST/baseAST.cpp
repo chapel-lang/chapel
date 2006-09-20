@@ -97,6 +97,7 @@ BaseAST::BaseAST(astType_t type) :
   id(uid++),
   prev(NULL),
   next(NULL),
+  list(NULL),
   parentScope(NULL),
   parentSymbol(NULL),
   filename(yyfilename), 
@@ -121,7 +122,9 @@ BaseAST::copyInner(ASTMap* map) {
 
 
 void BaseAST::verify() {
-
+  if (prev || next)
+    if (!list)
+      INT_FATAL(this, "BaseAST is in list but does not point at it");
 }
 
 
@@ -185,14 +188,18 @@ bool BaseAST::inTree(void) {
 BaseAST* BaseAST::remove(void) {
   if (!this)
     return this;
-  if (prev || next) {
-    if (!prev || !next) {
-      INT_FATAL("Ill-formed list in BaseAST::remove");
-    }
-    next->prev = prev;
-    prev->next = next;
+  if (list) {
+    if (next)
+      next->prev = prev;
+    else
+      list->tail = prev;
+    if (prev)
+      prev->next = next;
+    else
+      list->head = next;
     next = NULL;
     prev = NULL;
+    list = NULL;
   } else {
     callReplaceChild(NULL);
   }
@@ -206,16 +213,21 @@ void BaseAST::replace(BaseAST* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::replace");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::replace");
-  if (prev || next) {
-    if (!prev || !next) {
-      INT_FATAL(this, "Ill-formed list in BaseAST::replace");
-    }
-    new_ast->prev = prev;
+  if (list) {
     new_ast->next = next;
-    next->prev = new_ast;
-    prev->next = new_ast;
+    new_ast->prev = prev;
+    new_ast->list = list;
+    if (next)
+      next->prev = new_ast;
+    else
+      list->tail = new_ast;
+    if (prev)
+      prev->next = new_ast;
+    else
+      list->head = new_ast;
     next = NULL;
     prev = NULL;
+    list = NULL;
   } else {
     callReplaceChild(new_ast);
   }
@@ -229,15 +241,19 @@ void BaseAST::replace(BaseAST* new_ast) {
 void BaseAST::insertBefore(BaseAST* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertBefore");
-  if (!prev)
+  if (!list)
     INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
-  if (new_ast->prev || new_ast->next)
+  if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
   if (dynamic_cast<Symbol*>(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertBefore");
   new_ast->prev = prev;
   new_ast->next = this;
-  prev->next = new_ast;
+  new_ast->list = list;
+  if (prev)
+    prev->next = new_ast;
+  else
+    list->head = new_ast;
   prev = new_ast;
   sibling_insert_help(this, new_ast);
 }
@@ -246,15 +262,19 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
 void BaseAST::insertAfter(BaseAST* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertAfter");
-  if (!next)
+  if (!list)
     INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
-  if (new_ast->prev || new_ast->next)
+  if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
   if (dynamic_cast<Symbol*>(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertAfter");
   new_ast->prev = this;
   new_ast->next = next;
-  next->prev = new_ast;
+  new_ast->list = list;
+  if (next)
+    next->prev = new_ast;
+  else
+    list->tail = new_ast;
   next = new_ast;
   sibling_insert_help(this, new_ast);
 }
@@ -408,10 +428,7 @@ char* currentFilename = NULL;
 char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
-#define AST_ADD_LIST(_t, _m, _mt)        \
-  for_alist_sc(_mt, tmp, ((_t*)a)->_m) { \
-    asts.add(tmp);                       \
-  }
+#define AST_ADD_LIST(_t, _m) for_asts(tmp, ((_t*)a)->_m) asts.add(tmp)
 
 void
 get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
@@ -432,7 +449,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     AST_ADD_CHILD(BlockStmt, param_high);
     AST_ADD_CHILD(BlockStmt, param_stride);
     AST_ADD_CHILD(BlockStmt, param_index);
-    AST_ADD_LIST(BlockStmt, body, Stmt);
+    AST_ADD_LIST(BlockStmt, body);
     break;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
@@ -450,7 +467,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     break;
   case EXPR_CALL:
     AST_ADD_CHILD(CallExpr, baseExpr);
-    AST_ADD_LIST(CallExpr, argList, Expr);
+    AST_ADD_LIST(CallExpr, argList);
     break;
   case EXPR_NAMED:
     AST_ADD_CHILD(NamedExpr, actual);
@@ -458,7 +475,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case SYMBOL_UNRESOLVED:
     break;
   case SYMBOL_MODULE:
-    AST_ADD_LIST(ModuleSymbol, stmts, Stmt);
+    AST_ADD_LIST(ModuleSymbol, stmts);
     break;
   case SYMBOL_VAR:
     break;
@@ -470,7 +487,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     AST_ADD_CHILD(Symbol, type);
     break;
   case SYMBOL_FN:
-    AST_ADD_LIST(FnSymbol, formals, DefExpr);
+    AST_ADD_LIST(FnSymbol, formals);
     AST_ADD_CHILD(FnSymbol, body);
     AST_ADD_CHILD(FnSymbol, where);
     AST_ADD_CHILD(FnSymbol, retExprType);
@@ -484,14 +501,14 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case TYPE_FN:
     break;
   case TYPE_ENUM:
-    AST_ADD_LIST(EnumType, constants, DefExpr);
+    AST_ADD_LIST(EnumType, constants);
     break;
   case TYPE_USER:
     AST_ADD_CHILD(UserType, typeExpr);
     break;
   case TYPE_CLASS:
-    AST_ADD_LIST(ClassType, fields, DefExpr);
-    AST_ADD_LIST(ClassType, inherits, Expr);
+    AST_ADD_LIST(ClassType, fields);
+    AST_ADD_LIST(ClassType, inherits);
     break;
   case BASE:
     INT_FATAL(a, "Unexpected case in get_ast_children (BASE)");
@@ -501,8 +518,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     break;
   }
 }
-#undef AST_ADD_CHILD
-#undef AST_ADD_LIST
 
 SymScope* rootScope = NULL;
 

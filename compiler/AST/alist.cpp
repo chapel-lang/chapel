@@ -8,44 +8,31 @@
 
 
 AList::AList() :
-  head(new BaseAST()),
-  tail(new BaseAST()),
+  head(NULL),
+  tail(NULL),
   parent(NULL)
 {
-  clear();
 }
 
 
 AList::AList(BaseAST* elem) :
-  head(new BaseAST()),
-  tail(new BaseAST()),
+  head(NULL),
+  tail(NULL),
   parent(NULL)
 {
-  clear();
-  if (elem) insertAtTail(elem);
-}
-
-
-void AList::clear(void) {
-  head->next = tail;
-  tail->prev = head;
-  head->parentSymbol = (Symbol*)0x1;
-  tail->parentSymbol = (Symbol*)0x1;
+  if (elem)
+    insertAtTail(elem);
 }
 
 
 bool AList::isEmpty(void) {
-  if (this == NULL) {
-    return true;
-  } else {
-    return (head->next == tail);
-  }
+  return head == NULL;
 }
 
 
 int AList::length(void) {
   int numNodes = 0;
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     numNodes++;
   }
   return numNodes;
@@ -53,29 +40,23 @@ int AList::length(void) {
 
 
 BaseAST* AList::first(void) {
-  if (this == NULL || isEmpty())
-    return NULL;
-  return dynamic_cast<BaseAST*>(head->next);
+  return head;
 }
 
 
 BaseAST* AList::last(void) {
-  if (this == NULL || isEmpty())
-    return NULL;
-  return dynamic_cast<BaseAST*>(tail->prev);
+  return tail;
 }
 
 
 BaseAST* AList::only(void) {
-  if (isEmpty()) {
+  if (!head)
     INT_FATAL("only() called on empty list");
-  }
-  if (head->next->next == tail) {
+  if (head == tail)
     return first();
-  } else {
+  else
     INT_FATAL("only() called on list with more than one element");
-    return NULL;
-  }
+  return NULL;
 }
 
 
@@ -84,7 +65,7 @@ BaseAST* AList::get(int index) {
     INT_FATAL("Indexing list must use positive integer");
   }
   int i = 0;
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     i++;
     if (i == index) {
       return node;
@@ -98,14 +79,20 @@ BaseAST* AList::get(int index) {
 void AList::insertAtHead(BaseAST* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
-  if (new_ast->prev || new_ast->next)
+  if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
   if (dynamic_cast<Symbol*>(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtHead");
-  new_ast->prev = head;
-  new_ast->next = head->next;
-  head->next = new_ast;
-  new_ast->next->prev = new_ast;
+  if (!head) {
+    head = new_ast;
+    tail = new_ast;
+    new_ast->list = this;
+  } else {
+    new_ast->next = head;
+    head = new_ast;
+    new_ast->next->prev = new_ast;
+    new_ast->list = this;
+  }
   parent_insert_help(parent, new_ast);
 }
 
@@ -125,16 +112,22 @@ void AList::insertAtTail(BaseAST* new_ast) {
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
   if (dynamic_cast<Symbol*>(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtTail");
-  new_ast->next = tail;
-  new_ast->prev = tail->prev;
-  tail->prev = new_ast;
-  new_ast->prev->next = new_ast;
+  if (!tail) {
+    head = new_ast;
+    tail = new_ast;
+    new_ast->list = this;
+  } else {
+    new_ast->prev = tail;
+    tail = new_ast;
+    new_ast->prev->next = new_ast;
+    new_ast->list = this;
+  }
   parent_insert_help(parent, new_ast);
 }
 
 
 void AList::insertAtTail(AList* new_ast) {
-  for_alist_sc(BaseAST, elem, new_ast) {
+  for_asts(elem, new_ast) {
     elem->remove();
     insertAtTail(elem);
   }
@@ -142,7 +135,7 @@ void AList::insertAtTail(AList* new_ast) {
 
 
 void AList::print(FILE* outfile, char* separator) {
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     node->print(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -152,7 +145,7 @@ void AList::print(FILE* outfile, char* separator) {
 
 
 void AList::printDef(FILE* outfile, char* separator) {
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     node->printDef(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -162,7 +155,7 @@ void AList::printDef(FILE* outfile, char* separator) {
 
 
 void AList::codegen(FILE* outfile, char* separator) {
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     node->codegen(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -181,15 +174,16 @@ AList* AList::copy(ASTMap* map, bool internal) {
     map = &localMap;
 
   AList* newList = new AList();
-  for_alist_sc(BaseAST, node, this) {
+  for_asts(node, this) {
     BaseAST* newnode = COPY_INT(node);
     newnode->next = NULL;
     newnode->prev = NULL;
+    newnode->list = NULL;
     newList->insertAtTail(newnode);
   }
 
   if (!internal) {
-    for_alist_sc(BaseAST, node, newList)
+    for_asts(node, newList)
       update_symbols(node, map);
   }
   return newList;

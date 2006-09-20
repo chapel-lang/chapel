@@ -542,7 +542,7 @@ void ClassType::addDeclarations(AList* stmts, bool tail) {
           fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }
-      if (def->parentSymbol || def->prev)
+      if (def->parentSymbol || def->list)
         def->remove();
       if (tail)
         fields->insertAtTail(def);
