@@ -75877,3 +75877,14 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         parallel.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/06 17:13:32 -- bradc
+
+Log message:
+	Updated with commments added during the HPCC
+	benchmarks meeting held today.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+
