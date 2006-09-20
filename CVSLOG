@@ -76016,3 +76016,20 @@ Log message:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-uintliteral.future 
 
+---------------------------------------------------------------------------
+
+09/20/06 13:41:41 -- deitz
+
+Log message:
+	Removed sentinels from the alist implementation.
+	
+	This improves memory consumption but there is more to do.  Estimating
+	from a graph output by massif valgrind on Jacobi, the peak memory in
+	use decreases from 32M to 24M and the memory in use after resolve
+	decreases from 17M to 7M.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp baseAST.cpp stmt.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
+
