@@ -76006,3 +76006,13 @@ Removed files:
 	                             tuple_domain.future 
 	                             tuple_domain.good 
 
+---------------------------------------------------------------------------
+
+09/20/06 13:27:28 -- deitz
+
+Log message:
+	Removed .future, Wayne fixed this bug.
+
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-uintliteral.future 
+
