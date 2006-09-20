@@ -76136,3 +76136,30 @@ Modified files:
 	                                               test_infer_class2.good 
 	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/20/06 16:32:57 -- waynew
+
+Log message:
+	Further partial checkin of indefinite hash function implementation.
+	 - Added member? query function.
+	 - Added tuple indefinite hash function creation.
+	 - Hashing now done on 64b integers, rather than 64b uint's. Hash functions
+	   do not return a negative number.  Temporary hack.
+	 - == and != comparison function for tuples.
+	
+	Some tests testing the hashing functions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl 
+Added files:
+	chapel/test/domains/indefinite/waynew/: indef1.chpl indef1.good 
+	                                        indef2.chpl indef2.good 
+	                                        tuple_index.chpl 
+	                                        tuple_index.good 
+	                                        tuple_index2.chpl 
+	                                        tuple_index2.good 
+
