@@ -1,3 +1,6 @@
+// BLC: Change cast to int into mask against high bit
+// BLC: Implement a timer class and insert calls
+
 const POLY = 0x0000000000000007u;  // BLC: should be param, but causes error
 
 config const totMemSize = 1000u;
@@ -7,6 +10,7 @@ const tableSize = 1 << logTableSize;
 config const verify = true;
 config const debug = false;
 
+// BLC: note the prevalence of the n-1 upper bound motif
 const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
 var Table: [tableDom] uint;
 
@@ -23,6 +27,8 @@ def main() {
   if (verify) then verifyResults();
 }
 
+
+// BLC: eliminate Ran array -- replace with per-thread local variable
 
 def randomAccessUpdate() {
   // BLC: would prefer the following line to be Table = tableDom;
@@ -45,9 +51,9 @@ def randomAccessUpdate() {
 
   if debug then writeln("Ran is: ", Ran);
 
-  forall i in updateDom by numRandoms {
+  for i in updateDom by numRandoms {
     forall j in ranDom {
-      // This appears everywhere.  Might be nice to make it a macro-ish thing?
+      // BLC: This appears everywhere.  Might be nice to make it a macro-ish thing?
       Ran(j) = (Ran(j) << 1) ^ (if Ran(j):int < 0 then POLY else 0u);
       Table((Ran(j) & (tableSize-1)):int) ^= Ran(j); // BLC: unfortunate cast
     }
@@ -106,7 +112,7 @@ def HPCCstarts(n:int) {
     temp = (temp << 1) ^ (if temp:int < 0 then POLY else 0u);
   }
 
-  var high = 62;  // BLC: magic number -- name?
+  var high = 62;    // BLC: magic number -- name?
   while (n2 >> high) & 1 == 0 do
     high -= 1;
 
@@ -125,8 +131,10 @@ def HPCCstarts(n:int) {
 }
 
 
+// BLC: could replace this all by some sort of bpop + bit search 
+// function?
 def computeLogTableSize(memsize) {
-  param tableElemSize = 8;
+  param tableElemSize = 8;  // BLC: magic number == sizeof(uint)
 
   var elemsInTable = memsize / tableElemSize;
   var logTableSize = 0u;
