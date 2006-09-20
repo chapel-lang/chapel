@@ -75841,3 +75841,39 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+09/19/06 17:03:14 -- deitz
+
+Log message:
+	Changed the way in which ast wrapper nodes are automatically inserted.
+	They are no longer (unsafely) added based on the dynamic type of a
+	node in alist code.  They are now added when the list is accessed via
+	a BaseAST.  So for example
+	
+	  fn->insertAtTail(new DefExpr(var));
+	
+	will put an ExprStmt around the DefExpr, but
+	
+	  fn->body->body->insertAtTail(new DefExpr(var));
+	
+	will not (resulting in a problem).
+	
+	Wrappers that are built are ExprStmt on expressions when inserted into
+	a list that contains statements, DefExpr on ArgSymbols when inserted
+	as a formal (use insertFormalAtTail or insertFormalAtHead now), and
+	SymExpr on symbols when inserted into a CallExpr.
+	
+	An ExprStmt is also put around expressions that are inserted via
+	insertBefore or insertAfter in a list of statements.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp build.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp flattenFunctions.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         parallel.cpp 
+
