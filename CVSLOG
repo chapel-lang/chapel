@@ -75986,3 +75986,23 @@ Log message:
 Removed files:
 	chapel/test/functions/waynew/: iterator8.future 
 
+---------------------------------------------------------------------------
+
+09/20/06 11:59:46 -- waynew
+
+Log message:
+	Moved to indefinite dir.
+
+Added files:
+	chapel/test/domains/indefinite/waynew/: .cvsignore 
+	                                        record_hash.chpl 
+	                                        record_hash.good 
+	                                        tuple_domain.chpl 
+	                                        tuple_domain.future 
+	                                        tuple_domain.good 
+Removed files:
+	chapel/test/domains/waynew/: .cvsignore record_hash.chpl 
+	                             record_hash.good tuple_domain.chpl 
+	                             tuple_domain.future 
+	                             tuple_domain.good 
+
