@@ -1,1 +1,1 @@
-Error: Enumerator value for NEG must be int parameter (test_enum6.chpl:7)
+test_enum6.chpl:7: error: enumerator 'NEG' is not an int parameter

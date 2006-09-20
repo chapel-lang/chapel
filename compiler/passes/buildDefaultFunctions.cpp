@@ -244,6 +244,9 @@ static void build_chpl_main(void) {
 
 
 static void build_record_equality_function(ClassType* ct) {
+  if (function_exists("==", 2, ct->symbol->name))
+    return;
+
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
@@ -268,6 +271,9 @@ static void build_record_equality_function(ClassType* ct) {
 
 
 static void build_record_inequality_function(ClassType* ct) {
+  if (function_exists("!=", 2, ct->symbol->name))
+    return;
+
   FnSymbol* fn = new FnSymbol("!=");
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);

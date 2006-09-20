@@ -1,3 +1,4 @@
-Error: Unresolved call 'C(f=1)' (test_infer_class1.chpl:6)
-Candidates are:
-  C(type t, f: t) (test_infer_class1.chpl:1)
+test_infer_class1.chpl:1: In function '__init_test_infer_class1':
+test_infer_class1.chpl:6: error: Unresolved call 'C(f=1)'
+error: Candidates are:
+test_infer_class1.chpl:1: error:   C(type t, f: t)

@@ -1,1 +1,2 @@
-Error: Variable 'x' used before defined (test_config_use_before_decl.chpl:1)
+test_config_use_before_decl.chpl:1: In function '__init_test_config_use_before_decl':
+test_config_use_before_decl.chpl:1: error: 'x' used before defined

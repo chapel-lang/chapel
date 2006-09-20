@@ -1,1 +1,2 @@
-Error: Variable 'x' used before defined (test_var_decl_strange4.chpl:4)
+test_var_decl_strange4.chpl:1: In function '__init_test_var_decl_strange4':
+test_var_decl_strange4.chpl:4: error: 'x' used before defined

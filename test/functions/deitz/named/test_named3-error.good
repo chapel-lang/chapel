@@ -1,4 +1,5 @@
-Error: Unresolved call 'foo(i=1, m=2, n=3)' (test_named3-error.chpl:23)
-Candidates are:
-  foo(i: int, j: int, k: int) (test_named3-error.chpl:1)
-  foo(l: int, m: int, n: int) (test_named3-error.chpl:5)
+test_named3-error.chpl:1: In function '__init_test_named3-error':
+test_named3-error.chpl:23: error: Unresolved call 'foo(i=1, m=2, n=3)'
+error: Candidates are:
+test_named3-error.chpl:1: error:   foo(i: int, j: int, k: int)
+test_named3-error.chpl:5: error:   foo(l: int, m: int, n: int)

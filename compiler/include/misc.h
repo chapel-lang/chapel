@@ -30,30 +30,27 @@ char *dupstr(char *s, char *e = 0);
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
 #define INT_FATAL \
-  if (setupDevelError(__FILE__, __LINE__, true , false , false ) && developer) printProblem
+  if (setupError(__FILE__, __LINE__, true , false , false )) printProblem
 
-#define INT_WARNING \
-  if (setupDevelError(__FILE__, __LINE__, false , false , true ) && developer) printProblem
+#define INT_WARN \
+  if (setupError(__FILE__, __LINE__, false , false , true )) printProblem
 
 #define USR_FATAL \
-  if (setupDevelError(__FILE__, __LINE__, true , true , false )) printProblem
+  if (setupError(__FILE__, __LINE__, true , true , false )) printProblem
 
 #define USR_FATAL_CONT \
-  if (setupDevelError(__FILE__, __LINE__, true , true , true )) printProblem
+  if (setupError(__FILE__, __LINE__, true , true , true )) printProblem
 
-#define USR_STOP \
-  check_fatal_errors_encountered
-
-#define USR_WARNING \
-  if (setupDevelError(__FILE__, __LINE__, false, true , true )) printProblem
+#define USR_WARN \
+  if (setupError(__FILE__, __LINE__, false, true , true )) printProblem
 
 #define USR_PRINT \
   if (setupDevelPrint(__FILE__, __LINE__ )) printProblem
 
-#define USR_PRINT_NOLINE \
-  if (setupDevelPrint(__FILE__, __LINE__ )) printProblemNoLine
+#define USR_STOP \
+  check_fatal_errors_encountered
 
-int setupDevelError(char* filename, int lineno, bool fatal, bool user, bool cont);
+bool setupError(char* filename, int lineno, bool fatal, bool user, bool cont);
 int setupDevelPrint(char* filename, int lineno);
 void printProblem(char* fmt, ...);
 void printProblem(IFAAST* ast, char* fmt, ...);

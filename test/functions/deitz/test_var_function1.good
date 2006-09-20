@@ -1,1 +1,2 @@
-Error: Assigning to a constant expression (test_var_function1.chpl:5)
+test_var_function1.chpl:5: In function 'bar':
+test_var_function1.chpl:5: error: Assigning to a constant expression

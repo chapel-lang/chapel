@@ -1,1 +1,1 @@
-Error: Class C inherits from record D (test_inherit_error3.chpl:1)
+test_inherit_error3.chpl:1: error: Class C inherits from record D

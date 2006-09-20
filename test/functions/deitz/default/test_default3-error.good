@@ -1,4 +1,5 @@
-Error: Ambiguous call 'foo()' (test_default3-error.chpl:17)
-Candidates are:
-  foo(i: int, j: float, k: string) (test_default3-error.chpl:1)
-  foo(i: float, j: string, k: int) (test_default3-error.chpl:5)
+test_default3-error.chpl:1: In function '__init_test_default3-error':
+test_default3-error.chpl:17: error: Ambiguous call 'foo()'
+error: Candidates are:
+test_default3-error.chpl:1: error:   foo(i: int, j: float, k: string)
+test_default3-error.chpl:5: error:   foo(i: float, j: string, k: int)

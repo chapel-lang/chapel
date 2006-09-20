@@ -1,1 +1,2 @@
-Error: Variable 'foo' used before defined (test_scope2.chpl:6)
+test_scope2.chpl:5: In function 'bar':
+test_scope2.chpl:6: error: 'foo' used before defined

@@ -1,1 +1,2 @@
-Error: Symbol 'y' is not defined (intent-7-error.chpl:9)
+intent-7-error.chpl:1: In function '__init_intent-7-error':
+intent-7-error.chpl:9: error: 'y' undeclared (first use this function)

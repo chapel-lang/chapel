@@ -1,1 +1,2 @@
-Error: Variable 'a' used before defined (defaultinit1a.chpl:3)
+defaultinit1a.chpl:1: In function 'main':
+defaultinit1a.chpl:3: error: 'a' used before defined

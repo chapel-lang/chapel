@@ -1,3 +1,4 @@
-Error: Unresolved call 'f(:C)' (union_type_hierarchy-2.chpl:16)
-Candidates are:
-  f(a: D) (union_type_hierarchy-2.chpl:10)
+union_type_hierarchy-2.chpl:1: In function '__init_union_type_hierarchy-2':
+union_type_hierarchy-2.chpl:16: error: Unresolved call 'f(:C)'
+error: Candidates are:
+union_type_hierarchy-2.chpl:10: error:   f(a: D)

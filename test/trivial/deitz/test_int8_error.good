@@ -1,1 +1,2 @@
-Error: Type mismatch in assignment from int(16) to int(8) (test_int8_error.chpl:2)
+test_int8_error.chpl:1: In function '__init_test_int8_error':
+test_int8_error.chpl:2: error: Type mismatch in assignment from int(16) to int(8)

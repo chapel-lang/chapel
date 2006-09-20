@@ -1,1 +1,2 @@
-Error: Variable 'y' used before defined (test_var_decl_strange2.chpl:1)
+test_var_decl_strange2.chpl:1: In function '__init_test_var_decl_strange2':
+test_var_decl_strange2.chpl:1: error: 'y' used before defined

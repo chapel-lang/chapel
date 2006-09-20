@@ -1,1 +1,1 @@
-Error: Return type does not match type of returned expression (typefn2.chpl:1)
+typefn2.chpl:1: error: Return type does not match type of returned expression

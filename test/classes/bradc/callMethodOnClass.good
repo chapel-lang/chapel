@@ -1,3 +1,4 @@
-Error: Unresolved call 'D.start' (callMethodOnClass.chpl:25)
-Candidates are:
-  :D.start (callMethodOnClass.chpl:14)
+callMethodOnClass.chpl:23: In function 'main':
+callMethodOnClass.chpl:25: error: Unresolved call 'D.start'
+error: Candidates are:
+callMethodOnClass.chpl:14: error:   :D.start

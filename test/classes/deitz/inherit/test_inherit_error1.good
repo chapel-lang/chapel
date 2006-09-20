@@ -1,1 +1,1 @@
-Error: Class hierarchy is cyclic (test_inherit_error1.chpl:1)
+test_inherit_error1.chpl:1: error: Class hierarchy is cyclic

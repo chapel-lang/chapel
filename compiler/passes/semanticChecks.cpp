@@ -116,77 +116,58 @@ check_parsed(void) {
 }
 
 
-static void
-check_normalized_calls(CallExpr* call) {
-  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-    if (dynamic_cast<ModuleSymbol*>(base->var)) {
-      USR_FATAL_CONT(call, "Illegal call of module %s", base->var->name);
-    }
-  }
-}
-
-
-static void
-check_normalized_functions(FnSymbol* fn) {
-  if (fn->noParens && !fn->_this)
-    USR_FATAL_CONT(fn, "Non-member functions must have parenthesized argument lists");
-}
-
-
-static void
-check_normalized_def_before_use(FnSymbol* fn) {
-  Vec<Symbol*> defined;
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE))
-        defined.set_add(dynamic_cast<SymExpr*>(call->get(1))->var);
-    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
-        if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
-          continue;
-      if (dynamic_cast<VarSymbol*>(sym->var))
-        if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
-          if (!defined.set_in(sym->var))
-            if (sym->var != fn->_this)
-              USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
-    }
-  }
-}
-
-
-void
-check_normalized_enum(EnumType* et) {
-  for_alist(DefExpr, def, et->constants) {
-    if (def->init) {
-      SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
-      if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
-                   !dynamic_cast<VarSymbol*>(sym->var)->immediate))
-        USR_FATAL(def, "Enumerator value for %s must be int parameter", def->sym->name);
-    }
-  }
-}
-
-
 void
 check_normalized(void) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      check_normalized_calls(a);
-    } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
-      check_normalized_functions(a);
-      check_normalized_def_before_use(a);
-    } else if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
-      CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
-      if (!(parent && parent->baseExpr == a))
-        if (dynamic_cast<UnresolvedSymbol*>(a->var))
-          USR_FATAL_CONT(a, "Symbol '%s' is not defined", a->var->name);
-    } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
-      if (EnumType* et = dynamic_cast<EnumType*>(a->type))
-        check_normalized_enum(et);
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->noParens && !fn->_this)
+      USR_FATAL_CONT(fn, "functions require parentheses");
+
+    // do not check body of nested function (would be again)
+    if (fn->defPoint->parentSymbol->astType == SYMBOL_FN)
+      continue;
+
+    Vec<char*> reported;
+    Vec<BaseAST*> asts;
+    Vec<Symbol*> defined;
+    collect_asts_postorder(&asts, fn);
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
+          if (dynamic_cast<ModuleSymbol*>(base->var))
+            USR_FATAL_CONT(call, "illegal use of module '%s'", base->var->name);
+        if (call->isPrimitive(PRIMITIVE_MOVE))
+          defined.set_add(dynamic_cast<SymExpr*>(call->get(1))->var);
+      } else if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
+          if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+            continue;
+        if (dynamic_cast<VarSymbol*>(sym->var))
+          if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
+            if (!defined.set_in(sym->var))
+              if (sym->var != fn->_this)
+                USR_FATAL(sym, "'%s' used before defined", sym->var->name);
+        CallExpr* parent = dynamic_cast<CallExpr*>(sym->parentExpr);
+        if (!(parent && parent->baseExpr == sym))
+          if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+            if (!reported.set_in(sym->var->name)) {
+              USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                             sym->var->name);
+              reported.set_add(sym->var->name);
+            }
+          }
+      }
+    }
+  }
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+      for_alist(DefExpr, def, et->constants) {
+        if (def->init) {
+          SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
+          if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
+                       !dynamic_cast<VarSymbol*>(sym->var)->immediate))
+            USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
+        }
+      }
     }
   }
 }

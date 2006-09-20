@@ -6,6 +6,9 @@
 #include "files.h"
 #include "chpl.h"
 #include "baseAST.h"
+#include "symbol.h"
+#include "expr.h"
+#include "stmt.h"
 
 void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -39,64 +42,79 @@ clean_exit(int status) {
 static bool exit_immediately = true;
 static bool exit_eventually = false;
 
+static char* err_filename;
+static int err_lineno;
+static int err_fatal;
+static int err_user;
+static FnSymbol* err_fn = NULL;
 
-static char* internalErrorCode(char* filename, int lineno) {
+
+static void
+print_user_internal_error() {
   static char error[8];
 
-  char* filename_start = strrchr(filename, '/');
-  if (filename_start) {
+  char* filename_start = strrchr(err_filename, '/');
+  if (filename_start)
     filename_start++;
-  }
-  else {
-    filename_start = filename;
-  }
+  else
+    filename_start = err_filename;
   strncpy(error, filename_start, 3);
-  sprintf(error, "%s%04d", error, lineno);
+  sprintf(error, "%s%04d", error, err_lineno);
   for (int i = 0; i < 7; i++) {
     if (error[i] >= 'a' && error[i] <= 'z') {
       error[i] += 'A' - 'a';
     }
   }
-  return error;
+
+  fprintf(stderr, "internal failure %s ", error);
+  char version[128];
+  get_version(version);
+  fprintf(stderr, "chpl Version %s\n", version);
+  if (err_fatal)
+    clean_exit(1);
 }
 
 
-int setupDevelError(char *filename, int lineno, bool fatal, bool user, bool cont) {
-  if (developer) {
-    fprintf(stderr, "[%s:%d] ", filename, lineno);
-  }
-
-  if (!user) {
-    if (fatal) {
-      fprintf(stderr, "Internal error: ");
-    }
-    else {
-      fprintf(stderr, "Internal warning: ");
-    }
-  }
-  else {
-    if (fatal) {
-      fprintf(stderr, "Error: ");
-    }
-    else {
-      fprintf(stderr, "Warning: ");
-    }
-  }
-
-  if (!user && !developer) {
-    char version[128];
-    fprintf(stderr, "%s ", internalErrorCode(filename, lineno));
-    get_version(version);
-    fprintf(stderr, "chpl Version %s\n", version);
-    if (fatal) {
-      clean_exit(1);
-    }
-  }
-
-  if (fatal)
-    exit_eventually = true;
+bool
+setupError(char *filename, int lineno, bool fatal, bool user, bool cont) {
+  err_filename = filename;
+  err_lineno = lineno;
+  err_fatal = fatal;
+  err_user = user;
   exit_immediately = !cont;
-  return 1;
+  if (err_fatal)
+    exit_eventually = true;
+  return true;
+}
+
+
+static void
+printDevelErrorHeader(BaseAST* ast) {
+  if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast->parentSymbol)) {
+      if (fn != err_fn) {
+        err_fn = fn;
+        if (fn->filename && fn->lineno) {
+          if (developer)
+            fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
+          fprintf(stderr, "%s:%d: In function '%s':\n",
+                  fn->filename, fn->lineno, fn->name);
+        }
+      }
+    }
+  }
+
+  if (developer)
+    fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
+
+  if (ast && ast->filename && ast->lineno)
+    fprintf(stderr, "%s:%d: ", ast->filename, ast->lineno);
+
+  fprintf(stderr, err_fatal ? "error: " : "warning: ");
+
+  if (!err_user && !developer) {
+    print_user_internal_error();
+  }
 }
 
 
@@ -104,38 +122,24 @@ int setupDevelPrint(char *filename, int lineno) {
   if (developer) {
     fprintf(stderr, "[%s:%d] ", filename, lineno);
   }
+
   return 1;
 }
 
 
-static void printUsrLocation(char* filename, int lineno) {
-  if (filename || lineno) {
-    fprintf(stderr, " (");
-    if (filename) {
-      fprintf(stderr, "%s", filename);
-    }
-    if (lineno) {
-      if (filename) {
-        fprintf(stderr, ":");
-      } else {
-        fprintf(stderr, "line ");
-      }
-      fprintf(stderr, "%d", lineno);
-    }
-    fprintf(stderr, ")");
-  }
-  fprintf(stderr, "\n");
-}
-
-
 void printProblem(char *fmt, ...) {
+  printDevelErrorHeader(NULL);
+
+  if (!err_user && !developer)
+    return;
+
   va_list args;
 
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
 
-  printUsrLocation(NULL, 0);
+  fprintf(stderr, "\n");
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);
@@ -144,20 +148,18 @@ void printProblem(char *fmt, ...) {
 
 
 void printProblem(BaseAST* ast, char *fmt, ...) {
-  va_list args;
-  int usrlineno = 0;
-  char *usrfilename = NULL;
+  printDevelErrorHeader(ast);
 
-  if (ast) {
-    usrfilename = ast->filename;
-    usrlineno = ast->lineno;
-  }
+  if (!err_user && !developer)
+    return;
+
+  va_list args;
   
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
 
-  printUsrLocation(usrfilename, usrlineno);
+  fprintf(stderr, "\n");
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);

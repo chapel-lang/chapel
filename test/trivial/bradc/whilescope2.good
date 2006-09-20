@@ -1,1 +1,2 @@
-Error: Symbol 't' is not defined (whilescope2.chpl:2)
+whilescope2.chpl:1: In function '__init_whilescope2':
+whilescope2.chpl:2: error: 't' undeclared (first use this function)

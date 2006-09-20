@@ -1,1 +1,2 @@
-Error: Symbol 'thisVariableDoesntExist' is not defined (badfile.chpl:1)
+badfile.chpl:1: In function '__init_badfile':
+badfile.chpl:1: error: 'thisVariableDoesntExist' undeclared (first use this function)

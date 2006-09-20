@@ -1,1 +1,2 @@
-Error: Unresolved call 'foo' (undefinedfn.chpl:4)
+undefinedfn.chpl:1: In function 'main':
+undefinedfn.chpl:4: error: Unresolved call 'foo'

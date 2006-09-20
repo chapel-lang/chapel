@@ -1,1 +1,2 @@
-Error: Unresolved call ':pair()' (weirdinit.chpl:7)
+weirdinit.chpl:6: In function 'main':
+weirdinit.chpl:7: error: Unresolved call ':pair()'

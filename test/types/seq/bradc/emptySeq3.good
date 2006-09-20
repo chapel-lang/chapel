@@ -1,1 +1,2 @@
-Error: Type mismatch in assignment from nil to seq(int) (emptySeq3.chpl:1)
+emptySeq3.chpl:1: In function '__init_emptySeq3':
+emptySeq3.chpl:1: error: Type mismatch in assignment from nil to seq(int)

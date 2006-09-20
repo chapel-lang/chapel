@@ -1,1 +1,2 @@
-Error: Variable 'x' used before defined (initvarsamename.chpl:4)
+initvarsamename.chpl:1: In function '__init_initvarsamename':
+initvarsamename.chpl:4: error: 'x' used before defined

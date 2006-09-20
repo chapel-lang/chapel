@@ -1,1 +1,2 @@
-Error: Assigning to a constant expression (intents-error.chpl:25)
+intents-error.chpl:25: In function '_assignplus10':
+intents-error.chpl:25: error: Assigning to a constant expression

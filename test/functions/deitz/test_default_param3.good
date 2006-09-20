@@ -1,4 +1,5 @@
-Error: Ambiguous call 'foo(17)' (test_default_param3.chpl:10)
-Candidates are:
-  foo(i: int) (test_default_param3.chpl:1)
-  foo(i: int, s: string) (test_default_param3.chpl:5)
+test_default_param3.chpl:1: In function '__init_test_default_param3':
+test_default_param3.chpl:10: error: Ambiguous call 'foo(17)'
+error: Candidates are:
+test_default_param3.chpl:1: error:   foo(i: int)
+test_default_param3.chpl:5: error:   foo(i: int, s: string)

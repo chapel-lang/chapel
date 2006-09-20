@@ -1,1 +1,1 @@
-Error: Non-member functions must have parenthesized argument lists (main2.chpl:4)
+main2.chpl:4: error: functions require parentheses

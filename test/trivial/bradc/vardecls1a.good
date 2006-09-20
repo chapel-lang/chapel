@@ -1,1 +1,2 @@
-Error: Variable 'x' used before defined (vardecls1a.chpl:9)
+vardecls1a.chpl:8: In function 'bar':
+vardecls1a.chpl:9: error: 'x' used before defined

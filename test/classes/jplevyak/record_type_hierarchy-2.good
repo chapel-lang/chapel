@@ -1,3 +1,4 @@
-Error: Unresolved call 'f(:D)' (record_type_hierarchy-2.chpl:16)
-Candidates are:
-  f(a: C) (record_type_hierarchy-2.chpl:10)
+record_type_hierarchy-2.chpl:1: In function '__init_record_type_hierarchy-2':
+record_type_hierarchy-2.chpl:16: error: Unresolved call 'f(:D)'
+error: Candidates are:
+record_type_hierarchy-2.chpl:10: error:   f(a: C)

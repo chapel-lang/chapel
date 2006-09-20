@@ -1,1 +1,1 @@
-Error: Variable 'x' is not initialized or has no type (test_infer1.chpl:1)
+test_infer1.chpl:1: error: Variable 'x' is not initialized or has no type
