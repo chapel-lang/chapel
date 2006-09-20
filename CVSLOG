@@ -75909,3 +75909,36 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+09/19/06 18:04:05 -- waynew
+
+Log message:
+	Implemented automatic insertion of _to_seq.  _to_seq(iterator) returns a
+	sequence.  Because our implemenation of iterator functions transforms the
+	iterator into a class, things such as writeln(iterator) was no longer
+	valid.  It needed to be manually replaced (in user .chpl code) with
+	writeln(_to_seq(iterator)).  Now the replacement occurs automatically.
+	
+	Changed test files accordingly.  Power to the iterators!
+	
+	Cleaned up iterator transformation code a little more.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/arrays/deitz/domains/: test_domain2.chpl 
+	chapel/test/classes/deitz/infer/: infer_field2.chpl 
+	                                  infer_field2a.chpl 
+	                                  infer_field2b.chpl 
+	                                  infer_field2c.chpl 
+	chapel/test/functions/deitz/: test_iterator1.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.chpl 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3a.chpl 
+	chapel/test/functions/waynew/: iterator6.chpl iterator7.chpl 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+
