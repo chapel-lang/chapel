@@ -76033,3 +76033,106 @@ Modified files:
 	chapel/compiler/include/: alist.h baseAST.h 
 	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+09/20/06 16:00:35 -- deitz
+
+Log message:
+	Changed the way error messages are reported to look more like gcc.
+	
+	Added "In function 'foo':" to error messages if we know what function
+	the error occurred in.
+	
+	Reworked check_normalized and put a catch to only show the error for a
+	variable undeclared to only print it once.  This gets it down to twice
+	for
+	
+	  test/studies/hpcc/RA/bradc/ra-bradc-duplicateErrors.chpl
+	
+	because of nested functions being pulled out.
+	
+	Added a catch so the default == and != functions for records are not
+	built if one already exists.
+	
+	Updated .goods.
+
+Modified files:
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	                            weirdinit.good 
+	chapel/test/classes/deitz/: test_bad_function_noparens.good 
+	                            test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+	                            test_method_call2.good 
+	chapel/test/classes/deitz/inherit/: test_inherit_error1.good 
+	                                    test_inherit_error2.good 
+	                                    test_inherit_error3.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-2.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/classes/marybeth/: test_dispatch1-error.good 
+	chapel/test/flowanalysis/recursion/: rec_fun-1.good 
+	                                     rec_fun-2.good 
+	                                     rec_fun-3.good 
+	                                     rec_obj-1.good 
+	                                     rec_obj-2.good 
+	                                     rec_obj-3.good 
+	chapel/test/functions/bradc/: intents-classes2-error.good 
+	                              intents-error.good typefn2.good 
+	chapel/test/functions/deitz/: test_bad_function.good 
+	                              test_default_param3.good 
+	                              test_return2.good 
+	                              test_var_function1.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	                                      test_default4-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	                                    test_named6-error.good 
+	chapel/test/functions/jplevyak/: intent-5-error.good 
+	                                 intent-7-error.good 
+	                                 zeroarity-bound-error-1.good 
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-duplicateErrors.good 
+	chapel/test/trivial/bradc/: defaultinit1a.good 
+	                            initvarsamename.good 
+	                            initvarsamename2.good 
+	                            readmethod.good redefinevar.good 
+	                            uintloop.good undefinedfn.good 
+	                            undefinedfn2.good vardecls.good 
+	                            vardecls1a.good whilescope2.good 
+	chapel/test/trivial/bradc/entrypoint/: main2.good twomains.good 
+	chapel/test/trivial/deitz/: foo.good 
+	                            test_config_use_before_decl.good 
+	                            test_infer1.good 
+	                            test_int8_error.good 
+	                            test_scope2.good 
+	                            test_use_before_def1.good 
+	                            test_use_before_def2.good 
+	                            test_use_before_def3.good 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.good 
+	chapel/test/trivial/roxana/: test_param_decl2.good 
+	                             test_param_decl3.good 
+	chapel/test/types/enum/deitz/: test_enum6.good 
+	chapel/test/types/file/bradc/: badfile.good badfile2.good 
+	                               badfile3.good 
+	chapel/test/types/seq/bradc/: emptySeq3.good length.modify.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/deitz/part1/: 
+	                                               test_clone_class1b.good 
+	chapel/test/types/type_variables/deitz/part3/: 
+	                                               test_overinstantiate1.good 
+	                                               test_overinstantiate1a.good 
+	chapel/test/types/type_variables/deitz/part7/: construct-1b.good 
+	                                               test_error1.good 
+	                                               test_infer_class1.good 
+	                                               test_infer_class2.good 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+
