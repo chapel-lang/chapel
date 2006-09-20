@@ -6,4 +6,4 @@ iterator foo() : (int, int) {
   }
 }
 
-writeln( _to_seq( foo()));
+writeln( foo());

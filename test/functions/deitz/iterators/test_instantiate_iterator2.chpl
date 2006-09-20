@@ -8,5 +8,5 @@ iterator foo(param rank : int, n : int) : rank*int {
   }
 }
 
-writeln( _to_seq( foo( 2, 4)));
-writeln( _to_seq( foo( 4, 5)));
+writeln( foo( 2, 4));
+writeln( foo( 4, 5));

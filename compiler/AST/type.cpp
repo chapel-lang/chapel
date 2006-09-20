@@ -474,6 +474,7 @@ void UserType::printDef(FILE* outfile) {
 ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
+  isIterator(false),
   structScope(NULL),
   fields(new AList<DefExpr>()),
   inherits(new AList<Expr>())
@@ -516,6 +517,7 @@ void ClassType::verify() {
 ClassType*
 ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
+  copy_type->isIterator = isIterator;
   copy_type->fields->insertAtTail(COPY_INT(fields));
   copy_type->inherits->insertAtTail(COPY_INT(inherits));
   for_fields(field, copy_type) {

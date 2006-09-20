@@ -8,7 +8,7 @@ iterator basic() : int {
   }
 }
 
-writeln( _to_seq( basic()));
+writeln( basic());
 
 for k in basic() {
   write( " ", k);

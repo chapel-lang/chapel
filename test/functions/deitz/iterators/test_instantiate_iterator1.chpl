@@ -3,5 +3,5 @@ iterator foo(param rank : int) : int {
     yield i + rank;
 }
 
-writeln( _to_seq( foo(2)));
-writeln( _to_seq( foo(3)));
+writeln( foo(2));
+writeln( foo(3));

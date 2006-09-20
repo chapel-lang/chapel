@@ -188,14 +188,6 @@ void normalize(BaseAST* base) {
 }
 
 
-
-// Return the label name to use.
-static char*
-iterator_return_label( uint return_pt) {
-  return stringcat( "return_", intstring( return_pt));
-}
-
-
 // Create formals for iterator class methods/functions and set _this.
 static void
 iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
@@ -251,8 +243,6 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         // need to reset default value (make re-entrant)
         Stmt *def_stmt= def->parentStmt;
         Expr *init_e = (def->init) ? dynamic_cast<Expr*>(def->init->remove()) : new CallExpr( "_init", (new CallExpr( ".", _this, new_StringSymbol( v->name))));
-        // Expr *newdef = new CallExpr( PRIMITIVE_SET_MEMBER, _this, new_StringSymbol( v->name), init_e);
-
         Expr *newdef = new CallExpr( v->name, 
                                      gMethodToken,
                                      _this,
@@ -336,18 +326,18 @@ static void
 iterator_replace_yields( FnSymbol *fn, 
                          Vec<ReturnStmt*>  *vals_returned,
                          Vec<LabelSymbol*> *labels) {
-  uint return_pts= 0;
+  uint return_pt= 0;
   Vec<BaseAST*> children;
-  LabelSymbol *l = new LabelSymbol( iterator_return_label( return_pts));
+  LabelSymbol *l= new LabelSymbol( stringcat("return_", intstring( return_pt)));
   labels->add( l);  // base case
 
   collect_asts( &children, fn->body);
   forv_Vec( BaseAST, ast, children) {
     if (ReturnStmt *rs=dynamic_cast<ReturnStmt*>( ast)) {
       if (rs->yield) {
-        return_pts++;
-        rs->insertBefore( new ReturnStmt( new_IntSymbol( return_pts)));
-        l = new LabelSymbol( iterator_return_label( return_pts));
+        return_pt++;
+        rs->insertBefore( new ReturnStmt( new_IntSymbol( return_pt)));
+        l = new LabelSymbol( stringcat( "return_", intstring( return_pt)));
         labels->add( l);
         rs->insertAfter( new ExprStmt( new DefExpr( l)));
         vals_returned->add( dynamic_cast<ReturnStmt*>(rs->remove()));
@@ -398,6 +388,16 @@ iterator_update_this_uses( FnSymbol *fn, DefExpr *newdef, DefExpr *olddef) {
 
 
 static void
+iterator_method( FnSymbol *fn) {
+  fn->fnClass = FN_FUNCTION;
+  fn->isMethod = true;                // method of iterator class
+  fn->global = true;                  // other modules need access
+  fn->retType = dtUnknown;            // let resolve figures these out
+  fn->retExprType = NULL;
+}
+
+
+static void
 iterator_transform( FnSymbol *fn) {
   ModuleSymbol*m = fn->getModule();
   char        *classn = stringcat("_iterator_", fn->name);
@@ -409,14 +409,9 @@ iterator_transform( FnSymbol *fn) {
   ArgSymbol *cursor = new ArgSymbol(INTENT_BLANK, "cursor", dtInt[INT_SIZE_64]);
 
   // create getNextCursor
-  FnSymbol *nextcf = new FnSymbol( "getNextCursor");
-  nextcf = fn->copy();
+  FnSymbol *nextcf = fn->copy();
   nextcf->name = nextcf->cname = canonicalize_string("getNextCursor");
-  nextcf->fnClass = FN_FUNCTION;
-  nextcf->isMethod = true;
-  nextcf->global = true;
-  nextcf->retType = dtUnknown;
-  nextcf->retExprType = NULL;
+  iterator_method( nextcf);
   m->stmts->insertAtHead(new ExprStmt(new DefExpr(nextcf)));
   compute_sym_uses( nextcf);
   iterator_create_fields( nextcf, ic);
@@ -425,34 +420,31 @@ iterator_transform( FnSymbol *fn) {
   Vec<LabelSymbol*> labels;
   iterator_replace_yields( nextcf, &vals_returned, &labels);
   iterator_build_jtable( nextcf, cursor, &vals_returned, &labels);
-  cleanup( ic_def->sym);  // cleanup( ic_def);
+  cleanup( ic_def->sym);
   normalize( ic_def);
   iterator_constructor_fixup( ic);
-
+  ic->isIterator = true;
+  
   FnSymbol *headcf = new FnSymbol( "getHeadCursor");
-  headcf->global = true;
+  iterator_method( headcf);
   m->stmts->insertAtHead(new ExprStmt(new DefExpr( headcf)));
   iterator_formals( headcf, ic);
   headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
-  headcf->isMethod = true;
 
   FnSymbol *valuef = new FnSymbol( "getValue");
-  valuef->global = true;
+  iterator_method( valuef);
   m->stmts->insertAtHead(new ExprStmt(new DefExpr( valuef)));
   iterator_formals( valuef, ic, cursor);
   iterator_build_vtable( valuef, cursor, &vals_returned);
   iterator_update_this_uses( valuef, 
                              valuef->formals->get(2), 
                              nextcf->formals->get(2));
-  valuef->retExprType = NULL;
-  valuef->isMethod = true;
 
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
-  isvalidcf->global = true;
+  iterator_method( isvalidcf);
   m->stmts->insertAtHead(new ExprStmt(new DefExpr( isvalidcf)));
   isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
-  isvalidcf->isMethod = true;
 
   // iterator -> wrapper function
   fn->fnClass = FN_FUNCTION;

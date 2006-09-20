@@ -10,4 +10,4 @@ for i in foo_for( 10) {
 }
 writeln();
 
-writeln( _to_seq( foo_for( 10)));
+writeln( foo_for( 10));

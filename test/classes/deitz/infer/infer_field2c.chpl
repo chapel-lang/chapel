@@ -41,4 +41,4 @@ iterator bar() : int {
   }
 }
 
-writeln( _to_seq( bar()));
+writeln( bar());

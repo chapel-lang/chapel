@@ -76,11 +76,11 @@ D.dimInit(1, 1, 3, 1);
 D.dimInit(2, 1, 4, 1);
 writeln(D);
 
-writeln( _to_seq( D.dforall(1)));
-writeln( _to_seq( D.dforall(2)));
+writeln( D.dforall(1));
+writeln( D.dforall(2));
 
-writeln( _to_seq( D.dfor(1)));
-writeln( _to_seq( D.dfor(2)));
+writeln( D.dfor(1));
+writeln( D.dfor(2));
 
 for i:int in D.dfor(1) {
   for j:int in D.dfor(2) {

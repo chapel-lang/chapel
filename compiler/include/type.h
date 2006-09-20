@@ -129,10 +129,11 @@ enum ClassTag {
 
 class ClassType : public Type {
  public:
-  ClassTag classTag;
-  SymScope* structScope;
-  AList<DefExpr>* fields;
-  AList<Expr>* inherits; // used from parsing, sets dispatchParents
+  ClassTag        classTag;
+  bool            isIterator;
+  SymScope       *structScope;
+  AList<DefExpr> *fields;
+  AList<Expr>    *inherits; // used from parsing, sets dispatchParents
 
   ClassType(ClassTag initClassTag);
   ~ClassType();

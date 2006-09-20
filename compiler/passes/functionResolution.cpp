@@ -924,6 +924,49 @@ resolveCall(CallExpr* call) {
     Vec<char*> anames;
     computeActuals(call, &atypes, &aparams, &anames);
 
+    // automatically replace calls with iterator arg with calls to _to_seq
+    // if (SymExpr *se = dynamic_cast<SymExpr*>(call->baseExpr)) {
+    // se->var
+    if (dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!(call->isNamed( "_to_seq") ||
+            call->isNamed( "getNextCursor") ||
+            call->isNamed( "getHeadCursor") ||
+            call->isNamed( "getValue") ||
+            call->isNamed( "isValidCursor?"))) {
+        ASTMap subs;
+        int    pos = 0;
+        forv_Vec( Type, argtype, atypes) {
+          ClassType *ct = dynamic_cast<ClassType*>( argtype);
+          if (ct && ct->isIterator) {  // replace use with call to _to_seq
+            // YAH, skip if method on self
+            if (pos==1 && (atypes.v[0] == dtMethodToken))
+              continue;
+
+            VarSymbol *temp = new VarSymbol( stringcat( stringcat( "_to_seq_temp", intstring( call->id)), stringcat( "_", intstring( pos))));
+            call->parentStmt->insertBefore( new DefExpr( temp));
+            subs.put( aparams.v[pos], temp);
+            CallExpr  *toseq = new CallExpr( "_to_seq", 
+                                             aparams.v[pos]);
+            CallExpr  *toseqass = new CallExpr( PRIMITIVE_MOVE,
+                                                temp,
+                                                toseq);
+            // CallExpr  *toseqass = new CallExpr( "=", temp, toseq);
+            call->parentStmt->insertBefore( toseqass);
+            resolveCall( toseq);
+            resolveFns( toseq->isResolved());
+            resolveCall( toseqass);
+          }
+          pos++;
+        }
+
+        if (subs.n > 0) {
+          update_symbols( call, &subs);
+          resolveCall( call);
+          return;
+        }
+      }
+    }
+    
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
     FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);

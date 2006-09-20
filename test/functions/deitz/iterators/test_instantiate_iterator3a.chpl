@@ -25,7 +25,7 @@ iterator foo(param rank : int, n : int) : rank*int {
   }
 }
 
-writeln( _to_seq( foo( 1, 2)));
-writeln( _to_seq( foo( 2, 2)));
-writeln( _to_seq( foo( 3, 2)));
-writeln( _to_seq( foo( 4, 2)));
+writeln( foo( 1, 2));
+writeln( foo( 2, 2));
+writeln( foo( 3, 2));
+writeln( foo( 4, 2));
