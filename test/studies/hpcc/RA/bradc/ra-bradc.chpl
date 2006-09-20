@@ -87,17 +87,14 @@ def verifyResults() {
 }
 
 
-// BLC: would really like n to be intent "in" so that it can be
-// modified rather than being copied into n2
-def HPCCstarts(n:int) {
+def HPCCstarts(in n:int) {
   param period = 1317624576693539401;
 
-  var n2 = n;
-  while (n2 < 0) do
-    n2 += period;
-  while (n2 > period) do
-    n2 -= period;
-  if (n2 == 0) then return 0x1u;
+  while (n < 0) do
+    n += period;
+  while (n > period) do
+    n -= period;
+  if (n == 0) then return 0x1u;
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
   var m2Dom = [0..m2DomSize-1];
@@ -113,7 +110,7 @@ def HPCCstarts(n:int) {
   }
 
   var high = 62;    // BLC: magic number -- name?
-  while (n2 >> high) & 1 == 0 do
+  while (n >> high) & 1 == 0 do
     high -= 1;
 
   var ran = 0x2u;
@@ -123,7 +120,7 @@ def HPCCstarts(n:int) {
       if ((ran >> j:uint) & 1) then temp ^= m2(j); // BLC: unfortunate cast
     }
     ran = temp;
-    if ((n2 >> i) & 1) {
+    if ((n >> i) & 1) {
       ran = (ran << 1) ^ (if ran:int < 0 then POLY else 0u);
     }
   }
