@@ -75976,3 +75976,13 @@ Modified files:
 	chapel/compiler/AST/: astutil.cpp 
 	chapel/compiler/include/: astutil.h 
 
+---------------------------------------------------------------------------
+
+09/20/06 10:36:02 -- waynew
+
+Log message:
+	Explicit _to_seq no longer required for iterators.
+
+Removed files:
+	chapel/test/functions/waynew/: iterator8.future 
+
