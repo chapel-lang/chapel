@@ -1050,7 +1050,14 @@ literal:
         $$ = new SymExpr(new_IntSymbol(strtoll(yytext, NULL, 10)));
     }
 | UINTLITERAL
-    { $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10))); }
+    {
+      if (!strncmp("0b", yytext, 2))
+        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext+2, NULL, 2))); 
+      else if (!strncmp("0x", yytext, 2))
+        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext+2, NULL, 16))); 
+      else
+        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10)));
+    }
 | FLOATLITERAL
     { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
 | IMAGLITERAL
