@@ -75899,3 +75899,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/06 17:32:55 -- waynew
+
+Log message:
+	Added binary and hex unsigned literals.  Power to the unsigned!
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
