@@ -418,7 +418,7 @@ static void build_record_hash_function( ClassType *ct) {
   fn->insertFormalAtTail( arg);
 
   if (ct->fields->length() < 0) {
-    fn->insertAtTail( new ReturnStmt( new_UIntSymbol(0)));
+    fn->insertAtTail( new ReturnStmt( new_IntSymbol(0)));
   } else {
     CallExpr *call;
     bool first = true;
@@ -443,6 +443,8 @@ static void build_record_hash_function( ClassType *ct) {
   reset_file_info( def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
+  if (ct->symbol->hasPragma("tuple"))
+    fn->addPragma("tuple hash function");
 }
 
 

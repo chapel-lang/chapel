@@ -142,6 +142,10 @@ class _domain {
     _value.add(i);
   }
 
+  def member?(i) {
+    return _value.member?(i);
+  }
+
   def expand(i...?k) {
     var x = _value.expand((...i));
     return _domain(x.type, rank, x);

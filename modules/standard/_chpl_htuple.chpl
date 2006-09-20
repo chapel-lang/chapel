@@ -20,6 +20,24 @@ pragma "inline" def =(x : _tuple, y) {
   return x;
 }
 
+def ==( a: _tuple, b: _tuple): bool {
+  if (a.size != b.size) then
+    return false;
+  for param i in 1..a.size do
+    if (a(i) != b(i)) then
+      return false;
+  return true;
+}
+
+def !=( a: _tuple, b: _tuple): bool {
+  if (a.size != b.size) then
+    return true;
+  for param i in 1..a.size do
+    if (a(i) != b(i)) then
+      return true;
+  return false;
+}
+
 def fwrite(f : file, x : _tuple) {
   fwrite(f, "(", x(1));
   for param i in 2..x.size do

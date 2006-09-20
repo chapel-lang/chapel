@@ -78,8 +78,9 @@ class _idomain {
       var i = (_indefinite_hash(ind) + probe**2) % _ps(size);
       if table(i) == 0 then
         return i;
-      if inds(table(i)-1) == ind then
+      if inds(table(i)-1) == ind {
         return i;
+      }
       probe = probe + 1;
     }
     return -1;
@@ -97,6 +98,10 @@ class _idomain {
       inds(num_inds-1) = ind;
 
     }
+  }
+
+  def member?( ind: ind_type) {
+    return (table(_map(ind)) != 0);
   }
 
   def _build_array(type elt_type)
@@ -158,7 +163,7 @@ def _gen_key(i: int): int {
   key = key ^ (key >> 15);
   key += ~(key << 27);
   key = key ^ (key >> 31);
-  return key;
+  return key & 0x7fffffffffffffff;  // YAH, make non-negative
 }
 
 pragma "inline"

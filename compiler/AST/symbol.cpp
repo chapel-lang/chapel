@@ -1070,6 +1070,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
   return fn;
 }
 
+
 FnSymbol*
 instantiate_tuple_init(FnSymbol* fn) {
   if (fn->formals->length() != 1)
@@ -1081,6 +1082,41 @@ instantiate_tuple_init(FnSymbol* fn) {
   for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  return fn;
+}
+
+
+FnSymbol*
+instantiate_tuple_hash( FnSymbol* fn) {
+  if (fn->formals->length() != 1)
+    INT_FATAL(fn, "tuple hash function has more than one argument");
+  ArgSymbol  *arg = fn->getFormal(1);
+  ClassType  *ct = dynamic_cast<ClassType*>(arg->type);
+  ReturnStmt *ret;
+  if (ct->fields->length() < 0) {
+    ret = new ReturnStmt( new_IntSymbol(0));
+  } else {
+    CallExpr *call;
+    bool first = true;
+    for (int i=1; i<ct->fields->length(); i++) {
+      CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
+      if (first) {
+        call =  new CallExpr( "_indefinite_hash", field_access);
+        first = false;
+      } else {
+        call = new CallExpr( "^", 
+                             new CallExpr( "_indefinite_hash",
+                                           field_access),
+                             new CallExpr( "<<",
+                                           call,
+                                           new_IntSymbol(17)));
+      }
+    }
+    // YAH, make sure that we do not return a negative hash value for now
+    call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL), call);
+    ret = new ReturnStmt( call);
+  }
+  fn->body->replace( new BlockStmt( ret));
   return fn;
 }
 
@@ -1235,6 +1271,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (hasPragma("tuple init"))
       newfn = instantiate_tuple_init(newfn);
 
+    if (hasPragma("tuple hash function"))  // finish generating hash function?
+      newfn = instantiate_tuple_hash( newfn);
   }
 
   normalize(newfn);
