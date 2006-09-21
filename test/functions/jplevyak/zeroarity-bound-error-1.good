@@ -1,4 +1,3 @@
 zeroarity-bound-error-1.chpl:1: In function '__init_zeroarity-bound-error-1':
 zeroarity-bound-error-1.chpl:9: error: Unresolved call ':C.g'
-error: Candidates are:
-zeroarity-bound-error-1.chpl:3: error:   :C.g()
+zeroarity-bound-error-1.chpl:3: note: candidates are: :C.g()

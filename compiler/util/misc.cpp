@@ -46,6 +46,7 @@ static char* err_filename;
 static int err_lineno;
 static int err_fatal;
 static int err_user;
+static int err_print;
 static FnSymbol* err_fn = NULL;
 
 
@@ -76,11 +77,13 @@ print_user_internal_error() {
 
 
 bool
-setupError(char *filename, int lineno, bool fatal, bool user, bool cont) {
+setupError(char *filename, int lineno, bool fatal, bool user, bool cont,
+           bool print) {
   err_filename = filename;
   err_lineno = lineno;
   err_fatal = fatal;
   err_user = user;
+  err_print = print;
   exit_immediately = !cont;
   if (err_fatal)
     exit_eventually = true;
@@ -90,15 +93,17 @@ setupError(char *filename, int lineno, bool fatal, bool user, bool cont) {
 
 static void
 printDevelErrorHeader(BaseAST* ast) {
-  if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast->parentSymbol)) {
-      if (fn != err_fn) {
-        err_fn = fn;
-        if (fn->filename && fn->lineno) {
-          if (developer)
-            fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
-          fprintf(stderr, "%s:%d: In function '%s':\n",
-                  fn->filename, fn->lineno, fn->name);
+  if (!err_print) {
+    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast->parentSymbol)) {
+        if (fn != err_fn) {
+          err_fn = fn;
+          if (fn->filename && fn->lineno) {
+            if (developer)
+              fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
+            fprintf(stderr, "%s:%d: In function '%s':\n",
+                    fn->filename, fn->lineno, fn->name);
+          }
         }
       }
     }
@@ -110,20 +115,11 @@ printDevelErrorHeader(BaseAST* ast) {
   if (ast && ast->filename && ast->lineno)
     fprintf(stderr, "%s:%d: ", ast->filename, ast->lineno);
 
-  fprintf(stderr, err_fatal ? "error: " : "warning: ");
+  fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");
 
   if (!err_user && !developer) {
     print_user_internal_error();
   }
-}
-
-
-int setupDevelPrint(char *filename, int lineno) {
-  if (developer) {
-    fprintf(stderr, "[%s:%d] ", filename, lineno);
-  }
-
-  return 1;
 }
 
 

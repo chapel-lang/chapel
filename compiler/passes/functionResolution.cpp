@@ -995,8 +995,11 @@ resolveCall(CallExpr* call) {
           if (developer) {
             for (int i = callStack.n-1; i>=0; i--) {
               CallExpr* cs = callStack.v[i];
-              char* name = cs->getFunction()->name;
-              USR_PRINT(callStack.v[i], "  called from %s", name);
+              FnSymbol* f = cs->getFunction();
+              if (f->instantiatedFrom)
+                USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+              else
+                break;
             }
           }
           bool _this = false;
@@ -1004,14 +1007,16 @@ resolveCall(CallExpr* call) {
             _this = true;
           if (_this)
             USR_STOP();
-          USR_PRINT("Candidates are:");
+          bool printed_one = false;
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
             if (fn->isSetter) 
               continue;
             if (!developer && fn->getModule()->modtype == MOD_STANDARD)
               continue;
-            char* str = fn2string(fn);
-            USR_PRINT(fn, "  %s", str);
+            USR_PRINT(fn, "%s %s",
+                      printed_one ? "               " : "candidates are:",
+                      fn2string(fn));
+            printed_one = true;
           }
           USR_STOP();
         } else {

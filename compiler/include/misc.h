@@ -30,28 +30,28 @@ char *dupstr(char *s, char *e = 0);
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
 #define INT_FATAL \
-  if (setupError(__FILE__, __LINE__, true , false , false )) printProblem
+  if (setupError(__FILE__, __LINE__, true, false, false, false)) printProblem
 
 #define INT_WARN \
-  if (setupError(__FILE__, __LINE__, false , false , true )) printProblem
+  if (setupError(__FILE__, __LINE__, false, false, true, false)) printProblem
 
 #define USR_FATAL \
-  if (setupError(__FILE__, __LINE__, true , true , false )) printProblem
+  if (setupError(__FILE__, __LINE__, true, true, false, false)) printProblem
 
 #define USR_FATAL_CONT \
-  if (setupError(__FILE__, __LINE__, true , true , true )) printProblem
+  if (setupError(__FILE__, __LINE__, true, true, true, false)) printProblem
 
 #define USR_WARN \
-  if (setupError(__FILE__, __LINE__, false, true , true )) printProblem
+  if (setupError(__FILE__, __LINE__, false, true, true, false)) printProblem
 
 #define USR_PRINT \
-  if (setupDevelPrint(__FILE__, __LINE__ )) printProblem
+  if (setupError(__FILE__, __LINE__, false, true, true, true)) printProblem
 
 #define USR_STOP \
   check_fatal_errors_encountered
 
-bool setupError(char* filename, int lineno, bool fatal, bool user, bool cont);
-int setupDevelPrint(char* filename, int lineno);
+bool setupError(char* filename, int lineno,
+                bool fatal, bool user, bool cont, bool print);
 void printProblem(char* fmt, ...);
 void printProblem(IFAAST* ast, char* fmt, ...);
 void printProblem(BaseAST* ast, char* fmt, ...);

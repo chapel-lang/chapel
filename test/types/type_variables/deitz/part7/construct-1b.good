@@ -1,4 +1,3 @@
 construct-1b.chpl:1: In function '__init_construct-1b':
 construct-1b.chpl:6: error: Unresolved call 'R(t=float, x="deitz was here")'
-error: Candidates are:
-construct-1b.chpl:1: error:   R(type t, x: t)
+construct-1b.chpl:1: note: candidates are: R(type t, x: t)
