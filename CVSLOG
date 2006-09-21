@@ -76204,3 +76204,20 @@ Modified files:
 	                                               test_infer_class2.good 
 	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/21/06 15:56:09 -- waynew
+
+Log message:
+	Added indefinite domain remove method (slow implementation) and couple of
+	tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+Added files:
+	chapel/test/domains/indefinite/waynew/: add_remove.chpl 
+	                                        add_remove.good 
+	                                        add_remove2.chpl 
+	                                        add_remove2.good 
+
