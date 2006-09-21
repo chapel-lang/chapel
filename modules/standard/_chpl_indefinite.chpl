@@ -29,12 +29,13 @@ _ps(24) = 402653189;
 _ps(25) = 805306457;
 _ps(26) = 1610612741;
 
+
 class _idomain {
   type ind_type;
-  var num_inds : int;
-  var size : int = 0;
-  var table : _ddata(int) = _ddata(int, _ps(size));
-  var inds : _ddata(ind_type) = _ddata(ind_type, _ps(size)/2);
+  var num_inds: int;
+  var size: int = 0;
+  var table: _ddata(int) = _ddata(int, _ps(size));
+  var inds: _ddata(ind_type) = _ddata(ind_type, _ps(size)/2);
 
   def initialize() {
     table.init();
@@ -76,11 +77,10 @@ class _idomain {
     var probe = 0;
     while true {
       var i = (_indefinite_hash(ind) + probe**2) % _ps(size);
-      if table(i) == 0 then
+      if (table(i) == 0) then
         return i;
-      if inds(table(i)-1) == ind {
+      if (inds(table(i)-1) == ind) then
         return i;
-      }
       probe = probe + 1;
     }
     return -1;
@@ -91,12 +91,22 @@ class _idomain {
 
   def add(ind : ind_type) {
     if (table(_map(ind)) == 0) {
-      num_inds = num_inds + 1;
-      if num_inds == _ps(size)/2 then
+      num_inds += 1;
+      if (num_inds == _ps(size)/2) then
         _double();
       table(_map(ind)) = num_inds;
       inds(num_inds-1) = ind;
+    }
+  }
 
+  def remove( ind: ind_type) {
+    var ind_pos = _map(ind);
+    if (table(ind_pos) != 0) {
+      var tsize = _ps(size);
+      [j in table(ind_pos)-1..tsize/2-2] inds(j) = inds(j+1); 
+      [j in 0..tsize] table(j) = 0;
+      num_inds -= 1;
+      [j in 0..num_inds-1] table( _map(inds(j))) = j+1;
     }
   }
 

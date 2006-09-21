@@ -142,6 +142,10 @@ class _domain {
     _value.add(i);
   }
 
+  def remove(i) {
+    _value.remove(i);
+  }
+
   def member?(i) {
     return _value.member?(i);
   }
