@@ -76163,3 +76163,44 @@ Added files:
 	                                        tuple_index2.chpl 
 	                                        tuple_index2.good 
 
+---------------------------------------------------------------------------
+
+09/21/06 09:04:57 -- deitz
+
+Log message:
+	Fixed function resolution errors further to make them look more like
+	gcc errors and to get rid of extra "in function" info lines.
+	
+	Note that the function reported in "In function" is sometimes
+	internal.  Need to fix this.
+
+Modified files:
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+	                            test_method_call2.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-2.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/functions/deitz/: test_bad_function.good 
+	                              test_default_param3.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	                                      test_default4-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/deitz/part3/: 
+	                                               test_overinstantiate1.good 
+	                                               test_overinstantiate1a.good 
+	chapel/test/types/type_variables/deitz/part7/: construct-1b.good 
+	                                               test_error1.good 
+	                                               test_infer_class1.good 
+	                                               test_infer_class2.good 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+
