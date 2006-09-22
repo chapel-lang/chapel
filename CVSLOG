@@ -76221,3 +76221,378 @@ Added files:
 	                                        add_remove2.chpl 
 	                                        add_remove2.good 
 
+---------------------------------------------------------------------------
+
+09/22/06 16:55:37 -- deitz
+
+Log message:
+	Initial checkin of new spec with section The Conditional Statement
+	created.
+	
+	Stubs for new sections are automatically created by a preprocessing
+	perl script.  This also checks for duplicate section names and for
+	unused files (changed names).
+	
+	A good start to the table of contents is complete for all but two
+	sections:  Reductions and Scans, and Input and Output.
+	
+	We may want a more detail subsection breakdown for the Language
+	Overview section as well.
+
+Added files:
+	chapel/spec/: .cvsignore Makefile chapel_listing.tex 
+	              preprocess.pl spec.tex stub.tex syntax_listing.tex 
+	chapel/spec/Acknowledgments/: Acknowledgments.tex 
+	chapel/spec/Classes/: Accessing_Base_Class_Fields.tex 
+	                      Ambiguities_in_Constructor_Calls.tex 
+	                      Automatic_Memory_Management.tex 
+	                      Class_Assignment.tex 
+	                      Class_Constructors.tex 
+	                      Class_Declarations.tex 
+	                      Class_Field_Accesses.tex Class_Fields.tex 
+	                      Class_Instances.tex Class_Method_Calls.tex 
+	                      Class_Method_Declarations.tex 
+	                      Class_Methods.tex 
+	                      Class_Methods_without_Parentheses.tex 
+	                      Classes.tex 
+	                      Default_Getters_and_Setters.tex 
+	                      Derived_Class_Constructors.tex 
+	                      Derived_Class_Definition.tex 
+	                      Getters_and_Setters.tex Inheritance.tex 
+	                      Inheriting_from_Multiple_Classes.tex 
+	                      Iteration_over_Classes.tex 
+	                      Nested_Type_Definitions_in_Classes.tex 
+	                      Overriding_Base_Class_Functions.tex 
+	                      Shadowing_Base_Class_Fields.tex 
+	                      The_Default_Constructor.tex 
+	                      The_Iteration_Interface.tex 
+	                      The_em_this_Method.tex 
+	                      The_em_this_Reference.tex 
+	                      User-Defined_Constructors.tex 
+	                      User-Defined_Getters_and_Setters.tex 
+	chapel/spec/Conversions/: Conversions.tex 
+	                          Explicit_Class_Conversions.tex 
+	                          Explicit_Conversions.tex 
+	                          Explicit_Enumeration_Conversions.tex 
+	                          Explicit_Numeric_Conversions.tex 
+	                          Explicit_Record_Conversions.tex 
+	                          Implicit_Class_Conversions.tex 
+	                          Implicit_Compile-Time_Constant_Conversions.tex 
+	                          Implicit_Conversions.tex 
+	                          Implicit_Enumeration_Conversions.tex 
+	                          Implicit_Numeric_Conversions.tex 
+	                          Implicit_Record_Conversions.tex 
+	chapel/spec/Domains_and_Arrays/: 
+	                                 Adding_Indices_to_Indefinite_Domains.tex 
+	                                 Adding_Indices_to_Opaque_Domains.tex 
+	                                 Adding_Indices_to_Sparse_Arithmetic_Domains.tex 
+	                                 Anonymous_Domains.tex 
+	                                 Arithmetic_Array_Indexing.tex 
+	                                 Arithmetic_Domain_Index_Types.tex 
+	                                 Arithmetic_Domain_Indexing.tex 
+	                                 Arithmetic_Domain_and_Array_Types.tex 
+	                                 Arithmetic_Domains_and_Arithmetic_Sequences.tex 
+	                                 Arithmetic_Domains_and_Arrays.tex 
+	                                 Array_Assignment.tex 
+	                                 Array_Indexing.tex 
+	                                 Array_Initialization.tex 
+	                                 Array_Promotion_of_Scalar_Functions.tex 
+	                                 Array_Slicing.tex 
+	                                 Array_Types.tex Arrays.tex 
+	                                 Arrays_of_Arrays.tex 
+	                                 Association_of_Arrays_to_Domains.tex 
+	                                 Association_of_Subdomains_to_Domains.tex 
+	                                 Destructive_Reallocation_of_Arrays.tex 
+	                                 Domain_Assignment.tex 
+	                                 Domain_Types.tex Domains.tex 
+	                                 Domains_and_Arrays.tex 
+	                                 Enumerated_Domain_Index_Types.tex 
+	                                 Enumerated_Domain_and_Array_Types.tex 
+	                                 Enumerated_Domains_and_Arrays.tex 
+	                                 Formal_Arguments_of_Arithmetic_Array_Type.tex 
+	                                 Formal_Arguments_of_Array_Type.tex 
+	                                 Formal_Arguments_of_Domain_Type.tex 
+	                                 Indefinite_Domain_Index_Types.tex 
+	                                 Indefinite_Domain_and_Array_Types.tex 
+	                                 Indefinite_Domains_and_Arrays.tex 
+	                                 Index_Methods_on_Domains.tex 
+	                                 Index_Methods_on_Subdomains.tex 
+	                                 Index_Types.tex 
+	                                 Iteration_over_Arrays.tex 
+	                                 Iteration_over_Domains.tex 
+	                                 Methods_on_Arithmetic_Domains_and_Arrays.tex 
+	                                 Methods_on_Enumerated_Domains_and_Arrays.tex 
+	                                 Methods_on_Indefinite_Domains_and_Arrays.tex 
+	                                 Methods_on_Opaque_Domains_and_Arrays.tex 
+	                                 Methods_on_Product_Domains_and_Arrays.tex 
+	                                 Multidimensional_Arithmetic_Domains_and_Arrays.tex 
+	                                 Opaque_Domain_Index_Types.tex 
+	                                 Opaque_Domain_and_Array_Types.tex 
+	                                 Opaque_Domains_and_Arrays.tex 
+	                                 Preservative_Reallocation_of_Arrays.tex 
+	                                 Product_Domain_Definition.tex 
+	                                 Product_Domains_and_Arrays.tex 
+	                                 Removing_Indices_from_Indefinite_Domains.tex 
+	                                 Removing_Indices_from_Opaque_Domains.tex 
+	                                 Removing_Indices_from_Sparse_Arithmetic_Domains.tex 
+	                                 Sparse_Arithmetic_Domains_and_Arrays.tex 
+	                                 Strided_Arithmetic_Domains_and_Arrays.tex 
+	                                 Subdomain_Definition.tex 
+	                                 Subdomains.tex 
+	chapel/spec/Expressions/: Addition_Operators.tex 
+	                          Arithmetic_Operators.tex 
+	                          Bitwise_And_Operators.tex 
+	                          Bitwise_Complement_Operators.tex 
+	                          Bitwise_Operators.tex 
+	                          Bitwise_Or_Operators.tex 
+	                          Bitwise_Xor_Operators.tex 
+	                          Call_Expressions.tex Casts.tex 
+	                          Concatentation_Operators.tex 
+	                          Conditional_Expressions.tex 
+	                          Constant_Expressions.tex 
+	                          Division_Operators.tex 
+	                          Equality_Comparison_Operators.tex 
+	                          Exponentiation_Operators.tex 
+	                          Expressions.tex Forall_Expressions.tex 
+	                          Indexing_Expressions.tex 
+	                          Let_Expressions.tex 
+	                          Literal_Expressions.tex 
+	                          Logical_And_Operators.tex 
+	                          Logical_Negation_Operators.tex 
+	                          Logical_Operators.tex 
+	                          Logical_Or_Operators.tex 
+	                          Member_Access_Expressions.tex 
+	                          Modulus_Operators.tex 
+	                          Multiplication_Operators.tex 
+	                          Ordered_Comparison_Operators.tex 
+	                          Other_Operators.tex 
+	                          Primary_Expressions.tex 
+	                          Relational_Operators.tex 
+	                          Shift_Operators.tex 
+	                          Subtraction_Operators.tex 
+	                          The_Arithmetic_Domain_By_Operator.tex 
+	                          The_Sequence_By_Operator.tex 
+	                          The_Sequence_Concatenation_Operator.tex 
+	                          The_String_Concatenation_Operator.tex 
+	                          The_Type_Query_Expression.tex 
+	                          Unary_Minus_Operators.tex 
+	                          Unary_Plus_Operators.tex 
+	                          Variable_Expressions.tex 
+	chapel/spec/Functions/: Accessing_Outer_Variables.tex 
+	                        Default_Values.tex 
+	                        Determining_Candidate_Functions.tex 
+	                        Determining_More_Specific_Functions.tex 
+	                        Explicit_Setter_Functions.tex 
+	                        Formal_Arguments.tex Function_Calls.tex 
+	                        Function_Definitions.tex 
+	                        Function_Overloading.tex 
+	                        Function_Resolution.tex Functions.tex 
+	                        Functions_with_Class_Arguments.tex 
+	                        Identifying_Visible_Functions.tex 
+	                        Intents.tex Most_Specific_Function.tex 
+	                        Named_Arguments.tex Nested_Functions.tex 
+	                        Operator_Overloading.tex 
+	                        Special_Functions.tex 
+	                        The_Blank_Intent.tex The_In_Intent.tex 
+	                        The_Inout_Intent.tex The_Out_Intent.tex 
+	                        Variable_Functions.tex 
+	                        Variable_Length_Argument_Lists.tex 
+	                        Visibility_and_Function_Resolution.tex 
+	chapel/spec/Generics/: Formal_Arguments_of_Generic_Type.tex 
+	                       Formal_Arguments_with_Queried_Types.tex 
+	                       Formal_Arguments_without_Types.tex 
+	                       Function_Resolution_and_Generic_Functions.tex 
+	                       Function_Visibility_in_Generic_Functions.tex 
+	                       Generic_Array_Argument_Types.tex 
+	                       Generic_Default_Constructors.tex 
+	                       Generic_Domain_and_Sequence_Types.tex 
+	                       Generic_Functions.tex Generic_Methods.tex 
+	                       Generic_Types.tex Generics.tex 
+	                       Instantiating_Generic_Functions.tex 
+	                       Instantiating_Parameterized_Generics.tex 
+	                       Parameter_Expressions.tex 
+	                       Parameters_and_Generics.tex 
+	                       The_em_elt_type_Type.tex 
+	                       Type_Aliases_and_Generic_Types.tex 
+	                       Type_Expressions.tex 
+	                       Where_Expressions.tex 
+	chapel/spec/Input_and_Output/: Input_and_Output.tex 
+	chapel/spec/Iterators/: Iterator_Calls.tex 
+	                        Iterator_Functions.tex Iterators.tex 
+	                        Iterators_as_Sequences.tex 
+	                        Iterators_in_For_and_Forall_Loops.tex 
+	                        Making_a_Class_an_Iterator.tex 
+	                        Returning_Values.tex 
+	                        The_em_getHeadCursor_Method.tex 
+	                        The_em_getNextCursor_Method.tex 
+	                        The_em_getValue_Method.tex 
+	                        The_em_isValidCursorQ_Method.tex 
+	                        The_em_rank_Parameter.tex 
+	                        Yielding_Values.tex 
+	chapel/spec/Language_Overview/: Language_Overview.tex 
+	chapel/spec/Lexical_Structure/: Case_Sensitivity.tex 
+	                                Comments.tex 
+	                                Compile-Time_Conditionals.tex 
+	                                Grouping_Tokens.tex 
+	                                Identifiers.tex Keywords.tex 
+	                                Lexical_Structure.tex 
+	                                Literals.tex 
+	                                Operators_and_Punctuation.tex 
+	                                Programs.tex Tokens.tex 
+	                                White_Space.tex 
+	chapel/spec/Locality_and_Distribution/: 
+	                                        BlockCyclic_Distribution.tex 
+	                                        Block_Distribution.tex 
+	                                        Cut_Distribution.tex 
+	                                        Cyclic_Distribution.tex 
+	                                        Distributed_Arrays.tex 
+	                                        Distributed_Domains.tex 
+	                                        Distributions.tex 
+	                                        Locales.tex 
+	                                        Locality_and_Distribution.tex 
+	                                        On.tex 
+	                                        On_and_Forall_Loops.tex 
+	                                        On_and_Iterators.tex 
+	                                        Parallel_Execution_Model.tex 
+	                                        Predefined_Locales_Array.tex 
+	                                        Querying_the_Locale_of_a_Variable.tex 
+	                                        Specifying_Locales_for_Computation.tex 
+	                                        Standard_Distributions.tex 
+	                                        Undistributed_Domains_and_Arrays.tex 
+	                                        User-Defined_Distributions.tex 
+	chapel/spec/Modules/: Command-Line_Arguments.tex 
+	                      Explicit_Naming.tex 
+	                      Implicit_Module_Names.tex 
+	                      Module_Execution.tex Module_Scopes.tex 
+	                      Modules.tex Nested_Modules.tex 
+	                      Program_Execution.tex 
+	                      Programs_with_a_Single_Module.tex 
+	                      The_em_finalize_Function.tex 
+	                      The_em_initialize_Function.tex 
+	                      The_em_main_Function.tex Using_Modules.tex 
+	chapel/spec/Notation/: Notation.tex 
+	chapel/spec/Organization/: Organization.tex 
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Atomic_Transactions.tex 
+	                                              Begin.tex 
+	                                              Cobegin.tex 
+	                                              Forall.tex 
+	                                              Functions_on_Synchronization_Variables.tex 
+	                                              Implicit_Synchronization_on_Variables.tex 
+	                                              Memory_Consistency.tex 
+	                                              Ordered_Expressions.tex 
+	                                              Ordered_Forall.tex 
+	                                              Parallel_Expressions.tex 
+	                                              Parallel_Iterators.tex 
+	                                              Parallel_Statements.tex 
+	                                              Parallelism_and_Synchronization.tex 
+	                                              Serial.tex 
+	                                              Single_Assignment_Variables.tex 
+	                                              Strong_Atomicity.tex 
+	                                              Synchronization_Variables_of_Class_Type.tex 
+	                                              Synchronization_Variables_of_Record_Type.tex 
+	                                              Weak_Atomicity.tex 
+	chapel/spec/Records/: Class_and_Record_Differences.tex 
+	                      Record_Assignment.tex 
+	                      Record_Declarations.tex 
+	                      Record_Inheritance.tex Records.tex 
+	                      Records_as_Value_Classes.tex 
+	chapel/spec/Reductions_and_Scans/: Reductions_and_Scans.tex 
+	chapel/spec/Scope/: Scope.tex 
+	chapel/spec/Sequences/: Arithmetic_Sequences.tex 
+	                        Conversions_Between_Sequences_and_Tuples.tex 
+	                        Filtering_Predicates.tex 
+	                        Indefinite_Sequences.tex 
+	                        Indexing_into_Strings_with_Arithmetic_Sequences.tex 
+	                        Iteration_over_Sequences.tex 
+	                        Methods_and_Functions_on_Sequences.tex 
+	                        Sequence_Assignment.tex 
+	                        Sequence_Concatenation.tex 
+	                        Sequence_Equality.tex 
+	                        Sequence_Expressions.tex 
+	                        Sequence_Indexing.tex 
+	                        Sequence_Indexing_by_Integers.tex 
+	                        Sequence_Indexing_by_Tuples.tex 
+	                        Sequence_Promotion_of_Scalar_Functions.tex 
+	                        Sequence_Type_Definitions.tex 
+	                        Sequences.tex 
+	                        Sequences_in_Conditional_Statements.tex 
+	                        Sequences_in_Logical_Contexts.tex 
+	                        Sequences_in_Select_Statements.tex 
+	                        Sequences_in_While_and_Do_While_Loops.tex 
+	                        Sequences_of_One-Character_Strings.tex 
+	                        Strided_Arithmetic_Sequences.tex 
+	                        Tensor_Product_Promotion.tex 
+	                        The_em_length_Method.tex 
+	                        The_em_reshape_Function.tex 
+	                        The_em_reverse_Method.tex 
+	                        The_em_spread_Function.tex 
+	                        The_em_transpose_Function.tex 
+	                        Zipper_Promotion.tex 
+	chapel/spec/Standard_Modules/: Bitwise_Functions.tex Math.tex 
+	                               Random_Numbers.tex 
+	                               Standard_Modules.tex System.tex 
+	                               Timers.tex 
+	chapel/spec/Statements/: Assignment_Statements.tex Blocks.tex 
+	                         Declaration_Statements.tex 
+	                         Expression_Statements.tex 
+	                         Function_Declaration_Statements.tex 
+	                         Module_Declaration_Statements.tex 
+	                         Statements.tex 
+	                         Tensor_Product_Iteration.tex 
+	                         The_Atomic_Statement.tex 
+	                         The_Begin_Statement.tex 
+	                         The_Cobegin_Statement.tex 
+	                         The_Conditional_Statement.tex 
+	                         The_Empty_Statement.tex 
+	                         The_For_and_Forall_Loops.tex 
+	                         The_On_Statement.tex 
+	                         The_Return_Statement.tex 
+	                         The_Select_Statement.tex 
+	                         The_Serial_Statement.tex 
+	                         The_Type_Select_Statement.tex 
+	                         The_Use_Statement.tex 
+	                         The_While_and_Do_While_Loops.tex 
+	                         The_Yield_Statement.tex 
+	                         Type_Declaration_Statements.tex 
+	                         Variable_Declaration_Statements.tex 
+	                         Zipper_Iteration.tex 
+	chapel/spec/Synchronization/: Synchronization.tex 
+	chapel/spec/Tuples/: Declaring_Homogeneous_Tuples.tex 
+	                     Formal_Argument_Declarations_in_a_Tuple.tex 
+	                     Formal_Arguments_of_Tuple_Type.tex 
+	                     Homogeneous_Tuples.tex 
+	                     Ignoring_Values_with_Underscore.tex 
+	                     Indexing_of_Homogeneous_Tuples.tex 
+	                     Tuple_Assignment.tex 
+	                     Tuple_Destructuring.tex 
+	                     Tuple_Expressions.tex Tuple_Indexing.tex 
+	                     Tuple_Type_Definitions.tex Tuples.tex 
+	                     Variable_Declarations_in_a_Tuple.tex 
+	chapel/spec/Types/: Class_Types.tex Complex_Types.tex 
+	                    Domain_and_Array_Types.tex 
+	                    Enumerated_Types.tex 
+	                    Floating-Point_Types.tex 
+	                    Primitive_Type_Literals.tex 
+	                    Primitive_Types.tex Record_Types.tex 
+	                    Sequence_Types.tex 
+	                    Signed_and_Unsigned_Integral_Types.tex 
+	                    The_Bool_Type.tex The_Locale_Type.tex 
+	                    The_String_Type.tex Tuple_Types.tex 
+	                    Type_Aliases.tex Types.tex Union_Types.tex 
+	chapel/spec/Unions/: Record_and_Union_Differences.tex 
+	                     The_Type_Select_Statement_and_Unions.tex 
+	                     Union_Assignment.tex Union_Declarations.tex 
+	                     Union_Field_Accesses.tex Union_Fields.tex 
+	                     Union_Inheritance.tex Unions.tex 
+	chapel/spec/Variables/: Compile-Time_Constants.tex 
+	                        Configuration_Variables.tex 
+	                        Constants.tex Default_Initialization.tex 
+	                        Global_Variables.tex 
+	                        Local_Type_Inference.tex 
+	                        Local_Variables.tex 
+	                        Runtime_Constants.tex 
+	                        Single_Variables.tex 
+	                        Synchronization_Variables.tex 
+	                        Variable_Declarations.tex Variables.tex 
+
