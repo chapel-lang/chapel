@@ -1,0 +1,26 @@
+\lstdefinelanguage{syntax}
+  {
+    morekeywords={
+      block,
+      conditional,
+      expression,
+      level,
+      statement
+    },
+    sensitive=false,
+    mathescape=false,
+    basicstyle=\footnotesize\tt,
+    keywordstyle=\em,
+    literate={[[}{{$[$}}{1}
+             {]]}{{$]$}}{1}
+             {[[,...]]}{{$[$, $\ldots]$}}{5}
+             {[[...]]}{{$[\ldots]$}}{3}
+  }
+
+\lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}
+
+% block
+% block-level-statement
+% conditional-statement
+% expression
+% statement

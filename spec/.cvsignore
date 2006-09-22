@@ -1,0 +1,11 @@
+*.aux
+*.ind
+*.idx
+*.ilg
+*.log
+*.out
+*.toc
+*.dvi
+*.ps
+*.pdf
+spec_pl.tex

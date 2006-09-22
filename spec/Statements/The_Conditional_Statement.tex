@@ -1,0 +1,19 @@
+The syntax for a conditional statement is given by the following
+definition:
+\begin{syntax}
+conditional-statement:
+  if expression then statement [[ else statement ]]
+  if expression block-level-statement [[ else statement ]]
+\end{syntax}
+
+A conditional statement evaluates an expression of bool type.  If the
+expression evaluates to true, the statement that immediately follows
+the \chpl{then} keyword or, in the case where there is no \chpl{then}
+keyword, the expression, is executed.  Otherwise, if the optional
+else-clause exists, the statement following the \chpl{else} keyword is
+executed.
+
+If the statement that immediately follows the optional \chpl{then}
+keyword is a conditional statement, the else-clause is bound to the
+nearest preceding conditional statement without an else-clause that is
+legal syntactically.
