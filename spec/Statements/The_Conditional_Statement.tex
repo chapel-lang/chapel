@@ -1,3 +1,7 @@
+\index{if@\chpl{if}}
+\index{then@\chpl{then}}
+\index{else@\chpl{else}}
+\index{conditional statement}
 The syntax for a conditional statement is given by the following
 definition:
 \begin{syntax}
@@ -12,6 +16,8 @@ the \chpl{then} keyword or, in the case where there is no \chpl{then}
 keyword, the expression, is executed.  Otherwise, if the optional
 else-clause exists, the statement following the \chpl{else} keyword is
 executed.
+
+\index{conditional statement!dangling else}
 
 If the statement that immediately follows the optional \chpl{then}
 keyword is a conditional statement, the else-clause is bound to the
