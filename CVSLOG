@@ -76596,3 +76596,14 @@ Added files:
 	                        Synchronization_Variables.tex 
 	                        Variable_Declarations.tex Variables.tex 
 
+---------------------------------------------------------------------------
+
+09/22/06 17:26:39 -- deitz
+
+Log message:
+	Added some index entries.
+
+Modified files:
+	chapel/spec/: Makefile spec.tex 
+	chapel/spec/Statements/: The_Conditional_Statement.tex 
+
