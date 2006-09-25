@@ -896,6 +896,51 @@ char* fn2string(FnSymbol* fn) {
 
 
 static void
+checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
+  if (call->primitive || call->argList->length() != 2)
+    return;
+  if (call->isNamed("+") ||
+      call->isNamed("-") ||
+      call->isNamed("*") ||
+      call->isNamed("/") ||
+      call->isNamed("**") ||
+      call->isNamed("%") ||
+      call->isNamed("&") ||
+      call->isNamed("|") ||
+      call->isNamed("^") ||
+      call->isNamed("==") ||
+      call->isNamed("!=") ||
+      call->isNamed(">") ||
+      call->isNamed("<") ||
+      call->isNamed(">=") ||
+      call->isNamed("<=") ||
+      call->isNamed("&&") ||
+      call->isNamed("||")) {
+    if ((atypes->v[0] == dtInt[INT_SIZE_64] &&
+         atypes->v[1] == dtUInt[INT_SIZE_64]) ||
+        (atypes->v[0] == dtInt[INT_SIZE_64] &&
+         atypes->v[1] == dtUInt[INT_SIZE_64])) {
+      VarSymbol* var;
+      if (atypes->v[0] == dtInt[INT_SIZE_64])
+        var = dynamic_cast<VarSymbol*>(aparams->v[0]);
+      else
+        var = dynamic_cast<VarSymbol*>(aparams->v[1]);
+      if (var && var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
+        int64 iconst = var->immediate->int_value();
+        if (iconst >= 0)
+          return;
+      }
+      SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+      if (!base)
+        INT_FATAL(call, "bad call baseExpr");
+      USR_FATAL(call, "illegal use of '%s' on operands of type int(64) and uint(64)",
+                base->var->name);
+    }
+  }
+}
+
+
+static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
@@ -921,6 +966,9 @@ resolveCall(CallExpr* call) {
     Vec<Symbol*> aparams;
     Vec<char*> anames;
     computeActuals(call, &atypes, &aparams, &anames);
+
+    checkBinaryOp(call, &atypes, &aparams);
+
 
     // automatically replace calls with iterator arg with calls to _to_seq
     // if (SymExpr *se = dynamic_cast<SymExpr*>(call->baseExpr)) {
