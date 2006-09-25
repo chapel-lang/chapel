@@ -76902,3 +76902,15 @@ Modified files:
 	chapel/test/types/complex/waynew/: complex-simple.chpl 
 	                                   complex-simple.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 15:59:16 -- bradc
+
+Log message:
+	Adding a future which shows what are either bugs in
+	using hex initializers, or a major thinko in my head.
+
+Added files:
+	chapel/test/types/scalar/bradc/: uintinit.chpl uintinit.future 
+	                                 uintinit.good 
+
