@@ -76607,3 +76607,31 @@ Modified files:
 	chapel/spec/: Makefile spec.tex 
 	chapel/spec/Statements/: The_Conditional_Statement.tex 
 
+---------------------------------------------------------------------------
+
+09/25/06 08:07:54 -- deitz
+
+Log message:
+	Reworded conditional statements section.
+	
+	Added a couple new sections: block-level statements, operator
+	precedence, user-defined compiler errors.
+	
+	Filled in expression statements and block-level statements sections.
+
+Modified files:
+	chapel/spec/: spec.tex syntax_listing.tex 
+	chapel/spec/Statements/: Expression_Statements.tex 
+	                         The_Conditional_Statement.tex 
+Added files:
+	chapel/spec/Expressions/: Miscellaneous_Operators.tex 
+	                          Operator_Overloading.tex 
+	                          Operator_Precedence_and_Associativity.tex 
+	                          Operators.tex 
+	chapel/spec/Lexical_Structure/: User-Defined_Compiler_Errors.tex 
+	chapel/spec/Statements/: Block_Level_Statements.tex 
+Removed files:
+	chapel/spec/Expressions/: Concatentation_Operators.tex 
+	                          Other_Operators.tex 
+	chapel/spec/Functions/: Operator_Overloading.tex 
+
