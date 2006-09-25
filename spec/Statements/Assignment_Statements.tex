@@ -1,1 +1,36 @@
-This is a stub.  This portion of the document does not exist.
+An assignment statement assigns the value of an expression to another
+expression that can appear on the left-hand side of the operator, for
+example, a variable.  Assignment statements are given by
+
+\begin{syntax}
+assignment-statement:
+  left-hand-side-expression assignment-operator expression
+
+left-hand-side-expression:
+  expression
+
+assignment-operator: one of
+   = += -= *= /= %= **= &= |= ^= &&= ||= #= <<= >>=
+\end{syntax}
+
+The expression on the right-hand side of the assignment operator is
+evaluated first; it can be any expression.  The expression on the left
+hand side is any expression that can be assigned the value on the
+right-hand side.  It is evaluated second and then assigned the value.
+
+The assignment operators that contain a binary operator as a prefix is
+a short-hand for applying the binary operator to the two operands and
+then assigning the value of that application to the already evaluated
+left-hand side.  Thus, for example, \chpl{x += y} is equivalent to
+\chpl{x = x + y} where the expression \chpl{x} is evaluated once.
+
+Values of one primitive or enumerated type can be assigned to another
+primitive or enumerated type if an implicit coercion exists between
+those types~\ref{Implicit_Conversions}.
+
+The validity and semantics of assigning between
+classes~\ref{Class_Assignment}, records~\ref{Record_Assignment},
+unions~\ref{Union_Assignment}, tuples~\ref{Tuple_Assignment},
+sequences~\ref{Sequence_Assignment}, domains~\ref{Domain_Assignment},
+and arrays~\ref{Array_Assignment} is discussed in these later
+sections.

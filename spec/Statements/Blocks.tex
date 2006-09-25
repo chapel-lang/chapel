@@ -1,9 +1,11 @@
 \index{block}
-A block is a statement or list of statements that form their own
-scope.  A block is given by
+
+A block is a statement or a possibly empty list of statements that
+form their own scope.  A block is given by
 \begin{syntax}
 block-statement:
   { statement [[,...]] }
+  { }
 \end{syntax}
 
 Variables defined within a block are local
