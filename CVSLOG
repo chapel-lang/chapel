@@ -76914,3 +76914,22 @@ Added files:
 	chapel/test/types/scalar/bradc/: uintinit.chpl uintinit.future 
 	                                 uintinit.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 16:06:28 -- deitz
+
+Log message:
+	Added an error message to catch use of a void value earlier.
+	
+	Removed a .future.
+	
+	Fixed a bug in the standard sleep function in which it was trying to
+	return a void value.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/functions/bradc/: forgotReturn.good 
+Removed files:
+	chapel/test/functions/bradc/: forgotReturn.future 
+
