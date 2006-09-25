@@ -76635,3 +76635,23 @@ Removed files:
 	                          Other_Operators.tex 
 	chapel/spec/Functions/: Operator_Overloading.tex 
 
+---------------------------------------------------------------------------
+
+09/25/06 10:16:08 -- deitz
+
+Log message:
+	Fixed a minor bug in function resolution in which ambiguous errors
+	were not flagged, being resolved instead almost arbitrarily.
+	
+	Changed user-defined compiler error function name from "error" to
+	"compilerError" as it is more descriptive.
+	
+	Added (though commented out for now) error cases for applying the
+	binary operators to an int(64) and a uint(64).  These are commented
+	out because they result in an ambiguity.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+
