@@ -76933,3 +76933,34 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/: forgotReturn.future 
 
+---------------------------------------------------------------------------
+
+09/25/06 16:58:13 -- bradc
+
+Log message:
+	More HPCC FT explorations:
+	
+	- bitreverse.chpl and bitreverse2.chpl are the bit reverse
+	  function, written using some bit functions that I think
+	  we'll want to support in a standard (explicitly loaded)
+	  bitOps module to make the NSA happy.  I've implemented
+	  those in the math module for now as a placeholder, and
+	  will check in in its own commit step.
+	
+	- twiddles-advanced.chpl and twiddles-advanced2.chpl are
+	  two futures that query information about arrays that
+	  are passed in in advanced ways.  There's no short-term
+	  need to get these working, but I wanted to capture
+	  them for the long-term because I keep finding myself
+	  wanting something like this.
+
+Added files:
+	chapel/test/hpcc/: .cvsignore bitreverse.chpl bitreverse.good 
+	                   bitreverse2.chpl bitreverse2.good 
+	                   twiddles-advanced.chpl 
+	                   twiddles-advanced.future 
+	                   twiddles-advanced.good 
+	                   twiddles-advanced2.chpl 
+	                   twiddles-advanced2.future 
+	                   twiddles-advanced2.good 
+
