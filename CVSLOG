@@ -76776,3 +76776,29 @@ Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: 
 	                                    ra-bradc-duplicateErrors.future 
 
+---------------------------------------------------------------------------
+
+09/25/06 15:07:28 -- bradc
+
+Log message:
+	Added two futures:
+	
+	- one notes that <<= and >>= are not supported in our current
+	  implementation or spec.  I believe they should be.  If there's
+	  disagreement on this topic, let me know.
+	
+	- the other captures a very confusing case in which a 2D array
+	  is indexed in one dimension or as if it was two 1D arrays,
+	  both of which turn up somewhat surprising results.  My
+	  preference is to see this declared as an error.  If the
+	  current behavior is expected in the language (and considered
+	  useful/attractive), let me know.  I'm finding it error-prone.
+
+Added files:
+	chapel/test/arrays/bradc/: twoDasTwoOneDs.chpl 
+	                           twoDasTwoOneDs.future 
+	                           twoDasTwoOneDs.good 
+	chapel/test/trivial/bradc/: shiftAssignOps.chpl 
+	                            shiftAssignOps.future 
+	                            shiftAssignOps.good 
+
