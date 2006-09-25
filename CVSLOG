@@ -76812,3 +76812,55 @@ Log message:
 Added files:
 	chapel/spec/: README 
 
+---------------------------------------------------------------------------
+
+09/25/06 15:32:13 -- deitz
+
+Log message:
+	Use Symbol::isCompilerTemp to mark functions as built by the compiler.
+	They are then not used to print out the "In function" line in the
+	error messages.  This is done currently only for the Module's init
+	functions which are built by the compiler and so the name of which
+	should not be printed out.
+	
+	Updated some .goods to reflect this change.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/classes/deitz/: test_bad_function_noparens.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-2.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/classes/marybeth/: test_dispatch1-error.good 
+	chapel/test/functions/deitz/: test_bad_function.good 
+	                              test_default_param3.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	                                      test_default4-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	                                    test_named6-error.good 
+	chapel/test/functions/jplevyak/: intent-7-error.good 
+	                                 zeroarity-bound-error-1.good 
+	chapel/test/trivial/bradc/: initvarsamename.good uintloop.good 
+	                            whilescope2.good 
+	chapel/test/trivial/deitz/: foo.good 
+	                            test_config_use_before_decl.good 
+	                            test_int8_error.good 
+	                            test_int_uint.good 
+	                            test_use_before_def1.good 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.good 
+	chapel/test/types/file/bradc/: badfile.good badfile2.good 
+	                               badfile3.good 
+	chapel/test/types/seq/bradc/: emptySeq3.good length.modify.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/deitz/part7/: construct-1b.good 
+	                                               test_error1.good 
+	                                               test_infer_class1.good 
+	                                               test_infer_class2.good 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+
