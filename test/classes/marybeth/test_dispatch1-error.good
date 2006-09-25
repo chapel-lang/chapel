@@ -1,2 +1,1 @@
-test_dispatch1-error.chpl:1: In function '__init_test_dispatch1-error':
 test_dispatch1-error.chpl:27: error: Type mismatch in assignment from shoe to pumps

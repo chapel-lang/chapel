@@ -1,3 +1,2 @@
-union_type_hierarchy-3-error.chpl:1: In function '__init_union_type_hierarchy-3-error':
 union_type_hierarchy-3-error.chpl:16: error: Unresolved call 'f(:D)'
 union_type_hierarchy-3-error.chpl:10: note: candidates are: f(a: C)

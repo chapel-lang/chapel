@@ -101,7 +101,7 @@ printDevelErrorHeader(BaseAST* ast) {
           while (fn = dynamic_cast<FnSymbol*>(err_fn->defPoint->parentSymbol)) {
             err_fn = fn;
           }
-          if (err_fn->filename && err_fn->lineno) {
+          if (!err_fn->isCompilerTemp && err_fn->filename && err_fn->lineno) {
             if (developer)
               fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
             fprintf(stderr, "%s:%d: In function '%s':\n",

@@ -1,2 +1,1 @@
-test_int_uint.chpl:1: In function '__init_test_int_uint':
 test_int_uint.chpl:1: error: illegal use of '+' on operands of type int(64) and uint(64)

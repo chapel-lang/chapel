@@ -1,3 +1,2 @@
 test_bad_function_noparens.chpl:1: error: functions require parentheses
-test_bad_function_noparens.chpl:1: In function '__init_test_bad_function_noparens':
 test_bad_function_noparens.chpl:5: error: 'bar' undeclared (first use this function)

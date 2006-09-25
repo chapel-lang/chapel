@@ -1,2 +1,1 @@
-test_use_before_def1.chpl:1: In function '__init_test_use_before_def1':
 test_use_before_def1.chpl:1: error: 'x' used before defined

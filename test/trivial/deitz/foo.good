@@ -1,2 +1,1 @@
-foo.chpl:1: In function '__init_foo':
 foo.chpl:4: error: illegal use of module 'foo'

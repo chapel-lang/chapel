@@ -1,2 +1,1 @@
-test_var_decl_strange3.chpl:1: In function '__init_test_var_decl_strange3':
 test_var_decl_strange3.chpl:1: error: 'x' used before defined

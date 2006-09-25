@@ -1,3 +1,2 @@
-test_bad_function.chpl:1: In function '__init_test_bad_function':
 test_bad_function.chpl:5: error: Unresolved call 'foo(2.0)'
 test_bad_function.chpl:1: note: candidates are: foo(i: int)
