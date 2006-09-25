@@ -76802,3 +76802,13 @@ Added files:
 	                            shiftAssignOps.future 
 	                            shiftAssignOps.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 15:16:43 -- deitz
+
+Log message:
+	Added spec readme file.
+
+Added files:
+	chapel/spec/: README 
+
