@@ -24,8 +24,9 @@ typedef int64 _CG_int64;
 typedef float32 _CG_float32;
 typedef float64 _CG_float64;
 typedef float128 _CG_float128;
-typedef complex32 _CG_complex32;
 typedef complex64 _CG_complex64;
+typedef complex128 _CG_complex128;
+typedef complex256 _CG_complex256;
 typedef char * _CG_string;
 typedef void *_CG_ref;
 #define _CG_reply _CG_symbol

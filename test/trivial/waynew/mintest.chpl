@@ -25,11 +25,3 @@ var f64:float;
 writeln( min( f32.type));
 writeln( min( f64.type));
 writeln( min( float));
-
-/*
-var c32:complex(32);
-var c64:complex;
-writeln( min( c32.type));
-writeln( min( c64.type));
-writeln( min( complex));
-*/

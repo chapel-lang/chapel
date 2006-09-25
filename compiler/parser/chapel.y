@@ -1060,7 +1060,7 @@ literal:
     {
       yytext[strlen(yytext)-1] = '\0';
       char cstr[256];
-      sprintf( cstr, "_chpl_complex64(0.0, %s)", yytext);
+      sprintf( cstr, "_chpl_complex128(0.0, %s)", yytext);
       $$ = new SymExpr(new_ComplexSymbol(cstr, 0.0, strtod(yytext, NULL)));
     }
 | STRINGLITERAL

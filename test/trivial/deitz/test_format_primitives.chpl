@@ -6,7 +6,8 @@ var s : string;
 
 s = i:"%lld";
 
-writeln(s);
+// writeln(s);
+writeln(i:"%lld");
 
 var f : float = 1.23;
 
@@ -14,4 +15,4 @@ writeln(f:"%e");
 
 var c : complex = 2.0 + 3.0i;
 
-writeln(c:"(%g,%g)");
+writeln(c:"(%lg,%lg)");

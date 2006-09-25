@@ -497,9 +497,9 @@ int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
 }
 
 
-int setInCommandLine_complex64( char* varName, 
-                                _complex64* value, 
-                                char* moduleName) {
+int setInCommandLine_complex128( char* varName, 
+                                 _complex128* value, 
+                                 char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
@@ -507,7 +507,7 @@ int setInCommandLine_complex64( char* varName,
     char extraChars;
     char imaginaryI = 'i';
     int numScans;
-    numScans = sscanf(setValue, _default_format_read_complex64"%c", 
+    numScans = sscanf(setValue, _default_format_read_complex128"%c", 
                       &(value->re), &(value->im), &imaginaryI, &extraChars);
     if ((numScans == 3) && (imaginaryI == 'i')) {
       varSet = 1;

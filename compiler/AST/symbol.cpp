@@ -1642,23 +1642,23 @@ VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_float_type size) {
+VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_type size) {
   Immediate imm;
   switch (size) {
-  case FLOAT_SIZE_32: 
-    imm.v_complex32.r  = r; 
-    imm.v_complex32.i  = i; 
-    break;
-  case FLOAT_SIZE_64: 
+  case COMPLEX_SIZE_64: 
     imm.v_complex64.r  = r; 
     imm.v_complex64.i  = i; 
     break;
-  case FLOAT_SIZE_128: 
+  case COMPLEX_SIZE_128: 
     imm.v_complex128.r = r; 
     imm.v_complex128.i = i; 
     break;
+  case COMPLEX_SIZE_256: 
+    imm.v_complex256.r = r; 
+    imm.v_complex256.i = i; 
+    break;
   default:
-    INT_FATAL( "unknown FLOAT_SIZE for complex");
+    INT_FATAL( "unknown COMPLEX_SIZE for complex");
   }
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;

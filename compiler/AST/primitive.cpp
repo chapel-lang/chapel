@@ -40,13 +40,16 @@ returnInfoFloat(CallExpr* call) {
 static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
-  if (t == dtComplex[FLOAT_SIZE_32]) {
+  if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtFloat[FLOAT_SIZE_32];
-  } else if (t == dtComplex[FLOAT_SIZE_64]) {
+  } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return dtFloat[FLOAT_SIZE_64];
-  } else { // t == dtComplex[FLOAT_SIZE_128])
+  } else if (t == dtComplex[COMPLEX_SIZE_256]) {
     return dtFloat[FLOAT_SIZE_128];
+  } else {
+    INT_FATAL( call, "unsupported complex size");
   }
+  return dtUnknown;
 }
 
 static Type*

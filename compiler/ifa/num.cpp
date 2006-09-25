@@ -5,8 +5,8 @@
 #include "prim_data.h"
 
 static int 
-sprint_float_val(char* str, double val) {
-  int numchars = sprintf(str, "%g", val);
+sprint_float_val(char* str, float128 val) {
+  int numchars = sprintf(str, "%Lg", val);
   if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
     strcat(str, ".0");
     return numchars + 2;
@@ -16,7 +16,7 @@ sprint_float_val(char* str, double val) {
 }
 
 static int 
-sprint_complex_val(char* str, double real, double imm) {
+sprint_complex_val(char* str, float128 real, float128 imm) {
   int numchars = 0;
   numchars += sprintf(str+numchars, "(");
   numchars += sprint_float_val(str+numchars, real);
@@ -77,13 +77,17 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
-        case FLOAT_SIZE_32: 
-          res = sprintf(str, control_string, imm.v_complex32.r, imm.v_complex32.i); break;
-        case FLOAT_SIZE_64:
-          res = sprintf(str, control_string, imm.v_complex64.r, imm.v_complex64.i); break;
-        case FLOAT_SIZE_128:
+        case COMPLEX_SIZE_64:
+          res = sprintf(str, control_string, 
+                        imm.v_complex64.r, imm.v_complex64.i);
+          break;
+        case COMPLEX_SIZE_128:
           res = sprintf(str, control_string, 
                         imm.v_complex128.r, imm.v_complex128.i); 
+          break;
+        case COMPLEX_SIZE_256: 
+          res = sprintf(str, control_string, 
+                        imm.v_complex256.r, imm.v_complex256.i); 
           break;
         default: assert(!"case");
       }
@@ -146,13 +150,14 @@ sprint_imm(char *str, Immediate &imm) {
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
-        case FLOAT_SIZE_32: 
-          res = sprint_complex_val(str, imm.v_complex32.r, imm.v_complex32.i); break;
-        case FLOAT_SIZE_64:
-          res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); break;
-        case FLOAT_SIZE_128:
-          res = sprint_complex_val(str, 
-                                   imm.v_complex128.r, imm.v_complex128.i); 
+        case COMPLEX_SIZE_64:
+          res = sprint_complex_val(str,imm.v_complex64.r,imm.v_complex64.i); 
+          break;
+        case COMPLEX_SIZE_128:
+          res = sprint_complex_val(str,imm.v_complex128.r,imm.v_complex128.i); 
+          break;
+        case COMPLEX_SIZE_256: 
+          res = sprint_complex_val(str,imm.v_complex256.r,imm.v_complex256.i); 
           break;
         default: assert(!"case");
       }
@@ -222,22 +227,23 @@ fprint_imm(FILE *fp, Immediate &imm) {
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
-        case FLOAT_SIZE_32: {
-          char str[80];
-          res = sprint_complex_val(str, imm.v_complex32.r, imm.v_complex32.i); 
-          fputs(str, fp);
-          break;
-        }
-        case FLOAT_SIZE_64: {
+        case COMPLEX_SIZE_64: {
           char str[80];
           res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); 
           fputs(str, fp);
           break;
         }
-        case FLOAT_SIZE_128: {
+        case COMPLEX_SIZE_128: {
           char str[160];
           res = sprint_complex_val(str, 
                                    imm.v_complex128.r, imm.v_complex128.i); 
+          fputs(str, fp);
+          break;
+        }
+        case COMPLEX_SIZE_256: {
+          char str[320];
+          res = sprint_complex_val(str, 
+                                   imm.v_complex256.r, imm.v_complex256.i); 
           fputs(str, fp);
           break;
         }

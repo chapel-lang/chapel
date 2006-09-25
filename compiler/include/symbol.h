@@ -273,7 +273,7 @@ VarSymbol *new_StringSymbol(char *s);
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 PrimitiveType *immediate_type(Immediate *imm);
 

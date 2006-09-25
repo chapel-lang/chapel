@@ -766,11 +766,11 @@ createPrimitiveType( char *name, char *cname) {
   dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
   dtFloat[FLOAT_SIZE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
-#define INIT_PRIMITIVE_COMPLEX( name, width)                                      \
-  dtComplex[FLOAT_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
-  dtComplex[FLOAT_SIZE_ ## width]->defaultValue = new_ComplexSymbol(              \
-                                  "_chpl_complex" #width "(0.0, 0.0)",            \
-                                   0.0, 0.0, FLOAT_SIZE_ ## width)
+#define INIT_PRIMITIVE_COMPLEX( name, width)                                   \
+  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
+  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
+                                  "_chpl_complex" #width "(0.0, 0.0)",         \
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width)
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
   gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
@@ -826,23 +826,23 @@ void initPrimitiveTypes(void) {
   }
 
   // WAW: could have a loop, but the following unrolling is more explicit.
-  INIT_PRIMITIVE_INT( "int", 64);          // default size
   INIT_PRIMITIVE_INT( "int(8)", 8);
   INIT_PRIMITIVE_INT( "int(16)", 16);
   INIT_PRIMITIVE_INT( "int(32)", 32);
+  INIT_PRIMITIVE_INT( "int", 64);            // default size
 
-  INIT_PRIMITIVE_UINT( "uint", 64);        // default size
   INIT_PRIMITIVE_UINT( "uint(8)", 8);
   INIT_PRIMITIVE_UINT( "uint(16)", 16);
   INIT_PRIMITIVE_UINT( "uint(32)", 32);
+  INIT_PRIMITIVE_UINT( "uint", 64);          // default size
 
-  INIT_PRIMITIVE_FLOAT( "float", 64);      // default size
   INIT_PRIMITIVE_FLOAT( "float(32)", 32);
+  INIT_PRIMITIVE_FLOAT( "float", 64);        // default size
   INIT_PRIMITIVE_FLOAT( "float(128)", 128);
 
-  INIT_PRIMITIVE_COMPLEX( "complex", 64);  // default size
-  INIT_PRIMITIVE_COMPLEX( "_complex32", 32); // supports hack, used in module
-  INIT_PRIMITIVE_COMPLEX( "complex(128)", 128);
+  INIT_PRIMITIVE_COMPLEX( "_complex64", 64); // supports hack, used in module
+  INIT_PRIMITIVE_COMPLEX( "complex", 128);   // default size
+  INIT_PRIMITIVE_COMPLEX( "complex(256)", 256);
 
   dtString = createPrimitiveType( "string", "_string");
   dtString->defaultValue = new_StringSymbol("");
@@ -894,9 +894,9 @@ bool is_float_type(Type *t) {
 
 bool is_complex_type(Type *t) {
   return
-    t == dtComplex[FLOAT_SIZE_32] ||
-    t == dtComplex[FLOAT_SIZE_64] ||
-    t == dtComplex[FLOAT_SIZE_128];
+    t == dtComplex[COMPLEX_SIZE_64] ||
+    t == dtComplex[COMPLEX_SIZE_128] ||
+    t == dtComplex[COMPLEX_SIZE_256];
 }
 
 
@@ -907,17 +907,18 @@ int get_width(Type *t) {
     return 16;
   if (t == dtInt[INT_SIZE_32] || 
       t == dtUInt[INT_SIZE_32] ||
-      t == dtFloat[FLOAT_SIZE_32] || 
-      t == dtComplex[FLOAT_SIZE_32])
+      t == dtFloat[FLOAT_SIZE_32])
     return 32;
   if (t == dtInt[INT_SIZE_64] || 
       t == dtUInt[INT_SIZE_64] ||
       t == dtFloat[FLOAT_SIZE_64] ||
-      t == dtComplex[FLOAT_SIZE_64])
+      t == dtComplex[COMPLEX_SIZE_64])
     return 64;
   if (t == dtFloat[FLOAT_SIZE_128] ||
-      t == dtComplex[FLOAT_SIZE_128])
+      t == dtComplex[COMPLEX_SIZE_128])
     return 128;
+  if (t == dtComplex[COMPLEX_SIZE_256])
+    return 256;
   INT_FATAL(t, "Unknown bit width");
   return 0;
 }

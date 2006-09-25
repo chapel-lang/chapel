@@ -25,16 +25,20 @@ void _chpl_memtest_allocAndFree(void) {
 
   _int64* i = (_int64*) _chpl_malloc(1, sizeof(_int64), 
                                              "_int64");
+  fprintf(stdout, "malloc'd an int\n");
+  printMemStat();
   _bool* b = (_bool*) _chpl_malloc(1, sizeof(_bool), "_bool");
-  fprintf(stdout, "malloc'd an int and a bool\n");
+  fprintf(stdout, "malloc'd abool\n");
   printMemStat();
 
   _float64* f = (_float64*) _chpl_calloc(1, sizeof(_float64), "_float64");
   *f = 99.9;
+  fprintf(stdout, "calloc'd a float\n");
+  printMemStat();
   _complex64* c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64");
   c->re = 1.2;
   c->im = 2.3;
-  fprintf(stdout, "calloc'd a float and a complex\n");
+  fprintf(stdout, "calloc'd a complex\n");
   printMemStat();
 
   _chpl_free(i);

@@ -110,10 +110,13 @@ static void genTostringRoutineName(FILE* outfile, Type* exprType) {
     fprintf(outfile, "float64");
   } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
     fprintf(outfile, "float128");
-  } else if (exprType == dtComplex[FLOAT_SIZE_32]) {
-    fprintf(outfile, "complex32");
-  } else if (exprType == dtComplex[FLOAT_SIZE_64]) {
+
+  } else if (exprType == dtComplex[COMPLEX_SIZE_64]) {
     fprintf(outfile, "complex64");
+  } else if (exprType == dtComplex[COMPLEX_SIZE_128]) {
+    fprintf(outfile, "complex128");
+  } else if (exprType == dtComplex[COMPLEX_SIZE_256]) {
+    fprintf(outfile, "complex256");
   } else {
     INT_FATAL(exprType, "Unexpected type case in codegenCastToString");
   }
@@ -693,7 +696,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
           if (var->varClass == VAR_CONFIG) {
             fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
-                    (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex64**)&" : "&",
+                    (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex128**)&" : "&",
                     var->cname, 
                     var->type->symbol->cname,
                     var->name,
@@ -803,8 +806,7 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (is_float_type( t)) {
             fprintf( outfile, "MIN_FLOAT%d", get_width( t));
           } else {   // must be (is_complex_type( t))
-            fprintf( outfile, "_chpl_complex%d( MIN_FLOAT%d, MIN_FLOAT%d)", 
-                     get_width( t), get_width( t), get_width( t));
+            INT_FATAL( t, "cannot do min on complex types");
           }
         } else {
           INT_FATAL( t, "not arithmetic type");
@@ -822,8 +824,7 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (is_float_type( t)) {
             fprintf( outfile, "MAX_FLOAT%d", get_width( t));
           } else {   // must be (is_complex_type( t))
-            fprintf( outfile, "_chpl_complex%d( MAX_FLOAT%d, MAX_FLOAT%d)", 
-                     get_width( t), get_width( t), get_width( t));
+            INT_FATAL( t, "cannot do max on complex types");
           }
         } else {
           INT_FATAL( t, "not arithmetic type");
@@ -892,7 +893,7 @@ void CallExpr::codegen(FILE* outfile) {
           } else {   // must be (is_complex_type( t))
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
-                     get_width( t), get_width( t), get_width( t));
+                     get_width( t), get_width( t)/2, get_width( t)/2);
           }
         } else {
           INT_FATAL( t, "not arithmetic type");
@@ -1114,17 +1115,18 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegenCastToString(outfile);
         break;
       } else if (is_complex_type( typeInfo())) {
-        fprintf( outfile, "_chpl_complex%d( ", get_width(get(1)->typeInfo()));
+        int width1 = get_width(get(1)->typeInfo());
+        fprintf( outfile, "_chpl_complex%d( ", width1);
         if (is_complex_type(get(2)->typeInfo())) {       // complex->complex
-          fprintf( outfile, "(_float%d)(", get_width(get(1)->typeInfo()));
+          fprintf( outfile, "(_float%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".re), ");
-          fprintf( outfile, "(_float%d)(", get_width(get(1)->typeInfo()));
+          fprintf( outfile, "(_float%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".im))");
         } else if (is_float_type( get(2)->typeInfo()) || // float->complex
                    is_int_type( get(2)->typeInfo())) { // int->complex
-          fprintf( outfile, "(_float%d)(", get_width(get(1)->typeInfo()));
+          fprintf( outfile, "(_float%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "), 0.0)");
         } else {
@@ -1182,7 +1184,7 @@ void CallExpr::codegen(FILE* outfile) {
   // eventually there should be no runtime complex type
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
-      fprintf(outfile, "(_complex64**)");
+      fprintf(outfile, "(_complex128**)");
     }
   }
   if (primitive && !strcmp(primitive->name, "string_copy")) {

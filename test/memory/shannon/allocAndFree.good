@@ -1,9 +1,13 @@
-malloc'd an int and a bool
+malloc'd an int
+totalMem=8, maxMem=8
+malloc'd abool
 totalMem=12, maxMem=12
-calloc'd a float and a complex
-totalMem=36, maxMem=36
+calloc'd a float
+totalMem=20, maxMem=20
+calloc'd a complex
+totalMem=28, maxMem=28
 freed the int, the bool, and the complex
-totalMem=8, maxMem=36
+totalMem=8, maxMem=28
 realloc'd 10 times the float
 totalMem=80, maxMem=80
 freed the float

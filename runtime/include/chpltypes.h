@@ -33,9 +33,9 @@ typedef unsigned long long  _uint64;
 typedef float               _float32;
 typedef double              _float64;
 typedef long double         _float128;
-typedef struct __complex32  {_float32 re; _float32 im;} _complex32;
-typedef struct __complex64  {_float64 re; _float64 im;} _complex64;
-typedef struct __complex128 {_float128 re; _float128 im;} _complex128;
+typedef struct __complex64  {_float32 re; _float32 im;} _complex64;
+typedef struct __complex128 {_float64 re; _float64 im;} _complex128;
+typedef struct __complex256 {_float128 re; _float128 im;} _complex256;
 typedef char*               _string;
 typedef _int64              _symbol;
 
@@ -79,8 +79,10 @@ char* _chpl_tostring_uint32(_uint32 x, char* format);
 char* _chpl_tostring_uint64(_uint64 x, char* format);
 char* _chpl_tostring_float32(_float32 x, char* format);
 char* _chpl_tostring_float64(_float64 x, char* format);
-char* _chpl_tostring_complex32(_complex32 x, char* format);
+char* _chpl_tostring_float128(_float128 x, char* format);
 char* _chpl_tostring_complex64(_complex64 x, char* format);
+char* _chpl_tostring_complex128(_complex128 x, char* format);
+char* _chpl_tostring_complex256(_complex256 x, char* format);
 
 _bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y);
@@ -95,9 +97,9 @@ _int64 object2int( _chpl_object o);  // return the ptr
 
 
 // Construction and assignment of complex numbers
-_complex32  _chpl_complex32( _float32 r, _float32 i);
-_complex64  _chpl_complex64( _float64 r, _float64 i);
-_complex128 _chpl_complex128( _float128 r, _float128 i);
+_complex64  _chpl_complex64( _float32 r, _float32 i);
+_complex128 _chpl_complex128( _float64 r, _float64 i);
+_complex256 _chpl_complex256( _float128 r, _float128 i);
 #define     complex_get_real(c)          &c.re
 #define     complex_get_imag(c)          &c.im
 #define     complex_set_real(c, r)        c.re=r

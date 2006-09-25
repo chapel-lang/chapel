@@ -26,10 +26,13 @@
 #define _default_format_write_float32     "%lg"
 #define _default_format_write_float64     "%lg"  /* double */
 
-#define _default_format_read_complex64    "%lg + %lg%c"
+#define _default_format_read_complex64    "%g + %g%c"
+#define _default_format_read_complex128   "%lg + %lg%c"
+#define _default_format_read_complex256   "%llg + %llg%c"
 
-extern char* _default_format_write_complex32;
 extern char* _default_format_write_complex64;
+extern char* _default_format_write_complex128;
+extern char* _default_format_write_complex256;
 
 #define _default_format_read_string       "%255s"   
 #define _default_format_write_string      "%s"

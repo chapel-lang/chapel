@@ -36,6 +36,12 @@ enum IF1_float_type {
   FLOAT_SIZE_NUM
 };
 
+enum IF1_complex_type { 
+  COMPLEX_SIZE_32, COMPLEX_SIZE_64, COMPLEX_SIZE_96, COMPLEX_SIZE_128, 
+  COMPLEX_SIZE_160, COMPLEX_SIZE_192, COMPLEX_SIZE_224, COMPLEX_SIZE_256, 
+  COMPLEX_SIZE_NUM
+};
+
 class Immediate { public:
   unsigned int const_kind : 4;
   unsigned int num_index : 3;
@@ -54,9 +60,9 @@ class Immediate { public:
     float32    v_float32;
     float64    v_float64;
     float128   v_float128;
-    complex32  v_complex32;
     complex64  v_complex64;
     complex128 v_complex128;
+    complex256 v_complex256;
     char *v_string;
   };
 
@@ -101,21 +107,21 @@ class Immediate { public:
     }
   }
 
-  void set_complex(complex128 c, IF1_float_type comp_size=FLOAT_SIZE_64) {
+  void set_complex(complex128 c, IF1_complex_type comp_size=COMPLEX_SIZE_128) {
     const_kind = NUM_KIND_COMPLEX;
     num_index = comp_size;
     switch( comp_size) {
-    case FLOAT_SIZE_32:  
-      v_complex32.r = c.r;  
-      v_complex32.i = c.i;  
-      break;
-    case FLOAT_SIZE_64:  
+    case COMPLEX_SIZE_64:  
       v_complex64.r = c.r;  
       v_complex64.i = c.i;  
       break;
-    case FLOAT_SIZE_128: 
+    case COMPLEX_SIZE_128: 
       v_complex128.r = c.r; 
       v_complex128.i = c.i; 
+      break;
+    case COMPLEX_SIZE_256:  
+      v_complex256.r = c.r;  
+      v_complex256.i = c.i;  
       break;
     default:
       INT_FATAL("unsupported complex size enum %d", comp_size);

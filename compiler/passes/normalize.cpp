@@ -1021,7 +1021,7 @@ static void fold_call_expr(CallExpr* call) {
         if (!ptype_p) {
           FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_SIZE_NUM, ptype_p);
           if (!ptype_p) {
-            FIND_PRIMITIVE_TYPE( dtComplex, FLOAT_SIZE_NUM, ptype_p);
+            FIND_PRIMITIVE_TYPE( dtComplex, COMPLEX_SIZE_NUM, ptype_p);
           }
         }
       }
@@ -1071,11 +1071,11 @@ static void fold_call_expr(CallExpr* call) {
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtComplex) {
                   switch (size) {
-                  case 32:  tsize = dtComplex[FLOAT_SIZE_32]->symbol;  break;
-                  case 64:  tsize = dtComplex[FLOAT_SIZE_64]->symbol;  break;
-                  case 128: tsize = dtComplex[FLOAT_SIZE_128]->symbol; break;
+                  case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
+                  case 128: tsize = dtComplex[COMPLEX_SIZE_128]->symbol; break;
+                  case 256: tsize = dtComplex[COMPLEX_SIZE_256]->symbol; break;
                   default:
-                    USR_FATAL( call, "illegal size %d for float", size);
+                    USR_FATAL( call, "illegal size %d for complex", size);
                   }
                   call->replace( new SymExpr(tsize));
                 }
@@ -1572,11 +1572,17 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
           fn->defPoint->parentStmt->remove();
-        } else if (call->isNamed("float") || call->isNamed("complex")) {
+        } else if (call->isNamed("float")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
             if (dtFloat[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtFloat[i]));
+          fn->defPoint->parentStmt->remove();
+        } else if (call->isNamed("complex")) {
+          for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
+            if (dtComplex[i])
+              clone_for_parameterized_primitive_formals(fn, def,
+                                                        get_width(dtComplex[i]));
           fn->defPoint->parentStmt->remove();
         }
       }

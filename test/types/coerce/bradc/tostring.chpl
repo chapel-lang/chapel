@@ -17,8 +17,8 @@ var f32: float(32) = 11.12:float(32);
 var f64: float(64) = 13.14;
 var fdf: float     = 15.16;
 
-var c32: complex(32) = (17.18 + 19.20i):complex(32);
-var c64: complex(64) = 21.22 + 23.24i;
+var c64: complex(64) = (17.18 + 19.20i):complex(64);
+var c128: complex(128) = 21.22 + 23.24i;
 var cdf: complex = 25.26 + 27.28i;
 
 def dobool(x) {
@@ -60,6 +60,8 @@ dotype(f32);
 dotype(f64);
 dotype(fdf);
 
-dotype(c32);
+/* no min/max on complex types
 dotype(c64);
+dotype(c128);
 dotype(cdf);
+*/
