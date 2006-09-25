@@ -76702,3 +76702,22 @@ Added files:
 	chapel/test/hpcc/: bitreverse.c twiddles-onebased.chpl 
 	                   twiddles-onebased.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 13:43:46 -- bradc
+
+Log message:
+	Added an interesting future test in which a function that
+	returns nothing is used to initialize a variable with
+	inferred type.  The compiler infers the variable to have
+	void type, which leads to other confusing messages.  My
+	assumption is that we'd like to signal an error when the
+	programmer attempts to use the return value of a function
+	with no return type.
+
+Added files:
+	chapel/test/functions/bradc/: forgotReturn.chpl 
+	                              forgotReturn.future 
+	                              forgotReturn.good 
+	chapel/test/functions/bradc/useBeforeDef/: .cvsignore 
+
