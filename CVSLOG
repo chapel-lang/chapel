@@ -76864,3 +76864,41 @@ Modified files:
 	                                               test_infer_class2.good 
 	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 15:55:16 -- waynew
+
+Log message:
+	Changed complex(w) to mean real(w/2) + imag(w/2).
+	 - Changed default is complex(128).
+	 - We no longer have complex(32).  We should have complex(w), where w=64, 128,
+	   and 256.
+	 - Changed internal enum widths from FLOAT_SIZE_x -> COMPLEX_SIZE_x.
+	 - Added IF1_complex_type.  (Why do we still use IF1?).
+	 - complex(32)->complex(64) and complex(64)->complex(128) in a bunch of tests
+	   and .good's.
+	 - misc. i/o routines with complex.
+	
+	Other
+	 - We no longer support max/min on complex types.
+	 - chplmem_test so that it's easier to see that the output is correct.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/ifa/: num.cpp num.h 
+	chapel/compiler/include/: chpltypes.h symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h config.h 
+	chapel/runtime/src/: chplmem_tests.c chpltypes.c config.c 
+	chapel/test/memory/shannon/: allocAndFree.good 
+	chapel/test/trivial/deitz/: test_format_primitives.chpl 
+	chapel/test/trivial/waynew/: mintest.chpl 
+	chapel/test/types/coerce/bradc/: printcomplex.chpl 
+	                                 printzeroes.chpl tostring.chpl 
+	                                 tostring.good 
+	chapel/test/types/complex/waynew/: complex-simple.chpl 
+	                                   complex-simple.good 
+
