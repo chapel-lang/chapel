@@ -98,11 +98,14 @@ printDevelErrorHeader(BaseAST* ast) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast->parentSymbol)) {
         if (fn != err_fn) {
           err_fn = fn;
-          if (fn->filename && fn->lineno) {
+          while (fn = dynamic_cast<FnSymbol*>(err_fn->defPoint->parentSymbol)) {
+            err_fn = fn;
+          }
+          if (err_fn->filename && err_fn->lineno) {
             if (developer)
               fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
             fprintf(stderr, "%s:%d: In function '%s':\n",
-                    fn->filename, fn->lineno, fn->name);
+                    err_fn->filename, err_fn->lineno, err_fn->name);
           }
         }
       }

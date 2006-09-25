@@ -1,5 +1,0 @@
-error messages
-
-The same error message is printed out 6 times for the same line
-with no apparent cause (e.g., the function shouldn't be
-instantiated 6 times...)

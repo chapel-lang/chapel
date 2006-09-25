@@ -616,6 +616,7 @@ FnSymbol::FnSymbol(char* initName) :
   isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
+  visiblePoint(NULL),
   visible(true),
   global(false),
   basicBlocks(NULL),

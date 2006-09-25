@@ -103,6 +103,7 @@ def fwrite(f : file, a: _array) {
   fwrite(f, a._value);
 }
 
+pragma "domain"
 class _domain {
   type _domain_type;
   param rank : int;

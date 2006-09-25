@@ -168,6 +168,7 @@ void
 initPrimitive() {
   primitives[PRIMITIVE_UNKNOWN] = NULL;
 
+  prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
   prim_def(PRIMITIVE_REF, "ref", returnInfoMove);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", returnInfoFirst);

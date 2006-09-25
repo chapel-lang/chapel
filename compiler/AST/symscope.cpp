@@ -46,12 +46,11 @@ void SymScope::define(Symbol* sym) {
     symbols.add(sym);
   }
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    rootScope->addVisibleFunction(fn);
-//     if (fn->global) {
-//       rootScope->addVisibleFunction(fn);
-//     } else {
-//       addVisibleFunction(fn);
-//     }
+    if (fn->global) {
+      rootScope->addVisibleFunction(fn);
+    } else {
+      addVisibleFunction(fn);
+    }
   }
 }
 
@@ -266,6 +265,10 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   if (astParent) {
     forv_Vec(ModuleSymbol, module, astParent->modUses) {
       module->modScope->getVisibleFunctions(allVisibleFunctions, name, true);
+    }
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
+      if (fn->visiblePoint && fn->visiblePoint->parentScope)
+        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }
   if (parent)

@@ -1429,20 +1429,26 @@ static void tag_global(FnSymbol* fn) {
     return;
   for_formals(formal, fn) {
     if (ClassType* ct = dynamic_cast<ClassType*>(formal->type))
-      if (ct->classTag == CLASS_CLASS)
+      if (ct->classTag == CLASS_CLASS &&
+          !ct->symbol->hasPragma("domain") &&
+          !ct->symbol->hasPragma("array"))
         fn->global = true;
     if (SymExpr* sym = dynamic_cast<SymExpr*>(formal->defPoint->exprType))
       if (ClassType* ct = dynamic_cast<ClassType*>(sym->var->type))
-        if (ct->classTag == CLASS_CLASS)
+        if (ct->classTag == CLASS_CLASS &&
+            !ct->symbol->hasPragma("domain") &&
+            !ct->symbol->hasPragma("array"))
           fn->global = true;
   }
   if (fn->global) {
     fn->parentScope->removeVisibleFunction(fn);
-    rootScope->removeVisibleFunction(fn);
     rootScope->addVisibleFunction(fn);
     if (dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
       ModuleSymbol* mod = fn->getModule();
       Stmt* stmt = fn->defPoint->parentStmt;
+      CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
+      stmt->insertBefore(noop);
+      fn->visiblePoint = noop;
       stmt->remove();
       mod->stmts->insertAtTail(stmt);
     }
