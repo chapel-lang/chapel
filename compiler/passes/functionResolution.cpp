@@ -629,7 +629,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       arg2->type != arg->type) {
                     better = true;
                   }
-                  if (!moreSpecific(best, arg2->type, arg->type)) {
+                  if (moreSpecific(best, arg->type, arg2->type) &&
+                      arg2->type != arg->type) {
                     as_good = false;
                   }
                 }

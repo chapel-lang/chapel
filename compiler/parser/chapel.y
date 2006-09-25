@@ -111,7 +111,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TDO
 %token TDOMAIN
 %token TENUM
-%token TERROR
+%token TCOMPILERERROR
 %token TFOR
 %token TFORALL
 %token TGOTO
@@ -1113,7 +1113,7 @@ parenop_expr:
     {
       $$ = build_primitive_call($3);
     }
-| TERROR TLP STRINGLITERAL TRP
+| TCOMPILERERROR TLP STRINGLITERAL TRP
     {
       $$ = new CallExpr(PRIMITIVE_ERROR, new_StringSymbol($3));
     }

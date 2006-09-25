@@ -59,7 +59,7 @@ record seq {
     return _length;
 
   def =length(x) {
-    error("illegal assignment to sequence's length");
+    compilerError("illegal assignment to sequence's length");
   }
 
   def _append(e : elt_type)
@@ -191,11 +191,11 @@ record _aseq {
   var _stride : int;
 
   def _aseq(_low, _high) {
-    error("Invalid arithmetic sequence, bounds must be integers");
+    compilerError("Invalid arithmetic sequence, bounds must be integers");
   }
 
   def _aseq(_low, _high, _stride) {
-    error("Invalid arithmetic sequence, bounds and stride must be integers");
+    compilerError("Invalid arithmetic sequence, bounds and stride must be integers");
   }
 
   iterator this() : int {
