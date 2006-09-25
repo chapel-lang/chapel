@@ -61,10 +61,6 @@ Is this "while x"(i); or "while x(i)";?
     (Current).last_column  = (Rhs)[N].last_column; \
   } else (Current) = yylloc;
 
-#ifdef __CYGWIN__
-#define YYSTACK_ALLOC MALLOC
-#endif
-
 %}
 
 %start program
