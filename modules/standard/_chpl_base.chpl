@@ -154,7 +154,9 @@ pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 // More primitive funs
 //
 
-pragma "inline" def sleep( t: int) return __primitive( "sleep", t);
+pragma "inline" def sleep( t: int) {
+  __primitive( "sleep", t);
+}
 
 pragma "no codegen" pragma "rename _chpl_exit" def exit(status : int) {
   __primitive("exit");       

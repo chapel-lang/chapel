@@ -1166,6 +1166,9 @@ resolveCall(CallExpr* call) {
         sym->var->type = t;
       if (sym->var->type == dtNil)
         sym->var->type = t;
+      if (t == dtVoid) {
+        USR_FATAL(call->get(2), "illegal use of function that does not return a value");
+      }
       if (t == dtUnknown) {
         if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
           if (FnSymbol* rhsfn = rhs->isResolved()) {
