@@ -1,0 +1,2 @@
+Trying to use the return value of function 'foo',
+but it does not have one (forgotReturn.chpl:5)

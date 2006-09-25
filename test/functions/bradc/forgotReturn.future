@@ -1,0 +1,8 @@
+type inference
+
+When the author of a function forgets to return a value, the
+function is assumed to return void.  Unfortunately, it looks
+like the compiler allows variables to be assigned this void
+value, giving them void type.  My assumption is that we'd
+instead like to say something about the function not having
+a return type when trying to use its return value.
