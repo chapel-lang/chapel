@@ -76735,3 +76735,44 @@ Modified files:
 	chapel/spec/Statements/: Block_Level_Statements.tex Blocks.tex 
 	                         Expression_Statements.tex 
 
+---------------------------------------------------------------------------
+
+09/25/06 14:58:03 -- deitz
+
+Log message:
+	Add NOOP primitive for use in the implementation.
+	
+	Added CallExpr* FnSymbol::visiblePoint to point to a spot in the code
+	that a function should look at to determine what functions are
+	visible.  This is particularly important for functions with class
+	arguments which are globally visible (and so denested before function
+	resolution).  This will also be used to mark the point of
+	instantiation of a function.
+	
+	Stopped treating all functions as globally visible.
+	
+	Specialized global function determination so that functions that take
+	arguments of type of the array or domain class are not treated
+	globally.
+	
+	Changed "In function" message to print out outermost function for
+	nested functions.
+	
+	This fixes regression of functions/bradc/intents-error.
+	
+	Removed .future for studies/hpcc/RA/bradc/ra-bradc-duplicateErrors.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp 
+	                      symscope.cpp 
+	chapel/compiler/include/: primitive.h symbol.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/functions/bradc/: intents-error.good 
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-duplicateErrors.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-duplicateErrors.future 
+
