@@ -76655,3 +76655,22 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+09/25/06 11:00:50 -- deitz
+
+Log message:
+	Added error check to guard against using a binary operator on an
+	int(64) and a uint(64) unless the int(64) is a parameter that is
+	positive.
+	
+	This is in the compiler since putting it the base module resulted in
+	an ambiguous resolution error (as it should).
+	
+	Updated one test output file.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/trivial/deitz/: test_int_uint.good 
+
