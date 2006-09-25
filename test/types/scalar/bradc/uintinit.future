@@ -1,0 +1,13 @@
+uint semantics
+
+I need someone to double-check me on this one.  Seems as though if I
+initialize a uint via a hex literal of the appropriate width, it
+shouldn't matter if it's a signed or unsigned hex literal, since the
+bit pattern should be preserved across the implicit coercion that's
+forced.  Yet for some reason, declaring a signed vs. unsigned value is
+giving different answers.  I'm not sure why...
+
+For that matter, initializing a signed int variable or an
+inferred-type variable with a signed hex value seems to be causing
+similar behavior rather than storing it as a signed value.  Not sure
+why.
