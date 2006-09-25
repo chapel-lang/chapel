@@ -1,16 +1,13 @@
 \lstdefinelanguage{syntax}
   {
-    morekeywords={
-      block,
-      conditional,
-      expression,
-      level,
-      statement
-    },
+    morekeywords={},
     sensitive=false,
-    mathescape=false,
+    mathescape=true,
     basicstyle=\footnotesize\tt,
-    keywordstyle=\em,
+    keywordstyle=\footnotesize\tt,
+    commentstyle=\footnotesize\tt,
+    identifierstyle=\footnotesize\it,
+    morecomment=[s]{`}{'},
     literate={[[}{{$[$}}{1}
              {]]}{{$]$}}{1}
              {[[,...]]}{{$[$, $\ldots]$}}{5}
@@ -19,8 +16,21 @@
 
 \lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}
 
+% atomic-statement
+% begin-statement
 % block
 % block-level-statement
+% cobegin-statement
 % conditional-statement
+% empty-statement
 % expression
+% expression-statement
+% for-statement
+% forall-statement
+% on-statement
+% return-statement
+% select-statement
+% serial-statement
 % statement
+% while-do-statement
+% yield-statement

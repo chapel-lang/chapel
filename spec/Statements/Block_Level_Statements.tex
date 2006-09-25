@@ -1,0 +1,23 @@
+A block level statement is a category of statement that is sometimes
+called for by the language syntax. A block level statement is given by
+\begin{syntax}
+block-level-statement:
+  block
+  conditional-statement
+  empty-statement
+  select-statement
+  for-statement
+  forall-statement
+  while-do-statement
+  return-statement
+  yield-statement
+  atomic-statement
+  cobegin-statement
+  begin-statement
+  serial-statement
+  on-statement
+\end{syntax}
+
+Block level statements are part of the language to avoid the excessive
+and unnecessary use of curly brackets.  For example, function bodies
+are not required to be blocks, but must be block level statements.
