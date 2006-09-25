@@ -76674,3 +76674,14 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/test/trivial/deitz/: test_int_uint.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 13:12:06 -- bradc
+
+Log message:
+	Removed cygwin-specific #ifdef which breaks build and
+	no longer seems necessary now that GC is removed.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
