@@ -76721,3 +76721,17 @@ Added files:
 	                              forgotReturn.good 
 	chapel/test/functions/bradc/useBeforeDef/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+09/25/06 13:54:52 -- deitz
+
+Log message:
+	Filled in Scope section (section 1).  Filled in blocks section.
+	
+	Added some more index terms.
+
+Modified files:
+	chapel/spec/Scope/: Scope.tex 
+	chapel/spec/Statements/: Block_Level_Statements.tex Blocks.tex 
+	                         Expression_Statements.tex 
+
