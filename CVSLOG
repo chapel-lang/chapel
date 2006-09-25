@@ -76685,3 +76685,20 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+09/25/06 13:14:09 -- bradc
+
+Log message:
+	Rewrote twiddles.chpl test to be 0-based rather than 1-based,
+	which cleaned it up greatly.
+	
+	Added bitreverse.c which tests the bit reverse function in C
+	and implements some MTA-specific behavior in C.
+
+Modified files:
+	chapel/test/hpcc/: twiddles.chpl 
+Added files:
+	chapel/test/hpcc/: bitreverse.c twiddles-onebased.chpl 
+	                   twiddles-onebased.good 
+
