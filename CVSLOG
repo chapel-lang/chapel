@@ -77102,3 +77102,14 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.good 
 
+---------------------------------------------------------------------------
+
+09/26/06 10:13:26 -- waynew
+
+Log message:
+	Updated.  My DONE's means a reasonable implementation is in. It may still
+	have known bugs and/or not handle all cases.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
