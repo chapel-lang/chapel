@@ -1,0 +1,18 @@
+The forall loop may be specified with a more concise syntax given by
+another alternative:
+\begin{syntax}
+for-statement:
+  [ index-list `in' iterator-list ] statement
+\end{syntax}
+The semantics of this alternative syntax are unchanged.
+
+\begin{example}
+The following statements are equivalent:
+\begin{chapel}
+forall i in 1..n do
+  sum += i;
+\end{chapel}
+\begin{chapel}
+[i in 1..n] sum += i;
+\end{chapel}
+\end{example}

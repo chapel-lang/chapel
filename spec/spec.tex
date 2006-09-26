@@ -5,6 +5,13 @@
 \input{chapel_listing}
 \input{syntax_listing}
 
+\newenvironment{example}{
+  \begin{quote}
+  \it Example.\\
+}{
+  \end{quote}
+}
+
 % courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
 \newcommand{\sekshun}[1]
            {
@@ -151,7 +158,7 @@ Seattle, WA 98104}
 \subsection{Miscellaneous Operators}
 \subsubsection{The String Concatenation Operator}
 \subsubsection{The Sequence Concatenation Operator}
-\\subsubsection{The Arithmetic Domain By Operator}
+\subsubsection{The Arithmetic Domain By Operator}
 \subsubsection{The Sequence By Operator}
 \subsection{Let Expressions}
 \subsection{Conditional Expressions}
@@ -170,6 +177,7 @@ Seattle, WA 98104}
 \subsection{The For and Forall Loops}
 \subsubsection{Zipper Iteration}
 \subsubsection{Tensor Product Iteration}
+\subsubsection{Alternative Forall Loop Syntax}
 \subsection{The Return Statement}
 \subsection{The Yield Statement}
 \subsection{Declaration Statements}

@@ -1,1 +1,16 @@
-This is a stub.  This portion of the document does not exist.
+When multiple expressions are iterated over in a zipper context, on
+each iteration, each expression is iterated over, the values are
+returned by the iterators in a tuple and assigned to the expressions
+in the index list, and the statement is executed.
+
+The shape of each iterator, the rank and the extents in each
+dimension, must be identical.
+
+\begin{example}
+The output of
+\begin{chapel}
+for i, j in 1..3, 4..6 do
+  write(i, " ", j, " ");
+\end{chapel}
+is ``1 4 2 5 3 6 ''.
+\end{example}

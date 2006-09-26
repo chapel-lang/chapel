@@ -1,1 +1,33 @@
-This is a stub.  This portion of the document does not exist.
+A type select statement has two uses.  It can be used to determine the
+type of a union, as discussed in
+Section~\ref{The_Type_Select_Statement_and_Unions}.  In its more
+general form, it can be used to determine the types of one or more
+values using the same mechanisms used to disambiguate function
+definitions.  It syntax is given by:
+\begin{syntax}
+type-select-statement:
+  `type' `select' expression [[,...]] { type-when-statement [[...]] }
+
+type-when-statement:
+  `when' type [[,...]] `do' statement
+  `when' type [[,...]] block-level-statement
+  `otherwise' statement
+\end{syntax}
+
+Call the expressions following the keyword \chpl{select}, the select
+expressions.  The number of select expressions must be equal to the
+number of types following each of the \chpl{when} keywords.  Like the
+select statement, one of the statements associated with a \chpl{when}
+will be executed.  In this case, that statement is chosen by the
+function resolution mechanism.  The select expressions are the actual
+arguments, the types following the \chpl{when} keywords are the types
+of the formal arguments for different anonymous functions.  The
+function that would be selected by function resolution determines the
+statement that is executed.  If none of the functions are chosen, the
+the statement associated with the keyword \chpl{otherwise}, if it
+exists, will be selected.
+
+As with function resolution, this can result in an ambiguous
+situation.  Unlike with function resolution, in the event of an
+ambiguity, the first statement in the list of when statements is
+chosen.
