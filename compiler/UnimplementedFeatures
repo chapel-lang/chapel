@@ -16,9 +16,9 @@ DONE sequence indexing with a sequence
 DONE predicate expressions "x = [i in D] if i < 10 then ..."
 DONE iterator functions
 DONE reductions
-     indefinite domains
+DONE indefinite domains
        -=/remove method
-       member? method
+DONE   member? method
 DONE domain arguments to functions
 DONE association of arrays to domains
 DONE   domain assignment
