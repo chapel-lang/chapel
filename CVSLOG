@@ -77036,3 +77036,59 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+09/25/06 17:42:04 -- bradc
+
+Log message:
+	Moved the contents of the old hpcc/ directory under the
+	studies/hpcc directory.  Other than this move, did two
+	small changes:
+	
+	  - enabled testing for the FFT directory (didn't realize
+	    that it hadn't been on earlier)
+	
+	  - merged the recent changes to the twiddles and bitReverse
+	    functions in the twiddles.chpl and bitreverse.chpl
+	    tests into the main fft.chpl file and added a .good file
+	    for the test.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: .cvsignore README 
+	                                     bitreverse.c 
+	                                     bitreverse.chpl 
+	                                     bitreverse.good 
+	                                     bitreverse2.chpl 
+	                                     bitreverse2.good fft.c 
+	                                     fft.chpl 
+	                                     twiddles-advanced.chpl 
+	                                     twiddles-advanced.future 
+	                                     twiddles-advanced.good 
+	                                     twiddles-advanced2.chpl 
+	                                     twiddles-advanced2.future 
+	                                     twiddles-advanced2.good 
+	                                     twiddles-onebased.chpl 
+	                                     twiddles-onebased.good 
+	                                     twiddles.c twiddles.chpl 
+	                                     twiddles.good 
+	chapel/test/studies/hpcc/RA/bradc/earlyVersions/: .cvsignore 
+	                                                  NOTEST 
+	                                                  randomaccess-distributed.chpl 
+	                                                  randomaccess-local.chpl 
+	                                                  randomaccess-redundant.chpl 
+Removed files:
+	chapel/test/hpcc/: NOTEST README bitreverse.c bitreverse.chpl 
+	                   bitreverse.good bitreverse2.chpl 
+	                   bitreverse2.good fft.c fft.chpl 
+	                   randomaccess-distributed.chpl 
+	                   randomaccess-local.chpl 
+	                   randomaccess-redundant.chpl 
+	                   twiddles-advanced.chpl 
+	                   twiddles-advanced.future 
+	                   twiddles-advanced.good 
+	                   twiddles-advanced2.chpl 
+	                   twiddles-advanced2.future 
+	                   twiddles-advanced2.good 
+	                   twiddles-onebased.chpl twiddles-onebased.good 
+	                   twiddles.c twiddles.chpl twiddles.good 
+
