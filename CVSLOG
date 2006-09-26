@@ -76997,3 +76997,42 @@ Added files:
 Removed files:
 	chapel/test/trivial/bradc/: shiftAssignOps.future 
 
+---------------------------------------------------------------------------
+
+09/25/06 17:28:39 -- bradc
+
+Log message:
+	Added some bit-oriented functions to the math module for now.
+	Eventually they should be placed in an optionally-loaded module
+	for bit Operations (and probably renamed/genericized -- I didn't
+	spend much time on the names, and hard-coded lots of them to
+	specific sizes and types due to strange interactions between
+	ints and uints).  We should also review the library of bit
+	operators that the NSA requests from the MTA and similar
+	architectures to fill out this list to a full suite of gov't-
+	compliant operators (assuming that it's legal for us to do so).
+	
+	Routines I added:
+	
+	  - lg -> takes an int and returns the log(2) of that value.
+	          Could use a smarter algorithm if we had the "find
+	          uppermost left bit" operator, but I wasn't sure
+	          what to call that, so wrote it my dumb old way for
+	          now
+	
+	  - bitMatWrite -> writes out a 64-bit uint value as an 8x8
+	          bit matrix.  Intended for debugging primarily
+	
+	  - bitMatMultOr -> does a bitwise matrix-multiplication of
+	          2 64-bit uint values using bitwise-or as the
+	          combinator
+	
+	  - bitReverse -> reverses the lower "numBits" bits of a 64
+	          bit uint value
+	
+	  - bitRotLeft, bitRotRight -> circularly shifts a 64-bit
+	          uint value
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+
