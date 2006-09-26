@@ -76964,3 +76964,19 @@ Added files:
 	                   twiddles-advanced2.future 
 	                   twiddles-advanced2.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 16:59:43 -- deitz
+
+Log message:
+	Added Assignment Statements section (with all assignment operators
+	that we will support), and begin and cobegin statement sections which
+	are forward references that define the syntax and the statements
+	briefly.
+
+Modified files:
+	chapel/spec/: syntax_listing.tex 
+	chapel/spec/Statements/: Assignment_Statements.tex Blocks.tex 
+	                         The_Begin_Statement.tex 
+	                         The_Cobegin_Statement.tex 
+
