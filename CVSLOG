@@ -77092,3 +77092,13 @@ Removed files:
 	                   twiddles-onebased.chpl twiddles-onebased.good 
 	                   twiddles.c twiddles.chpl twiddles.good 
 
+---------------------------------------------------------------------------
+
+09/25/06 17:42:54 -- bradc
+
+Log message:
+	Oops, forgot to cvs add this file.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.good 
+
