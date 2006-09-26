@@ -77146,3 +77146,13 @@ Modified files:
 Added files:
 	chapel/spec/Statements/: Alternative_Forall_Loop_Syntax.tex 
 
+---------------------------------------------------------------------------
+
+09/26/06 14:57:07 -- bradc
+
+Log message:
+	A few last-minute code snippets for today's meeting.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly.c butterfly.chpl 
+
