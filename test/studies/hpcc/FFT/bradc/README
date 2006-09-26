@@ -1,0 +1,6 @@
+fft.c[hpl] : the main FFT file I'm working on
+|
++> twiddles*.c[hpl] : standalone tests and versions of the twiddles
+                     function
+|
++> bitreverse*.c[hpl] : ditto for the bit-reverse function

@@ -17,8 +17,8 @@ def main() {
   const EPS = 2.0 ** -51.0;
   const THRESHOLD = 16.0;
 
-  const D = [1..N];
-  const DW = [1..N/4];
+  const D = [0..N-1];
+  const DW = [0..N/4-1];
 
   var A: [D] complex;
   var B: [D] complex;
@@ -29,11 +29,11 @@ def main() {
   B = A;                       // save A for verification step
 
   twiddles(W);
-  W = bit_reverse(W);
+  W = bitReverse(W);
 
   A.imag = -A.imag;            // conjugate data
 
-  A = bit_reverse(A);
+  A = bitReverse(A);
 
   dfft(A, W);
 
@@ -43,7 +43,7 @@ def main() {
   var fftTimer = timer();
   fftTimer.start();
 
-  A = bit_reverse(A);
+  A = bitReverse(A);
   dfft(A, W);
 
   fftTimer.stop();
@@ -62,23 +62,33 @@ def main() {
   writeln("GFlops = ", gflop / time);
 }
 
-def bit_reverse(W) {
-  return W;
-/*
-//  const WD = W.domain;
-  const n = WD.extent();
-//  const mask: uint = 0x0102040810204080;
-  const shift = (log(n) / log(2)): integer;
 
-  for i in 1..n {
-    const ndx = MTA_BIT_MAT_OR(mask, MTA_BIT_MAT_OR(i, mask));
-    ndx = MTA_ROTATE_LEFT(ndx, shift);
-    v(2*ndx) = w(2*i);
-    v(2*ndx + 1) = w(2*i + 1);
+def twiddles(W: [?WD] complex) {
+  const n = WD(1).length;
+  const delta = 2.0 * atan(1.0) / n;
+
+  W(0) = 1.0;
+  // TODO: need to figure out the best way to write this _complex
+  W(n/2) = let cosDeltaN = cos(delta * n/2)
+            in _complex(cosDeltaN, cosDeltaN);
+  for i in 1..n/2-1 {
+    const x = cos(delta*i);
+    const y = sin(delta*i);
+    W(i)     = _complex(x, y);
+    W(n - i) = _complex(y, x);
   }
+}
 
+
+def bitReverse(W: [?WD] complex) {
+  const n = WD(1).length;
+  const reverse = lg(n);
+  var V: [WD] complex;
+  for i in WD {
+    var ndx = bitReverse(i:uint(64), numBits=reverse);
+    V(ndx:int) = W(i); // BLC: unfortunate cast
+  }
   return V;
-*/
 }
 
 def dfft(a, w) {
@@ -97,25 +107,3 @@ def dfft(a, w) {
 def prand_array(X) {
 }
 
-//fun twiddles(W: [?DW] float) {
-def twiddles(W: [?WD] complex) {
-  // TODO: workaround until I figure out how to query domain's length:
-  const n = (1<<logN)/4;
-  // const n = WD(1).length();
-  const delta = atan(1.0) / n;
-  const i = 1.0;
-
-  W(1) = 1.0;
-  // TODO: need to figure out the best way to write this _complex
-  W(n/2 + 1) = let cosDeltaN = cos(delta * n)
-                in _complex(cosDeltaN, cosDeltaN);
-  for i in 2..n/2 {
-    // TODO: this is a bit unfortunate -- do we have other options?
-    const deltaI = delta * 2*(i-1);
-    const x = cos(deltaI);
-    const y = sin(deltaI);
-    W(i)         = _complex(x, y);
-    W(n - i + 2) = _complex(y, x);
-  }
-  if (debug) then writeln("in twiddles(), W is: ", W);
-}
