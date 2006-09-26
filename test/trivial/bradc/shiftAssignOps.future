@@ -1,6 +1,0 @@
-???
-
-The bit-shift assignment operators do not seem to have been
-implemented.  These are not listed in the last draft of the
-spec, but I believe this is an oversight since these are
-obviously great operators.

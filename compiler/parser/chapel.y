@@ -154,10 +154,16 @@ Is this "while x"(i); or "while x(i)";?
 %token TASSIGNBOR
 %token TASSIGNBXOR
 %token TASSIGNDIVIDE
+%token TASSIGNEXP
+%token TASSIGNLAND
+%token TASSIGNLOR
 %token TASSIGNMINUS
+%token TASSIGNMOD
 %token TASSIGNMULTIPLY
 %token TASSIGNPLUS
 %token TASSIGNSEQCAT
+%token TASSIGNSR
+%token TASSIGNSL
 
 %token TCOLON
 %token TCOMMA
@@ -493,6 +499,16 @@ assign_stmt:
       $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("/", $1->copy(), $3)));
     }
+| lvalue TASSIGNMOD expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr("%", $1->copy(), $3)));
+    }
+| lvalue TASSIGNEXP expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr("**", $1->copy(), $3)));
+    }
 | lvalue TASSIGNBAND expr TSEMI
     {
       $$ = build_chpl_stmt(new CallExpr("=", $1,
@@ -508,10 +524,30 @@ assign_stmt:
       $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("^", $1->copy(), $3)));
     }
+| lvalue TASSIGNLAND expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr("&&", $1->copy(), $3)));
+    }
+| lvalue TASSIGNLOR expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr("||", $1->copy(), $3)));
+    }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
       $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("#", $1->copy(), $3)));
+    }
+| lvalue TASSIGNSR expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr(">>", $1->copy(), $3)));
+    }
+| lvalue TASSIGNSL expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
+             new CallExpr("<<", $1->copy(), $3)));
     }
 ;
 

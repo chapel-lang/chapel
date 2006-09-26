@@ -95,10 +95,16 @@ yield           processToken(TYIELD);
 "-="            processToken(TASSIGNMINUS);
 "*="            processToken(TASSIGNMULTIPLY);
 "/="            processToken(TASSIGNDIVIDE);
+"**="           processToken(TASSIGNEXP);
+"%="            processToken(TASSIGNMOD);
 "&="            processToken(TASSIGNBAND);
 "|="            processToken(TASSIGNBOR);
 "^="            processToken(TASSIGNBXOR);
+"&&="           processToken(TASSIGNLAND);
+"||="           processToken(TASSIGNLOR);
 "#="            processToken(TASSIGNSEQCAT);
+"<<="           processToken(TASSIGNSL);
+">>="           processToken(TASSIGNSR);
 
 ".."            processToken(TDOTDOT);
 "..."           processToken(TDOTDOTDOT);
