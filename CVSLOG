@@ -76980,3 +76980,20 @@ Modified files:
 	                         The_Begin_Statement.tex 
 	                         The_Cobegin_Statement.tex 
 
+---------------------------------------------------------------------------
+
+09/25/06 17:03:20 -- deitz
+
+Log message:
+	Added support for %=, **=, &&=, ||=, <<=, and >>=.
+	
+	Added a test to test all op= operators.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_assignop.chpl 
+	                            test_assignop.good 
+Removed files:
+	chapel/test/trivial/bradc/: shiftAssignOps.future 
+
