@@ -77113,3 +77113,36 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+09/26/06 13:16:51 -- deitz
+
+Log message:
+	Added example environment as in \begin{example} ... \end{example} to
+	create an italicized example. Chapel code can be included within
+	\begin{chapel} ... \end{chapel} within the example.
+	
+	Filled in most of the Statement subsections except return, yield, and
+	declaration statements.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Statements/: Block_Level_Statements.tex 
+	                         Statements.tex 
+	                         Tensor_Product_Iteration.tex 
+	                         The_Atomic_Statement.tex 
+	                         The_Begin_Statement.tex 
+	                         The_Cobegin_Statement.tex 
+	                         The_Conditional_Statement.tex 
+	                         The_Empty_Statement.tex 
+	                         The_For_and_Forall_Loops.tex 
+	                         The_On_Statement.tex 
+	                         The_Select_Statement.tex 
+	                         The_Serial_Statement.tex 
+	                         The_Type_Select_Statement.tex 
+	                         The_Use_Statement.tex 
+	                         The_While_and_Do_While_Loops.tex 
+	                         Zipper_Iteration.tex 
+Added files:
+	chapel/spec/Statements/: Alternative_Forall_Loop_Syntax.tex 
+
