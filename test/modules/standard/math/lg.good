@@ -1,0 +1,11 @@
+lg(ns) = 5
+lg(nu) = 6
+lg(nf) = 7
+lg(ns) = -1
+lg(nf) = -1
+lg(ns) = -1
+lg(nu) = -1
+lg(nf) = -1
+lg(ns) = 0
+lg(nu) = 0
+lg(nf) = 0

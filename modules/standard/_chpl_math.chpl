@@ -38,18 +38,16 @@ pragma "inline" def tgamma(x : float) return __primitive("tgamma", x);
 pragma "inline" def trunc(x : float) return __primitive("trunc", x);
 
 
-def lg(in x: int) {
+def lg(in x) {
   var retval = -1;
-  if (x <= 0) {
-    halt("Attempting to take the lg of a non-positive value");
-  }
-  while (x) {
-    x = x >> 1;
+  while (x >= 1) {
+    x /= 2;
     retval += 1;
   }
 
   return retval;
 }
+
 
 //
 // bit manipulation functions
