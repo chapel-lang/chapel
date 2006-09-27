@@ -7,11 +7,11 @@ var i32: int(32) = 3;
 var i64: int(64) = 4;
 var idf: int     = 5;
 
-var u08: uint( 8) = 6u;
-var u16: uint(16) = 7u;
-var u32: uint(32) = 8u;
-var u64: uint(64) = 9u;
-var udf: uint     = 10u;
+var u08: uint( 8) = 6;
+var u16: uint(16) = 7;
+var u32: uint(32) = 8;
+var u64: uint(64) = 9;
+var udf: uint     = 10;
 
 var f32: float(32) = 11.12:float(32);
 var f64: float(64) = 13.14;

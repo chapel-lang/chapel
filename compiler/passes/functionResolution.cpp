@@ -120,7 +120,9 @@ fits_in_uint(int width, Immediate* imm) {
     case 64:
       return (u <= 18446744073709551615ull);
     }
-  } else if (imm->const_kind == NUM_KIND_UINT) {
+  }
+  /* fold uint parameters?
+ else if (imm->const_kind == NUM_KIND_UINT) {
     uint64 i = imm->uint_value();
     switch (width) {
     default: INT_FATAL("bad width in fits_in_int");
@@ -134,6 +136,7 @@ fits_in_uint(int width, Immediate* imm) {
       return (i <= 18446744073709551615ull);
     }
   }
+  */
   return false;
 }
 
