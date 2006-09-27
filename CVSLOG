@@ -77403,3 +77403,19 @@ Log message:
 Modified files:
 	chapel/test/functions/bradc/: intUint3.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:04:33 -- bradc
+
+Log message:
+	A test that tries to create the value 0x8000000000000000
+	in 8 different ways, only 2 of which work.  Getting shift
+	operators that operate on various signed/unsigned types
+	correctly would go a long way to getting these working
+	better.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.chpl 
+	                                    ra-bradc-badshift.future 
+	                                    ra-bradc-badshift.good 
+
