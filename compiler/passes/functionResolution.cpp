@@ -84,7 +84,8 @@ fits_in_int(int width, Immediate* imm) {
     case 64:
       return (i >= -9223372036854775807ll-1 && i <= 9223372036854775807ll);
     }
-  } else if (imm->const_kind == NUM_KIND_UINT) {
+  }
+  /* else if (imm->const_kind == NUM_KIND_UINT) {
     uint64 i = imm->uint_value();
     switch (width) {
     default: INT_FATAL("bad width in fits_in_int");
@@ -97,7 +98,7 @@ fits_in_int(int width, Immediate* imm) {
     case 64:
       return (i <= 9223372036854775807ll);
     }
-  }
+    }*/
   return false;
 }
 
@@ -105,19 +106,32 @@ static bool
 fits_in_uint(int width, Immediate* imm) {
   if (imm->const_kind == NUM_KIND_INT) {
     int64 i = imm->int_value();
-    return i >= 0;
+    if (i < 0)
+      return false;
+    uint64 u = (uint64)i;
+    switch (width) {
+    default: INT_FATAL("bad width in fits_in_uint");
+    case 8:
+      return (u <= 255);
+    case 16:
+      return (u <= 65535);
+    case 32:
+      return (u <= 2147483647ull);
+    case 64:
+      return (u <= 18446744073709551615ull);
+    }
   } else if (imm->const_kind == NUM_KIND_UINT) {
     uint64 i = imm->uint_value();
     switch (width) {
     default: INT_FATAL("bad width in fits_in_int");
     case 8:
-      return (i <= 1<<8);
+      return (i <= 255);
     case 16:
-      return (i <= 1<<16);
+      return (i <= 65535);
     case 32:
-      return (i <= 1ull<<32);
+      return (i <= 2147483647ull);
     case 64:
-      return true;
+      return (i <= 18446744073709551615ull);
     }
   }
   return false;
@@ -628,9 +642,12 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                   if (moreSpecific(best, arg2->type, arg->type) && 
                       arg2->type != arg->type) {
                     better = true;
-                  }
-                  if (moreSpecific(best, arg->type, arg2->type) &&
+                  } else if (moreSpecific(best, arg->type, arg2->type) &&
                       arg2->type != arg->type) {
+                    as_good = false;
+                  } else if (is_int_type(arg2->type) && is_uint_type(arg->type)) {
+                    better = true;
+                  } else if (is_int_type(arg->type) && is_uint_type(arg2->type)) {
                     as_good = false;
                   }
                 }
