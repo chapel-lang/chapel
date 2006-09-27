@@ -77393,3 +77393,13 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: butterfly.future 
 
+---------------------------------------------------------------------------
+
+09/27/06 15:55:41 -- deitz
+
+Log message:
+	Fixed mistype in manually updated test output file.
+
+Modified files:
+	chapel/test/functions/bradc/: intUint3.good 
+
