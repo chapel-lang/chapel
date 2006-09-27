@@ -1,0 +1,7 @@
+deitz
+
+Another int/uint parameter argument test.  It may be that we only
+report the first ambiguity.  The fourth call should also be ambiguous,
+so we could either break this into another test or trust that it will
+stay working after testing it once by hand.
+
