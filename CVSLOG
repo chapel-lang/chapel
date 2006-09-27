@@ -77299,3 +77299,28 @@ Added files:
 	                                Synchronizing_and_Serializing_Tasks.tex 
 	                                Task_Parallel_Constructs.tex 
 
+---------------------------------------------------------------------------
+
+09/27/06 14:11:37 -- bradc
+
+Log message:
+	Added a new test showing that our current resolution
+	rules for integers are not faithful to the C# spec
+	that we were trying to match, based on a discussion
+	and explorations with Steve.
+	
+	This means, returning to Mary Beth's email question
+	earlier that foo(8) would dispatch to the default-int
+	version of foo() before it would dispatch to the 8-bit
+	int version, as Steve and I had predicted previously.
+	This is actually pretty reassuring.
+	
+	Similarly, foo(8:int(x)) should go directly to the
+	int(x) version if one exists (and look for bigger
+	versions afterwards if it doesn't).
+
+Added files:
+	chapel/test/functions/bradc/: resolveIntLiterals.chpl 
+	                              resolveIntLiterals.future 
+	                              resolveIntLiterals.good 
+
