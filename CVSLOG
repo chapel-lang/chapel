@@ -77352,3 +77352,23 @@ Added files:
 	                           stridedArrayArg.future 
 	                           stridedArrayArg.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 15:30:10 -- bradc
+
+Log message:
+	Another strided array case that would be nice to get
+	working for the HPCC FFT code.  This one shows that
+	once you start sending array slices to a function,
+	modifications to the array within the function are
+	not reflected in the actual array argument.  I've
+	commented out the calls that don't currently resolve
+	temporarily to demonstrate that even the calls that
+	do resolve seem to be resulting in copies being
+	inserted.
+
+Added files:
+	chapel/test/arrays/bradc/: stridedArrayArg2.chpl 
+	                           stridedArrayArg2.future 
+	                           stridedArrayArg2.good 
+
