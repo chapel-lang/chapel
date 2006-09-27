@@ -77372,3 +77372,24 @@ Added files:
 	                           stridedArrayArg2.future 
 	                           stridedArrayArg2.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 15:36:21 -- bradc
+
+Log message:
+	Made a standalone test of the C butterfly routine and
+	got the Chapel version similarly testing and working.
+	Wrote a preferable version using an array argument
+	(butterfly2.chpl), but ran into bugs captured by my
+	last two checkins that prevented it from working.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly.c butterfly.chpl 
+	                                     butterfly.good 
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly2.chpl 
+	                                     butterfly2.future 
+	                                     butterfly2.good 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly.future 
+
