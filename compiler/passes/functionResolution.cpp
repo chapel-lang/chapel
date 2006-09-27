@@ -412,6 +412,12 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   int j = -1;
   for_formals(formal, fn) {
     j++;
+    if (!strcmp(fn->name, "=")) {
+      if (j == 0) {
+        if (formal_actuals.v[j] != formal->type)
+          return;
+      }
+    }
     if (formal_actuals.v[j] &&
         !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn)) {
       delete actual_formals;
@@ -642,7 +648,13 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                            arg2->instantiatedFrom==dtAny) {
                   as_good = false;
                 } else {
-                  if (moreSpecific(best, arg2->type, arg->type) && 
+                  if (actual_types->v[k] == arg2->type &&
+                      actual_types->v[k] != arg->type) {
+                    better = true;
+                  } else if (actual_types->v[k] == arg->type &&
+                             actual_types->v[k] != arg2->type) {
+                    as_good = false;
+                  } else if (moreSpecific(best, arg2->type, arg->type) && 
                       arg2->type != arg->type) {
                     better = true;
                   } else if (moreSpecific(best, arg->type, arg2->type) &&

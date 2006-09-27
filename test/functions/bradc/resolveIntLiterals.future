@@ -1,4 +1,0 @@
-deitz
-
-Based on new understanding of the C# spec, we currently
-aren't resolving these functions appropriately.
