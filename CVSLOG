@@ -77324,3 +77324,16 @@ Added files:
 	                              resolveIntLiterals.future 
 	                              resolveIntLiterals.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 14:15:43 -- deitz
+
+Log message:
+	Disabled parameter coercion of 64-bit unsigned integers to smaller
+	width unsigned integers.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/functions/bradc/: intUint3.good 
+	chapel/test/types/coerce/bradc/: tostring.chpl 
+
