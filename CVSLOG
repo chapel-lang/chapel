@@ -77203,3 +77203,17 @@ Added files:
 	                              test_int_uint.future 
 	                              test_int_uint.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 09:38:43 -- bradc
+
+Log message:
+	Added a few more int/uint parameter argument-passing
+	examples based around the ones we were throwing at C#
+	yesterday...
+
+Added files:
+	chapel/test/functions/bradc/: intUint.chpl intUint.future 
+	                              intUint.good intUint2.chpl 
+	                              intUint2.future intUint2.good 
+
