@@ -1,0 +1,7 @@
+deitz
+
+Some ways of passing in strided or anonymous
+arrays work, others don't.  I'm not sure why
+some of my anonymous array slices don't work
+when yours do -- maybe because it's not a
+direct match?
