@@ -77156,3 +77156,22 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: butterfly.c butterfly.chpl 
 
+---------------------------------------------------------------------------
+
+09/26/06 17:03:38 -- waynew
+
+Log message:
+	Fixed a bug with sync records.  Relaxing the constraints on reading a record,
+	we no longer use a sync op to obtain the record in the coercion wrapper. The
+	allows the record to be passed by ref for member setting.
+	
+	Added some sync record tests.  Mostly record versions of the class tests.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/parallel/sync/waynew/: record0.chpl record0.good 
+	                                   record1.chpl record1.good 
+	                                   record2.chpl record2.good 
+	                                   record3.chpl record3.good 
+
