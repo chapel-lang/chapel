@@ -1,9 +1,13 @@
+// This version uses int cast sign comparison to get high bit
+
+// BLC: Change cast to int into mask against high bit
 // BLC: Implement a timer class and insert calls
 
+const POLY = 0x0000000000000007u;  // BLC: should be param, but causes error
+
 config const totMemSize = 1000u;
-param tableElemSize = 8;  // BLC: magic number == sizeof(uint)
-config const logTableSize = lg(totMemSize / tableElemSize);
-const tableSize = 0x1u << logTableSize:uint; // BLC: unfortunate cast
+config const logTableSize = computeLogTableSize(totMemSize);
+const tableSize = 1 << logTableSize;
 
 config const verify = true;
 config const debug = false;
@@ -30,12 +34,14 @@ def main() {
 
 
 // BLC: eliminate Ran array -- replace with per-thread local variable
+
 def randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
   [i in tableDom] Table(i) = i:uint;      // BLC: unfortunate cast
 
   if debug then writeln("Table is: ", Table);
 
+  // BLC: is it legal to make a config const/var local to a function?
   var ranDom = [0..numRandoms-1];
   // BLC: Would prefer this initialization to be:
   // var Ran: [i in ranDom] uint = HPCCstarts((numUpdates/numRandoms) * i);
@@ -51,7 +57,8 @@ def randomAccessUpdate() {
 
   for i in updateDom by numRandoms {
     forall j in ranDom {
-      Ran(j) = bitMunge(Ran(j));
+      // BLC: This appears everywhere.  Might be nice to make it a macro-ish thing?
+      Ran(j) = (Ran(j) << 1) ^ (if Ran(j):int < 0 then POLY else 0u);
       Table((Ran(j) & (tableSize-1)):int) ^= Ran(j); // BLC: unfortunate cast
     }
   }
@@ -64,7 +71,7 @@ def verifyResults() {
 
   var temp = 0x1u;  // BLC: Can we rename this?
   for i in updateDom {
-    temp = bitMunge(temp);
+    temp = (temp << 1) ^ (if (temp:int < 0) then POLY else 0u);
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
   }
 
@@ -101,8 +108,8 @@ def HPCCstarts(in n:int) {
   var temp = 0x1u;  // BLC: is there a better name for this?
   for i in m2Dom {
     m2(i) = temp;
-    temp = bitMunge(temp);
-    temp = bitMunge(temp);
+    temp = (temp << 1) ^ (if temp:int < 0 then POLY else 0u);
+    temp = (temp << 1) ^ (if temp:int < 0 then POLY else 0u);
   }
 
   var high = 62;    // BLC: magic number -- name?
@@ -117,18 +124,25 @@ def HPCCstarts(in n:int) {
     }
     ran = temp;
     if ((n >> i) & 1) {
-      ran = bitMunge(ran);
+      ran = (ran << 1) ^ (if ran:int < 0 then POLY else 0u);
     }
   }
   return ran;
 }
 
 
-// BLC: would like x to be an inout
-// BLC: would also like to see this fn inlined -- how to specify?
-// BLC: better name for this fn?
-def bitMunge(x) {
-  const POLY  = 0x0000000000000007u;  // BLC: should be param, but causes error
-  param hibit = 0x8000000000000000u; // BLC: would like to write this: 0x1u << 63, but doesn't work
-  return (x << 1) ^ (if (x & hibit) then POLY else 0u);  // BLC: 0u is unfortunate
+// BLC: could replace this all by some sort of bpop + bit search 
+// function?
+def computeLogTableSize(memsize) {
+  param tableElemSize = 8;  // BLC: magic number == sizeof(uint)
+
+  var elemsInTable = memsize / tableElemSize;
+  var logTableSize = 0u;
+
+  while (elemsInTable > 1) {
+    elemsInTable /= 2;
+    logTableSize += 1;
+  }
+
+  return logTableSize;
 }
