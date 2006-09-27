@@ -77217,3 +77217,19 @@ Added files:
 	                              intUint.good intUint2.chpl 
 	                              intUint2.future intUint2.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 10:13:58 -- deitz
+
+Log message:
+	Added remaining Statements subsections.
+
+Modified files:
+	chapel/spec/Statements/: Declaration_Statements.tex 
+	                         Function_Declaration_Statements.tex 
+	                         Module_Declaration_Statements.tex 
+	                         The_Return_Statement.tex 
+	                         The_Yield_Statement.tex 
+	                         Type_Declaration_Statements.tex 
+	                         Variable_Declaration_Statements.tex 
+
