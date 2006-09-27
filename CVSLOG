@@ -77265,3 +77265,37 @@ Removed files:
 	chapel/test/functions/bradc/: intUint.future intUint2.future 
 	chapel/test/functions/deitz/: test_int_uint.future 
 
+---------------------------------------------------------------------------
+
+09/27/06 12:46:41 -- marybeth
+
+Log message:
+	This commit outlines the Language Overview section, creating stub
+	files for the sections in the Language_Overview directory.
+	
+	Some text was added to the section files.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Language_Overview/: Language_Overview.tex 
+Added files:
+	chapel/spec/Language_Overview/: Arrays_and_Distributions.tex 
+	                                Basic_Language_Features.tex 
+	                                Data_Distributions.tex 
+	                                Data_Parallel_Constructs.tex 
+	                                Data_Types_and_Variables.tex 
+	                                Exploiting_Data_Locality.tex 
+	                                Functions_and_Methods.tex 
+	                                Generic_Programming.tex 
+	                                Global_View_Programming_Model.tex 
+	                                Locality_Aware_Programming.tex 
+	                                Motivating_Principles.tex 
+	                                Object-Oriented_Programming.tex 
+	                                Parallel_Features.tex 
+	                                Programs_and_Modules.tex 
+	                                Sequences_and_Iterators.tex 
+	                                Statements_and_Expressions.tex 
+	                                Structured_Data_Types.tex 
+	                                Synchronizing_and_Serializing_Tasks.tex 
+	                                Task_Parallel_Constructs.tex 
+
