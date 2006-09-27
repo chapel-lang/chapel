@@ -77434,3 +77434,26 @@ Added files:
 	                                 assignUintNegative.future 
 	                                 assignUintNegative.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:32:26 -- deitz
+
+Log message:
+	Made no coercion favor any coercion during function resolution.
+	Removed .future of a test showing that an int literal favors resolving
+	to a function with an int argument over an int(8) argument.
+	
+	Made resolution of the assignment function require an exact match for
+	the first argument.  Overloading assignment is not exposed to the
+	user.
+	
+	Fixed test outputs, one changed and one I keep trying to get right but
+	don't.  Now it is right.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/functions/bradc/: intUint3.good 
+	chapel/test/trivial/deitz/: test_int8_error.good 
+Removed files:
+	chapel/test/functions/bradc/: resolveIntLiterals.future 
+
