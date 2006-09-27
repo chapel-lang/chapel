@@ -77457,3 +77457,20 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/: resolveIntLiterals.future 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:42:50 -- bradc
+
+Log message:
+	The lg() function I implemented the other day took
+	an int as a parameter.  The current one is generic.
+	We may want to specialize for ints and uints once
+	we have a "find highest true bit" function.  This
+	version relies on /= 2 to be optimized to a shift
+	by the C compiler...
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+Added files:
+	chapel/test/modules/standard/math/: lg.chpl lg.good 
+
