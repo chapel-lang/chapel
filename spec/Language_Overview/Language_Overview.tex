@@ -1,1 +1,24 @@
-This is a stub.  This portion of the document does not exist.
+The current dominant parallel programming paradigm is characterized by a localized
+view of the computation combined with explicit control
+over message passing, as exemplified by a combination
+of Fortran or C/C++ with MPI. Such a fragmented memory
+model provides the programmer with full control over data
+distribution and communication, at the expense of productivity,
+conciseness, and clarity.
+
+Chapel is a new parallel programming language being developed by Cray Inc. 
+Chapel strives to improve the programmability of parallel computer systems
+by providing a higher level of expression 
+than current parallel languages do and by improving the separation between 
+algorithmic expression and data structure implementation details. 
+
+Chapel supports a global-view parallel programming model at a high level by 
+supporting abstractions for data parallelism, task parallelism, and nested parallelism. 
+It supports optimization for the locality of data and computation in the program 
+via abstractions for data distribution and data-driven placement of subcomputations. 
+It supports code reuse and generality via object-oriented concepts and generic 
+programming features. While Chapel borrows concepts from many preceding languages, 
+its parallel concepts are most closely based on ideas from High-Performance Fortran 
+(HPF), ZPL, and the Cray MTA's extensions to Fortran/C. 
+
+
