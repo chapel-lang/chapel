@@ -77175,3 +77175,16 @@ Added files:
 	                                   record2.chpl record2.good 
 	                                   record3.chpl record3.good 
 
+---------------------------------------------------------------------------
+
+09/26/06 17:38:03 -- bradc
+
+Log message:
+	Forgot that this directory is now being tested -- marked
+	butterfly as a future (though the future is really writing
+	it -- we don't seem to have a butterfly.notest option).
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly.future 
+	                                     butterfly.good 
+
