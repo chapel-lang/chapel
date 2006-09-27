@@ -760,7 +760,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
             (mt = dynamic_cast<DefExpr*>(this->formals->get(1))) &&
             (mt->sym->type == dtMethodToken) &&
             (_this == this->getFormal(2))) {
-          call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
+          // call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
+          call->insertAtTail( new CallExpr( "value", gMethodToken, wrapper_formal));
         } else {
           if (ts->hasPragma( "sync var"))
             call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
