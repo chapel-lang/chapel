@@ -77489,3 +77489,19 @@ Added files:
 	                                    ra-bradc-condexpr.good 
 	                                    ra-bradc-condexpr.future 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:55:19 -- bradc
+
+Log message:
+	Took another pass over my RA implementation, improving
+	the comparison against signed stuff and some other
+	little things.  Was more satisfying than working on
+	FFT in the face of troubles passing arrays... :)
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
+	                                    ra-bradc-old1.good 
+
