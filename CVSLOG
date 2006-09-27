@@ -77233,3 +77233,35 @@ Modified files:
 	                         Type_Declaration_Statements.tex 
 	                         Variable_Declaration_Statements.tex 
 
+---------------------------------------------------------------------------
+
+09/27/06 11:31:15 -- deitz
+
+Log message:
+	Made conversion to a signed integer argument better than an unsigned
+	integer when resolving overloaded functions.
+	
+	Removed three futures and broke up one future test with two
+	ambiguities into two tests.
+	
+	Fixed a bug in implicit constant coercion in which we were off by one
+	thus allowing something like
+	
+	  var u: uint(8) = 256;
+	
+	This is now an error.  It used to assign 0.  Fixed one test case by
+	introducing an explicit cast.
+	
+	Enabled and fixed implicit constant coercion of uint parameters to
+	uints that can hold them.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/functions/bradc/: intUint2.chpl intUint2.good 
+	chapel/test/trivial/waynew/: uint8-64.chpl 
+Added files:
+	chapel/test/functions/bradc/: intUint3.chpl intUint3.good 
+Removed files:
+	chapel/test/functions/bradc/: intUint.future intUint2.future 
+	chapel/test/functions/deitz/: test_int_uint.future 
+
