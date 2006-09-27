@@ -77419,3 +77419,18 @@ Added files:
 	                                    ra-bradc-badshift.future 
 	                                    ra-bradc-badshift.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:25:08 -- bradc
+
+Log message:
+	An error message that could (eventually) use improving.
+	When assigning a negative literal to a uint, the error
+	calls the value a float even though it doesn't appear
+	to be one to the user.
+
+Added files:
+	chapel/test/types/scalar/bradc/: assignUintNegative.chpl 
+	                                 assignUintNegative.future 
+	                                 assignUintNegative.good 
+
