@@ -77337,3 +77337,18 @@ Modified files:
 	chapel/test/functions/bradc/: intUint3.good 
 	chapel/test/types/coerce/bradc/: tostring.chpl 
 
+---------------------------------------------------------------------------
+
+09/27/06 15:14:30 -- bradc
+
+Log message:
+	Checking in a strided array argument test which shows
+	that certain variations don't seem to be working.  It
+	would be nice to have these cases working for the FFT
+	benchmark.
+
+Added files:
+	chapel/test/arrays/bradc/: stridedArrayArg.chpl 
+	                           stridedArrayArg.future 
+	                           stridedArrayArg.good 
+
