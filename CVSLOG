@@ -77474,3 +77474,18 @@ Modified files:
 Added files:
 	chapel/test/modules/standard/math/: lg.chpl lg.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 16:49:18 -- bradc
+
+Log message:
+	A future test showing that our flexibility in
+	interpreting the type of a literal does not
+	extend to conditional expressions -- instead
+	a type mismatch is flagged.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-condexpr.chpl 
+	                                    ra-bradc-condexpr.good 
+	                                    ra-bradc-condexpr.future 
+
