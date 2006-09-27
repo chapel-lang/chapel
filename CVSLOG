@@ -77188,3 +77188,18 @@ Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: butterfly.future 
 	                                     butterfly.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 09:01:27 -- deitz
+
+Log message:
+	Added a test to show a change that function resolution needs to make
+	to favor int over uint when coercions have taken place.  This shows
+	another complexity of uint.  C# rules of function resolution favor int
+	over uint and we plan to do the same.
+
+Added files:
+	chapel/test/functions/deitz/: test_int_uint.chpl 
+	                              test_int_uint.future 
+	                              test_int_uint.good 
+
