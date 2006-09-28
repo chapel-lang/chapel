@@ -77559,3 +77559,19 @@ Removed files:
 	chapel/spec/Parallelism_and_Synchronization/: 
 	                                              Parallel_Expressions.tex 
 
+---------------------------------------------------------------------------
+
+09/28/06 15:01:58 -- bradc
+
+Log message:
+	Tried to update these tests based on my new understanding
+	that 0x80 is not -8 for an 8-bit integer, but am not at
+	all convinced that I got these correct.  Am relying on
+	Steve to verify these after he gets his new scheme
+	implemented.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.good 
+	chapel/test/types/scalar/bradc/: uintinit.chpl uintinit.future 
+	                                 uintinit.good 
+
