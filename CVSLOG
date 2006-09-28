@@ -77612,3 +77612,17 @@ Modified files:
 	                                    ra-bradc-condexpr.future 
 	chapel/test/types/scalar/bradc/: assignUintNegative.future 
 
+---------------------------------------------------------------------------
+
+09/28/06 16:45:19 -- bradc
+
+Log message:
+	Hacked a version of dfft to trace through the control flow
+	in the C FFT benchmark and understand when all the specialized
+	functions are called.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.c 
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c 
+
