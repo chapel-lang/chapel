@@ -1,4 +1,4 @@
-error messages
+error messages (long-term)
 
 We currently print a message about converting a float to a uint
 when the number does not appear to the user to be a float.

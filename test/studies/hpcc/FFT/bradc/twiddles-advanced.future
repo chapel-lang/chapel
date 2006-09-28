@@ -1,4 +1,4 @@
-advanced argument querying
+advanced argument querying (HPCC RA, very low unless simple)
 
 This is a very advanced version of the twiddles function in
 which we use an anonymous domain with query bounds to determine

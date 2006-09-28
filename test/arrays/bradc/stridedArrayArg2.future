@@ -1,4 +1,4 @@
-deitz
+deitz (HPCC FFT high, if not overly hard)
 
 Once stridedArrayArg1.future is fixed, the two commented out calls
 here should be uncommented to get this test in its eventual form.

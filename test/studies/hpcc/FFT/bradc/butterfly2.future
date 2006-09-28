@@ -1,4 +1,4 @@
-deitz
+deitz (HPCC FFT high, if not overly hard)
 
 This test isn't working for reasons captured by 
 test/arrays/bradc/stridedArrayArg[,2].chpl

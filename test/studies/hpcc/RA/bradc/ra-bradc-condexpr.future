@@ -1,4 +1,4 @@
-conditional expressions with parameters
+conditional expressions with parameters (HPCC-RA medium)
 
 This test shows that if one branch of a conditional
 expression contains a parameter, it does not unify

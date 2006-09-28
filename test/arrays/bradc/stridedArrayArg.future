@@ -1,4 +1,4 @@
-deitz
+deitz (HPCC FFT high, if not overly hard)
 
 Some ways of passing in strided or anonymous
 arrays work, others don't.  I'm not sure why

@@ -1,4 +1,4 @@
-shift errors
+shift errors (HPCC-RA medium)
 
 A bunch of ways of creating the value 0x80000000000000000
 don't seem to work.  I believe these all should, though I
