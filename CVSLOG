@@ -77575,3 +77575,22 @@ Modified files:
 	chapel/test/types/scalar/bradc/: uintinit.chpl uintinit.future 
 	                                 uintinit.good 
 
+---------------------------------------------------------------------------
+
+09/28/06 15:45:44 -- deitz
+
+Log message:
+	Made user-specified return type act as a cast of the actual returned
+	data.  We actually want to make this a "safe cast" meaning it should
+	check to make sure this is a legal coercion.
+	
+	Fixed html output of literals and naming of types to access the
+	immediate values rather than print out an opaque/uninformative name,
+	e.g., _literal_int.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp view.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/test/functions/bradc/: typefn2.good 
+
