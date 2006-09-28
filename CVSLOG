@@ -77594,3 +77594,21 @@ Modified files:
 	chapel/modules/standard/: _chpl_complex.chpl 
 	chapel/test/functions/bradc/: typefn2.good 
 
+---------------------------------------------------------------------------
+
+09/28/06 16:00:49 -- bradc
+
+Log message:
+	Annotated futures related to HPCC benchmarks.
+
+Modified files:
+	chapel/test/arrays/bradc/: stridedArrayArg.future 
+	                           stridedArrayArg2.future 
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly2.future 
+	                                     twiddles-advanced.future 
+	                                     twiddles-advanced2.future 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badparam.future 
+	                                    ra-bradc-badshift.future 
+	                                    ra-bradc-condexpr.future 
+	chapel/test/types/scalar/bradc/: assignUintNegative.future 
+
