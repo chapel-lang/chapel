@@ -1,0 +1,12 @@
+Array assignments are done in parallel. Each array element is assigned
+in parallel. If there are duplicate values in the sequence, then the
+order of the element-wise assignments is arbitrary.
+
+\begin{example}
+\begin{chapel}
+X(S) = Y;
+\end{chapel}
+X is an array and S a sequence of index values. The execution of all X(S$_i$)=Y
+occurs concurrently.
+\end{example}
+

@@ -1,1 +1,14 @@
-This is a stub.  This portion of the document does not exist.
+The \chpl{ordered} keyword can be used as an unary operator to
+suppress parallel execution of a sequence expression that can involve
+side-effects to memory. The \chpl{ordered} keyword does not inhibit
+parallelism within the sub-expression.
+
+\begin{example}
+\begin{chapel}
+ordered [i in S] f(i) 
+\end{chapel}
+f is a function and S is a sequence. Each instance of
+f(S$_i$) is executed one at a time and in sequence order. The
+\chpl{ordered} constraint does not propagate to inhibit parallelism
+within f.
+\end{example}

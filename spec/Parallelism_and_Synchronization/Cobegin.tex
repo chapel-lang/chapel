@@ -1,1 +1,17 @@
-This is a stub.  This portion of the document does not exist.
+The second form of creating parallelism is with the \chpl{cobegin}
+statement. The \chpl{cobegin} statement syntax is
+\begin{chapel}
+cobegin <compound statement> 
+\end{chapel}
+Each statement in the \chpl{<compound\ statement>} is executed 
+concurrently with every other statement and is considered a separate 
+computation.
+
+Control continues after all of these statements within the compound
+statement have been evaluated. As with \chpl{forall}, control
+transfers are not permitted either into or out of the body of a
+\chpl{cobegin} statement. As with \chpl{forall}, \chpl{yield}
+statements are allowed.
+
+Variables declared in the \chpl{cobegin} compound statment are {\em single
+assignment variables} \ref{Single Assignment Variables}. 

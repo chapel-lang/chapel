@@ -1,1 +1,11 @@
-This is a stub.  This portion of the document does not exist.
+Synchronized variables support a number of special methods. These
+include the following on synchronized variable s
+\begin{chapel}
+purge(s)      // force s to be empty
+writeFE(s, v) // wait for full, assign s=v, and leave empty
+writeXF(s, v) // no wait, assign s=v, and leave full
+writeXE(s, v) // no wait, assign s=v, and leave empty
+readFF(s)     // wait full, leave full, and return s's value
+readXF(s)     // no wait, leave full, and return s's value
+readXX(s)     // no wait, leave F/E unchanged, and return s's value
+\end{chapel}

@@ -1,1 +1,17 @@
-This is a stub.  This portion of the document does not exist.
+The keyword \chpl{ordered} has no effect if \chpl{<expr>} is a
+sequence value but affects order of evaluation when \chpl{<expr>} is
+an iterator.
+
+% \footnote{It might be tempting to generate a warning when the
+% keyword is ignored but those warnings may be spurious in a generic
+% context where we are reusing an abstract function definition.}
+
+Without the \chpl{ordered} keyword, the evaluation of \chpl{<expr>}
+can proceed concurrently with evaluation of the statements as
+well. Alternately, \chpl{<expr>} could be fully evaluated before any
+\chpl{<block>} is evaluated.
+
+When the \chpl{ordered} keyword is present, the only concurrency
+between statements is the concurrency that is explicitly specified in
+the iterator.  This allows an iterator to not only define a sequence
+of values, but to impose a partial order on that sequence.

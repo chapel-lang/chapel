@@ -1,1 +1,9 @@
-This is a stub.  This portion of the document does not exist.
+A \chpl{single} variable can have \chpl{record} type but in this case
+all fields must be assigned at the same time. Assignments to
+individual fields are not permitted.
+
+A \chpl{sync} variable can hold a value of \chpl{record} type but in
+this case the entire record must be read and written. Reads and writes
+of individual non-\chpl{const} fields are not permitted.
+
+

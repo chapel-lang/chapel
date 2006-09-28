@@ -1,1 +1,17 @@
-This is a stub.  This portion of the document does not exist.
+The first form of creating parallelism is with the \chpl{forall}
+statement. The \chpl{forall} statement is a variant of \chpl{for} that 
+enables concurrent execution. The \chpl{forall} statement syntax is
+\begin{chapel}
+[ordered] forall <var> in <expr> <block>
+\end{chapel}
+Here \chpl{<var>} is either a symbol or a tuple of symbols and
+\chpl{<expr>} evaluates to a sequence of suitable type. This
+statement evaluates \chpl{<block>} once for each element in the
+sequence. The evaluation of each of these statements can be executed
+concurrently and is considered a separate computation. Control
+continues with the statement following the \chpl{forall} only after
+all statement instances have been completely evaluated.
+
+Control transfers such as \chpl{goto}, \chpl{break}, \chpl{continue},
+and \chpl{return} are not permitted either into or out of the body of
+a \chpl{forall} statement.  However, \chpl{yield} statements are permitted.

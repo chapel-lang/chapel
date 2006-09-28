@@ -1,1 +1,15 @@
-This is a stub.  This portion of the document does not exist.
+The third form of creating parallelism is with the \chpl{begin}
+statement. The \chpl{begin} statement syntax is
+\begin{chapel}
+begin <statement>;
+\end{chapel}
+A second computation is created to execute \chpl{<statement>}.
+This second computation is executed concurrently with the balance of
+the initiating computation which continues with the statement
+following the \chpl{begin}. Using \chpl{begin} is an unstructured way to 
+create a new computation executed only for its side-effects.
+
+Control transfers in to or out of \chpl{<statement>} are prohibited. Unlike
+\chpl{forall} and \chpl{cobegin}, \chpl{yield} statement are not permitted.
+
+% including \chpl{return} 

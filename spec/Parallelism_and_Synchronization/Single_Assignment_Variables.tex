@@ -1,1 +1,71 @@
-This is a stub.  This portion of the document does not exist.
+Single assignment variable can only be assigned once during their
+dynamic lifetime.  Any reference to the single assignment variable
+before it is defined causes the computation's execution to be
+suspended until the variable is assigned. Otherwise, the reference
+proceeds as with normal variables.  After a single assigment variable is
+assigned, all computations with pending references are resumed in an
+unspecified order. The syntax of a single assignment variable is
+\begin{chapel}
+[[var]] <symbol>: single <type> [= <expr>];
+\end{chapel}
+The keyword \chpl{single} is used as a type modifier. 
+
+\begin{example}
+\begin{chapel}
+class Tree {
+  var is_leaf : bool;
+  var left    : Tree;
+  var right   : Tree;
+  var value   : int;
+}
+
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var x:single int;
+  begin x = left.sum();
+  var y = right.sum();
+  return x+y;
+}
+\end{chapel}
+While a \chpl{cobegin} might be a more suitable formulation, this
+fragment creates an asynchronous computation to compute the sum of the
+left sub-tree while the main computation continues with the right
+sub-tree. The final reference to variable x will be delayed until the
+assignment to x completes and that value will be used as a summand.
+\end{example}
+
+When a \chpl{single} variable has an initializer, the evaluation of
+that initializer is implicitly performed as an asynchronous
+computation. 
+\begin{example}
+\begin{chapel}
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var x: single int = left.sum;
+  var y = right.sum();
+  return x+y;
+}
+\end{chapel}
+This is equivalent to the above where the declaration and assignment are
+separated.
+\end{example}
+
+Any variable declaration in a \chpl{cobegin} is implicitly treated as
+a \chpl{single} variable for references in other statements of the
+\chpl{cobegin}.  The above example might then be written as:
+\begin{example}
+\begin{chapel}
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var z;
+  cobegin {
+    var x = left.sum();
+    var y = right.sum();
+    z = x+y;
+  }
+  return z;
+}
+\end{chapel}
+The computation with assignment to z waits for the other computations 
+to assign to x and y before it reference x and y in order to assign to z.
+\end{example}

@@ -1,1 +1,10 @@
-This is a stub.  This portion of the document does not exist.
+The \chpl{serial} statement is used to control the parallelism.
+The syntax of \chpl{serial} is
+\begin{chapel}
+serial <expr> <block> ;
+\end{chapel}
+where \chpl{<expr>} evaluates to a \chpl{bool}.  Regardless of that
+value, \chpl{<block>} is evaluated. If the value evaluates to
+\chpl{true} however, any dynamically encountered \chpl{forall} or
+\chpl{cobegin} statement is executed sequentially. 
+

@@ -1,1 +1,34 @@
-This is a stub.  This portion of the document does not exist.
+\paragraph{Memory Consistency}
+The Chapel implementation permits holding the values of variables in
+alternate locations which we will refer to as {\em caches}.  The
+implementation may {\em prefetch} by copying a value from a variable
+to a cache before an access to that variable is executed. It may store
+a value into a cache after it is assigned but not write it to the
+variable in which case we say the cache is {\em dirty}.
+ 
+There are restrictions on caching to ensure effective communication
+between concurrent computations. These restrictions are defined in
+terms of {\em input} and {\em output synchronization points}.
+
+An input synchronization point occurs when a computation performs an
+operation, such as reading a synchronized variable, that may cause
+that computation to be delayed. This also includes waiting for
+sub-computations associated with {\tt forall} and \chpl{cobegin}
+statements. Any cached value of a variable that might have been
+modified by concurrent computation must be treated as invalid at the
+input synchronization point.  This is called {\em invalidating} the
+cache.
+
+An output synchronization point occurs when a computation performs an
+operation that may enable another computation to begin or resume
+execution. This includes starting a \chpl{forall} or \chpl{cobegin} or
+accessing a synchronized variable.  Any dirty value of a variable that
+might be accessed by another computation must be {\em flushed} from
+cache back to the location of the variable.
+
+Chapel does not guarantee communication of values between concurrent
+computations unless there is appropriate synchronization to coordinate
+the producer and consumer.
+
+Because of their role in coordinating threads, synchronized variables
+can not generally be cached.
