@@ -570,6 +570,8 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
+      if (fn->retExprType)
+        ret_expr = new CallExpr(PRIMITIVE_CAST, fn->retExprType->copy(), ret_expr);
       ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
     if (ret->next != label->defPoint->parentStmt) {

@@ -1,14 +1,14 @@
 pragma "inline" def _init(x: complex(?w)) return 0.0i:complex(w);
 
 // complex(64) bound functions
-def _complex64.real: float(32) return __primitive( "complex_get_real", this);
-def _complex64.imag: float(32) return __primitive( "complex_get_imag", this);
+def _complex64.real return __primitive( "complex_get_real", this);
+def _complex64.imag return __primitive( "complex_get_imag", this);
 def _complex64.=real (f:float(32)) { __primitive("complex_set_real", this, f); }
 def _complex64.=imag (f:float(32)) { __primitive("complex_set_imag", this, f); }
 
 // complex(128) bound functions
-def complex.real: float return __primitive( "complex_get_real", this);
-def complex.imag: float return __primitive( "complex_get_imag", this);
+def complex.real return __primitive( "complex_get_real", this);
+def complex.imag return __primitive( "complex_get_imag", this);
 def complex.=real (f:float) { __primitive( "complex_set_real", this, f); }
 def complex.=imag (f:float) { __primitive( "complex_set_imag", this, f); }
 

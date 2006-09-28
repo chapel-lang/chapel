@@ -1224,7 +1224,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
           if (first)
             clone->name = astr(clone->name, ",");
           clone->cname = stringcat(clone->cname, symbol->cname);
-          clone->name = astr(clone->name, symbol->cname);
+          VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
+          if (var && var->immediate) {
+            char imm[128];
+            sprint_imm(imm, *var->immediate);
+            clone->name = astr(clone->name, imm);
+          } else
+            clone->name = astr(clone->name, symbol->cname);
           first = true;
         }
       }

@@ -375,10 +375,12 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         html_print_symbol( html_file, pass, e->sym, true);
       }
     } else if (VarSymbol* e = get_constant(expr)) {
-      if (e->immediate->const_kind == CONST_KIND_STRING) {
-        fprintf(html_file, "<i><FONT COLOR=\"blue\">'%s'</FONT></i>", e->immediate->v_string);
+      if (e->immediate) {
+        char imm[128];
+        sprint_imm(imm, *e->immediate);
+        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", imm);
       } else {
-        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->cname);
+        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
       }
     } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
       html_print_symbol( html_file, pass, e->var, false);
