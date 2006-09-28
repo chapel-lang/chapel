@@ -77626,3 +77626,13 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft.c 
 
+---------------------------------------------------------------------------
+
+09/28/06 16:50:56 -- bradc
+
+Log message:
+	A few more edits before I head out.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c 
+
