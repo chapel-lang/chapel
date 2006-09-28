@@ -77505,3 +77505,21 @@ Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
 	                                    ra-bradc-old1.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 17:08:25 -- marybeth
+
+Log message:
+	Checking in two new versions of RA.  The first one is a Chapel version
+	that implements the outer loop parallelism in the MTA version (ra2.chpl).
+	The second one has an inner stride of VectorLength which could vectorize
+	(ra3.chpl).
+	
+	I'm still looking into ra3.chpl to ensure that it is correct.  I thought
+	that I would check it in as it is now so that others could start to look at
+	it too.
+
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
+	                                       ra3.chpl ra3.good 
+
