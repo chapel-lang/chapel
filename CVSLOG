@@ -77523,3 +77523,39 @@ Added files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
 	                                       ra3.chpl ra3.good 
 
+---------------------------------------------------------------------------
+
+09/27/06 17:57:08 -- waynew
+
+Log message:
+	Checkpoint.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Atomic_Transactions.tex 
+	                                              Begin.tex 
+	                                              Cobegin.tex 
+	                                              Forall.tex 
+	                                              Functions_on_Synchronization_Variables.tex 
+	                                              Implicit_Synchronization_on_Variables.tex 
+	                                              Memory_Consistency.tex 
+	                                              Ordered_Expressions.tex 
+	                                              Ordered_Forall.tex 
+	                                              Parallel_Iterators.tex 
+	                                              Parallel_Statements.tex 
+	                                              Parallelism_and_Synchronization.tex 
+	                                              Serial.tex 
+	                                              Single_Assignment_Variables.tex 
+	                                              Synchronization_Variables_of_Record_Type.tex 
+Added files:
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Parallel_Array_Assignment.tex 
+	                                              Parallel_Execution.tex 
+	                                              Scan_and_Reduce.tex 
+	                                              Sequence.tex 
+	                                              Sync_Variables.tex 
+Removed files:
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Parallel_Expressions.tex 
+
