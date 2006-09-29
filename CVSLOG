@@ -77647,3 +77647,13 @@ Added files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: .cvsignore stream.chpl 
 	                                          stream.future 
 
+---------------------------------------------------------------------------
+
+09/28/06 17:46:45 -- waynew
+
+Log message:
+	It's a little bit Scottish.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.good 
+
