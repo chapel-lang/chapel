@@ -77750,3 +77750,48 @@ Log message:
 Added files:
 	chapel/test/domains/waynew/: init.chpl init.future init.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 11:48:32 -- deitz
+
+Log message:
+	Switched default int size to int(32) and default uint size to
+	uint(32).
+	
+	Expect the following hpcc study regressions
+	
+	[Error matching program output for studies/hpcc/FFT/bradc/bitreverse]
+	[Error matching program output for studies/hpcc/FFT/bradc/bitreverse2]
+	[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-old1]
+	[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc]
+	[Error matching compiler output for studies/hpcc/RA/marybeth/ra]
+	[Error matching compiler output for studies/hpcc/RA/marybeth/ra2]
+	[Error matching compiler output for studies/hpcc/RA/marybeth/ra3]
+	
+	which should be discussed.
+	
+	Updated many tests and/or test outputs.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         parallel.cpp 
+	chapel/modules/standard/: _chpl_file.chpl _chpl_indefinite.chpl 
+	                          _chpl_math.chpl 
+	chapel/runtime/include/: chplio.h config.h 
+	chapel/runtime/src/: config.c 
+	chapel/test/memory/shannon/: printMemTable2.chpl 
+	chapel/test/reductions/waynew/: breductions.chpl 
+	chapel/test/trivial/bradc/: opAssociativity.chpl 
+	chapel/test/trivial/deitz/: test_int32.chpl test_int32b.chpl 
+	                            test_int_uint.chpl 
+	chapel/test/trivial/waynew/: int2uint.good int8-64b.chpl 
+	                             maxtest.chpl mintest.chpl 
+	                             uint2int.chpl uint8-64.chpl 
+	                             uintliteral.chpl 
+	chapel/test/types/coerce/bradc/: tostring.good 
+	chapel/test/types/scalar/bradc/: uint.good 
+
