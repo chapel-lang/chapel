@@ -77657,3 +77657,19 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.good 
 
+---------------------------------------------------------------------------
+
+09/28/06 17:56:17 -- waynew
+
+Log message:
+	- width and size functions on variables of primitive types that return
+	  number of bits and bytes, respectively. Currently seems broken on types
+	  though.  Question of what to return for bool. Implementation's answer is
+	  not intuitive.
+	
+	- Minor edits to stream.chpl.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
+
