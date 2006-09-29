@@ -12,19 +12,22 @@ conditional-statement:
 \end{syntax}
 
 A conditional statement evaluates an expression of bool type. If the
-expression evaluates to true, the first statement or block level statement of
-the conditional statement is executed.  If the expression evaluates to
-false and the optional else-clause exists, the statement following the
+expression evaluates to true, the first statement in the conditional
+statement is executed.  If the expression evaluates to false and the
+optional else-clause exists, the statement following the
 \chpl{else} keyword is executed.
 
-If the boolean expression contains only parameters that may be evaluated at
-compile time, the compiler will replace the entire conditional statement with
-the appropriate statement depending on the value of the boolean 
-expression.
+If the expression is a parameter, the conditional statement is folded
+by the compiler. If the expression evaluates to true, the first
+statement replaces the conditional statement. If the expression
+evaluates to false, the second statement, if it exists, replaces the
+conditional statement; if the second statement does not exist, the
+conditional statement is removed.
 
 \index{conditional statement!dangling else}
-If the conditional statement contains nested conditional statements, then 
-the else-clause is bound to the nearest preceding conditional statement
+If the statement that immediately follows the optional \chpl{then}
+keyword is a conditional statement and it is not in a block, the
+else-clause is bound to the nearest preceding conditional statement
 without an else-clause.
 
 Each statement embedded in the {\em conditional-statement} has its own
