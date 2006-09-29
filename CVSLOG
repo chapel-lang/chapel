@@ -77636,3 +77636,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft.c 
 
+---------------------------------------------------------------------------
+
+09/28/06 17:28:56 -- waynew
+
+Log message:
+	Initial port of HPCC's stream.c benchmark.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: .cvsignore stream.chpl 
+	                                          stream.future 
+
