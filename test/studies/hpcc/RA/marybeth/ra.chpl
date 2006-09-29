@@ -95,7 +95,7 @@ def RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
         ran(j) = ((ran(j) << 1) ^ POLY);
       else
         ran(j) = ((ran(j) << 1) ^ 0);
-      Table((ran(j) & (TableSize-1)):int(64)) ^= ran(j);
+      Table((ran(j) & (TableSize-1)):int) ^= ran(j);
     }
     i += 1;
   } while (i < NUPDATE/128);
@@ -146,7 +146,7 @@ def main() {
       temp = ((temp << 1) ^ POLY);
     else
       temp = ((temp << 1) ^ 0);
-    Table((temp & (TableSize-1)):int(64)) ^= temp;
+    Table((temp & (TableSize-1)):int) ^= temp;
     i += 1;
   } while (i < NUPDATE);
 

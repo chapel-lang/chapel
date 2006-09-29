@@ -14,7 +14,7 @@
  *
  *  last revised 9/18/2008 by marybeth
  */  
-const POLY:uint(64) = 7u;
+const POLY:uint(64) = 7;
 
 config const verify = true;
 
@@ -67,7 +67,7 @@ def RandomAccessUpdate() {
     [k in VectorDomain] ran(k) = RandomStart(BigStep*j+k);
     for i in BigStepDomain by VectorLength{
       for k in VectorDomain{
-        ran(k) = (ran(k) << 1:uint) ^ (if (ran(k):int(64) < 0) then POLY else 0:uint);
+        ran(k) = (ran(k) << 1:uint(64)) ^ (if (ran(k):int(64) < 0) then POLY else 0:uint(64));
         Table((ran(k) & (TableSize-1)):int) ^= ran(k);
       }
     }
@@ -77,19 +77,19 @@ def RandomAccessUpdate() {
 def RandomStart(step0:int):uint(64) {
 
   var i:int;
-  var ran:uint(64) = 2:uint;
+  var ran:uint(64) = 2:uint(64);
 
   if (step0 ==0) then 
-    return 0x1:uint;
+    return 0x1:uint(64);
   else
     i = lg(step0);
   while (i > 0) do {
-    var temp:uint(64) = 0:uint;
+    var temp:uint(64) = 0:uint(64);
     [j in RandStepsDomain] if (( ran >> (j:uint(64))) & 1) then temp ^= RandomSteps(j);
     ran = temp;
     i -= 1;
     if (( step0 >> i) & 1) then
-      ran = (ran << 1) ^ (if (ran:int(64) < 0) then POLY else 0:uint);
+      ran = (ran << 1) ^ (if (ran:int(64) < 0) then POLY else 0:uint(64));
   }
   return ran;
 }
@@ -100,8 +100,8 @@ def InitRandomSteps() {
 
   for i in RandStepsDomain {
     RandomSteps(i) = temp;
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint(64));
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint(64));
   }
 }
 
@@ -110,7 +110,7 @@ def VerifyResults() {
 
   var temp: uint(64) = 1:uint;  
   for i in UpdateDomain {
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint(64));
     Table((temp & (TableSize-1)):int) ^= temp;  
   }
 
