@@ -1,6 +1,0 @@
-shift errors (HPCC-RA medium)
-
-After Steve's updates to remove suffixes and reinterpret
-literals, all of these seem to be working except for
-the two param values.
-
