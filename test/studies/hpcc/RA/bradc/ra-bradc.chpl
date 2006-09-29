@@ -1,7 +1,7 @@
 // BLC: Implement a timer class and insert calls
 
 config const totMemSize = 1000u;
-param tableElemSize = 8;  // BLC: magic number == sizeof(uint)
+param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
 config const logTableSize = lg(totMemSize / tableElemSize);
 const tableSize = 0x1u << logTableSize:uint; // BLC: unfortunate cast
 
@@ -10,7 +10,7 @@ config const debug = false;
 
 // BLC: note the prevalence of the n-1 upper bound motif
 const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
-var Table: [tableDom] uint;
+var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
 const updateDom = [0..numUpdates:int-1];  // BLC: unfortunate cast
@@ -32,14 +32,14 @@ def main() {
 // BLC: eliminate Ran array -- replace with per-thread local variable
 def randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
-  [i in tableDom] Table(i) = i:uint;      // BLC: unfortunate cast
+  [i in tableDom] Table(i) = i:uint(64);  // BLC: unfortunate cast
 
   if debug then writeln("Table is: ", Table);
 
   var ranDom = [0..numRandoms-1];
   // BLC: Would prefer this initialization to be:
-  // var Ran: [i in ranDom] uint = HPCCstarts((numUpdates/numRandoms) * i);
-  var Ran: [ranDom] uint;
+  // var Ran: [i in ranDom] uint(64) = HPCCstarts((numUpdates/numRandoms) * i);
+  var Ran: [ranDom] uint(64);
   // BLC: writing the following line results in the promotion-to-float problem
   // [i in ranDom] Ran(i) = HPCCstarts((numUpdates/numRandoms) * i);
   // BLC: resulting in the following unfortunate cast:
@@ -62,7 +62,7 @@ def randomAccessUpdate() {
 
 def verifyResults() {
 
-  var temp = 0x1u;  // BLC: Can we rename this?
+  var temp= 0x1:uint(64);  // BLC: Can we rename this?
   for i in updateDom {
     temp = bitMunge(temp);
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
@@ -83,22 +83,22 @@ def verifyResults() {
 }
 
 
-def HPCCstarts(in n:int) {
+def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
   param period = 1317624576693539401;
 
   while (n < 0) do
     n += period;
   while (n > period) do
     n -= period;
-  if (n == 0) then return 0x1u;
+  if (n == 0) then return 0x1:uint(64);
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
   var m2Dom = [0..m2DomSize-1];
-  var m2: [m2Dom] uint;
+  var m2: [m2Dom] uint(64);
 
   // BLC: isn't this redundantly computing the same array m2 over and
   // over again?
-  var temp = 0x1u;  // BLC: is there a better name for this?
+  var temp = 0x1: uint(64);  // BLC: is there a better name for this?
   for i in m2Dom {
     m2(i) = temp;
     temp = bitMunge(temp);
@@ -109,9 +109,9 @@ def HPCCstarts(in n:int) {
   while (n >> high) & 1 == 0 do
     high -= 1;
 
-  var ran = 0x2u;
+  var ran = 0x2u: uint(64);
   forall i in 0..high-1 by -1 {
-    var temp = 0u;  // BLC: is there a better name for this?
+    var temp = 0:uint(64);  // BLC: is there a better name for this?
     for j in m2Dom {
       if ((ran >> j:uint) & 1) then temp ^= m2(j); // BLC: unfortunate cast
     }
@@ -128,7 +128,7 @@ def HPCCstarts(in n:int) {
 // BLC: would also like to see this fn inlined -- how to specify?
 // BLC: better name for this fn?
 def bitMunge(x) {
-  const POLY  = 0x0000000000000007u;  // BLC: should be param, but causes error
-  param hibit = 0x8000000000000000u; // BLC: would like to write this: 0x1u << 63, but doesn't work
-  return (x << 1) ^ (if (x & hibit) then POLY else 0u);  // BLC: 0u is unfortunate
+  const POLY: uint(64) = 0x0000000000000007u;  // BLC: should be param, but causes error
+  param hibit: uint(64) = 0x8000000000000000u; // BLC: would like to write this: 0x1u << 63, but doesn't work
+  return (x << 1) ^ (if (x & hibit) then POLY else 0:uint(64));  // BLC: cast is unfortunate
 }

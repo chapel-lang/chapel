@@ -90,8 +90,8 @@ var bitInd: [bitMatDom] uint(64);
 // using [i in bitMatDom] syntax
 for i in bitMatDimDom {
   for j in bitMatDimDom {
-    bitInd(i,j) = 0x1u << (((bitsPerBitMatDim-i)*bitsPerBitMatDim)
-                           + (bitsPerBitMatDim-j)):uint;
+    bitInd(i,j) = 0x1:uint(64) << (((bitsPerBitMatDim-i)*bitsPerBitMatDim)
+                                 + (bitsPerBitMatDim-j)):uint;
     //    bitMatWrite(bitInd(i,j));
   }
 }

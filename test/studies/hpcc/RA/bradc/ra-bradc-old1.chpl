@@ -3,9 +3,9 @@
 // BLC: Change cast to int into mask against high bit
 // BLC: Implement a timer class and insert calls
 
-const POLY = 0x0000000000000007u;  // BLC: should be param, but causes error
+const POLY:uint(64) = 0x0000000000000007;  // BLC: should be param, but causes error
 
-config const totMemSize = 1000u;
+config const totMemSize:uint(64) = 1000;
 config const logTableSize = computeLogTableSize(totMemSize);
 const tableSize = 1 << logTableSize;
 
@@ -14,7 +14,7 @@ config const debug = false;
 
 // BLC: note the prevalence of the n-1 upper bound motif
 const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
-var Table: [tableDom] uint;
+var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
 const updateDom = [0..numUpdates:int-1];  // BLC: unfortunate cast
@@ -37,28 +37,28 @@ def main() {
 
 def randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
-  [i in tableDom] Table(i) = i:uint;      // BLC: unfortunate cast
+  [i in tableDom] Table(i) = i:uint(64);      // BLC: unfortunate cast
 
   if debug then writeln("Table is: ", Table);
 
   // BLC: is it legal to make a config const/var local to a function?
   var ranDom = [0..numRandoms-1];
   // BLC: Would prefer this initialization to be:
-  // var Ran: [i in ranDom] uint = HPCCstarts((numUpdates/numRandoms) * i);
-  var Ran: [ranDom] uint;
+  // var Ran: [i in ranDom] uint(64) = HPCCstarts((numUpdates/numRandoms) * i);
+  var Ran: [ranDom] uint(64);
   // BLC: writing the following line results in the promotion-to-float problem
   // [i in ranDom] Ran(i) = HPCCstarts((numUpdates/numRandoms) * i);
   // BLC: resulting in the following unfortunate cast:
   // BLC: Getting the ambiguity declared is priority #1 for me 
   //      -- I've made this mistake too many times now
-  [i in ranDom] Ran(i) = HPCCstarts(((numUpdates:int/numRandoms) * i));
+  [i in ranDom] Ran(i) = HPCCstarts(((numUpdates:int(64)/numRandoms) * i));
 
   if debug then writeln("Ran is: ", Ran);
 
   for i in updateDom by numRandoms {
     forall j in ranDom {
       // BLC: This appears everywhere.  Might be nice to make it a macro-ish thing?
-      Ran(j) = (Ran(j) << 1) ^ (if Ran(j):int < 0 then POLY else 0u);
+      Ran(j) = (Ran(j) << 1) ^ (if Ran(j):int(64) < 0 then POLY else 0:uint(64));
       Table((Ran(j) & (tableSize-1)):int) ^= Ran(j); // BLC: unfortunate cast
     }
   }
@@ -69,9 +69,9 @@ def randomAccessUpdate() {
 
 def verifyResults() {
 
-  var temp = 0x1u;  // BLC: Can we rename this?
+  var temp:uint(64) = 0x1u;  // BLC: Can we rename this?
   for i in updateDom {
-    temp = (temp << 1) ^ (if (temp:int < 0) then POLY else 0u);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint(64));
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
   }
 
@@ -90,41 +90,41 @@ def verifyResults() {
 }
 
 
-def HPCCstarts(in n:int) {
+def HPCCstarts(in n:int(64)) {
   param period = 1317624576693539401;
 
   while (n < 0) do
     n += period;
   while (n > period) do
     n -= period;
-  if (n == 0) then return 0x1u;
+  if (n == 0) then return 0x1:uint(64);
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
   var m2Dom = [0..m2DomSize-1];
-  var m2: [m2Dom] uint;
+  var m2: [m2Dom] uint(64);
 
   // BLC: isn't this redundantly computing the same array m2 over and
   // over again?
-  var temp = 0x1u;  // BLC: is there a better name for this?
+  var temp: uint(64) = 0x1u;  // BLC: is there a better name for this?
   for i in m2Dom {
     m2(i) = temp;
-    temp = (temp << 1) ^ (if temp:int < 0 then POLY else 0u);
-    temp = (temp << 1) ^ (if temp:int < 0 then POLY else 0u);
+    temp = (temp << 1) ^ (if temp:int(64) < 0 then POLY else 0:uint(64));
+    temp = (temp << 1) ^ (if temp:int(64) < 0 then POLY else 0:uint(64));
   }
 
   var high = 62;    // BLC: magic number -- name?
   while (n >> high) & 1 == 0 do
     high -= 1;
 
-  var ran = 0x2u;
+  var ran: uint(64) = 0x2u;
   forall i in 0..high-1 by -1 {
-    var temp = 0u;  // BLC: is there a better name for this?
+    var temp: uint(64) = 0;  // BLC: is there a better name for this?
     for j in m2Dom {
-      if ((ran >> j:uint) & 1) then temp ^= m2(j); // BLC: unfortunate cast
+      if ((ran >> j:uint(64)) & 1) then temp ^= m2(j); // BLC: unfortunate cast
     }
     ran = temp;
     if ((n >> i) & 1) {
-      ran = (ran << 1) ^ (if ran:int < 0 then POLY else 0u);
+      ran = (ran << 1) ^ (if ran:int(64) < 0 then POLY else 0:uint(64));
     }
   }
   return ran;
@@ -134,10 +134,10 @@ def HPCCstarts(in n:int) {
 // BLC: could replace this all by some sort of bpop + bit search 
 // function?
 def computeLogTableSize(memsize) {
-  param tableElemSize = 8;  // BLC: magic number == sizeof(uint)
+  param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
 
   var elemsInTable = memsize / tableElemSize;
-  var logTableSize = 0u;
+  var logTableSize: uint(64) = 0u;
 
   while (elemsInTable > 1) {
     elemsInTable /= 2;
