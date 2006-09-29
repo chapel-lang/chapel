@@ -14,21 +14,21 @@
  *
  *  last revised 9/18/2008 by marybeth
  */  
-param POLY:uint = 0x0000000000000007;
-param PERIOD:int = 1317624576693539401;
+param POLY:uint(64) = 0x0000000000000007;
+param PERIOD:int(64) = 1317624576693539401;
 param MEMSIZE:int = 1000; 
 
 var NUPDATE:int;
 
-def HPCC_starts(n:int):uint {
+def HPCC_starts(n:int(64)):uint(64) {
   var i:int;
   var j:int;
-  var n2:int = n;
-  var temp:uint;
-  var ran:uint;
+  var n2 = n;
+  var temp:uint(64);
+  var ran:uint(64);
   var D: domain(1) = [0..63];
-  var m2: [D] uint;
-  var result: uint;
+  var m2: [D] uint(64);
+  var result: uint(64);
 
   while (n2 < 0) do {
     n2 += PERIOD;
@@ -44,11 +44,11 @@ def HPCC_starts(n:int):uint {
   temp = 0x1;
   for i in D {
     m2(i) = temp;
-    if (temp:int) < 0 then
+    if (temp:int(64)) < 0 then
       temp = ((temp << 1) ^ POLY);
     else
       temp = ((temp << 1) ^ 0);
-    if (temp:int) < 0 then
+    if (temp:int(64)) < 0 then
       temp = ((temp << 1) ^ POLY);
     else
       temp = ((temp << 1) ^ 0);
@@ -61,12 +61,12 @@ def HPCC_starts(n:int):uint {
   while (i > 0) do {
     temp = 0;
     for j in D do {
-      if ((ran >> j:uint) & 1) then temp ^= m2(j);
+      if ((ran >> j:uint(64)) & 1) then temp ^= m2(j);
     }
     ran = temp;
     i -= 1;
     if ((n2 >> i) & 1) then {
-      if (ran:int) < 0 then
+      if (ran:int(64)) < 0 then
         ran = ((ran << 1) ^ POLY);
       else
         ran = ((ran << 1) ^ 0);
@@ -75,27 +75,27 @@ def HPCC_starts(n:int):uint {
   return ran;
 }
 
-def RandomAccessUpdate(TableSize:uint, Table: [] uint) {
+def RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
   var i:int;
   var D: domain(1) =  [0..127];
-  var ran: [D] uint;              
+  var ran: [D] uint(64);              
   var j:int;
 
   for i in Table.domain {
-    Table(i) = i:uint;
+    Table(i) = i:uint(64);
   }
   for j in D {
-    ran(j) = HPCC_starts (((NUPDATE/128) * j):int);
+    ran(j) = HPCC_starts (((NUPDATE/128) * j):int(64));
   }
 
   i = 0;
   do {
     for j in D {
-      if (ran(j):int) < 0 then
+      if (ran(j):int(64)) < 0 then
         ran(j) = ((ran(j) << 1) ^ POLY);
       else
         ran(j) = ((ran(j) << 1) ^ 0);
-      Table((ran(j) & (TableSize-1)):int) ^= ran(j);
+      Table((ran(j) & (TableSize-1)):int(64)) ^= ran(j);
     }
     i += 1;
   } while (i < NUPDATE/128);
@@ -104,14 +104,14 @@ def RandomAccessUpdate(TableSize:uint, Table: [] uint) {
 def main() {
 
   var i:int;
-  var temp:uint;
+  var temp:uint(64);
   var cputime:float;               /* CPU time to update table */
   var realtime:float;              /* Real time to update table */
   var GUPs: float;
   var failure:int;
   var totalMem:float = (MEMSIZE:float)/8.0;
-  var TableSize:uint;
-  var logTableSize:uint; 
+  var TableSize:uint(64);
+  var logTableSize:uint(64); 
   const TableDomain: int;
 
   /* calculate local memory per node for the update table */
@@ -129,7 +129,7 @@ def main() {
 
   TableDomain = (TableSize:int);
   var D:domain(1) = [0..TableDomain-1];
-  var Table: [D] uint;
+  var Table: [D] uint(64);
 
   NUPDATE = 4*(TableSize:int);
 
@@ -142,11 +142,11 @@ def main() {
   i  = 0;
   temp = 0x1;
   do {
-    if (temp:int) < 0 then
+    if (temp:int(64)) < 0 then
       temp = ((temp << 1) ^ POLY);
     else
       temp = ((temp << 1) ^ 0);
-    Table((temp & (TableSize-1)):int) ^= temp;
+    Table((temp & (TableSize-1)):int(64)) ^= temp;
     i += 1;
   } while (i < NUPDATE);
 
