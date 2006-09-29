@@ -77896,3 +77896,18 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.c io.c hpcc.h 
 
+---------------------------------------------------------------------------
+
+09/29/06 16:07:45 -- deitz
+
+Log message:
+	Removed .future related to goto usage since goto is no longer in the
+	language.
+	
+	Note that there are no plans to remove it from the parser or the IR.
+	It should, however, be changed to _goto and _label.
+
+Removed files:
+	chapel/test/trivial/deitz/: test_goto2.chpl test_goto2.future 
+	                            test_goto2.good 
+
