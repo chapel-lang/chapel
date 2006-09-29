@@ -195,6 +195,8 @@ void cft1st(int n, double *a, double *w)
   a[14] = wk1r * (x0i - x0r);
   a[15] = wk1r * (x0i + x0r);
 
+  printf("  // computes first 16 (8 complexes) manually\n");
+
 #pragma mta use 100 streams
 #pragma mta no scalar expansion
 #pragma mta assert no dependence
@@ -206,7 +208,7 @@ void cft1st(int n, double *a, double *w)
       double wk3r = wk1r - 2 * wk2i * wk1i;
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
-      printf("  btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
+      printf("  l=2 btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
       btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
 
       wk1r = w[k1 + k1 + 2];
@@ -214,7 +216,7 @@ void cft1st(int n, double *a, double *w)
       wk3r = wk1r - 2 * wk2r * wk1i;
       wk3i = 2 * wk2r * wk1r - wk1i;
 
-      printf("  btrfly(j+8=%d + 8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
+      printf("  l=2 btrfly(j+8=%d+8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
       btrfly (j + 8, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 } }
 
@@ -231,14 +233,14 @@ void cftmd0(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (j = 0; j < l; j += 2) {
-    printf("    btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)\n", j);
+    printf("    l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)\n", l, j);
     btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
   }
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (j = m; j < l + m; j += 2) {
-    printf("    btrfly(j=%d, wk1r=%g, wk1r=%g, 0.0, 1.0, -wk1r=%g, wk1r=%g, a, b, c, d)\n", j, wk1r, wk1r, -wk1r, wk1r);
+    printf("    l=%d btrfly(j=%d, wk1r=%g, wk1r=%g, 0.0, 1.0, -wk1r=%g, wk1r=%g, a, b, c, d)\n", l, j, wk1r, wk1r, -wk1r, wk1r);
     btrfly(j, wk1r, wk1r, 0.0, 1.0, - wk1r, wk1r, a, b, c, d);
   }
 }
@@ -269,7 +271,7 @@ void cftmd1(int n, int l, double *a, double *w)
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
       for (j = k; j < l + k; j += 2) {
-        printf("  btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
+        printf("  l=%d btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
         btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
       }
 
@@ -279,7 +281,7 @@ void cftmd1(int n, int l, double *a, double *w)
       wk3i = 2 * wk2r * wk1r - wk1i;
 
       for (j = k + m; j < l + k + m; j += 2) {
-        printf("  btrfly(j+8=%d + 8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
+        printf("  l=%d btrfly(j+8=%d+8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
         btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
       }
 } }
@@ -306,7 +308,7 @@ void cftmd21(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
       for (j = k; j < k + l; j += 2) {
-        printf("  btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
+        printf("  l=%d btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
         btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
       }
 
@@ -318,7 +320,7 @@ void cftmd21(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
       for (j = k + m; j < k + m + l; j += 2) {
-        printf("  btrfly(j+8=%d + 8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
+        printf("  l=%d btrfly(j+8=%d+8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
         btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
       }
 
@@ -353,7 +355,7 @@ void cftmd2(int n, int l, double *a, double *w)
       double wk3r = wk1r - 2 * wk2i * wk1i;
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
-        printf("  btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
+        printf("  l=%d btrfly(j=%d, wk1r=%g, wk1i=%g, wk2r=%g, wk2i=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
       btrfly (j + k, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
   }
 
@@ -366,7 +368,7 @@ void cftmd2(int n, int l, double *a, double *w)
       double wk3r = wk1r - 2 * wk2r * wk1i;
       double wk3i = 2 * wk2r * wk1r - wk1i;
 
-      printf("  btrfly(j+8=%d+8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
+      printf("  l=%d btrfly(j+8=%d+8, wk1r=%g, wk1i=%g, -wk2i=%g, wk2r=%g, wk3r=%g, wk3i=%g, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
       btrfly (j + k + m, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 
 } } }
@@ -401,7 +403,7 @@ void dfft(int n, int logn, double *a, double *w)
 #pragma mta assert no dependence
      for (j = 0; j < l; j += 2)
        btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
-       printf("btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);\n");
+       printf("l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);\n", l);
   } else {
     printf("l << 2 != n\n");
 
