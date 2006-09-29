@@ -1096,7 +1096,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   ClassType  *ct = dynamic_cast<ClassType*>(arg->type);
   ReturnStmt *ret;
   if (ct->fields->length() < 0) {
-    ret = new ReturnStmt( new_IntSymbol(0));
+    ret = new ReturnStmt(new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call;
     bool first = true;
@@ -1115,8 +1115,8 @@ instantiate_tuple_hash( FnSymbol* fn) {
       }
     }
     // YAH, make sure that we do not return a negative hash value for now
-    call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL), call);
-    ret = new ReturnStmt( call);
+    call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
+    ret = new ReturnStmt( new CallExpr(PRIMITIVE_CAST, dtInt[INT_SIZE_64]->symbol, call));
   }
   fn->body->replace( new BlockStmt( ret));
   return fn;

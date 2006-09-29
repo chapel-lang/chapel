@@ -390,6 +390,49 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
 } 
 
 
+int setInCommandLine_int32(char* varName, _int32* value, 
+                               char* moduleName) {
+  int varSet = 0;
+  char* setValue = lookupSetValue(varName, moduleName);
+
+  if (setValue) {
+    char extraChars;
+    int numScans = sscanf(setValue, _default_format_read_int32"%c", 
+                      value, &extraChars);
+    if (numScans == 1) {
+      varSet = 1;
+    } else {
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type int");
+      printError(message);
+    }
+  }   
+  return varSet;
+}
+
+
+int setInCommandLine_uint32(char* varName, _uint32* value, char* moduleName) {
+  int varSet = 0;
+  char* setValue = lookupSetValue(varName, moduleName);
+
+  if (setValue) {
+    char extraChars;
+    int numScans = sscanf(setValue, _default_format_read_uint32"%c", 
+                          value, &extraChars);
+    if (numScans == 1) {
+      varSet = 1;
+    } else {
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type uint");
+      printError(message);
+    }
+  }
+  return varSet;
+}  
+
+
 int setInCommandLine_int64(char* varName, _int64* value, 
                                char* moduleName) {
   int varSet = 0;

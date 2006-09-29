@@ -1,5 +1,5 @@
-var i:int;
-var ui:uint;
+var i:int(64);
+var ui:uint(64);
 
 ui = 9u;
 writeln ("ui=9u is ", ui);

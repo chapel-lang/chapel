@@ -2,11 +2,11 @@ def foo(i : int(32)) {
   writeln("int32 = ", i);
 }
 
-def foo(i : int) {
+def foo(i : int(64)) {
   writeln("int64 = ", i);
 }
 
-var i : int;
+var i : int(64);
 foo(i);
 
 var j : int(32);

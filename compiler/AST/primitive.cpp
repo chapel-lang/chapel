@@ -23,12 +23,17 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
-returnInfoInt(CallExpr* call) {
+returnInfoInt32(CallExpr* call) {
+  return dtInt[INT_SIZE_32];
+}
+
+static Type*
+returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
 static Type*
-returnInfoUInt(CallExpr* call) {
+returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
 
@@ -221,7 +226,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
-  prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt);  // 64-bit
+  prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64);  // 64-bit
 
   // operations on sync/single vars
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid);
@@ -254,7 +259,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid);
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
-  prim_def("abs", returnInfoInt);
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);
   prim_def("asin", returnInfoFloat);
@@ -289,10 +293,10 @@ initPrimitive() {
   prim_def("tgamma", returnInfoFloat);
   prim_def("trunc", returnInfoFloat);
   prim_def("fopen", returnInfoFile);
-  prim_def("fclose", returnInfoInt);
-  prim_def("fprintf", returnInfoInt);
-  prim_def("fscanf", returnInfoInt);
-  prim_def("fflush", returnInfoInt);
+  prim_def("fclose", returnInfoInt32);
+  prim_def("fprintf", returnInfoInt32);
+  prim_def("fscanf", returnInfoInt32);
+  prim_def("fflush", returnInfoInt32);
   prim_def("readLit", returnInfoBool);
   prim_def("string_fscanf", returnInfoString);
   prim_def("string_contains", returnInfoBool);
@@ -302,12 +306,12 @@ initPrimitive() {
   prim_def("string_equal", returnInfoBool);
   prim_def("string_select", returnInfoString);
   prim_def("string_strided_select", returnInfoString);
-  prim_def("string_length", returnInfoInt);
-  prim_def("ascii", returnInfoInt);
+  prim_def("string_length", returnInfoInt32);
+  prim_def("ascii", returnInfoInt32);
   prim_def("sleep", returnInfoVoid);
-  prim_def("float2int", returnInfoInt);
-  prim_def("object2int", returnInfoInt);
-  prim_def("exit", returnInfoInt);
+  prim_def("float2int", returnInfoInt64);
+  prim_def("object2int", returnInfoInt64);
+  prim_def("exit", returnInfoInt32);
 
   prim_def("complex_get_real", returnInfoComplexField, true);
   prim_def("complex_get_imag", returnInfoComplexField, true);
@@ -319,5 +323,5 @@ initPrimitive() {
   prim_def("get_stderr", returnInfoFile);
   prim_def("get_nullfile", returnInfoFile);
   prim_def("get_errno", returnInfoString);
-  prim_def("get_eof", returnInfoInt);
+  prim_def("get_eof", returnInfoInt32);
 }

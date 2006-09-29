@@ -1,4 +1,4 @@
-var ui:uint;
+var ui:uint(64);
 ui = 510;
 writeln ("ui=510 is ", ui);
 

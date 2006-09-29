@@ -1285,11 +1285,11 @@ get_int(Expr *e, long *i) {
   if (e) {
     if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
-        if (v->immediate &&
-            v->immediate->const_kind == NUM_KIND_INT &&
-            v->immediate->num_index == INT_SIZE_64) {
-          *i = v->immediate->v_int64;
-          return true;
+        if (v->immediate) {
+          if (v->immediate->const_kind == NUM_KIND_INT) {
+            *i = v->immediate->int_value();
+            return true;
+          }
         }
       }
     }

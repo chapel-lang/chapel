@@ -117,7 +117,7 @@ class file {
   var mode : string = "r";
   var path : string = ".";
   var fp : _file;
-  var writeLock : sync uint;    // for serializing fwrite output
+  var writeLock : sync uint(64);    // for serializing fwrite output
 
   def open {
     if (this == stdin || this == stdout || this == stderr) {
@@ -247,7 +247,7 @@ def fread(f: file = stdin, inout val: int) {
 
 
 def _fwrite_lock( f: file) {
-  var me: uint = __primitive( "thread_id");
+  var me: uint(64) = __primitive( "thread_id");
   if (isFull( f.writeLock)) {
     if (readXX( f.writeLock) == me) {
       return false;

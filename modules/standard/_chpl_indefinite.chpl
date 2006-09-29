@@ -29,7 +29,6 @@ _ps(24) = 402653189;
 _ps(25) = 805306457;
 _ps(26) = 1610612741;
 
-
 class _idomain {
   type ind_type;
   var num_inds: int;
@@ -76,7 +75,7 @@ class _idomain {
   def _map(ind : ind_type) : int {
     var probe = 0;
     while true {
-      var i = (_indefinite_hash(ind) + probe**2) % _ps(size);
+      var i = ((_indefinite_hash(ind) + probe**2) % _ps(size)):int(32);
       if (table(i) == 0) then
         return i;
       if (inds(table(i)-1) == ind) then
@@ -163,7 +162,7 @@ def fwrite(f : file, x : _iarray) {
 }
 
 // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
-def _gen_key(i: int): int {
+def _gen_key(i: int(64)): int(64) {
   var key = i;
   key += ~(key << 32);
   key = key ^ (key >> 22);
@@ -177,7 +176,7 @@ def _gen_key(i: int): int {
 }
 
 pragma "inline"
-def _indefinite_hash(b: bool): int {
+def _indefinite_hash(b: bool): int(64) {
   if (b) 
     return 17;
   else
@@ -185,29 +184,29 @@ def _indefinite_hash(b: bool): int {
 }
 
 pragma "inline"
-def _indefinite_hash(i: int): int {
+def _indefinite_hash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
 pragma "inline"
-def _indefinite_hash(u: uint): int {
-  return _gen_key(u:int);
+def _indefinite_hash(u: uint(64)): int(64) {
+  return _gen_key(u:int(64));
 }
 
 pragma "inline"
-def _indefinite_hash(f: float): int {
+def _indefinite_hash(f: float): int(64) {
   return _gen_key(__primitive( "float2int", f));
 }
 
 pragma "inline"
-def _indefinite_hash(c: complex): int {
+def _indefinite_hash(c: complex): int(64) {
   return _gen_key(c.real:int ^ c.imag:int); 
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
 pragma "inline"
-def _indefinite_hash(x : string): int {
-  var hash: int = 0;
+def _indefinite_hash(x : string): int(64) {
+  var hash: int(64) = 0;
   for c in 1..length(x) {
     hash = ((hash << 5) + hash) ^ ascii(x(c));
   }
@@ -215,6 +214,6 @@ def _indefinite_hash(x : string): int {
 }
 
 pragma "inline"
-def _indefinite_hash(o: object): int {
+def _indefinite_hash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }

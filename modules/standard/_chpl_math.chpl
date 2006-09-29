@@ -2,7 +2,7 @@
 // Primitive math funs
 //
 
-pragma "inline" def abs(x : int) return __primitive("abs", x);
+pragma "inline" def abs(x : int) return if x < 0 then -x else x;
 pragma "inline" def acos(x : float) return __primitive("acos", x);
 pragma "inline" def acosh(x : float) return __primitive("acosh", x);
 pragma "inline" def asin(x : float) return __primitive("asin", x);

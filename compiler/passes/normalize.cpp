@@ -1347,7 +1347,7 @@ expand_var_args(FnSymbol* fn) {
       // handle expansion of variable argument list where number of
       // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInt[INT_SIZE_64] && n_var->immediate) {
+        if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
           int n = n_var->immediate->v_int64;
           AList* actual_types = new AList();
           AList* actuals = new AList();

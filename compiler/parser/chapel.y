@@ -1074,21 +1074,33 @@ expr_list_item:
 literal:
   INTLITERAL
     {
+      unsigned long long int ull;
       if (!strncmp("0b", yytext, 2))
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 2)));
+        ull = strtoull(yytext+2, NULL, 2);
       else if (!strncmp("0x", yytext, 2))
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 16)));
+        ull = strtoull(yytext+2, NULL, 16);
       else
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext, NULL, 10)));
+        ull = strtoull(yytext, NULL, 10);
+      if (ull <= 2147483647ull)
+        $$ = new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
+      else if (ull <= 9223372036854775807ull)
+        $$ = new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
+      else
+        $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
     }
 | UINTLITERAL
     {
+      unsigned long long int ull;
       if (!strncmp("0b", yytext, 2))
-        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext+2, NULL, 2))); 
+        ull = strtoull(yytext+2, NULL, 2);
       else if (!strncmp("0x", yytext, 2))
-        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext+2, NULL, 16))); 
+        ull = strtoull(yytext+2, NULL, 16);
       else
-        $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10)));
+        ull = strtoull(yytext, NULL, 10);
+      if (ull <= 4294967295ull)
+        $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_32));
+      else
+        $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
     }
 | FLOATLITERAL
     { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
