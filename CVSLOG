@@ -77795,3 +77795,16 @@ Modified files:
 	chapel/test/types/coerce/bradc/: tostring.good 
 	chapel/test/types/scalar/bradc/: uint.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 13:59:06 -- bradc
+
+Log message:
+	Updated bit functions and HPCC tests to work with
+	new default integer widths.
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
+	                                    ra-bradc.chpl 
+
