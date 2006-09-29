@@ -77980,3 +77980,17 @@ Added files:
 	chapel/test/studies/hpcc/STREAMS/bradc/: stream-bradc.chpl 
 	                                         stream-bradc.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 16:43:16 -- bradc
+
+Log message:
+	Fixed problem introduced by better implementation of shifts.
+	It used to be that tableSize was determined to be a uint because
+	of its ":int << :uint" initialization.  Now it was being
+	(correctly) determined to be an int, requiring uses of it to
+	be cast to uint later (or vice-versa).
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
+
