@@ -77691,3 +77691,17 @@ Modified files:
 	                         The_Select_Statement.tex 
 	                         The_While_and_Do_While_Loops.tex 
 
+---------------------------------------------------------------------------
+
+09/28/06 19:05:19 -- marybeth
+
+Log message:
+	Checking in int(64) version of ra, ra2, and ra3 in anticipation of
+	switching to default 32-bit integer size.
+	
+	These tests work with the default 64-bit integer compiler.  Hopefully,
+	they'll continue to work when the default size changes.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl ra2.chpl ra3.chpl 
+
