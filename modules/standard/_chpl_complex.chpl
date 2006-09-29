@@ -37,7 +37,11 @@ pragma "inline" def /(a: complex(?w), b: complex(w))
 pragma "inline" def conjg(a: complex(?w))
   return _complex(a.real, -a.imag);
 
+pragma "inline" def width(a: complex(?w)) return 2*w;
+pragma "inline" def size(a: complex(?w)) return (2*w)/8;
+
 pragma "inline"
 def _tostring(x: complex, format: string) : string {
   return __primitive("to_string", format, x);
 }
+

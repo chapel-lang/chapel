@@ -140,8 +140,8 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
     writeln( "This system uses ", BytesPerWord, " bytes per DOUBLE PRECISION word.");
 
     writeln( HLINE);
-    writeln( "Array size = ", VectorSize*BytesPerWord, " Offset = " , OFFSET);
-    writeln( "Total memory required = ", (NUM_VECTORS * BytesPerWord) * (VectorSize / GB:float), "GB.");
+    writeln( "Array size (B) = ", VectorSize*BytesPerWord, " Offset = " , OFFSET);
+    writeln( "Total memory required (GB) = ", (NUM_VECTORS * BytesPerWord) * (VectorSize / GB:float));
   }
 
 
@@ -190,9 +190,9 @@ var params: HPCC_Params;
 params.HPLMaxProcMem = MEMORY;
 
 if !HPCC_Stream( params, true) {
-  writeln( "good!");
+  writeln( "it's Scottish!");
 } else {
-  writeln( "bad!");
+  writeln( "it's NOT Scottish!");
 }
 
 

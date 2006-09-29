@@ -15,6 +15,8 @@ pragma "inline" def >(a: bool, b: bool) return __primitive(">", a, b);
 pragma "inline" def !(a: bool) return __primitive("!", a);
 pragma "inline" def &&(a: bool, b: bool) return __primitive("&&", a, b);
 pragma "inline" def ||(a: bool, b: bool) return __primitive("||", a, b);
+pragma "inline" def width(a: bool)  return 32;  // YAH.  WAW: fixme please.
+pragma "inline" def size(a: bool)  return  4;   // YAH.  WAW: fixme please.
 
 // Primitive functions and operators on ints
 pragma "inline" def =(a: int(?w), b: int(w)) return b;
@@ -41,6 +43,8 @@ pragma "inline" def &&(a: int(?w), b: int(w)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: int(?w), b: int(w)) return __primitive("||", a, b);
 pragma "inline" def <<(a: int(?w), b: int(w)) return __primitive("<<", a, b);
 pragma "inline" def >>(a: int(?w), b: int(w)) return __primitive(">>", a, b);
+pragma "inline" def width(a: int(?w)) return w;
+pragma "inline" def size(a: int(?w)) return w/8;
 
 // Primitive functions and operators on uints
 pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
@@ -67,6 +71,8 @@ pragma "inline" def >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
 pragma "inline" def !(a: uint(?w)) return __primitive("!", a);
 pragma "inline" def &&(a: uint(?w), b: uint(w)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: uint(?w), b: uint(w)) return __primitive("||", a, b);
+pragma "inline" def width(a: uint(?w)) return w;
+pragma "inline" def size(a: uint(?w)) return w/8;
 
 // Primitive functions and operators on floats
 pragma "inline" def =(a: float(?w), b: float(w)) return b;
@@ -86,6 +92,8 @@ pragma "inline" def >(a: float(?w), b: float(w)) return __primitive(">", a, b);
 pragma "inline" def !(a: float(?w)) return __primitive("!", a);
 pragma "inline" def &&(a: float(?w), b: float(w)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: float(?w), b: float(w)) return __primitive("||", a, b);
+pragma "inline" def width(a: float(?w)) return w;
+pragma "inline" def size(a: float(?w)) return w/8;
 
 // Primitive functions and operators on string
 pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
