@@ -77948,3 +77948,17 @@ Modified files:
 	                             uintliteral.chpl 
 	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 16:20:47 -- deitz
+
+Log message:
+	Made parameters variables (since we don't fold casts yet), removed
+	extra output line in .good, and removed .future.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.chpl 
+	                                    ra-bradc-badshift.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.future 
+
