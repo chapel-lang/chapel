@@ -12,11 +12,10 @@ when-statement:
   `when' expression [[,...]] block-level-statement
   `otherwise' statement
 \end{syntax}
-Call the expression that follows the keyword \chpl{select}, the select
-expression.  Each expression in the list of expressions following the
-keyword \chpl{when}, the case expressions, must be able to be compared
-with the select expression using the equality operator \chpl{==}.  The
-first case expression that contains an expression where that
+The expression that follows the keyword \chpl{select}, the select
+expression, is compared with the list of expressions following the keyword 
+\chpl{when}, the case expressions, using the equality operator \chpl{==}.
+The first case expression that contains an expression where that
 comparison is \chpl{true} will be selected and control transferred to
 the associated statement.  If the comparison is always \chpl{false},
 the statement associated with the keyword \chpl{otherwise}, if it

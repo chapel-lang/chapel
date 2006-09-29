@@ -19,7 +19,8 @@ hand side is any expression that can be assigned the value on the
 right-hand side.  It is evaluated second and then assigned the value.
 
 The assignment operators that contain a binary operator as a prefix is
-a short-hand for applying the binary operator to the two operands and
+a short-hand for applying the binary operator to the left and right-hand
+side expressions and
 then assigning the value of that application to the already evaluated
 left-hand side.  Thus, for example, \chpl{x += y} is equivalent to
 \chpl{x = x + y} where the expression \chpl{x} is evaluated once.
