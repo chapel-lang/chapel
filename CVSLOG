@@ -77851,3 +77851,27 @@ Modified files:
 	chapel/test/trivial/waynew/: uintliteral.chpl 
 	chapel/test/types/scalar/bradc/: uint.chpl uintinit.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 15:00:10 -- bradc
+
+Log message:
+	Fixed tests and futures based on removal of u suffix
+	in combination with default uint being of 64-bit
+	width.
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: bitreverse2.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badlineno.chpl 
+	                                    ra-bradc-badparam.chpl 
+	                                    ra-bradc-badshift.chpl 
+	                                    ra-bradc-badshift.future 
+	                                    ra-bradc-condexpr.chpl 
+	                                    ra-bradc-duplicateErrors.chpl 
+	                                    ra-bradc-illegalcast.chpl 
+	                                    ra-bradc.chpl 
+	chapel/test/types/scalar/bradc/: uintinit.chpl uintinit.good 
+Removed files:
+	chapel/test/types/scalar/bradc/: uintinit.future 
+
