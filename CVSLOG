@@ -77716,3 +77716,15 @@ Modified files:
 	chapel/spec/Statements/: The_Conditional_Statement.tex 
 	                         The_Select_Statement.tex 
 
+---------------------------------------------------------------------------
+
+09/29/06 11:16:00 -- waynew
+
+Log message:
+	Changed names to bits and bytes as placeholders until it's decided.  Should
+	be slightly easier to change now (even by a script, say).
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
+
