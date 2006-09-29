@@ -77728,3 +77728,15 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 11:27:00 -- waynew
+
+Log message:
+	Cosmetic changes.  Increased total memory size a tiny bit to about 1MB/vector.
+	Should be good to work with as a basis.  Updated .good.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
+	                                          stream.good 
+
