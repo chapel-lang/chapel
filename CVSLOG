@@ -77911,3 +77911,40 @@ Removed files:
 	chapel/test/trivial/deitz/: test_goto2.chpl test_goto2.future 
 	                            test_goto2.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 16:10:27 -- deitz
+
+Log message:
+	Expect 1 regression:
+	
+	[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-old1]
+	
+	Changed all builtin operators on integers and unsigned integers so
+	that they operate solely on 32- and 64-bit integers and unsigned
+	integers.  So for
+	
+	  var i: int(16);
+	  i = i + 1;
+	
+	you need a cast
+	
+	  var i: int(16);
+	  i = (i+1):int(16);
+	
+	to show the potential data loss.  The following operators are changed:
+	  + - ~ !  + - * / ** % & | ^ == != <= >= < > && || << >>
+	
+	Fixed << and >> operators to take their type from the left operand.
+	The right operand must be an integral type (following C#).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_math.chpl 
+	chapel/test/trivial/deitz/: test_init_int8.chpl 
+	chapel/test/trivial/waynew/: int8-64.chpl uint8-64.chpl 
+	                             uintliteral.chpl 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+
