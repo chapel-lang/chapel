@@ -77808,3 +77808,14 @@ Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
 	                                    ra-bradc.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 14:06:43 -- bradc
+
+Log message:
+	Updates on the FFT benchmarks based on work
+	from home this morning.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
+
