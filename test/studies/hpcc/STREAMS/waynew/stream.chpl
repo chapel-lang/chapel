@@ -1,18 +1,18 @@
 // HPCC STREAM benchmark.  Basis was stream.c
 
-//param TOTAL_MBS = 32;
-param TOTAL_MBS = 2;
-param MB = 1024*1024;
+param TOTAL_MBS = 3;          // total memory
+param MB = 1024*1024;         // megabytes
 param GB = 1024*MB;
-param MEMORY = TOTAL_MBS * MB;
-param NUM_VECTORS = 3;
-param OFFSET = 0;
+param MEMORY = TOTAL_MBS*MB;
+param NUM_VECTORS = 3;        
+param OFFSET = 0;             // purpose?
+param SCALAR = 3.0;
 
 // parameters of execution (from include/hpcc.h); bunch of stuff deleted
 record HPCC_Params {
-  // var StreamThreads, StreamVectorSize: int ;
-  var HPLMaxProcMem: int;  // totalMem/procMin
-  // var HPLMaxProc, HPLMinProc: int;
+  // var StreamThreads, StreamVectorSize: int ;  // should these be used?
+  // var HPLMaxProc, HPLMinProc: int;            // should these be used?
+  var HPLMaxProcMem: int;                        // totalMem/procMin
 }
 
 
@@ -26,9 +26,9 @@ HPCC_LocalVectorSize( params: HPCC_Params,
   // (for a 4-byte integer, 2**31-1 is the maximum integer, so the maximum 
   // power of 2 is 30) */
   var i: int;
-  // var maxIntBits2 = size(int) * 8 - 2;
-  // var maxIntBits2 = size(i) * 8 - 2;  // broken?
-  var maxIntBits2 = width(i) - 2;
+  // var maxIntBits2 = bytes(int) * 8 - 2;
+  // var maxIntBits2 = bytes(i) * 8 - 2;  // broken?
+  var maxIntBits2 = bits(i) - 2;
 
   // flg2 = floor(log2(params->HPLMaxProcMem / size / vecCnt))
   var flg2 = 1;
@@ -52,8 +52,7 @@ var VectorSize: int;
 var Vector: domain(1) = [1..10];
 var a, b, c: [Vector] float;
 
-// param N = 2000000;
-param N = 2000;         // smaller for now, just to get it working
+// param N = 2000000;      // purpose?
 param NTIMES = 10;
 
 var HLINE = "-------------------------------------------------------------";
@@ -70,7 +69,7 @@ def checkSTREAMresults( doIO: bool): bool {
   aj = 2.0E0 * aj;
 
   // now execute timing loop
-  var scalar = 3.0;
+  var scalar = SCALAR;
   for k in (1..NTIMES) {
     cj = aj;
     bj = scalar * cj;
@@ -119,15 +118,15 @@ def checkSTREAMresults( doIO: bool): bool {
     }
   } else {
     failure = false;
-    if doIO then writeln( "Solution Validates\n");
+    if doIO then writeln( "Solution Validates");
   }
   return failure;
 }
 
 
 def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
-  // VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, size(float), false); 
-  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, size(a[1]), false); 
+  // VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bytes(float), false); 
+  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bytes(a[1]), false); 
 
   Vector = [1..VectorSize];   // realloc a, b, and c
 
@@ -136,7 +135,7 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   // --- SETUP --- determine precision and check timing ---
   if doIO {
     writeln( HLINE);
-    var BytesPerWord = size(a[1]);
+    var BytesPerWord = bytes(a[1]);
     writeln( "This system uses ", BytesPerWord, " bytes per DOUBLE PRECISION word.");
 
     writeln( HLINE);
@@ -158,7 +157,7 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
     a[j] = 2.0E0 * a[j];
 
   // --- MAIN LOOP --- repeat test cases NTIMES times ---
-  var scalar = 3.0;
+  var scalar = SCALAR;
   for k in [1..NTIMES] {
     // tuned_STREAM_Copy();
     [j in Vector] c[j] = a[j];
@@ -189,10 +188,9 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
 var params: HPCC_Params;
 params.HPLMaxProcMem = MEMORY;
 
-if !HPCC_Stream( params, true) {
-  writeln( "it's Scottish!");
-} else {
-  writeln( "it's NOT Scottish!");
+
+if HPCC_Stream( params, true) {  // if failure
+  writeln( "Solution Failed!");
 }
 
 
