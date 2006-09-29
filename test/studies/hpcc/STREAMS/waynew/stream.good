@@ -1,0 +1,12 @@
+-------------------------------------------------------------
+This system uses 8 bytes per DOUBLE PRECISION word.
+-------------------------------------------------------------
+Array size (B) = 699048 Offset = 0
+Total memory required (GB) = 0.00195312
+-------------------------------------------------------------
+Results Comparison: 
+        Expected  : 1.00777e+172.01553e+162.68738e+16
+        Observed  : 1.00777e+172.01553e+162.68738e+16
+Solution Validates
+
+it's Scottish!
