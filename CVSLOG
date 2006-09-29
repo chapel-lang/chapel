@@ -77740,3 +77740,13 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
 	                                          stream.good 
 
+---------------------------------------------------------------------------
+
+09/29/06 11:29:34 -- waynew
+
+Log message:
+	Test use of domain without initialization.
+
+Added files:
+	chapel/test/domains/waynew/: init.chpl init.future init.good 
+
