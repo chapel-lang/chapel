@@ -77875,3 +77875,14 @@ Modified files:
 Removed files:
 	chapel/test/types/scalar/bradc/: uintinit.future 
 
+---------------------------------------------------------------------------
+
+09/29/06 15:05:03 -- marybeth
+
+Log message:
+	Checking in further changes to ra, ra2 and ra3 in order for them to work
+	correctly with the default 32-bit integer size.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl ra2.chpl ra3.chpl 
+
