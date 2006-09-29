@@ -22,6 +22,8 @@ HPCC_LocalVectorSize( params: HPCC_Params,
                       vecCnt: int, 
                       size: int, 
                       pow2: bool): int {
+  // use our bit lib routine instead ?
+
   // this is the maximum power of 2 that that can be held in a signed integer 
   // (for a 4-byte integer, 2**31-1 is the maximum integer, so the maximum 
   // power of 2 is 30) */
@@ -150,6 +152,10 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
     b[j] = 2.0;
     c[j] = 0.0;
   }
+  // Alternatively?  Less opportunity to optimize?
+  // a = 1.0;
+  // b = 2.0;
+  // c = 0.0;
 
   if doIO then writeln( HLINE);
 
@@ -160,16 +166,20 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   var scalar = SCALAR;
   for k in [1..NTIMES] {
     // tuned_STREAM_Copy();
-    [j in Vector] c[j] = a[j];
+    // [j in Vector] c[j] = a[j];
+    c = a;
 
     // tuned_STREAM_Scale(scalar);
-    [j in Vector] b[j] = scalar * c[j];
+    // [j in Vector] b[j] = scalar * c[j];
+    b = scalar * c;
 
     // tuned_STREAM_Add();
-    [j in Vector] c[j] = a[j] + b[j];
+    // [j in Vector] c[j] = a[j] + b[j];
+    c = a + b;
 
     // tuned_STREAM_Triad(scalar);
-    [j in Vector] a[j] = b[j] + scalar*c[j];
+    // [j in Vector] a[j] = b[j] + scalar*c[j];
+    a = b + scalar * c;
   }
 
   // --- SUMMARY ---
@@ -237,5 +247,3 @@ void tuned_STREAM_Triad(float scalar)
     a[j] = b[j]+scalar*c[j];
 }
 */
-
-
