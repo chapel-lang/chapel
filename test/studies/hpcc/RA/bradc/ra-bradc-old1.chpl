@@ -7,7 +7,7 @@ const POLY:uint(64) = 0x0000000000000007;  // BLC: should be param, but causes e
 
 config const totMemSize:uint(64) = 1000;
 config const logTableSize = computeLogTableSize(totMemSize);
-const tableSize = 1 << logTableSize;
+const tableSize = 1:uint(64) << logTableSize;
 
 config const verify = true;
 config const debug = false;
