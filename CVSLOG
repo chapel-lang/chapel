@@ -77962,3 +77962,21 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.future 
 
+---------------------------------------------------------------------------
+
+09/29/06 16:34:42 -- bradc
+
+Log message:
+	Took a quick rewrite of Wayne's streams benchmark
+	so that I'd be familiar with it for Monday's PGAS
+	talk.  Moved a bunch of initialization stuff into
+	config vars, made file read top-to-bottom more,
+	killed some dead stuff, used more array syntax,
+	reductions, etc.
+	
+	Could still use more work.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-bradc.chpl 
+	                                         stream-bradc.good 
+
