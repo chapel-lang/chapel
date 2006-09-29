@@ -77673,3 +77673,21 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+09/28/06 18:39:16 -- marybeth
+
+Log message:
+	Some minor changes to the Statements chapter.
+	
+	I also modified spec.tex.  I rearranged the order of Block and Block Level Statements
+	section.  I also modified the Example environment.  (I'm not tied to this example
+	environment.  I wanted to suggest something different.)
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Statements/: Assignment_Statements.tex 
+	                         The_Conditional_Statement.tex 
+	                         The_Select_Statement.tex 
+	                         The_While_and_Do_While_Loops.tex 
+
