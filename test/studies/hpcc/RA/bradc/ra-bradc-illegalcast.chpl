@@ -1,4 +1,4 @@
-const POLY = 0x0000000000000007u;  // BLC: should be param, but causes error
+const POLY = 0x0000000000000007:uint(64);  // BLC: should be param, but causes error
 //      PERIOD = 1317624576693539401;
 
 config const totMemSize = 1000:uint;
@@ -11,7 +11,7 @@ config const verify = true;
 config const debug = false;
 
 const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
-var Table: [tableDom] uint;
+var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
 const updateDom = [0..numUpdates:int-1];  // BLC: unfortunate cast
@@ -28,15 +28,15 @@ def main() {
 
 
 def randomAccessUpdate() {
-  Table = tableDom:uint;
+  Table = tableDom:uint(64);       // THE BUG OCCURS BECAUSE OF THIS
   writeln("Table is: ", Table);
 }
 
 
 def verifyResults() {
-  var temp = 0x1:uint;
+  var temp = 0x1:uint(64);
   for i in updateDom {
-    temp = (temp << 1) ^ (if (temp < 0) then POLY else 0:uint);
+    temp = (temp << 1) ^ (if (temp < 0) then POLY else 0:uint(64));
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
   }
 

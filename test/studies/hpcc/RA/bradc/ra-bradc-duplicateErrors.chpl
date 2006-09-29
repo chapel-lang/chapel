@@ -1,4 +1,4 @@
-param POLY = 0x0000000000000007u;
+param POLY = 0x0000000000000007:uint(64);
 //      PERIOD = 1317624576693539401;
 
 config const verify = false;
@@ -10,7 +10,7 @@ const tableSize = 1 << logTableSize;
 config const errorTolerance = 0.01;
 
 const tableDom = [0..tableSize-1];
-var Table: [tableDom] uint;
+var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
 const updateDom = [0..numUpdates-1];
@@ -37,7 +37,7 @@ def main() {
 
 
 def VerifyResults() {
-  var temp = 0x1:uint;
+  var temp = 0x1:uint(64);
   for i in updateDom {
     temp = (temp << 1) ^ (if (temp < 0) then POLY else 0);
     Table(temp & (tableSize-1)) ^= temp;

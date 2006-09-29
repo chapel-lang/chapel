@@ -1,6 +1,6 @@
 shift errors (HPCC-RA medium)
 
-A bunch of ways of creating the value 0x80000000000000000
-don't seem to work.  I believe these all should, though I
-may be mistaken.  Currently only numbers 6 and 7 work.
+After Steve's updates to remove suffixes and reinterpret
+literals, all of these seem to be working except for
+the two param values.
 

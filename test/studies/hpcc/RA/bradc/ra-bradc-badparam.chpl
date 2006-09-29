@@ -1,4 +1,4 @@
-param POLY:uint = 0x0000000000000007u;  // BLC: should be param?
+param POLY = 0x0000000000000007: uint(64);  // BLC: should be param?
 //      PERIOD = 1317624576693539401;
 
 config const verify = false;
@@ -38,7 +38,7 @@ def main() {
 
 
 def VerifyResults() {
-  var temp = 0x1:uint;
+  var temp = 0x1:uint(64);
   for i in updateDom {
     temp = (temp << 1) ^ (if (temp < 0) then POLY else 0);
     Table(temp & (tableSize-1)) ^= temp;

@@ -1,4 +1,4 @@
-var x: uint = 8u;
+var x: uint = 8;
 
 config var testit = true;
 

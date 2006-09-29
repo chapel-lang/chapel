@@ -1,10 +1,6 @@
 myuint1 = 9223372036854775808
 myuint2 = 9223372036854775808
-myuint3 = 9223372036854775808
-myuint4 = 9223372036854775808
 
-mysint1 = // this is probably illegal -- if so, break out to 2nd file
-mysint2 = // this is probably illegal -- if so, break out to 2nd file
 mysint3 = -9223372036854775808
 mysint4 = -9223372036854775808
 
@@ -13,15 +9,10 @@ myxint2 = 9223372036854775808
 myxint3 = -9223372036854775808
 myxint4 = -9223372036854775808
 myxint5 = 9223372036854775808
-myxint6 = 9223372036854775808
 
 myuint1 >> 62 = 2
 myuint2 >> 62 = 2
-myuint3 >> 62 = 2
-myuint4 >> 62 = 2
 
-mysint1 >> 62 = -2
-mysint2 >> 62 = -2
 mysint3 >> 62 = -2
 mysint4 >> 62 = -2
 
@@ -30,5 +21,4 @@ myxint2 >> 62 = 2
 myxint3 >> 62 = -2
 myxint4 >> 62 = -2
 myxint5 >> 62 = 2
-myxint6 >> 62 = 2
 
