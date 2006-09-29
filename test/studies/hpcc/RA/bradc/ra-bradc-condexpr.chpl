@@ -2,7 +2,7 @@ var x: uint = 8u;
 
 config var testit = true;
 
-var y = if (testit) then x else 0u;
+var y = if (testit) then x else 0:uint;
 
 writeln("y is: ", y);
 

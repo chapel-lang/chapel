@@ -90,15 +90,15 @@ var bitInd: [bitMatDom] uint(64);
 // using [i in bitMatDom] syntax
 for i in bitMatDimDom {
   for j in bitMatDimDom {
-    bitInd(i,j) = 0x1:uint(64) << (((bitsPerBitMatDim-i)*bitsPerBitMatDim)
-                                 + (bitsPerBitMatDim-j)):uint;
+    bitInd(i,j) = 0x1:uint << (((bitsPerBitMatDim-i)*bitsPerBitMatDim)
+                               + (bitsPerBitMatDim-j)):uint;
     //    bitMatWrite(bitInd(i,j));
   }
 }
 
 
 def bitMatWrite(x: uint(64)) {
-  var mask: uint(64) = 0x8000000000000000u;
+  var mask: uint(64) = 0x8000000000000000;
   for i in bitMatDimDom {
     for j in bitMatDimDom {
       if ((x & mask) != 0) {
@@ -139,7 +139,7 @@ def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 
 // reverse numBits low-order bits of x
 def bitReverse(x: uint(64), numBits = 64) {
-  const mask: uint(64) = 0x0102040810204080u;
+  const mask: uint(64) = 0x0102040810204080;
   var ndx = bitMatMultOr(mask, bitMatMultOr(x, mask));
   ndx = bitRotLeft(ndx, numBits);
   return ndx;

@@ -1,19 +1,19 @@
 var myuint1: uint(64) = 0x8000000000000000;
-var myuint2: uint(64) = 0x8000000000000000u;
+var myuint2: uint(64) = 0x8000000000000000;
 var myuint3: uint(64) = 0x8000000000000000:uint(64);
-var myuint4: uint(64) = 0x8000000000000000u:uint(64);
+var myuint4: uint(64) = 0x8000000000000000:uint(64);
 
 var mysint1: int(64) = 0x8000000000000000;
-var mysint2: int(64) = 0x8000000000000000u;
+var mysint2: int(64) = 0x8000000000000000;
 var mysint3: int(64) = 0x8000000000000000:int(64);
-var mysint4: int(64) = 0x8000000000000000u:int(64);
+var mysint4: int(64) = 0x8000000000000000:int(64);
 
 var myxint1 = 0x8000000000000000;
-var myxint2 = 0x8000000000000000u;
+var myxint2 = 0x8000000000000000;
 var myxint3 = 0x8000000000000000:int(64);
-var myxint4 = 0x8000000000000000u:int(64);
+var myxint4 = 0x8000000000000000:int(64);
 var myxint5 = 0x8000000000000000:uint(64);
-var myxint6 = 0x8000000000000000u:uint(64);
+var myxint6 = 0x8000000000000000:uint(64);
 
 writeln("myuint1 = ", myuint1);
 writeln("myuint2 = ", myuint2);

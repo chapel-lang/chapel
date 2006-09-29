@@ -69,7 +69,7 @@ def randomAccessUpdate() {
 
 def verifyResults() {
 
-  var temp:uint(64) = 0x1u;  // BLC: Can we rename this?
+  var temp:uint(64) = 0x1;  // BLC: Can we rename this?
   for i in updateDom {
     temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint(64));
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
@@ -105,7 +105,7 @@ def HPCCstarts(in n:int(64)) {
 
   // BLC: isn't this redundantly computing the same array m2 over and
   // over again?
-  var temp: uint(64) = 0x1u;  // BLC: is there a better name for this?
+  var temp: uint(64) = 0x1;  // BLC: is there a better name for this?
   for i in m2Dom {
     m2(i) = temp;
     temp = (temp << 1) ^ (if temp:int(64) < 0 then POLY else 0:uint(64));
@@ -116,7 +116,7 @@ def HPCCstarts(in n:int(64)) {
   while (n >> high) & 1 == 0 do
     high -= 1;
 
-  var ran: uint(64) = 0x2u;
+  var ran: uint(64) = 0x2;
   forall i in 0..high-1 by -1 {
     var temp: uint(64) = 0;  // BLC: is there a better name for this?
     for j in m2Dom {
@@ -137,7 +137,7 @@ def computeLogTableSize(memsize) {
   param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
 
   var elemsInTable = memsize / tableElemSize;
-  var logTableSize: uint(64) = 0u;
+  var logTableSize: uint(64) = 0;
 
   while (elemsInTable > 1) {
     elemsInTable /= 2;

@@ -1,5 +1,5 @@
 var x: uint;
-var y = 0u;
+var y = 0:uint;
 
 writeln("x is: ", x);
 writeln("y is: ", y);

@@ -1,7 +1,7 @@
 const POLY = 0x0000000000000007u;  // BLC: should be param, but causes error
 //      PERIOD = 1317624576693539401;
 
-config const totMemSize = 1000u;
+config const totMemSize = 1000:uint;
 config const logTableSize = computeLogTableSize(totMemSize);
 const tableSize = 1 << logTableSize;
 
@@ -34,9 +34,9 @@ def randomAccessUpdate() {
 
 
 def verifyResults() {
-  var temp = 0x1u;
+  var temp = 0x1:uint;
   for i in updateDom {
-    temp = (temp << 1) ^ (if (temp < 0) then POLY else 0u);
+    temp = (temp << 1) ^ (if (temp < 0) then POLY else 0:uint);
     Table((temp & (tableSize-1)):int) ^= temp;  // BLC: unforunate cast
   }
 
@@ -60,7 +60,7 @@ def computeLogTableSize(memsize) {
   param fractionOfMemory = 0.5;
 
   var elemsInTable = (memsize * fractionOfMemory):uint / tableElemSize;
-  var logTableSize = 0u;
+  var logTableSize = 0:uint;
 
   while (elemsInTable > 1) {
     elemsInTable /= 2;

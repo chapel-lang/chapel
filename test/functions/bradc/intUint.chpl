@@ -7,5 +7,5 @@ def foo(x: uint, y: uint) {
 }
 
 foo(1,2);
-foo(1u, 2);
-foo(1u, 2u);
+foo(1:uint, 2);
+foo(1:uint, 2:uint);

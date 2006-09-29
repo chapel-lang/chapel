@@ -62,7 +62,7 @@ def RandomAccessUpdate() {
   for j in StreamDomain {
     var ran:uint(64) = RandomStart(BigStep*j);
     for i in BigStepDomain {
-      ran = (ran << 1u) ^ (if (ran:int(64) < 0) then POLY else 0u);
+      ran = (ran << 1:uint) ^ (if (ran:int(64) < 0) then POLY else 0:uint);
       Table((ran & (TableSize-1)):int) ^= ran;
     }
   }
@@ -71,40 +71,40 @@ def RandomAccessUpdate() {
 def RandomStart(step0:int):uint(64) {
 
   var i:int;
-  var ran:uint(64) = 2u;
+  var ran:uint(64) = 2:uint;
 
   if (step0 ==0) then 
-    return 0x1u;
+    return 0x1:uint;
   else
     i = lg(step0);
   while (i > 0) do {
-    var temp:uint(64) = 0u;
+    var temp:uint(64) = 0:uint;
     [j in RandStepsDomain] if (( ran >> (j:uint(64))) & 1) then temp ^= RandomSteps(j);
     ran = temp;
     i -= 1;
     if (( step0 >> i) & 1) then
-      ran = (ran << 1) ^ (if (ran:int(64) < 0) then POLY else 0u);
+      ran = (ran << 1) ^ (if (ran:int(64) < 0) then POLY else 0:uint);
   }
   return ran;
 }
 
 def InitRandomSteps() {
   
-  var temp:uint(64) = 1u;
+  var temp:uint(64) = 1:uint;
 
   for i in RandStepsDomain {
     RandomSteps(i) = temp;
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0u);
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0u);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
   }
 }
 
 def VerifyResults() {
   config const ErrorTolerance = 0.01;
 
-  var temp: uint(64) = 1u;  
+  var temp: uint(64) = 1:uint;  
   for i in UpdateDomain {
-    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0u);
+    temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0:uint);
     Table((temp & (TableSize-1)):int) ^= temp;  
   }
 

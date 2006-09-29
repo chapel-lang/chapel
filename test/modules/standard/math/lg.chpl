@@ -1,5 +1,5 @@
 config var ns = 32;
-config var nu = 64u;
+config var nu = 64:uint;
 config var nf = 128.1;
 
 writeln("lg(ns) = ", lg(ns));

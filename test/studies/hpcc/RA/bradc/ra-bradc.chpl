@@ -1,9 +1,9 @@
 // BLC: Implement a timer class and insert calls
 
-config const totMemSize = 1000u;
+config const totMemSize = 1000:uint;
 param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
 config const logTableSize = lg(totMemSize / tableElemSize);
-const tableSize = 0x1u << logTableSize:uint; // BLC: unfortunate cast
+const tableSize = 0x1:uint << logTableSize:uint; // BLC: unfortunate cast
 
 config const verify = true;
 config const debug = false;
@@ -128,7 +128,7 @@ def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
 // BLC: would also like to see this fn inlined -- how to specify?
 // BLC: better name for this fn?
 def bitMunge(x) {
-  const POLY: uint(64) = 0x0000000000000007u;  // BLC: should be param, but causes error
-  param hibit: uint(64) = 0x8000000000000000u; // BLC: would like to write this: 0x1u << 63, but doesn't work
+  const POLY: uint(64) = 0x0000000000000007;  // BLC: should be param, but causes error
+  param hibit: uint(64) = 0x8000000000000000; // BLC: would like to write this: 0x1 << 63, but doesn't work
   return (x << 1) ^ (if (x & hibit) then POLY else 0:uint(64));  // BLC: cast is unfortunate
 }

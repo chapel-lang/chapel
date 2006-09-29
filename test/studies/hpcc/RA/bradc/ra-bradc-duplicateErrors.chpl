@@ -3,7 +3,7 @@ param POLY = 0x0000000000000007u;
 
 config const verify = false;
 
-config const totMemSize = 1000u;
+config const totMemSize = 1000:uint;
 config const logTableSize = computeLogTableSize(totMemSize);
 const tableSize = 1 << logTableSize;
 
@@ -37,7 +37,7 @@ def main() {
 
 
 def VerifyResults() {
-  var temp = 0x1u;
+  var temp = 0x1:uint;
   for i in updateDom {
     temp = (temp << 1) ^ (if (temp < 0) then POLY else 0);
     Table(temp & (tableSize-1)) ^= temp;
@@ -58,7 +58,7 @@ def computeLogTableSize(memsize: uint) {
   param fractionOfMemory = 0.5;
 
   var elemsInTable = (memsize * fractionOfMemory):uint / tableElemSize;
-  var logTableSize = 0u;
+  var logTableSize = 0:uint;
 
   while (elemsInTable > 1) {
     elemsInTable /= 2;

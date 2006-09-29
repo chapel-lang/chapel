@@ -1,11 +1,11 @@
 param hibit1 = 0x1 << 63;
-param hibit2 = 0x1u << 63;
+param hibit2 = 0x1:uint << 63;
 var hibit3 = 0x1 << 63;
-var hibit4 = 0x1u << 63;
+var hibit4 = 0x1:uint << 63;
 var hibit5 = 0x8000000000000000;
-var hibit6 = 0x8000000000000000u;
+var hibit6 = 0x8000000000000000:uint;
 var hibit7: uint(64) = (0x1 << 63):uint;
-var hibit8: uint(64) = 0x1u << 63;
+var hibit8: uint(64) = 0x1:uint << 63;
 
 writeln("hibit1 = ", hibit1);
 writeln("hibit2 = ", hibit2);

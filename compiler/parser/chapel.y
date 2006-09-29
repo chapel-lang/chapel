@@ -146,7 +146,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TYIELD
 
 %token TIDENT
-%token INTLITERAL FLOATLITERAL IMAGLITERAL UINTLITERAL
+%token INTLITERAL FLOATLITERAL IMAGLITERAL
 %token <pch> STRINGLITERAL
 
 %token TASSIGN
@@ -1085,20 +1085,6 @@ literal:
         $$ = new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
       else if (ull <= 9223372036854775807ull)
         $$ = new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
-      else
-        $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
-    }
-| UINTLITERAL
-    {
-      unsigned long long int ull;
-      if (!strncmp("0b", yytext, 2))
-        ull = strtoull(yytext+2, NULL, 2);
-      else if (!strncmp("0x", yytext, 2))
-        ull = strtoull(yytext+2, NULL, 16);
-      else
-        ull = strtoull(yytext, NULL, 10);
-      if (ull <= 4294967295ull)
-        $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_32));
       else
         $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
     }

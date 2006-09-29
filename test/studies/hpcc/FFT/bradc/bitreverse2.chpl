@@ -15,7 +15,7 @@ writeln("V is: ", V);
 
 
 def bitReverse(W: [?WD] complex) {
-  const mask: uint(64) = 0x0102040810204080u;
+  const mask: uint(64) = 0x0102040810204080:uint;
   const n = WD(1).length;
   const shift = lg(n);
   var V: [WD] complex;
