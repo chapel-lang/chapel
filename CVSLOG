@@ -77886,3 +77886,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl ra2.chpl ra3.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 15:53:29 -- waynew
+
+Log message:
+	Relevant C source files for STREAMS from the HPCC bench.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.c io.c hpcc.h 
+
