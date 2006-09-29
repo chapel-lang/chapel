@@ -146,6 +146,7 @@ void normalize(BaseAST* base) {
   }
 
   dtAny->isGeneric = true;
+  dtAnyInt->isGeneric = true;
   asts.clear();
   collect_asts_postorder(&asts, base);
   int changed = 1;

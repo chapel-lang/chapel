@@ -5,7 +5,7 @@ writeln ("ui=510 is ", ui);
 var ui8:uint(8);
 ui8 = 128;
 writeln ("ui(8)=128 is ", ui8);
-ui8 = -128:uint(8);
+ui8 = (-128):uint(8);
 writeln ("ui(8)=-128 is ", ui8);
 ui8 = 256:uint(8);
 writeln ("ui(8)=256 is ", ui8);

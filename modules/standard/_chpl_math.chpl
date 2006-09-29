@@ -91,7 +91,7 @@ var bitInd: [bitMatDom] uint(64);
 for i in bitMatDimDom {
   for j in bitMatDimDom {
     bitInd(i,j) = 0x1:uint(64) << (((bitsPerBitMatDim-i)*bitsPerBitMatDim)
-                                  + (bitsPerBitMatDim-j)):uint;
+                                   + (bitsPerBitMatDim-j)):int;
     //    bitMatWrite(bitInd(i,j));
   }
 }
@@ -148,10 +148,10 @@ def bitReverse(x: uint(64), numBits = 64) {
 
 
 def bitRotLeft(x: uint(64), shift) {
-  return (x << shift:uint) | (x >> (64-shift):uint);
+  return (x << shift:int) | (x >> (64-shift):int);
 }
 
 
 def bitRotRight(x: uint(64), shift) {
-  return (x >> shift:uint) | (x << (64-shift):uint);
+  return (x >> shift:int) | (x << (64-shift):int);
 }

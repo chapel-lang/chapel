@@ -172,6 +172,7 @@ class PrimitiveType : public Type {
 
 // internal types
 TYPE_EXTERN Type* dtAny;
+TYPE_EXTERN Type* dtAnyInt;
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;

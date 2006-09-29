@@ -858,7 +858,8 @@ void initPrimitiveTypes(void) {
   dtCondVar_p = createPrimitiveType( "_condvar_p", "_chpl_condvar_p"); 
   CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "NULL");
 
-  dtAny = createPrimitiveType ("any", "_any");
+  dtAny = createPrimitiveType ("_any", "_any");
+  dtAnyInt = createPrimitiveType ("_anyint", "_anyint");
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
   dtSetterToken = createPrimitiveType ("_ST", "_ST");

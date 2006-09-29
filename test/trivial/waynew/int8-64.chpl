@@ -15,7 +15,7 @@ i8 = -128;
 writeln ("i(8)=-128 is ", i8);
 i8 = 256:int(8);
 writeln ("i(8)=256 is ", i8);
-i8 = -256:int(8);
+i8 = (-256):int(8);
 writeln ("i(8)=-256 is ", i8);
 
 var i16:int(8+8);
