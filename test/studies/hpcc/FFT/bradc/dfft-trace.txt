@@ -1,0 +1,91 @@
+logn = 1
+--------
+cft1st(n = 4);
+l << 2 != n
+
+
+logn = 2
+--------
+cft1st(n = 8);
+l << 2 != n
+
+
+logn = 3
+--------
+cft1st(n = 16);
+  // computes first 16 (8 complexes) manually
+l << 2 != n
+
+
+logn = 4
+--------
+cft1st(n = 32);
+  // computes first 16 (8 complexes) manually
+  l=2 btrfly(j=16, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=16+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+l << 2 == n
+l=8 btrfly(j=0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
+a(0), a(8), a(16), a(24)  [c(0), c(4), c(8), c(12)]
+
+logn = 5
+--------
+cft1st(n = 64);
+  // computes first 16 (8 complexes) manually
+  l=2 btrfly(j=16, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=16+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=32, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=32+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=48, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=48+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+cftmd2(n=64, l=8, a, w)
+  cftmd0(n=64, l=8, a, w)
+    l=8 btrfly(j=0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=2, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=4, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=6, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=32, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=34, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=36, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=38, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+l << 2 != n
+
+
+logn = 6
+--------
+cft1st(n = 128);
+  // computes first 16 (8 complexes) manually
+  l=2 btrfly(j=16, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=16+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=32, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=32+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=48, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=48+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=64, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=64+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=80, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=80+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=96, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=96+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j=112, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=2 btrfly(j+8=112+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+cftmd2(n=128, l=8, a, w)
+  cftmd0(n=128, l=8, a, w)
+    l=8 btrfly(j=0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=2, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=4, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=6, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)
+    l=8 btrfly(j=32, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=34, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=36, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+    l=8 btrfly(j=38, wk1r=0, wk1r=0, 0.0, 1.0, -wk1r=-0, wk1r=0, a, b, c, d)
+  l=8 btrfly(j=64, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j=66, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j=68, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j=70, wk1r=0, wk1i=0, wk2r=0, wk2i=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j+8=96+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j+8=98+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j+8=100+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  l=8 btrfly(j+8=102+8, wk1r=0, wk1i=0, -wk2i=-0, wk2r=0, wk3r=0, wk3i=0, a, b, c, d);
+  cftmd21(n=128, l=8, a, w)
+l << 2 == n
+btrfly(j=0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
