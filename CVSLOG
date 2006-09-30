@@ -78044,3 +78044,28 @@ Log message:
 Modified files:
 	chapel/etc/emacs/21.4/: font-lock.el 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:45:39 -- bradc
+
+Log message:
+	Was tinkering around with mg today to see how far
+	we are from getting it compiling (in case I use
+	it in my talk, as is likely).  Main issues are:
+	
+	  1) var A: [i in D] type(i) = f(i);
+	  2) global boundary conditions
+	  3) subdomains
+	  4) timers
+	
+	Other than that, things were going smoothly.  I
+	should try to break two levels out of the hierarchy
+	explicitly and send them to all the routines to see
+	how they work manually.  If that works, we're
+	nearly there.
+
+Modified files:
+	chapel/test/npb/mg/: mg-annotated.chpl mg-compilable.chpl 
+Added files:
+	chapel/test/npb/mg/: mg-compilable2.chpl 
+
