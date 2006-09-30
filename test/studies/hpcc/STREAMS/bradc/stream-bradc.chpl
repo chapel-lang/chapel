@@ -10,9 +10,9 @@ config const memInMBs = 3;
 const memInBytes = memInMBs*MB;
 
 type elemType = float(64);
-const elemSizeInBytes = 8;  // magic number -- replace with bytes(elemtype)
+const elemSizeInBytes = bits(elemType)/bitsPerByte;
 
-const maxIntBits2 = 4*bitsPerByte - 2; // 4 is magic number -- use bits(int)
+const maxIntBits2 = bits(int) - 2;
 const maxPossibleElems = (memInBytes/elemSizeInBytes)/numVectors;
 const flg2 = lg(maxPossibleElems);
 config const usePow2VectorSize = false;
