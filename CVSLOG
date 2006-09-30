@@ -78020,3 +78020,16 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:37:57 -- bradc
+
+Log message:
+	Updated my implementation to use the new (beautifully-named)
+	bits function.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-bradc.chpl 
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: .cvsignore 
+
