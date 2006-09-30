@@ -78007,3 +78007,16 @@ Modified files:
 Removed files:
 	chapel/test/domains/waynew/: init.future 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:14:01 -- waynew
+
+Log message:
+	- bits(type) instead of bits(var).
+	- Changed some ugliness in stream.chpl to use bits(type) and used
+	  uninitialized domain.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
+
