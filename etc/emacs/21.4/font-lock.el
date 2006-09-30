@@ -2704,20 +2704,20 @@ See also `chpl-font-lock-extra-types'.")
 (let* ((chpl-keywords
 	(eval-when-compile
 	  (regexp-opt '("atomic"
-                        "break" 
+                        "break" "by"
                         "cobegin" "config" "const" "continue" 
-                        "distributed" "do" 
+                        "def" "distributed" "do" 
                         "else" 
                         "for" "forall" 
                         "goto"
                         "if" "in" "inout" "iterator"
                         "let"
                         "nil"
-                        "ordered" "otherwise" "out"
+                        "on" "ordered" "otherwise" "out"
                         "param"
                         "reduce" "repeat" "return"
 			"select" 
-                        "typeselect"
+                        "then" "typeselect"
                         "until"
                         "var"
                         "when" "where" "while" "with"
@@ -2749,7 +2749,7 @@ See also `chpl-font-lock-extra-types'.")
 	(eval-when-compile
 	  (regexp-opt
 	   '("define" "do" "elif" "else" "endif" "error" "file" "if" "ifdef"
-	     "ifndef" "include" "line" "pragma" "then" "undef"))))
+	     "ifndef" "include" "line" "pragma" "undef"))))
        (chpl-preprocessor-directives-depth
 	(regexp-opt-depth chpl-preprocessor-directives)))
  (setq chpl-font-lock-keywords-1
