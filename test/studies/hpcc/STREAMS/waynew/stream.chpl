@@ -27,10 +27,8 @@ HPCC_LocalVectorSize( params: HPCC_Params,
   // this is the maximum power of 2 that that can be held in a signed integer 
   // (for a 4-byte integer, 2**31-1 is the maximum integer, so the maximum 
   // power of 2 is 30) */
-  var i: int;
-  // var maxIntBits2 = bytes(int) * 8 - 2;
-  // var maxIntBits2 = bytes(i) * 8 - 2;  // broken?
-  var maxIntBits2 = bits(i) - 2;
+
+  var maxIntBits2 = bits(int) - 2;
 
   // flg2 = floor(log2(params->HPLMaxProcMem / size / vecCnt))
   var flg2 = 1;
@@ -51,7 +49,7 @@ HPCC_LocalVectorSize( params: HPCC_Params,
 // stream.c
 
 var VectorSize: int;
-var Vector: domain(1) = [1..10];
+var Vector: domain(1);
 var a, b, c: [Vector] float;
 
 // param N = 2000000;      // purpose?
@@ -127,8 +125,7 @@ def checkSTREAMresults( doIO: bool): bool {
 
 
 def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
-  // VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bytes(float), false); 
-  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bytes(a[1]), false); 
+  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bits(float)/8, false); 
 
   Vector = [1..VectorSize];   // realloc a, b, and c
 
@@ -137,7 +134,7 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   // --- SETUP --- determine precision and check timing ---
   if doIO {
     writeln( HLINE);
-    var BytesPerWord = bytes(a[1]);
+    var BytesPerWord = bits(float)/8;
     writeln( "This system uses ", BytesPerWord, " bytes per DOUBLE PRECISION word.");
 
     writeln( HLINE);
@@ -202,48 +199,3 @@ params.HPLMaxProcMem = MEMORY;
 if HPCC_Stream( params, true) {  // if failure
   writeln( "Solution Failed!");
 }
-
-
-
-
-/*
-void tuned_STREAM_Copy()
-{
-  int j;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-        for (j=0; j<VectorSize; j++)
-            c[j] = a[j];
-}
-
-void tuned_STREAM_Scale(float scalar)
-{
-  int j;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-  for (j=0; j<VectorSize; j++)
-    b[j] = scalar*c[j];
-}
-
-void tuned_STREAM_Add()
-{
-  int j;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-  for (j=0; j<VectorSize; j++)
-    c[j] = a[j]+b[j];
-}
-
-void tuned_STREAM_Triad(float scalar)
-{
-  int j;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-  for (j=0; j<VectorSize; j++)
-    a[j] = b[j]+scalar*c[j];
-}
-*/

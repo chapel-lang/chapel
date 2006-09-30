@@ -15,8 +15,6 @@ pragma "inline" def >(a: bool, b: bool) return __primitive(">", a, b);
 pragma "inline" def !(a: bool) return __primitive("!", a);
 pragma "inline" def &&(a: bool, b: bool) return __primitive("&&", a, b);
 pragma "inline" def ||(a: bool, b: bool) return __primitive("||", a, b);
-pragma "inline" def bits(a: bool)  return 32;  // YAH.  WAW: fixme please.
-pragma "inline" def bytes(a: bool)  return  4;   // YAH.  WAW: fixme please.
 
 // Primitive functions and operators on ints
 pragma "inline" def =(a: int(?w), b: int(w)) return b;
@@ -63,6 +61,12 @@ pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
 pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
 pragma "inline" def &&(a: int(64), b: int(64)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: int(64), b: int(64)) return __primitive("||", a, b);
+
+pragma "inline" def bits(type t) where t == int(8)  return 8;
+pragma "inline" def bits(type t) where t == int(16) return 16;
+pragma "inline" def bits(type t) where t == int(32) return 32;
+pragma "inline" def bits(type t) where t == int(64) return 64;
+
 
 // Primitive functions and operators on uints
 pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
@@ -120,12 +124,11 @@ pragma "inline" def >>(a: uint(32), b: _anyint) return __primitive(">>", a, b);
 pragma "inline" def <<(a: uint(64), b: _anyint) return __primitive("<<", a, b);
 pragma "inline" def >>(a: uint(64), b: _anyint) return __primitive(">>", a, b);
 
+pragma "inline" def bits(type t) where t == uint(8)  return 8;
+pragma "inline" def bits(type t) where t == uint(16) return 16;
+pragma "inline" def bits(type t) where t == uint(32) return 32;
+pragma "inline" def bits(type t) where t == uint(64) return 64;
 
-
-pragma "inline" def bits(a: int(?w)) return w;
-pragma "inline" def bytes(a: int(?w)) return w/8;
-pragma "inline" def bits(a: uint(?w)) return w;
-pragma "inline" def bytes(a: uint(?w)) return w/8;
 
 // Primitive functions and operators on floats
 pragma "inline" def =(a: float(?w), b: float(w)) return b;
@@ -145,8 +148,9 @@ pragma "inline" def >(a: float(?w), b: float(w)) return __primitive(">", a, b);
 pragma "inline" def !(a: float(?w)) return __primitive("!", a);
 pragma "inline" def &&(a: float(?w), b: float(w)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: float(?w), b: float(w)) return __primitive("||", a, b);
-pragma "inline" def bits(a: float(?w)) return w;
-pragma "inline" def bytes(a: float(?w)) return w/8;
+pragma "inline" def bits(type t) where t == float(32)  return 32;
+pragma "inline" def bits(type t) where t == float(64)  return 64;
+pragma "inline" def bits(type t) where t == float(128) return 128;
 
 // Primitive functions and operators on string
 pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
