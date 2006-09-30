@@ -78033,3 +78033,14 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/RA/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:41:58 -- bradc
+
+Log message:
+	Updated coloring for Chapel mode based on Steve's
+	feedback at this week's meeting.
+
+Modified files:
+	chapel/etc/emacs/21.4/: font-lock.el 
+
