@@ -1,15 +1,28 @@
-// This is a port of the NPB MG benchmark (version 3.0) ported to
+// This is a port of the NPB MG benchmark (version 3.0) written in
 // Chapel by Brad Chamberlain.  As with any port, a number of
 // structural and stylistic choices were made; in some cases, the
 // original identifiers were preserved, either for clarity, or because
 // the author couldn't come up with better names for them.  In other
-// cases, more verbose names were used to improve readability.
+// cases, more verbose names were used in hopes of improving
+// readability.
 
 // In general, types are elided from declarations unless they are
 // believed to be ambiguous when reading the source, or greatly
 // improve the code's readability.  This is obviously a judgement
 // call.
 
+// It should be noted that as of this writing (Nov 2005), our
+// prototype Chapel implementation is not yet far enough along to
+// handle this code.  This therefore represents the target that we are
+// striving for rather than something that works today.
+
+/*
+class timer {
+  def start();
+  def stop();
+  def read() { return -1.0; }
+}
+*/
 
 // an enumerated type indicating the standard NPB problem classes:
 //   S: small
@@ -25,7 +38,6 @@ enum classVals {S, W, A, B, C, D, O};
 //   iterations: the number of iterations to run
 //   checksum: the expected result, if the default characteristics are used
 
-/* HACK arrays do not compile yet
 const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
 const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
 const checksum: [S..O] float  = (/0.0000530770700573,
@@ -35,43 +47,6 @@ const checksum: [S..O] float  = (/0.0000530770700573,
                                   0.000000570674826298,
                                   0.000000000158327506043,
                                   0.0/);
-implement these as funs for the time being: */
-
-def probSize(c: classVals) {
-  select (c) {
-    when S do return 32;
-    when W do return 64;
-    when A do return 256;
-    when B do return 256;
-    when C do return 512;
-    when D do return 1024;
-    otherwise return 256;
-  }
-}
-
-def iterations(c: classVals) {
-  select (c) {
-    when S do return 4;
-    when W do return 40;
-    when A do return 4;
-    when B do return 20;
-    when C do return 20;
-    when D do return 50;
-    otherwise return 4;
-  }
-}
-
-def checksum(c: classVals) {
-  select (c) {
-    when S do return 0.0000530770700573;
-    when W do return 0.00000000000000000250391406439;
-    when A do return 0.000002433365309;
-    when B do return 0.00000180056440132;
-    when C do return 0.000000570674826298;
-    when D do return 0.000000000158327506043;
-    otherwise return 0.0;
-  }
-}
 
 
 // this is the problem class that will be used for the run.  Since
@@ -122,10 +97,7 @@ config const warmup = true;
 // coefficient values that define the weight values used in each of
 // the 27-point stencils.
 
-/* HACK: array types not parsed yet
 type coeff = [0..3] float;
-*/
-type coeff = 4*float; // HACK
 
 
 // the domains that define the multigrid data structure
@@ -146,16 +118,17 @@ type coeff = 4*float; // HACK
 //   Stencil: a 3x3x3 domain used to describe the 27-point stencils
 //     used in this computation
 
-/* HACK: domains don't parse yet
 const Levels: domain(1) = [1..numLevels];
-const Base: domain(3) distributed(Block(3)) = [1..nx, 1..ny, 1..nz];
-const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
+const Base: domain(3) = [1..nx, 1..ny, 1..nz];
+//BLC: distributed doesn't work yet
+//const Base: domain(3) distributed(Block(3)) = [1..nx, 1..ny, 1..nz];
+//BLC: iterators in array decls don't work yet
+//const Hier: [lvl in Levels] subdomain(Base) = Base by -2**(lvl-1);
+//BLC: subdomains don't work:
+//var Hier: [Levels] subdomain(Base);
+var Hier: [Levels] domain(3);
+[lvl in Levels] Hier(lvl) = Base by -2**(lvl-1);
 const Stencil: domain(3) = [-1..1, -1..1, -1..1];
-*/
-class mydomain { }       // HACK
-const Levels: mydomain;  // HACK
-const Base: mydomain;    // HACK
-const Stencil: mydomain; // HACK
 
 
 // ENTRY POINT:
@@ -163,31 +136,29 @@ const Stencil: mydomain; // HACK
 def main() {
   // two timer variables that are used to time the initialization and
   // the benchmark time, respectively
-  var initTimer, benchTimer: timer;
+  //  var initTimer = timer(), benchTimer = timer();
 
   // Here's the timed initialization portion (indentation for emphasis)
-  initTimer.start();
+  //  initTimer.start();
 
     // These are our main arrays; V is the input array; U and R are
     // the hierarchical arrays used in the computation
-/* HACK: arrays don't parse yet
     var V: [Base] float;
-    var U, R: [lvl in Levels] [Hier(lvl)] float;
-*/
-    var V: float;    // HACK
-    var U, R: float; // HACK
+    // BLC: iterators in array decls don't work yet
+    //    var U, R: [lvl in Levels] [Hier(lvl)] float;
+    var U, R: [Levels] [Base] float;
 
     // Initialize everything
-    initializeMG();
-  initTimer.stop();
+    initializeMG(V, U, R);
+    //  initTimer.stop();
 
   // Here's the actual benchmark run; rnm2 is our checksum value
-  benchTimer.start();
+    //  benchTimer.start();
     var rnm2 = computeMG(V, U, R);
-  benchTimer.stop();
+    //  benchTimer.stop();
 
   // print out the results of the run and timings
-  printResults(rnm2, initTimer.read(), benchTimer.read());
+    //  printResults(rnm2, initTimer.read(), benchTimer.read());
 }
 
 
@@ -203,23 +174,14 @@ def initializeMG(V, U, R) {
   writeln(" Iterations: ", numIters);
   writeln();
 
+  // warm up the cache if the user has requested it
+  if (warmup) {
+    initArrays(V, U, R);
+    runOneIteration(V, U, R);
+  }
+
   // initialize the arrays
   initArrays(V, U, R);
-
-  // warm up the cache if the user has requested it, and then reset
-  // the arrays again
-  if (warmup) {
-    warmupMG(V, U, R);
-    initArrays(V, U, R);
-  }
-}
-
-
-// warmupMG() runs a single iteration of the benchmark to warm stuff up
-
-def warmupMG(V, U, R) {
-  mg3P(V, U, R);
-  resid(R(1), V, U(1));
 }
 
 
@@ -228,14 +190,10 @@ def warmupMG(V, U, R) {
 def computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
-  for it in (1..numIters) {
-    mg3P(V, U, R);
-    resid(R(1), V, U(1));
+  for it in 1..numIters {
+    runOneIteration(V, U, R);
   }
-/* HACK: tuple assignments don't parse yet
-  var (rnm2, _) = norm2u3(R(1));
-*/
-  var rnm2 = norm2u3(R(1))(1);   // HACK
+  var rnm2 = norm2u3(R(1))(1);
 
   return rnm2;
 }
@@ -276,6 +234,15 @@ def printResults(rnm2, inittime, runtime) {
     writeln(" UNSUCCESSFUL");
   }
   writeln(" Version = 3.0");
+}
+
+
+// running one iteration means running a round of mg3P followed by
+// one residual
+
+def runOneIteration(V, U, R) {
+  mg3P(V, U, R);
+  resid(R(1), V, U(1));
 }
 
 
@@ -331,10 +298,9 @@ def resid(R, V, U) {
   // hope is that by declaring these to be const, the compiler will do
   // stencil optimizations on them as defined in Deitz's SC2001 paper.
 
-/* HACK: arrays don't parse yet
-  const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
-*/
-  var a3d: 3*float;    // HACK
+  //  const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
+  var a3d: [Stencil] float;
+  [i,j,k in Stencil] a3d(i,j,k) = a((i!=0) + (j!=0) + (k!=0));
 
   // grab the U array's domain and stride information, for
   // convenience.  The stride is returned as a triple of ints
@@ -355,8 +321,8 @@ def resid(R, V, U) {
   // This array of values is subtracted from the V array and assigned
   // to the R array.
 
-  R = V - [ijk in UD] sum reduce [off in Stencil] 
-                                   (a3d(off) * U(ijk + Ustr*off));
+  R = V - [ijk in UD] + reduce [off in Stencil] 
+                                 (a3d(off) * U(ijk + Ustr*off));
 }
 
 
@@ -368,15 +334,14 @@ def resid(R, V, U) {
 
 def psinv(U, R) {
   const c: coeff = initCValues();
-/* HACK: arrays don't parse yet
-  const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
-*/
-  var c3d: 3*float;   // HACK
+  //  const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
+  var c3d: [Stencil] float;
+  [i,j,k in Stencil] c3d(i,j,k) = c((i!=0) + (j!=0) + (k!=0));
 
   const RD = R.Domain,
         Rstr = R.stride;
 
-  U += [ijk in RD] sum reduce [off in Stencil] (c3d(off) * R(ijk + Rstr*off));
+  U += [ijk in RD] + reduce [off in Stencil] (c3d(off) * R(ijk + Rstr*off));
 }
 
 
@@ -386,15 +351,14 @@ def psinv(U, R) {
 
 def rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-/* HACK: arrays don't parse yet
-  const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
-*/
-  const w3d: 3*float;   // HACK
+  //  const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
+  var w3d: [Stencil] float;
+  [i,j,k in Stencil] w3d(i,j,k) = w((i!=0) + (j!=0) + (k!=0));
 
   const SD = S.Domain,
         Rstr = R.stride;
 
-  S = [ijk in SD] sum reduce [off in Stencil] (w3d(off) * R(ijk + Rstr*off));
+  S = [ijk in SD] + reduce [off in Stencil] (w3d(off) * R(ijk + Rstr*off));
 }
 
 
@@ -420,14 +384,13 @@ def rprj3(S, R) {
 // topologies.
 
 def interp(R, S) {
-/* HACK: domains and arrays don't parse yet
   const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
-  const w: [ijk in IDom] float = 1.0 / IStn.numIndices();
-*/
-  const IDom: mydomain;  // HACK
-  const w: 3*float;      // HACK
-  const IStn: mydomain;  // HACK
+  //  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  var IStn: [IDom] domain(3);
+  [i,j,k in IDom] Istn(i,j,k) = [i..0, j..0, k..0];
+  //  const w: [ijk in IDom] float = 1.0 / IStn.numIndices();
+  var w: [IDom] float;
+  [ijk in IDom] w(ijk) = 1.0 / IStn.numIndices();
 
   const SD = S.Domain(),
         Rstr = R.stride,
@@ -435,7 +398,7 @@ def interp(R, S) {
 
   forall ioff in IDom {
     [ijk in SD] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum reduce [off in IStn(ioff)] S(ijk + Sstr*off);
+                = w(ioff) * + reduce [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
@@ -446,7 +409,7 @@ def interp(R, S) {
 // the callsite).
 
 def norm2u3(R) {
-  const rnm2 = sqrt((sum reduce R**2)/(nx*ny*nz)),
+  const rnm2 = sqrt((+ reduce R**2)/(nx*ny*nz)),
         rnmu = max reduce abs(R);
 
   return (rnm2, rnmu);
@@ -496,11 +459,11 @@ def initArrays(V, U, R) {
   // therefore imposes similar requirements and challenges.  I can
   // expound more on this in person than is worth embedding here.
 
-  V.setBoundaryCondition(wrap);
-  forall lvl in Levels {
-    U(lvl).setBoundaryCondition(wrap);
-    R(lvl).setBoundaryCondition(wrap);
-  }
+  //  V.setBoundaryCondition(wrap);
+  //  forall lvl in Levels {
+  //    U(lvl).setBoundaryCondition(wrap);
+  //    R(lvl).setBoundaryCondition(wrap);
+  //  }
 }
 
 
@@ -514,10 +477,7 @@ def initArrays(V, U, R) {
 
 def zran3(V) {
   const numCharges = 10;
-/* HACK: arrays don't parse yet
   var pos, neg: [1..numCharges] index(Base);
-*/
-  var pos, neg: 10*int;  // HACK
 
   // compute the random array of values
   V = [i,j,k in Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
@@ -527,7 +487,7 @@ def zran3(V) {
   // index of the array's domain.  This is an easy, though slow way to
   // perform this computation.  A better way would be to write a
   // user-defined reduction using Chapel's features for that, but this
-  // required lots more timing and isn't being timed anyway.
+  // required lots more effort and it isn't being timed anyway.
 
   for i in (1..numCharges) {
     pos(i) = maxloc reduce V;
