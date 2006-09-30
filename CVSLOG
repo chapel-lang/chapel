@@ -77994,3 +77994,16 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:03:18 -- deitz
+
+Log message:
+	Fixed bug of declaring an array over a domain that is not initialized.
+	Removed a .future.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+Removed files:
+	chapel/test/domains/waynew/: init.future 
+
