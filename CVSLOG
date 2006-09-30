@@ -78069,3 +78069,13 @@ Modified files:
 Added files:
 	chapel/test/npb/mg/: mg-compilable2.chpl 
 
+---------------------------------------------------------------------------
+
+09/29/06 17:47:26 -- bradc
+
+Log message:
+	A trace showing how John's HPCC FT unfolds as it runs.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft-trace.txt 
+
