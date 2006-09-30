@@ -424,7 +424,6 @@ class _aarray: _abase {
     return info(dim)(2);
 
   def initialize() {
-    if dom == nil then return;
     if noinit == true then return;
     for param dim in 1..rank do
       off(dim) = dom(dim)._low;

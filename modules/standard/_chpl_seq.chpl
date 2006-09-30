@@ -188,7 +188,7 @@ def fwrite(f : file, s : seq) {
 record _aseq {
   var _low : int;
   var _high : int;
-  var _stride : int;
+  var _stride : int = 1;
 
   def _aseq(_low, _high) {
     compilerError("Invalid arithmetic sequence, bounds must be integers");
