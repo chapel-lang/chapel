@@ -14,28 +14,21 @@ def complex.=imag (f:float) { __primitive( "complex_set_imag", this, f); }
 
 def =(a: complex(?w), b: complex(w)) return b;
 
-pragma "inline" def _complex(real: float(?w), imag: float(w)) {
-  var x: complex(2*w);
-  x.real = real;
-  x.imag = imag;
-  return x;
-}
-
 pragma "inline" def +(a: complex(?w), b: complex(w))
-  return _complex(a.real+b.real, a.imag+b.imag);
+  return (a.real+b.real, a.imag+b.imag):complex;
 
 pragma "inline" def -(a: complex(?w), b: complex(w))
-  return _complex(a.real-b.real, a.imag-b.imag);
+  return (a.real-b.real, a.imag-b.imag):complex;
 
 pragma "inline" def *(a: complex(?w), b: complex(w))
-  return _complex(a.real*b.real-a.imag*b.imag, a.imag*b.real+a.real*b.imag);
+  return (a.real*b.real-a.imag*b.imag, a.imag*b.real+a.real*b.imag):complex;
 
 pragma "inline" def /(a: complex(?w), b: complex(w))
   return let d = b.real*b.real+b.imag*b.imag in
-    _complex((a.real*b.real+a.imag*b.imag)/d, (a.imag*b.real-a.real*b.imag)/d);
+    ((a.real*b.real+a.imag*b.imag)/d, (a.imag*b.real-a.real*b.imag)/d):complex;
 
 pragma "inline" def conjg(a: complex(?w))
-  return _complex(a.real, -a.imag);
+  return (a.real, -a.imag):complex;
 
 pragma "inline" def bits(type t) where t == complex(64)  return 64;
 pragma "inline" def bits(type t) where t == complex(128) return 128;

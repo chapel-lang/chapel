@@ -66,6 +66,15 @@ specialize_casts(CallExpr* call) {
       call->get(1)->remove();
       call->replace(new CallExpr("_tuple_to_seq", arg1->remove()));
     }
+    if (!strcmp("complex", sym->var->name)) {
+      if (CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(2))) {
+        if (tuple->isNamed("_tuple")) {
+          Expr* arg1 = call->get(2);
+          call->get(1)->remove();
+          call->replace(new CallExpr("_tuple_to_complex", arg1->remove()));
+        }
+      }
+    }
   }
 }
 

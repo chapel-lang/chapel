@@ -70,12 +70,12 @@ def twiddles(W: [?WD] complex) {
   W(0) = 1.0;
   // TODO: need to figure out the best way to write this _complex
   W(n/2) = let cosDeltaN = cos(delta * n/2)
-            in _complex(cosDeltaN, cosDeltaN);
+            in (cosDeltaN, cosDeltaN):complex;
   for i in 1..n/2-1 {
     const x = cos(delta*i);
     const y = sin(delta*i);
-    W(i)     = _complex(x, y);
-    W(n - i) = _complex(y, x);
+    W(i)     = (x, y):complex;
+    W(n - i) = (y, x):complex;
   }
 }
 
@@ -131,19 +131,19 @@ def cft1st(A, W) {
 
   A(0) = x0 + x2;
   A(2) = x0 - x2;
-  A(1) = _complex(x1.real - x3.imag, x1.imag + x3.real);
-  A(3) = _complex(x1.real + x3.imag, x1.imag - x3.real);
+  A(1) = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  A(3) = (x1.real + x3.imag, x1.imag - x3.real):complex;
 
   x0 = A(4) + A(5);
   x1 = A(4) - A(5);
   x2 = A(6) + A(7);
   x3 = A(6) - A(7);
   A(4) = x0 + x2;
-  A(6) = _complex(x2.imag - x0.imag, x0.real - x2.real);
-  x0 = _complex(x0.real - x3.imag, x1.imag + x3.real);
-  A(5) = wk1r * _complex(x0.real - x0.imag, x0.real + x0.imag);
-  x0 = _complex(x3.imag + x1.real, x3.real - x1.imag);
-  A(7) = wk1r * _complex(x0.imag - x0.real, x0.imag + x0.real);
+  A(6) = (x2.imag - x0.imag, x0.real - x2.real):complex;
+  x0 = (x0.real - x3.imag, x1.imag + x3.real):complex;
+  A(5) = wk1r * (x0.real - x0.imag, x0.real + x0.imag):complex;
+  x0 = (x3.imag + x1.real, x3.real - x1.imag):complex;
+  A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
 
   var k1 = 1;
   for j in 8..n-1 by 8 {
@@ -168,7 +168,7 @@ def cftmd0(l, A, W) {
   }
 
   for j in m..l+m by 2 {
-    butterfly(_complex(wk1r, wk1r), -1.0i, _complex(-wk1r, wk1r), A(j), A(j+l), A(j+2*l), A(j+3*l));
+    butterfly((wk1r, wk1r), -1.0i, _complex(-wk1r, wk1r), A(j), A(j+l), A(j+2*l), A(j+3*l)):complex;
   }
 }
 
@@ -193,7 +193,7 @@ def cftmd1(l, A, W) {
                    2 * wk2.real * wk1.real - wk1.imag);
 
     for j in k+m..l+k+m-1 by 2 {
-      butterfly(wk1, _complex(-wk2.imag, wk2.real), wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
+      butterfly(wk1, (-wk2.imag, wk2.real), wk3, A(j), A(j+l), A(j+2*l), A(j+3*l)):complex;
     }
 
     k1 += 1;
@@ -216,8 +216,8 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   a = x0 + x2;
   x0 -= x2;
   c = wk2 * x0;
-  x0 = _complex(x1.real - x3.imag, x1.imag + x3.real);
+  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
   b = wk1 * x0;
-  x0 = _complex(x1.real + x3.imag, x1.imag - x3.real);
+  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
   d = wk3 * x0;
 }

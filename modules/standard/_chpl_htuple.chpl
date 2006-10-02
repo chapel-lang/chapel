@@ -58,3 +58,15 @@ def _tuple_to_seq(t: _tuple) {
     s #= t(j);
   return s;
 }
+
+pragma "inline" def _tuple_to_complex_help(real: float(?w), imag: float(w)) {
+  var x: complex(2*w);
+  x.real = real;
+  x.imag = imag;
+  return x;
+}
+
+def _tuple_to_complex(t: _tuple) where t.size == 2 {
+  var c = _tuple_to_complex_help(t(1), t(2));
+  return c;
+}

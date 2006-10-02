@@ -16,13 +16,13 @@ def twiddles(W: [?WD] complex) {
   W(1) = 1.0;
   // TODO: need to figure out the best way to write this _complex
   W(n/2 + 1) = let cosDeltaN = cos(delta * n)
-                in _complex(cosDeltaN, cosDeltaN);
+                in (cosDeltaN, cosDeltaN):complex;
   for i in 2..n/2 {
     const deltaI = delta * 2*(i-1);
     const x = cos(deltaI);
     const y = sin(deltaI);
-    W(i)         = _complex(x, y);
-    W(n - i + 2) = _complex(y, x);
+    W(i)         = (x, y):complex;
+    W(n - i + 2) = (y, x):complex;
   }
   writeln("W is: ", W);
 }

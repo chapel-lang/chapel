@@ -10,9 +10,9 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   abcd(1) = x0 + x2;
   x0 -= x2;
   abcd(3) = wk2 * x0;
-  x0 = _complex(x1.real - x3.imag, x1.imag + x3.real);
+  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
   abcd(2) = wk1 * x0;
-  x0 = _complex(x1.real + x3.imag, x1.imag - x3.real);
+  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
   abcd(4) = wk3 * x0;
 
   writeln("abcd is: ", abcd);
@@ -26,10 +26,10 @@ const D = [0..N-1];
 
 var A: [D] complex;
 
-[i in D] A(i) = _complex(2*i, 2*i+1);
+[i in D] A(i) = (2*i, 2*i+1):complex;
 
 for i in D by 4 {
-  butterfly(_complex(-1.0, -2.0), _complex(-3.0, -4.0), _complex(-5.0, -6.0),
+  butterfly((-1.0, -2.0), _complex(-3.0, -4.0), _complex(-5.0, -6.0):complex,
             A[i..i+3]);
 }
 
