@@ -78116,3 +78116,32 @@ Added files:
 	chapel/test/trivial/deitz/: test_complex_cast.chpl 
 	                            test_complex_cast.good 
 
+---------------------------------------------------------------------------
+
+10/02/06 10:44:33 -- deitz
+
+Log message:
+	Disabled indexing into strings as this has caused too many problems.
+	Added support for a method on strings called substring that replaces
+	this.  So for example:
+	
+	  "hello".substring(2)    // "e"
+	  "hello".substring(2..4) // "ell"
+	  987.substring(2)        // 8
+	
+	Simplified array indexing implementation as a result of this change.
+	
+	Updated test cases to use substring method.
+	
+	Fixed two missed tests with _complex usage.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_indefinite.chpl _chpl_seq.chpl 
+	chapel/test/functions/deitz/: test_int_this.chpl 
+	                              test_int_this2.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly.chpl fft.chpl 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/string/deitz/: test_string_select1.chpl 
+	                                 test_string_shuffle.chpl 
+
