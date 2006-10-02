@@ -1,2 +1,2 @@
 var i = 987;
-writeln(i(2));
+writeln(i.substring(2));

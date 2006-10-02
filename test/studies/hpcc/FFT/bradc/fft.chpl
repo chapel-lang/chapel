@@ -149,8 +149,8 @@ def cft1st(A, W) {
   for j in 8..n-1 by 8 {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
-    var wk3 = _complex(wk1.real - 2* wk2.imag * wk1.imag, 
-                       2 * wk2.imag * wk1.real - wk1.imag);
+    var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
+               2 * wk2.imag * wk1.real - wk1.imag):complex;
 
     butterfly(wk1, wk2, wk3, A(j), A(j+1), A(j+2), A(j+3));
 
@@ -168,7 +168,7 @@ def cftmd0(l, A, W) {
   }
 
   for j in m..l+m by 2 {
-    butterfly((wk1r, wk1r), -1.0i, _complex(-wk1r, wk1r), A(j), A(j+l), A(j+2*l), A(j+3*l)):complex;
+    butterfly((wk1r, wk1r):complex, -1.0i, (-wk1r, wk1r):complex, A(j), A(j+l), A(j+2*l), A(j+3*l));
   }
 }
 
@@ -182,18 +182,18 @@ def cftmd1(l, A, W) {
   for k in m2..n-1 by m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
-    var wk3 = _complex(wk1.real - 2 * wk2.imag * wk1.imag,
-                       2 * wk2.imag * wk1.real - wk1.imag);
+    var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
+               2 * wk2.imag * wk1.real - wk1.imag):complex;
     for j in k..l+k-1 by 2 {
       butterfly(wk1, wk2, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
     }
 
     wk1 = W[2*k1+1];
-    wk3 = _complex(wk1.real - 2 * wk2.real * wk1.imag,
-                   2 * wk2.real * wk1.real - wk1.imag);
+    wk3 = (wk1.real - 2 * wk2.real * wk1.imag,
+           2 * wk2.real * wk1.real - wk1.imag):complex;
 
     for j in k+m..l+k+m-1 by 2 {
-      butterfly(wk1, (-wk2.imag, wk2.real), wk3, A(j), A(j+l), A(j+2*l), A(j+3*l)):complex;
+      butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
     }
 
     k1 += 1;

@@ -158,7 +158,7 @@ pragma "inline" def ==(a: string, b: string) return __primitive("string_equal", 
 pragma "inline" def !=(a: string, b: string) return !(a == b);
 pragma "inline" def +(a: string, b: string) return __primitive("string_concat", a, b);
 pragma "inline" def length(a: string) return __primitive("string_length", a);
-pragma "inline" def string.this(i: int) return __primitive("string_index", this, i);
+pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
 
 pragma "inline" def _string_contains(a: string, b: string)
   return __primitive("string_contains", a, b);

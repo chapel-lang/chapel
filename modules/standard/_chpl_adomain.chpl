@@ -25,26 +25,16 @@ class _array {
     return a;
   }
 
-  def =this(d : _domain, v) {
+  def =this(d : _domain, val: elt_type) {
     for i in d do
-      this(i) = v;
+      this(i) = val;
   }
 
-  // need this function to compete with string indexing function
-  // (scalar promotion on array of strings or scalar promotion and
-  // coercion on array of ints/floats)
-  def this(i:int...?k)
+  def this(i...?k)
     return _value((...i));
 
-  def =this(i:int...?k, val: elt_type) {
+  def =this(i...?k, val: elt_type) {
     _value((...i)) = val;
-  }
-
-  def this(i) where !(i.type:_domain)
-    return _value(i);
-
-  def =this(i, val: elt_type) where !(i.type:_domain) {
-    _value(i) = val;
   }
 
   def getHeadCursor()

@@ -208,7 +208,7 @@ pragma "inline"
 def _indefinite_hash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..length(x) {
-    hash = ((hash << 5) + hash) ^ ascii(x(c));
+    hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
   }
   return _gen_key(hash);
 }

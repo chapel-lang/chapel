@@ -237,7 +237,7 @@ def fwrite(f : file, s : _aseq) {
     fwrite(f, " by ", s._stride);
 }
 
-pragma "inline" def string.this(s: _aseq)
+pragma "inline" def string.substring(s: _aseq)
   if s._stride != 1 then
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else

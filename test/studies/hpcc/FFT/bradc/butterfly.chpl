@@ -27,7 +27,7 @@ var A: [D] complex;
 [i in D] A(i) = (2*i, 2*i+1):complex;
 
 for i in D by 4 {
-  butterfly((-1.0, -2.0), _complex(-3.0, -4.0), _complex(-5.0, -6.0):complex,
+  butterfly((-1.0, -2.0):complex, (-3.0, -4.0):complex, (-5.0, -6.0):complex,
             A(i), A(i+1), A(i+2), A(i+3));
 }
 
