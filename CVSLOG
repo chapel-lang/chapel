@@ -78079,3 +78079,40 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft-trace.txt 
 
+---------------------------------------------------------------------------
+
+10/02/06 10:02:17 -- deitz
+
+Log message:
+	Enabled complex cast on a literal tuple so that something like
+	
+	  (2, 3):complex
+	
+	is a complex number.  It is currently not folded (but should be) so it
+	cannot be used in a parameter specification.
+	
+	A literal tuple is required so
+	
+	  var t = (2, 3);
+	  ... t:complex ...
+	
+	would result in an error.  Is this a wrong choice?
+	
+	Removed internal function _complex and updated lots of instances in
+	the test suite where this internal function was being used.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl _chpl_htuple.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: bitreverse.chpl 
+	                                     bitreverse2.chpl 
+	                                     butterfly.chpl 
+	                                     butterfly2.chpl fft.chpl 
+	                                     twiddles-advanced.chpl 
+	                                     twiddles-advanced2.chpl 
+	                                     twiddles-onebased.chpl 
+	                                     twiddles.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_complex_cast.chpl 
+	                            test_complex_cast.good 
+
