@@ -231,9 +231,10 @@ pragma "no codegen" pragma "rename fflush" def fflush(fp: _file) : int {
   return __primitive("fflush", fp);
 }
 
-def init_elts(x, s, e) {
+def init_elts(x, s, type t) {
   for i in 1..s {
-    var y : e.type;
+    // var y : e.type;
+    var y : t;
     x(i-1) = y;
   }
 }
@@ -243,10 +244,10 @@ pragma "data class"
 class _ddata {
   type elt_type;
   var size : int;
-  var _element : elt_type;
+  // var _element : elt_type;
   pragma "inline" def init() {
     __primitive("array_init", this, elt_type, size);
-    init_elts(this, size, _element);
+    init_elts(this, size, elt_type);
   }
   pragma "inline" def this(i : int) {
     return __primitive("array_get", this, i);

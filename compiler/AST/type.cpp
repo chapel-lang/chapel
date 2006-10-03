@@ -591,7 +591,7 @@ void ClassType::codegenDef(FILE* outfile) {
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
-    dynamic_cast<DefExpr*>(fields->get(3))->sym->type->codegen(outfile);
+    dynamic_cast<DefExpr*>(fields->get(1))->sym->type->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {
