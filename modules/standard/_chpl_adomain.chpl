@@ -18,12 +18,8 @@ class _array {
   var _value : _array_type;
   var dom : _domain;
 
-  def this(d : _domain) {
-    var a = d._build_array(elt_type);
-    for i in d do
-      a(i) = this(i);
-    return a;
-  }
+  def this(d : _domain)
+    return _value.slice(d._value);
 
   def =this(d : _domain, val: elt_type) {
     for i in d do
@@ -385,7 +381,7 @@ class _aarray: _abase {
   param rank : int;
 
   var dom : _adomain(rank);
-  var info : rank*2*int;
+  var info : rank*3*int;
   var size : int;
   var data : _ddata(elt_type);
   var noinit: bool = false;
@@ -413,10 +409,15 @@ class _aarray: _abase {
   def blk(dim : int) var
     return info(dim)(2);
 
+  def str(dim : int) var
+    return info(dim)(3);
+
   def initialize() {
     if noinit == true then return;
-    for param dim in 1..rank do
+    for param dim in 1..rank {
       off(dim) = dom(dim)._low;
+      str(dim) = dom(dim)._stride;
+    }
     blk(rank) = 1;
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
@@ -444,12 +445,18 @@ class _aarray: _abase {
           halt("array index out of bounds: ", ind);
     var sum : int;
     for param i in 1..rank do
-      sum = sum + ((ind(i) - off(i)) * blk(i)) / dom(i)._stride;
+      sum = sum + ((ind(i) - off(i)) * blk(i)) / str(i);
+//    write(" [", ind, " = ", sum, "] ");
     return data(sum);
   }
 
   def this(ind : int ...rank) var
     return this(ind);
+
+  def this(ind: _aseq ...rank) var {
+    var d = [(...ind)];
+    return slice(d._value);
+  }
 
   def view(d: _adomain) {
     if rank != d.rank then
@@ -461,8 +468,29 @@ class _aarray: _abase {
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
-      alias.off(i) = d(i)._low;
+      alias.off(i) = d(i)._low + (off(i) - dom(i)._low);
       alias.blk(i) = blk(i);
+      alias.str(i) = d(i)._stride;
+    }
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
+  }
+
+  def slice(d: _adomain) {
+    if rank != d.rank then
+      halt("array rank change not supported");
+    for param i in 1..rank {
+      if !_in(dom(i), d(i)) then
+        halt("array slice out of bounds in dimension ", i, ": ", d);
+      if d(i)._stride % dom(i)._stride != 0 then
+        halt("stride of array slice is not multiple of stride in dimension ", i);
+    }
+    var alias = _aarray(elt_type, rank, d, noinit=true);
+    alias.data = data;
+    alias.size = size;
+    for param i in 1..rank {
+      alias.off(i) = off(i);
+      alias.blk(i) = blk(i);
+      alias.str(i) = str(i);
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
   }

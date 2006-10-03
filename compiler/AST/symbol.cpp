@@ -621,7 +621,8 @@ FnSymbol::FnSymbol(char* initName) :
   global(false),
   basicBlocks(NULL),
   calledBy(NULL),
-  isWrapper(false)
+  isWrapper(false),
+  normalizedOnce(false)
 {
   gFns.add(this);
   formals->parent = this;

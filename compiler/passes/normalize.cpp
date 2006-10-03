@@ -1495,6 +1495,9 @@ change_types_to_values(BaseAST* base) {
 
 
 static void fixup_array_formals(FnSymbol* fn) {
+  if (fn->normalizedOnce)
+    return;
+  fn->normalizedOnce = true;
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {

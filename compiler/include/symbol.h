@@ -189,6 +189,7 @@ class FnSymbol : public Symbol {
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   bool isWrapper;
+  bool normalizedOnce;
 
   FnSymbol(char* initName);
   ~FnSymbol();

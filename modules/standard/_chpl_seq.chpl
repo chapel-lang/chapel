@@ -231,6 +231,14 @@ def by(s : _aseq, i : int)
 def _in(s : _aseq, i : int)
   return i >= s._low && i <= s._high && (i - s._low) % s._stride == 0;
 
+// really slow --- REWRITE
+def _in(s1: _aseq, s2: _aseq) {
+  for i in s2 do
+    if !_in(s1, i) then
+      return false;
+  return true;
+}
+
 def fwrite(f : file, s : _aseq) {
   fwrite(f, s._low, "..", s._high);
   if (s._stride > 1) then
