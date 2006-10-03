@@ -78271,3 +78271,14 @@ Removed files:
 	chapel/test/arrays/bradc/: stridedArrayArg.future 
 	chapel/test/studies/hpcc/FFT/bradc/: butterfly2.future 
 
+---------------------------------------------------------------------------
+
+10/03/06 13:08:16 -- waynew
+
+Log message:
+	Minor mod.  Removed _element from _ddata.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
