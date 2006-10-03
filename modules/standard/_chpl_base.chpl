@@ -244,7 +244,6 @@ pragma "data class"
 class _ddata {
   type elt_type;
   var size : int;
-  // var _element : elt_type;
   pragma "inline" def init() {
     __primitive("array_init", this, elt_type, size);
     init_elts(this, size, elt_type);
