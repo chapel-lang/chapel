@@ -78207,3 +78207,19 @@ Added files:
 	chapel/test/arrays/deitz/: test_slice_stride3.chpl 
 	                           test_slice_stride3.good 
 
+---------------------------------------------------------------------------
+
+10/03/06 10:45:48 -- deitz
+
+Log message:
+	Fixed a bug to enable slicing and viewing and then slicing and viewing
+	again where I have defined sliced to mean indexing into an array and
+	getting a subset of the data as an alias and viewed to mean passing an
+	array to a function and remapping the indices.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_slice_stride4.chpl 
+	                           test_slice_stride4.good 
+
