@@ -475,7 +475,7 @@ class _aarray: _abase {
       alias.off(i) = d(i)._low;
       alias.blk(i) = blk(i) * (dom(i)._stride / str(i));
       alias.str(i) = d(i)._stride;
-      alias.orig(i) = orig(i) + (off(i) - dom(i)._low);
+      alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
   }
