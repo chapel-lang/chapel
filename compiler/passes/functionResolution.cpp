@@ -71,7 +71,7 @@ resolveFormals(FnSymbol* fn) {
 
 static bool
 fits_in_int(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT) {
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
     int64 i = imm->int_value();
     switch (width) {
     default: INT_FATAL("bad width in fits_in_int");

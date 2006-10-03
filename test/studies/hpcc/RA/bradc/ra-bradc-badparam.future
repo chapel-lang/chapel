@@ -1,4 +1,0 @@
-param problem (HPCC RA - med)
-
-It seems that my param here is causing a semantic error violation
-even though Mary Beth's identical param did not.  Why?

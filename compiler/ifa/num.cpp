@@ -634,8 +634,6 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_mod:
     case P_prim_add:
     case P_prim_subtract:
-    case P_prim_lsh:
-    case P_prim_rsh:
     case P_prim_and:
     case P_prim_or:
     case P_prim_xor:
@@ -643,6 +641,11 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
       fold_result(&im1, &im2, &coerce);
       imm->const_kind = coerce.const_kind;
       imm->num_index = coerce.num_index;
+      break;
+    case P_prim_lsh:
+    case P_prim_rsh:
+      imm->const_kind = im1.const_kind;
+      imm->num_index = im1.num_index;
       break;
     case P_prim_less:
     case P_prim_lessorequal:

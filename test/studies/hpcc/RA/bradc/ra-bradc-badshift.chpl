@@ -1,5 +1,5 @@
-var hibit1 = 0x1:int(64) << 63;
-var hibit2 = 0x1:uint(64) << 63;
+param hibit1 = 0x1:int(64) << 63;
+param hibit2 = 0x1:uint(64) << 63;
 var hibit3 = 0x1:int(64) << 63;
 var hibit4 = 0x1:uint(64) << 63;
 var hibit5 = 0x8000000000000000;

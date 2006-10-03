@@ -830,12 +830,23 @@ static void fix_def_expr(DefExpr* def) {
 }
 
 
+VarSymbol*
+cast_fold(TypeSymbol* ts, VarSymbol* var) {
+  VarSymbol* typevar = dynamic_cast<VarSymbol*>(ts->type->defaultValue);
+  if (!typevar || !typevar->immediate)
+    INT_FATAL("unexpected case in cast_fold");
+  Immediate coerce = *typevar->immediate;
+  coerce_immediate(var->immediate, &coerce);
+  return new_ImmediateSymbol(&coerce);
+}
+
+
 #define FOLD_CALL(name, prim)                             \
   if (call->isNamed(name)) {                              \
     Immediate i3;                                         \
     fold_constant(prim, i1, i2, &i3);                     \
     call->replace(new SymExpr(new_ImmediateSymbol(&i3))); \
-    return;                                               \
+    return true;                                          \
   }
 
 #define FIND_PRIMITIVE_TYPE( prim_type, numoftypes, ptype_p)            \
@@ -875,9 +886,9 @@ isSubType(Type* sub, Type* super) {
 }
 
 
-static void fold_call_expr(CallExpr* call) {
+static bool fold_call_expr(CallExpr* call) {
   if (call->partialTag == PARTIAL_ALWAYS)
-    return;
+    return false;
   if (call->isNamed("_copy")) {
     if (call->argList->length() == 1) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -919,7 +930,7 @@ static void fold_call_expr(CallExpr* call) {
           INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
       }
     }
-    return;
+    return false;
   }
 
   if (call->isNamed("_construct__tuple")) {
@@ -1090,11 +1101,29 @@ static void fold_call_expr(CallExpr* call) {
     }
   }
 
+  if (call->isPrimitive(PRIMITIVE_CAST)) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (var->immediate) {
+          if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+            if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
+              if (!is_complex_type(ts->type) && ts->type != dtString) {
+                SymExpr* s = new SymExpr(cast_fold(ts, var));
+                call->replace(s);
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (call->argList->length() == 2) {
     if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
-      return;
+      return false;
     if (is_float_type(call->get(1)->typeInfo()))
-      return;
+      return false;
     SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
     SymExpr* a2 = dynamic_cast<SymExpr*>(call->get(2));
     if (a1 && a2) {
@@ -1107,7 +1136,7 @@ static void fold_call_expr(CallExpr* call) {
           // WAW: folding not handling complex yet
           if ((NUM_KIND_COMPLEX == i1->const_kind) ||
               (NUM_KIND_COMPLEX == i2->const_kind)) {
-            return;
+            return false;
           }
 
           FOLD_CALL("+", P_prim_add);
@@ -1131,7 +1160,7 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("**", P_prim_pow);
           if (call->isNamed("=")) {
             call->replace(new SymExpr(v2));
-            return;
+            return true;
           }
         }
       }
@@ -1156,6 +1185,8 @@ static void fold_call_expr(CallExpr* call) {
       }
     }
   }
+
+  return false;
 }
 
 
@@ -1165,7 +1196,7 @@ static bool fold_def_expr(DefExpr* def) {
   VarSymbol* defSymVar = dynamic_cast<VarSymbol*>(def->sym);
   if (def->sym->isParam() || 
       (def->sym->isConst() && defSymVar && defSymVar->varClass != VAR_CONFIG)) {
-    forv_Vec(SymExpr*, sym, def->sym->uses) {
+    forv_Vec(SymExpr, sym, def->sym->uses) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
         if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
           if (SymExpr* val = dynamic_cast<SymExpr*>(call->get(2))) {
@@ -1180,7 +1211,7 @@ static bool fold_def_expr(DefExpr* def) {
             }
           }
         }
-        if (call->isNamed("=") && call->get(1) == sym) {
+        if (!def->sym->isParam() && call->isNamed("=") && call->get(1) == sym) {
           if (SymExpr* val = dynamic_cast<SymExpr*>(call->get(2))) {
             if (VarSymbol* var = dynamic_cast<VarSymbol*>(val->var)) {
               if (var->immediate) {
@@ -1195,7 +1226,7 @@ static bool fold_def_expr(DefExpr* def) {
   }
   if (value) {
     move->parentStmt->remove();
-    forv_Vec(SymExpr*, sym, def->sym->uses) {
+    forv_Vec(SymExpr, sym, def->sym->uses) {
       sym->var = value;
     }
     def->parentStmt->remove();
@@ -1285,7 +1316,7 @@ static void fold_params(BaseAST* base) {
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
         if (a->parentSymbol) // in ast
-          fold_call_expr(a);
+          change |= fold_call_expr(a);
       if (CondStmt* a = dynamic_cast<CondStmt*>(ast))
         if (a->parentSymbol) // in ast
           fold_cond_stmt(a);
