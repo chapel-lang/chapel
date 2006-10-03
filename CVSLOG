@@ -78166,3 +78166,19 @@ Added files:
 	                                 test_array_arg9.chpl 
 	                                 test_array_arg9.good 
 
+---------------------------------------------------------------------------
+
+10/03/06 09:43:59 -- deitz
+
+Log message:
+	Enabled array slicing on one-dimensional arrays including strided
+	arrays or slices.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_slice_stride.chpl 
+	                           test_slice_stride.good 
+	                           test_slice_stride2.chpl 
+	                           test_slice_stride2.good 
+
