@@ -78319,3 +78319,73 @@ Added files:
 	                            test_indefinite_remove.future 
 	                            test_indefinite_remove.good 
 
+---------------------------------------------------------------------------
+
+10/03/06 16:41:20 -- deitz
+
+Log message:
+	Note: regression: (see reason below)
+	 [Error matching compiler output for arrays/bradc/stridedArrayArg2]
+	
+	Added special handling of -= to allow it to call the domain's remove
+	method.
+	
+	Made op= insert a cast to handle the case:
+	
+	  var i: int(8) = 2;
+	  i += 1;
+	
+	The issue here is that we cannot translate it into
+	
+	  i = i + 1;
+	
+	since this would result in an error since i + 1 is a 32-bit int.  Thus
+	op= is now handled as
+	
+	  a op= b
+	
+	is changed into
+	
+	  a = (a op b):a.type
+	
+	following C# semantics.
+	
+	Unfortunately this breaks support for op= on whole arrays since we
+	don't want to cast it to the array.  This will require major reworking
+	of casts to get right.  This is the reason for the regression.
+	
+	Implemented a first pass on inference on return types to infer the
+	return type to be any returned type that other returned values can be
+	coerced into including via the implicit coercion rule so
+	
+	  return i:int(8);
+	  return 2;
+	
+	will return an int(8) since 2 can be cast into it.  We discussed a
+	more restrictive rule at the meeting but I had trouble figuring out
+	the semantics of what we wanted.  Treat this as preliminary.
+	
+	Added a future on domain remove that is the same as the last one but
+	uses -= instead of the method call.
+	
+	Removed conditional expression hpcc future.
+	
+	Added two tests to look at return inference and coercion.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+Added files:
+	chapel/test/domains/deitz/: test_indefinite_remove2.chpl 
+	                            test_indefinite_remove2.future 
+	                            test_indefinite_remove2.good 
+	chapel/test/functions/deitz/infer/: test_coerce_return_type.chpl 
+	                                    test_coerce_return_type.good 
+	                                    test_infer_return_type.chpl 
+	                                    test_infer_return_type.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-condexpr.future 
+
