@@ -387,16 +387,16 @@ class _aarray: _abase {
   var noinit: bool = false;
 
   def getHeadCursor()
-    return 0;
+    return dom.getHeadCursor();
 
   def getNextCursor(c)
-    return c + 1;
+    return dom.getNextCursor(c);
 
   def getValue(c)
-    return data(c);
+    return this(dom.getValue(c));
 
   def isValidCursor?(c)
-    return c < size;
+    return dom.isValidCursor?(c);
 
   iterator this() : elt_type {
     forall x in dom
@@ -514,32 +514,23 @@ class _aarray: _abase {
   }
 
   def assign(y : _aarray) {
-    var j : int;
-    for e in y {
-      data(j) = e;
-      j = j + 1;
-    }
+    for i,e in dom,y do
+      this(i) = e;
   }
 
   def assign(y : seq) {
-    var j : int;
-    for e in y {
-      data(j) = e;
-      j = j + 1;
-    }
+    for i,e in dom,y do
+      this(i) = e;
   }
 
   def assign(y: _aseq) {
-    var j : int;
-    for e in y {
-      data(j) = e;
-      j = j + 1;
-    }
+    for i,e in dom,y do
+      this(i) = e;
   }
 
   def assign(y: elt_type) {
-    for i in 0..size-1 do
-      data(i) = y;
+    for i in dom do
+      this(i) = y;
   }
 }
 

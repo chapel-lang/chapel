@@ -1,7 +1,0 @@
-deitz (HPCC FFT high, if not overly hard)
-
-Once stridedArrayArg1.future is fixed, the two commented out calls
-here should be uncommented to get this test in its eventual form.
-Interestingly, even for the calls that currently do work, mods to
-the array argument within the function are not reflected back at
-the callsite...
