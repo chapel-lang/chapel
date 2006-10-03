@@ -381,7 +381,7 @@ class _aarray: _abase {
   param rank : int;
 
   var dom : _adomain(rank);
-  var info : rank*3*int;
+  var info : rank*4*int;
   var size : int;
   var data : _ddata(elt_type);
   var noinit: bool = false;
@@ -412,11 +412,15 @@ class _aarray: _abase {
   def str(dim : int) var
     return info(dim)(3);
 
+  def orig(dim : int) var
+    return info(dim)(4);
+
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
       off(dim) = dom(dim)._low;
       str(dim) = dom(dim)._stride;
+      orig(dim) = 0;
     }
     blk(rank) = 1;
     for dim in 1..rank-1 by -1 do
@@ -445,7 +449,7 @@ class _aarray: _abase {
           halt("array index out of bounds: ", ind);
     var sum : int;
     for param i in 1..rank do
-      sum = sum + ((ind(i) - off(i)) * blk(i)) / str(i);
+      sum = sum + (ind(i) - off(i)) * blk(i) / str(i) - orig(i);
 //    write(" [", ind, " = ", sum, "] ");
     return data(sum);
   }
@@ -468,9 +472,10 @@ class _aarray: _abase {
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
-      alias.off(i) = d(i)._low + (off(i) - dom(i)._low);
-      alias.blk(i) = blk(i);
+      alias.off(i) = d(i)._low;
+      alias.blk(i) = blk(i) * (dom(i)._stride / str(i));
       alias.str(i) = d(i)._stride;
+      alias.orig(i) = orig(i) + (off(i) - dom(i)._low);
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
   }
@@ -491,6 +496,7 @@ class _aarray: _abase {
       alias.off(i) = off(i);
       alias.blk(i) = blk(i);
       alias.str(i) = str(i);
+      alias.orig(i) = orig(i);
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
   }
