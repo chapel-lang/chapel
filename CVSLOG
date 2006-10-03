@@ -78292,3 +78292,17 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+10/03/06 14:36:12 -- deitz
+
+Log message:
+	Fixed a bug with using whole array ops and assignment on sliced arrays.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Removed files:
+	chapel/test/arrays/bradc/: stridedArrayArg2.future 
+
