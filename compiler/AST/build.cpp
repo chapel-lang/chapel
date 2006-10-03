@@ -229,7 +229,11 @@ build_for_expr(AList* indices,
                                                     indices,
                                                     iterators,
                                                     cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt), isSquare)));
-  stmts->insertAtTail(new ReturnStmt(seq));
+  VarSymbol* rettmp = new VarSymbol("_ret_seq");
+  rettmp->isCompilerTemp = true;
+  stmts->insertAtTail(new ExprStmt(new DefExpr(rettmp)));
+  stmts->insertAtTail(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, rettmp, seq)));
+  stmts->insertAtTail(new ReturnStmt(rettmp));
   return stmts;
 }
 
@@ -343,16 +347,19 @@ AList* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockSt
 }
 
 
-AList* build_assignplus(Expr* lhs, Expr* rhs) {
+BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
   static int uid = 1;
-  FnSymbol* fn;
-  AList* stmts = new AList();
+  BlockStmt* stmt = build_chpl_stmt();
 
-  fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  FnSymbol* fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("+", lhs->copy(), rhs->copy())));
-  stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, new CallExpr("+", tmp, rhs->copy()))));
+  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
   fn->insertFormalAtTail(
@@ -360,12 +367,63 @@ AList* build_assignplus(Expr* lhs, Expr* rhs) {
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
       new SymExpr("_domain")));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringSymbol("add")), rhs->copy()));
-  stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
-
-  stmts->insertAtTail(new ExprStmt(new CallExpr(fn->name, lhs->copy())));
+  fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("add")), rhs->copy()));
+  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  stmt->insertAtTail(new ExprStmt(new CallExpr(fn->name, tmp)));
   uid++;
-  return stmts;
+  return stmt;
+}
+
+
+BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
+  static int uid = 1;
+  BlockStmt* stmt = build_chpl_stmt();
+
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  FnSymbol* fn = new FnSymbol(stringcat("_assignminus", intstring(uid)));
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
+  fn->addPragma("inline");
+  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, new CallExpr("-", tmp, rhs->copy()))));
+  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
+
+  fn = new FnSymbol(stringcat("_assignminus", intstring(uid)));
+  fn->insertFormalAtTail(
+    new DefExpr(
+      new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
+      new SymExpr("_domain")));
+  fn->addPragma("inline");
+  fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("remove")), rhs->copy()));
+  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  stmt->insertAtTail(new ExprStmt(new CallExpr(fn->name, tmp)));
+  uid++;
+  return stmt;
+}
+
+
+BlockStmt*
+build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = build_chpl_stmt();
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("#", tmp, rhs)));
+  return stmt;
+}
+
+
+BlockStmt*
+build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = build_chpl_stmt();
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, new CallExpr(op, tmp, rhs))));
+  return stmt;
 }
 
 

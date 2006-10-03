@@ -1,5 +1,0 @@
-conditional expressions with parameters (HPCC-RA medium)
-
-This test shows that if one branch of a conditional
-expression contains a parameter, it does not unify
-with the other branch, but results in an error.

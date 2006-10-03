@@ -482,72 +482,59 @@ assign_stmt:
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = build_chpl_stmt(build_assignplus($1, $3));
+      $$ = build_plus_assign_chpl_stmt($1, $3);
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("-", $1->copy(), $3)));
+      $$ = build_minus_assign_chpl_stmt($1, $3);
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("*", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("*", $1, $3);
     }
 | lvalue TASSIGNDIVIDE expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("/", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("/", $1, $3);
     }
 | lvalue TASSIGNMOD expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("%", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("%", $1, $3);
     }
 | lvalue TASSIGNEXP expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("**", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("**", $1, $3);
     }
 | lvalue TASSIGNBAND expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("&", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("&", $1, $3);
     }
 | lvalue TASSIGNBOR expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("|", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("|", $1, $3);
     }
 | lvalue TASSIGNBXOR expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("^", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("^", $1, $3);
     }
 | lvalue TASSIGNLAND expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("&&", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("&&", $1, $3);
     }
 | lvalue TASSIGNLOR expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("||", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("||", $1, $3);
     }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("#", $1->copy(), $3)));
+      $$ = build_seqcat_assign_chpl_stmt($1, $3);
     }
 | lvalue TASSIGNSR expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr(">>", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt(">>", $1, $3);
     }
 | lvalue TASSIGNSL expr TSEMI
     {
-      $$ = build_chpl_stmt(new CallExpr("=", $1,
-             new CallExpr("<<", $1->copy(), $3)));
+      $$ = build_op_assign_chpl_stmt("<<", $1, $3);
     }
 ;
 

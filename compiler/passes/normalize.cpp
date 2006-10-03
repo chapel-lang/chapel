@@ -234,6 +234,8 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
   forv_Vec( BaseAST, ast, children) {
     if (DefExpr *def = dynamic_cast<DefExpr*>(ast)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(def->sym)) {
+        if (v->isCompilerTemp)
+          continue;
         if (Expr *etype = dynamic_cast<Expr*>(def->exprType->remove())) {
           classdefs->insertAtTail(new ExprStmt( new DefExpr( v, NULL, etype->copy())));
         } else {

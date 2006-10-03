@@ -26,7 +26,10 @@ AList* build_for_expr(AList* indices,
                             bool isSquare = false,
                             Expr* cond = NULL);
 AList* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
-AList* build_assignplus(Expr* lhs, Expr* rhs);
+BlockStmt* build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs);
+BlockStmt* build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs);
+BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
+BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, AList* whenstmts);
 AList* build_type_select(AList* s, AList* whenstmts);
 FnSymbol* build_reduce(Expr* red, Expr *seq);

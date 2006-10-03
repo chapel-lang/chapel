@@ -1215,6 +1215,20 @@ resolveCall(CallExpr* call) {
         call->primitive = primitives[PRIMITIVE_REF];
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
+
+      // do not resolve function return type yet
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol)) {
+        if (ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
+          if (SymExpr* ret = dynamic_cast<SymExpr*>(last->expr)) {
+            if (ret->var == sym->var) {
+              if (ret->var->isCompilerTemp)
+                ret->var->type = dtUnknown;
+              return;
+            }
+          }
+        }
+      }
+
       ClassType* ct = dynamic_cast<ClassType*>(sym->var->type);
       if (t == dtNil && sym->var->type != dtNil && (!ct || ct->classTag != CLASS_CLASS))
         USR_FATAL(call, "Type mismatch in assignment from nil to %s",
@@ -1279,13 +1293,52 @@ resolveFns(FnSymbol* fn) {
     INT_FATAL(fn, "Function is not normal");
   if (ret->var->isReference)
     fn->retRef = true;
-  Type* rt = ret->typeInfo();
+  Type* rt = ret->var->type;
+
+  Vec<Type*> types;
+  Vec<Symbol*> params;
+  if (rt == dtUnknown) {
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+        if (sym->var == ret->var) {
+          if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+            if (call->isPrimitive(PRIMITIVE_MOVE) || call->isPrimitive(PRIMITIVE_REF)) {
+              if (call->get(1) == sym) {
+                if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
+                  params.add(sym->var);
+                else
+                  params.add(NULL);
+                types.add(call->get(2)->typeInfo());
+              }
+            }
+          }
+        }
+      }
+    }
+    if (types.n == 1)
+      rt = types.v[0];
+    if (types.n > 1) {
+      for (int i = 0; i < types.n; i++) {
+        bool best = true;
+        for (int j = 0; j < types.n; j++) {
+          if (types.v[i] != types.v[j]) {
+            if (!canCoerce(types.v[j], params.v[j], types.v[i]))
+              best = false;
+          }
+        }
+        if (best) {
+          rt = types.v[i];
+          break;
+        }
+      }
+    }
+  }
+
+  ret->var->type = rt;
   if (fn->retType == dtUnknown)
     fn->retType = rt;
   if (rt == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
-  if (rt != fn->retType)
-    USR_FATAL(fn, "Return type does not match type of returned expression");
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
