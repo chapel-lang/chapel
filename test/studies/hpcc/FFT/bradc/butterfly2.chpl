@@ -5,7 +5,7 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   var x2 = abcd(3) + abcd(4);
   var x3 = abcd(3) - abcd(4);
 
-  writeln("abcd is: ", abcd);
+//  writeln("abcd is: ", abcd);
 
   abcd(1) = x0 + x2;
   x0 -= x2;
@@ -15,7 +15,7 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
   abcd(4) = wk3 * x0;
 
-  writeln("abcd is: ", abcd);
+//  writeln("abcd is: ", abcd);
 }
 
 
@@ -29,7 +29,7 @@ var A: [D] complex;
 [i in D] A(i) = (2*i, 2*i+1):complex;
 
 for i in D by 4 {
-  butterfly((-1.0, -2.0), _complex(-3.0, -4.0), _complex(-5.0, -6.0):complex,
+  butterfly((-1.0, -2.0):complex, (-3.0, -4.0):complex, (-5.0, -6.0):complex,
             A[i..i+3]);
 }
 

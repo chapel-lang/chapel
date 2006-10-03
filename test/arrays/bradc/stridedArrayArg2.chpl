@@ -11,7 +11,7 @@ for i in D do
 
 writeln("A is: ", A);
 
-//foo(A[1..3]);       // this doesn't work
+foo(A[1..3]);       // this doesn't work
 
 writeln("A is: ", A);
 
@@ -19,7 +19,7 @@ foo(A[D by 2]);     // this does!?
 
 writeln("A is: ", A);
 
-//foo(A[2..6 by 2]);  // this doesn't
+foo(A[2..6 by 2]);  // this doesn't
 
 writeln("A is: ", A);
 
