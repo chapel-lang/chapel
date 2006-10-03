@@ -78182,3 +78182,28 @@ Added files:
 	                           test_slice_stride2.chpl 
 	                           test_slice_stride2.good 
 
+---------------------------------------------------------------------------
+
+10/03/06 09:56:30 -- deitz
+
+Log message:
+	Added test case to show that strided slices of multidimensional arrays
+	is also working.  But note that currently
+	
+	  A(1..6, 1..6)
+	
+	is a 2D slice that is identical to
+	
+	  A[1..6, 1..6]
+	
+	Since this is slicing, it does not use promotion which would have a
+	different result.
+	
+	This seems wrong.  I believe A(1..6, 1..6) should refer to the
+	diagonal but I can see arguments that it shouldn't.  There are
+	diffculties with making it the diagonal that we should discuss.
+
+Added files:
+	chapel/test/arrays/deitz/: test_slice_stride3.chpl 
+	                           test_slice_stride3.good 
+
