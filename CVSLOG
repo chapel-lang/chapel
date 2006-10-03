@@ -78282,3 +78282,13 @@ Modified files:
 	chapel/compiler/AST/: type.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+10/03/06 13:11:08 -- waynew
+
+Log message:
+	Ooops. Forgot to remove a bit of unused commented out code.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+
