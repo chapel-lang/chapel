@@ -78145,3 +78145,24 @@ Modified files:
 	chapel/test/types/string/deitz/: test_string_select1.chpl 
 	                                 test_string_shuffle.chpl 
 
+---------------------------------------------------------------------------
+
+10/03/06 09:03:33 -- deitz
+
+Log message:
+	Enabled non-strided array slicing on one-dimensional non-strided
+	arrays.  This is preliminary.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+Added files:
+	chapel/test/arrays/deitz/part1/: test_array_arg7.chpl 
+	                                 test_array_arg7.good 
+	                                 test_array_arg8.chpl 
+	                                 test_array_arg8.good 
+	                                 test_array_arg9.chpl 
+	                                 test_array_arg9.good 
+
