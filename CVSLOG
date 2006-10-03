@@ -78251,3 +78251,23 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badparam.future 
 
+---------------------------------------------------------------------------
+
+10/03/06 12:17:48 -- deitz
+
+Log message:
+	Fixed what is printed (removed what looks like debug printing,
+	uncommented commented out function calls that look like they were
+	commented out during debugging) in some future tests.  Fixed use of
+	_complex function (no longer exists) to use complex cast.
+	
+	Removed two of the three strided slice .futures.  The remaining one
+	fails because of the use of whole array ops on the viewed slice.
+
+Modified files:
+	chapel/test/arrays/bradc/: stridedArrayArg2.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly2.chpl 
+Removed files:
+	chapel/test/arrays/bradc/: stridedArrayArg.future 
+	chapel/test/studies/hpcc/FFT/bradc/: butterfly2.future 
+
