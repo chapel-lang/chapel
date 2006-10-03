@@ -78306,3 +78306,16 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: stridedArrayArg2.future 
 
+---------------------------------------------------------------------------
+
+10/03/06 14:58:26 -- deitz
+
+Log message:
+	Added an indefinite domain remove test that doesn't seem to be
+	working.  Wayne, can you take a look?
+
+Added files:
+	chapel/test/domains/deitz/: test_indefinite_remove.chpl 
+	                            test_indefinite_remove.future 
+	                            test_indefinite_remove.good 
+
