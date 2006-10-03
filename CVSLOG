@@ -78223,3 +78223,31 @@ Added files:
 	chapel/test/arrays/deitz/: test_slice_stride4.chpl 
 	                           test_slice_stride4.good 
 
+---------------------------------------------------------------------------
+
+10/03/06 12:11:34 -- deitz
+
+Log message:
+	Added support for folding of primitive casts that are applied to
+	parameters.
+	
+	Note: casts of parameters to type complex and string are not folded.
+	
+	Reconstituted test/studies/hpcc/RA/bradc/ra-bradc-badshift to declare
+	parameters instead of variables in two cases.
+	
+	Fixed a bug in which parameters that were used in the then or else
+	expression of a conditional expression would not be folded.  Removed
+	.future for test/studies/hpcc/RA/bradc/ra-bradc-badparam.
+	
+	Fixed parameter coercion to only work on 32-bit integer parameters,
+	necessary now that casts are folded.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/functions/bradc/: intUint3.good 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badshift.chpl 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badparam.future 
+
