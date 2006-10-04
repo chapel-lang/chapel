@@ -78450,3 +78450,15 @@ Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test2.future 
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 09:06:29 -- deitz
+
+Log message:
+	Removed extra linefeed in .good and removed .future for working test.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test3.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test3.future 
+
