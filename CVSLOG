@@ -78576,3 +78576,21 @@ Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
 	                                       ra3.chpl ra3.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 13:10:45 -- marybeth
+
+Log message:
+	Checking in the test ra2-param-test which fails because POLY is declared
+	to be a param.  It gives the error:
+	
+	ra2-param-test.chpl:97: In function 'InitRandomSteps':
+	ra2-param-test.chpl:103: error: illegal use of '^' on operands of type uint(64) and int
+	
+	It seems that POLY is not being typed correctly.
+
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2-param-test.chpl 
+	                                       ra2-param-test.future 
+	                                       ra2-param-test.good 
+
