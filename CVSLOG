@@ -78679,3 +78679,34 @@ Added files:
 	                                   test_aseq2-error.chpl 
 	                                   test_aseq2-error.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 15:47:48 -- deitz
+
+Log message:
+	Enabled coercion of parameters so something like
+	
+	  param i: int = 2;
+	  param p: float = i;
+	
+	will produce a parameter of type float.  Prior to this fix, the
+	'float' type would be ignored.
+	
+	In the implementation, this is handled by translating
+	
+	  param identifier: type = expression;
+	
+	to
+	
+	  param identifier = (expression):type;
+	
+	Since the cast is folded, there is no problem.
+	
+	Removed two .futures.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2-param-test.future 
+	chapel/test/trivial/deitz/: test_coerce_param.future 
+
