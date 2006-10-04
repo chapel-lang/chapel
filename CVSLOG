@@ -78554,3 +78554,25 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 13:06:09 -- marybeth
+
+Log message:
+	Checking in the latest versions of ra2.chpl, ra2.good, ra3.chpl, ra3.good.
+	These are getting very close to final versions...
+	
+	Both versions of Random Access now have output indicating the number of
+	random streams and the length of those streams.  The ra3.chpl version
+	also prints out the length of the inner vector loop.
+	
+	Both now print out a GUPs number and timing information.  The timer
+	routines are still not implemented, however.
+	
+	The ra2 version is the Chapel version of the MTA code.  The ra3 version
+	is the ra2 version + an inner vector loop.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
+	                                       ra3.chpl ra3.good 
+
