@@ -41,11 +41,6 @@ class _idomain {
     inds.init();
   }
 
-  iterator _forall() : ind_type {
-    forall i in 0..num_inds-1 do
-      yield inds(i);
-  }
-
   def getHeadCursor()
     return 0;
 

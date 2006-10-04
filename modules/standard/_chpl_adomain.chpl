@@ -59,6 +59,11 @@ def =(a: _array, b: _array) {
   return a;
 }
 
+def =(a: _array, b: _domain) {
+  a._value.assign(b._value);
+  return a;
+}
+
 def =(a: _array, b: seq) {
   a._value.assign(b);
   return a;
@@ -92,6 +97,7 @@ def fwrite(f : file, a: _array) {
 pragma "domain"
 class _domain {
   type _domain_type;
+  type _index_type;
   param rank : int;
   var _value : _domain_type;
   var _arrs: seq(_abase);
@@ -108,6 +114,11 @@ class _domain {
   def isValidCursor?(c)
     return _value.isValidCursor?(c);
 
+  iterator this() : _index_type {
+    forall x in _value
+      yield x; 
+  }
+
   def this(dim : int)
     return _value(dim);
 
@@ -122,7 +133,7 @@ class _domain {
 
   def _build_sparse_domain() {
     var x = _value._build_sparse_domain();
-    return _domain(x.type, rank, x);
+    return _domain(x.type, _index_type, rank, x);
   }
 
   def add(i) {
@@ -139,22 +150,22 @@ class _domain {
 
   def expand(i...?k) {
     var x = _value.expand((...i));
-    return _domain(x.type, rank, x);
+    return _domain(x.type, _index_type, rank, x);
   }
 
   def exterior(i...?k) {
     var x = _value.exterior((...i));
-    return _domain(x.type, rank, x);
+    return _domain(x.type, _index_type, rank, x);
   }
 
   def interior(i...?k) {
     var x = _value.interior((...i));
-    return _domain(x.type, rank, x);
+    return _domain(x.type, _index_type, rank, x);
   }
 
   def translate(i...?k) {
     var x = _value.translate((...i));
-    return _domain(x.type, rank, x);
+    return _domain(x.type, _index_type, rank, x);
   }
 }
 
@@ -171,7 +182,7 @@ def fwrite(f : file, a: _domain) {
 
 def by(a: _domain, b) {
   var x = a._value by b;
-  return _domain(x.type, a.rank, x);
+  return _domain(x.type, a._index_type, a.rank, x);
 }
 
 ////////////////////////////////////////////////////
@@ -181,17 +192,17 @@ def _build_domain(x)
 
 def _build_domain(ranges : _aseq ...?rank) {
   var x = _adomain(rank, ranges);
-  return _domain(x.type, rank, x);
+  return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
 
 def _build_domain_type(param rank : int) {
   var x = _adomain(rank);
-  return _domain(x.type, rank, x);
+  return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
 
 def _build_domain_type(type ind_type) {
   var x = _idomain(ind_type);
-  return _domain(x.type, 1, x);
+  return _domain(x.type, ind_type, 1, x);
 }
 
 def _build_sparse_domain_type(dom)
@@ -398,11 +409,6 @@ class _aarray: _abase {
   def isValidCursor?(c)
     return dom.isValidCursor?(c);
 
-  iterator this() : elt_type {
-    forall x in dom
-      yield x; 
-  }
-
   def off(dim : int) var
     return info(dim)(1);
 
@@ -477,7 +483,7 @@ class _aarray: _abase {
       alias.str(i) = d(i)._stride;
       alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, rank, d));
   }
 
   def slice(d: _adomain) {
@@ -498,7 +504,7 @@ class _aarray: _abase {
       alias.str(i) = str(i);
       alias.orig(i) = orig(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, rank, d));
   }
 
   def reallocate(d: _domain) {
@@ -514,6 +520,11 @@ class _aarray: _abase {
   }
 
   def assign(y : _aarray) {
+    for i,e in dom,y do
+      this(i) = e;
+  }
+
+  def assign(y : _adomain) {
     for i,e in dom,y do
       this(i) = e;
   }
