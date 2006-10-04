@@ -78530,3 +78530,27 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test5.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 10:49:05 -- deitz
+
+Log message:
+	Fixed error message on incorrect assignment into an array.  For
+	example,
+	
+	  var A: [1..5] uint;
+	  var i: int;
+	
+	  A(2) = i;
+	
+	now gives a good error.
+	
+	Removed a .future and updated the .good to be an error.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
+
