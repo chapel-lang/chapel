@@ -78710,3 +78710,17 @@ Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra2-param-test.future 
 	chapel/test/trivial/deitz/: test_coerce_param.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 16:13:03 -- deitz
+
+Log message:
+	Minor cleanup of index type code as index(D).
+	
+	Fixed .good of one test that was generated with the developer flag.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+	chapel/test/types/seq/deitz/aseq/: test_aseq2-error.good 
+
