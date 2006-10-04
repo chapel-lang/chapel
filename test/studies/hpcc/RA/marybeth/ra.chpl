@@ -152,7 +152,7 @@ def main() {
 
   temp = 0;
   for i in D {
-    if (Table[i] != i) then temp += 1;
+    if (Table[i] != i:uint(64)) then temp += 1;
   }
 
   writeln("Found ", temp, " errors in ", TableSize, " locations");

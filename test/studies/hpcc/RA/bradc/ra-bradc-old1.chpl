@@ -77,7 +77,7 @@ def verifyResults() {
 
   var numErrors = 0;
   for i in tableDom {
-    if (Table(i) != i) then
+    if (Table(i) != i:uint(64)) then
       numErrors += 1;
   }
 

@@ -946,15 +946,14 @@ checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
       call->isNamed("<=") ||
       call->isNamed("&&") ||
       call->isNamed("||")) {
-    if ((atypes->v[0] == dtInt[INT_SIZE_64] &&
-         atypes->v[1] == dtUInt[INT_SIZE_64]) ||
-        (atypes->v[0] == dtInt[INT_SIZE_64] &&
-         atypes->v[1] == dtUInt[INT_SIZE_64])) {
+    if ((is_int_type(atypes->v[0]) && atypes->v[1] == dtUInt[INT_SIZE_64]) ||
+        (is_int_type(atypes->v[1]) && atypes->v[0] == dtUInt[INT_SIZE_64])) {
       VarSymbol* var;
-      if (atypes->v[0] == dtInt[INT_SIZE_64])
+      if (atypes->v[1] == dtUInt[INT_SIZE_64]) {
         var = dynamic_cast<VarSymbol*>(aparams->v[0]);
-      else
+      } else {
         var = dynamic_cast<VarSymbol*>(aparams->v[1]);
+      }
       if (var && var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
         int64 iconst = var->immediate->int_value();
         if (iconst >= 0)
@@ -963,8 +962,9 @@ checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
       SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
       if (!base)
         INT_FATAL(call, "bad call baseExpr");
-      USR_FATAL(call, "illegal use of '%s' on operands of type int(64) and uint(64)",
-                base->var->name);
+      USR_FATAL(call, "illegal use of '%s' on operands of type %s and %s",
+                base->var->name, atypes->v[0]->symbol->name,
+                atypes->v[1]->symbol->name);
     }
   }
 }
