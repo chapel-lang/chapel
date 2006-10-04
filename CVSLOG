@@ -78438,3 +78438,15 @@ Added files:
 	                            test_domain_promote2.chpl 
 	                            test_domain_promote2.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 09:02:52 -- deitz
+
+Log message:
+	Removed three .future files for tests that pass.
+
+Removed files:
+	chapel/test/classes/deitz/: test_type_in_class4.future 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test2.future 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.future 
+
