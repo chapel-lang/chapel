@@ -110,11 +110,6 @@ class _idomain {
 
   def _build_array(type elt_type)
     return _iarray(elt_type, ind_type, dom=this);
-
-  def _build_index() {
-    var i : ind_type;
-    return i;
-  }
 }
 
 class _iarray: _abase {
