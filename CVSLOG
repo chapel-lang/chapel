@@ -78488,3 +78488,45 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test4.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 09:52:31 -- deitz
+
+Log message:
+	Note: This fix required the insertion of an unfortunate cast in each
+	of the following tests
+	
+	  studies/hpcc/RA/bradc/ra-bradc-old1
+	  studies/hpcc/RA/bradc/ra-bradc
+	  studies/hpcc/RA/marybeth/ra
+	
+	because the domain cannot YET contain an index of type uint(64) and
+	thus comparing the index with a value of uint(64) in "i != table(i)"
+	requires a cast of i to uint(64) since != cannot be used on a uint(64)
+	and an int.
+	
+	Made it so that for the binary arithmetic operators
+	
+	   + - * / ** % & | ^ == != > < >= <= && ||
+	
+	it is a compiler error if one argument is a uint(64) and the other
+	argument is an int(8), int(16), int(32), or int(64).  The
+	justification is that otherwise it would become a float.  This rule
+	follows C#.
+	
+	Fixed the implementation which previously handled only the int(64) and
+	uint(64) case (and which also missed the case where the int(64) was
+	the left operand due to a typo).
+	
+	Removed a .future and updated the .good to contain the appropriate
+	error message.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
+	                                    ra-bradc.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test5.good 
+	                                       ra.chpl 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test5.future 
+
