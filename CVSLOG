@@ -78630,3 +78630,52 @@ Added files:
 	chapel/modules/standard/: Timers.chpl 
 	chapel/test/trivial/deitz/: test_timer1.chpl test_timer1.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 15:38:15 -- deitz
+
+Log message:
+	Added support for generic arithmetic sequences so that we can handle
+	arithmetic sequences over different integral types.
+	
+	Arithmetic sequences can be created over int, uint, int(64), and
+	uint(64) where the type is resolved in the same way that the binary
+	arithmetic operator type is resolved.
+	
+	So in the code
+	
+	  var u: uint = 12;
+	  for i in 1..u do
+	    ...
+	
+	i will be a uint.
+	
+	Fixed the output of test/trivial/bradc/uintloop since arithmetic
+	sequences over unsigned ints are now allowed.
+	
+	Added two test cases.
+	
+	Note: Arithmetic domains are over ints and are not YET generic.
+	
+	Moved the arithmetic sequence class out of the sequence module and
+	into the arithmetic domain module to deal with a bug in which generics
+	were tagged incorrectly when they spanned modules in the opposite
+	order to which they are normalized.  To handle this correctly means a
+	more major overhaul to normalize than what is necessary now.
+	
+	The error was as follows.  The generic _aseq is tagged as generic when
+	its module is normalized.  Since it was used in the adomain module
+	which is normalized before the sequence module some generic functions
+	were not being tagged as generic resulting in a function resolution
+	error.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+	chapel/test/trivial/bradc/: uintloop.good 
+Added files:
+	chapel/test/types/seq/deitz/aseq/: test_aseq1.chpl 
+	                                   test_aseq1.good 
+	                                   test_aseq2-error.chpl 
+	                                   test_aseq2-error.good 
+
