@@ -254,6 +254,9 @@ class _ddata {
   pragma "inline" def =this(i : int, val : elt_type) {
     __primitive("array_set", this, i, val);
   }
+  pragma "data set error" pragma "inline" def =this(i : int, val) {
+    compilerError("type mismatch");
+  }
 }
 
 

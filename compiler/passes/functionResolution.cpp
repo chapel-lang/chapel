@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "symscope.h"
 #include "runtime.h"
 
@@ -970,6 +971,18 @@ checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
 }
 
 
+static CallExpr*
+userCall(CallExpr* call) {
+  if (call->getModule()->modtype == MOD_STANDARD) {
+    for (int i = callStack.n-1; i >= 0; i--) {
+      if (callStack.v[i]->getModule()->modtype != MOD_STANDARD)
+        return callStack.v[i];
+    }
+  }
+  return call;
+}
+
+
 static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
@@ -1057,14 +1070,21 @@ resolveCall(CallExpr* call) {
       parentCall->baseExpr->replace(call->baseExpr->remove());
       return;
     }
+    if (resolvedFn && resolvedFn->hasPragma("data set error")) {
+      Type* elt_type = dynamic_cast<Type*>(resolvedFn->getFormal(1)->type->substitutions.v[0].value);
+      if (!elt_type)
+        INT_FATAL(call, "Unexpected substitution of ddata class");
+      USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
+                atypes.v[3]->symbol->name, elt_type->symbol->name);
+    }
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (!strcmp("=", name)) {
           if (atypes.v[1] == dtNil) {
-            USR_FATAL(call, "Illegal assignment of nil to structure of type %s",
+            USR_FATAL(call, "type mismatch in assignment of nil to %s",
                       atypes.v[0]->symbol->name);
           } else {
-            USR_FATAL(call, "Type mismatch, assignment from %s to %s",
+            USR_FATAL(call, "type mismatch in assignment from %s to %s",
                       atypes.v[1]->symbol->name,
                       atypes.v[0]->symbol->name);
           }
