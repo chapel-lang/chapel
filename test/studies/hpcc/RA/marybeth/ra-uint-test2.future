@@ -1,0 +1,3 @@
+hpcc
+
+This test fails when POLY is declared as a param instead of a const.

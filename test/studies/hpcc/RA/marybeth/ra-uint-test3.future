@@ -1,0 +1,5 @@
+hpcc
+
+This test assigns an integer literal to an uint(64) as part of a conditional
+expression.  If the integer literal is not cast to a uint(64), the test fails
+to compile.

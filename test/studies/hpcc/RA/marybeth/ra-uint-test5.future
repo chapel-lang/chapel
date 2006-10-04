@@ -1,0 +1,8 @@
+hpcc
+
+This test initializes an integer constant with the expression, NumUpdates/Numstreams.
+NumUpdates is a uint(64) and the test fails to compile with the error:
+
+ Type mismatch in assignment from float(32) to int
+
+The test works if the expression is cast to a uint(64).

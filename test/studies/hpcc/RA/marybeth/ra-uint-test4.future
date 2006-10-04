@@ -1,0 +1,8 @@
+hpcc
+
+This test initializes a uint(64) with an expression (1 << logsize), where
+logsize in a const int.  It fails to compile without casting the expression
+to a uint(64).  
+
+If logsize is replaced with an integer literal, then the test works without
+a cast.

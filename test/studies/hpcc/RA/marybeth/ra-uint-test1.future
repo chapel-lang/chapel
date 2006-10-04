@@ -1,0 +1,8 @@
+hpcc
+
+This test initializes an array of uints with the index i.  It fails
+if the i is not cast to uint(64).
+
+It seems like we would like to support this.  If not, we need a 
+better error message.
+
