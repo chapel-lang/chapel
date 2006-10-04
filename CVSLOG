@@ -78389,3 +78389,32 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-condexpr.future 
 
+---------------------------------------------------------------------------
+
+10/03/06 18:22:48 -- marybeth
+
+Log message:
+	Checking in 5 tests that currently fail.  These tests represent
+	outstanding issues with uints in Random Access.
+	
+	I'm sure that these problems have been noted before.  However, I
+	wanted to be thorough and to track the progress of the compiler with
+	tests that came from my version of Random Access.
+
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.chpl 
+	                                       ra-uint-test1.future 
+	                                       ra-uint-test1.good 
+	                                       ra-uint-test2.chpl 
+	                                       ra-uint-test2.future 
+	                                       ra-uint-test2.good 
+	                                       ra-uint-test3.chpl 
+	                                       ra-uint-test3.future 
+	                                       ra-uint-test3.good 
+	                                       ra-uint-test4.chpl 
+	                                       ra-uint-test4.future 
+	                                       ra-uint-test4.good 
+	                                       ra-uint-test5.chpl 
+	                                       ra-uint-test5.future 
+	                                       ra-uint-test5.good 
+
