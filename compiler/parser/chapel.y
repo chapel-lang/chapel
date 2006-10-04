@@ -1228,7 +1228,7 @@ top_level_expr:
       $$ = new CallExpr(PRIMITIVE_CAST, $3, $1);
     }
 | expr TDOTDOT expr
-    { $$ = new CallExpr("_aseq", $1, $3, new_IntSymbol(1)); }
+    { $$ = new CallExpr("_build_aseq", $1, $3); }
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }

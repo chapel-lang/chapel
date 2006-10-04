@@ -190,7 +190,7 @@ def by(a: _domain, b) {
 def _build_domain(x)
   return x;
 
-def _build_domain(ranges : _aseq ...?rank) {
+def _build_domain(ranges : _aseq(int) ...?rank) {
   var x = _adomain(rank, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
@@ -227,12 +227,12 @@ def _build_index_type(dom) {
 
 ///////////////
 
-def _aseq._translate(i : int) : _aseq {
+def _aseq._translate(i : int) {
   return _low+i.._high+i by _stride;
 }
 
-def _aseq._interior(i : int) : _aseq {
-  var x : _aseq = _low.._high by _stride;
+def _aseq._interior(i : int) {
+  var x = _low.._high by _stride;
   if (i < 0) {
     x = _low.._low-1-i by _stride;
   } else if (i > 0) {
@@ -241,8 +241,8 @@ def _aseq._interior(i : int) : _aseq {
   return x;
 }
 
-def _aseq._exterior(i : int) : _aseq {
-  var x : _aseq = _low.._high by _stride;
+def _aseq._exterior(i : int) {
+  var x = _low.._high by _stride;
   if (i < 0) {
     x = _low+i.._low-1 by _stride;
   } else if (i > 0) {
@@ -251,14 +251,14 @@ def _aseq._exterior(i : int) : _aseq {
   return x;
 }
 
-def _aseq._expand(i : int) : _aseq {
+def _aseq._expand(i : int) {
   return _low-i.._high+i by _stride;
 }
 
 
 class _adomain {
   param rank : int;
-  var ranges : rank*_aseq;
+  var ranges : rank*_aseq(int);
 
   def getHeadCursor() {
     var c : rank*int;
@@ -463,7 +463,7 @@ class _aarray: _abase {
   def this(ind : int ...rank) var
     return this(ind);
 
-  def this(ind: _aseq ...rank) var {
+  def this(ind: _aseq(int) ...rank) var {
     var d = [(...ind)];
     return slice(d._value);
   }
@@ -624,3 +624,77 @@ def _extended_euclid(u: int, v: int) {
   }
   return (u3, u1);
 }
+
+
+-- Arithmetic sequence
+
+def _build_aseq(low: int, high: int) return _aseq(int, low, high);
+def _build_aseq(low: uint, high: uint) return _aseq(uint, low, high);
+def _build_aseq(low: int(64), high: int(64)) return _aseq(int(64), low, high);
+def _build_aseq(low: uint(64), high: uint(64)) return _aseq(uint(64), low, high);
+
+def _build_aseq(low, high) {
+  compilerError("arithmetic sequence bounds are not of integral type");
+}
+
+record _aseq {
+  type elt_type;
+  var _low : elt_type;
+  var _high : elt_type;
+  var _stride : int = 1;
+
+  iterator this() : elt_type {
+    forall x in this
+      yield x; 
+  }
+
+  def getHeadCursor()
+    if _stride > 0 then
+      return _low;
+    else
+      return _high;
+
+  def getNextCursor(c)
+    if _stride > 0 then
+      return c + _stride:elt_type;
+    else
+      return c - (-_stride):elt_type;
+
+  def getValue(c)
+    return c;
+
+  def isValidCursor?(c)
+    return _low <= c && c <= _high;
+
+  def length
+    return
+      (if _stride > 0
+        then (_high - _low + _stride:elt_type) / _stride:elt_type
+        else -(_low - _high - (-_stride):elt_type) / (-_stride):elt_type);
+}
+
+def by(s : _aseq, i : int)
+  return _aseq(s.elt_type, s._low, s._high, s._stride * i);
+
+def _in(s : _aseq, i : s.elt_type)
+  return i >= s._low && i <= s._high && (i - s._low) % s._stride == 0;
+
+// really slow --- REWRITE
+def _in(s1: _aseq, s2: _aseq) {
+  for i in s2 do
+    if !_in(s1, i) then
+      return false;
+  return true;
+}
+
+def fwrite(f : file, s : _aseq) {
+  fwrite(f, s._low, "..", s._high);
+  if (s._stride > 1) then
+    fwrite(f, " by ", s._stride);
+}
+
+pragma "inline" def string.substring(s: _aseq)
+  if s._stride != 1 then
+    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
+  else
+    return __primitive("string_select", this, s._low, s._high);

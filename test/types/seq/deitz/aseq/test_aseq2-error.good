@@ -1,0 +1,1 @@
+[functionResolution.cpp:1257] test/types/seq/deitz/aseq/test_aseq2-error.chpl:3: error: Type mismatch in assignment from int(64) to uint
