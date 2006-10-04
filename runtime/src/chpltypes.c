@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/time.h>
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
@@ -335,3 +336,10 @@ _chpl_complex256( _float128 r, _float128 i) {
   _complex256 ret_c = {r, i};
   return ret_c;
 }
+
+_timervalue* _now_timer_help(_timervalue* time) {
+  struct timezone tz;
+  gettimeofday(time, &tz);
+  return time;
+}
+_timervalue _default_timer;

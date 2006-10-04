@@ -25,6 +25,7 @@ void parse(void) {
     ParseFile(stringcat(path, "_chpl_math.chpl"), MOD_STANDARD);
     seqModule = ParseFile(stringcat(path, "_chpl_seq.chpl"), MOD_STANDARD);
     standardModule = ParseFile(stringcat(path, "_chpl_standard.chpl"), MOD_STANDARD);
+    ParseFile(stringcat(path, "Timers.chpl"), MOD_STANDARD);
   }
 
   int filenum = 0;

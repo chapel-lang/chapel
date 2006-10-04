@@ -18,6 +18,11 @@ returnInfoFile(CallExpr* call) {
 }
 
 static Type*
+returnInfoTimer(CallExpr* call) {
+  return dtTimer;
+}
+
+static Type*
 returnInfoString(CallExpr* call) {
   return dtString;
 }
@@ -324,4 +329,8 @@ initPrimitive() {
   prim_def("get_nullfile", returnInfoFile);
   prim_def("get_errno", returnInfoString);
   prim_def("get_eof", returnInfoInt32);
+
+  prim_def("_init_timer", returnInfoVoid);
+  prim_def("_now_timer", returnInfoTimer);
+  prim_def("_diff_timer", returnInfoFloat);
 }

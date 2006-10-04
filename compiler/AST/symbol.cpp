@@ -21,6 +21,7 @@ Symbol *gMethodToken = NULL;
 Symbol *gSetterToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
+Symbol *gTimer = NULL;
 Symbol *gMutex_p = NULL;
 Symbol *gCondVar_p = NULL;
 

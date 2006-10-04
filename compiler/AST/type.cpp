@@ -852,6 +852,9 @@ void initPrimitiveTypes(void) {
   dtFile = createPrimitiveType ("_file", "_cfile");
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
 
+  dtTimer = createPrimitiveType("_timervalue", "_timervalue");
+  CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
+
   dtMutex = createPrimitiveType( "_mutex", "_chpl_mutex_t"); 
   dtMutex_p = createPrimitiveType( "_mutex_p", "_chpl_mutex_p"); 
   CREATE_DEFAULT_SYMBOL (dtMutex_p, gMutex_p, "NULL");

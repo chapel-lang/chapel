@@ -288,6 +288,7 @@ extern Symbol *gMethodToken;
 extern Symbol *gSetterToken;
 extern Symbol *gVoid;
 extern Symbol *gFile;
+extern Symbol *gTimer;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
