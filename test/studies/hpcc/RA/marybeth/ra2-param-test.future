@@ -1,0 +1,9 @@
+hpcc
+
+This test gives the error:
+
+ra2-param-test.chpl:97: In function 'InitRandomSteps':
+ra2-param-test.chpl:103: error: illegal use of '^' on operands of type uint(64) and int
+
+The test differs from ra2.chpl in that POLY is a param instead of a const.  
+It seems that when POLY is a param it is not being typed correctly.
