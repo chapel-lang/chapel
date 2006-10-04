@@ -78594,3 +78594,39 @@ Added files:
 	                                       ra2-param-test.future 
 	                                       ra2-param-test.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 14:59:20 -- deitz
+
+Log message:
+	Added a standard module called Timers.  It must be explicitly used:
+	
+	  use Timers;
+	
+	It defines a record called Timer that supports the following methods:
+	
+	  def Timer.clear()
+	    clears the elapsed time stored by the timer and stops it
+	
+	  def Timer.start()
+	    starts the timer
+	    it is an error if the timer is already running
+	
+	  def Timer.stop()
+	    stops the timer and updates the elapsed time
+	    it is an error if the timer is not running
+	
+	  def Timer.value : float
+	    returns the time in seconds as a float
+	    the timer may be running but can also be stopped
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/runtime/include/: chplrt.h stdchpl.h 
+	chapel/runtime/src/: chpltypes.c 
+Added files:
+	chapel/modules/standard/: Timers.chpl 
+	chapel/test/trivial/deitz/: test_timer1.chpl test_timer1.good 
+
