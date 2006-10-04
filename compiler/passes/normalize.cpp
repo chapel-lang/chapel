@@ -802,30 +802,22 @@ static void fix_user_assign(CallExpr* call) {
 
 static void fix_def_expr(DefExpr* def) {
   if (def->exprType) {
-    bool ignore_type = false;
     if (def->init) {
-
-      // ignore type on parameters if it has an init to avoid a double
-      // assignment for now.  this is a hack.  we need to handle the
-      // double assignment in the case of "param x : float = 1" where
-      // the integer literal is coerced to a float.
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
-        if (var->consClass == VAR_PARAM)
-          ignore_type = true;
-
-      if (ignore_type)
-        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->remove()));
-      else
-        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
+      // parameters can only be assigned once so cast the init
+      // expression to the type
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
+        if (var->consClass == VAR_PARAM) {
+          def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_CAST, def->exprType->remove(), def->init->remove())));
+          return;
+        }
+      }
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
     }
-    if (!ignore_type) {
-      VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-      typeTemp->isTypeVariable = true;
-      def->parentStmt->insertBefore(new DefExpr(typeTemp));
-      def->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
-      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
-    } else
-      def->exprType->remove();
+    VarSymbol* typeTemp = new VarSymbol("_typeTmp");
+    typeTemp->isTypeVariable = true;
+    def->parentStmt->insertBefore(new DefExpr(typeTemp));
+    def->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
+    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
   } else if (def->init) {
     def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
   }
