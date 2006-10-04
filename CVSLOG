@@ -78418,3 +78418,23 @@ Added files:
 	                                       ra-uint-test5.future 
 	                                       ra-uint-test5.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 08:56:52 -- deitz
+
+Log message:
+	Enabled promotion of domains over its indices allowing a domain to be
+	assigned to an array if the array's elements are the same type as the
+	domain's indices.  Also this allows a domain to be passed to a
+	function or operator that expects its indices and it is promoted.
+	Added two tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+Added files:
+	chapel/test/domains/deitz/: test_domain_promote1.chpl 
+	                            test_domain_promote1.good 
+	                            test_domain_promote2.chpl 
+	                            test_domain_promote2.good 
+
