@@ -78462,3 +78462,29 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test3.future 
 
+---------------------------------------------------------------------------
+
+10/04/06 09:10:26 -- deitz
+
+Log message:
+	Updated .good so that it is the error message that the compiler
+	generates and removed the .future file.
+	
+	My interpretation is that given
+	
+	  const logsize:int = 4;
+	  const TableSize:uint(64) = (1 << logsize);
+	
+	the expression 1 << logsize is a 32-bit integer.  Since logsize is not
+	a compiler constant (a parameter), this expression is not folded so it
+	is not a parameter.  Thus it cannot be assigned to TableSize.
+	
+	I am not sure whether the compiler should try to fold what things that
+	are not strictly speaking parameters and thus not generate errors if
+	it so happens that that folding works.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test4.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test4.future 
+
