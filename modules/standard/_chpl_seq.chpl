@@ -5,6 +5,7 @@ class _seqNode {
   var _next : _seqNode of elt_type;
 }
 
+pragma "seq"
 record seq {
   type elt_type;
 

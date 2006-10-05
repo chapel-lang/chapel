@@ -190,8 +190,12 @@ void build_default_functions(void) {
       buildDefaultIOFunctions(type->type);
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
-          build_record_equality_function(ct);
-          build_record_inequality_function(ct);
+          if (!(ct->symbol->hasPragma("domain") ||
+                ct->symbol->hasPragma("array") ||
+                ct->symbol->hasPragma("seq"))) {
+            build_record_equality_function(ct);
+            build_record_inequality_function(ct);
+          }
           build_record_assignment_function(ct);
           build_record_init_function(ct);
           build_record_copy_function(ct);
