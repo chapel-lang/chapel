@@ -1,21 +1,9 @@
 /*  This is the Chapel version of Random Access HPC benchmark.
  *
- *  For now, memory size is a compile time parameter.  That will
- *  be changed to a runtime parameter later.
- *
- *  Timing is not implemented yet.  So, the GUPs number is not 
- *  computed.
- *  
- *  This program performs the updates to Table and checks if they
- *  are correct.
- *
- *  This is a pretty straightforward translation from C.  More changes
- *  will be made to make it a true Chapel program.
- *
- *  last revised 9/18/2008 by marybeth
  */  
+
 // param used below still gives errors
-const POLY:uint(64) = 7;
+param POLY:uint(64) = 7;
 
 config const verify = true;
 
@@ -42,16 +30,21 @@ var GUPs:float;
 
 def main() {
 
-  var Time:float;
+  use Timers;
+  var t:Timer;
 
   writeRAdata();
 
   InitRandomSteps();
 
-  RealTime = Timer();
-  RandomAccessUpdate();
-  RealTime = Timer() - RealTime;
+  t.clear();
+  t.start();
 
+  RandomAccessUpdate();
+
+  t.stop();
+
+  RealTime = t.value;
 
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
   GUPs *= 1.0e-9*NumUpdates;
@@ -126,10 +119,6 @@ def VerifyResults() {
   } else {
     writeln("(failed)");
   }
-}
-
-def Timer():float {
-  return 1.0;
 }
 
 def writeRAdata() {
