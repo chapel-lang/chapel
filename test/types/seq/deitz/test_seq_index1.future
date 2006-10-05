@@ -1,5 +1,0 @@
-semantic
-
-This is an interesting ambiguity in an attempt to index into a sequence of strings with an arithmetic sequence.  Since strings supporting indexing directly with arithmetic sequences, there is an ambiguity between the scalar promotions.
-
-One solution is to define indexing with an arithmetic sequence directly on a sequence and doing the same for one-dimensional arrays.
