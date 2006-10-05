@@ -78968,3 +78968,22 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/: sclc.pl 
 
+---------------------------------------------------------------------------
+
+10/05/06 16:33:22 -- waynew
+
+Log message:
+	- Array forall type with initializer. You should be able to do the following
+	  in a var declaration:
+	  var A: [i in D] int = jam(i);
+	
+	- Some tests testing array forall type with initializer.
+
+Modified files:
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/arrays/waynew/: init1.chpl init1.good init2.chpl 
+	                            init2.good init3.chpl init3.good 
+
