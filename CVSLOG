@@ -78943,3 +78943,16 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: promoteSeq.future 
 
+---------------------------------------------------------------------------
+
+10/05/06 14:51:56 -- deitz
+
+Log message:
+	Updated .good and removed .future for test that has a trivial meaning
+	now that indexing into strings has been disabled.
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq_index1.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq_index1.future 
+
