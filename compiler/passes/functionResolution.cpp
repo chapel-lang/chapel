@@ -86,26 +86,12 @@ fits_in_int(int width, Immediate* imm) {
       return (i >= -9223372036854775807ll-1 && i <= 9223372036854775807ll);
     }
   }
-  /* else if (imm->const_kind == NUM_KIND_UINT) {
-    uint64 i = imm->uint_value();
-    switch (width) {
-    default: INT_FATAL("bad width in fits_in_int");
-    case 8:
-      return (i <= 127);
-    case 16:
-      return (i <= 32767);
-    case 32:
-      return (i <= 2147483647ll);
-    case 64:
-      return (i <= 9223372036854775807ll);
-    }
-    }*/
   return false;
 }
 
 static bool
 fits_in_uint(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT) {
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
     int64 i = imm->int_value();
     if (i < 0)
       return false;
@@ -119,25 +105,13 @@ fits_in_uint(int width, Immediate* imm) {
     case 32:
       return (u <= 2147483647ull);
     case 64:
-      return (u <= 18446744073709551615ull);
+      return true;
     }
+  } else if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_64) {
+    int64 i = imm->int_value();
+    if (i > 0 && width == 64)
+      return true;
   }
-  /* fold uint parameters?
- else if (imm->const_kind == NUM_KIND_UINT) {
-    uint64 i = imm->uint_value();
-    switch (width) {
-    default: INT_FATAL("bad width in fits_in_int");
-    case 8:
-      return (i <= 255);
-    case 16:
-      return (i <= 65535);
-    case 32:
-      return (i <= 2147483647ull);
-    case 64:
-      return (i <= 18446744073709551615ull);
-    }
-  }
-  */
   return false;
 }
 
