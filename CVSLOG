@@ -78805,3 +78805,43 @@ Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
 	                                       ra3.chpl ra3.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 13:50:55 -- deitz
+
+Log message:
+	Made arithmetic domains generic over integral types so that in
+	
+	  [1..10:uint, 1..10:uint]
+	
+	the "dimensional index type" is uint.
+	
+	Note that all arithmetic sequences must have the same element type and
+	this element type becomes the dimensional index type.  I added a
+	future to wait on a better error message if this is not the case.
+	
+	The dimensional index type can be specified in a domain's type by
+	writing, for example, domain(2, uint).
+	
+	Note: a dimensional index type of uint(64) is not YET working.
+	
+	Made abs work over int, int(64), uint, and uint(64) to avoid getting a
+	float when passing it a uint.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_math.chpl 
+	                          _chpl_sparse.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_uint.chpl 
+	                           test_array_uint.good 
+	                           test_array_uint2.chpl 
+	                           test_array_uint2.future 
+	                           test_array_uint2.good 
+	                           test_array_uint3.chpl 
+	                           test_array_uint3.good 
+	                           test_array_uint4.chpl 
+	                           test_array_uint4.good 
+	                           test_domain_mixed_dim_types.chpl 
+	                           test_domain_mixed_dim_types.future 
+	                           test_domain_mixed_dim_types.good 
+
