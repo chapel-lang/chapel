@@ -78741,3 +78741,19 @@ Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
 	                                       ra3.chpl ra3.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 18:29:13 -- marybeth
+
+Log message:
+	Framework for submission paper to HPC challenge competition.
+	
+	The RA section has some text, mostly code fragments from the C,
+	C+MPI, UPC and Chapel versions of the update loop.  More discussion
+	is needed.
+
+Added files:
+	chapel/doc/studies/hpcc/: appendix.tex chapel_listing.tex 
+	                          FFT.tex Intro.tex RA.tex STREAM.tex 
+	                          submitsc06.tex Makefile bib.bib 
+
