@@ -78790,3 +78790,18 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+10/05/06 13:49:39 -- marybeth
+
+Log message:
+	Updated ra2 and ra3 tests to not print out timing information.
+	Updated ra3 test renaming "vector loop" to "inner loop" and
+	VectorDomain to LittleStepDomain.  The parallel inner loop gives
+	the benchmark nested parallelism that shouldn't be limited to
+	vectorization.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
+	                                       ra3.chpl ra3.good 
+
