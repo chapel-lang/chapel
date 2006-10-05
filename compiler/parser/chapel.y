@@ -982,12 +982,14 @@ type:
   composable_type %prec TSTARTUPLE
 | anon_record_type
 | tuple_type
-| composable_type TOF type
+| composable_type TOF type  
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-| composable_type TSTAR type %prec TSTAR
+| composable_type TSTAR type %prec TSTAR  
     { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR type
+{ $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $4->copy()), $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), new CallExpr("_build_forall_init_dom", $4))); }
 | TLSBR TRSBR type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
 | TLSBR TQUESTION identifier TRSBR type

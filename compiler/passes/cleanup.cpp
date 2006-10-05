@@ -154,6 +154,36 @@ void cleanup(void) {
 void cleanup(Symbol* base) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, base);
+
+  // handle forall's in type declaration
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
+      if (call->isNamed( "_build_forall_init")) {
+        if (call->parentStmt) {
+#include "build.h"
+          if (ExprStmt *stmt = dynamic_cast<ExprStmt*>(call->parentStmt)) {
+            if (DefExpr *def = dynamic_cast<DefExpr*>(stmt->expr)) {
+              CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
+              CallExpr *forinfo = dynamic_cast<CallExpr*>(tinfo->get(3)->remove());
+              AList *indices = dynamic_cast<CallExpr*>(forinfo->argList->head)->argList;
+              AList *iters = dynamic_cast<CallExpr*>(forinfo->argList->tail)->argList;
+              BlockStmt *forblk = build_chpl_stmt(build_for_expr( exprsToIndices(indices), iters, def->init->copy()));
+
+              FnSymbol *forall_init = new FnSymbol( "_forallinit");
+              forall_init->insertAtTail( forblk);
+              def->parentStmt->insertBefore( new DefExpr( forall_init));
+              def->init->replace( new CallExpr( forall_init));
+            } else {
+              INT_FATAL( call, "missing parent def expr");
+            }
+          }
+        } else {
+          INT_FATAL( call, "missing parent stmt");
+        }
+      }
+    }
+  }
+
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
