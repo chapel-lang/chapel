@@ -648,10 +648,7 @@ record _aseq {
       return _high;
 
   def getNextCursor(c)
-    if _stride > 0 then
-      return c + _stride:elt_type;
-    else
-      return c - (-_stride):elt_type;
+    return c + _stride:elt_type;
 
   def getValue(c)
     return c;
@@ -663,7 +660,7 @@ record _aseq {
     return
       (if _stride > 0
         then (_high - _low + _stride:elt_type) / _stride:elt_type
-        else -(_low - _high - (-_stride):elt_type) / (-_stride):elt_type);
+        else (_low - _high + _stride:elt_type) / _stride:elt_type);
 }
 
 def by(s : _aseq, i : int)
