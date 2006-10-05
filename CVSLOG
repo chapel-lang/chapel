@@ -78923,3 +78923,23 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_uint64.chpl 
 	                           test_array_uint64.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 14:46:28 -- deitz
+
+Log message:
+	Disabled building default == and != function on sequences, arrays, and
+	domains.  Perhaps this makes sense to disable on all types that promote.
+	
+	Removed .future for test/types/seq/bradc/promoteSeq.chpl.
+	
+	Note: test/studies/beer/bradc/beer-promoted-infer.chpl is not YET
+	working because it casts a sequence to a string and casts cannot YET
+	be promoted.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Removed files:
+	chapel/test/types/seq/bradc/: promoteSeq.future 
+
