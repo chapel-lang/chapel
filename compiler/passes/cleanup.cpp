@@ -5,6 +5,7 @@
  ***/
 
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
 #include "passes.h"
 #include "runtime.h"
@@ -160,7 +161,6 @@ void cleanup(Symbol* base) {
     if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
       if (call->isNamed( "_build_forall_init")) {
         if (call->parentStmt) {
-#include "build.h"
           if (ExprStmt *stmt = dynamic_cast<ExprStmt*>(call->parentStmt)) {
             if (DefExpr *def = dynamic_cast<DefExpr*>(stmt->expr)) {
               CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
