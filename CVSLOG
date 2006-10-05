@@ -78956,3 +78956,15 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/deitz/: test_seq_index1.future 
 
+---------------------------------------------------------------------------
+
+10/05/06 16:21:16 -- marybeth
+
+Log message:
+	Adding perl script downloaded from hpc website for counting
+	lines of source.  We need to report lines of source for each benchmark
+	submitted.
+
+Added files:
+	chapel/test/studies/hpcc/: sclc.pl 
+
