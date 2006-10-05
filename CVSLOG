@@ -78757,3 +78757,26 @@ Added files:
 	                          FFT.tex Intro.tex RA.tex STREAM.tex 
 	                          submitsc06.tex Makefile bib.bib 
 
+---------------------------------------------------------------------------
+
+10/05/06 08:54:17 -- deitz
+
+Log message:
+	The following parameter coercions are now allowed (and only these):
+	
+	 int(32) -> int(8), uint(8), int(16), uint(16), uint(32)
+	 int(64) -> uint(64)
+	
+	They are allowed if the value can fit in the target type.
+	
+	Added two test cases, one of int/long resolution that worked without
+	this change, and one of the different aseqs that didn't work before
+	the above fix.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_int_long.chpl 
+	                            test_int_long.good 
+	chapel/test/types/seq/deitz/: test_aseq3.chpl test_aseq3.good 
+
