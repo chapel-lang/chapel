@@ -187,13 +187,14 @@ def by(a: _domain, b) {
 def _build_domain(x)
   return x;
 
-def _build_domain(ranges : _aseq(int) ...?rank) {
-  var x = _adomain(rank, ranges);
+def _build_domain(ranges : _aseq ...?rank) {
+  type t = ranges(1).elt_type;
+  var x = _adomain(rank, t, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
 
-def _build_domain_type(param rank : int) {
-  var x = _adomain(rank);
+def _build_domain_type(param rank : int, type dimensional_index_type = int) {
+  var x = _adomain(rank, dimensional_index_type);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
 
@@ -256,10 +257,11 @@ def _aseq._expand(i : int) {
 
 class _adomain {
   param rank : int;
-  var ranges : rank*_aseq(int);
+  type dim_type;
+  var ranges : rank*_aseq(dim_type);
 
   def getHeadCursor() {
-    var c : rank*int;
+    var c : rank*dim_type;
     for param i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
@@ -292,13 +294,13 @@ class _adomain {
     return ranges(dim);
 
   def _build_array(type elt_type)
-    return _aarray(elt_type, rank, dom=this);
+    return _aarray(elt_type, rank, dim_type, dom=this);
 
   def _build_sparse_domain()
-    return _sdomain(rank, adomain=this);
+    return _sdomain(rank, dim_type, adomain=this);
 
   def translate(dim : rank*int) {
-    var x = _adomain(rank);
+    var x = _adomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
@@ -309,7 +311,7 @@ class _adomain {
   }
 
   def interior(dim : rank*int) {
-    var x = _adomain(rank);
+    var x = _adomain(rank, int);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
           (dim(i) < 0) && (this(i)._low-1-dim(i) > this(i)._high)) {
@@ -325,7 +327,7 @@ class _adomain {
   }
 
   def exterior(dim : rank*int) {
-    var x = _adomain(rank);
+    var x = _adomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
@@ -336,7 +338,7 @@ class _adomain {
   }
 
   def expand(dim : rank*int) {
-    var x = _adomain(rank);
+    var x = _adomain(rank, int);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -347,7 +349,7 @@ class _adomain {
   }  
   
   def expand(dim : int ...?numDims) {
-    var x = _adomain(rank);
+    var x = _adomain(rank, int);
     if (rank == numDims) {
       -- NOTE: would probably like to get rid of this assignment
       -- since domain assignment is/will eventually be nontrivial
@@ -366,14 +368,14 @@ class _adomain {
 
 
 def by(dom : _adomain, dim : dom.rank*int) {
-  var x = _adomain(dom.rank);
+  var x = _adomain(dom.rank, dom.dim_type);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
   return x;
 }
 
 def by(dom : _adomain, dim : int) {
-  var x = _adomain(dom.rank);
+  var x = _adomain(dom.rank, dom.dim_type);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim;
   return x;
@@ -383,10 +385,14 @@ def by(dom : _adomain, dim : int) {
 class _aarray: _abase {
   type elt_type;
   param rank : int;
+  type dim_type;
 
-  var dom : _adomain(rank);
-  var info : rank*4*int;
-  var size : int;
+  var dom : _adomain(rank, dim_type);
+  var off: rank*dim_type;
+  var blk: rank*dim_type;
+  var str: rank*int;
+  var orig: rank*dim_type;
+  var size : dim_type;
   var data : _ddata(elt_type);
   var noinit: bool = false;
 
@@ -402,30 +408,18 @@ class _aarray: _abase {
   def isValidCursor?(c)
     return dom.isValidCursor?(c);
 
-  def off(dim : int) var
-    return info(dim)(1);
-
-  def blk(dim : int) var
-    return info(dim)(2);
-
-  def str(dim : int) var
-    return info(dim)(3);
-
-  def orig(dim : int) var
-    return info(dim)(4);
-
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
       off(dim) = dom(dim)._low;
       str(dim) = dom(dim)._stride;
-      orig(dim) = 0;
+      orig(dim) = 0:dim_type;
     }
-    blk(rank) = 1;
+    blk(rank) = 1:dim_type;
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
     size = blk(1) * dom(1).length;
-    data = _ddata(elt_type, size);
+    data = _ddata(elt_type, size:int); // ahh!!! can't cast to int here
     data.init();
   }
 
@@ -441,22 +435,22 @@ class _aarray: _abase {
       this(i) = v;
   }
 
-  def this(ind : rank*int) var {
+  def this(ind : rank*dim_type) var {
     if boundsChecking
       for param i in 1..rank do
         if !_in(dom(i), ind(i)) then
           halt("array index out of bounds: ", ind);
-    var sum : int;
+    var sum : dim_type;
     for param i in 1..rank do
-      sum = sum + (ind(i) - off(i)) * blk(i) / str(i) - orig(i);
+      sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - orig(i);
 //    write(" [", ind, " = ", sum, "] ");
-    return data(sum);
+    return data(sum:int); // !!ahh
   }
 
-  def this(ind : int ...rank) var
+  def this(ind : dim_type ...rank) var
     return this(ind);
 
-  def this(ind: _aseq(int) ...rank) var {
+  def this(ind: _aseq(dim_type) ...rank) var {
     var d = [(...ind)];
     return slice(d._value);
   }
@@ -467,7 +461,7 @@ class _aarray: _abase {
     for param i in 1..rank do
       if d(i).length != dom(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = _aarray(elt_type, rank, d, noinit=true);
+    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -488,7 +482,7 @@ class _aarray: _abase {
       if d(i)._stride % dom(i)._stride != 0 then
         halt("stride of array slice is not multiple of stride in dimension ", i);
     }
-    var alias = _aarray(elt_type, rank, d, noinit=true);
+    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -502,11 +496,14 @@ class _aarray: _abase {
 
   def reallocate(d: _domain) {
     if (d.rank == rank) {
-      var new = _aarray(elt_type, rank, d._value);
+      var new = _aarray(elt_type, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);
       dom = new.dom;
-      info = new.info;
+      off = new.off;
+      blk = new.blk;
+      str = new.str;
+      orig = new.orig;
       size = new.size;
       data = new.data;
     }
@@ -546,7 +543,7 @@ def fwrite(f : file, x : _adomain) {
 }
 
 def fwrite(f : file, x : _aarray) {
-  var i : x.rank*int;
+  var i : x.rank*x.dim_type;
   for dim in 1..x.rank do
     i(dim) = x.dom(dim)._low;
   label next while true {
@@ -574,25 +571,24 @@ def _intersect(a: _aseq, b: _aseq) {
   var g, x: int;
   (g, x) = _extended_euclid(a._stride, b._stride);
   if abs(a._low - b._low) % g != 0 then
-    return 1..0;
+    return 1..0:a.elt_type;
   var low = max(a._low, b._low);
   var high = min(a._high, b._high);
   var stride = a._stride * b._stride / g;
-  var alignment = a._low + (b._low - a._low) * x * a._stride / g;
+  var alignment = (a._low + (b._low - a._low) * x * a._stride / g):a.elt_type;
   if alignment == 0 then
-    alignment = stride;
+    alignment = stride:a.elt_type;
   low = low + low % alignment;
   return low..high by stride;
 }
 
 def _intersect(a: _adomain, b: _adomain) {
-  var c = _adomain(a.rank);
+  var c = _adomain(a.rank, a.dim_type);
   for param i in 1..a.rank do
     c.ranges(i) = _intersect(a(i), b(i));
   return c;
 }
 
-// for when we start supporting strides
 // Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
 // given two non-negative integers u and v
 // returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
