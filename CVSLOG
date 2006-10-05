@@ -78895,3 +78895,15 @@ Removed files:
 	                            beer-submitted.good beer.chpl 
 	                            beer.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 14:34:05 -- bradc
+
+Log message:
+	Took out line from nightly regression script that tried
+	to build the nogc version of the compiler for the valgrind
+	runs.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
