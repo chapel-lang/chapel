@@ -548,13 +548,13 @@ def fwrite(f : file, x : _aarray) {
     i(dim) = x.dom(dim)._low;
   label next while true {
     fwrite(f, x(i));
-    if i(x.rank) <= (x.dom(x.rank)._high - x.dom(x.rank)._stride) {
+    if i(x.rank) <= (x.dom(x.rank)._high - x.dom(x.rank)._stride:x.dim_type) {
       fwrite(f, " ");
-      i(x.rank) += x.dom(x.rank)._stride;
+      i(x.rank) += x.dom(x.rank)._stride:x.dim_type;
     } else {
       for dim in 1..x.rank-1 by -1 {
-        if i(dim) <= (x.dom(dim)._high - x.dom(dim)._stride) {
-          i(dim) += x.dom(dim)._stride;
+        if i(dim) <= (x.dom(dim)._high - x.dom(dim)._stride:x.dim_type) {
+          i(dim) += x.dom(dim)._stride:x.dim_type;
           for dim2 in dim+1..x.rank {
             fwrite(f, "\n");
             i(dim2) = x.dom(dim2)._low;
@@ -663,7 +663,8 @@ def by(s : _aseq, i : int)
   return _aseq(s.elt_type, s._low, s._high, s._stride * i);
 
 def _in(s : _aseq, i : s.elt_type)
-  return i >= s._low && i <= s._high && (i - s._low) % s._stride == 0;
+  return i >= s._low && i <= s._high &&
+    (i - s._low) % abs(s._stride):s.elt_type == 0;
 
 // really slow --- REWRITE
 def _in(s1: _aseq, s2: _aseq) {
