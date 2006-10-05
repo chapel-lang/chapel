@@ -78987,3 +78987,13 @@ Added files:
 	chapel/test/arrays/waynew/: init1.chpl init1.good init2.chpl 
 	                            init2.good init3.chpl init3.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 16:41:44 -- waynew
+
+Log message:
+	Ooops.  Forgot to put an include in a more appropriate place.  Heh heh.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
