@@ -1,11 +1,10 @@
 /*  This is the Chapel version of Random Access HPC benchmark.
  *
  */  
-
-// param used below still gives errors
 param POLY:uint(64) = 7;
 
 config const verify = true;
+config const showtiming = false;
 
 config const TotalMemSize:int = 100000;
 const LogTableSize:int  = lg(TotalMemSize/2);
@@ -49,7 +48,7 @@ def main() {
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
   GUPs *= 1.0e-9*NumUpdates;
 
-  writeRAresults();
+  if (showtiming) then writeRAresults();
 
   if (verify) then VerifyResults();
 }

@@ -3,7 +3,4 @@ Number of updates = 131072
 Number of random streams = 512
 Length of each random stream = 256
 
-Real time used = 0.319377 seconds
-0.000410399 Billion(10^9) Updates    per second [GUP/s]
-
 Found 0 errors in 32768 locations (passed)

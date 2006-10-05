@@ -6,6 +6,7 @@
 param POLY:uint(64) = 7;
 
 config const verify = true;
+config const showtiming = false;
 
 config const TotalMemSize:int = 100000;
 const LogTableSize:int  = lg(TotalMemSize/2);
@@ -14,9 +15,7 @@ const TableSize:uint(64) = (1 << LogTableSize):uint(64);
 const NumUpdates:uint(64) = 4*TableSize;
 config const NumStreams:int = 1 << 9;
 const BigStep:int = (NumUpdates:int)/NumStreams;
-config const VectorLength = 64;
-
-const VectorDomain = [0..VectorLength-1];
+config const LittleStep = 64;
 
 const TableDomain = [0..(TableSize-1):int];
 var Table: [TableDomain] uint(64);
@@ -26,6 +25,7 @@ var RandomSteps: [RandStepsDomain] uint(64);
 
 const StreamDomain = [0..NumStreams-1];
 const BigStepDomain = [0..BigStep-1];
+const LittleStepDomain = [0..LittleStep-1];
 const UpdateDomain: domain(2) = [0..NumStreams-1,0..BigStep-1];
 
 var RealTime:float;
@@ -51,7 +51,7 @@ def main() {
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
   GUPs *= 1.0e-9*NumUpdates;
 
-  writeRAresults();
+  if (showtiming) then writeRAresults();
 
   if (verify) then VerifyResults();
 
@@ -62,10 +62,10 @@ def RandomAccessUpdate() {
   [i in TableDomain] Table(i) = i:uint(64);
   
   for j in StreamDomain {
-    var ranvec: [VectorDomain] uint(64);
-    [k in VectorDomain] ranvec(k) = RandomStart(BigStep*j+(BigStep/VectorLength)*k);
-    for i in BigStepDomain by VectorLength{
-      for k in VectorDomain{
+    var ranvec: [LittleStepDomain] uint(64);
+    [k in LittleStepDomain] ranvec(k) = RandomStart(BigStep*j+(BigStep/LittleStep)*k);
+    for i in BigStepDomain by LittleStep{
+      for k in LittleStepDomain{
         ranvec(k) = (ranvec(k) << 1) ^ (if (ranvec(k):int(64) < 0) then POLY else 0);
         Table((ranvec(k) & (TableSize-1)):int) ^= ranvec(k);
       }
@@ -133,7 +133,7 @@ def writeRAdata() {
   writeln("Number of updates = ",NumUpdates);
   writeln("Number of random streams = ",NumStreams);
   writeln("Length of each random stream = ",BigStep);
-  writeln("Inner vector loop length = ",VectorLength);
+  writeln("Inner loop length = ",LittleStep);
   writeln();
 }
 

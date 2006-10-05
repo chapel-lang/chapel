@@ -2,9 +2,6 @@ Main table size = 2^15 = 32768 words
 Number of updates = 131072
 Number of random streams = 512
 Length of each random stream = 256
-Inner vector loop length = 64
-
-Real time used = 10.1831 seconds
-1.28716e-05 Billion(10^9) Updates    per second [GUP/s]
+Inner loop length = 64
 
 Found 0 errors in 32768 locations (passed)
