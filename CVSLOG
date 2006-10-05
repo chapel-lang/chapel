@@ -78907,3 +78907,19 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+10/05/06 14:46:13 -- deitz
+
+Log message:
+	Inserted a few more casts to get arithmetic domains working on
+	uint(64).
+	
+	Added a test case.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_uint64.chpl 
+	                           test_array_uint64.good 
+
