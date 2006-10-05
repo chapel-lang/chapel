@@ -78724,3 +78724,20 @@ Modified files:
 	                          _chpl_indefinite.chpl 
 	chapel/test/types/seq/deitz/aseq/: test_aseq2-error.good 
 
+---------------------------------------------------------------------------
+
+10/04/06 17:44:51 -- marybeth
+
+Log message:
+	Updated versions of ra2 and ra3 using the Timers module to
+	time the benchmark.  Also, switched POLY from const to param,
+	since param for this case is now working.
+	
+	ra2.good and ra3.good are also updated.  However, since they
+	contain timing information, the output of ra2 and ra3 is no longer
+	constant.  I'm not sure how that gets handled during testing.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra2.good 
+	                                       ra3.chpl ra3.good 
+
