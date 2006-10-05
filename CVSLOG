@@ -78845,3 +78845,53 @@ Added files:
 	                           test_domain_mixed_dim_types.future 
 	                           test_domain_mixed_dim_types.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 13:56:19 -- bradc
+
+Log message:
+	Forgot to mention, but 99 bottles of beer came up
+	again as a benchmark at the PGAS workshop, so between
+	that and Steve's implementation of domain promotion,
+	I revisited this.
+	
+	* moved our implementations into a studies directory
+	  and out of my trivial directory
+	
+	* wrote a few different versions that used promotion,
+	  varying primarily based on the degree to which
+	  formal argument types are used.  Interestingly,
+	  even though the function was written to take an
+	  integer and return a string, a lot of it promotes
+	  to take an aggregate of integers (the domain) and
+	  return an aggregate of strings.  This is a
+	  wonderful example of the power of promotion.
+	
+	* except that == currently isn't promoting across
+	  sequences.  Checked in a future beer version based
+	  on this as well as a standalone future in the
+	  types directory.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c 
+Added files:
+	chapel/test/studies/beer/: beer-submitted.chpl 
+	                           beer-submitted.good beer.chpl 
+	                           beer.good 
+	chapel/test/studies/beer/bradc/: .cvsignore 
+	                                 beer-promoted-explicit.chpl 
+	                                 beer-promoted-explicit.good 
+	                                 beer-promoted-infer-explicit.chpl 
+	                                 beer-promoted-infer-explicit.good 
+	                                 beer-promoted-infer.chpl 
+	                                 beer-promoted-infer.future 
+	                                 beer-promoted-infer.good 
+	                                 beer-promoted-init.chpl 
+	                                 beer-promoted-init.good 
+	chapel/test/types/seq/bradc/: promoteSeq.chpl promoteSeq.future 
+	                              promoteSeq.good 
+Removed files:
+	chapel/test/trivial/bradc/: beer-submitted.chpl 
+	                            beer-submitted.good beer.chpl 
+	                            beer.good 
+
