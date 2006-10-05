@@ -403,7 +403,7 @@ void dfft(int n, int logn, double *a, double *w)
 #pragma mta assert no dependence
      for (j = 0; j < l; j += 2)
        btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
-       printf("l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);\n", l);
+     printf("l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);\n", l, j);
   } else {
     printf("l << 2 != n\n");
 

@@ -1,0 +1,4 @@
+deitz
+
+It seems that promotion of == over sequences is broken.
+Interestingly, promotion of == over domains is not.

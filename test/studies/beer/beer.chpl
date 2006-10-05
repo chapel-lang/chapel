@@ -6,6 +6,8 @@
  *            HPLS workshop
  * compiles and runs with chpl compiler version 0.3.3211
  * for more information, contact: chapel_info@cray.com
+ * modified 08/02/2006 to fix a bug workaround in the original version
+ * modified 08/16/2006 to update syntax (fun -> def)
  * 
  *
  * Notes: 
