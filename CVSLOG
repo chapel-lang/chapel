@@ -78780,3 +78780,13 @@ Added files:
 	                            test_int_long.good 
 	chapel/test/types/seq/deitz/: test_aseq3.chpl test_aseq3.good 
 
+---------------------------------------------------------------------------
+
+10/05/06 11:41:58 -- deitz
+
+Log message:
+	Simplified arithmetic sequence implementation in an obvious way.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
