@@ -3,6 +3,7 @@
 //
 
 // this is the class that all array classes are derived from
+pragma "abase"
 class _abase {
   def reallocate(d: _domain) {
     halt("reallocation not implemented for this array");

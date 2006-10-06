@@ -1,5 +1,1 @@
-I'd expect to see some sort of error about indexing into a
-2D array with only a single index in this case, if that is
-possible.  If we think this is incorrect, I'd like to
-reconsider this decision in the language.
-
+twoDasTwoOneDs.chpl:11: error: unresolved access of '[domain(2,int)] float' by '(:int)'

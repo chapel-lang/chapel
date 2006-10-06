@@ -1,2 +1,2 @@
 weirdinit.chpl:6: In function 'main':
-weirdinit.chpl:7: error: unresolved call ':pair()'
+weirdinit.chpl:7: error: unresolved access of 'pair' by '()'

@@ -811,11 +811,9 @@ char* call2string(CallExpr* call,
   }
   if (!strcmp("this", name))
     _this = true;
-  if (_this) {
-    str = stringcat(str, ":", atypes.v[0]->symbol->name);
-  } else if (!strncmp("_construct_", name, 11)) {
+  if (!strncmp("_construct_", name, 11)) {
     str = stringcat(str, name+11);
-  } else {
+  } else if (!_this) {
     str = stringcat(str, name);
   }
   if (!call->methodTag)
@@ -1062,38 +1060,41 @@ resolveCall(CallExpr* call) {
                       atypes.v[1]->symbol->name,
                       atypes.v[0]->symbol->name);
           }
-        } else if (resolve_call_error_candidates.n > 0) {
-          char* str = call2string(call, name, atypes, aparams, anames);
-          USR_FATAL_CONT(userCall(call), "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved", str);
-          if (developer) {
-            for (int i = callStack.n-1; i>=0; i--) {
-              CallExpr* cs = callStack.v[i];
-              FnSymbol* f = cs->getFunction();
-              if (f->instantiatedFrom)
-                USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-              else
-                break;
-            }
-          }
-          bool _this = false;
-          if (!strcmp("this", name))
-            _this = true;
-          if (_this)
-            USR_STOP();
-          bool printed_one = false;
-          forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
-            if (fn->isSetter) 
-              continue;
-            if (!developer && fn->getModule()->modtype == MOD_STANDARD)
-              continue;
-            USR_PRINT(fn, "%s %s",
-                      printed_one ? "               " : "candidates are:",
-                      fn2string(fn));
-            printed_one = true;
-          }
+        } else if (!strcmp("this", name)) {
+          USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'",
+                         (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
+                         atypes.v[0]->symbol->name,
+                         call2string(call, name, atypes, aparams, anames));
           USR_STOP();
         } else {
-          USR_FATAL(userCall(call), "unresolved call '%s'", name);
+          char* str = call2string(call, name, atypes, aparams, anames);
+          USR_FATAL_CONT(userCall(call), "%s call '%s'",
+                         (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
+                         str);
+          if (resolve_call_error_candidates.n > 0) {
+            if (developer) {
+              for (int i = callStack.n-1; i>=0; i--) {
+                CallExpr* cs = callStack.v[i];
+                FnSymbol* f = cs->getFunction();
+                if (f->instantiatedFrom)
+                  USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+                else
+                  break;
+              }
+            }
+            bool printed_one = false;
+            forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
+              if (fn->isSetter) 
+                continue;
+              if (!developer && fn->getModule()->modtype == MOD_STANDARD)
+                continue;
+              USR_PRINT(fn, "%s %s",
+                        printed_one ? "               " : "candidates are:",
+                        fn2string(fn));
+              printed_one = true;
+            }
+          }
+          USR_STOP();
         }
       } else {
         INT_FATAL(call, "Error in resolve_call");
@@ -1578,6 +1579,36 @@ resolve() {
 }
 
 
+static bool
+is_array_type(Type* type) {
+  forv_Vec(Type, t, type->dispatchParents) {
+    if (t->symbol->hasPragma("abase"))
+      return true;
+    else if (is_array_type(t))
+      return true;
+  }
+  return false;
+}
+
+
+static void
+fixTypeNames(ClassType* ct) {
+  if (is_array_type(ct)) {
+    char* domain_type = ct->getField(4)->type->symbol->name;
+    char* elt_type = ct->getField(1)->type->symbol->name;
+    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
+    ct->symbol->name = astr("[", domain_type, "] ", elt_type);
+    ct->symbol->defPoint->parentScope->define(ct->symbol);
+  }
+  if (ct->instantiatedFrom &&
+      !strcmp(ct->instantiatedFrom->symbol->name, "_adomain")) {
+    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
+    ct->symbol->name = astr(ct->symbol->name+2);
+    ct->symbol->defPoint->parentScope->define(ct->symbol);
+  }
+}
+
+
 static void
 setFieldTypes(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
@@ -1601,4 +1632,5 @@ setFieldTypes(FnSymbol* fn) {
     if (!found)
       INT_FATAL(formal, "Unable to find field in constructor");
   }
+  fixTypeNames(ct);
 }
