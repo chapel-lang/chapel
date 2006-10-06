@@ -79150,3 +79150,20 @@ Modified files:
 	chapel/test/npb/: mg.chpl 
 	chapel/test/npb/mg/: mg-annotated.chpl 
 
+---------------------------------------------------------------------------
+
+10/06/06 15:08:02 -- marybeth
+
+Log message:
+	Checking in Random module.  This module contains fillRandomVec which
+	fills a vector with random floats.  There are two versions - one that
+	takes a seed and one that doesn't.
+	
+	The module needs further review.  The module now just has function
+	definitions.  We may want the ability to create random number/vector objects.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+Added files:
+	chapel/modules/standard/: Random.chpl 
+
