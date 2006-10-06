@@ -79137,3 +79137,16 @@ Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old2.chpl 
 	                                    ra-bradc-old2.good 
 
+---------------------------------------------------------------------------
+
+10/06/06 14:06:18 -- bradc
+
+Log message:
+	Minor changes to MG code that I made before sending them
+	to the guy managing the NPB benchmark suite these days
+	who was interested in seeing them based on the PGAS talk.
+
+Modified files:
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl 
+
