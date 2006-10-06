@@ -1,4 +1,4 @@
-test_default4-error.chpl:25: error: Ambiguous call 'foo()'
+test_default4-error.chpl:25: error: ambiguous call 'foo()'
 test_default4-error.chpl:1: note: candidates are: foo(i: int, j: float, k: string)
 test_default4-error.chpl:5: note:                 foo(i: float, j: string, k: int)
 test_default4-error.chpl:9: note:                 foo(i: string, j: int, k: float)

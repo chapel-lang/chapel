@@ -1055,16 +1055,16 @@ resolveCall(CallExpr* call) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (!strcmp("=", name)) {
           if (atypes.v[1] == dtNil) {
-            USR_FATAL(call, "type mismatch in assignment of nil to %s",
+            USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
                       atypes.v[0]->symbol->name);
           } else {
-            USR_FATAL(call, "type mismatch in assignment from %s to %s",
+            USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                       atypes.v[1]->symbol->name,
                       atypes.v[0]->symbol->name);
           }
         } else if (resolve_call_error_candidates.n > 0) {
           char* str = call2string(call, name, atypes, aparams, anames);
-          USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
+          USR_FATAL_CONT(userCall(call), "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved", str);
           if (developer) {
             for (int i = callStack.n-1; i>=0; i--) {
               CallExpr* cs = callStack.v[i];
@@ -1093,7 +1093,7 @@ resolveCall(CallExpr* call) {
           }
           USR_STOP();
         } else {
-          USR_FATAL(call, "Unresolved call '%s'", name);
+          USR_FATAL(userCall(call), "unresolved call '%s'", name);
         }
       } else {
         INT_FATAL(call, "Error in resolve_call");
@@ -1155,7 +1155,7 @@ resolveCall(CallExpr* call) {
         if (t == dtUnknown)
           INT_FATAL(call, "Unable to resolve field type");
         if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(call, "Cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
+          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
         found = true;
       }
     }
@@ -1196,8 +1196,8 @@ resolveCall(CallExpr* call) {
       if (t == dtUnknown) {
         if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
           if (FnSymbol* rhsfn = rhs->isResolved()) {
-            USR_FATAL_CONT(rhsfn, "Unable to resolve return type of function '%s'", rhsfn->name);
-            USR_FATAL(rhs, "Called recursively at this point");
+            USR_FATAL_CONT(rhsfn, "unable to resolve return type of function '%s'", rhsfn->name);
+            USR_FATAL(rhs, "called recursively at this point");
           }
         }
       }
@@ -1225,10 +1225,10 @@ resolveCall(CallExpr* call) {
 
       ClassType* ct = dynamic_cast<ClassType*>(sym->var->type);
       if (t == dtNil && sym->var->type != dtNil && (!ct || ct->classTag != CLASS_CLASS))
-        USR_FATAL(call, "Type mismatch in assignment from nil to %s",
+        USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                   sym->var->type->symbol->name);
       if (t != dtNil && t != sym->var->type && !isDispatchParent(t, sym->var->type))
-        USR_FATAL(call, "Type mismatch in assignment from %s to %s",
+        USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                   t->symbol->name, sym->var->type->symbol->name);
       if (t != sym->var->type && isDispatchParent(t, sym->var->type)) {
         Expr* rhs = call->get(2);
@@ -1590,7 +1590,7 @@ setFieldTypes(FnSymbol* fn) {
     if (t == dtUnknown)
       INT_FATAL(formal, "Unable to resolve field type");
     if (t == dtNil)
-      USR_FATAL(formal, "Unable to determine type of field from nil");
+      USR_FATAL(formal, "unable to determine type of field from nil");
     bool found = false;
     for_fields(field, ct) {
       if (!strcmp(field->name, formal->name)) {

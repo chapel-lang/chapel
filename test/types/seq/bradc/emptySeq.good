@@ -1,1 +1,1 @@
-Error: Invalid empty sequence literal '(//)'
+error: Invalid empty sequence literal '(//)'

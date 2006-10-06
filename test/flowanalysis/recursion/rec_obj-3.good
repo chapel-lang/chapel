@@ -1,1 +1,1 @@
-rec_obj-3.chpl:1: error: Unable to determine type of field from nil
+rec_obj-3.chpl:1: error: unable to determine type of field from nil

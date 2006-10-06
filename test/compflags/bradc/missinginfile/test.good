@@ -1,1 +1,1 @@
-Error: opening nonexistentfile.chpl: No such file or directory
+error: opening nonexistentfile.chpl: No such file or directory

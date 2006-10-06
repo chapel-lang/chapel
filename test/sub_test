@@ -34,7 +34,7 @@ endif
 ## set umask such that other testers can modify files also
 #umask 002
 
-set diffargs = "-i"
+set diffargs = ""
 
 # make sure can execute compiler
 
@@ -247,7 +247,7 @@ foreach chplsrc ($testsrc)
 	    continue
 	endif
 
-	echo \[Executing diff $checkfile $complog\]
+	echo \[Executing diff $diffargs $checkfile $complog\]
 	diff $diffargs $checkfile $complog
 	set difffailed = $status
         if ( $difffailed == 0 ) then
