@@ -79065,3 +79065,22 @@ Modified files:
 	                                               test_infer_class2.good 
 	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
 
+---------------------------------------------------------------------------
+
+10/06/06 11:21:55 -- deitz
+
+Log message:
+	Improved error messages regarding arrays and domains by making the
+	type look more like Chapel code and by calling an unresolved call to
+	the this function an unresolved access.  Removed a .future.  Updated a
+	few .goods.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/bradc/: twoDasTwoOneDs.good 
+	chapel/test/classes/bradc/: weirdinit.good 
+	chapel/test/trivial/bradc/: undefinedfn.good undefinedfn2.good 
+Removed files:
+	chapel/test/arrays/bradc/: twoDasTwoOneDs.future 
+
