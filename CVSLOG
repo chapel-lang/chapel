@@ -79084,3 +79084,18 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: twoDasTwoOneDs.future 
 
+---------------------------------------------------------------------------
+
+10/06/06 11:52:48 -- bradc
+
+Log message:
+	Filing a future in which striding a uint-indexed
+	domain by a uint doesn't seem to work.  Would be
+	convenient if it did.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-strideduintdomain.chpl 
+	                                    ra-bradc-strideduintdomain.good 
+	                                    ra-bradc-strideduintdomain.future 
+
