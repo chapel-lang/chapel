@@ -79099,3 +79099,13 @@ Added files:
 	                                    ra-bradc-strideduintdomain.good 
 	                                    ra-bradc-strideduintdomain.future 
 
+---------------------------------------------------------------------------
+
+10/06/06 13:26:12 -- waynew
+
+Log message:
+	Removed an arg evaluation order assumption.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
