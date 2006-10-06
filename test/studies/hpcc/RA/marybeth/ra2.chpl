@@ -14,7 +14,7 @@ const NumUpdates:uint(64) = 4*TableSize;
 const NumStreams:int = 1 << 9;
 const BigStep:int = (NumUpdates:int)/NumStreams;
 
-const TableDomain = [0..(TableSize-1):int];
+const TableDomain = [0..TableSize-1];
 var Table: [TableDomain] uint(64);
 
 const RandStepsDomain = [0..63];
@@ -55,13 +55,13 @@ def main() {
 
 def RandomAccessUpdate() {
 
-  [i in TableDomain] Table(i) = i:uint(64);
+  [i in TableDomain] Table(i) = i;
   
   for j in StreamDomain {
     var ran:uint(64) = RandomStart(BigStep*j);
     for i in BigStepDomain {
       ran = (ran << 1) ^ (if (ran:int(64) < 0) then POLY else 0);
-      Table((ran & (TableSize-1)):int) ^= ran;
+      Table(ran & (TableSize-1)) ^= ran;
     }
   }
 }
@@ -103,12 +103,12 @@ def VerifyResults() {
   var temp: uint(64) = 1;  
   for i in UpdateDomain {
     temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0);
-    Table((temp & (TableSize-1)):int) ^= temp;  
+    Table(temp & (TableSize-1)) ^= temp;  
   }
 
   var NumErrors = 0;
   for i in TableDomain {
-    if (Table(i) != i:uint(64)) then
+    if (Table(i) != i) then
       NumErrors += 1;
   }
 
