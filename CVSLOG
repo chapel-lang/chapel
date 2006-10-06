@@ -79167,3 +79167,14 @@ Modified files:
 Added files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/06/06 15:34:21 -- deitz
+
+Log message:
+	Added compiler README that I started writing a long time ago but
+	forgot to check in and forgot about too.
+
+Added files:
+	chapel/compiler/: README 
+
