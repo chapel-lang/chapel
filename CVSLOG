@@ -78997,3 +78997,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+10/06/06 10:28:01 -- marybeth
+
+Log message:
+	Updated ra2 and ra3 now that domains can be of type uint(64).
+	Changed TableDomain to be of type uint(64).  Removed now unnecessary casts.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra3.chpl 
+
