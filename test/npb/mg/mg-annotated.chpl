@@ -31,9 +31,9 @@ enum classVals {S, W, A, B, C, D, O};
 //   iterations: the number of iterations to run
 //   checksum: the expected result, if the default characteristics are used
 
-const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
-const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
-const checksum: [S..O] float  = (/0.0000530770700573,
+const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/),
+      iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/),
+      checksum: [S..O] float  = (/0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
                                   0.00000180056440132,
@@ -65,18 +65,18 @@ config const nx = n,
 // of the smallest dimension.  The user may specify a different number
 // of levels on the executable's command-line.
 
-config const numLevels = lg2(min(min(nx,ny),nz));
+config const numLevels = lg(min(nx,ny,nz)),
 
 
 // the number of iterations to run.  Again, determined by the problem
 // class by default, but overridable.
 
-config const numIters = iterations(Class);
+             numIters = iterations(Class),
 
 
 // the checksum for the benchmark, again overridable.
 
-config const verifyValue = checksum(Class);
+             verifyValue = checksum(Class);
 
 
 // A flag specifying whether or not a "warmup" round should be run, a
@@ -530,17 +530,4 @@ def randlc(x, a) {
   x = t3 - t46 * t4;
 
   return r46 * x;
-}
-
-
-// simple math helper fun; perhaps this will be part of the
-// standard library, but it was easy enough to write
-
-def lg2(x) {
-  var lg = -1;
-  while (x) {
-    x *= 2;
-    lg += 1;
-  }
-  return lg;
 }

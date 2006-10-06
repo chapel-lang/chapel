@@ -1,27 +1,27 @@
--- This is a port of the NPB MG benchmark (version 3.0) written in
--- Chapel by Brad Chamberlain.  As with any port, a number of
--- structural and stylistic choices were made; in some cases, the
--- original identifiers were preserved, either for clarity, or because
--- the author couldn't come up with better names for them.  In other
--- cases, more verbose names were used in hopes of improving
--- readability.
+// This is a port of the NPB MG benchmark (version 3.0) written in
+// Chapel by Brad Chamberlain.  As with any port, a number of
+// structural and stylistic choices were made; in some cases, the
+// original identifiers were preserved, either for clarity, or because
+// the author couldn't come up with better names for them.  In other
+// cases, more verbose names were used in hopes of improving
+// readability.
 
--- In general, types are elided from declarations unless they are
--- believed to be ambiguous when reading the source, or greatly
--- improve the code's readability.  This is obviously a judgement
--- call.
+// In general, types are elided from declarations unless they are
+// believed to be ambiguous when reading the source, or greatly
+// improve the code's readability.  This is obviously a judgement
+// call.
 
--- It should be noted that as of this writing (Nov 2005), our
--- prototype Chapel implementation is not yet far enough along to
--- handle this code.  This therefore represents the target that we are
--- striving for rather than something that works today.
+// It should be noted that as of this writing (Nov 2005), our
+// prototype Chapel implementation is not yet far enough along to
+// handle this code.  This therefore represents the target that we are
+// striving for rather than something that works today.
 
 enum classVals {S, W, A, B, C, D, O};
 
 
-const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
-const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
-const checksum: [S..O] float  = (/0.0000530770700573,
+const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/),
+      iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/),
+      checksum: [S..O] float  = (/0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
                                   0.00000180056440132,
@@ -39,9 +39,9 @@ config const nx = n,
              nz = n;
 
 
-config const numLevels = lg2(min(min(nx,ny),nz));
-config const numIters = iterations(Class);
-config const verifyValue = checksum(Class);
+config const numLevels = lg(min(nx,ny,nz)),
+             numIters = iterations(Class),
+             verifyValue = checksum(Class);
 
 config const warmup = true;
 
@@ -71,7 +71,7 @@ def main() {
 }
 
 
--- top-level funs
+// top-level funs
 
 def initializeMG(V, U, R) {
   writeln(" NAS Parallel Benchmarks 3.0 (Chapel version) - MG Benchmark");
@@ -142,16 +142,16 @@ def runOneIteration(V, U, R) {
 
 
 def mg3P(V, U, R) {
-  -- project up the hierarchy
+  // project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
   }
 
-  -- compute at the top of the hierarchy
+  // compute at the top of the hierarchy
   U(numLevels) = 0.0;
   psinv(U(numLevels), R(numLevels));
 
-  -- interpolate down the hierarchy
+  // interpolate down the hierarchy
   for lvl in (2..numLevels-1) by -1 {
     U(lvl) = 0.0;
     interp(U(lvl), U(lvl+1));
@@ -159,7 +159,7 @@ def mg3P(V, U, R) {
     psinv(U(lvl), R(lvl));
   }
 
-  -- compute at the bottom of the hierarchy
+  // compute at the bottom of the hierarchy
   interp(U(1), U(2));
   resid(R(1), V, U(1));
   psinv(U(1), R(1));
@@ -234,11 +234,11 @@ def initCValues(Class): coeff {
 
 
 
--- SETUP ROUTINES:
+// SETUP ROUTINES:
 
 def initArrays(V, U, R) {
-  -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
-  -- but the following is minimal:
+  // conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
+  // but the following is minimal:
   zran3(V);
   U(1) = 0.0;
 
@@ -256,17 +256,17 @@ def zran3(V) {
 
   V = [i,j,k in Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
 
-  -- the following does a number of maxloc/minloc reductions, each of
-  -- which returns the location of the largest/smallest element as an
-  -- index of the array's domain.  This is an easy, though slow way to
-  -- perform this computation.  A better way would be to write a
-  -- user-defined reduction using Chapel's features for that, but this
-  -- required more effort and it isn't being timed anyway.
+  // the following does a number of maxloc/minloc reductions, each of
+  // which returns the location of the largest/smallest element as an
+  // index of the array's domain.  This is an easy, though slow way to
+  // perform this computation.  A better way would be to write a
+  // user-defined reduction using Chapel's features for that, but this
+  // required more effort and it isn't being timed anyway.
 
   for i in (1..numCharges) {
     pos(i) = maxloc reduce V;
     neg(i) = minloc reduce V;
-    pos(i) = 0.5;  -- (remove from consideration on next iteration)
+    pos(i) = 0.5;  // (remove from consideration on next iteration)
     neg(i) = 0.5;
   }
 
@@ -325,14 +325,4 @@ def randlc(x, a) {
   x = t3 - t46 * t4;
 
   return r46 * x;
-}
-
-
-def lg2(x) {
-  var lg = -1;
-  while (x) {
-    x *= 2;
-    lg += 1;
-  }
-  return lg;
 }
