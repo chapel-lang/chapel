@@ -79109,3 +79109,31 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+10/06/06 14:03:48 -- bradc
+
+Log message:
+	Updated ra-bradc.chpl to utilize several new features:
+	
+	        - uint domains
+	        - better shift operators
+	        - inout arguments
+	        - the bits() function
+	        - timers
+	        - [i in D]-style array declarations
+	
+	and moved the last version to ra-bradc-old2.chpl.
+	
+	This is starting to look like really great code to me!
+	(I haven't looked at Mary Beth's version in quite some
+	time because it's been easier to understand improvements
+	in the compiler in the code I'm familiar with;  need
+	to synch back up with where Mary Beth's code is soon).
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old2.chpl 
+	                                    ra-bradc-old2.good 
+
