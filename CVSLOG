@@ -79389,3 +79389,31 @@ Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft-trace.7.txt 
 	                                     dfft-trace.8.txt 
 
+---------------------------------------------------------------------------
+
+10/09/06 15:24:55 -- bradc
+
+Log message:
+	This test captures an expression that I tried to write
+	to cast an integer to a float and multiply it by 2:
+	
+	        i:float*2
+	
+	but which was instead interpreted as a homogeneous tuple.
+	
+	From the .future file:
+	
+	  ...Would either like to have this work as I intended
+	  or generate a better error message (in the latter
+	  case, this seems like yet another case that might
+	  cause us to re-think our homogeneous tuple specification
+	  -- note that if it required parenthesis, this ambiguity
+	  would not have occurred).
+	
+	This is *not* on the critical path for the HPCC deadline.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-badtuple.chpl 
+	                                     fft-badtuple.future 
+	                                     fft-badtuple.good 
+
