@@ -79270,3 +79270,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+10/09/06 10:10:08 -- deitz
+
+Log message:
+	Removed .future as this test correctly shows an error for assigning an
+	int to a uint.
+
+Modified files:
+	chapel/test/types/coerce/bradc/: int2uint.good 
+Removed files:
+	chapel/test/types/coerce/bradc/: int2uint.future 
+
