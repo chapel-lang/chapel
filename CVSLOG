@@ -79219,3 +79219,31 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
 	                         parallel.cpp 
 
+---------------------------------------------------------------------------
+
+10/09/06 09:55:52 -- deitz
+
+Log message:
+	Moved declaration statements to the sections that define what they
+	declare.  Removed forall discussion from the statements section and
+	moved the alternative syntax section into the parallelism section.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Functions/: Function_Definitions.tex 
+	chapel/spec/Variables/: Variable_Declarations.tex 
+Added files:
+	chapel/spec/Modules/: Module_Definitions.tex 
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Alternative_Forall_Loop_Syntax.tex 
+	chapel/spec/Statements/: The_For_Loop.tex 
+	chapel/spec/Types/: Type_Definitions.tex 
+Removed files:
+	chapel/spec/Statements/: Alternative_Forall_Loop_Syntax.tex 
+	                         Declaration_Statements.tex 
+	                         Function_Declaration_Statements.tex 
+	                         Module_Declaration_Statements.tex 
+	                         The_For_and_Forall_Loops.tex 
+	                         Type_Declaration_Statements.tex 
+	                         Variable_Declaration_Statements.tex 
+
