@@ -1,2 +1,1 @@
-u is: 1
-i is: 2
+int2uint.chpl:6: error: type mismatch in assignment from int to uint
