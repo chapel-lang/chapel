@@ -1,3 +1,14 @@
+\noindent @@@\hrulefill \\
+The cobegin statement spawns a computation for each of the statements
+in the block-statement that it immediately precedes.  When each of
+these computations finish, control continues with the next statement.
+The syntax for the cobegin statement is given by
+\begin{syntax}
+cobegin-statement:
+  `cobegin' block-statement
+\end{syntax}
+\noindent @@@\hrulefill \\
+
 The second form of creating parallelism is with the \chpl{cobegin}
 statement. The \chpl{cobegin} statement syntax is
 \begin{chapel}

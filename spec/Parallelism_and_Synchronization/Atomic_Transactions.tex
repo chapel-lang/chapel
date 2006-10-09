@@ -1,3 +1,13 @@
+\noindent @@@\hrulefill \\
+The atomic statement creates an atomic transaction around a statement
+or block of statements.  The syntax for the atomic statement is given
+by
+\begin{syntax}
+atomic-statement:
+  `atomic' block-level-statement
+\end{syntax}
+\noindent @@@\hrulefill \\
+
 An {\em atomic transaction} is a region of the program that appears to
 execute as if all other computations in the program are suspended. It
 is indicated as:
