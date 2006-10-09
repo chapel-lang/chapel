@@ -256,17 +256,13 @@ thread_args() {
 
 
                 // add the function args as fields in the class
-                AList* vlist = new AList();
                 for_actuals(arg, fcall) {
                   SymExpr *s = dynamic_cast<SymExpr*>(arg);
                   Symbol  *var = s->var; // arg or var
-                  vlist->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol(var->name,
-                                                                             var->type,
-                                                                             VAR_NORMAL,
-                                                                             VAR_VAR,
-                                                                             true))));
+                  VarSymbol* field = new VarSymbol(var->name, var->type);
+                  field->is_ref = true;
+                  ctype->fields->insertAtTail(new DefExpr(field));
                 }
-                ctype->addDeclarations( vlist);
                 mod->stmts->insertAtHead( new ExprStmt(new DefExpr( new_c)));
 
                 // create the class variable instance and allocate it

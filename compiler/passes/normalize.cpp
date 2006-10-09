@@ -204,7 +204,6 @@ iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
 // Create a field in the class for each local variable and replace uses.
 static void
 iterator_create_fields( FnSymbol *fn, ClassType *ic) {
-  AList *classdefs = new AList();
   ArgSymbol   *_this = new ArgSymbol( INTENT_BLANK, "this", ic);
 
   // create a field for each formal
@@ -216,9 +215,9 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
                                            dtUnknown,
                                            VAR_NORMAL,
                                            const_type);
-      classdefs->insertAtTail(new ExprStmt( new DefExpr( newfield,
-                                                         NULL,
-                                                         etype)));
+      ic->fields->insertAtTail(new DefExpr(newfield,
+                                           NULL,
+                                           etype));
       // replace uses in body
       forv_Vec( SymExpr, se, a->uses) {
         se->replace( new CallExpr( ".", _this, new_StringSymbol( se->var->name)));
@@ -236,21 +235,23 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(def->sym)) {
         if (v->isCompilerTemp)
           continue;
-        if (Expr *etype = dynamic_cast<Expr*>(def->exprType->remove())) {
-          classdefs->insertAtTail(new ExprStmt( new DefExpr( v, NULL, etype->copy())));
-        } else {
-          classdefs->insertAtTail(new ExprStmt( new DefExpr( v, NULL, new CallExpr( PRIMITIVE_TYPEOF, def->init->copy()))));
-        }
+
+        Stmt* def_stmt= def->parentStmt;
+        Expr* def_init = def->init;
+        Expr* def_type = def->exprType;
+        def_init->remove();
+        def_type->remove();
 
         // need to reset default value (make re-entrant)
-        Stmt *def_stmt= def->parentStmt;
-        Expr *init_e = (def->init) ? dynamic_cast<Expr*>(def->init->remove()) : new CallExpr( "_init", (new CallExpr( ".", _this, new_StringSymbol( v->name))));
-        Expr *newdef = new CallExpr( v->name, 
-                                     gMethodToken,
-                                     _this,
-                                     gSetterToken,
-                                     init_e);
-        def_stmt->replace( new ExprStmt( newdef));
+        if (!def_init)
+          def_init = new CallExpr("_init", new CallExpr(".", _this, new_StringSymbol(v->name)));
+        def_stmt->replace(new ExprStmt(new CallExpr("=", new CallExpr(".", _this, new_StringSymbol(v->name)), def_init)));
+
+        if (def_type) {
+          ic->fields->insertAtTail(new DefExpr(v, NULL, def_type->copy()));
+        } else {
+          ic->fields->insertAtTail(new DefExpr(v, NULL, new CallExpr(PRIMITIVE_TYPEOF, def_init->copy())));
+        }
 
         // replace uses in body
         compute_sym_uses( fn);
@@ -260,8 +261,6 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
       }
     }
   }
-
-  ic->addDeclarations( classdefs);
 
   // create formals
   for_formals(formal, fn)
@@ -1375,20 +1374,17 @@ expand_var_args(FnSymbol* fn) {
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
           int n = n_var->immediate->v_int64;
-          AList* actual_types = new AList();
-          AList* actuals = new AList();
+          CallExpr* tupleCall = new CallExpr("_tuple");
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
             new_arg->variableExpr = NULL;
-            actual_types->insertAtTail(new SymExpr(new_arg));
-            actuals->insertAtTail(new SymExpr(new_arg));
+            tupleCall->insertAtTail(new SymExpr(new_arg));
             new_arg->name = astr("_e", intstring(i), "_", arg->name);
             new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          CallExpr* tupleCall = new CallExpr("_tuple", actuals);
           tupleCall->insertAtHead(new_IntSymbol(n));
           fn->insertAtHead(new DefExpr(var, tupleCall));
           arg->defPoint->remove();

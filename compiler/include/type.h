@@ -26,6 +26,7 @@ class Expr;
 class DefExpr;
 class CallExpr;
 class CondStmt;
+class BlockStmt;
 class SymScope;
 
 
@@ -66,9 +67,9 @@ class Type : public BaseAST {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual Symbol* getField(char* name);
 };
 
@@ -102,9 +103,9 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
 };
 
 
@@ -151,9 +152,9 @@ class ClassType : public Type {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual BlockStmt* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual Symbol* getField(char* name);
   virtual Symbol* getField(int i);
 };

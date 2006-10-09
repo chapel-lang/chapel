@@ -465,9 +465,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->insertFormalAtTail(fileArg);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      AList* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
-      BlockStmt* block_stmt = new BlockStmt(body);
-      fn->body = block_stmt;
+      fn->body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
@@ -486,9 +484,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->insertFormalAtTail(fileArg);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      AList* body = type->buildDefaultReadFunctionBody(fileArg, arg);
-      BlockStmt* block_stmt = new BlockStmt(body);
-      fn->body = block_stmt;
+      fn->body = type->buildDefaultReadFunctionBody(fileArg, arg);
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);

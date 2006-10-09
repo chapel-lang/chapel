@@ -172,8 +172,9 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-AList* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  return new AList();
+BlockStmt* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  INT_FATAL(this, "unexpected call to Type::buildDefaultWriteFunctionBody");
+  return NULL;
 }
 
 
@@ -182,8 +183,9 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-AList* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  return new AList();
+BlockStmt* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  INT_FATAL(this, "unexpected call to Type::buildDefaultWriteFunctionBody");
+  return NULL;
 }
 
 
@@ -391,14 +393,14 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-AList* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   CondStmt* body = NULL;
   for_alist(DefExpr, constant, constants) {
     body = new CondStmt(new CallExpr("==", arg, constant->sym),
                         new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(constant->sym->name))),
                         body);
   }
-  return new AList(body);
+  return new BlockStmt(body);
 }
 
 
@@ -407,8 +409,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-AList* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList* body = new AList();
+BlockStmt* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  BlockStmt* body = new BlockStmt();
   Symbol* valString = new VarSymbol("valString");
   body->insertAtTail(new ExprStmt(new DefExpr(valString, new_StringSymbol(""))));
   body->insertAtTail(new ExprStmt(new CallExpr("fread", fileArg, valString)));
@@ -621,15 +623,14 @@ bool ClassType::hasDefaultWriteFunction(void) {
 }
 
 
-AList* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList* body = new AList();
+BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  BlockStmt* body = new BlockStmt();
   if (classTag == CLASS_CLASS) {
-    AList* fwriteNil =
-      new AList(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("nil"))));
+    BlockStmt* fwriteNil = new BlockStmt();
+    fwriteNil->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("nil")));
     fwriteNil->insertAtTail(new ReturnStmt());
-    BlockStmt* blockStmt = new BlockStmt(fwriteNil);
-    Expr* argIsNil = new CallExpr("==", arg, gNil);
-    body->insertAtTail(new CondStmt(argIsNil, blockStmt));
+    body->insertAtTail(new CondStmt(new CallExpr("==", arg, gNil),
+                                    fwriteNil));
   }
 
   if (classTag == CLASS_CLASS) {
@@ -680,8 +681,8 @@ bool ClassType::hasDefaultReadFunction(void) {
 }
 
 
-AList* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList* body = new AList();
+BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  BlockStmt* body = new BlockStmt();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
   body->insertAtTail(new ExprStmt(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue))));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
