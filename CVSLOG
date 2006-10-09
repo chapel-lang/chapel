@@ -79258,3 +79258,15 @@ Modified files:
 	chapel/spec/Parallelism_and_Synchronization/: Cobegin.tex 
 	chapel/spec/Statements/: Blocks.tex 
 
+---------------------------------------------------------------------------
+
+10/09/06 10:04:43 -- deitz
+
+Log message:
+	Simplified codegen and added code to inlining to remove functions that
+	have been inlined at that point.  This improves compiler performance
+	by about 6%.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp inlineFunctions.cpp 
+
