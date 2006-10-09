@@ -79247,3 +79247,14 @@ Removed files:
 	                         Type_Declaration_Statements.tex 
 	                         Variable_Declaration_Statements.tex 
 
+---------------------------------------------------------------------------
+
+10/09/06 09:57:57 -- deitz
+
+Log message:
+	Fixed two undefined references.
+
+Modified files:
+	chapel/spec/Parallelism_and_Synchronization/: Cobegin.tex 
+	chapel/spec/Statements/: Blocks.tex 
+
