@@ -1,1 +1,11 @@
-This is a stub.  This portion of the document does not exist.
+Variables are declared with the following syntax:
+\begin{syntax}
+variable-declaration-statement:
+  `config' const-tag variable-declaration [[,...]] ;
+
+const-tag: one of
+  `param' `const' `var'
+
+variable-declaration:
+  identifier [[ : type ]] [[ = expression ]]
+\end{syntax}

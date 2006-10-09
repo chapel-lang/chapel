@@ -1,1 +1,41 @@
-This is a stub.  This portion of the document does not exist.
+Functions, iterators, and methods (collectively referred to as
+functions in places) are declared with the following syntax:
+\begin{syntax}
+function-declaration-statement:
+  `def' [[ type-binding ]] function-name [[ argument-list ]]
+    [[ return-type ]] [[ where-clause ]] block-level-statement
+
+type-binding:
+  identifier .
+
+function-name:
+  identifier
+  = identifier
+  operator-name
+
+operator-name: one of
+  + - * / % ** && || ! == <= >= < > << >> & | ^ ~ #
+
+argument-list:
+  ( formal [[,...]] )
+
+formal:
+  formal-tag identifier [[ formal-type ]] [[ default-expression ]]
+  formal-tag identifier [[ formal-type ]] variable-argument-expression
+
+formal-type:
+  : type
+  : TQUESTION identifier
+
+default-expression:
+  = expression
+
+variable-argument-expression:
+  ... expression
+  ... TQUESTION identifier
+
+formal-tag: one of
+  in out inout param type
+\end{syntax}
+Iterators are discussed in Section~\ref{Iterators}.  Methods are
+discussed in Section~\ref{Class_Methods}.

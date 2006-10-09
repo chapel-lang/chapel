@@ -1,15 +1,10 @@
-The for and forall loops iterate over sequences, domains, arrays,
-iterators, or any class that implements the structural iterator
-interface.  The syntax of the for and forall loops are given by:
+The for loop iterates over sequences, domains, arrays, iterators, or
+any class that implements the structural iterator interface.  The
+syntax of the for loop is given by:
 \begin{syntax}
 for-statement:
-  for-tag index-list `in' iterator-list `do' statement
-  for-tag index-list `in' iterator-list block-level-statement
-
-for-tag:
-  `for'
-  `forall'
-  `ordered' `forall'
+  `for' index-list `in' iterator-list `do' statement
+  `for' index-list `in' iterator-list block-level-statement
 
 index-list:
   expression [[,...]]
@@ -31,7 +26,3 @@ iterated over using a zipper iteration described in
 Section~\ref{Zipper_Iteration}.  If the expressions are surrounded by
 brackets, they are iterated over using a tensor product iteration
 described in Section~\ref{Tensor_Product_Iteration}.
-
-The \chpl{forall} and \chpl{ordered forall} statements have parallel
-semantics that are described in Sections~\ref{Forall}
-and~\ref{Ordered_Forall}.
