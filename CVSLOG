@@ -79283,3 +79283,22 @@ Modified files:
 Removed files:
 	chapel/test/types/coerce/bradc/: int2uint.future 
 
+---------------------------------------------------------------------------
+
+10/09/06 10:22:50 -- deitz
+
+Log message:
+	Moved return discussion to Functions section, yield discussion to
+	Iterators section.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Statements/: Statements.tex 
+Added files:
+	chapel/spec/Functions/: The_Return_Statement.tex 
+	chapel/spec/Iterators/: The_Yield_Statement.tex 
+Removed files:
+	chapel/spec/Iterators/: Returning_Values.tex Yielding_Values.tex 
+	chapel/spec/Statements/: The_Return_Statement.tex 
+	                         The_Yield_Statement.tex 
+
