@@ -79178,3 +79178,29 @@ Log message:
 Added files:
 	chapel/compiler/: README 
 
+---------------------------------------------------------------------------
+
+10/09/06 09:33:12 -- deitz
+
+Log message:
+	Moved syntax and statement brief definition of atomic, begin, cobegin,
+	on, and serial into the parallelism and locality chapters.  Deleted
+	these sections from the statements section.  Highlighted this move
+	with "@@@--------" as it needs to be folded in to this chapter.
+
+Modified files:
+	chapel/spec/: spec.tex syntax_listing.tex 
+	chapel/spec/Locality_and_Distribution/: On.tex 
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Atomic_Transactions.tex 
+	                                              Begin.tex 
+	                                              Cobegin.tex 
+	                                              Serial.tex 
+	chapel/spec/Statements/: Statements.tex 
+Removed files:
+	chapel/spec/Statements/: The_Atomic_Statement.tex 
+	                         The_Begin_Statement.tex 
+	                         The_Cobegin_Statement.tex 
+	                         The_On_Statement.tex 
+	                         The_Serial_Statement.tex 
+
