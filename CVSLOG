@@ -79313,3 +79313,28 @@ Added files:
 	chapel/test/classes/waynew/: class-rec.chpl class-rec.future 
 	                             class-rec.good 
 
+---------------------------------------------------------------------------
+
+10/09/06 11:59:54 -- deitz
+
+Log message:
+	Started working on types and primitive types section.  Added a new
+	section to discuss the implicit conversion to bool for expressions
+	used in a statement context.
+	
+	Moved locale type section to Locality section.
+	
+	Changed overall document and example style.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Types/: Primitive_Types.tex 
+	                    Signed_and_Unsigned_Integral_Types.tex 
+	                    The_Bool_Type.tex Types.tex 
+Added files:
+	chapel/spec/Conversions/: 
+	                          Implicit_Statement_Bool_Conversions.tex 
+	chapel/spec/Locality_and_Distribution/: The_Locale_Type.tex 
+Removed files:
+	chapel/spec/Types/: The_Locale_Type.tex 
+
