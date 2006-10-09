@@ -79204,3 +79204,18 @@ Removed files:
 	                         The_On_Statement.tex 
 	                         The_Serial_Statement.tex 
 
+---------------------------------------------------------------------------
+
+10/09/06 09:36:38 -- deitz
+
+Log message:
+	Removed some dynamic allocation of ALists in the compiler in
+	preparation for removing all dynamic allocation of ALists.  Dynamic
+	allocation of alists is only done in parsing now.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
+	                         parallel.cpp 
+
