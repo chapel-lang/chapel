@@ -79367,3 +79367,25 @@ Modified files:
 Removed files:
 	chapel/test/classes/waynew/: class-rec.future 
 
+---------------------------------------------------------------------------
+
+10/09/06 15:11:40 -- bradc
+
+Log message:
+	Snapshot of my current work on the FFT code.  I believe
+	that I've got the main structure and array slices being
+	sent to the butterfly() routine all correct now (at least
+	up to logN==8).  Twiddles may be off, and I need to rip
+	out a lot of debugging code, but wanted to capture where
+	I am before moving on.
+	
+	The .txt files are traces of what happens at execution
+	time.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: .cvsignore dfft-trace.txt 
+	                                     dfft.c fft.chpl 
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft-trace.7.txt 
+	                                     dfft-trace.8.txt 
+
