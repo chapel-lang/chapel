@@ -98,4 +98,13 @@ void inlineFunctions(void) {
     return;
   forv_Vec(ModuleSymbol, mod, allModules)
     inline_calls(mod);
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+        if (fn->hasPragma("inline")) {
+          fn->defPoint->parentStmt->remove();
+        }
+      }
+    }
+  }
 }

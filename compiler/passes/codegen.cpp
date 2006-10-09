@@ -450,57 +450,43 @@ static void codegen_header(void) {
   cnames.put("write", 1);
   cnames.put("y1", 1); // this is ridiculous...
 
-  // Remove functions not used (misses mutual recursion)
-  compute_call_sites();
-  Vec<FnSymbol*> all_functions;
-  collect_functions(&all_functions);
-  forv_Vec(FnSymbol, fn, all_functions) {
-    if (fn->calledBy->n == 0 && chpl_main != fn)
-      fn->defPoint->parentStmt->remove();
-  }
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      Symbol* sym = def->sym;
 
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    Symbol* sym = dynamic_cast<Symbol*>(ast);
-    if (!sym)
-      continue;
+      if (sym->name == sym->cname)
+        sym->cname = stringcpy(sym->name);
 
-    if (sym->name == sym->cname)
-      sym->cname = stringcpy(sym->name);
+      if (char* pragma = sym->hasPragmaPrefix("rename"))
+        sym->cname = stringcpy(pragma+7);
 
-    if (char* pragma = sym->hasPragmaPrefix("rename"))
-      sym->cname = stringcpy(pragma+7);
+      if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))
+        if (vs->immediate)
+          continue;
 
-    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))
-      if (vs->immediate)
+      if (sym->hasPragma("no codegen"))
         continue;
 
-    if (sym->parentScope == rootScope)
-      continue;
+      legalizeCName(sym);
 
-    if (sym->hasPragma("no codegen"))
-      continue;
-
-    legalizeCName(sym);
-
-    // mangle symbol that is neither field nor formal if the symbol's
-    // name has already been encountered
-    if (!dynamic_cast<ArgSymbol*>(sym) &&
-        !dynamic_cast<UnresolvedSymbol*>(sym) &&
-        !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
-        cnames.get(sym->cname))
-      sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
-
-    cnames.put(sym->cname, 1);
-
-    if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
-      typeSymbols.add(typeSymbol);
-    } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
-      fnSymbols.add(fnSymbol);
-    } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
-      if (dynamic_cast<ModuleSymbol*>(varSymbol->parentScope->astParent))
-        varSymbols.add(varSymbol);
+      // mangle symbol that is neither field nor formal if the symbol's
+      // name has already been encountered
+      if (!dynamic_cast<ArgSymbol*>(sym) &&
+          !dynamic_cast<UnresolvedSymbol*>(sym) &&
+          !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
+          cnames.get(sym->cname))
+        sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
+      
+      cnames.put(sym->cname, 1);
+    
+      if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
+        typeSymbols.add(typeSymbol);
+      } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
+        fnSymbols.add(fnSymbol);
+      } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
+        if (dynamic_cast<ModuleSymbol*>(varSymbol->parentScope->astParent))
+          varSymbols.add(varSymbol);
+      }
     }
   }
 
@@ -574,9 +560,7 @@ codegen_config() {
   fprintf(codefile, "void CreateConfigVarTable(void) {\n");
   fprintf(codefile, "initConfigVarTable();\n");
 
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       codefile = outfileinfo.fptr;
       VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
@@ -614,11 +598,9 @@ void codegen(void) {
   codegen_config();
 
   forv_Vec(ModuleSymbol, currentModule, allModules) {
-    if (!currentModule->hasPragma("no codegen")) {
-      mysystem(stringcat("# codegen-ing module", currentModule->name),
-               "generating comment for --print-commands option");
-      currentModule->codegenDef();
-    }
+    mysystem(stringcat("# codegen-ing module", currentModule->name),
+             "generating comment for --print-commands option");
+    currentModule->codegenDef();
   }
 
   closeMakefile();
