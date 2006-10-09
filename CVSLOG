@@ -79338,3 +79338,13 @@ Added files:
 Removed files:
 	chapel/spec/Types/: The_Locale_Type.tex 
 
+---------------------------------------------------------------------------
+
+10/09/06 14:09:23 -- marybeth
+
+Log message:
+	Adding test for length and rank fields of a domain.
+
+Added files:
+	chapel/test/domains/marybeth/: testrank.chpl testrank.good 
+
