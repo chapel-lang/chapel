@@ -1,1 +1,27 @@
-This is a stub.  This portion of the document does not exist.
+The integral types can be parameterized by the number of bits used to
+represent them.  The default signed integral type, \chpl{int}, and the
+default unsigned integral type, \chpl{uint}, are 32 bits.
+
+The integral types and their ranges are given in the following table:
+
+\begin{center}
+\begin{tabular}{|l|r|r|}
+\hline
+{\bf Type} & {\bf Minimum Value} & {\bf Maximum Value} \\
+\hline
+{\tt int(8)} & -128 & 127 \\
+{\tt uint(8)} & 0 & 255 \\
+{\tt int(16)} & -32768 & 127 \\
+{\tt uint(16)} & 0 & 65535 \\
+{\tt int(32)}, {\tt int} & -2147483648 & 2147483647 \\
+{\tt uint(32)}, {\tt uint} & 0 & 4294967295 \\
+{\tt int(64)} & -9223372036854775808 & 9223372036854775807 \\
+{\tt uint(64)} & 0 & 18446744073709551615 \\
+\hline
+\end{tabular}
+\end{center}
+
+The unary and binary operators that are pre-defined over the integral
+types operate with 32- and 64-bit precision.  Using these operators on
+integral types represented with fewer bits results in a coercion
+according to the rules defined in Section~\ref{Implicit_Conversions}.

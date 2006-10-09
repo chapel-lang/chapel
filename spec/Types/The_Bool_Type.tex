@@ -1,1 +1,13 @@
-This is a stub.  This portion of the document does not exist.
+Chapel defines a logical data type designated by the symbol
+\chpl{bool} with the two predefined values \chpl{true} and
+\chpl{false}.
+
+The relational operators return values of \chpl{bool} type and the
+logical operators operate on values of \chpl{bool} type.
+
+Some statements require expressions of \chpl{bool} type and Chapel
+supports a special conversion of values to \chpl{bool} type when used
+in this context (Section~\ref{Implicit_Statement_Bool_Conversions}).
+For example, an integer can be used as the condition in a conditional
+statement.  It is converted to \chpl{false} if it is zero, and
+otherwise, it is converted to \chpl{true}.

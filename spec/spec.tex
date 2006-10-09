@@ -6,12 +6,9 @@
 \input{syntax_listing}
 
 \newenvironment{example}{
-  \begin{center}
-  \hrulefill\ {\bf Example} \hrulefill\ \\
-  \end{center}
+[{\it Example}:
 }{
-
-  \noindent \hrulefill\ 
+{\it End example}.]
 }
 
 % courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
@@ -49,6 +46,9 @@ Seattle, WA 98104}
 
 \pagestyle{myheadings}
 \pagenumbering{arabic}
+
+\setlength{\parindent}{0in}
+\setlength{\parskip}{4mm plus2mm minus1mm}
 
 \sekshun{Scope}
 
@@ -115,7 +115,6 @@ Seattle, WA 98104}
 \subsection{Tuple Types}
 \subsection{Sequence Types}
 \subsection{Domain and Array Types}
-\subsection{The Locale Type}
 \subsection{Type Aliases}
 
 \sekshun{Variables}
@@ -140,6 +139,7 @@ Seattle, WA 98104}
 \subsubsection{Implicit Class Conversions}
 \subsubsection{Implicit Record Conversions}
 \subsubsection{Implicit Compile-Time Constant Conversions}
+\subsubsection{Implicit Statement Bool Conversions}
 \subsection{Explicit Conversions}
 \subsubsection{Explicit Numeric Conversions}
 \subsubsection{Explicit Enumeration Conversions}
@@ -473,6 +473,7 @@ Seattle, WA 98104}
 \sekshun{Locality and Distribution}
 
 \subsection{Locales}
+\subsubsection{The Locale Type}
 \subsubsection{Parallel Execution Model}
 \subsubsection{Predefined Locales Array}
 \subsubsection{Querying the Locale of a Variable}
