@@ -1,3 +1,8 @@
+class CC {
+  type t;
+  var d : t;
+}
+
 record R {
   type Rtype;
   var  data: Rtype;
@@ -6,9 +11,7 @@ record R {
 
 class C {
   type ind_type;
-  var inds: _ddata(R(ind_type));
-  // var inds: R(ind_type);
+  var inds: CC(R(ind_type));
 }
-
 
 var c: C(float) = C(float);

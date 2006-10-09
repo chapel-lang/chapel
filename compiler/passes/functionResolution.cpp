@@ -760,8 +760,7 @@ resolve_type_expr(Expr* expr) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
-        if (call->parentSymbol &&
-            (call->typeInfo() == dtUnknown))
+        if (call->parentSymbol && call->typeInfo() == dtUnknown)
           resolveFns(call->isResolved());
         callStack.pop();
       }
@@ -772,24 +771,6 @@ resolve_type_expr(Expr* expr) {
     INT_FATAL(expr, "Unable to resolve type expression");
   return t;
 }
-
-
-// static void
-// build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
-//                     CallExpr* call,
-//                     char* name,
-//                     Vec<Type*>* atypes,
-//                     Vec<Symbol*>* aparams,
-//                     Vec<char*>* anames) {
-//   forv_Vec(Type, type, atypes->v[1]->dispatchChildren) {
-//     atypes->v[1] = type;
-//     FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames);
-//     if (fn) {
-//       dispatchMap->put(type, fn);
-//       build_dispatch_tree(dispatchMap, call, name, atypes, aparams, anames);
-//     }
-//   }
-// }
 
 
 char* call2string(CallExpr* call,
@@ -1340,6 +1321,16 @@ resolveFns(FnSymbol* fn) {
       if (dynamic_cast<ClassType*>(parent) && parent != dtValue && parent != dtObject && parent->defaultConstructor) {
         resolveFormals(parent->defaultConstructor);
         resolveFns(parent->defaultConstructor);
+      }
+    }
+    if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+      for_fields(field, ct) {
+        if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+          if (fct->defaultConstructor) {
+            resolveFormals(fct->defaultConstructor);
+            resolveFns(fct->defaultConstructor);
+          }
+        }
       }
     }
   }
