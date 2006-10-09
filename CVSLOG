@@ -79302,3 +79302,14 @@ Removed files:
 	chapel/spec/Statements/: The_Return_Statement.tex 
 	                         The_Yield_Statement.tex 
 
+---------------------------------------------------------------------------
+
+10/09/06 11:31:36 -- waynew
+
+Log message:
+	Nested generic class/record test.
+
+Added files:
+	chapel/test/classes/waynew/: class-rec.chpl class-rec.future 
+	                             class-rec.good 
+
