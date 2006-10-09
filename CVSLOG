@@ -79348,3 +79348,22 @@ Log message:
 Added files:
 	chapel/test/domains/marybeth/: testrank.chpl testrank.good 
 
+---------------------------------------------------------------------------
+
+10/09/06 15:09:49 -- deitz
+
+Log message:
+	Made html view slightly more robust in the event of an invalid AST.
+	
+	Fixed a bug in which types that are only used in other types are
+	sometimes not fully processed.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/classes/waynew/: class-rec.chpl 
+Removed files:
+	chapel/test/classes/waynew/: class-rec.future 
+
