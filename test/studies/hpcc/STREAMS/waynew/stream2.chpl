@@ -57,25 +57,25 @@ def main() {
 
   A = 2.0 * A;
 
-  // var clock: Timer;
+  var clock: Timer;
   var time: [COPY..TRIAD, 1..numIters] float;
-  // clock.start();
+  clock.start();
   for i in 1..numIters {
-    // time[COPY, i] = clock.value;
+    time[COPY, i] = clock.value;
     C = A;
-    // time[COPY, i] = clock.value - time[COPY, i];
+    time[COPY, i] = clock.value - time[COPY, i];
 
-    // time[SCALE, i] = clock.value;
+    time[SCALE, i] = clock.value;
     B = scalar * C;
-    // time[SCALE, i] = clock.value - time[SCALE, i];
+    time[SCALE, i] = clock.value - time[SCALE, i];
 
-    // time[ADD, i] = clock.value;
+    time[ADD, i] = clock.value;
     C = A + B;
-    // time[ADD, i] = clock.value - time[ADD, i];
+    time[ADD, i] = clock.value - time[ADD, i];
 
-    // time[TRIAD, i] = clock.value;
+    time[TRIAD, i] = clock.value;
     A = B + scalar * C;
-    // time[TRIAD, i] = clock.value - time[TRIAD, i];
+    time[TRIAD, i] = clock.value - time[TRIAD, i];
   }
 
   if (checkSTREAMresults()) {
