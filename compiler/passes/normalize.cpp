@@ -1113,10 +1113,6 @@ static bool fold_call_expr(CallExpr* call) {
   }
 
   if (call->argList->length() == 2) {
-    if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
-      return false;
-    if (is_float_type(call->get(1)->typeInfo()))
-      return false;
     SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
     SymExpr* a2 = dynamic_cast<SymExpr*>(call->get(2));
     if (a1 && a2) {
@@ -1126,12 +1122,13 @@ static bool fold_call_expr(CallExpr* call) {
         Immediate* i1 = v1->immediate;
         Immediate* i2 = v2->immediate;
         if (i1 && i2) {
-          // WAW: folding not handling complex yet
-          if ((NUM_KIND_COMPLEX == i1->const_kind) ||
-              (NUM_KIND_COMPLEX == i2->const_kind)) {
+          if (call->get(1)->typeInfo() == dtString ||
+              is_float_type(call->get(1)->typeInfo()) ||
+              is_complex_type(call->get(1)->typeInfo()) ||
+              call->get(2)->typeInfo() == dtString ||
+              is_float_type(call->get(2)->typeInfo()) ||
+              is_complex_type(call->get(2)->typeInfo()))
             return false;
-          }
-
           FOLD_CALL("+", P_prim_add);
           FOLD_CALL("-", P_prim_subtract);
           FOLD_CALL("*", P_prim_mult);
@@ -1168,6 +1165,10 @@ static bool fold_call_expr(CallExpr* call) {
         Immediate* i1 = v1->immediate;
         Immediate* i2 = NULL;
         if (i1) {
+          if (call->get(1)->typeInfo() == dtString ||
+              is_float_type(call->get(1)->typeInfo()) ||
+              is_complex_type(call->get(1)->typeInfo()))
+            return false;
           FOLD_CALL("+", P_prim_plus);
           FOLD_CALL("-", P_prim_minus);
           FOLD_CALL("~", P_prim_not);

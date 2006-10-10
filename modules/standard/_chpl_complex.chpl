@@ -14,6 +14,12 @@ def complex.=imag (f:float) { __primitive( "complex_set_imag", this, f); }
 
 def =(a: complex(?w), b: complex(w)) return b;
 
+pragma "inline" def +(a: complex(?w))
+  return a;
+
+pragma "inline" def -(a: complex(?w))
+  return (-a.real, -a.imag):complex;
+
 pragma "inline" def +(a: complex(?w), b: complex(w))
   return (a.real+b.real, a.imag+b.imag):complex;
 
