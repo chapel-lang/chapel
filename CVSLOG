@@ -79666,3 +79666,46 @@ Added files:
 	                                  negateimaginary.future 
 	                                  negateimaginary.good 
 
+---------------------------------------------------------------------------
+
+10/10/06 14:34:51 -- deitz
+
+Log message:
+	Fixed a couple of bugs in arithmetic sequences:
+	
+	Bounds were not snapped so
+	
+	  1..10 by -2       ===>  10, 8, 6, 4, 2
+	  1..10 by -2 by -2 ===>  1, 5, 9
+	
+	Now
+	
+	  1..10 by -2       ===>  10, 8, 6, 4, 2
+	  1..10 by -2 by -2 ===>  2, 6, 10
+	
+	Checked in a test case.
+	
+	Note that
+	
+	  1..10 by -2
+	
+	now prints out as
+	
+	  2..10 by -2
+	
+	since the bounds are snapped.
+	
+	Fixed a bug in the write function in which negative strides were not
+	written.
+	
+	Added a runtime error to check for a stride of 0.
+	
+	Updated a few .goods.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/stride/: test_stride1.good 
+	                                  test_stride2.good 
+	chapel/test/domains/shannon/: by4Dtuple.good 
+	chapel/test/types/seq/deitz/: test_aseq3.good 
+
