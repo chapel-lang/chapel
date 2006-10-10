@@ -1,1 +1,16 @@
-This is a stub.  This portion of the document does not exist.
+A class is defined with the following syntax:
+\begin{syntax}
+class-declaration-statement:
+  `class' identifier inherit-expression[OPT] {
+    class-statements }
+
+class-statements:
+  class-statement
+  class-statement class-statements
+
+class-statement:
+  type-declaration-statement
+  function-declaration-statement
+  variable-declaration-statement
+  `type' identifier ;
+\end{syntax}

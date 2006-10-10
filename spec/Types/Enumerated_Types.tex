@@ -1,1 +1,15 @@
-This is a stub.  This portion of the document does not exist.
+Enumerated types are declared with the following syntax:
+\begin{syntax}
+enum-declaration-statement:
+  `enum' identifier { enum-constant-list } ;
+
+enum-constant-list
+  enum-constant
+  enum-constant , enum-constant-list
+
+enum-constant:
+  identifier init-part[OPT]
+
+init-part:
+  = expression
+\end{syntax}
