@@ -79556,3 +79556,19 @@ Removed files:
 	                    Tuple_Types.tex Type_Definitions.tex 
 	                    Union_Types.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 11:47:53 -- deitz
+
+Log message:
+	Put back forward reference type sections.  I actually just meant to
+	pull the syntax definitions out of here and put those in the main
+	sections, but then I got carried away.
+
+Modified files:
+	chapel/spec/: spec.tex 
+Added files:
+	chapel/spec/Types/: Class_Types.tex Domain_and_Array_Types.tex 
+	                    Record_Types.tex Sequence_Types.tex 
+	                    Tuple_Types.tex Union_Types.tex 
+
