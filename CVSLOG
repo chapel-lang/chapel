@@ -79741,3 +79741,13 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+10/10/06 15:03:21 -- deitz
+
+Log message:
+	Removed .future.
+
+Removed files:
+	chapel/test/types/complex/bradc/: negateimaginary.future 
+
