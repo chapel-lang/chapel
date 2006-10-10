@@ -1,5 +1,15 @@
 Type aliases are declared with the following syntax:
 \begin{syntax}
 type-alias-declaration-statement:
-  `type' identifier = type ;
+  `type' identifier type-part[OPT] ;
+
+type-part:
+  = type ;
 \end{syntax}
+A type alias is a symbol that aliases any type as specified in the
+\sntx{type-part}.  A use of a type alias has the same meaning as using
+the type specified by \sntx{type-part} directly.
+
+The \sntx{type-part} is optional in the definition of a class, record,
+or union.  Its absence makes the class, record, or union
+generic \rsec{Generics}.
