@@ -204,15 +204,15 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
 
-%type <pblockstmt> var_decl_stmt
-%type <pstmtls> var_decl_stmt_inner var_decl_stmt_inner_ls
+%type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
+%type <pstmt> var_decl_stmt_inner
 
 %type <pblockstmt> parsed_block_single_stmt
 
 %type <pblockstmt> parsed_block_stmt block_stmt
 
 %type <pstmt> when_stmt
-%type <pstmtls> when_stmt_ls
+%type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type opt_formal_type
 %type <pexpr> type anon_record_type tuple_type type_binding_expr
@@ -399,43 +399,45 @@ if_stmt:
 
 for_stmt:
   TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
-    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new SymExpr(new_IntSymbol(1)), $9)); }
+    { $$ = build_param_for_stmt($3, $5, $7, new SymExpr(new_IntSymbol(1)), $9); }
 | TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
-    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new SymExpr(new_IntSymbol(1)), $8)); }
-/* | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr TDO stmt */
-/*     { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9, $11)); } */
-//| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
-  //    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9, $10)); }
+    { $$ = build_param_for_stmt($3, $5, $7, new SymExpr(new_IntSymbol(1)), $8); }
+/*
+| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr TDO stmt
+    { $$ = build_param_for_stmt($3, $5, $7, $9, $11); }
+| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
+    { $$ = build_param_for_stmt($3, $5, $7, $9, $10); }
+*/
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, $5)); }
+    { $$ = build_for_block($1, exprsToIndices($2), $4, $5); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6))); }
+    { $$ = build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6)); }
 ;
 
 
 expr_for_stmt:
   TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
-    { $$ = build_chpl_stmt(build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6))); }
+    { $$ = build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6)); }
 ;
 
 
 while_do_stmt:
   TWHILE expr TDO stmt
-    { $$ = build_chpl_stmt(build_while_do_block($2, new BlockStmt($4))); }
+    { $$ = build_while_do_block($2, new BlockStmt($4)); }
 | TWHILE expr parsed_block_stmt
-    { $$ = build_chpl_stmt(build_while_do_block($2, $3)); }
+    { $$ = build_while_do_block($2, $3); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = build_chpl_stmt(build_do_while_block($4, $2)); }
+    { $$ = build_do_while_block($4, $2); }
 ;
 
 
 type_select_stmt:
   TTYPE TSELECT nonempty_expr_ls TLCBR when_stmt_ls TRCBR
-    { $$ = build_chpl_stmt(build_type_select($3, $5)); }
+    { $$ = build_type_select($3, $5); }
 ;
 
 
@@ -447,7 +449,7 @@ select_stmt:
 
 when_stmt_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = build_chpl_stmt(); }
 | when_stmt_ls when_stmt
     { $1->insertAtTail($2); }
 ; 
@@ -884,13 +886,14 @@ var_decl_stmt:
     {
       setVarSymbolAttributes($3, $1, $2);
       backPropagateInitsTypes($3);
-      $$ = build_chpl_stmt($3);
+      $$ = $3;
     }
 ;
 
 
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
+    { $$ = build_chpl_stmt($1); }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
       $1->insertAtTail($3);
@@ -902,7 +905,7 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = new AList(new ExprStmt(new DefExpr(var, $3, $2)));
+      $$ = new ExprStmt(new DefExpr(var, $3, $2));
     }
 ;
 

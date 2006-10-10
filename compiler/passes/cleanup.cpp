@@ -167,7 +167,7 @@ void cleanup(Symbol* base) {
               CallExpr *forinfo = dynamic_cast<CallExpr*>(tinfo->get(3)->remove());
               AList *indices = dynamic_cast<CallExpr*>(forinfo->argList->head)->argList;
               AList *iters = dynamic_cast<CallExpr*>(forinfo->argList->tail)->argList;
-              BlockStmt *forblk = build_chpl_stmt(build_for_expr( exprsToIndices(indices), iters, def->init->copy()));
+              BlockStmt *forblk = build_for_expr( exprsToIndices(indices), iters, def->init->copy());
 
               FnSymbol *forall_init = new FnSymbol( "_forallinit");
               forall_init->insertAtTail( forblk);

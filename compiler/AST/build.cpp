@@ -131,7 +131,7 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
 }
 
 
-FnSymbol* build_let_expr(AList* decls, Expr* expr) {
+FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
   fn->addPragma("inline");
@@ -149,11 +149,11 @@ static void build_loop_labels(BlockStmt* body) {
 }
 
 
-AList* build_while_do_block(Expr* cond, BlockStmt* body) {
+BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
-  AList* stmts = new AList();
+  BlockStmt* stmts = build_chpl_stmt();
   stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(new CondStmt(cond, body));
   body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
@@ -162,7 +162,7 @@ AList* build_while_do_block(Expr* cond, BlockStmt* body) {
 }
 
 
-AList* build_do_while_block(Expr* cond, BlockStmt* body) {
+BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
   BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->first());
   if (!block) {
     block = new BlockStmt(body);
@@ -171,7 +171,7 @@ AList* build_do_while_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
-  AList* stmts = new AList();
+  BlockStmt* stmts = build_chpl_stmt();
   stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
   stmts->insertAtTail(body);
   block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
@@ -181,13 +181,13 @@ AList* build_do_while_block(Expr* cond, BlockStmt* body) {
 
 
 // builds body of for expression
-AList*
+BlockStmt*
 build_for_expr(AList* indices,
                AList* iterators,
                Expr* expr,
                bool isSquare,
                Expr* cond) {
-  AList* stmts = new AList();
+  BlockStmt* stmts = build_chpl_stmt();
 
   CallExpr* elt_type;
   if (iterators->length() == 1) {
@@ -238,7 +238,7 @@ build_for_expr(AList* indices,
 }
 
 
-static AList*
+static BlockStmt*
 build_cross_block(BlockTag tag,
                   AList* indices,
                   AList* iterators,
@@ -250,17 +250,17 @@ build_cross_block(BlockTag tag,
     AList* iterator = new AList(iterators->first()->remove());
     body = new BlockStmt(build_for_block(tag, index, iterator, body));
   }
-  return new AList(body);
+  return build_chpl_stmt(body);
 }
 
 
-AList* build_for_block(BlockTag tag,
-                             AList* indices,
-                             AList* iterators,
-                             BlockStmt* body,
-                             bool isSquare, // cross product of iterators
-                             int only_once) { // execute only once
-                                              // used in build_for_expr
+BlockStmt* build_for_block(BlockTag tag,
+                           AList* indices,
+                           AList* iterators,
+                           BlockStmt* body,
+                           bool isSquare, // cross product of iterators
+                           int only_once) { // execute only once used
+                                            // in build_for_expr
   if (isSquare && only_once)
     INT_FATAL("Unexpected arguments to build_for_block");
   if (isSquare)
@@ -268,7 +268,7 @@ AList* build_for_block(BlockTag tag,
   static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;
-  AList* stmts = new AList();
+  BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
   VarSymbol* index = new VarSymbol(stringcat("_index_", intstring(uid)));
   if (indices->length() > 1) {
@@ -332,7 +332,7 @@ AList* build_for_block(BlockTag tag,
 }
 
 
-AList* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
+BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
   block->param_low = low;
@@ -343,7 +343,7 @@ AList* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockSt
   BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
   block->insertBefore(new CallExpr("=", index_var, index_var)); // because otherwise it is dead leading to an analysis problem
-  return new AList(outer);
+  return build_chpl_stmt(outer);
 }
 
 
@@ -427,12 +427,12 @@ build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs) {
 }
 
 
-CondStmt* build_select(Expr* selectCond, AList* whenstmts) {
+CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
 
-  for_alist(Stmt, stmt, whenstmts) {
+  for_alist(Stmt, stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -473,13 +473,13 @@ CondStmt* build_select(Expr* selectCond, AList* whenstmts) {
 }
 
 
-AList* build_type_select(AList* exprs, AList* whenstmts) {
+BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   static int uid = 1;
   FnSymbol* fn;
-  AList* stmts = new AList();
+  BlockStmt* stmts = build_chpl_stmt();
   bool has_otherwise = false;
 
-  for_alist(Stmt, stmt, whenstmts) {
+  for_alist(Stmt, stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -567,10 +567,10 @@ FnSymbol* build_scan(Expr* scan, Expr* seq) {
 
 
 void
-backPropagateInitsTypes(AList* stmts) {
+backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
-  for_alist_backward(Stmt, stmt, stmts) {
+  for_alist_backward(Stmt, stmt, stmts->body) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(exprStmt->expr)) {
         if (def->init || def->exprType) {
@@ -589,8 +589,8 @@ backPropagateInitsTypes(AList* stmts) {
 
 
 void
-setVarSymbolAttributes(AList* stmts, varType vartag, consType constag) {
-  for_alist(Stmt, stmt, stmts) {
+setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
+  for_alist(Stmt, stmt, stmts->body) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
