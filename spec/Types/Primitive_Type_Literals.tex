@@ -1,1 +1,87 @@
-This is a stub.  This portion of the document does not exist.
+Bool literals are designated by the following syntax:
+\begin{syntax}
+bool-literal: one of
+  `true' `false'
+\end{syntax}
+
+Signed and unsigned integer literals are designated by the following
+syntax:
+\begin{syntax}
+integer-literal:
+  digits
+
+digits:
+  digit
+  digit digits
+
+digit: one of
+  0 1 2 3 4 5 6 7 8 9
+\end{syntax}
+Suffixes, like those in C, are not necessary.  The type of an integer
+literal is the first type of the following that can hold the value of
+the digits: \chpl{int}, \chpl{int(64)}, \chpl{uint(64)}.  Explicit
+conversions are necessary to change the type of the literal to another
+integer size.
+
+Floating-point literals are designated by the following syntax:
+\begin{syntax}
+floating-point-literal:
+  digits[OPT] . digit digits[OPT] exponent-part[OPT]
+
+exponent-part:
+  `e' sign[OPT] digits
+
+sign: one of
+  + -
+\end{syntax}
+The type of a floating-point literal is \chpl{float}.  Explicit
+conversions are necessary to change the type of the literal to another
+floating-point size.
+
+Note that floating-point literals require that a digit follow the
+decimal point.  This is necessary to avoid an ambiguity in
+interpreting \chpl{2.e+2} that arises if a method called \chpl{e} is
+defined on integers.
+
+Complex literals are designated by the following syntax:
+\begin{syntax}
+complex-literal:
+  floating-point-literal `i'
+  integer-literal `i'
+\end{syntax}
+This complex-literal form specifies the imaginary part.  The real part
+can be specified in a separate integer or floating-point literal and
+then added to the imaginary part.
+
+Alternatively, a 2-tuple literal of expressions of integer or
+floating-point type can be cast to a complex.  These expressions can
+be literals, but do not need to be.  To create a complex literal or
+parameter, they must be literals or parameters.
+
+\begin{example}
+The following codes represent the same complex literal:
+\begin{center}
+\chpl{2.0i}, \hspace{1pc} \chpl{0.0+2.0i}, \hspace{1pc}
+\chpl{(0.0,2.0):complex}.
+\end{center}
+\end{example}
+
+String literals are designated by the following syntax:
+\begin{syntax}
+string-literal:
+  " characters "
+  ' characters '
+
+characters:
+  character
+  character characters
+
+character:
+  any-character
+\end{syntax}
+
+\begin{implementation}
+Strings are currently restricted to ASCII characters.  In a future
+version of Chapel, strings will be defined over alphabets to allow for
+more exotic characters.
+\end{implementation}

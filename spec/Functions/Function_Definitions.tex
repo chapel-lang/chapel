@@ -2,8 +2,8 @@ Functions, iterators, and methods (collectively referred to as
 functions in places) are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
-  `def' [[ type-binding ]] function-name [[ argument-list ]]
-    [[ return-type ]] [[ where-clause ]] block-level-statement
+  `def' type-binding[OPT] function-name argument-list[OPT]
+    return-type[OPT] where-clause[OPT] block-level-statement
 
 type-binding:
   identifier .
@@ -17,11 +17,15 @@ operator-name: one of
   + - * / % ** && || ! == <= >= < > << >> & | ^ ~ #
 
 argument-list:
-  ( formal [[,...]] )
+  ( formals[OPT] )
+
+formals:
+  formal
+  formal , formals
 
 formal:
-  formal-tag identifier [[ formal-type ]] [[ default-expression ]]
-  formal-tag identifier [[ formal-type ]] variable-argument-expression
+  formal-tag identifier formal-type[OPT] default-expression[OPT]
+  formal-tag identifier formal-type[OPT] variable-argument-expression
 
 formal-type:
   : type

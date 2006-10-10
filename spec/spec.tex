@@ -11,12 +11,26 @@
 {\it End example}.]
 }
 
+\newenvironment{implementation}{
+[{\it Implementation note}:
+}{
+{\it End implementation note}.]
+}
+
 % courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
 \newcommand{\sekshun}[1]
            {
              \section{#1}
              \markboth{Chapel Language Specification}{#1}
            }
+
+\oddsidemargin 0.0in
+\evensidemargin 0.5in
+\textwidth 6in
+\headheight 0.2in
+\topmargin 0in
+\headsep 0.3in
+\textheight 8.5in
 
 \makeindex
 
@@ -39,6 +53,10 @@ Seattle, WA 98104}
 \cleardoublepage
 \include{tm}
 \cleardoublepage
+
+\pagestyle{myheadings}
+\markboth{Chapel Language Specification}{Chapel Language Specification}
+\pagenumbering{roman}
 
 \tableofcontents
 

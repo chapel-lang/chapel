@@ -6,12 +6,24 @@ values using the same mechanisms used to disambiguate function
 definitions.  It syntax is given by:
 \begin{syntax}
 type-select-statement:
-  `type' `select' expression [[,...]] { type-when-statement [[...]] }
+  `type' `select' expression-list { type-when-statements }
+
+type-when-statements:
+  type-when-statement
+  type-when-statement type-when-statements
 
 type-when-statement:
-  `when' type [[,...]] `do' statement
-  `when' type [[,...]] block-level-statement
+  `when' type-list `do' statement
+  `when' type-list block-level-statement
   `otherwise' statement
+
+expression-list:
+  expression
+  expression , expression-list
+
+type-list:
+  type
+  type , type-list
 \end{syntax}
 
 Call the expressions following the keyword \chpl{select}, the select

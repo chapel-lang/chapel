@@ -1,1 +1,14 @@
-This is a stub.  This portion of the document does not exist.
+Like the integral and floating-point types, the complex types can be
+parameterized by the number of bits used to represent them.  A complex
+number is composed of two floating-point numbers so the number of bits
+used to represent a complex is twice the number of bits used to
+represent the floating-point numbers.
+
+The real and imaginary components can be accessed via the methods
+\chpl{real} and \chpl{imag}.
+
+\begin{example}
+Given a complex number \chpl{3.14+2.72i}, the expressions
+\chpl{c.real} and \chpl{c.imag} refer to \chpl{3.14} and \chpl{2.72}
+respectively.
+\end{example}

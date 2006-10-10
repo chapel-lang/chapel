@@ -7,8 +7,11 @@ statements based on the evaluation of an expression of bool type. The
 syntax for a conditional statement is given by
 \begin{syntax}
 conditional-statement:
-  `if' expression `then' statement [[ `else' statement ]]
-  `if' expression block-level-statement [[ `else' statement ]]
+  `if' expression `then' statement else-part[OPT]
+  `if' expression block-level-statement else-part[OPT]
+
+else-part:
+  `else' statement
 \end{syntax}
 
 A conditional statement evaluates an expression of bool type. If the

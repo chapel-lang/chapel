@@ -7,12 +7,16 @@ for-statement:
   `for' index-list `in' iterator-list block-level-statement
 
 index-list:
-  expression [[,...]]
+  expression-list[OPT]
 
 iterator-list:
-  expression [[,...]]
-  ( expression [[,...]] )
-  [ expression [[,...]] ]
+  expression-list[OPT]
+  ( expression-list[OPT] )
+  [ expression-list[OPT] ]
+
+expression-list
+  expression
+  expression , expression-list
 \end{syntax}
 
 When there is single expression in the iterator list, that expression

@@ -5,12 +5,20 @@ The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
 \begin{syntax}
 select-statement:
-  `select' expression { when-statement [[...]] }
+  `select' expression { when-statements }
+
+when-statements:
+  when-statement
+  when-statement when-statements
 
 when-statement:
-  `when' expression [[,...]] `do' statement
-  `when' expression [[,...]] block-level-statement
+  `when' expression-list `do' statement
+  `when' expression-list block-level-statement
   `otherwise' statement
+
+expression-list:
+  expression
+  expression , expression-list
 \end{syntax}
 The expression that follows the keyword \chpl{select}, the select
 expression, is compared with the list of expressions following the
