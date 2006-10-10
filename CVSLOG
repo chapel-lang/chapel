@@ -79623,3 +79623,19 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
 
+---------------------------------------------------------------------------
+
+10/10/06 14:04:54 -- marybeth
+
+Log message:
+	Some text for the Language Overview sections.
+	
+	I added modified text from existing papers and writeups about Chapel
+	for the Motivating Principle sections.
+
+Modified files:
+	chapel/spec/Language_Overview/: Language_Overview.tex 
+	                                Global_View_Programming_Model.tex 
+	                                Generic_Programming.tex 
+	                                Basic_Language_Features.tex 
+
