@@ -79727,3 +79727,17 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/10/06 15:02:50 -- deitz
+
+Log message:
+	Really disabled folding of binary operators over strings, complexes,
+	and floats.  A few cases could have gotten through.  Disabled folding
+	of unary operators over these types as well.  Implemented unary + and
+	- on complexes.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+
