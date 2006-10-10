@@ -1,4 +1,5 @@
-The current dominant parallel programming paradigm is characterized by a localized
+In HPC applications, the current dominant parallel programming paradigm 
+is characterized by a localized
 view of the computation combined with explicit control
 over message passing, as exemplified by a combination
 of Fortran or C/C++ with MPI. Such a fragmented memory
@@ -6,10 +7,10 @@ model provides the programmer with full control over data
 distribution and communication, at the expense of productivity,
 conciseness, and clarity.
 
-Chapel is a new parallel programming language being developed by Cray Inc. 
-Chapel strives to improve the programmability of parallel computer systems
-by providing a higher level of expression 
-than current parallel languages do and by improving the separation between 
+Chapel is a new parallel programming language that 
+strives to improve the programmability of parallel computer systems.
+It provides a higher level of expression 
+than current parallel languages do and it improves the separation between 
 algorithmic expression and data structure implementation details. 
 
 Chapel supports a global-view parallel programming model at a high level by 
@@ -20,5 +21,49 @@ It supports code reuse and generality via object-oriented concepts and generic
 programming features. While Chapel borrows concepts from many preceding languages, 
 its parallel concepts are most closely based on ideas from High-Performance Fortran 
 (HPF), ZPL, and the Cray MTA's extensions to Fortran/C. 
+
+The key features of the Chapel language for productive parallel programming are as 
+follows: 
+\begin{itemize}
+\item {\bf Locale type} - an opaque type used for organizing and referring to 
+units of machine locality.
+\item {\bf Domains} - first-class index sets that can potentially be distributed 
+between multiple locales.  Domains are Chapel's primary vehicle for global-view 
+data parallelism.
+\item {\bf Arrays} - generalized support for distributed data aggregates, including 
+dynamic multidimensional rectilinear arrays, potentially strided and/or sparse 
+in each dimension; associative arrays; set- and graph-based arrays.
+\item {\bf User-defined distributions} - a capability for users to specify the 
+low-level distributed implementation of domains and arrays orthogonally 
+to the computations that operate on these concepts.
+\item {\bf \chpl{forall} loops and iterators} - concepts for specifying parallel 
+iteration in a manner that separates algorithm and implementation.
+\item {\bf Index types} - types representing domain indices to support code 
+clarity and bounds-checking optimizations.    
+\item {\bf User-defined reductions and scans} - a framework for expressing parallel 
+prefix operations over data aggregates cleanly and efficiently.
+\item {\bf \chpl{cobegin} and \chpl{begin} statements} - statement types for 
+supporting task-parallel computations.
+\item {\bf Sync and single-assignment variables} - variable types that support 
+synchronization between parallel tasks.
+\item {\bf Atomic sections} - compound statements that support atomic execution 
+from the perspective of other threads.
+\item {\bf \chpl{On} clauses} - specifications that support explicit placement of 
+data values and computation on the machine's locales.
+\item {\bf Value and reference classes} - object-oriented software containers 
+that support encapsulation of state and the separation of interfaces from 
+implementations.
+\item {\bf Function and operator overloading, multiple dispatch, pass-by-argument name, 
+default argument values} - concepts that support modern and productive function call 
+capabilities.
+\item {\bf Type variables and latent types} - capabilities for writing algorithms 
+independently of types to support code reuse, exploratory programming, and 
+generic functions and data structures.
+\item {\bf Modules} - software containers for namespace management and programming 
+in-the-large.
+\item {\bf Other features for productive programming} - tuples, type-safe unions, 
+sequences, etc.
+\end{itemize}
+
 
 
