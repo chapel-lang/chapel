@@ -79598,3 +79598,17 @@ Log message:
 Modified files:
 	chapel/spec/Types/: Primitive_Type_Literals.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 13:52:40 -- waynew
+
+Log message:
+	Added timing calls to the stream.chpl benchmark.
+	
+	Checking in a copy so that Steve can take a look at a bug with the Timers
+	module value function.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+	                                          stream2.notest 
+
