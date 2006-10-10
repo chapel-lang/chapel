@@ -79431,3 +79431,27 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.notest 
 
+---------------------------------------------------------------------------
+
+10/09/06 17:50:11 -- marybeth
+
+Log message:
+	Checking in an updated version of the Random module.  This version
+	attempts to safely generate a list of random numbers in parallel.
+	
+	There is now a rng class.  The idea is that you create a generator
+	object that is initialized with a seed.  The one generator can be
+	used to generate lists of random numbers.  Multiple lists can't
+	be generated in parallel with one generator object, but each list
+	is safely generated in parallel.  To create multiple lists of random
+	numbers in parallel, you could create a generator object for each
+	list and then proceed in parallel.
+	
+	I'm still not sure of this implementation and hope to learn more about
+	the generator before saying that this version is correct.
+	
+	This version needs review for conventions and for correctness.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
