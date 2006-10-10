@@ -6,11 +6,14 @@ config var debug = false;
 
 // BLC: This call needs to go away
 def resetA(A: [?D] complex) {
+  /*
   [i in D] {
     A(i).real = 2*i;
     A(i).imag = A(i).real + 1.0;
   }
+  */
 }
+
 
 def main() {
   const N = 1 << logN;
@@ -26,7 +29,12 @@ def main() {
   var B: [D] complex;
   var W: [DW] complex;
 
-  fillRandomVec(A);
+  [i in D] {
+    A(i).real = 2*i;
+    A(i).imag = A(i).real + 1.0;
+  }
+
+  //  fillRandomVec(A);
 
   B = A;                       // save A for verification step
 
@@ -99,7 +107,9 @@ def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
 
 
 def dfft(A: [?AD] complex, W) {
-  writeln("W is: ", W);
+  write("w[] =");
+  for i in W.domain do write(W(i):" %g %g");
+  writeln();
   
   writeln("cft1st();");
   cft1st(A, W);
@@ -136,6 +146,7 @@ def dfft(A: [?AD] complex, W) {
   }
 }
 
+
 def cft1st(A, W) {
   const n = A.domain(1).length;
   var x0 = A(0) + A(1);
@@ -170,13 +181,15 @@ def cft1st(A, W) {
     var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
                2 * wk2.imag * wk1.real - wk1.imag):complex;
 
-      resetA(A);
+    resetA(A);
     butterfly(wk1, wk2, wk3, A(j), A(j+1), A(j+2), A(j+3));
 
-    wk1 = W(k1+k1+1);
+    //    writeln("accessing: ", 2*k1+1);
+    wk1 = W(2*k1+1);
     wk3 = (wk1.real - 2*wk2.real * wk1.imag, 
            2*wk2.real * wk1.real - wk1.imag):complex;
-      resetA(A);
+    wk2 = (-wk2.imag, wk2.real): complex;
+    resetA(A);
     butterfly(wk1, wk2, wk3, A(j+4), A(j+5), A(j+6), A(j+7));
 
     k1 += 1;
@@ -195,9 +208,11 @@ def cftmd0(l, A, W) {
 
   forall j in m..l+m-1 {
     resetA(A);
-    butterfly((wk1r, wk1r):complex, -1.0i, (-wk1r, wk1r):complex, A(j), A(j+l), A(j+2*l), A(j+3*l));
+    butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
+              A(j), A(j+l), A(j+2*l), A(j+3*l));
   }
 }
+
 
 def cftmd1(l, A, W) {
   const m = l << 2;
@@ -230,6 +245,7 @@ def cftmd1(l, A, W) {
   }
 }
 
+
 def cftmd2(l, A, W) {
   var m = l << 2;
   var m2 = 2*m;
@@ -245,7 +261,7 @@ def cftmd2(l, A, W) {
   }
 
   forall j in 0..l-1 by 2 {
-    var k1 = 2;  // BLC: zip this in
+    var k1 = 1;  // BLC: zip this in
     forall k in m2..n-1 by m2 {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
@@ -254,13 +270,13 @@ def cftmd2(l, A, W) {
       resetA(A);
       butterfly(wk1, wk2, wk3, A[j+k], A[l + j+k], A[2*l + j+k], A[3*l + j+k]);
 
-      k1 += 2;
+      k1 += 1;
     }
 
-    k1 = 2;  // BLC: zip this in
+    k1 = 1;  // BLC: zip this in
     forall k in m2..n-1 by 2 {
       var wk2 = W[k1];
-      var wk1 = W[2*k1 + 2];
+      var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
                  2*wk2.real * wk1.real - wk1.imag): complex;
       wk2 = (-wk2.imag, wk2.real): complex;
@@ -269,10 +285,11 @@ def cftmd2(l, A, W) {
       butterfly(wk1, wk2, wk3, A[j+k+m], A[j+k+m + l], A[j+k+m + 2*l],
                 A[j+k+m + 3*l]);
 
-      k1 += 2;
+      k1 += 1;
     }
   }
 }
+
 
 def cftmd21(l, A, W) {
   const n = A.domain(1).length;
@@ -280,7 +297,7 @@ def cftmd21(l, A, W) {
   var m2 = 2*m;
   var m3 = 3*m;
 
-  var k1 = 2;
+  var k1 = 1;
   for k in m2..n-1 by m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
@@ -292,7 +309,7 @@ def cftmd21(l, A, W) {
       butterfly(wk1, wk2, wk3, A[j], A[j + l], A[j + 2*l], A[j + 3*l]);
     }
 
-    wk1 = W[2*k1 + 2];
+    wk1 = W[2*k1 + 1];
     wk3 = (wk1.real - 2*wk2.real * wk1.imag,
            2*wk2.real * wk1.real - wk1.imag): complex;
     wk2 = (-wk2.imag, wk2.real): complex;
@@ -302,7 +319,7 @@ def cftmd21(l, A, W) {
       butterfly(wk1, wk2, wk3, A[j], A[j+l], A[j+2*l], A[j+3*l]);
     }
 
-    k1 += 2;
+    k1 += 1;
   }
 }
 
@@ -313,10 +330,10 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   var x1 = a - b;
   var x2 = c + d;
   var x3 = c - d;
-  writeln("    a=", a, ", b=", b, ", c=", c, ", d=", d);
-  writeln("      wk1=", wk1);
-  writeln("      wk2=", wk2);
-  writeln("      wk3=", wk3);
+  writeln("    a=", a:"{%g,%g}", ", b=", b:"{%g,%g}", ", c=", c:"{%g,%g}", ", d=", d:"{%g,%g}");
+  writeln("      wk1=", wk1:"%g + %gi");
+  writeln("      wk2=", wk2:"%g + %gi");
+  writeln("      wk3=", wk3:"%g + %gi");
 
   a = x0 + x2;
   x0 -= x2;

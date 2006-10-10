@@ -20,10 +20,12 @@
 int N2;
 
 void resetA(double* a) {
+  /*
   int i;
   for (i=0; i<N2; i++) {
     a[i] = i;
   }
+  */
 }
 
 
@@ -37,11 +39,11 @@ void btrfly(int j, double wk1r, double wk1i, double wk2r, double wk2i, double wk
   double x3r = c[j    ] - d[j    ];
   double x3i = c[j + 1] - d[j + 1];
 
-  printf("        a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n", 
+  printf("    a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n", 
          a[j], a[j+1], b[j], b[j+1], c[j], c[j+1], d[j], d[j+1]);
-  printf("          wk1=%g + %gi\n"
-         "          wk2=%g + %gi\n"
-         "          wk3=%g + %gi\n",
+  printf("      wk1=%g + %gi\n"
+         "      wk2=%g + %gi\n"
+         "      wk3=%g + %gi\n",
          wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
 
   a[j    ] = x0r + x2r;
@@ -129,16 +131,25 @@ double * bit_reverse(int n, double *w) {
   double *v = new double[2 * n];
 
   mask  = 0x0102040810204080LL;
-  shift = (int) (log(n) / log(2));
+  int ncopy = n;
+  shift = 0;
+  while (ncopy != 1) {
+    ncopy = ncopy >> 1;
+    shift++;
+  }
+  /*  if (n%2 == 0) {
+    shift += 1;
+  }
+  */
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (i = 0; i < n; i++) {
-    printf("i = %d\n", i);
+    //    printf("i = %d\n", i);
       unsigned long long ndx = BitMatMultOr(mask, BitMatMultOr(i, mask));
       ndx = bitRotLeft(ndx, shift);
-      printf("ndx = %llu\n", ndx);
-      printf("i = %d\n", i);
+      //      printf("ndx = %llu\n", ndx);
+      //      printf("i = %d\n", i);
       v[2 * ndx]     = w[2 * i];
       v[2 * ndx + 1] = w[2 * i + 1];
   }
@@ -214,7 +225,7 @@ void cft1st(int n, double *a, double *w)
   a[14] = wk1r * (x0i - x0r);
   a[15] = wk1r * (x0i + x0r);
 
-  printf("  // computes first 16 (8 complexes) manually\n");
+  printf("  // computes first 8 complexes manually\n");
 
 #pragma mta use 100 streams
 #pragma mta no scalar expansion
@@ -230,6 +241,7 @@ void cft1st(int n, double *a, double *w)
       resetA(a);
       btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
 
+      //      writeln("accessing: %d\n", k1+k1+2/2);
       wk1r = w[k1 + k1 + 2];
       wk1i = v[k1 + k1 + 2];
       wk3r = wk1r - 2 * wk2r * wk1i;
@@ -407,7 +419,7 @@ void dfft(int n, int logn, double *a, double *w)
   }
   printf("\n");
 
-  printf("cft1st(n = %d);\n", n);
+  printf("cft1st();\n", n);
   cft1st(n, a, w);
 
   i = 4; l = 8;
@@ -480,28 +492,34 @@ int main(int argc, char *argv[])
   for (i = 0; i < N2; i++) b[i] = a[i];
 
   twiddles(N / 4, w);
+  /*
   printf("w[] =");
   for (i=0; i< N/2; i++) {
     printf(" %g", w[i]);
   }
-  printf("\n");  w = bit_reverse(N / 4, w);
+  printf("\n");  
+  */
+  w = bit_reverse(N / 4, w);
+  /*
   printf("w[] =");
   for (i=0; i< N/2; i++) {
     printf(" %g", w[i]);
   }
   printf("\n");
+  */
 
 
 /* conjugate data */
 #pragma mta assert parallel
   //  for (i = 1; i < N2; i += 2) a[i] = -a[i];
 
-  //  a = bit_reverse(N, a);
-  printf("a[] =");
+  a = bit_reverse(N, a);
+  /*  printf("a[] =");
   for (i=0; i<N2; i++) {
     printf(" %g", a[i]);
   }
   printf("\n");
+  */
   dfft(N2, logN, a, w);
   exit(0);
 }
