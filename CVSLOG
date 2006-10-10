@@ -79588,3 +79588,13 @@ Modified files:
 	chapel/spec/Classes/: Class_Declarations.tex 
 	chapel/spec/Types/: Type_Aliases.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 13:29:20 -- deitz
+
+Log message:
+	Added hexadecimal and binary literals to the spec.
+
+Modified files:
+	chapel/spec/Types/: Primitive_Type_Literals.tex 
+
