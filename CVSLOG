@@ -79572,3 +79572,19 @@ Added files:
 	                    Record_Types.tex Sequence_Types.tex 
 	                    Tuple_Types.tex Union_Types.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 12:06:17 -- deitz
+
+Log message:
+	Filled in type aliases section.
+	
+	Added new command \rsec{SectionName} to cite a section.  It places
+	parentheses around the section number and precedes the number with the
+	section symbol.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Classes/: Class_Declarations.tex 
+	chapel/spec/Types/: Type_Aliases.tex 
+
