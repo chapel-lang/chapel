@@ -79455,3 +79455,22 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/09/06 17:53:55 -- marybeth
+
+Log message:
+	Checking in a version of STREAMS that initializes the vectors with random
+	numbers.  **This is different from the provided reference implementation.**
+	
+	This version uses the Random module which is still under development.
+	
+	The routine that checks the results needed to be modified to account for
+	the vectors being initialized with random numbers rather a constant value
+	for all entries.  I used the l_1-norm to compute the relative error in the
+	computed solution.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+
