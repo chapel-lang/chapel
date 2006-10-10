@@ -660,8 +660,16 @@ record _aseq {
         else (_low - _high + _stride:elt_type) / _stride:elt_type);
 }
 
-def by(s : _aseq, i : int)
-  return _aseq(s.elt_type, s._low, s._high, s._stride * i);
+def by(s : _aseq, i : int) {
+  if i == 0 then
+    halt("illegal stride of 0");
+  var as = _aseq(s.elt_type, s._low, s._high, s._stride * i);
+  if as._stride < 0 then
+    as._low = as._low + (as._high - as._low) % (-as._stride):as.elt_type;
+  else
+    as._high = as._high - (as._high - as._low) % (as._stride):as.elt_type;
+  return as;
+}
 
 def _in(s : _aseq, i : s.elt_type)
   return i >= s._low && i <= s._high &&
@@ -677,7 +685,7 @@ def _in(s1: _aseq, s2: _aseq) {
 
 def fwrite(f : file, s : _aseq) {
   fwrite(f, s._low, "..", s._high);
-  if (s._stride > 1) then
+  if (s._stride != 1) then
     fwrite(f, " by ", s._stride);
 }
 
