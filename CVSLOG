@@ -79709,3 +79709,21 @@ Modified files:
 	chapel/test/domains/shannon/: by4Dtuple.good 
 	chapel/test/types/seq/deitz/: test_aseq3.good 
 
+---------------------------------------------------------------------------
+
+10/10/06 14:51:30 -- bradc
+
+Log message:
+	Got to the point where all calls to butterfly() are sending in
+	the same array elements and twiddle values.  This is now quite
+	close to being correct code.  Then, some cleanup will be needed.
+	
+	Note: that bug I checked in about -1.0i isn't as important as I
+	thought it was -- turns out the literal should've been 1.0i anyway.
+	
+	This checkin also includes what I believe to be a bug in John Feo's
+	code.  I've mailed him to confirm that this is the case.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
+
