@@ -79486,3 +79486,16 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/10/06 09:15:27 -- deitz
+
+Log message:
+	Simplified parse code and removed more dynamic AList creations.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+
