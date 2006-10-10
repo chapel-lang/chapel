@@ -79537,3 +79537,22 @@ Modified files:
 	                    The_String_Type.tex Type_Definitions.tex 
 	chapel/spec/Variables/: Variable_Declarations.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 11:43:28 -- deitz
+
+Log message:
+	Removed subsections that had the sole purpose of forward referencing
+	and put the forward reference in the supersection.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Classes/: Class_Declarations.tex 
+	chapel/spec/Types/: Enumerated_Types.tex Type_Aliases.tex 
+	                    Types.tex 
+Removed files:
+	chapel/spec/Types/: Class_Types.tex Domain_and_Array_Types.tex 
+	                    Record_Types.tex Sequence_Types.tex 
+	                    Tuple_Types.tex Type_Definitions.tex 
+	                    Union_Types.tex 
+
