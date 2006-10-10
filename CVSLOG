@@ -79639,3 +79639,16 @@ Modified files:
 	                                Generic_Programming.tex 
 	                                Basic_Language_Features.tex 
 
+---------------------------------------------------------------------------
+
+10/10/06 14:21:18 -- deitz
+
+Log message:
+	Added a simple test to show a bug with the reference implementation
+	that shows up when a timer is read without being stopped.  Working on
+	a fix.
+
+Added files:
+	chapel/test/trivial/deitz/: test_timer2.chpl test_timer2.future 
+	                            test_timer2.good 
+
