@@ -79499,3 +79499,41 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+10/10/06 11:19:09 -- deitz
+
+Log message:
+	Changed margins so that the spec fills more of the page.
+	
+	Added 'implementation' environment and an implementation note.  Use
+	
+	  \begin{implementation}
+	  ...
+	  \end{implementation}
+	
+	Added roman numbering of the table of context pages and everything up
+	to page one.
+	
+	Changed optional syntax to use [OPT] which subscripts 'opt' to
+	indicate an optional piece of the syntax definition.  This is the way
+	it is done in all the other specs that I saw (as opposed to the
+	brackets we used to use).  Updated syntax everywhere the syntax
+	listing is used.
+	
+	Filled in the rest of the Primitive Types section.
+
+Modified files:
+	chapel/spec/: spec.tex syntax_listing.tex 
+	chapel/spec/Functions/: Function_Definitions.tex 
+	                        The_Return_Statement.tex 
+	chapel/spec/Statements/: Blocks.tex 
+	                         The_Conditional_Statement.tex 
+	                         The_For_Loop.tex 
+	                         The_Select_Statement.tex 
+	                         The_Type_Select_Statement.tex 
+	chapel/spec/Types/: Complex_Types.tex Floating-Point_Types.tex 
+	                    Primitive_Type_Literals.tex 
+	                    The_String_Type.tex Type_Definitions.tex 
+	chapel/spec/Variables/: Variable_Declarations.tex 
+
