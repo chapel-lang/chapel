@@ -162,6 +162,12 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
 
+    if (-r ./$execfile.notest) then
+        echo \[Skipping notest test: $localdir/$execfile\]
+        continue;
+    endif
+
+
     if (-r ./$execfile.catfiles) then
         set catfiles = "$globalCatfiles `cat ./$execfile.catfiles`"
     else

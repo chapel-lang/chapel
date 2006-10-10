@@ -172,7 +172,8 @@
 #    disabling subdirectories containing tests that don't work
 #    yet, or subdirectories that contain input files for other
 #    tests (though they will also be ignored if they fail to
-#    contain any .chpl files...)
+#    contain any .chpl files...).  This may also be selected for
+#    a single test, foo.chpl, by creating a foo.notest file.
 #
 #  - if the subdirectory contains a NOEXEC file, any executables
 #    built in that directory will not attempt to be executed.
