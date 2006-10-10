@@ -79612,3 +79612,14 @@ Added files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
 	                                          stream2.notest 
 
+---------------------------------------------------------------------------
+
+10/10/06 13:56:06 -- waynew
+
+Log message:
+	Uncommented code to enable the timer code to be generated and cause the
+	bug.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+
