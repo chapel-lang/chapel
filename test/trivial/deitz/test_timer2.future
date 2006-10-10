@@ -1,0 +1,3 @@
+deitz
+
+error with references in value method on timers if the timer is not stopped.
