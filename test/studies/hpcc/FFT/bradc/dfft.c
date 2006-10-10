@@ -37,8 +37,12 @@ void btrfly(int j, double wk1r, double wk1i, double wk2r, double wk2i, double wk
   double x3r = c[j    ] - d[j    ];
   double x3i = c[j + 1] - d[j + 1];
 
-  printf("        a={%lg,%lg}, b={%lg,%lg}, c={%lg,%lg}, d={%lg,%lg}\n", 
+  printf("        a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n", 
          a[j], a[j+1], b[j], b[j+1], c[j], c[j+1], d[j], d[j+1]);
+  printf("          wk1=%g + %gi\n"
+         "          wk2=%g + %gi\n"
+         "          wk3=%g + %gi\n",
+         wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
 
   a[j    ] = x0r + x2r;
   a[j + 1] = x0i + x2i;
@@ -83,7 +87,7 @@ static void setupBitIndices(void) {
     for (j=0; j<8; j++) {
       bitInd[i][j] = 0x1LL << (((7-i)*8) + (7-j));
       //      printf("\n");
-      //      BitMatPrint(mask[i][j]);
+      //      BitMatPrint(bitInd[i][j]);
     }
     //    printf("\n");
   }
@@ -130,8 +134,11 @@ double * bit_reverse(int n, double *w) {
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (i = 0; i < n; i++) {
-      int ndx = BitMatMultOr(mask, BitMatMultOr(i, mask));
+    printf("i = %d\n", i);
+      unsigned long long ndx = BitMatMultOr(mask, BitMatMultOr(i, mask));
       ndx = bitRotLeft(ndx, shift);
+      printf("ndx = %llu\n", ndx);
+      printf("i = %d\n", i);
       v[2 * ndx]     = w[2 * i];
       v[2 * ndx + 1] = w[2 * i + 1];
   }
@@ -220,7 +227,6 @@ void cft1st(int n, double *a, double *w)
       double wk3r = wk1r - 2 * wk2i * wk1i;
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
-      printf("  l=2 btrfly(j=%d, wk1r=%lg, wk1i=%lg, wk2r=%lg, wk2i=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
       resetA(a);
       btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
 
@@ -229,7 +235,6 @@ void cft1st(int n, double *a, double *w)
       wk3r = wk1r - 2 * wk2r * wk1i;
       wk3i = 2 * wk2r * wk1r - wk1i;
 
-      printf("  l=2 btrfly(j+8=%d+8, wk1r=%lg, wk1i=%lg, -wk2i=%lg, wk2r=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
       resetA(a);
       btrfly (j + 8, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 } }
@@ -247,7 +252,6 @@ void cftmd0(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (j = 0; j < l; j += 2) {
-    printf("    l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d)\n", l, j);
     resetA(a);
     btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
   }
@@ -255,7 +259,6 @@ void cftmd0(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (j = m; j < l + m; j += 2) {
-    printf("    l=%d btrfly(j=%d, wk1r=%lg, wk1r=%lg, 0.0, 1.0, -wk1r=%lg, wk1r=%lg, a, b, c, d)\n", l, j, wk1r, wk1r, -wk1r, wk1r);
     resetA(a);
     btrfly(j, wk1r, wk1r, 0.0, 1.0, - wk1r, wk1r, a, b, c, d);
   }
@@ -287,8 +290,7 @@ void cftmd1(int n, int l, double *a, double *w)
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
       for (j = k; j < l + k; j += 2) {
-        printf("  l=%d btrfly(j=%d, wk1r=%lg, wk1i=%lg, wk2r=%lg, wk2i=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
-      resetA(a);
+        resetA(a);
         btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
       }
 
@@ -298,8 +300,7 @@ void cftmd1(int n, int l, double *a, double *w)
       wk3i = 2 * wk2r * wk1r - wk1i;
 
       for (j = k + m; j < l + k + m; j += 2) {
-        printf("  l=%d btrfly(j+8=%d+8, wk1r=%lg, wk1i=%lg, -wk2i=%lg, wk2r=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
-      resetA(a);
+        resetA(a);
         btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
       }
 } }
@@ -326,8 +327,7 @@ void cftmd21(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
       for (j = k; j < k + l; j += 2) {
-        printf("  l=%d btrfly(j=%d, wk1r=%lg, wk1i=%lg, wk2r=%lg, wk2i=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
-      resetA(a);
+        resetA(a);
         btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
       }
 
@@ -339,8 +339,7 @@ void cftmd21(int n, int l, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
       for (j = k + m; j < k + m + l; j += 2) {
-        printf("  l=%d btrfly(j+8=%d+8, wk1r=%lg, wk1i=%lg, -wk2i=%lg, wk2r=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
-      resetA(a);
+        resetA(a);
         btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
       }
 
@@ -379,7 +378,6 @@ void cftmd2(int n, int l, double *a, double *w)
       double wk3r = wk1r - 2 * wk2i * wk1i;
       double wk3i = 2 * wk2i * wk1r - wk1i;
 
-        printf("  l=%d btrfly(j=%d, wk1r=%lg, wk1i=%lg, wk2r=%lg, wk2i=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
       resetA(a);
       btrfly (j + k, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
   }
@@ -393,7 +391,6 @@ void cftmd2(int n, int l, double *a, double *w)
       double wk3r = wk1r - 2 * wk2r * wk1i;
       double wk3i = 2 * wk2r * wk1r - wk1i;
 
-      printf("  l=%d btrfly(j+8=%d+8, wk1r=%lg, wk1i=%lg, -wk2i=%lg, wk2r=%lg, wk3r=%lg, wk3i=%lg, a, b, c, d);\n", l, j, wk1r, wk1i, -wk2i, wk2r, wk3r, wk3i);
       resetA(a);
       btrfly (j + k + m, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 
@@ -403,6 +400,12 @@ void cftmd2(int n, int l, double *a, double *w)
 void dfft(int n, int logn, double *a, double *w)
 { int i, l, j;
   double *v, *b, *c, *d;
+
+  printf("w[] =");
+  for (i=0; i< n/4; i++) {
+    printf(" %g", w[i]);
+  }
+  printf("\n");
 
   printf("cft1st(n = %d);\n", n);
   cft1st(n, a, w);
@@ -428,7 +431,6 @@ void dfft(int n, int logn, double *a, double *w)
 #pragma mta use 100 streams
 #pragma mta assert no dependence
     for (j = 0; j < l; j += 2) {
-      printf("l=%d btrfly(j=%d, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);\n", l, j);
       resetA(a);
       btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
     }
@@ -451,6 +453,8 @@ void dfft(int n, int logn, double *a, double *w)
 int main(int argc, char *argv[])
 { int i;
   double gflop, maxerr, time;
+
+  setupBitIndices();
 
   int logN;
   if (argc > 1) {
@@ -476,7 +480,17 @@ int main(int argc, char *argv[])
   for (i = 0; i < N2; i++) b[i] = a[i];
 
   twiddles(N / 4, w);
-  w = bit_reverse(N / 4, w);
+  printf("w[] =");
+  for (i=0; i< N/2; i++) {
+    printf(" %g", w[i]);
+  }
+  printf("\n");  w = bit_reverse(N / 4, w);
+  printf("w[] =");
+  for (i=0; i< N/2; i++) {
+    printf(" %g", w[i]);
+  }
+  printf("\n");
+
 
 /* conjugate data */
 #pragma mta assert parallel
@@ -485,7 +499,7 @@ int main(int argc, char *argv[])
   //  a = bit_reverse(N, a);
   printf("a[] =");
   for (i=0; i<N2; i++) {
-    printf(" %lg", a[i]);
+    printf(" %g", a[i]);
   }
   printf("\n");
   dfft(N2, logN, a, w);

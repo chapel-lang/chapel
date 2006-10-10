@@ -1,8 +1,10 @@
+use Random;
 use Timers;
 
 config var logN = 5;
 config var debug = false;
 
+// BLC: This call needs to go away
 def resetA(A: [?D] complex) {
   [i in D] {
     A(i).real = 2*i;
@@ -24,7 +26,7 @@ def main() {
   var B: [D] complex;
   var W: [DW] complex;
 
-  prand_array(A);
+  fillRandomVec(A);
 
   B = A;                       // save A for verification step
 
@@ -37,7 +39,6 @@ def main() {
 
   // BLC: This line needs to go away
   resetA(A);
-  writeln("A is: ", A);
   dfft(A, W);
 
   halt();
@@ -75,7 +76,7 @@ def twiddles(W: [?WD] complex) {
   W(0) = 1.0;
   W(n/2) = let cosDeltaN = cos(delta * n/2)
             in (cosDeltaN, cosDeltaN):complex;
-  for i in 1..n/2-1 {
+  forall i in 1..n/2-1 {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -88,7 +89,8 @@ def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
   const n = WD(1).length;
   const reverse = lg(n);
   var V: [WD] complex;
-  for i in WD {
+  forall i in WD {
+    // BLC: what does this bitReverse function do with high-order bits?
     var ndx = bitReverse(i:uint(64), numBits=reverse);
     V(ndx:int) = W(i); // BLC: unfortunate cast
   }
@@ -97,6 +99,8 @@ def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
 
 
 def dfft(A: [?AD] complex, W) {
+  writeln("W is: ", W);
+  
   writeln("cft1st();");
   cft1st(A, W);
 
@@ -117,14 +121,13 @@ def dfft(A: [?AD] complex, W) {
   const n = AD(1).length;
   if ((l << 2) == n) {
     writeln("l << 2 == n");
-    for j in 0..l-1 {
-      writeln("l=", l, " butterfly(j=", j, ", 1.0, 1.0, 1.0, A);");
+    forall j in 0..l-1 {
       resetA(A);
       butterfly(1.0, 1.0, 1.0, A(j), A(j+l), A(j+2*l), A(j+3*l));
     }
   } else {
     writeln("l << 2 != n");
-    for j in 0..l-1 {
+    forall j in 0..l-1 {
       var x0 = A(j).real;
       var x1 = A(j).imag;
       A(j).real = x0+x1;
@@ -161,20 +164,18 @@ def cft1st(A, W) {
   writeln("  // computes first 8 complexes manually");
 
   var k1 = 1;
-  for j in 8..n-1 by 8 {
+  forall j in 8..n-1 by 8 {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
                2 * wk2.imag * wk1.real - wk1.imag):complex;
 
-    writeln("  l=2 butterfly(wk1=", wk1, ", wk2=", wk2, ", wk3=", wk3, ", a, b, c, d);");
       resetA(A);
     butterfly(wk1, wk2, wk3, A(j), A(j+1), A(j+2), A(j+3));
 
     wk1 = W(k1+k1+1);
     wk3 = (wk1.real - 2*wk2.real * wk1.imag, 
            2*wk2.real * wk1.real - wk1.imag):complex;
-    writeln("  l=2 butterfy(wk1=", wk1, ", wk2=", wk2, ", wk3=", wk3, ", a, b, c, d);");
       resetA(A);
     butterfly(wk1, wk2, wk3, A(j+4), A(j+5), A(j+6), A(j+7));
 
@@ -187,14 +188,12 @@ def cftmd0(l, A, W) {
   var wk1r = W(1).real;
   const m = l << 2;
 
-  for j in 0..l-1 {
-    writeln("    l=", l, ", butterfly(1.0, 1.0, 1.0, A, A, A, A);");
+  forall j in 0..l-1 {
     resetA(A);
     butterfly(1.0, 1.0, 1.0, A(j), A(j+l), A(j+2*l), A(j+3*l));
   }
 
-  for j in m..l+m-1 {
-    writeln("    l=", l, ", butterfly(..., A, A, A, A);");
+  forall j in m..l+m-1 {
     resetA(A);
     butterfly((wk1r, wk1r):complex, -1.0i, (-wk1r, wk1r):complex, A(j), A(j+l), A(j+2*l), A(j+3*l));
   }
@@ -208,13 +207,12 @@ def cftmd1(l, A, W) {
   writeln("  cftmd0(l=", l, ", A, W);");
   cftmd0(l, A, W);
   var k1 = 1;
-  for k in m2..n-1 by m2 {
+  forall k in m2..n-1 by m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
                2 * wk2.imag * wk1.real - wk1.imag):complex;
     for j in k..l+k-1 {
-      writeln("  l=", l, ", butterfly(wk1, wk2, wk3, A, A, A, A);");
       resetA(A);
       butterfly(wk1, wk2, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
     }
@@ -224,7 +222,6 @@ def cftmd1(l, A, W) {
            2 * wk2.real * wk1.real - wk1.imag):complex;
 
     for j in k+m..l+k+m-1 {
-      writeln("  l=", l, ", butterfly(wk1, wk2, wk3, A, A, A, A);");
       resetA(A);
       butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
     }
@@ -247,15 +244,13 @@ def cftmd2(l, A, W) {
     return;
   }
 
-  for j in 0..l-1 by 2 {
+  forall j in 0..l-1 by 2 {
     var k1 = 2;  // BLC: zip this in
-    for k in m2..n-1 by m2 {
+    forall k in m2..n-1 by m2 {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                  2 * wk2.imag * wk1.real - wk1.imag): complex;
-      writeln("  l=", l, " butterfly(j=", j, ", wk1=", wk1, ", wk2=", wk2,
-              ", wk3=", wk3, ", a, b, c, d);");
       resetA(A);
       butterfly(wk1, wk2, wk3, A[j+k], A[l + j+k], A[2*l + j+k], A[3*l + j+k]);
 
@@ -263,15 +258,13 @@ def cftmd2(l, A, W) {
     }
 
     k1 = 2;  // BLC: zip this in
-    for k in m2..n-1 by 2 {
+    forall k in m2..n-1 by 2 {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 2];
       var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
                  2*wk2.real * wk1.real - wk1.imag): complex;
       wk2 = (-wk2.imag, wk2.real): complex;
 
-      writeln("  l=", l, " butterfly(j=", j, ", wk1=", wk1, ", wk2=", wk2,
-              ", wk3=", wk3, ", a, b, c, d);");
       resetA(A);
       butterfly(wk1, wk2, wk3, A[j+k+m], A[j+k+m + l], A[j+k+m + 2*l],
                 A[j+k+m + 3*l]);
@@ -294,8 +287,7 @@ def cftmd21(l, A, W) {
     var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                2* wk2.imag * wk1.real - wk1.imag): complex;
 
-    for j in k..k+l-1 {
-      writeln("  l=", l, " butterfly(wk1, wk2, wk3, a, b, c, d);");
+    forall j in k..k+l-1 {
       resetA(A);
       butterfly(wk1, wk2, wk3, A[j], A[j + l], A[j + 2*l], A[j + 3*l]);
     }
@@ -305,8 +297,7 @@ def cftmd21(l, A, W) {
            2*wk2.real * wk1.real - wk1.imag): complex;
     wk2 = (-wk2.imag, wk2.real): complex;
 
-    for j in k+m..k+m+l-1 {
-      writeln("  l=", l, " butterfly(..., A, A, A, A);");
+    forall j in k+m..k+m+l-1 {
       resetA(A);
       butterfly(wk1, wk2, wk3, A[j], A[j+l], A[j+2*l], A[j+3*l]);
     }
@@ -316,16 +307,16 @@ def cftmd21(l, A, W) {
 }
 
 
-def prand_array(X) {
-}
-
 def butterfly(wk1: complex, wk2: complex, wk3: complex, 
               inout a, inout b, inout c, inout d) {
   var x0 = a + b;
   var x1 = a - b;
   var x2 = c + d;
   var x3 = c - d;
-  writeln("        a=", a, ", b=", b, ", c=", c, ", d=", d);
+  writeln("    a=", a, ", b=", b, ", c=", c, ", d=", d);
+  writeln("      wk1=", wk1);
+  writeln("      wk2=", wk2);
+  writeln("      wk3=", wk3);
 
   a = x0 + x2;
   x0 -= x2;
