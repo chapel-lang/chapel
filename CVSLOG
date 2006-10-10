@@ -79417,3 +79417,17 @@ Added files:
 	                                     fft-badtuple.future 
 	                                     fft-badtuple.good 
 
+---------------------------------------------------------------------------
+
+10/09/06 17:37:41 -- bradc
+
+Log message:
+	Added the capability to create a test-specific ".notest" file
+	that says the testing system should not run that test.  Added
+	one of these to the FFT code until I get it more stable.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.notest 
+
