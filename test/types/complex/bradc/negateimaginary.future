@@ -1,0 +1,6 @@
+HPCC high -- imaginary literals
+
+For some reason, negative imaginary literals don't seem
+to be working correctly.  Thought this was related to
+passing them to a function, but it turns out to be a
+general problem.
