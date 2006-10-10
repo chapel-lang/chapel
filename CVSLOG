@@ -79652,3 +79652,17 @@ Added files:
 	chapel/test/trivial/deitz/: test_timer2.chpl test_timer2.future 
 	                            test_timer2.good 
 
+---------------------------------------------------------------------------
+
+10/10/06 14:27:28 -- bradc
+
+Log message:
+	Here's a bug that causes an expressiveness problem
+	for the HPCC FT benchmark.  For some reason the
+	expression -1.0i seems to have the value 0.0 + 0.0i.
+
+Added files:
+	chapel/test/types/complex/bradc/: negateimaginary.chpl 
+	                                  negateimaginary.future 
+	                                  negateimaginary.good 
+
