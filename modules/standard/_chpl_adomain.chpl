@@ -51,6 +51,8 @@ class _array {
       yield x; 
   }
 
+  def numElements return dom.numIndices;
+
   def view(d: _domain)
     return _value.view(d._value);
 }
@@ -142,7 +144,7 @@ class _domain {
     _value.remove(i);
   }
 
-  def size return _value.size;
+  def numIndices return _value.numIndices;
 
   def member?(i) {
     return _value.member?(i);
@@ -296,7 +298,7 @@ class _adomain {
   def this(dim : int)
     return ranges(dim);
 
-  def size {
+  def numIndices {
     var sum = 1;
     for param i in 1..rank do
       sum *= ranges(i).length;
