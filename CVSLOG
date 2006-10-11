@@ -79902,3 +79902,26 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	                                            stream.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 14:10:55 -- deitz
+
+Log message:
+	This checkin fixes two related bugs!
+	  This regression is now working: arrays/bradc/stridedArrayArg2
+	  This future is now removed: studies/blas/marybeth/saxpy1
+	
+	Fixed a bug in which assigning to array arguments via whole array
+	assignment was being flagged as a constant assignment error.
+	
+	Fixed a bug in which compound assignments, e.g., +=, are now supported
+	over arrays.  A cast to the type of the lhs is put in, but this
+	doesn't work over types that scalar promote, so the cast is ignored in
+	that case.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         semanticChecks.cpp 
+Removed files:
+	chapel/test/studies/blas/marybeth/: saxpy1.future 
+
