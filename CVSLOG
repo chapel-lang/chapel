@@ -79834,3 +79834,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/11/06 11:32:16 -- bradc
+
+Log message:
+	Rewrote to pass array slices into butterfly -- and it still
+	works with no problems!!  (Thanks Steve!)
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
