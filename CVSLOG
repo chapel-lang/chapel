@@ -79823,3 +79823,14 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_timer2.future 
 
+---------------------------------------------------------------------------
+
+10/11/06 11:20:23 -- bradc
+
+Log message:
+	Fixed the last bug in getting my FFT results to match
+	John Feo's code's.  Now, on to cleanup.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: dfft.c fft.chpl 
+
