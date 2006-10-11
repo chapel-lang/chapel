@@ -1,0 +1,8 @@
+deitz
+
+The new "snapping" by operator seems to be implemented 
+incorrectly -- in particular, lo bounds must be snapped
+up and high bounds down.  In this case, a high bound
+is shown to snap up, causing a degenerate range to
+become non-empty.  See ZPL's implementation for a reference.
+
