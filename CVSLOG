@@ -79889,3 +79889,16 @@ Added files:
 	                                  negateimaginary2.future 
 	                                  negateimaginary2.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 13:56:36 -- marybeth
+
+Log message:
+	Updated stream.chpl to include timing and printing results.  This version
+	initializes the vectors with random numbers, times the update loop, computes
+	the resulting times and prints them out.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+
