@@ -156,7 +156,7 @@ def dfft(A: [?AD] complex, W) {
     writeln("l << 2 == n");
     forall j in 0..l-1 {
       resetA(A);
-      butterfly(1.0, 1.0, 1.0, A(j), A(j+l), A(j+2*l), A(j+3*l));
+      butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
     }
   } else {
     writeln("l << 2 != n");
@@ -205,7 +205,7 @@ def cft1st(A, W) {
                2 * wk2.imag * wk1.real - wk1.imag):complex;
 
     resetA(A);
-    butterfly(wk1, wk2, wk3, A(j), A(j+1), A(j+2), A(j+3));
+    butterfly(wk1, wk2, wk3, A[j..j+3]);
 
     //    writeln("accessing: ", 2*k1+1);
     wk1 = W(2*k1+1);
@@ -213,7 +213,7 @@ def cft1st(A, W) {
            2*wk2.real * wk1.real - wk1.imag):complex;
     wk2 = (-wk2.imag, wk2.real): complex;
     resetA(A);
-    butterfly(wk1, wk2, wk3, A(j+4), A(j+5), A(j+6), A(j+7));
+    butterfly(wk1, wk2, wk3, A[j+4..j+7]);
 
     k1 += 1;
   }
@@ -228,13 +228,13 @@ def cftmd0(l, A, W) {
   
   forall j in 0..l-1 {
     resetA(A);
-    butterfly(1.0, 1.0, 1.0, A(j), A(j+l), A(j+2*l), A(j+3*l));
+    butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
   }
 
   forall j in m..l+m-1 {
     resetA(A);
     butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
-              A(j), A(j+l), A(j+2*l), A(j+3*l));
+              A[j..j+3*l by l]);
   }
 }
 
@@ -254,7 +254,7 @@ def cftmd1(l, A, W) {
                2 * wk2.imag * wk1.real - wk1.imag):complex;
     for j in k..l+k-1 {
       resetA(A);
-      butterfly(wk1, wk2, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
+      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
     }
 
     wk1 = W[2*k1+1];
@@ -263,7 +263,7 @@ def cftmd1(l, A, W) {
 
     for j in k+m..l+k+m-1 {
       resetA(A);
-      butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A(j), A(j+l), A(j+2*l), A(j+3*l));
+      butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*l by l]);
     }
 
     k1 += 1;
@@ -293,7 +293,7 @@ def cftmd2(l, A, W) {
       var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                  2 * wk2.imag * wk1.real - wk1.imag): complex;
       resetA(A);
-      butterfly(wk1, wk2, wk3, A[j+k], A[l + j+k], A[2*l + j+k], A[3*l + j+k]);
+      butterfly(wk1, wk2, wk3, A[j+k..j+k+3*l by l]);
 
       k1 += 1;
     }
@@ -307,8 +307,7 @@ def cftmd2(l, A, W) {
       wk2 = (-wk2.imag, wk2.real): complex;
 
       resetA(A);
-      butterfly(wk1, wk2, wk3, A[j+k+m], A[j+k+m + l], A[j+k+m + 2*l],
-                A[j+k+m + 3*l]);
+      butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*l by l]);
 
       k1 += 1;
     }
@@ -331,7 +330,7 @@ def cftmd21(l, A, W) {
 
     forall j in k..k+l-1 {
       resetA(A);
-      butterfly(wk1, wk2, wk3, A[j], A[j + l], A[j + 2*l], A[j + 3*l]);
+      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
     }
 
     wk1 = W[2*k1 + 1];
@@ -341,7 +340,7 @@ def cftmd21(l, A, W) {
 
     forall j in k+m..k+m+l-1 {
       resetA(A);
-      butterfly(wk1, wk2, wk3, A[j], A[j+l], A[j+2*l], A[j+3*l]);
+      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
     }
 
     k1 += 1;
@@ -350,22 +349,22 @@ def cftmd21(l, A, W) {
 
 
 def butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              inout a, inout b, inout c, inout d) {
-  var x0 = a + b;
-  var x1 = a - b;
-  var x2 = c + d;
-  var x3 = c - d;
-  writeln("    a=", a:"{%g,%g}", ", b=", b:"{%g,%g}", ", c=", c:"{%g,%g}", ", d=", d:"{%g,%g}");
+              inout A:[1..4] complex) {
+  var x0 = A[1] + A[2];
+  var x1 = A[1] - A[2];
+  var x2 = A[3] + A[4];
+  var x3 = A[3] - A[4];
+  writeln("    a=", A[1]:"{%g,%g}", ", b=", A[2]:"{%g,%g}", ", c=", A[3]:"{%g,%g}", ", d=", A[4]:"{%g,%g}");
   writeln("      wk1=", wk1:"%g + %gi");
   writeln("      wk2=", wk2:"%g + %gi");
   writeln("      wk3=", wk3:"%g + %gi");
 
-  a = x0 + x2;
+  A[1] = x0 + x2;
   x0 -= x2;
-  c = wk2 * x0;
+  A[3] = wk2 * x0;
   x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
-  b = wk1 * x0;
+  A[2] = wk1 * x0;
   x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
-  d = wk3 * x0;
-  writeln("    a=", a:"{%g,%g}", ", b=", b:"{%g,%g}", ", c=", c:"{%g,%g}", ", d=", d:"{%g,%g}\n");
+  A[4] = wk3 * x0;
+  writeln("    a=", A[1]:"{%g,%g}", ", b=", A[2]:"{%g,%g}", ", c=", A[3]:"{%g,%g}", ", d=", A[4]:"{%g,%g}\n");
 }
