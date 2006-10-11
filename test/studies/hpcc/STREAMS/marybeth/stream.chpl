@@ -1,3 +1,6 @@
+use Timers;
+use Random;
+
 // constants related to memory
 param MB = 1024**2,
       GB = 1024*MB,
@@ -11,6 +14,7 @@ const memInBytes = memInMBs*MB;
 
 type elemType = float(64);
 const elemSizeInBytes = bits(elemType)/bitsPerByte;
+const bytes = 3*elemSizeInBytes;
 
 const maxIntBits2 = bits(int) - 2;
 const maxPossibleElems = (memInBytes/elemSizeInBytes)/numVectors;
@@ -21,57 +25,78 @@ config const vectorSize = if flg2 <= maxIntBits2
                           then if usePow2VectorSize then (1 << flg2)
                                                     else maxPossibleElems
                           else 1 << maxIntBits2;
-
-
 // the vectors
 var A, B, C: [1..vectorSize] elemType;
 
+const seed = 333444.0;
 
 // config constants for steering the computation
-config const numIters = 10;
 config const scalar = 3.0;
 
 config const doIO = true;
 
+config const numIters = 10;
+const iterDomain = [1..numIters];
+var time: [iterDomain] float;
+var avgtime, sumtime, mintime, maxtime: float;
+var curGBs: float;
+
 
 def main() {
-  use Random;
-  var generator = rng(333444.0);
+  var clock: Timer;
+
+  initStreamVectors();
 
   if doIO then writeStreamData();
 
-  generator.fillRandom(A);
-  generator.fillRandom(B);
-  generator.fillRandom(C);
+  clock.start();
+  for k in iterDomain {
+    time(k) = clock.value;
+    A = B + scalar * C;
+    time(k) = clock.value - time(k);
+  }
+  clock.stop();
+
+  computeStreamResults();
+
+  if doIO then writeStreamResults();
+
+  if (checkSTREAMresults() && doIO) then writeln("Solution Failed!");
+}
+
+def initStreamVectors() {
+  var randlist = rng(seed);
+
+  randlist.fillRandom(A);
+  randlist.fillRandom(B);
+  randlist.fillRandom(C);
 
   A = 2.0 * A;
+}
 
-  for k in 1..numIters {
-    A = B + scalar * C;
-  }
+def computeStreamResults() {
 
-  if (checkSTREAMresults()) {
-    writeln("Solution Failed!");
-  }
+  sumtime = + reduce time[2..numIters];
+  mintime = min reduce time[2..numIters];
+  maxtime = max reduce time[2..numIters];
 }
 
 
 def checkSTREAMresults() {
-  use Random;
-  var generator = rng(333444.0);
+  var randlist = rng(seed);
   var vector = [1..vectorSize];
 
   var Aref, Bref, Cref, error : [vector] elemType;
 
-  generator.fillRandom(Aref);
-  generator.fillRandom(Bref);
-  generator.fillRandom(Cref);
+  randlist.fillRandom(Aref);
+  randlist.fillRandom(Bref);
+  randlist.fillRandom(Cref);
 
   for i in vector {
     Aref(i) = 2.0 * Aref(i);
   }
 
-  for k in 1..numIters {
+  for k in iterDomain {
     for i in vector {
       Aref(i) = Bref(i) + scalar*Cref(i);
     }
@@ -112,3 +137,12 @@ def writeStreamData() {
           (numVectors * elemSizeInBytes) * (vectorSize / GB:float));
   writeln(HLINE);
 }
+
+def writeStreamResults() {
+  writeln( "Function\tRate (GB/s)\tAvg time\tMin time\tMax time");
+  curGBs = mintime;
+  curGBs *= 1.0e-9 * bytes * vectorSize;
+  avgtime = sumtime/(numIters-1);  // skipped the 1st iteration
+  writeln( "Triad    ", curGBs:"\t%g", avgtime:"\t%g", mintime:"\t%g", maxtime:"\t%g");
+}
+
