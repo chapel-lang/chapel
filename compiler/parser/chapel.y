@@ -1178,6 +1178,8 @@ non_tuple_lvalue:
 | memberaccess_expr
 | TLSBR nonempty_expr_ls TRSBR
     { $$ = new CallExpr("_build_domain", $2); }
+| TLSBR nonempty_expr_ls TRP
+    { $$ = new CallExpr("_build_domain_exclusive_upper", $2); }
 ;
 
 

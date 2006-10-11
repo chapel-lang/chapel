@@ -136,6 +136,9 @@ class _domain {
     return _domain(x.type, _index_type, rank, x);
   }
 
+  def _exclusive_upper
+    return _domain(_domain_type, _index_type, rank, _value._exclusive_upper);
+
   def add(i) {
     _value.add(i);
   }
@@ -197,6 +200,9 @@ def _build_domain(ranges : _aseq ...?rank) {
   var x = _adomain(rank, t, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
 }
+
+def _build_domain_exclusive_upper(x...?rank)
+  return _build_domain((...x))._exclusive_upper;
 
 def _build_domain_type(param rank : int, type dimensional_index_type = int) {
   var x = _adomain(rank, dimensional_index_type);
@@ -264,6 +270,16 @@ class _adomain {
   param rank : int;
   type dim_type;
   var ranges : rank*_aseq(dim_type);
+
+  def _exclusive_upper {
+    var x = _adomain(rank, dim_type);
+    for param i in 1..rank {
+      if ranges(i)._stride != 1 then
+        halt("syntax [domain-specification) requires a stride of one");
+      x.ranges(i) = ranges(i)._low..ranges(i)._high-1;
+    }
+    return x;
+  }
 
   def getHeadCursor() {
     var c : rank*dim_type;
