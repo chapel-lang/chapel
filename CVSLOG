@@ -79751,3 +79751,14 @@ Log message:
 Removed files:
 	chapel/test/types/complex/bradc/: negateimaginary.future 
 
+---------------------------------------------------------------------------
+
+10/11/06 10:09:09 -- deitz
+
+Log message:
+	Added sequence 1..10 by -2 by -2 test case that I meant to checkin
+	yesterday with the related fix.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_aseq4.good test_aseq4.chpl 
+
