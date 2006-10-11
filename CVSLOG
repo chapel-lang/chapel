@@ -79762,3 +79762,30 @@ Log message:
 Added files:
 	chapel/test/types/seq/deitz/: test_aseq4.good test_aseq4.chpl 
 
+---------------------------------------------------------------------------
+
+10/11/06 10:35:49 -- deitz
+
+Log message:
+	Added distributed syntax as in
+	
+	  var d: domain(expression-list) distributed(expression)
+	
+	The distributed expression is ignored.
+	
+	Made domain literals parse if followed by a method on that domain
+	literal.
+	
+	Added
+	
+	  def domain.size return /* the size of the domain */;
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_parse_distributed.chpl 
+	                           test_parse_distributed.good 
+	chapel/test/domains/deitz/: test_domain_size.chpl 
+	                            test_domain_size.good 
+
