@@ -80006,3 +80006,22 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/11/06 16:42:35 -- bradc
+
+Log message:
+	This is currently the highest priority for HPCC FFT
+	and represents a compiler regression that's come up
+	in the past few days.  From the future file:
+	
+	The new "snapping" by operator seems to be implemented
+	incorrectly -- in particular, lo bounds must be snapped
+	up and high bounds down.  In this case, a high bound
+	is shown to snap up, causing a degenerate range to
+	become non-empty.  See ZPL's implementation for a reference.
+
+Added files:
+	chapel/test/types/seq/bradc/: degenseq.chpl degenseq.future 
+	                              degenseq.good 
+
