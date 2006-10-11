@@ -79872,3 +79872,20 @@ Added files:
 	chapel/test/domains/deitz/: test_mismatched_brackets.chpl 
 	                            test_mismatched_brackets.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 13:54:40 -- bradc
+
+Log message:
+	This is high priority for HPCC FFT -- either by
+	fixing it or suggesting a clean workaround.n
+	
+	This future test shows that assigning an array
+	the negation of its imaginary component does
+	not currently work.
+
+Added files:
+	chapel/test/types/complex/bradc/: negateimaginary2.chpl 
+	                                  negateimaginary2.future 
+	                                  negateimaginary2.good 
+
