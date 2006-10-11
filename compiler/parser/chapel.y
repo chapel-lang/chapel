@@ -215,7 +215,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmt> when_stmt
 %type <pblockstmt> when_stmt_ls
 
-%type <pexpr> opt_type opt_formal_type
+%type <pexpr> opt_type opt_formal_type array_type opt_elt_type
 %type <pexpr> type anon_record_type tuple_type type_binding_expr
 %type <pexpr> composable_type variable_type parenop_type memberaccess_type
 %type <ptype> class_tag
@@ -992,6 +992,28 @@ distributed_expr: /* not supported in one-locale implementation */
 ;
 
 
+opt_elt_type:
+  /* nothing */
+    { $$ = NULL; }
+| type
+    { $$ = $1; }
+;
+
+
+array_type:
+  TLSBR nonempty_expr_ls TRSBR opt_elt_type
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR type
+{ 
+  CallExpr *dom = new CallExpr("_build_domain", $4->copy());
+  $$ = new CallExpr("_build_array_type", dom, $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), new CallExpr("_build_forall_init_dom", $4))); }
+| TLSBR TRSBR opt_elt_type
+    { $$ = new CallExpr("_build_array_type", gNil, $3); }
+| TLSBR TQUESTION identifier TRSBR opt_elt_type
+    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
+;
+
+
 type:
   composable_type %prec TSTARTUPLE
 | anon_record_type
@@ -1000,16 +1022,7 @@ type:
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | composable_type TSTAR type %prec TSTAR  
     { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
-| TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR type
-{ 
-  CallExpr *dom = new CallExpr("_build_domain", $4->copy());
-  $$ = new CallExpr("_build_array_type", dom, $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), new CallExpr("_build_forall_init_dom", $4))); }
-| TLSBR TRSBR type
-    { $$ = new CallExpr("_build_array_type", gNil, $3); }
-| TLSBR TQUESTION identifier TRSBR type
-    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
+| array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
     { $$ = new CallExpr("_build_domain_type", $3); }
 | TDOMAIN

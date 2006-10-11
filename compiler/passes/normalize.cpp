@@ -1527,10 +1527,17 @@ static void fixup_array_formals(FnSymbol* fn) {
       if (call->isNamed("_build_array_type")) {
         SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
         DefExpr* def = dynamic_cast<DefExpr*>(call->get(1));
-        if (def || (sym && sym->var == gNil)) {
-          DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
-          if (!parent || !dynamic_cast<ArgSymbol*>(parent->sym) || parent->exprType != call)
-            USR_FATAL(call, "Array with empty or queried domain can only be used as a formal argument type");
+        DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
+        if (call->argList->length() == 1)
+          if (!parent || !dynamic_cast<ArgSymbol*>(parent->sym) ||
+              parent->exprType != call)
+            USR_FATAL(call, "array without element type can only "
+                      "be used as a formal argument type");
+        if (def || (sym && sym->var == gNil) || call->argList->length() == 1) {
+          if (!parent || !dynamic_cast<ArgSymbol*>(parent->sym)
+              || parent->exprType != call)
+            USR_FATAL(call, "array with empty or queried domain can "
+                      "only be used as a formal argument type");
           parent->exprType->replace(new SymExpr(chpl_array));
           if (!fn->where) {
             fn->where = new BlockStmt(new ExprStmt(new SymExpr(gTrue)));
@@ -1538,7 +1545,10 @@ static void fixup_array_formals(FnSymbol* fn) {
           }
           ExprStmt* stmt = dynamic_cast<ExprStmt*>(fn->where->body->only());
           Expr* expr = stmt->expr;
-          expr->replace(new CallExpr("&&", expr->copy(), new CallExpr("==", call->get(2)->remove(), new CallExpr(".", parent->sym, new_StringSymbol("elt_type")))));
+          if (call->argList->length() == 2)
+            expr->replace(new CallExpr("&&", expr->copy(),
+                            new CallExpr("==", call->get(2)->remove(),
+                              new CallExpr(".", parent->sym, new_StringSymbol("elt_type")))));
           if (def) {
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
@@ -1546,8 +1556,25 @@ static void fixup_array_formals(FnSymbol* fn) {
                   sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("dom")));
               }
             }
+          } else if (!sym || sym->var != gNil) {
+            VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
+            forv_Vec(BaseAST, ast, asts) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+                if (sym->var == parent->sym)
+                  sym->var = tmp;
+              }
+            }
+            fn->insertAtHead(new CondStmt(
+                               new SymExpr(parent->sym),
+                                 new ExprStmt(
+                                   new CallExpr(PRIMITIVE_MOVE, tmp,
+                                     new CallExpr(new CallExpr(".", parent->sym,
+                                                               new_StringSymbol("view")),
+                                                  call->get(1)->copy())))));
+            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
+            fn->insertAtHead(new DefExpr(tmp));
           }
-        } else {
+        } else {  //// DUPLICATED CODE ABOVE AND BELOW
           DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
           if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
             VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
@@ -1557,7 +1584,13 @@ static void fixup_array_formals(FnSymbol* fn) {
                   sym->var = tmp;
               }
             }
-            fn->insertAtHead(new CondStmt(new SymExpr(parent->sym), new ExprStmt(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(new CallExpr(".", parent->sym, new_StringSymbol("view")), call->get(1)->copy())))));
+            fn->insertAtHead(new CondStmt(
+                               new SymExpr(parent->sym),
+                               new ExprStmt(
+                                 new CallExpr(PRIMITIVE_MOVE, tmp,
+                                   new CallExpr(new CallExpr(".", parent->sym,
+                                                             new_StringSymbol("view")),
+                                                call->get(1)->copy())))));
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
