@@ -79803,3 +79803,23 @@ Modified files:
 	chapel/test/domains/deitz/: test_domain_size.chpl 
 	                            test_domain_size.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 10:54:38 -- deitz
+
+Log message:
+	Made culling of over references more aggressive.  This aggressiveness
+	is necessary for correctness.  Note that aggressiveness is not typical
+	of compilers where correctness often leads to conservativeness and/or
+	reservedness.
+	
+	Removed a .future.
+	
+	Note: this also fixes test/studies/hpcc/STREAMS/waynew/stream2 which
+	has a .notest attached to it.
+
+Modified files:
+	chapel/compiler/passes/: cullOverReferences.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: test_timer2.future 
+
