@@ -79845,3 +79845,30 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/11/06 11:50:36 -- deitz
+
+Log message:
+	Added support for domain literals of the form
+	
+	  [domain-specification)
+	
+	where the upper bound is treated exclusively in the arithmetic domain
+	case so, for example, [1..10, 1..10) is equivalent to [1..9, 1..9].
+	
+	A runtime error occurs if the stride of the arithmetic domain is not 1
+	because I didn't know what to do otherwise.
+	
+	A compiler error occurs if the domain is not arithmetic.  The error
+	message is not very good.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/domains/deitz/: test_mismatched_brackets.chpl 
+	                            test_mismatched_brackets.good 
+
