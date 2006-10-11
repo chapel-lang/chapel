@@ -104,6 +104,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TCONSTRUCTOR
 %token TCONTINUE
 %token TDEF
+%token TDISTRIBUTED
 %token TDO
 %token TDOMAIN
 %token TENUM
@@ -221,7 +222,7 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
-%type <pexpr> literal seq_expr where
+%type <pexpr> literal seq_expr where distributed_expr
 %type <pexpr> variable_expr top_level_expr
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls
@@ -981,6 +982,16 @@ composable_type:
 ;
 
 
+distributed_expr: /* not supported in one-locale implementation */
+  /* nothing */
+    { $$ = NULL; }
+| TDISTRIBUTED
+    { $$ = NULL; }
+| TDISTRIBUTED TLP expr TRP
+    { $$ = NULL; }
+;
+
+
 type:
   composable_type %prec TSTARTUPLE
 | anon_record_type
@@ -999,11 +1010,11 @@ type:
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
 | TLSBR TQUESTION identifier TRSBR type
     { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
-| TDOMAIN TLP expr_ls TRP
+| TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
     { $$ = new CallExpr("_build_domain_type", $3); }
 | TDOMAIN
     { $$ = new SymExpr("_domain"); }
-| TSPARSE TDOMAIN TLP expr_ls TRP
+| TSPARSE TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
     { $$ = new CallExpr("_build_sparse_domain_type", $4); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
@@ -1165,6 +1176,8 @@ non_tuple_lvalue:
 | variable_expr
 | parenop_expr
 | memberaccess_expr
+| TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("_build_domain", $2); }
 ;
 
 
@@ -1208,8 +1221,6 @@ expr:
       forall_iterator->insertAtTail(build_for_expr(exprsToIndices($2), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
-| TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_build_domain", $2); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE

@@ -48,6 +48,7 @@ const           processToken(TCONST);
 constructor     processToken(TCONSTRUCTOR);
 continue        processToken(TCONTINUE);
 def             processToken(TDEF);
+distributed     processToken(TDISTRIBUTED);
 do              processToken(TDO);
 domain          processToken(TDOMAIN);
 else            processToken(TELSE);

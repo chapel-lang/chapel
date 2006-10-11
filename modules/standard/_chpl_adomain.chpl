@@ -142,6 +142,8 @@ class _domain {
     _value.remove(i);
   }
 
+  def size return _value.size;
+
   def member?(i) {
     return _value.member?(i);
   }
@@ -293,6 +295,14 @@ class _adomain {
 
   def this(dim : int)
     return ranges(dim);
+
+  def size {
+    var sum = 1;
+    for param i in 1..rank do
+      sum *= ranges(i).length;
+    return sum;
+    // WANT: return * reduce (this(1..rank).length);
+  }
 
   def _build_array(type elt_type)
     return _aarray(elt_type, rank, dim_type, dom=this);
