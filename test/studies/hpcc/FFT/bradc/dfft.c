@@ -29,6 +29,16 @@ void resetA(double* a) {
 }
 
 
+void writeA(double* a) {
+  printf("a[] =");
+  for (int i=0; i<N2; i++) {
+    printf(" %g", a[i]);
+  }
+  printf("\n");
+}
+
+
+
 void btrfly(int j, double wk1r, double wk1i, double wk2r, double wk2i, double wk3r, double wk3i, double* a, double* b, double* c, double* d)
 { double x0r = a[j    ] + b[j    ];
   double x0i = a[j + 1] + b[j + 1];
@@ -60,6 +70,9 @@ void btrfly(int j, double wk1r, double wk1i, double wk2r, double wk2i, double wk
   x0i = x1i - x3r;
   d[j    ] = wk3r * x0r - wk3i * x0i;
   d[j + 1] = wk3r * x0i + wk3i * x0r;
+
+  printf("    a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n\n", 
+         a[j], a[j+1], b[j], b[j+1], c[j], c[j+1], d[j], d[j+1]);
 }
 
 void BitMatPrint(unsigned long long x) {
@@ -260,6 +273,8 @@ void cftmd0(int n, int l, double *a, double *w)
   double *b = a + l;
   double *c = a + l + l;
   double *d = a + l + l + l;
+
+  writeA(a);
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
@@ -514,12 +529,14 @@ int main(int argc, char *argv[])
   //  for (i = 1; i < N2; i += 2) a[i] = -a[i];
 
   a = bit_reverse(N, a);
-  /*  printf("a[] =");
+  /*
+  printf("a[] =");
   for (i=0; i<N2; i++) {
     printf(" %g", a[i]);
   }
   printf("\n");
   */
+  writeA(a);
   dfft(N2, logN, a, w);
   exit(0);
 }

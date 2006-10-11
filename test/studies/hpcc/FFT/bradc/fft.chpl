@@ -1,8 +1,10 @@
 use Random;
 use Timers;
 
-config var logN = 5;
-config var debug = false;
+// BLC: clean up complex arithmetic
+
+config const logN = 5;
+config const debug = false;
 
 // BLC: This call needs to go away
 def resetA(A: [?D] complex) {
@@ -13,6 +15,14 @@ def resetA(A: [?D] complex) {
   }
   */
 }
+
+def writeA(A) {
+  write("a[] =");
+  for i in A.domain do write(A(i):" %g %g");
+  writeln();
+}
+
+
 
 
 def main() {
@@ -43,24 +53,28 @@ def main() {
 
   A.imag = -A.imag;            // conjugate data
 
+  var fftTimer: Timer;
+  fftTimer.start();
+
   A = bitReverse(A);
 
   // BLC: This line needs to go away
   resetA(A);
+
+  writeA(A);
+
+  // BLC: Why was John timing the second version?
   dfft(A, W);
+  fftTimer.stop();
 
   halt();
 
   A.real =  A.real / N;        // conjugate and scale data
   A.imag = -A.imag / N;
 
-  var fftTimer: Timer;
-  fftTimer.start();
-
   A = bitReverse(A);
   dfft(A, W);
 
-  fftTimer.stop();
   var time = fftTimer.value;
 
   var maxerr = max reduce sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
@@ -93,15 +107,24 @@ def twiddles(W: [?WD] complex) {
 }
 
 
+// Check what the NSA supports for bit reversal
+// rename this?
 def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
   const n = WD(1).length;
   const reverse = lg(n);
   var V: [WD] complex;
-  forall i in WD {
+  /* BLC: could we do this as a permutation instead?
+  var P: [i in WD] index(WD) = i;
+  bitReverse(P);
+  V(P) = W;
+  */
+  forall i in WD {  // BLC: could this be a uint domain?
     // BLC: what does this bitReverse function do with high-order bits?
+    // BLC: could this be rewritten as one line?
     var ndx = bitReverse(i:uint(64), numBits=reverse);
     V(ndx:int) = W(i); // BLC: unfortunate cast
   }
+  // BLC: W = V would be preferable
   return V;
 }
 
@@ -167,7 +190,7 @@ def cft1st(A, W) {
   x3 = A(6) - A(7);
   A(4) = x0 + x2;
   A(6) = (x2.imag - x0.imag, x0.real - x2.real):complex;
-  x0 = (x0.real - x3.imag, x1.imag + x3.real):complex;
+  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
   A(5) = wk1r * (x0.real - x0.imag, x0.real + x0.imag):complex;
   x0 = (x3.imag + x1.real, x3.real - x1.imag):complex;
   A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
@@ -201,6 +224,8 @@ def cftmd0(l, A, W) {
   var wk1r = W(1).real;
   const m = l << 2;
 
+  writeA(A);
+  
   forall j in 0..l-1 {
     resetA(A);
     butterfly(1.0, 1.0, 1.0, A(j), A(j+l), A(j+2*l), A(j+3*l));
@@ -342,4 +367,5 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   b = wk1 * x0;
   x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
   d = wk3 * x0;
+  writeln("    a=", a:"{%g,%g}", ", b=", b:"{%g,%g}", ", c=", c:"{%g,%g}", ", d=", d:"{%g,%g}\n");
 }
