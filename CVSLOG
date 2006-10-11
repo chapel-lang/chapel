@@ -79948,3 +79948,33 @@ Added files:
 	chapel/test/arrays/deitz/: test_no_elt_type.chpl 
 	                           test_no_elt_type.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 15:14:58 -- bradc
+
+Log message:
+	Adding a test that shows if you don't overload division
+	on (complex,float), you get problems with -0.0 values.
+	
+	Tried to fix this by adding the following routine to
+	_chpl_complex.chpl:
+	
+	pragma "inline" def /(a: complex(?w), b: float(?w2))
+	  return (a.real/b, a.imag/b): complex;
+	
+	but it causes a seg fault.  Some other variations that I
+	tried caused ambiguities in which it seemed that casting
+	to a complex or a larger float were equally viable.
+	
+	The following worked, but did not seem general enough:
+	
+	pragma "inline" def /(a: complex(?w), b: float)
+	  return (a.real/b, a.imag/b): complex;
+	
+	Getting this fixed would be nice for HPCC FFT.
+
+Added files:
+	chapel/test/types/complex/bradc/: negateimaginary3.chpl 
+	                                  negateimaginary3.future 
+	                                  negateimaginary3.good 
+
