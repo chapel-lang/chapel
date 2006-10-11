@@ -79925,3 +79925,26 @@ Modified files:
 Removed files:
 	chapel/test/studies/blas/marybeth/: saxpy1.future 
 
+---------------------------------------------------------------------------
+
+10/11/06 15:14:48 -- deitz
+
+Log message:
+	Made it so that the element type of a formal argument's array type can
+	be elided as in
+	
+	  def foo(A: [?D]) { ... }
+	  def foo(A: []) { ... }
+	  def foo(A: [2..5]) { ... }
+	
+	Updated an error message to a test that tried to elide the element
+	type from an array declared not as a formal argument type.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/arrays/bradc/: noelemtype.good 
+Added files:
+	chapel/test/arrays/deitz/: test_no_elt_type.chpl 
+	                           test_no_elt_type.good 
+
