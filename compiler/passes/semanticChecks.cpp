@@ -199,6 +199,8 @@ check_resolved_syms(Symbol* var) {
   if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var))
     if (vs->immediate)
       return;
+  if (dynamic_cast<ArgSymbol*>(var) && var->type->symbol->hasPragma("array"))
+    return;
   int num_moves = 0;
   CallExpr* move = 0;
   forv_Vec(SymExpr*, sym, var->uses) {

@@ -1,4 +1,0 @@
-deitz
-
-Array assignment within a function fails when assigning to arrays passed to
-that function.

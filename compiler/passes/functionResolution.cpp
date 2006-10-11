@@ -1118,7 +1118,16 @@ resolveCall(CallExpr* call) {
     Type* t= call->get(1)->typeInfo();
     if (t == dtUnknown)
       INT_FATAL(call, "Unable to resolve type");
-    call->get(1)->replace(new SymExpr(t->symbol));
+    if (t->scalarPromotionType) {
+      // ignore for now to handle translation of A op= B of arrays
+      // should be an error in general
+      //   can't cast to an array type or a sequence type, ...
+      Expr* castee = call->get(2);
+      castee->remove();
+      call->replace(castee);
+    } else {
+      call->get(1)->replace(new SymExpr(t->symbol));
+    }
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
     if (!sym)
