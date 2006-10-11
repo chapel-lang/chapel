@@ -79994,3 +79994,15 @@ Added files:
 	                                  negativeimaginaryliteral.future 
 	                                  negativeimaginaryliteral.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 15:28:09 -- bradc
+
+Log message:
+	Cleaned up the debug printing a bit and worked around
+	inability to do whole-array assignment on the real/imaginary
+	components of a complex array (e.g., A.real = ... or A.imag = ...)
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
