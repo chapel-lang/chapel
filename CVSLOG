@@ -79978,3 +79978,19 @@ Added files:
 	                                  negateimaginary3.future 
 	                                  negateimaginary3.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 15:17:03 -- bradc
+
+Log message:
+	This is a much lower-priority future showing that
+	-0.0i imaginary literals don't seem to get preserved.
+	Not necessary to get right soon, just ran into it
+	along the way and was thrown off by it for quite some
+	time.
+
+Added files:
+	chapel/test/types/complex/bradc/: negativeimaginaryliteral.chpl 
+	                                  negativeimaginaryliteral.future 
+	                                  negativeimaginaryliteral.good 
+
