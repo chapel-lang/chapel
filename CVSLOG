@@ -79789,3 +79789,17 @@ Added files:
 	chapel/test/domains/deitz/: test_domain_size.chpl 
 	                            test_domain_size.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 10:54:12 -- deitz
+
+Log message:
+	Renamed domain.size to domain.numIndices.  Added convenience method
+	array.numElements.  These are not implemented over indefinite domains
+	and arrays.  Updated a test case.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/domains/deitz/: test_domain_size.chpl 
+	                            test_domain_size.good 
+
