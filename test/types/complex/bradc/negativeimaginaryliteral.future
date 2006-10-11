@@ -1,0 +1,4 @@
+imaginary literals
+
+It seems that a -0.0i literal doesn't have its
+sign preserved.
