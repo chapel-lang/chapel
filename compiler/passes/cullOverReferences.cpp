@@ -60,6 +60,14 @@ void cullOverReferences() {
               if (isReferenced(sym))
                 refCount++;
             }
+            if (FnSymbol* fn = def->getFunction()) {
+              if (ReturnStmt* stmt = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
+                if (SymExpr* expr = dynamic_cast<SymExpr*>(stmt->expr)) {
+                  if (expr->var == var && !fn->retRef)
+                    writeCount = refCount = 0;
+                }
+              }
+            }
             if (refCount == 0 && writeCount == 0) {
               change = true;
               var->isReference = false;
