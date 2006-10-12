@@ -34,7 +34,7 @@ def main() {
   timer.stop();
 
   if (verify) then verifyResults();
-  if (printTiming) then writeln("Elapsed time = ", timer.value, " seconds");
+  if (printTiming) then writeln("Elapsed time = ", timer.elapsed(), " seconds");
 }
 
 

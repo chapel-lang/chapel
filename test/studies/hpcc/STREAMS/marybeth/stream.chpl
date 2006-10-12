@@ -57,9 +57,9 @@ def main() {
 
   clock.start();
   for k in iterDomain {
-    time(k) = clock.value;
+    time(k) = clock.elapsed();
     A = B + scalar * C;
-    time(k) = clock.value - time(k);
+    time(k) = clock.elapsed() - time(k);
   }
   clock.stop();
 

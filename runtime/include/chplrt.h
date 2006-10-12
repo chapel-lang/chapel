@@ -1,7 +1,6 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
-// adapted from ZPL
 #define _timervalue struct timeval
 #define _init_timer(time)
 extern _timervalue* _now_timer_help(_timervalue* time);
@@ -11,7 +10,8 @@ extern _timervalue _default_timer; // hack as a default value
 #define _diff_timer(time2,time) \
         ((_float64) (((time2).tv_sec*1e+6+(time2).tv_usec) -\
                      ((time).tv_sec*1e+6+(time).tv_usec)) / 1e+6)
-
+#define _seconds_timer(time) ((_float64)((time).tv_sec))
+#define _microseconds_timer(time) ((_float64)((time).tv_usec))
 
 #define array_get(x, i) (&((x)->_data[i]))
 #define array_set(x, i, v) ((x)->_data[i] = v)

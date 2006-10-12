@@ -332,5 +332,6 @@ initPrimitive() {
 
   prim_def("_init_timer", returnInfoVoid);
   prim_def("_now_timer", returnInfoTimer);
-  prim_def("_diff_timer", returnInfoFloat);
+  prim_def("_seconds_timer", returnInfoFloat);
+  prim_def("_microseconds_timer", returnInfoFloat);
 }

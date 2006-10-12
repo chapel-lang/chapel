@@ -89,7 +89,7 @@ def main() {
   dfft(A, W);
   if debug then writeA(A);
 
-  var time = fftTimer.value;
+  var time = fftTimer.elapsed();
 
   if debug then {
     var C: [D] float = sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);

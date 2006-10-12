@@ -43,7 +43,7 @@ def main() {
 
   t.stop();
 
-  RealTime = t.value;
+  RealTime = t.elapsed();
 
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
   GUPs *= 1.0e-9*NumUpdates;
