@@ -80383,3 +80383,13 @@ Added files:
 	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
 	                                               test-Random.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 16:58:26 -- bradc
+
+Log message:
+	Stopping point for today.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
