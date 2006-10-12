@@ -80243,3 +80243,24 @@ Log message:
 Modified files:
 	chapel/test/domains/indefinite/waynew/: indef6.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 14:44:00 -- deitz
+
+Log message:
+	Fixed a uint(64) arithmetic domain bug and a test, and removed a .future.
+	
+	If this test is meant to capture something else (the error message,
+	distributed but infered domain type), check in another modified
+	version.
+	
+	Moved floating point operations out of _chpl_base and into
+	_chpl_complex in expectation of work on this.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_complex.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.chpl 
+Removed files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.future 
+
