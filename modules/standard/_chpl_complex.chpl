@@ -1,9 +1,35 @@
+pragma "inline" def _init(x : float(?w)) return 0:float(w);
+
+// Primitive functions and operators on floats
+pragma "inline" def =(a: float(?w), b: float(w)) return b;
+pragma "inline" def +(a: float(?w)) return __primitive("u+", a);
+pragma "inline" def -(a: float(?w)) return __primitive("u-", a);
+pragma "inline" def +(a: float(?w), b: float(w)) return __primitive("+", a, b);
+pragma "inline" def -(a: float(?w), b: float(w)) return __primitive("-", a, b);
+pragma "inline" def *(a: float(?w), b: float(w)) return __primitive("*", a, b);
+pragma "inline" def /(a: float(?w), b: float(w)) return __primitive("/", a, b);
+pragma "inline" def **(a: float(?w), b: float(w)) return __primitive("**", a, b);
+pragma "inline" def ==(a: float(?w), b: float(w)) return __primitive("==", a, b);
+pragma "inline" def !=(a: float(?w), b: float(w)) return __primitive("!=", a, b);
+pragma "inline" def <=(a: float(?w), b: float(w)) return __primitive("<=", a, b);
+pragma "inline" def >=(a: float(?w), b: float(w)) return __primitive(">=", a, b);
+pragma "inline" def <(a: float(?w), b: float(w)) return __primitive("<", a, b);
+pragma "inline" def >(a: float(?w), b: float(w)) return __primitive(">", a, b);
+pragma "inline" def !(a: float(?w)) return __primitive("!", a);
+pragma "inline" def &&(a: float(?w), b: float(w)) return __primitive("&&", a, b);
+pragma "inline" def ||(a: float(?w), b: float(w)) return __primitive("||", a, b);
+pragma "inline" def bits(type t) where t == float(32)  return 32;
+pragma "inline" def bits(type t) where t == float(64)  return 64;
+pragma "inline" def bits(type t) where t == float(128) return 128;
+
 pragma "inline" def _init(x: complex(?w)) return 0.0i:complex(w);
 
 def complex.real return __primitive( "complex_get_real", this);
 def complex.imag return __primitive( "complex_get_imag", this);
-def complex.=real (f:float) { __primitive( "complex_set_real", this, f); }
-def complex.=imag (f:float) { __primitive( "complex_set_imag", this, f); }
+
+// bug note: float should be parameterized over complex bit width
+def complex.=real(f:float) { __primitive( "complex_set_real", this, f); }
+def complex.=imag(f:float) { __primitive( "complex_set_imag", this, f); }
 
 def =(a: complex(?w), b: complex(w)) return b;
 
@@ -33,7 +59,8 @@ pragma "inline" def bits(type t) where t == complex(64)  return 64;
 pragma "inline" def bits(type t) where t == complex(128) return 128;
 pragma "inline" def bits(type t) where t == complex(256) return 256;
 
-pragma "inline"
-def _tostring(x: complex, format: string) : string {
+pragma "inline" def _tostring(x: complex, format: string)
   return __primitive("to_string", format, x);
-}
+
+pragma "inline" def _tostring(x : float, format : string)
+  return __primitive("to_string", format, x);

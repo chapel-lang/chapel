@@ -1,8 +1,0 @@
-hpcc
-
-This test fails with this error:
-
-ra-test-dist.chpl:2: error: type mismatch in assignment from domain(1,uint(64)) to domain(1,int)
-
-Adding the distributed syntax somehow made the domain an integer domain rather
-than inferring that it's a uint(64) domain from the assignment.

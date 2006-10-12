@@ -130,28 +130,6 @@ pragma "inline" def bits(type t) where t == uint(32) return 32;
 pragma "inline" def bits(type t) where t == uint(64) return 64;
 
 
-// Primitive functions and operators on floats
-pragma "inline" def =(a: float(?w), b: float(w)) return b;
-pragma "inline" def +(a: float(?w)) return __primitive("u+", a);
-pragma "inline" def -(a: float(?w)) return __primitive("u-", a);
-pragma "inline" def +(a: float(?w), b: float(w)) return __primitive("+", a, b);
-pragma "inline" def -(a: float(?w), b: float(w)) return __primitive("-", a, b);
-pragma "inline" def *(a: float(?w), b: float(w)) return __primitive("*", a, b);
-pragma "inline" def /(a: float(?w), b: float(w)) return __primitive("/", a, b);
-pragma "inline" def **(a: float(?w), b: float(w)) return __primitive("**", a, b);
-pragma "inline" def ==(a: float(?w), b: float(w)) return __primitive("==", a, b);
-pragma "inline" def !=(a: float(?w), b: float(w)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: float(?w), b: float(w)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: float(?w), b: float(w)) return __primitive(">=", a, b);
-pragma "inline" def <(a: float(?w), b: float(w)) return __primitive("<", a, b);
-pragma "inline" def >(a: float(?w), b: float(w)) return __primitive(">", a, b);
-pragma "inline" def !(a: float(?w)) return __primitive("!", a);
-pragma "inline" def &&(a: float(?w), b: float(w)) return __primitive("&&", a, b);
-pragma "inline" def ||(a: float(?w), b: float(w)) return __primitive("||", a, b);
-pragma "inline" def bits(type t) where t == float(32)  return 32;
-pragma "inline" def bits(type t) where t == float(64)  return 64;
-pragma "inline" def bits(type t) where t == float(128) return 128;
-
 // Primitive functions and operators on string
 pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
 pragma "inline" def ==(a: string, b: string) return __primitive("string_equal", a, b);
@@ -167,9 +145,6 @@ pragma "inline" def _tostring(x : bool, format : string)
   return __primitive("to_string", format, x);
 
 pragma "inline" def _tostring(x : int, format : string)
-  return __primitive("to_string", format, x);
-
-pragma "inline" def _tostring(x : float, format : string)
   return __primitive("to_string", format, x);
 
 pragma "inline" def ascii(a: string) return __primitive("ascii", a);
@@ -190,7 +165,6 @@ pragma "inline" def _copy(a) return a;
 pragma "inline" def _init(x : bool) return false;
 pragma "inline" def _init(x : int(?w)) return 0:int(w);
 pragma "inline" def _init(x : uint(?w)) return 0:uint(w);
-pragma "inline" def _init(x : float(?w)) return 0:float(w);
 pragma "inline" def _init(x : string) return "";
 pragma "inline" def _init(x) return nil:x;
 

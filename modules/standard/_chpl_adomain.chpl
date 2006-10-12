@@ -599,12 +599,15 @@ def fwrite(f : file, x : _aarray) {
 def _intersect(a: _aseq, b: _aseq) {
   var g, x: int;
   (g, x) = _extended_euclid(a._stride, b._stride);
-  if abs(a._low - b._low) % g != 0 then
+  var gg = g:a.elt_type;
+  var xx = x:a.elt_type;
+  var as = (a._stride):a.elt_type;
+  if abs(a._low - b._low) % gg != 0 then
     return 1..0:a.elt_type;
   var low = max(a._low, b._low);
   var high = min(a._high, b._high);
   var stride = a._stride * b._stride / g;
-  var alignment = (a._low + (b._low - a._low) * x * a._stride / g):a.elt_type;
+  var alignment = a._low + (b._low - a._low) * xx * as / gg;
   if alignment == 0 then
     alignment = stride:a.elt_type;
   low = low + low % alignment;
