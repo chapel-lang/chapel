@@ -80173,3 +80173,15 @@ Added files:
 Removed files:
 	chapel/modules/standard/: Timers.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 13:37:21 -- marybeth
+
+Log message:
+	Turned off printing of timing results of stream benchmark.  Now, nightly
+	tests won't fail.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+
