@@ -1,4 +1,4 @@
-use Timers;
+use Time;
 use Random;
 
 // constants related to memory

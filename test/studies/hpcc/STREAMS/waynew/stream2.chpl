@@ -1,4 +1,4 @@
-use Timers;
+use Time;
 
 // constants related to memory
 param MB = 1024**2,

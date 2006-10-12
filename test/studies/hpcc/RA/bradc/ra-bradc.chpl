@@ -1,4 +1,4 @@
-use Timers;
+use Time;
 
 param bitsPerByte = 8;
 

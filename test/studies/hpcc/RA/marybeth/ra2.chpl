@@ -29,7 +29,7 @@ var GUPs:float;
 
 def main() {
 
-  use Timers;
+  use Time;
   var t:Timer;
 
   writeRAdata();
