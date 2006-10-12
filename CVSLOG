@@ -80144,3 +80144,32 @@ Added files:
 Removed files:
 	chapel/test/domains/deitz/: test_indefinite_remove.future 
 
+---------------------------------------------------------------------------
+
+10/12/06 12:30:48 -- deitz
+
+Log message:
+	Added new module Types and added a function numBits that works on
+	types to this module.  It is copied from the bits function, but the
+	bits function is not removed in this checkin.
+	
+	Added new module BitOps which is empty.
+	
+	Renamed module Timers to Time in expectation of adding more
+	functionality.
+	
+	Updated some tests.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra3.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+	chapel/test/trivial/deitz/: test_timer1.chpl test_timer2.chpl 
+Added files:
+	chapel/modules/standard/: BitOps.chpl Time.chpl Types.chpl 
+Removed files:
+	chapel/modules/standard/: Timers.chpl 
+
