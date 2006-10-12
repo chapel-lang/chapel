@@ -1,7 +1,9 @@
+param _MIN_SIZE = 0;
+param _MAX_SIZE = 26;
+
 var _ps : _ddata(int) = _ddata(int, 27);
 _ps.init();
-
-_ps(0) = 23;
+_ps(_MIN_SIZE) = 23;
 _ps(1) = 53;
 _ps(2) = 97;
 _ps(3) = 193;
@@ -27,98 +29,245 @@ _ps(22) = 100663319;
 _ps(23) = 201326611;
 _ps(24) = 402653189;
 _ps(25) = 805306457;
-_ps(26) = 1610612741;
+_ps(_MAX_SIZE) = 1610612741;
+
+
+
+param _EMPTY   = -1;
+param _DELETED = -2;
+
+
+record _ind_data_t {
+  type itype;
+  var  data: itype;
+  var  valid: bool;
+}
+
 
 class _idomain {
   type ind_type;
   var num_inds: int;
   var size: int = 0;
-  var table: _ddata(int) = _ddata(int, _ps(size));
-  var inds: _ddata(ind_type) = _ddata(ind_type, _ps(size)/2);
+  var table: _ddata(int);
+  var inds: _ddata(_ind_data_t(ind_type));
+  var free_inds: _stack(int);
+  var deleted_seen: int;
+  var is_compact: bool;
+
+
+  // compiler-internal routines
 
   def initialize() {
-    table.init();
+    table  = _ddata(int, _ps(size));
+    table.init( _EMPTY);
+    inds =  _ddata(_ind_data_t(ind_type), _ps(size)/2);
     inds.init();
+    free_inds = _stack(int);
+    deleted_seen = _EMPTY;
+    is_compact = false;
   }
 
-  def getHeadCursor()
+  def getHeadCursor() {
     return 0;
+  }
 
-  def getNextCursor(c)
+  def getNextCursor(c) {
     return c + 1;
+  }
 
-  def getValue(c)
-    return inds(c);
+  def getValue(c) {
+    return inds(c).data;
+  }
 
-  def isValidCursor?(c)
+  def isValidCursor?(c) {
     return c < num_inds;
+  }
+
+
+  // internal routines
+
+  def _half() {
+    if (size > _MIN_SIZE) {
+      var new_len = _ps(size-1);
+      table = _ddata(int, new_len);
+      table.init(_EMPTY);
+
+      var new_inds = _ddata(_ind_data_t(ind_type), new_len/2);
+      new_inds.init();
+      var inds_count = 0;
+      var inds_pos = 0;
+      while inds_count<num_inds {
+        var ind = inds(inds_pos);
+        if (ind.valid) {
+          new_inds(inds_count) = ind;
+          table(_map(ind.data)) = inds_count;
+          inds_count += 1;
+        }
+        inds_pos += 1;
+      }
+      inds = new_inds;
+      size -= 1;
+      free_inds.empty();
+    }
+  }
 
   def _double() {
-    size = size + 1;
-    var inds_copy = _ddata(ind_type, _ps(size)/2);
-    inds_copy.init();
-    for i in 0.._ps(size-1)/2-1 do
-      inds_copy(i) = inds(i);
-    inds = inds_copy;
+    if (size < _MAX_SIZE) {
+      var new_len = _ps(size+1);
 
-    table = _ddata(int, _ps(size));
-    table.init();
-    for i in 0.._ps(size-1)-1 do
-      table(_map(inds(i))) = i+1;
+      table = _ddata(int, new_len);
+      table.init(_EMPTY);
+
+      var new_inds = _ddata(_ind_data_t(ind_type), new_len/2);
+      new_inds.init();
+      var inds_count = 0;
+      for inds_pos in 0..inds.size-1 {
+        var ind = inds(inds_pos);
+        if (ind.valid) {
+          new_inds(inds_count) = ind;
+          table(_map(ind.data)) = inds_count;
+          inds_count += 1;
+        }
+      }
+
+      inds = new_inds;
+      size += 1;
+      free_inds.empty();
+    } else {
+      halt( "cannot double idomain");
+    }
   }
 
   def _map(ind : ind_type) : int {
     var probe = 0;
+    deleted_seen = _EMPTY;
     while true {
-      var i = ((_indefinite_hash(ind) + probe**2) % _ps(size)):int(32);
-      if (table(i) == 0) then
+      var i = ((_indefinite_hash(ind) + probe**2) % table.size):int(32);
+      var table_i = table(i);
+      if table_i==_EMPTY then
         return i;
-      if (inds(table(i)-1) == ind) then
+      else if table_i==_DELETED then
+        deleted_seen = i;                      
+      else if inds(table_i).data==ind then
         return i;
       probe = probe + 1;
     }
-    return -1;
+    halt( "could not map index ", ind);
+    return -1;  // should never get here
   }
 
-  def _get_index(ind : ind_type)
-    return table(_map(ind)) - 1;
+  def _get_index(ind : ind_type) {
+    var i = _map(ind);
+    if (i >= 0) then
+      return table(i);
+    else
+      halt( "index not found: ", ind);
+  }
+
+  def _build_array(type elt_type) {
+    return _iarray(elt_type, ind_type, dom=this); 
+  }
+
+  def _compact() {
+    if (free_inds.length > 0) {
+      var inds_count = 0;
+      var inds_pos = 0;
+      while inds_count<num_inds {
+        var ind = inds(inds_pos);
+        if (ind.valid) {
+          inds(inds_count) = ind;
+          var i = _map(ind.data);
+          if deleted_seen>0 then
+            table(deleted_seen) = inds_count;
+          else 
+            table(i) = inds_count;
+          inds_count += 1;
+        }
+        inds_pos += 1;
+      }
+    }
+    free_inds.empty();
+    is_compact = true;
+  }
+
+  // public routines
 
   def add(ind : ind_type) {
-    if (table(_map(ind)) == 0) {
+    var hash = _map(ind);
+    var ind_pos = table(hash);
+    if (ind_pos==_EMPTY) {
+      if (deleted_seen > 0) then
+        hash = deleted_seen;
+
+      if (free_inds.length > 0) {      // reduce, reuse, recycle
+        ind_pos = free_inds.pop();            
+      } else {
+        if (num_inds == inds.size) {
+          _double();
+        }
+        ind_pos = num_inds;
+        hash = _map(ind);
+      }
+      table(hash) = ind_pos;
+      inds(ind_pos).data = ind;       // WAW: fixme w/ anon record literal
+      inds(ind_pos).valid = true;
       num_inds += 1;
-      if (num_inds == _ps(size)/2) then
-        _double();
-      table(_map(ind)) = num_inds;
-      inds(num_inds-1) = ind;
-    }
+    } // else, already in domain
   }
 
   def remove( ind: ind_type) {
     var ind_pos = _map(ind);
-    if (table(ind_pos) != 0) {
-      var tsize = _ps(size);
-      [j in table(ind_pos)-1..tsize/2-2] inds(j) = inds(j+1); 
-      [j in 0..tsize] table(j) = 0;
+    var table_i = table(ind_pos);
+    if (table_i!=_EMPTY && table_i!=_DELETED) {
+      is_compact = false;
+      inds(table_i).valid = false;
       num_inds -= 1;
-      [j in 0..num_inds-1] table( _map(inds(j))) = j+1;
+      free_inds.push( table_i);
+      table(ind_pos) = _DELETED;
     }
+
+    if (size > _MIN_SIZE) then
+      if (num_inds < _ps(size-1)/2) then  // downsize?
+        _half();
   }
+
 
   def member?( ind: ind_type) {
-    return (table(_map(ind)) != 0);
+    var ind_pos = table(_map(ind));
+    return (ind_pos!=_EMPTY && ind_pos!=_DELETED);
   }
 
-  def _build_array(type elt_type)
-    return _iarray(elt_type, ind_type, dom=this);
+  def numIndices {
+    return num_inds:uint(64);
+  }
+
 }
+
+def fwrite( f : file, d : _idomain) {
+  fwrite( f, "[");
+  var inds_count = 0;
+  var inds_pos = 0;
+  while inds_count<d.num_inds {
+    var ind = d.inds( inds_pos);
+    if (ind.valid) {
+      fwrite( f, ind.data);
+      inds_count += 1;
+      if (inds_count<d.num_inds) then fwrite(f, ", ");
+    }
+    inds_pos += 1;
+  }
+  fwrite(f, "]");
+}
+
 
 class _iarray: _abase {
   type elt_type;
   type ind_type;
   var dom : _idomain(ind_type);
-  var data : _ddata(elt_type) = _ddata(elt_type, 128);
+  var data : _ddata(elt_type);
 
   def initialize() {
+    data = _ddata( elt_type, _ps(0)/2);
     data.init();
   }
 
@@ -136,20 +285,35 @@ class _iarray: _abase {
 
   def isValidCursor?(c)
     return c < dom.num_inds;
+
+  def reallocate(d: _idomain) {
+    if !(d.is_compact) then d._compact();
+    var new_data = _ddata( elt_type, d.inds.size);
+    new_data.init();
+    for i in 0..d.num_inds {
+      var ind = dom.inds(dom.table(dom._map(d.inds(i).data)));
+      if ind.valid {
+        new_data(i) = ind.data;
+      }
+    }
+    data = new_data;
+  }
 }
 
-def fwrite(f : file, x : _idomain) {
-  fwrite(f, "[", x.inds(0));
-  for i in 1..x.num_inds-1 do
-    fwrite(f, ", ", x.inds(i));
-  fwrite(f, "]");
+def fwrite(f : file, ia : _iarray) {
+  var inds_count = 0;
+  var inds_pos = 0;
+  while inds_count<ia.dom.num_inds {
+    var ind = ia.dom.inds(inds_pos);
+    if (ind.valid) {
+      fwrite( f, ia.data(inds_pos));
+      inds_count += 1;
+      if (inds_count < ia.dom.num_inds) then fwrite( f, " ");
+    }
+    inds_pos += 1;
+  }
 }
 
-def fwrite(f : file, x : _iarray) {
-  fwrite(f, x.data(0));
-  for i in 1..x.dom.num_inds-1 do
-    fwrite(f, " ", x.data(i));
-}
 
 // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
 def _gen_key(i: int(64)): int(64) {
