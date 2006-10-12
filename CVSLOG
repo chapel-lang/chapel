@@ -80294,3 +80294,14 @@ Modified files:
 	chapel/runtime/include/: chplrt.h 
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+10/12/06 15:36:14 -- deitz
+
+Log message:
+	Added a test of the getCurrentDate function.
+
+Added files:
+	chapel/test/functions/deitz/Time/: test_getCurrentDate.chpl 
+	                                   test_getCurrentDate.good 
+
