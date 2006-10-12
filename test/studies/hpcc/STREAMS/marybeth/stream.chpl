@@ -1,5 +1,5 @@
 // Modules for timing and random number generator routines
-use Timers;
+use Time;
 use Random;
 
 // constants related to memory
