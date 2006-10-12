@@ -80185,3 +80185,16 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	                                            stream.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 14:02:57 -- marybeth
+
+Log message:
+	Added a test that fails when using the distributed syntax.  The domain's type
+	is no longer being inferred from the initialization assignment.
+
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.chpl 
+	                                       ra-test-dist.future 
+	                                       ra-test-dist.good 
+
