@@ -80343,3 +80343,43 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 16:30:43 -- marybeth
+
+Log message:
+	I cleaned up the Random module:
+	
+	- I added a standalone routine, fillRandom which takes an array and
+	fills it with random numbers.  Optional arguments are seed and arand.
+	I only implemented this for the case where the in/out array is 1D.
+	Note:  to reproduce the same list of random numbers, you must set
+	both seed and arand.
+	
+	- I changed the name of the class to randomStream.
+	
+	- I cleaned up some things in the class routines.  fillRandom is now
+	much, much cleaner since I assumed it was running serially.  It also
+	only works on 1D arrays so far.
+	
+	- If seed and arand aren't set (either when creating a randomStream
+	object or when calling the fillRandom standalone routine), they are
+	set to values involving calls to getCurrentTime.  I set the seed to
+	the current time in microseconds and arand to the current time in
+	seconds + the current time in milliseconds.  The difference in magnitude
+	between seed and arand seems to produce numbers with more randomness in
+	them.  If others have other ideas, please implement them.
+	
+	- The class keeps track of how many random numbers have been generated
+	so far in that stream.  The seed and arand are kept constant.
+	
+	I added a test that tests the standalone routine and fillRandom for an
+	object with constant seeds and arands.  The output will be constant and
+	suitable for a test.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+Added files:
+	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
+	                                               test-Random.good 
+
