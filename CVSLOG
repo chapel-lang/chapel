@@ -80051,3 +80051,32 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.c 
 
+---------------------------------------------------------------------------
+
+10/11/06 18:44:33 -- bradc
+
+Log message:
+	I spoke too soon earlier, having believed that if
+	logN==10 worked other problem sizes would work as
+	well.  Turned out there were still some subtle bugs
+	that only showed up at larger and smaller problem
+	sizes.  I believe things are now working (which is
+	to say, the error keeps pace with John's for
+	logN=3..17 on a ramp of input values and is less
+	than the tolerance for a random input).
+	
+	The bugs that this version fixes are:
+	  - strided degenerate sequences are correct again
+	    (thanks to Steve's fix)
+	  - two loops were strided incorrectly and are now
+	    fixed -- one by m2 rather than 2; the other by
+	    1 rather than 2.
+	  - the code that manually cleans up "odd" problem
+	    sizes is now correct.
+	
+	Now I should be in a position to clean this code up
+	tomorrow.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
