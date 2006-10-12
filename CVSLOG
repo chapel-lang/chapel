@@ -80316,3 +80316,19 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 16:00:19 -- deitz
+
+Log message:
+	Added specification of the Time module.
+	
+	This needs to be reformatted.
+
+Modified files:
+	chapel/spec/: spec.tex 
+Added files:
+	chapel/spec/Standard_Modules/: Time.tex 
+Removed files:
+	chapel/spec/Standard_Modules/: Timers.tex 
+
