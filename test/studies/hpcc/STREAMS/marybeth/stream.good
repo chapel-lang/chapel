@@ -4,8 +4,6 @@ This system uses 8 bytes per 64-bit float.
 Array size (B) = 1048576
 Total memory required (GB) = 0.00292969
 -------------------------------------------------------------
-Function        Rate (GB/s)     Avg time        Min time        Max time
-Triad           0.00100903      0.323409        0.320763        0.331022
 Results Comparison: 
         Expected  : 3.99847
         Observed  : 3.99847

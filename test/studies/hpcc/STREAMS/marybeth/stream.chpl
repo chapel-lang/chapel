@@ -1,4 +1,5 @@
-use Time;
+// Modules for timing and random number generator routines
+use Timers;
 use Random;
 
 // constants related to memory
@@ -28,19 +29,24 @@ config const vectorSize = if flg2 <= maxIntBits2
 // the vectors
 var A, B, C: [1..vectorSize] elemType;
 
-const seed = 333444.0;
+// config constants for output
+config const doIO = true;
+config const showTiming = false;
 
-// config constants for steering the computation
+// config constant for scalar in TRIAD computation
 config const scalar = 3.0;
 
-config const doIO = true;
-
+// config constant for setting the number of times the computation is repeated
 config const numIters = 10;
 const iterDomain = [1..numIters];
+
+// timing array and variables for results
 var time: [iterDomain] float;
 var avgtime, sumtime, mintime, maxtime: float;
 var curGBs: float;
 
+// setting the seed for the random number generator
+const seed = 333444.0;
 
 def main() {
   var clock: Timer;
@@ -59,7 +65,7 @@ def main() {
 
   computeStreamResults();
 
-  if doIO then writeStreamResults();
+  if (showTiming && doIO) then writeStreamResults();
 
   if (checkSTREAMresults() && doIO) then writeln("Solution Failed!");
 }
