@@ -80277,3 +80277,20 @@ Modified files:
 	chapel/modules/standard/: _chpl_indefinite.chpl 
 	chapel/test/domains/indefinite/waynew/: indef6.chpl indef6.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 15:32:21 -- deitz
+
+Log message:
+	Implemented getCurrentTime() and getCurrentDate() as discussed.
+	Interfaces are difficult.  But I think this is good enough for a first
+	pass and for now.  getCurrentTime returns a float that is the number
+	of seconds since Midnight or you can specify what units to use as an
+	argument to the function.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: Time.chpl 
+	chapel/runtime/include/: chplrt.h 
+	chapel/runtime/src/: chpltypes.c 
+
