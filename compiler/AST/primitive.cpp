@@ -334,4 +334,8 @@ initPrimitive() {
   prim_def("_now_timer", returnInfoTimer);
   prim_def("_seconds_timer", returnInfoFloat);
   prim_def("_microseconds_timer", returnInfoFloat);
+  prim_def("_now_year", returnInfoInt32);
+  prim_def("_now_month", returnInfoInt32);
+  prim_def("_now_day", returnInfoInt32);
+  prim_def("_now_time", returnInfoFloat);
 }

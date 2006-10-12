@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/time.h>
+#include <time.h>
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
@@ -343,3 +344,42 @@ _timervalue* _now_timer_help(_timervalue* time) {
   return time;
 }
 _timervalue _default_timer;
+
+_int32 _now_year(void) {
+  struct tm * now;
+  struct timezone tz;
+  _timervalue t;
+  gettimeofday(&t, &tz);
+  now = localtime(&t.tv_sec);
+  return now->tm_year;
+}
+
+_int32 _now_month(void) {
+  struct tm * now;
+  struct timezone tz;
+  _timervalue t;
+  gettimeofday(&t, &tz);
+  now = localtime(&t.tv_sec);
+  return now->tm_mon;
+}
+
+_int32 _now_day(void) {
+  struct tm * now;
+  struct timezone tz;
+  _timervalue t;
+  gettimeofday(&t, &tz);
+  now = localtime(&t.tv_sec);
+  return now->tm_mday;
+}
+
+_float64 _now_time(void) {
+  struct tm * now;
+  struct timezone tz;
+  _timervalue t;
+  gettimeofday(&t, &tz);
+  now = localtime(&t.tv_sec);
+  return (_float64)(now->tm_hour)*3600.0e+6 +
+    (_float64)(now->tm_min)*60.0e+6 +
+    (_float64)(now->tm_sec)*1.0e+6 +
+    (_float64)(t.tv_usec);
+}

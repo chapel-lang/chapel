@@ -1,16 +1,14 @@
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 
 // returns time elapsed since midnight
-def getCurrentTime(unit: TimeUnits) {
-  halt("getCurrentTime() is not implemented yet");
-  return 0.0;
-}
+def getCurrentTime(unit: TimeUnits = seconds)
+  return _convert_microseconds(unit, __primitive("_now_time"));
 
 // returns (year, month, day) as a tuple of 3 ints
-def getCurrentDate() {
-  halt("getCurrentDate() is not implemented yet");
-  return (0, 0, 0);
-}
+def getCurrentDate()
+  return (__primitive("_now_year")+1900,
+          __primitive("_now_month")+1,
+          __primitive("_now_day"));
 
 record Timer {
   var time: _timervalue;
@@ -74,7 +72,7 @@ def _convert_microseconds(unit: TimeUnits, us: float) {
     when milliseconds do return us / 1.0e+3;
     when seconds do return us / 1.0e+6;
     when minutes do return us / 60.0e+6;
-    when hours do return us / 360.0e+6;
+    when hours do return us / 3600.0e+6;
   }
   halt("internal error in module Time");
 }
