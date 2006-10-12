@@ -1,3 +1,0 @@
-semantic
-
-is there a way to allow a method on int(32).  usually no on instantiated types, but this is a primitive?  what about treating int like a generic int when used as in int.print().

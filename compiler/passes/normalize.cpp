@@ -39,6 +39,7 @@ static void tag_hasVarArgs(FnSymbol* fn);
 static void tag_global(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
 static void fixup_array_formals(FnSymbol* fn);
+static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_parameterized_primitive_formals(FnSymbol* fn);
 
 
@@ -59,6 +60,7 @@ void normalize(BaseAST* base) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
       fixup_array_formals(fn);
+      clone_parameterized_primitive_methods(fn);
       fixup_parameterized_primitive_formals(fn);
       if (fn->fnClass == FN_ITERATOR) {
         enable_scalar_promotion( fn);
@@ -1594,6 +1596,48 @@ static void fixup_array_formals(FnSymbol* fn) {
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
+        }
+      }
+    }
+  }
+}
+
+
+static void clone_parameterized_primitive_methods(FnSymbol* fn) {
+  if (dynamic_cast<ArgSymbol*>(fn->_this)) {
+    if (fn->_this->type == dtInt[INT_SIZE_32]) {
+      for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
+        if (dtInt[i] && i != INT_SIZE_32) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtInt[i];
+          fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
+        }
+      }
+    }
+    if (fn->_this->type == dtUInt[INT_SIZE_32]) {
+      for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
+        if (dtUInt[i] && i != INT_SIZE_32) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtUInt[i];
+          fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
+        }
+      }
+    }
+    if (fn->_this->type == dtFloat[FLOAT_SIZE_64]) {
+      for (int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++) {
+        if (dtFloat[i] && i != FLOAT_SIZE_64) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtFloat[i];
+          fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
+        }
+      }
+    }
+    if (fn->_this->type == dtComplex[COMPLEX_SIZE_128]) {
+      for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
+        if (dtComplex[i] && i != COMPLEX_SIZE_128) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtComplex[i];
+          fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
         }
       }
     }

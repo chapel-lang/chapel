@@ -838,11 +838,11 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_UINT( "uint(64)", 64);          // default size
 
   INIT_PRIMITIVE_FLOAT( "float(32)", 32);
-  INIT_PRIMITIVE_FLOAT( "float", 64);        // default size
+  INIT_PRIMITIVE_FLOAT( "float", 64);            // default size
   INIT_PRIMITIVE_FLOAT( "float(128)", 128);
 
-  INIT_PRIMITIVE_COMPLEX( "_complex64", 64); // supports hack, used in module
-  INIT_PRIMITIVE_COMPLEX( "complex", 128);   // default size
+  INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
+  INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size
   INIT_PRIMITIVE_COMPLEX( "complex(256)", 256);
 
   dtString = createPrimitiveType( "string", "_string");

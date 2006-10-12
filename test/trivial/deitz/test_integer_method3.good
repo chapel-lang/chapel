@@ -1,2 +1,2 @@
 int.print = 12
-int(32).print = 14
+int.print = 14
