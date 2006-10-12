@@ -9,12 +9,22 @@ use Random;
 use Time;
 
 
+// problem size configs
 config const logN = 5;
 
-config const printTiming = true;
-             
+// pseudo-random input configs
+config const deterministic = false,
+             seed = 314159265.0,
+             arand = 1220703125.0;
+
+// verification configs
 config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
+
+// boolean configs
+config const printTiming = true;
+
+// BLC: control printing out of error value to avoid portability issues
 
 
 def main() {
@@ -32,9 +42,14 @@ def main() {
   const ProblemDom = [0..N);
   var Z, z: [ProblemDom] complex;
 
-  fillRandomVec(z);            // fill input with pseudo-random values
+  // generate pseudo-random input
+  if deterministic then
+    fillRandom(z, seed=seed, arand=arand);
+  else
+    fillRandom(z);
 
-  Z = conjg(z);                // conjugate input, copying to working array
+  // conjugate input, storing result to work array
+  Z = conjg(z);
 
 
   // TIMED SECTION
@@ -45,32 +60,12 @@ def main() {
 
   var execTime = getCurrentTime() - startTime;
 
-  // BLC: This line wants /(complex,real) to be implemented correctly:
-  Z = conjg(Z) / N;
-
-  Z = bitReverseShuffle(Z);
-  dfft(Z, Twiddles);
-
-  // BLC: need to check this against written spec
-  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
-
-  maxerr = maxerr / logN / epsilon;
-
-  var status = if (maxerr < threshold) then "SUCCESS" else "FAILURE";
-  writeln(status, ", error = ", maxerr);
-  writeln("\n");
-
-  writeln("N      = ", N);
-  if (printTiming) {
-    writeln("Time   = ", execTime);
-    const gflop = 5.0 * N * logN / 1000000000.0;
-    writeln("GFlops = ", gflop / execTime);
-  }
+  verifyResults(z, Z, execTime, Twiddles);
 }
 
 
-def computeTwiddles(W: [?WD] complex) {
-  const n = WD(1).length;
+def computeTwiddles(W) {
+  const n = W.numElements;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
@@ -87,10 +82,10 @@ def computeTwiddles(W: [?WD] complex) {
 
 // Check what the NSA supports for bit reversal
 // rename this?
-def bitReverseShuffle(W: [?WD] complex) {  // BLC: would be nice to drop complex?
-  const n = WD(1).length;
+def bitReverseShuffle(W: [?WD]) {
+  const n = WD.numIndices;
   const reverse = lg(n);
-  var V: [WD] complex;
+  var V: [WD] W.elt_type;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
   var P: [i in WD] index(WD) = i;
   bitReverse(P);
@@ -136,6 +131,32 @@ def dfft(A: [?AD] complex, W) {
       A(j) = a + b;
       A(j+l) = a - b;
     }
+  }
+}
+
+
+def verifyResults(z, Z, execTime, Twiddles) {
+  const N = Z.numElements;
+
+  // BLC: This line wants /(complex,real) to be implemented directly:
+  Z = conjg(Z) / N;
+
+  Z = bitReverseShuffle(Z);
+  dfft(Z, Twiddles);
+
+  // BLC: need to check this against written spec
+  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
+
+  maxerr = maxerr / logN / epsilon;
+
+  write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
+  writeln(", error = ", maxerr);
+  writeln();
+  writeln("N      = ", N);
+  if (printTiming) {
+    writeln("Time   = ", execTime);
+    const gflop = 5.0 * N * logN / 1000000000.0;
+    writeln("GFlops = ", gflop / execTime);
   }
 }
 
