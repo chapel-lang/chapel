@@ -80305,3 +80305,14 @@ Added files:
 	chapel/test/functions/deitz/Time/: test_getCurrentDate.chpl 
 	                                   test_getCurrentDate.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 15:46:29 -- bradc
+
+Log message:
+	Starting cleanup.  Converted [l..h-1] expressions to [l..h)
+	and cleaned up some debugging stuff.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
