@@ -80117,3 +80117,30 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_integer_method3.future 
 
+---------------------------------------------------------------------------
+
+10/12/06 12:25:51 -- waynew
+
+Log message:
+	- Partial check in of indefinite domain implementation.
+	  - most of the functionality should be there.  Currently missing
+	    remapping of associated arrays when internal maps change.  Also not
+	    tested yet is domain assignment.
+	  - added init(d:elt_type) function for domain initialization
+	- Internal _stack class (used by indef. domain). Put in a new module,
+	  _chpl_ds.chpl.
+	- Test growing and shrinking indef domains.
+	- Test add/remove exercising reuse of removed indices.
+	- Removed .future.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_indefinite.chpl 
+	                          _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: _chpl_ds.chpl 
+	chapel/test/domains/indefinite/waynew/: indef4.chpl indef4.good 
+	                                        indef6.chpl indef6.good 
+Removed files:
+	chapel/test/domains/deitz/: test_indefinite_remove.future 
+
