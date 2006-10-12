@@ -80223,3 +80223,13 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
 	chapel/test/trivial/deitz/: test_timer1.chpl test_timer2.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 14:26:36 -- deitz
+
+Log message:
+	Changed to "use Time" (again?).
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+
