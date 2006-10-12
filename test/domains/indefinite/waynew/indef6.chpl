@@ -1,14 +1,19 @@
 param SIZE = 10;
 
 var idomain: domain(int);
+var A: [idomain] float;
+
+def jam() {
+  writeln( idomain);
+  writeln( "numIndices = ", idomain.numIndices);
+  writeln( A);
+  writeln( "numElements = ", A.numElements);
+}
 
 for d in 1..SIZE do idomain.add( d);
-var A: [idomain] float;
 for d in 1..SIZE do A[d] = d + d:float/10.0;
-writeln( A);
-
+jam();
 
 for d in 1..SIZE do 
   if (d%2 == 0) then idomain.remove( d);
-writeln( idomain);
-writeln( A);
+jam();

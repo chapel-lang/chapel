@@ -238,9 +238,8 @@ class _idomain {
   }
 
   def numIndices {
-    return num_inds:uint(64);
+    return num_inds;
   }
-
 }
 
 def fwrite( f : file, d : _idomain) {
@@ -297,6 +296,10 @@ class _iarray: _abase {
       }
     }
     data = new_data;
+  }
+
+  def numElements {
+    return dom.numIndices;
   }
 }
 
