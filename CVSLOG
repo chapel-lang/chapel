@@ -80198,3 +80198,28 @@ Added files:
 	                                       ra-test-dist.future 
 	                                       ra-test-dist.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 14:24:18 -- deitz
+
+Log message:
+	Implemented improved Time module interface, adding units and changing
+	value to elapsed.
+	
+	Use
+	
+	  timer1.elapsed(unit=hours)
+	
+	for long-running programs, for example.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: Time.chpl 
+	chapel/runtime/include/: chplrt.h 
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra2.chpl ra3.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+	chapel/test/trivial/deitz/: test_timer1.chpl test_timer2.chpl 
+
