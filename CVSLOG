@@ -80264,3 +80264,16 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.future 
 
+---------------------------------------------------------------------------
+
+10/12/06 14:51:15 -- waynew
+
+Log message:
+	For indefinite domain/array, functions numIndices/numElements.
+	
+	Changed test to test those calls.
+
+Modified files:
+	chapel/modules/standard/: _chpl_indefinite.chpl 
+	chapel/test/domains/indefinite/waynew/: indef6.chpl indef6.good 
+
