@@ -5,6 +5,7 @@ use Timers;
 
 config const logN = 5;
 config const debug = false;
+config const printTiming = false;
 
 // BLC: This call needs to go away
 def resetA(A: [?D] complex) {
@@ -43,9 +44,9 @@ def main() {
     A(i).real = 2*i;
     A(i).imag = A(i).real + 1.0;
   }
-  writeA(A);
 
-  //  fillRandomVec(A);
+  fillRandomVec(A);
+  if debug then writeA(A);
 
   B = A;                       // save A for verification step
 
@@ -56,7 +57,7 @@ def main() {
   // BLC: would like this to be:
   //  A.imag = -A.imag;            // conjugate data
   A = conjg(A);
-  writeA(A);
+  if debug then writeA(A);
 
   var fftTimer: Timer;
   fftTimer.start();
@@ -66,15 +67,11 @@ def main() {
   // BLC: This line needs to go away
   resetA(A);
 
-  if debug then writeA(A);
-
   // BLC: Why was John timing the second version?
-  writeA(A);
+  if debug then writeA(A);
   dfft(A, W);
-  writeA(A);
+  if debug then writeA(A);
   fftTimer.stop();
-
-  if (debug) then halt();
 
   // BLC: originally wrote this as:
   //  A.real =  A.real / N;        // conjugate and scale data
@@ -86,14 +83,18 @@ def main() {
   // correctly:
   A = conjg(A) / N;
   
-  writeA(A);
+  if debug then writeA(A);
 
   A = bitReverse(A);
   dfft(A, W);
-  writeA(A);
+  if debug then writeA(A);
 
   var time = fftTimer.value;
 
+  if debug then {
+    var C: [D] float = sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
+    writeln("error[] =", C);
+  }
   var maxerr = max reduce sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
 
   maxerr = maxerr / logN / EPS;
@@ -103,8 +104,10 @@ def main() {
   writeln("\n");
 
   writeln("N      = ", N);
-  writeln("Time   = ", time);
-  writeln("GFlops = ", gflop / time);
+  if (printTiming) {
+    writeln("Time   = ", time);
+    writeln("GFlops = ", gflop / time);
+  }
 }
 
 
@@ -147,11 +150,13 @@ def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
 
 
 def dfft(A: [?AD] complex, W) {
+  /*
   if (debug) {
     write("w[] =");
     for i in W.domain do write(W(i):" %g %g");
     writeln();
   }
+  */
   
   if debug then writeln("cft1st();");
   cft1st(A, W);
@@ -164,9 +169,11 @@ def dfft(A: [?AD] complex, W) {
     l *= 4;
     lasti = i;
   }
+  //  writeln("lasti+2 = ", lasti+2, " logN-1 = ", logN-1);
   for i in lasti+2..logN-1 by 2 {
     if debug then writeln("i=", i, "  cftmd2(l=", l, ", A, W);");
     cftmd2(l, A, W);
+    if debug then writeln("i=", i, "  returned from cftmd2();");
     l *= 4;
   }
 
@@ -180,10 +187,10 @@ def dfft(A: [?AD] complex, W) {
   } else {
     if debug then writeln("l << 2 != n");
     forall j in 0..l-1 {
-      var x0 = A(j).real;
-      var x1 = A(j).imag;
-      A(j).real = x0+x1;
-      A(j).imag = x0-x1;
+      var a = A(j);
+      var b = A(j+l);
+      A(j) = a + b;
+      A(j+l) = a - b;
     }
   }
 }
@@ -197,6 +204,8 @@ def cft1st(A, W) {
   var x3 = A(2) - A(3);
 
   const wk1r = W(1).real;
+
+  if debug then writeA(A);
 
   A(0) = x0 + x2;
   A(2) = x0 - x2;
@@ -215,6 +224,8 @@ def cft1st(A, W) {
   A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
 
   if debug then writeln("  // computes first 8 complexes manually");
+
+  if debug then writeA(A);
 
   var k1 = 1;
   forall j in 8..n-1 by 8 {
@@ -243,7 +254,7 @@ def cftmd0(l, A, W) {
   var wk1r = W(1).real;
   const m = l << 2;
 
-  if debug then writeA(A);
+  //  if debug then writeA(A);
   
   forall j in 0..l-1 {
     resetA(A);
@@ -265,6 +276,7 @@ def cftmd1(l, A, W) {
 
   if debug then writeln("  cftmd0(l=", l, ", A, W);");
   cftmd0(l, A, W);
+  if debug then writeln("  returned from cftmd0();");
   var k1 = 1;
   forall k in m2..n-1 by m2 {
     var wk2 = W[k1];
@@ -297,14 +309,16 @@ def cftmd2(l, A, W) {
 
   if debug then writeln("  cftmd0(l=", l, ", A, W);");
   cftmd0(l, A, W);
+  if debug then writeln("  returned from cftmd0();");
   if (m2 >= n) return;
   if (m2 >= n / 8) {
     if debug then writeln("  cftmd21(l=", l, ", A, W);");
     cftmd21(l, A, W);
+    if debug then writeln("  returned from cftmd21();");
     return;
   }
 
-  forall j in 0..l-1 by 2 {
+  forall j in 0..l-1 {
     var k1 = 1;  // BLC: zip this in
     forall k in m2..n-1 by m2 {
       var wk2 = W[k1];
@@ -318,7 +332,7 @@ def cftmd2(l, A, W) {
     }
 
     k1 = 1;  // BLC: zip this in
-    forall k in m2..n-1 by 2 {
+    forall k in m2..n-1 by m2 {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
@@ -379,14 +393,24 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
     writeln("      wk1=", wk1:"%g + %gi");
     writeln("      wk2=", wk2:"%g + %gi");
     writeln("      wk3=", wk3:"%g + %gi");
+
+    writeln();
+
+    writeln("      x0=", x0:"%g %g");
+    writeln("      x1=", x1:"%g %g");
+    writeln("      x2=", x2:"%g %g");
+    writeln("      x3=", x3:"%g %g");
   }
 
   A[1] = x0 + x2;
   x0 -= x2;
+  if debug then writeln("      x0=", x0:"%g %g");
   A[3] = wk2 * x0;
   x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  if debug then writeln("      x0=", x0:"%g %g");
   A[2] = wk1 * x0;
   x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
+  if debug then writeln("      x0=", x0:"%g %g");
   A[4] = wk3 * x0;
 
   if (debug) {
