@@ -1,19 +1,17 @@
-const
-  FT_arand = 1220703125.0,
-  FT_seed  = 314159265.0;
+use Time;
 
-class rng {
+class randomStream {
 
-  var seed = FT_seed;
-  var arand = FT_arand;
+  const seed = getCurrentTime(unit=microseconds);
+  const arand = getCurrentTime() + getCurrentTime(unit=milliseconds);
+  var numGenerated = 0;
 
-  const
-    r23   = 0.5**23,
-    t23   = 2.0**23,
-    r46   = 0.5**46,
-    t46   = 2.0**46;
-
-  def nextrandlc(x : float, a : float) {
+  def nextrandlc(x : float, a: float = arand) {
+    const
+      r23   = 0.5**23,
+      t23   = 2.0**23,
+      r46   = 0.5**46,
+      t46   = 2.0**46;
     var t1 = r23 * a;
     var a1 = floor(t1);
     var a2 = a - t23 * a1;
@@ -29,10 +27,10 @@ class rng {
     return (x3, r46 * x3);
   }
 
-  def initrandlc(seed, a : float, in n : int) : float {
+  def initrandlc(in n : int) : float {
     var i : int, t : float, g : float;
     var x : float = seed;
-    t = a;
+    t = arand;
     while n != 0 do {
       i = n / 2;
       if 2 * i != n then
@@ -49,29 +47,20 @@ class rng {
       writeln ("Not yet implemented for 2D or higher arrays.");
       [i in D] x(i) = -1.0;
     }
-    else if (D.rank == 1) {
-      var n = D(1).length;
-      var innerD: domain(1);
-      if (n > 128) {
-        for i in D by 128 {
-          var randlc_last_x: float = initrandlc(seed, arand, i);
-          if (i+127 > n) then
-            innerD = [i..n];
-          else 
-            innerD = [i..i+127];
-          for j in innerD {
-              (randlc_last_x,x(j)) = nextrandlc(randlc_last_x, arand); 
-          }
-        }
+    else {
+      var randlc_last_x: float = initrandlc(numGenerated+1);
+      for i in D {
+        (randlc_last_x,x(i)) = nextrandlc(randlc_last_x);    
+        numGenerated += 1;
       }
-      else {
-        var randlc_last_x: float = initrandlc(seed, arand, 1);
-        x(1) = randlc_last_x;
-        for i in [2..n] {
-          (randlc_last_x,x(i)) = nextrandlc(randlc_last_x, arand);    
-        }
-      }
-    seed = x(n);
     }
   }
+}
+
+def fillRandom(x:[] float, seed: float = (getCurrentTime(unit=microseconds)), 
+    arand: float = (getCurrentTime() + getCurrentTime(unit=milliseconds))) {
+  use Random;
+  var randNums = randomStream(seed,arand);
+
+  randNums.fillRandom(x); 
 }
