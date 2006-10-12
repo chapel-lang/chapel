@@ -80039,3 +80039,15 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: degenseq.future 
 
+---------------------------------------------------------------------------
+
+10/11/06 18:36:08 -- bradc
+
+Log message:
+	Fixed John's code so that it runs correctly on
+	our Linux boxes and put in a bunch of (currently
+	commented out) debugging print statements.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.c 
+
