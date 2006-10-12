@@ -15,16 +15,36 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/mta_task.h>
-#include <machine/runtime.h>
+//#include <sys/mta_task.h>
+//#include <machine/runtime.h>
 
+/*
 double timer()
 { return ((double) mta_get_clock(0) / mta_clock_freq()); }
+*/
+
+int N2;  // hoisted this here to support routines like the following:
+
+void resetA(double* a) {
+  int i;
+  for (i=0; i<N2; i++) {
+    a[i] = i;
+  }
+}
+
+void writeA(double* a) {
+  /*
+  printf("a[] =");
+  for (int i=0; i<N2; i++) {
+    printf(" %g", a[i]);
+  }
+  printf("\n");
+  */
+}
+
 
 #pragma mta inline
-void btrfly(j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d)
-  int j;
-  double wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, *a, *b, *c, *d;
+void btrfly(int j, double wk1r, double wk1i, double wk2r, double wk2i, double wk3r, double wk3i, double* a, double* b, double* c, double* d)
 { double x0r = a[j    ] + b[j    ];
   double x0i = a[j + 1] + b[j + 1];
   double x1r = a[j    ] - b[j    ];
@@ -34,33 +54,103 @@ void btrfly(j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d)
   double x3r = c[j    ] - d[j    ];
   double x3i = c[j + 1] - d[j + 1];
 
+  /*
+  printf("    a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n", 
+         a[j], a[j+1], b[j], b[j+1], c[j], c[j+1], d[j], d[j+1]);
+  printf("      wk1=%g + %gi\n"
+         "      wk2=%g + %gi\n"
+         "      wk3=%g + %gi\n",
+         wk1r, wk1i, wk2r, wk2i, wk3r, wk3i);
+  printf("\n");
+  printf("      x0=%g %g\n", x0r, x0i);
+  printf("      x1=%g %g\n", x1r, x1i);
+  printf("      x2=%g %g\n", x2r, x2i);
+  printf("      x3=%g %g\n", x3r, x3i);
+  */
+
   a[j    ] = x0r + x2r;
   a[j + 1] = x0i + x2i;
   x0r -= x2r;
   x0i -= x2i;
+  //  printf("      x0=%g %g\n", x0r, x0i);
   c[j    ] = wk2r * x0r - wk2i * x0i;
   c[j + 1] = wk2r * x0i + wk2i * x0r;
   x0r = x1r - x3i;
   x0i = x1i + x3r;
+  //  printf("      x0=%g %g\n", x0r, x0i);
   b[j    ] = wk1r * x0r - wk1i * x0i;
   b[j + 1] = wk1r * x0i + wk1i * x0r;
   x0r = x1r + x3i;
   x0i = x1i - x3r;
+  //  printf("      x0=%g %g\n", x0r, x0i);
   d[j    ] = wk3r * x0r - wk3i * x0i;
   d[j + 1] = wk3r * x0i + wk3i * x0r;
+  /*
+  printf("    a={%g,%g}, b={%g,%g}, c={%g,%g}, d={%g,%g}\n\n", 
+         a[j], a[j+1], b[j], b[j+1], c[j], c[j+1], d[j], d[j+1]);
+  */
+}
+
+
+static unsigned long long bitInd[8][8];
+
+static void setupBitIndices(void) {
+  int i, j;
+  for (i=0; i<8; i++) {
+    for (j=0; j<8; j++) {
+      bitInd[i][j] = 0x1LL << (((7-i)*8) + (7-j));
+      //      printf("\n");
+      //      BitMatPrint(bitInd[i][j]);
+    }
+    //    printf("\n");
+  }
+}
+
+unsigned long long MTA_BIT_MAT_OR(unsigned long long x, unsigned long long y) {
+  int i, j, k;
+  unsigned long long result = 0x0LL;
+
+  for (i=0; i<8; i++) {
+    for (j=0; j<8; j++) {
+      int temp = 0;
+      for (k=0; k<8; k++) {
+        temp |= ((bitInd[i][k] & x) != 0) && ((bitInd[k][j] & y) != 0);
+      }
+      if (temp) {
+        result |= bitInd[i][j];
+      }
+    }
+  }
+  //  BitMatPrint(result);
+
+  return result;
+}
+
+
+unsigned long long MTA_ROTATE_LEFT(unsigned long long x, unsigned long long y) {
+  unsigned long long result;
+
+  result = (x << y) | (x >> (64-y));
+  
+  return result;
 }
 
 double * bit_reverse(int n, double *w) {
-  unsigned int i, mask, shift;
+  unsigned long long i, mask, shift;
   double *v = new double[2 * n];
 
-  mask  = 0x0102040810204080;
-  shift = (int) (log(n) / log(2));
+  mask  = 0x0102040810204080LL;
+  int ncopy = n;
+  shift = 0;
+  while (ncopy != 1) {
+    ncopy = ncopy >> 1;
+    shift++;
+  }
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
   for (i = 0; i < n; i++) {
-      int ndx = MTA_BIT_MAT_OR(mask, MTA_BIT_MAT_OR(i, mask));
+      unsigned long long ndx = MTA_BIT_MAT_OR(mask, MTA_BIT_MAT_OR(i, mask));
       ndx = MTA_ROTATE_LEFT(ndx, shift);
       v[2 * ndx]     = w[2 * i];
       v[2 * ndx + 1] = w[2 * i + 1];
@@ -92,11 +182,15 @@ void twiddles(int n, double *w)
 void cft1st(int n, double *a, double *w)
 { int j, k1;
 
+ printf("cft1st()\n"); 
+
   double *v   = w + 1;
   double *b   = a + 2;
   double *c   = a + 4;
   double *d   = a + 6;
   double wk1r = w[2];
+
+  writeA(a);
 
   double x0r = a[0] + a[2];
   double x0i = a[1] + a[3];
@@ -137,6 +231,10 @@ void cft1st(int n, double *a, double *w)
   a[14] = wk1r * (x0i - x0r);
   a[15] = wk1r * (x0i + x0r);
 
+  printf("  // computes first 8 complexes manually\n");
+
+  writeA(a);
+
 #pragma mta use 100 streams
 #pragma mta no scalar expansion
 #pragma mta assert no dependence
@@ -160,6 +258,7 @@ void cft1st(int n, double *a, double *w)
 
 void cftmd0(int n, int l, double *a, double *w)
 { int j, m = l << 2;
+ printf("  cftmd0()\n"); 
 
   double wk1r = w[2];
 
@@ -177,10 +276,13 @@ void cftmd0(int n, int l, double *a, double *w)
 #pragma mta assert no dependence
   for (j = m; j < l + m; j += 2)
       btrfly(j, wk1r, wk1r, 0.0, 1.0, - wk1r, wk1r, a, b, c, d);
+  printf("  returning from cftmd0()\n"); 
 }
 
 void cftmd1(int n, int l, double *a, double *w)
 { int j, k, k1;
+
+ printf("cftmd1();\n"); 
 
   int m  = l << 2;
   int m2 = 2 * m;
@@ -213,13 +315,16 @@ void cftmd1(int n, int l, double *a, double *w)
 
       for (j = k + m; j < l + k + m; j += 2)
           btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
-} }
+} 
+}
 
 void cftmd21(int n, int l, double *a, double *w)
 { int j, k, k1;
   int m  = l << 2;
   int m2 = 2 * m;
   int m3 = 3 * m;
+
+  printf("cftmd21();\n");
 
   double *v = w + 1;
   double *b = a + l;
@@ -249,10 +354,14 @@ void cftmd21(int n, int l, double *a, double *w)
   for (j = k + m; j < k + m + l; j += 2)
       btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 
-} }
+}
+  printf("returning from cftmd21();\n");
+}
 
 void cftmd2(int n, int l, double *a, double *w)
 { int j, k, k1;
+
+ printf("cftmd2();\n"); 
 
   int m  = l << 2;
   int m2 = 2 * m;
@@ -293,7 +402,10 @@ void cftmd2(int n, int l, double *a, double *w)
 
       btrfly (j + k + m, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 
-} } }
+} } 
+
+ printf("returning from cftmd2();\n"); 
+}
 
 void dfft(int n, int logn, double *a, double *w)
 { int i, l, j;
@@ -312,13 +424,15 @@ void dfft(int n, int logn, double *a, double *w)
   d = a + l + l + l;
 
   if ((l << 2) == n) {
-
+    printf("l << 2 == n\n");
+    
 #pragma mta use 100 streams
 #pragma mta assert no dependence
      for (j = 0; j < l; j += 2)
          btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
 
   } else {
+    printf("l << 2 != n\n");
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
@@ -337,7 +451,14 @@ int main(int argc, char *argv[])
 { int i;
   double gflop, maxerr, time;
 
-  int logN  = atoi(argv[1]);
+  setupBitIndices();
+
+  int logN;
+  if (argc > 1) {
+    logN = atoi(argv[1]);
+  } else {
+    logN = 5;
+  }
   int N     = 1 << logN;
 
   double EPS = pow(2.0, -51.0);
@@ -347,8 +468,10 @@ int main(int argc, char *argv[])
   double *b = new double[N * 2];
   double *w = new double[N / 2];
 
-  int N2 = 2 * N;
-  prand_(&N2, a);
+  N2 = 2 * N;
+  //  prand_(&N2, a);
+  resetA(a);
+  writeA(a);
 
 /* save a for verification step */
   for (i = 0; i < N2; i++) b[i] = a[i];
@@ -359,30 +482,38 @@ int main(int argc, char *argv[])
 /* conjugate data */
 #pragma mta assert parallel
   for (i = 1; i < N2; i += 2) a[i] = -a[i];
+  writeA(a);
 
   a = bit_reverse(N, a);
+  writeA(a);
   dfft(N2, logN, a, w);
+  writeA(a);
 
 /* conjugate and scale data */
 #pragma mta assert parallel
   for (i = 0; i < N2; i += 2)
       {a[i] = a[i] / N; a[i + 1] = -a[i + 1] / N;}
+  writeA(a);
 
-  time = timer();
+  //  time = timer();
 
   a = bit_reverse(N, a);
   dfft(N2, logN, a, w);
+  writeA(a);
 
-  time  = timer() - time;
+  //  time  = timer() - time;
   gflop = 5.0 * N * logN / 1000000000.0;
 
 /* verify fft */
+//  printf("error[] =");
   for (i = 0, maxerr = 0.0; i < N2; i += 2) {
       double tmp1 = b[i]     - a[i];
       double tmp2 = b[i + 1] - a[i + 1];
       double tmp3 = sqrt(tmp1 * tmp1 + tmp2 * tmp2);
+      //      printf(" %g", tmp3);
       maxerr = (tmp3 > maxerr) ? tmp3 : maxerr;
   }
+  //  printf("\n");
 
   maxerr = maxerr / logN / EPS;
   if (maxerr < THRESHOLD) printf("SUCCESS, error = %lf\n", maxerr);
