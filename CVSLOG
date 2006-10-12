@@ -80025,3 +80025,17 @@ Added files:
 	chapel/test/types/seq/bradc/: degenseq.chpl degenseq.future 
 	                              degenseq.good 
 
+---------------------------------------------------------------------------
+
+10/11/06 17:07:22 -- deitz
+
+Log message:
+	Fixed a bug in which empty arithmetic sequences did not remain empty
+	when operated on with the 'by' operator.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/types/seq/bradc/: degenseq.good 
+Removed files:
+	chapel/test/types/seq/bradc/: degenseq.future 
+
