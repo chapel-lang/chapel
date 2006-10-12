@@ -80090,3 +80090,30 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 12:09:40 -- deitz
+
+Log message:
+	Made it so that methods bound to a primitive type that can be
+	parameterized by the number of bits that it contains is a generic
+	method.  It is replicated over all of the types.  For example,
+	
+	  def int.print() { ... }
+	
+	creates methods over all size of int.
+	
+	Removed a hack on the complex names and cleaned up the complex module's
+	implementation of the real and imag methods.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/test/trivial/deitz/: test_integer_method3.chpl 
+	                            test_integer_method3.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_integer_method3.future 
+
