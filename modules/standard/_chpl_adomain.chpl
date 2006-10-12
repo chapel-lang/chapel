@@ -663,8 +663,8 @@ record _aseq {
 
   def initialize() {
     if _low > _high {
-      _low = 1;
-      _high = 0;
+      _low = 1:elt_type;
+      _high = 0:elt_type;
       _stride = 1;
     }
   }
