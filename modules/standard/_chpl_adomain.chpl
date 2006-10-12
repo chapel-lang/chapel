@@ -661,6 +661,14 @@ record _aseq {
   var _high : elt_type;
   var _stride : int = 1;
 
+  def initialize() {
+    if _low > _high {
+      _low = 1;
+      _high = 0;
+      _stride = 1;
+    }
+  }
+
   iterator this() : elt_type {
     forall x in this
       yield x; 
@@ -691,6 +699,8 @@ record _aseq {
 def by(s : _aseq, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
+  if s._low == 1 && s._high == 0 then
+    return _aseq(s.elt_type, s._low, s._high, s._stride);
   var as = _aseq(s.elt_type, s._low, s._high, s._stride * i);
   if as._stride < 0 then
     as._low = as._low + (as._high - as._low) % (-as._stride):as.elt_type;
