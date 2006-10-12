@@ -80332,3 +80332,14 @@ Added files:
 Removed files:
 	chapel/spec/Standard_Modules/: Timers.tex 
 
+---------------------------------------------------------------------------
+
+10/12/06 16:16:43 -- bradc
+
+Log message:
+	Still cleaning up.  It's still working, so this is
+	a checkpoint.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
