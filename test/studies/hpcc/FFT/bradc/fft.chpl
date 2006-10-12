@@ -3,76 +3,56 @@
 
 // BLC: clean up complex arithmetic
 
+// BLC: insert problem size computation based on memory size?
+
 use Random;
 use Time;
 
 
 config const logN = 5;
 
-config const debug = false,
-             printTiming = true;
-
+config const printTiming = true;
+             
 config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
 
 
 def main() {
+  // compute problem size
   const N = 1 << logN;
 
-  const D = [0..N);
-  const DW = [0..N/4);
+  // twiddle domain and arrays
+  const TwiddleDom = [0..N/4);
+  var Twiddles: [TwiddleDom] complex;
 
-  var A: [D] complex;
-  var B: [D] complex;
-  var W: [DW] complex;
+  computeTwiddles(Twiddles);
+  Twiddles = bitReverseShuffle(Twiddles);
 
-  [i in D] {
-    A(i).real = 2*i;
-    A(i).imag = A(i).real + 1.0;
-  }
+  // problem domain and arrays
+  const ProblemDom = [0..N);
+  var Z, z: [ProblemDom] complex;
 
-  fillRandomVec(A);
+  fillRandomVec(z);            // fill input with pseudo-random values
 
-  B = A;                       // save A for verification step
-
-  twiddles(W);
-  W = bitReverse(W);
+  Z = conjg(z);                // conjugate input, copying to working array
 
 
-  // BLC: would like this to be:
-  //  A.imag = -A.imag;            // conjugate data
-  A = conjg(A);
+  // TIMED SECTION
+  var startTime = getCurrentTime();
 
-  var fftTimer: Timer;
-  fftTimer.start();
+  Z = bitReverseShuffle(Z);
+  dfft(Z, Twiddles);
 
-  A = bitReverse(A);
+  var execTime = getCurrentTime() - startTime;
 
-  // BLC: Why was John timing the second version?
-  dfft(A, W);
-  fftTimer.stop();
+  // BLC: This line wants /(complex,real) to be implemented correctly:
+  Z = conjg(Z) / N;
 
-  // BLC: originally wrote this as:
-  //  A.real =  A.real / N;        // conjugate and scale data
-  //  A.imag = -A.imag / N;
-  // but it doesn't currently work.  Maybe that's OK because the
-  // rewrite is pretty clean
+  Z = bitReverseShuffle(Z);
+  dfft(Z, Twiddles);
 
-  // BLC: This line only works if /(complex,real) is implemented
-  // correctly:
-  A = conjg(A) / N;
-  
-
-  A = bitReverse(A);
-  dfft(A, W);
-
-  var time = fftTimer.elapsed();
-
-  if debug then {
-    var C: [D] float = sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
-    writeln("error[] =", C);
-  }
-  var maxerr = max reduce sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
+  // BLC: need to check this against written spec
+  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
 
   maxerr = maxerr / logN / epsilon;
 
@@ -82,14 +62,14 @@ def main() {
 
   writeln("N      = ", N);
   if (printTiming) {
-    writeln("Time   = ", time);
+    writeln("Time   = ", execTime);
     const gflop = 5.0 * N * logN / 1000000000.0;
-    writeln("GFlops = ", gflop / time);
+    writeln("GFlops = ", gflop / execTime);
   }
 }
 
 
-def twiddles(W: [?WD] complex) {
+def computeTwiddles(W: [?WD] complex) {
   const n = WD(1).length;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -107,7 +87,7 @@ def twiddles(W: [?WD] complex) {
 
 // Check what the NSA supports for bit reversal
 // rename this?
-def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
+def bitReverseShuffle(W: [?WD] complex) {  // BLC: would be nice to drop complex?
   const n = WD(1).length;
   const reverse = lg(n);
   var V: [WD] complex;
@@ -128,41 +108,28 @@ def bitReverse(W: [?WD] complex) {  // BLC: would be nice to drop complex?
 
 
 def dfft(A: [?AD] complex, W) {
-  /*
-  if (debug) {
-    write("w[] =");
-    for i in W.domain do write(W(i):" %g %g");
-    writeln();
-  }
-  */
   
-  if debug then writeln("cft1st();");
   cft1st(A, W);
 
   var l = 4;
   var lasti = 2;
   for i in 4..logN/2 by 2 {
-    if debug then writeln("cftmd1(l=", l, ", A, W);");
     cftmd1(l, A, W);
     l *= 4;
     lasti = i;
   }
   //  writeln("lasti+2 = ", lasti+2, " logN-1 = ", logN-1);
   for i in [lasti+2..logN) by 2 {
-    if debug then writeln("i=", i, "  cftmd2(l=", l, ", A, W);");
     cftmd2(l, A, W);
-    if debug then writeln("i=", i, "  returned from cftmd2();");
     l *= 4;
   }
 
   const n = AD(1).length;
   if ((l << 2) == n) {
-    if debug then writeln("l << 2 == n");
     forall j in [0..l) {
       butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
     }
   } else {
-    if debug then writeln("l << 2 != n");
     forall j in [0..l) {
       var a = A(j);
       var b = A(j+l);
@@ -197,8 +164,6 @@ def cft1st(A, W) {
   A(5) = wk1r * (x0.real - x0.imag, x0.real + x0.imag):complex;
   x0 = (x3.imag + x1.real, x3.real - x1.imag):complex;
   A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
-
-  if debug then writeln("  // computes first 8 complexes manually");
 
   var k1 = 1;
   forall j in [8..n) by 8 {
@@ -241,9 +206,7 @@ def cftmd1(l, A, W) {
   const m2 = 2*m;
   const n = A.domain(1).length;
 
-  if debug then writeln("  cftmd0(l=", l, ", A, W);");
   cftmd0(l, A, W);
-  if debug then writeln("  returned from cftmd0();");
   var k1 = 1;
   forall k in [m2..n) by m2 {
     var wk2 = W[k1];
@@ -272,14 +235,10 @@ def cftmd2(l, A, W) {
   var m2 = 2*m;
   const n = A.domain(1).length;
 
-  if debug then writeln("  cftmd0(l=", l, ", A, W);");
   cftmd0(l, A, W);
-  if debug then writeln("  returned from cftmd0();");
   if (m2 >= n) return;
   if (m2 >= n / 8) {
-    if debug then writeln("  cftmd21(l=", l, ", A, W);");
     cftmd21(l, A, W);
-    if debug then writeln("  returned from cftmd21();");
     return;
   }
 
@@ -349,32 +308,11 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   var x2 = A[3] + A[4];
   var x3 = A[3] - A[4];
 
-  if (debug) {
-    writeln("    a=", A[1]:"{%g,%g}", ", b=", A[2]:"{%g,%g}", ", c=", A[3]:"{%g,%g}", ", d=", A[4]:"{%g,%g}");
-    writeln("      wk1=", wk1:"%g + %gi");
-    writeln("      wk2=", wk2:"%g + %gi");
-    writeln("      wk3=", wk3:"%g + %gi");
-
-    writeln();
-
-    writeln("      x0=", x0:"%g %g");
-    writeln("      x1=", x1:"%g %g");
-    writeln("      x2=", x2:"%g %g");
-    writeln("      x3=", x3:"%g %g");
-  }
-
   A[1] = x0 + x2;
   x0 -= x2;
-  if debug then writeln("      x0=", x0:"%g %g");
   A[3] = wk2 * x0;
   x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
-  if debug then writeln("      x0=", x0:"%g %g");
   A[2] = wk1 * x0;
   x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
-  if debug then writeln("      x0=", x0:"%g %g");
   A[4] = wk3 * x0;
-
-  if (debug) {
-    writeln("    a=", A[1]:"{%g,%g}", ", b=", A[2]:"{%g,%g}", ", c=", A[3]:"{%g,%g}", ", d=", A[4]:"{%g,%g}\n");
-  }
 }
