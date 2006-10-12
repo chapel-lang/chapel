@@ -80080,3 +80080,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 09:08:21 -- deitz
+
+Log message:
+	Fix to last night's regressions.  My fault.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
