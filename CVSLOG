@@ -80545,3 +80545,18 @@ Added files:
 	                                     fft-arrinit.good 
 	                                     fft-arrinit.future 
 
+---------------------------------------------------------------------------
+
+10/13/06 16:13:39 -- bradc
+
+Log message:
+	Filing a future/bug in which whole-array permutations
+	don't seem to work.  For example:
+	
+	        A(Perm) = B;
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-perm.chpl 
+	                                     fft-perm.future 
+	                                     fft-perm.good 
+
