@@ -1,6 +1,3 @@
-SUCCESS, error = 0.0
-
+SUCCESS, error = 0.0559017
 
 N      = 32
-Time   = 1.0
-GFlops = 8e-07
