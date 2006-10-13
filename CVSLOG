@@ -80531,3 +80531,17 @@ Added files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl fft.execopts 
 	                                        fft.good 
 
+---------------------------------------------------------------------------
+
+10/13/06 16:01:36 -- bradc
+
+Log message:
+	Found a bug in which [i in D]-style array initializations
+	don't seem to work when they are used to declare local
+	variables based on queried domains.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-arrinit.chpl 
+	                                     fft-arrinit.good 
+	                                     fft-arrinit.future 
+
