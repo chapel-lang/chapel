@@ -72,7 +72,7 @@ def main() {
 }
 
 def initStreamVectors() {
-  var randlist = randomStream(seed,arand);
+  var randlist = RandomStream(seed,arand);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);
@@ -90,7 +90,7 @@ def computeStreamResults() {
 
 
 def checkSTREAMresults() {
-  var randlist = randomStream(seed,arand);
+  var randlist = RandomStream(seed,arand);
   var vector = [1..vectorSize];
 
   var Aref, Bref, Cref, error : [vector] elemType;

@@ -1,9 +1,10 @@
 use Time;
 
-class randomStream {
+class RandomStream {
 
-  const seed = getCurrentTime(unit=microseconds);
-  const arand = getCurrentTime() + getCurrentTime(unit=milliseconds);
+  const seed = 2.0*(getCurrentTime(unit=microseconds))+1.0;
+  const arand = 2.0*(getCurrentTime() + getCurrentTime(unit=milliseconds)) + 1.0;
+
   var numGenerated = 0;
 
   def nextrandlc(x : float, a: float = arand) {
@@ -57,10 +58,10 @@ class randomStream {
   }
 }
 
-def fillRandom(x:[] float, seed: float = (getCurrentTime(unit=microseconds)), 
-    arand: float = (getCurrentTime() + getCurrentTime(unit=milliseconds))) {
-  use Random;
-  var randNums = randomStream(seed,arand);
+def fillRandom(x:[] float, seed: float = (2.0*getCurrentTime(unit=microseconds)+1.0), 
+    arand: float = (2.0*(getCurrentTime() + getCurrentTime(unit=milliseconds))+1.0)) {
+
+  var randNums = RandomStream(seed,arand);
 
   randNums.fillRandom(x); 
 }
