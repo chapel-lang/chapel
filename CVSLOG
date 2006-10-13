@@ -80477,3 +80477,18 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream.chpl 
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 08:54:59 -- deitz
+
+Log message:
+	Added imag type to the compiler base.  There is currently no way to
+	specify an imaginary type other than explicitly.  The main change is
+	coming next.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+
