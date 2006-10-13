@@ -80393,3 +80393,17 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 17:49:56 -- marybeth
+
+Log message:
+	Updated stream benchmark with latest Random module.
+	
+	Set seed and arand to floats that are odd integers.  (If they aren't odd,
+	then the stream will end up generating 0's at some point.)
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+
