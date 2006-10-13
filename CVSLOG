@@ -80417,3 +80417,24 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/STREAMS/: stream.chpl stream.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 17:58:06 -- marybeth
+
+Log message:
+	I made a few changes to the Random module:
+	
+	- I changed the class name to RandomStream.
+	
+	- I deleted the use Random in the standalone routine.
+	
+	- I made sure that seed and arand were always set to an odd integer float.
+	
+	I updated tests that use this module.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+	chapel/test/studies/hpcc/STREAMS/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
+
