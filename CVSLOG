@@ -80518,3 +80518,16 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.notest 
 
+---------------------------------------------------------------------------
+
+10/13/06 15:54:21 -- marybeth
+
+Log message:
+	Checking in simplified version of fft.  This version does not special case
+	for when the twiddle factors are 1.0.  It also does not have different parallel
+	versions which can be used at specified times to produce optimized results.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl fft.execopts 
+	                                        fft.good 
+
