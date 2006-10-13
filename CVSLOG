@@ -80455,3 +80455,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra3.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 18:19:33 -- marybeth
+
+Log message:
+	The most recent version of RA for review.  It is almost complete, except for
+	adding distributed to the declaration of the TableDomain.
+
+Added files:
+	chapel/test/studies/hpcc/RA/: ra.chpl ra.good 
+
