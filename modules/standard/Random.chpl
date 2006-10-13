@@ -56,10 +56,28 @@ class RandomStream {
       }
     }
   }
+
+  def fillRandom(x:[?D] complex) {
+
+    if (D.rank > 1) {
+      writeln ("Not yet implemented for 2D or higher arrays.");
+      [i in D] x(i) = -1.0;
+    }
+    else {
+      var randlc_last_x: float = initrandlc(numGenerated+1);
+      for i in D {
+        (randlc_last_x,x(i).real) = nextrandlc(randlc_last_x);    
+        (randlc_last_x,x(i).imag) = nextrandlc(randlc_last_x);    
+        numGenerated += 2;
+      }
+    }
+  }
 }
 
-def fillRandom(x:[] float, seed: float = (2.0*getCurrentTime(unit=microseconds)+1.0), 
-    arand: float = (2.0*(getCurrentTime() + getCurrentTime(unit=milliseconds))+1.0)) {
+
+def fillRandom(x:[], seed: float = (2.0*getCurrentTime(unit=microseconds)+1.0),
+               arand: float = (2.0*(getCurrentTime() 
+                                   + getCurrentTime(unit=milliseconds))+1.0)) {
 
   var randNums = RandomStream(seed,arand);
 
