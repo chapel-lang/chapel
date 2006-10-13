@@ -80438,3 +80438,20 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/06 18:17:50 -- marybeth
+
+Log message:
+	Updated ra3.chpl (and just ra3, not ra2 also) to use the [) notation
+	for the domains that are 0-based.  I also used the naming conventions that Brad
+	and Steve agreed to.
+	
+	I added atomic to the update of the table.
+	
+	I didn't add distributed to the TableDomain declaration since I could not
+	get it to work with a uint(64) type.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra3.chpl 
+
