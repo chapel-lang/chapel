@@ -80570,3 +80570,15 @@ Log message:
 Removed files:
 	chapel/test/domains/deitz/: test_indefinite_remove2.future 
 
+---------------------------------------------------------------------------
+
+10/13/06 16:31:48 -- bradc
+
+Log message:
+	Filing a future to flag zippered iterations that have
+	different number of elements at runtime.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.chpl fft-zip.good 
+	                                     fft-zip.future 
+
