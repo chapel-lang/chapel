@@ -80560,3 +80560,13 @@ Added files:
 	                                     fft-perm.future 
 	                                     fft-perm.good 
 
+---------------------------------------------------------------------------
+
+10/13/06 16:29:56 -- waynew
+
+Log message:
+	.future should have been removed with my previous indefinite domain checkin.
+
+Removed files:
+	chapel/test/domains/deitz/: test_indefinite_remove2.future 
+
