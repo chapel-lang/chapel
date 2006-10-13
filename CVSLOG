@@ -80582,3 +80582,15 @@ Added files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.chpl fft-zip.good 
 	                                     fft-zip.future 
 
+---------------------------------------------------------------------------
+
+10/13/06 16:55:27 -- bradc
+
+Log message:
+	Continuing to clean this up.  Moved bitReverse() routine
+	in here, added zippered iterations, made the twiddles
+	calculation use more of a permutation-style of computation.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
