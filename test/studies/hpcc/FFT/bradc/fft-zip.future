@@ -1,0 +1,5 @@
+zippered iteration
+
+We need to generate an error message when two iterations
+are zipped together that have different numbers of
+elements.
