@@ -191,13 +191,17 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
     if (is_float_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)/2))
       return true;
+    if (is_imag_type(actualType) && 
+        (get_width(actualType) <= get_width(formalType)/2))
+      return true;
     if (is_complex_type(actualType) && 
         (get_width(actualType) < get_width(formalType)))
       return true;
   }
   if (formalType == dtString) {
     if (is_int_type(actualType) || is_uint_type(actualType) || 
-        is_float_type(actualType) || is_complex_type(actualType) ||
+        is_float_type(actualType) || is_imag_type(actualType) ||
+        is_complex_type(actualType) ||
         actualType == dtBool)
       return true;
   }

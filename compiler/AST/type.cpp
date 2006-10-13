@@ -767,6 +767,10 @@ createPrimitiveType( char *name, char *cname) {
   dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
   dtFloat[FLOAT_SIZE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
+#define INIT_PRIMITIVE_IMAG( name, width)                                     \
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
+  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  
 #define INIT_PRIMITIVE_COMPLEX( name, width)                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
@@ -841,6 +845,10 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_FLOAT( "float", 64);            // default size
   INIT_PRIMITIVE_FLOAT( "float(128)", 128);
 
+  INIT_PRIMITIVE_IMAG( "imag(32)", 32);
+  INIT_PRIMITIVE_IMAG( "imag", 64);            // default size
+  INIT_PRIMITIVE_IMAG( "imag(128)", 128);
+
   INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
   INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size
   INIT_PRIMITIVE_COMPLEX( "complex(256)", 256);
@@ -897,6 +905,14 @@ bool is_float_type(Type *t) {
 }
 
 
+bool is_imag_type(Type *t) {
+  return
+    t == dtImag[FLOAT_SIZE_32] ||
+    t == dtImag[FLOAT_SIZE_64] ||
+    t == dtImag[FLOAT_SIZE_128];
+}
+
+
 bool is_complex_type(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_64] ||
@@ -912,14 +928,17 @@ int get_width(Type *t) {
     return 16;
   if (t == dtInt[INT_SIZE_32] || 
       t == dtUInt[INT_SIZE_32] ||
-      t == dtFloat[FLOAT_SIZE_32])
+      t == dtFloat[FLOAT_SIZE_32] ||
+      t == dtImag[FLOAT_SIZE_32])
     return 32;
   if (t == dtInt[INT_SIZE_64] || 
       t == dtUInt[INT_SIZE_64] ||
       t == dtFloat[FLOAT_SIZE_64] ||
+      t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_64])
     return 64;
   if (t == dtFloat[FLOAT_SIZE_128] ||
+      t == dtImag[FLOAT_SIZE_128] ||
       t == dtComplex[COMPLEX_SIZE_128])
     return 128;
   if (t == dtComplex[COMPLEX_SIZE_256])

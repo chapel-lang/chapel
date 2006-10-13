@@ -466,3 +466,11 @@ pragma "no codegen" def _chpl_memtest_mallocOutOfMemory();
 pragma "no codegen" def _chpl_memtest_reallocOutOfMemory();
 
 pragma "no codegen" def startTrackingMem();
+
+
+pragma "inline" def bits(type t) where t == float(32)  return 32;
+pragma "inline" def bits(type t) where t == float(64)  return 64;
+pragma "inline" def bits(type t) where t == float(128) return 128;
+pragma "inline" def bits(type t) where t == complex(64)  return 64;
+pragma "inline" def bits(type t) where t == complex(128) return 128;
+pragma "inline" def bits(type t) where t == complex(256) return 256;

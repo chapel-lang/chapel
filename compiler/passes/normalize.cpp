@@ -1031,6 +1031,9 @@ static bool fold_call_expr(CallExpr* call) {
           FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_SIZE_NUM, ptype_p);
           if (!ptype_p) {
             FIND_PRIMITIVE_TYPE( dtComplex, COMPLEX_SIZE_NUM, ptype_p);
+            if (!ptype_p) {
+              FIND_PRIMITIVE_TYPE( dtImag, FLOAT_SIZE_NUM, ptype_p);
+            }
           }
         }
       }
@@ -1078,6 +1081,15 @@ static bool fold_call_expr(CallExpr* call) {
                     USR_FATAL( call, "illegal size %d for float", size);
                   }
                   call->replace( new SymExpr(tsize));
+                } else if (ptype_p == dtImag) {
+                  switch (size) {
+                  case 32:  tsize = dtImag[FLOAT_SIZE_32]->symbol;  break;
+                  case 64:  tsize = dtImag[FLOAT_SIZE_64]->symbol;  break;
+                  case 128: tsize = dtImag[FLOAT_SIZE_128]->symbol; break;
+                  default:
+                    USR_FATAL( call, "illegal size %d for imag", size);
+                  }
+                  call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtComplex) {
                   switch (size) {
                   case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
@@ -1102,7 +1114,8 @@ static bool fold_call_expr(CallExpr* call) {
         if (var->immediate) {
           if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
             if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
-              if (!is_complex_type(ts->type) && ts->type != dtString) {
+              if (!is_imag_type(ts->type) && 
+                  !is_complex_type(ts->type) && ts->type != dtString) {
                 SymExpr* s = new SymExpr(cast_fold(ts, var));
                 call->replace(s);
                 return true;
@@ -1126,9 +1139,11 @@ static bool fold_call_expr(CallExpr* call) {
         if (i1 && i2) {
           if (call->get(1)->typeInfo() == dtString ||
               is_float_type(call->get(1)->typeInfo()) ||
+              is_imag_type(call->get(1)->typeInfo()) ||
               is_complex_type(call->get(1)->typeInfo()) ||
               call->get(2)->typeInfo() == dtString ||
               is_float_type(call->get(2)->typeInfo()) ||
+              is_imag_type(call->get(2)->typeInfo()) ||
               is_complex_type(call->get(2)->typeInfo()))
             return false;
           FOLD_CALL("+", P_prim_add);
@@ -1169,6 +1184,7 @@ static bool fold_call_expr(CallExpr* call) {
         if (i1) {
           if (call->get(1)->typeInfo() == dtString ||
               is_float_type(call->get(1)->typeInfo()) ||
+              is_imag_type(call->get(1)->typeInfo()) ||
               is_complex_type(call->get(1)->typeInfo()))
             return false;
           FOLD_CALL("+", P_prim_plus);
@@ -1632,6 +1648,15 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         }
       }
     }
+    if (fn->_this->type == dtImag[FLOAT_SIZE_64]) {
+      for (int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++) {
+        if (dtImag[i] && i != FLOAT_SIZE_64) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtImag[i];
+          fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
+        }
+      }
+    }
     if (fn->_this->type == dtComplex[COMPLEX_SIZE_128]) {
       for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
         if (dtComplex[i] && i != COMPLEX_SIZE_128) {
@@ -1677,7 +1702,7 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
           fn->defPoint->parentStmt->remove();
-        } else if (call->isNamed("float")) {
+        } else if (call->isNamed("float") || call->isNamed("imag")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
             if (dtFloat[i])
               clone_for_parameterized_primitive_formals(fn, def,

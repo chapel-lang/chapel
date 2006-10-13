@@ -1651,6 +1651,29 @@ VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size) {
   return s;
 }
 
+VarSymbol *new_ImagSymbol(char *n, long double b, IF1_float_type size) {
+  Immediate imm;
+  switch (size) {
+  case FLOAT_SIZE_32  : imm.v_float32  = b; break;
+  case FLOAT_SIZE_64  : imm.v_float64  = b; break;
+  case FLOAT_SIZE_128 : imm.v_float128 = b; break;
+  default:
+    INT_FATAL( "unknown FLOAT_SIZE");
+  }
+  imm.const_kind = NUM_KIND_FLOAT;
+  imm.num_index = size;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtImag[size]);
+  rootScope->define(s);
+  s->cname = dupstr(n);
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
 VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_type size) {
   Immediate imm;
   switch (size) {

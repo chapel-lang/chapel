@@ -805,6 +805,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MIN_UINT%d", get_width( t));
           } else if (is_float_type( t)) {
             fprintf( outfile, "MIN_FLOAT%d", get_width( t));
+          } else if (is_imag_type( t)) {
+            fprintf( outfile, "MIN_IMAG%d", get_width( t));
           } else {   // must be (is_complex_type( t))
             INT_FATAL( t, "cannot do min on complex types");
           }
@@ -823,6 +825,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MAX_UINT%d", get_width( t));
           } else if (is_float_type( t)) {
             fprintf( outfile, "MAX_FLOAT%d", get_width( t));
+          } else if (is_imag_type( t)) {
+            fprintf( outfile, "MAX_IMAG%d", get_width( t));
           } else {   // must be (is_complex_type( t))
             INT_FATAL( t, "cannot do max on complex types");
           }
@@ -888,7 +892,8 @@ void CallExpr::codegen(FILE* outfile) {
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
-          if (is_int_type( t) || is_uint_type( t) || is_float_type( t)) {
+          if (is_int_type( t) || is_uint_type( t) || is_float_type( t) ||
+              is_imag_type(t)) {
             fprintf( outfile, "MAX_UINT%d", get_width( t));
           } else {   // must be (is_complex_type( t))
             // WAW: needs fixing?
@@ -907,7 +912,8 @@ void CallExpr::codegen(FILE* outfile) {
         if (is_arithmetic_type( t)) {
           if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "0");
-          } else if (is_float_type( t)) {
+          } else if (is_float_type( t) || is_imag_type(t)) {
+            // sjd: why are we doing this on floats???
             fprintf( outfile, "0.0");
           } else {   // must be (is_complex_type( t))
             // WAW: needs fixing?
