@@ -5,6 +5,7 @@
 
 // BLC: insert problem size computation based on memory size?
 
+use BitOps;
 use Random;
 use Time;
 
@@ -36,7 +37,7 @@ def main() {
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
-  Twiddles = bitReverseShuffle(Twiddles);
+  bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
   const ProblemDom = [0..N);
@@ -55,7 +56,7 @@ def main() {
   // TIMED SECTION
   var startTime = getCurrentTime();
 
-  Z = bitReverseShuffle(Z);
+  bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
   var execTime = getCurrentTime() - startTime;
@@ -80,30 +81,32 @@ def computeTwiddles(W) {
 }
 
 
-// Check what the NSA supports for bit reversal
-// rename this?
 def bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
   const reverse = lg(n);
-  var V: [WD] W.elt_type;  // BLC: rename this field?
-  /* BLC: could we do this as a permutation instead?
-  var P: [i in WD] index(WD) = i;
-  bitReverse(P);
-  V(P) = W;
-  */
-  forall i in WD {  // BLC: could this be a uint domain?
-    // BLC: what does this bitReverse function do with high-order bits?
-    // BLC: could this be rewritten as one line?
-    var ndx = bitReverse(i:uint(64), numBits=reverse);
-    V(ndx:int) = W(i); // BLC: unfortunate cast
-  }
-  // BLC: W = V would be preferable
-  return V;
+  var V: [WD] W.elt_type;  // BLC: rename elt_type to remove underscore?
+  // BLC: would like to use:
+  //  var Perm: [i in WD] int = bitReverse(i:uint(64), numBits = reverse):int;
+  var Perm: [WD] index(WD);
+  [i in WD] Perm(i) = bitReverse(i, numBits = reverse);
+  // BLC: would like to use:
+  // V(Perm) = W;
+  [i in WD] V(Perm(i)) = W(i);
+  W = V;
 }
 
 
+// reverses numBits low-order bits of val
+def bitReverse(val: ?valType, numBits = 64) {
+  param mask: uint(64) = 0x0102040810204080;
+  const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
+  const valReverse = bitRotLeft(valReverse64, numBits);
+  return valReverse: valType;
+}
+
+
+
 def dfft(A: [?AD] complex, W) {
-  
   cft1st(A, W);
 
   var l = 4;
@@ -113,7 +116,6 @@ def dfft(A: [?AD] complex, W) {
     l *= 4;
     lasti = i;
   }
-  //  writeln("lasti+2 = ", lasti+2, " logN-1 = ", logN-1);
   for i in [lasti+2..logN) by 2 {
     cftmd2(l, A, W);
     l *= 4;
@@ -141,7 +143,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
   // BLC: This line wants /(complex,real) to be implemented directly:
   Z = conjg(Z) / N;
 
-  Z = bitReverseShuffle(Z);
+  bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
   // BLC: need to check this against written spec
@@ -186,8 +188,10 @@ def cft1st(A, W) {
   x0 = (x3.imag + x1.real, x3.real - x1.imag):complex;
   A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
 
-  var k1 = 1;
-  forall j in [8..n) by 8 {
+  // BLC: would like to use an indefinite arithmetic array here
+  // BLC: would also like to use () on both indices and zipping
+  //      together of ranges
+  forall j,k1 in [8..n) by 8, 1..(n-8)/8 {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
@@ -195,14 +199,11 @@ def cft1st(A, W) {
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
-    //    writeln("accessing: ", 2*k1+1);
     wk1 = W(2*k1+1);
     wk3 = (wk1.real - 2*wk2.real * wk1.imag, 
            2*wk2.real * wk1.real - wk1.imag):complex;
     wk2 = (-wk2.imag, wk2.real): complex;
     butterfly(wk1, wk2, wk3, A[j+4..j+7]);
-
-    k1 += 1;
   }
 }
 
@@ -228,8 +229,7 @@ def cftmd1(l, A, W) {
   const n = A.domain(1).length;
 
   cftmd0(l, A, W);
-  var k1 = 1;
-  forall k in [m2..n) by m2 {
+  forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
@@ -245,8 +245,6 @@ def cftmd1(l, A, W) {
     for j in [k+m..k+m+l) {
       butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*l by l]);
     }
-
-    k1 += 1;
   }
 }
 
@@ -264,19 +262,15 @@ def cftmd2(l, A, W) {
   }
 
   forall j in [0..l) {
-    var k1 = 1;  // BLC: zip this in
-    forall k in [m2..n) by m2 {
+    forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                  2 * wk2.imag * wk1.real - wk1.imag): complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*l by l]);
-
-      k1 += 1;
     }
 
-    k1 = 1;  // BLC: zip this in
-    forall k in [m2..n) by m2 {
+    forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
@@ -284,8 +278,6 @@ def cftmd2(l, A, W) {
       wk2 = (-wk2.imag, wk2.real): complex;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*l by l]);
-
-      k1 += 1;
     }
   }
 }
@@ -297,8 +289,7 @@ def cftmd21(l, A, W) {
   var m2 = 2*m;
   var m3 = 3*m;
 
-  var k1 = 1;
-  for k in [m2..n) by m2 {
+  for k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
@@ -316,8 +307,6 @@ def cftmd21(l, A, W) {
     forall j in [k+m..k+m+l) {
       butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
     }
-
-    k1 += 1;
   }
 }
 
