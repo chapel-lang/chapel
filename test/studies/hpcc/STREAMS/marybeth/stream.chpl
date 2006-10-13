@@ -46,7 +46,8 @@ var avgtime, sumtime, mintime, maxtime: float;
 var curGBs: float;
 
 // setting the seed for the random number generator
-const seed = 333444.0;
+param seed = 333444555.0;
+param arand = 888899999.0;
 
 def main() {
   var clock: Timer;
@@ -71,7 +72,7 @@ def main() {
 }
 
 def initStreamVectors() {
-  var randlist = rng(seed);
+  var randlist = randomStream(seed,arand);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);
@@ -89,7 +90,7 @@ def computeStreamResults() {
 
 
 def checkSTREAMresults() {
-  var randlist = rng(seed);
+  var randlist = randomStream(seed,arand);
   var vector = [1..vectorSize];
 
   var Aref, Bref, Cref, error : [vector] elemType;
