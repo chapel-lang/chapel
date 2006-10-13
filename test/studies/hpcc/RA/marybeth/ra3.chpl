@@ -6,29 +6,30 @@
 param POLY:uint(64) = 7;
 
 config const verify = true;
-config const showtiming = false;
+config const doIO = true;
+config const showTiming = false;
 
-config const TotalMemSize:int = 100000;
-const LogTableSize:int  = lg(TotalMemSize/2);
-const TableSize:uint(64) = (1 << LogTableSize):uint(64);
+config const totalMemSize:int = 100000;
+const logTableSize:int  = lg(totalMemSize/2);
+const tableSize:uint(64) = (1 << logTableSize):uint(64);
 
-const NumUpdates:uint(64) = 4*TableSize;
-config const NumStreams:int = 1 << 9;
-const BigStep:int = (NumUpdates:int)/NumStreams;
-config const LittleStep = 64;
+const numUpdates:uint(64) = 4*tableSize;
+config const numStreams:int = 1 << 9;
+const bigStep:int = (numUpdates:int)/numStreams;
+config const littleStep = 64;
 
-const TableDomain = [0..TableSize-1];
+const TableDomain = [0..tableSize);
 var Table: [TableDomain] uint(64);
 
-const RandStepsDomain = [0..63];
+const RandStepsDomain = [0..64);
 var RandomSteps: [RandStepsDomain] uint(64);
 
-const StreamDomain = [0..NumStreams-1];
-const BigStepDomain = [0..BigStep-1];
-const LittleStepDomain = [0..LittleStep-1];
-const UpdateDomain: domain(2) = [0..NumStreams-1,0..BigStep-1];
+const StreamDomain = [0..numStreams);
+const BigStepDomain = [0..bigStep);
+const LittleStepDomain = [0..littleStep);
+const UpdateDomain: domain(2) = [0..numStreams,0..bigStep);
 
-var RealTime:float;
+var realTime:float;
 var GUPs:float;
 
 def main() {
@@ -36,44 +37,44 @@ def main() {
   use Time;
   var t:Timer;
 
-  writeRAdata();
+  if doIO then writeRAdata();
 
-  InitRandomSteps();
+  initRandomSteps();
 
   t.clear();
   t.start();
 
-  RandomAccessUpdate();
+  randomAccessUpdate();
 
   t.stop();
-  RealTime = t.elapsed();
+  realTime = t.elapsed();
 
-  GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
-  GUPs *= 1.0e-9*NumUpdates;
+  GUPs = (if (realTime > 0.0) then (1.0 / realTime) else -1.0);
+  GUPs *= 1.0e-9*numUpdates;
 
-  if (showtiming) then writeRAresults();
+  if (doIO && showTiming) then writeRAresults();
 
-  if (verify) then VerifyResults();
+  if (verify) then verifyResults();
 
 }
 
-def RandomAccessUpdate() {
+def randomAccessUpdate() {
  
   [i in TableDomain] Table(i) = i;
   
-  for j in StreamDomain {
+  forall j in StreamDomain {
     var ranvec: [LittleStepDomain] uint(64);
-    [k in LittleStepDomain] ranvec(k) = RandomStart(BigStep*j+(BigStep/LittleStep)*k);
-    for i in BigStepDomain by LittleStep{
+    [k in LittleStepDomain] ranvec(k) = randomStart(bigStep*j+(bigStep/littleStep)*k);
+    for i in BigStepDomain by littleStep{
       for k in LittleStepDomain{
         ranvec(k) = (ranvec(k) << 1) ^ (if (ranvec(k):int(64) < 0) then POLY else 0);
-        Table(ranvec(k) & (TableSize-1)) ^= ranvec(k);
+        atomic {Table(ranvec(k) & (tableSize-1)) ^= ranvec(k);}
       }
     }
   }
 }
 
-def RandomStart(step0:int):uint(64) {
+def randomStart(step0:int):uint(64) {
 
   var i:int;
   var ran:uint(64) = 2;
@@ -93,7 +94,7 @@ def RandomStart(step0:int):uint(64) {
   return ran;
 }
 
-def InitRandomSteps() {
+def initRandomSteps() {
   
   var temp:uint(64) = 1;
 
@@ -104,42 +105,44 @@ def InitRandomSteps() {
   }
 }
 
-def VerifyResults() {
-  config const ErrorTolerance = 0.01;
+def verifyResults() {
+  config const errorTolerance = 0.01;
 
   var temp: uint(64) = 1;  
   for i in UpdateDomain {
     temp = (temp << 1) ^ (if (temp:int(64) < 0) then POLY else 0);
-    Table(temp & (TableSize-1)) ^= temp;  
+    Table(temp & (tableSize-1)) ^= temp;  
   }
 
-  var NumErrors = 0;
+  var numErrors = 0;
   for i in TableDomain {
     if (Table(i) != i) then
-      NumErrors += 1;
+      numErrors += 1;
   }
 
-  write("Found ", NumErrors, " errors in ", TableSize, " locations ");
-  if (NumErrors <= ErrorTolerance*TableSize) {
-    writeln("(passed)");
-  } else {
-    writeln("(failed)");
+  if doIO {
+    write("Found ", numErrors, " errors in ", tableSize, " locations ");
+    if (numErrors <= errorTolerance*tableSize) {
+      writeln("(passed)");
+    } else {
+      writeln("(failed)");
+    }
   }
 }
 
 def writeRAdata() {
 
-  writeln("Main table size = 2^",LogTableSize," = ",TableSize," words");
-  writeln("Number of updates = ",NumUpdates);
-  writeln("Number of random streams = ",NumStreams);
-  writeln("Length of each random stream = ",BigStep);
-  writeln("Inner loop length = ",LittleStep);
+  writeln("Main table size = 2^",logTableSize," = ",tableSize," words");
+  writeln("Number of updates = ",numUpdates);
+  writeln("Number of random streams = ",numStreams);
+  writeln("Length of each random stream = ",bigStep);
+  writeln("Inner loop length = ",littleStep);
   writeln();
 }
 
 def writeRAresults() {
 
-  writeln("Real time used = ", RealTime, " seconds");
+  writeln("Real time used = ", realTime, " seconds");
   writeln(GUPs, " Billion(10^9) Updates    per second [GUP/s]");
   writeln();
 }
