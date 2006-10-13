@@ -27,7 +27,8 @@ config const vectorSize = if flg2 <= maxIntBits2
                                                     else maxPossibleElems
                           else 1 << maxIntBits2;
 // the vectors
-var A, B, C: [1..vectorSize] elemType;
+const VecDomain: domain(1) distributed(block) = [1..vectorSize];
+var A, B, C: [VecDomain] elemType;
 
 // config constants for output
 config const doIO = true;
@@ -91,20 +92,19 @@ def computeStreamResults() {
 
 def checkSTREAMresults() {
   var randlist = RandomStream(seed,arand);
-  var vector = [1..vectorSize];
 
-  var Aref, Bref, Cref, error : [vector] elemType;
+  var Aref, Bref, Cref, error : [VecDomain] elemType;
 
   randlist.fillRandom(Aref);
   randlist.fillRandom(Bref);
   randlist.fillRandom(Cref);
 
-  for i in vector {
+  for i in VecDomain {
     Aref(i) = 2.0 * Aref(i);
   }
 
   for k in iterDomain {
-    for i in vector {
+    for i in VecDomain {
       Aref(i) = Bref(i) + scalar*Cref(i);
     }
   }
