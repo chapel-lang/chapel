@@ -80407,3 +80407,13 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	                                            stream.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 17:50:54 -- marybeth
+
+Log message:
+	Version of stream benchmark for review.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/: stream.chpl stream.good 
+
