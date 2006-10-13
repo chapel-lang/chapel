@@ -80492,3 +80492,13 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 14:52:57 -- bradc
+
+Log message:
+	Overloaded fillRandom for 1D arrays of complex numbers.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
