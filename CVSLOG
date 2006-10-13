@@ -80502,3 +80502,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 15:36:36 -- bradc
+
+Log message:
+	Steve pointed out that I might want to check in a copy of
+	FFT that works to prevent regressions in the next week or
+	so.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: .cvsignore fft.good 
+Added files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.execopts 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.notest 
+
