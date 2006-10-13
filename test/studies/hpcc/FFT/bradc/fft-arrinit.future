@@ -1,0 +1,7 @@
+waynew
+
+For some reason, initialization of an array local in a function
+where the domain is queried from an argument isn't working.  I
+haven't tried to narrow down the problem to see if it has to do
+with being defined in a function, using a query domain, or
+something else.
