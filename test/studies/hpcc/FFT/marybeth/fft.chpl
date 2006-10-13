@@ -1,0 +1,185 @@
+use Random;
+use Time;
+
+
+// problem size configs
+config const logN = 5;
+
+// pseudo-random input configs
+config const deterministic = false,
+             seed = 314159265.0,
+             arand = 1220703125.0;
+
+// verification configs
+config const epsilon = 2.0 ** -51.0,
+             threshold = 16.0;
+
+// boolean configs
+config const printTiming = true;
+
+def main() {
+  // compute problem size
+  const N = 1 << logN;
+
+  // twiddle domain and arrays
+  const TwiddleDom = [0..N/4);
+  var Twiddles: [TwiddleDom] complex;
+
+  computeTwiddles(Twiddles);
+  Twiddles = bitReverseShuffle(Twiddles);
+
+  // problem domain and arrays
+  const ProblemDom: domain(1) distributed(block) = [0..N);
+  var Z, z: [ProblemDom] complex;
+  var realtemp, imagtemp: [ProblemDom] float;
+
+  // generate pseudo-random input
+  if deterministic then
+    fillRandom(z, seed=seed, arand=arand);
+  else
+    fillRandom(z);
+
+  // conjugate input, storing result to work array
+  Z = conjg(z);
+
+
+  // TIMED SECTION
+  var startTime = getCurrentTime();
+
+  Z = bitReverseShuffle(Z);
+  dfft(Z, Twiddles);
+
+  var execTime = getCurrentTime() - startTime;
+
+  verifyResults(z, Z, execTime, Twiddles);
+}
+
+
+def computeTwiddles(W) {
+  const n = W.numElements;
+  const delta = 2.0 * atan(1.0) / n;
+
+  W(0) = 1.0;
+  W(n/2) = let cosDeltaN = cos(delta * n/2)
+            in (cosDeltaN, cosDeltaN):complex;
+  forall i in [1..n/2) {
+    const x = cos(delta*i);
+    const y = sin(delta*i);
+    W(i)     = (x, y):complex;
+    W(n - i) = (y, x):complex;
+  }
+}
+
+
+// Check what the NSA supports for bit reversal
+// rename this?
+def bitReverseShuffle(W: [?WD]) {
+  const n = WD.numIndices;
+  const reverse = lg(n);
+  var V: [WD] W.elt_type;  // BLC: rename this field?
+  /* BLC: could we do this as a permutation instead?
+  var P: [i in WD] index(WD) = i;
+  bitReverse(P);
+  V(P) = W;
+  */
+  forall i in WD {  // BLC: could this be a uint domain?
+    // BLC: what does this bitReverse function do with high-order bits?
+    // BLC: could this be rewritten as one line?
+    var ndx = bitReverse(i:uint(64), numBits=reverse);
+    V(ndx:int) = W(i); // BLC: unfortunate cast
+  }
+  // BLC: W = V would be preferable
+  return V;
+}
+
+
+def dfft(A: [?AD] complex, W) {
+  
+  var l = 1;
+  var lasti:int;
+  var m, m2, k1: int;
+
+  const n = AD(1).length;
+
+  for i in 2..logN by 2 {
+    m = l << 2;
+    m2 = 2*m;
+    k1 = 0;
+    forall k in [0..n) by m2 {
+      var wk2 = W[k1];
+      var wk1 = W[2*k1];
+      var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
+                 2 * wk2.imag * wk1.real - wk1.imag):complex;
+      for j in [k..k+l) {
+        butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
+      }
+
+      wk1 = W[2*k1+1];
+      wk3 = (wk1.real - 2 * wk2.real * wk1.imag,
+             2 * wk2.real * wk1.real - wk1.imag):complex;
+
+      for j in [k+m..k+m+l) {
+        butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*l by l]);
+      }
+
+      k1 += 1;
+    }
+    l *= 4;
+    lasti = i;
+  }
+
+  if ((l << 2) == n) {
+    forall j in [0..l) {
+      butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
+    }
+  } else {
+    forall j in [0..l) {
+      var a = A(j);
+      var b = A(j+l);
+      A(j) = a + b;
+      A(j+l) = a - b;
+    }
+  }
+}
+
+
+def verifyResults(z, Z, execTime, Twiddles) {
+  const N = Z.numElements;
+
+  // BLC: This line wants /(complex,real) to be implemented directly:
+  Z = conjg(Z) / N;
+
+  Z = bitReverseShuffle(Z);
+  dfft(Z, Twiddles);
+
+  // BLC: need to check this against written spec
+  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
+
+  maxerr = maxerr / logN / epsilon;
+
+  write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
+  writeln(", error = ", maxerr);
+  writeln();
+  writeln("N      = ", N);
+  if (printTiming) {
+    writeln("Time   = ", execTime);
+    const gflop = 5.0 * N * logN / 1000000000.0;
+    writeln("GFlops = ", gflop / execTime);
+  }
+}
+
+def butterfly(wk1: complex, wk2: complex, wk3: complex, 
+              inout A:[1..4] complex) {
+  var x0 = A[1] + A[2];
+  var x1 = A[1] - A[2];
+  var x2 = A[3] + A[4];
+  var x3 = A[3] - A[4];
+
+  A[1] = x0 + x2;
+  x0 -= x2;
+  A[3] = wk2 * x0;
+  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  A[2] = wk1 * x0;
+  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
+  A[4] = wk3 * x0;
+}
