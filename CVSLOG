@@ -80466,3 +80466,14 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/: ra.chpl ra.good 
 
+---------------------------------------------------------------------------
+
+10/12/06 18:26:06 -- marybeth
+
+Log message:
+	Updated stream benchmark.  Created a VecDomain that is distributed.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+
