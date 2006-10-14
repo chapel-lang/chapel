@@ -80619,3 +80619,22 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 17:47:00 -- bradc
+
+Log message:
+	It seems that if this module has no code in it,
+	it doesn't get used properly.  I added some bogus
+	code for now.
+	
+	I have moved the BitOps from _chpl_math to here
+	in my private version of the compiler, but have
+	not had a chance to test yet, so will test over
+	the weekend and check in on Monday if it works.
+	In doing this move, I've also cleaned some of
+	them up a bit/generalized them.
+
+Modified files:
+	chapel/modules/standard/: BitOps.chpl 
+
