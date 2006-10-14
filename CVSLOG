@@ -80604,3 +80604,18 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 17:38:41 -- bradc
+
+Log message:
+	Here's where this exercise is ending today.  I
+	replaced a bunch of explicit complex manipulation
+	with multiplications by 1.0i following Steve's
+	nice suggestion.  Haven't replaced those weirder
+	complex expressions yet -- still trying to intuit
+	some sense from them.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
