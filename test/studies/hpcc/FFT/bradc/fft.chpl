@@ -13,6 +13,8 @@ use Time;
 // problem size configs
 config const logN = 5;
 
+param radix = 4;
+
 // pseudo-random input configs
 config const deterministic = false,
              seed = 314159265.0,
@@ -70,8 +72,8 @@ def computeTwiddles(W) {
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
-  W(n/2) = let cosDeltaN = cos(delta * n/2)
-            in (cosDeltaN, cosDeltaN):complex;
+  W(n/2) = let x = cos(delta * n/2)
+            in (x, x):complex;
   forall i in [1..n/2) {
     const x = cos(delta*i);
     const y = sin(delta*i);
@@ -106,32 +108,32 @@ def bitReverse(val: ?valType, numBits = 64) {
 
 
 
-def dfft(A: [?AD] complex, W) {
-  cft1st(A, W);
+def dfft(Z, W) {
+  cft1st(Z, W);
 
-  var l = 4;
+  var span = radix;
   var lasti = 2;
-  for i in 4..logN/2 by 2 {
-    cftmd1(l, A, W);
-    l *= 4;
+  for i in radix..logN/2 by 2 {
+    cftmd1(span, Z, W);
+    span *= radix;
     lasti = i;
   }
   for i in [lasti+2..logN) by 2 {
-    cftmd2(l, A, W);
-    l *= 4;
+    cftmd2(span, Z, W);
+    span *= radix;
   }
 
-  const n = AD(1).length;
-  if ((l << 2) == n) {
-    forall j in [0..l) {
-      butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
+  const n = Z.numElements;
+  if (radix*span == n) {
+    forall j in [0..span) {
+      butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
     }
   } else {
-    forall j in [0..l) {
-      var a = A(j);
-      var b = A(j+l);
-      A(j) = a + b;
-      A(j+l) = a - b;
+    forall j in [0..span) {
+      var a = Z(j);
+      var b = Z(j+span);
+      Z(j) = a + b;
+      Z(j+span) = a - b;
     }
   }
 }
@@ -208,66 +210,66 @@ def cft1st(A, W) {
 }
 
 
-def cftmd0(l, A, W) {
+def cftmd0(span, A, W) {
   var wk1r = W(1).real;
-  const m = l << 2;
+  const m = radix*span;
 
-  forall j in [0..l) {
-    butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
+  forall j in [0..span) {
+    butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
   }
 
-  forall j in [m..m+l) {
+  forall j in [m..m+span) {
     butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
-              A[j..j+3*l by l]);
+              A[j..j+3*span by span]);
   }
 }
 
 
-def cftmd1(l, A, W) {
-  const m = l << 2;
+def cftmd1(span, A, W) {
+  const m = radix*span;
   const m2 = 2*m;
   const n = A.domain(1).length;
 
-  cftmd0(l, A, W);
+  cftmd0(span, A, W);
   forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
                2 * wk2.imag * wk1.real - wk1.imag):complex;
-    for j in [k..k+l) {
-      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
+    for j in [k..k+span) {
+      butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
     wk1 = W[2*k1+1];
     wk3 = (wk1.real - 2 * wk2.real * wk1.imag,
            2 * wk2.real * wk1.real - wk1.imag):complex;
 
-    for j in [k+m..k+m+l) {
-      butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*l by l]);
+    for j in [k+m..k+m+span) {
+      butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*span by span]);
     }
   }
 }
 
 
-def cftmd2(l, A, W) {
-  var m = l << 2;
+def cftmd2(span, A, W) {
+  var m = radix*span;
   var m2 = 2*m;
   const n = A.domain(1).length;
 
-  cftmd0(l, A, W);
+  cftmd0(span, A, W);
   if (m2 >= n) return;
   if (m2 >= n / 8) {
-    cftmd21(l, A, W);
+    cftmd21(span, A, W);
     return;
   }
 
-  forall j in [0..l) {
+  forall j in [0..span) {
     forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                  2 * wk2.imag * wk1.real - wk1.imag): complex;
-      butterfly(wk1, wk2, wk3, A[j+k..j+k+3*l by l]);
+      butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
@@ -277,17 +279,16 @@ def cftmd2(l, A, W) {
                  2*wk2.real * wk1.real - wk1.imag): complex;
       wk2 = (-wk2.imag, wk2.real): complex;
 
-      butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*l by l]);
+      butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
     }
   }
 }
 
 
-def cftmd21(l, A, W) {
+def cftmd21(span, A, W) {
   const n = A.domain(1).length;
-  var m = l << 2;
+  var m = radix*span;
   var m2 = 2*m;
-  var m3 = 3*m;
 
   for k,k1 in [m2..n) by m2, 1..(n-m2)/m2 {
     var wk2 = W[k1];
@@ -295,8 +296,8 @@ def cftmd21(l, A, W) {
     var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
                2* wk2.imag * wk1.real - wk1.imag): complex;
 
-    forall j in [k..k+l) {
-      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
+    forall j in [k..k+span) {
+      butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
     wk1 = W[2*k1 + 1];
@@ -304,15 +305,15 @@ def cftmd21(l, A, W) {
            2*wk2.real * wk1.real - wk1.imag): complex;
     wk2 = (-wk2.imag, wk2.real): complex;
 
-    forall j in [k+m..k+m+l) {
-      butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
+    forall j in [k+m..k+m+span) {
+      butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
   }
 }
 
 
 def butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              inout A:[1..4] complex) {
+              inout A:[1..radix] complex) {
   var x0 = A[1] + A[2];
   var x1 = A[1] - A[2];
   var x2 = A[3] + A[4];
