@@ -80594,3 +80594,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/06 17:12:49 -- bradc
+
+Log message:
+	Starting to rename some of these 1-letter variables...
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
