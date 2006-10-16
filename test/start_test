@@ -313,6 +313,7 @@ set valgrindexe = 0
 set interpret = 0
 set testfutures = 0
 set testfuturesonly = 0
+set testnotests = 0
 set recurse = 1
 
 
@@ -384,6 +385,7 @@ while ( $#argv > 0 )
                 shift
                 set onetestpath = $argv[1]
                 set testfutures = 1
+                set testnotests = 1
                 shift
                 breaksw
         case -valgrindexe:
@@ -574,6 +576,12 @@ else
     else
         setenv CHPL_TEST_FUTURES 0
     endif
+endif
+
+if ($testnotests == 1) then
+    setenv CHPL_TEST_NOTESTS 1
+else
+    setenv CHPL_TEST_NOTESTS 0
 endif
 
 foreach dir ($dirs)

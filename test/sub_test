@@ -123,6 +123,7 @@ endif
 #               1 == "test futures and non-futures"
 #               0 == "test non-futures only"
 set testfutures = $CHPL_TEST_FUTURES
+set testnotests = $CHPL_TEST_NOTESTS
 
 if ($?CHPL_VALGRIND_OPTS == 0) then
   set CHPL_VALGRIND_OPTS = "--tool=memcheck"
@@ -162,7 +163,7 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
 
-    if (-r ./$execfile.notest) then
+    if (-r ./$execfile.notest && $testnotests == 0) then
         echo \[Skipping notest test: $localdir/$execfile\]
         continue;
     endif
