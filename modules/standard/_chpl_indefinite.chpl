@@ -285,17 +285,19 @@ class _iarray: _abase {
   def isValidCursor?(c)
     return c < dom.num_inds;
 
-  def reallocate(d: _idomain) {
-    if !(d.is_compact) then d._compact();
-    var new_data = _ddata( elt_type, d.inds.size);
+  def reallocate(d: _domain) {
+    var id = d._value;
+    // if !(id.is_compact) then id._compact();
+    var new_data = _ddata( elt_type, id.inds.size);
     new_data.init();
-    for i in 0..d.num_inds {
-      var ind = dom.inds(dom.table(dom._map(d.inds(i).data)));
+    for i in 0..id.inds.size-1 {
+      var ind = id.inds(i);
       if ind.valid {
-        new_data(i) = ind.data;
+        new_data(i) = data(dom._get_index(ind.data));
       }
     }
     data = new_data;
+    dom = id;
   }
 
   def numElements {

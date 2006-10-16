@@ -1539,7 +1539,7 @@ static void fixup_array_formals(FnSymbol* fn) {
     return;
   fn->normalizedOnce = true;
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn);
+  collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isNamed("_build_array_type")) {
