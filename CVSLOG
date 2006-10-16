@@ -80686,3 +80686,23 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/16/06 13:25:14 -- deitz
+
+Log message:
+	Added front-end and module support for an imaginary type called
+	imaginary.
+	
+	Update .good and fixed regression types/complex/bradc/negateimaginary.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp view.cpp 
+	chapel/compiler/ifa/: num.cpp num.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/types/complex/bradc/: negateimaginary.good 
+
