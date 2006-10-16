@@ -64,7 +64,7 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
           res = sprintf(str, control_string, imm.v_float32); break;
@@ -137,7 +137,7 @@ sprint_imm(char *str, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
           res = sprint_float_val(str, imm.v_float32); break;
@@ -207,7 +207,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
       char str[80];
       switch (imm.num_index) {
         case FLOAT_SIZE_32:  
@@ -298,7 +298,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
@@ -347,7 +347,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_float32 = (float32)_op(im1.v_float32, im2.v_float32); break; \
@@ -396,7 +396,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (im1.num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
@@ -445,7 +445,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             default: assert(!"case"); \
           } \
@@ -488,7 +488,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
               imm->v_float32 = _op im1.v_float32; break; \
@@ -537,7 +537,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_FLOAT: \
+        case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             default: assert(!"case"); \
           } \
@@ -755,7 +755,7 @@ convert_string_to_immediate(char *str, Immediate *imm) {
       }
       break;
     }
-    case NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
       switch (imm->num_index) {
         case FLOAT_SIZE_32:
           imm->v_float32 = atof( str); break;

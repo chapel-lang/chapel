@@ -957,6 +957,7 @@ parenop_type:
       if (!(call->isNamed("int") ||
             call->isNamed("uint") ||
             call->isNamed("float") ||
+            call->isNamed("imaginary") ||
             call->isNamed("complex")))
         USR_FATAL(call, "nested queries not supported on non-primitive types");
       $$ = call;
@@ -1111,9 +1112,9 @@ literal:
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      char cstr[256];
-      sprintf( cstr, "_chpl_complex128(0.0, %s)", yytext);
-      $$ = new SymExpr(new_ComplexSymbol(cstr, 0.0, strtod(yytext, NULL)));
+      //      char cstr[256];
+      //      sprintf( cstr, "_chpl_complex128(0.0, %s)", yytext);
+      $$ = new SymExpr(new_ImagSymbol(yytext, strtod(yytext, NULL)));
     }
 | STRINGLITERAL
     { $$ = new SymExpr(new_StringSymbol($1)); }

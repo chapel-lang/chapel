@@ -33,6 +33,9 @@ typedef unsigned long long  _uint64;
 typedef float               _float32;
 typedef double              _float64;
 typedef long double         _float128;
+typedef float               _imag32;
+typedef double              _imag64;
+typedef long double         _imag128;
 typedef struct __complex64  {_float32 re; _float32 im;} _complex64;
 typedef struct __complex128 {_float64 re; _float64 im;} _complex128;
 typedef struct __complex256 {_float128 re; _float128 im;} _complex256;
@@ -80,6 +83,11 @@ char* _chpl_tostring_uint64(_uint64 x, char* format);
 char* _chpl_tostring_float32(_float32 x, char* format);
 char* _chpl_tostring_float64(_float64 x, char* format);
 char* _chpl_tostring_float128(_float128 x, char* format);
+
+#define _chpl_tostring_imag32 _chpl_tostring_float32
+#define _chpl_tostring_imag64 _chpl_tostring_float64
+#define _chpl_tostring_imag128 _chpl_tostring_float128
+
 char* _chpl_tostring_complex64(_complex64 x, char* format);
 char* _chpl_tostring_complex128(_complex128 x, char* format);
 char* _chpl_tostring_complex256(_complex256 x, char* format);

@@ -27,6 +27,8 @@
 
 #define _default_format_write_float32     "%lg"
 #define _default_format_write_float64     "%lg"  /* double */
+#define _default_format_write_imag32     "%lgi"
+#define _default_format_write_imag64     "%lgi"  /* double */
 
 #define _default_format_read_complex64    "%g + %g%c"
 #define _default_format_read_complex128   "%lg + %lg%c"

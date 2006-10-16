@@ -767,8 +767,8 @@ createPrimitiveType( char *name, char *cname) {
   dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
   dtFloat[FLOAT_SIZE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
-#define INIT_PRIMITIVE_IMAG( name, width)                                     \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
+#define INIT_PRIMITIVE_IMAG( name, width)                               \
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
 #define INIT_PRIMITIVE_COMPLEX( name, width)                                   \
@@ -845,9 +845,9 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_FLOAT( "float", 64);            // default size
   INIT_PRIMITIVE_FLOAT( "float(128)", 128);
 
-  INIT_PRIMITIVE_IMAG( "imag(32)", 32);
-  INIT_PRIMITIVE_IMAG( "imag", 64);            // default size
-  INIT_PRIMITIVE_IMAG( "imag(128)", 128);
+  INIT_PRIMITIVE_IMAG( "imaginary(32)", 32);
+  INIT_PRIMITIVE_IMAG( "imaginary", 64);            // default size
+  INIT_PRIMITIVE_IMAG( "imaginary(128)", 128);
 
   INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
   INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size

@@ -111,6 +111,13 @@ static void genTostringRoutineName(FILE* outfile, Type* exprType) {
   } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
     fprintf(outfile, "float128");
 
+  } else if (exprType == dtImag[FLOAT_SIZE_32]) {
+    fprintf(outfile, "imag32");
+  } else if (exprType == dtImag[FLOAT_SIZE_64]) {
+    fprintf(outfile, "imag64");
+  } else if (exprType == dtImag[FLOAT_SIZE_128]) {
+    fprintf(outfile, "imag128");
+
   } else if (exprType == dtComplex[COMPLEX_SIZE_64]) {
     fprintf(outfile, "complex64");
   } else if (exprType == dtComplex[COMPLEX_SIZE_128]) {
@@ -1135,6 +1142,10 @@ void CallExpr::codegen(FILE* outfile) {
           fprintf( outfile, "(_float%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "), 0.0)");
+        } else if (is_imag_type( get(2)->typeInfo())) {
+          fprintf( outfile, "0.0, (_float%d)(", width1/2);
+          get(2)->codegen( outfile);
+          fprintf( outfile, "))");
         } else {
           INT_FATAL( "illegal cast to complex");
         }

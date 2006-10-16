@@ -110,7 +110,12 @@ char* _chpl_tostring_uint64(_uint64 x, char* format) {
 
 static void ensurePointZero(char* buffer) {
   if (!strchr(buffer, '.') && !strchr(buffer, 'e')) {
-    strcat(buffer, ".0");
+    if (strchr(buffer, 'i')) {
+      buffer[strlen(buffer)-1] = '\0';
+      strcat(buffer, ".0i");
+    } else {
+      strcat(buffer, ".0");
+    }
   }
 }
 

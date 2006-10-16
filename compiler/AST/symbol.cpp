@@ -1660,7 +1660,7 @@ VarSymbol *new_ImagSymbol(char *n, long double b, IF1_float_type size) {
   default:
     INT_FATAL( "unknown FLOAT_SIZE");
   }
-  imm.const_kind = NUM_KIND_FLOAT;
+  imm.const_kind = NUM_KIND_IMAG;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
@@ -1735,6 +1735,8 @@ immediate_type(Immediate *imm) {
       return dtInt[imm->num_index];
     case NUM_KIND_FLOAT:
       return dtFloat[imm->num_index];
+    case NUM_KIND_IMAG:
+      return dtImag[imm->num_index];
     case NUM_KIND_COMPLEX:
       return dtComplex[imm->num_index];
     default: 

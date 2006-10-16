@@ -378,7 +378,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       if (e->immediate) {
         char imm[128];
         sprint_imm(imm, *e->immediate);
-        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", imm);
+        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(e->type) ? "i" : "");
       } else {
         fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
       }

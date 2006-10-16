@@ -1702,7 +1702,7 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
           fn->defPoint->parentStmt->remove();
-        } else if (call->isNamed("float") || call->isNamed("imag")) {
+        } else if (call->isNamed("float") || call->isNamed("imaginary")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
             if (dtFloat[i])
               clone_for_parameterized_primitive_formals(fn, def,
