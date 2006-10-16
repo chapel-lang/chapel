@@ -1,5 +1,0 @@
-complex/real/imaginary semantics
-
-Unless we specify a special division function that acts on
-(complex, real), this test doesn't correctly preserve the
-signs of -0.0 values.
