@@ -80665,3 +80665,13 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+10/16/06 10:28:25 -- bradc
+
+Log message:
+	Missed this one in my last check-in somehow.
+
+Modified files:
+	chapel/test/npb/ft/: ft-serial.chpl 
+
