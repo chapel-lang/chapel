@@ -80675,3 +80675,14 @@ Log message:
 Modified files:
 	chapel/test/npb/ft/: ft-serial.chpl 
 
+---------------------------------------------------------------------------
+
+10/16/06 12:10:23 -- bradc
+
+Log message:
+	Forgot to do an update -d, and so missed fixing up this
+	test during my last check-in.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
+
