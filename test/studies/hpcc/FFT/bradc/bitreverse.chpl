@@ -1,3 +1,5 @@
+use BitOps;
+
 config var logN = 5;
 const N = 1 << logN;
 
@@ -23,4 +25,13 @@ def bitReverse(W: [?WD] complex) {
     V(ndx:int) = W(i); // BLC: unfortunate cast
   }
   return V;
+}
+
+
+// reverses numBits low-order bits of val
+def bitReverse(val: ?valType, numBits = 64) {
+  param mask: uint(64) = 0x0102040810204080;
+  const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
+  const valReverse = bitRotLeft(valReverse64, numBits);
+  return valReverse: valType;
 }
