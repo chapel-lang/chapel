@@ -80706,3 +80706,13 @@ Modified files:
 	chapel/runtime/src/: chpltypes.c 
 	chapel/test/types/complex/bradc/: negateimaginary.good 
 
+---------------------------------------------------------------------------
+
+10/16/06 13:42:15 -- deitz
+
+Log message:
+	Removed .future of working test.
+
+Removed files:
+	chapel/test/types/complex/bradc/: negateimaginary3.future 
+
