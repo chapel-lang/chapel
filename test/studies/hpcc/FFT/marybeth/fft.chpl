@@ -1,3 +1,4 @@
+use BitOps;
 use Random;
 use Time;
 
@@ -90,6 +91,15 @@ def bitReverseShuffle(W: [?WD]) {
   }
   // BLC: W = V would be preferable
   return V;
+}
+
+
+// reverses numBits low-order bits of val
+def bitReverse(val: ?valType, numBits = 64) {
+  param mask: uint(64) = 0x0102040810204080;
+  const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
+  const valReverse = bitRotLeft(valReverse64, numBits);
+  return valReverse: valType;
 }
 
 
