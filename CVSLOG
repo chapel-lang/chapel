@@ -80716,3 +80716,23 @@ Log message:
 Removed files:
 	chapel/test/types/complex/bradc/: negateimaginary3.future 
 
+---------------------------------------------------------------------------
+
+10/16/06 15:43:33 -- waynew
+
+Log message:
+	Fixed a bug with function local array declaration with iterator
+	initialization. Removed .future in a test that showed this.
+	
+	Fixed a bug with remove for indefinite domains.
+	
+	Test case that I forgot to check in last time.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_indefinite.chpl 
+Added files:
+	chapel/test/domains/indefinite/waynew/: indef7.chpl indef7.good 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-arrinit.future 
+
