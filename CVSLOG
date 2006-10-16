@@ -80649,3 +80649,19 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+10/16/06 10:26:45 -- bradc
+
+Log message:
+	Populated the BitOps module with functions from _chpl_math.
+	Updated tests to "use BitOps" if necessary.
+
+Modified files:
+	chapel/modules/standard/: BitOps.chpl _chpl_math.chpl 
+	chapel/test/trivial/deitz/: test_bpop.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: bitreverse.chpl 
+	                                     bitreverse2.chpl 
+Added files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: .cvsignore 
+
