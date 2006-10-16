@@ -80638,3 +80638,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: BitOps.chpl 
 
+---------------------------------------------------------------------------
+
+10/16/06 10:23:04 -- bradc
+
+Log message:
+	Made testing system execute a .notest test when the
+	-onetest flag is used to specify it explicitly.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
