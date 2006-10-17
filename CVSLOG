@@ -80898,3 +80898,32 @@ Added files:
 	                                       numLocales2.execopts 
 	                                       numLocales2.good 
 
+---------------------------------------------------------------------------
+
+10/17/06 16:40:05 -- bradc
+
+Log message:
+	Added a HPCCProblemSize module that computes
+	the problem size for an HPCC test given:
+	
+	  - an element type
+	  - the number of vectors to be allocated
+	  - the fraction of memory to use
+	  - whether or not a power-of-2 should be
+	    returned
+	
+	Also checking in a test that computes these
+	numbers for the three benchmarks we're
+	working on.
+	
+	This code would be improved by support for
+	multiple default values as caputured in the
+	defaultParamBoolInt.chpl test I checked in
+	earlier.
+
+Added files:
+	chapel/test/studies/hpcc/common/: probSize.chpl probSize.notest 
+	                                  testProbSize.chpl 
+	                                  testProbSize.compopts 
+	                                  testProbSize.good 
+
