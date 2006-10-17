@@ -1,0 +1,9 @@
+For default settings:
+  Stream = 5480064
+  RA     = 16440192
+  FFT    = 8220096
+
+For 2**k case:
+  Stream = 8388608
+  RA     = 16777216
+  FFT    = 8388608
