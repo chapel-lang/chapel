@@ -80794,3 +80794,16 @@ Added files:
 	                              defaultParamBoolInt.future 
 	                              defaultParamBoolInt.good 
 
+---------------------------------------------------------------------------
+
+10/17/06 13:19:15 -- bradc
+
+Log message:
+	Removed GC-specific aspects of testing
+	system now that we no longer use GC.
+	This should get the valgrind tests
+	that much closer to working.
+
+Modified files:
+	chapel/test/: start_test 
+
