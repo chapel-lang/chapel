@@ -80736,3 +80736,25 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft-arrinit.future 
 
+---------------------------------------------------------------------------
+
+10/17/06 11:29:55 -- bradc
+
+Log message:
+	A very strange bug in which if a module defines a const, an
+	internal error occurs in the verify pass.  If the const is
+	re-defined to be a var, the problem goes away.
+	
+	This is the reason that I couldn't introduce a new
+	standard module yesterday -- the first declaration
+	in it was a const.  Surely other standard modules
+	contain consts?
+
+Added files:
+	chapel/test/modules/bradc/: use_modulewithconst.chpl 
+	                            use_modulewithconst.compopts 
+	                            use_modulewithconst.future 
+	                            use_modulewithconst.good 
+	chapel/test/modules/bradc/usemodulewithconst/: 
+	                                               moduleWithConst.chpl 
+
