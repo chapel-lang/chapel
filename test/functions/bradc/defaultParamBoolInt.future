@@ -1,0 +1,4 @@
+default argument bug
+
+It seems that when there are two default arguments, the
+second one doesn't get set up?
