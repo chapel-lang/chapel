@@ -247,43 +247,58 @@ void printConfigVarTable(void) {
   configVarType* configVar = NULL; 
   int longestName = 0;
   char* moduleName = NULL;
-
-  if (firstInTable) {
-    fprintf(stdout, "CONFIG VARS:\n");
-    fprintf(stdout, "============\n");
-  }
+  int foundUserConfigs = 0;
+  int foundMultipleModules = 0;
 
   for (configVar = firstInTable;
        configVar != NULL;
        configVar = configVar->nextInstalled) {
 
-    int thisName = strlen(configVar->varName);
-    if (longestName < thisName)  {
-      longestName = thisName;
+    if (strncmp(configVar->moduleName, "_chpl_", 6) != 0) {
+      if (foundUserConfigs == 0) {
+        foundUserConfigs = 1;
+        moduleName = configVar->moduleName;
+      } else {
+        if (strcmp(moduleName, configVar->moduleName) != 0) {
+          foundMultipleModules = 1;
+        }
+      }
+      int thisName = strlen(configVar->varName);
+      if (longestName < thisName)  {
+        longestName = thisName;
+      }
     }
   }
 
-  for (configVar = firstInTable; 
-       configVar != NULL; 
-       configVar = configVar->nextInstalled) {
+  moduleName = NULL;
+  if (foundUserConfigs) {
+    fprintf(stdout, "CONFIG VARS:\n");
+    fprintf(stdout, "============\n");
 
-    if (moduleName == NULL) {
-      moduleName = configVar->moduleName;
-      if (strcmp(firstInTable->moduleName, lastInTable->moduleName) != 0) {
-        fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+    for (configVar = firstInTable; 
+         configVar != NULL; 
+         configVar = configVar->nextInstalled) {
+
+      if (strncmp(configVar->moduleName, "_chpl_", 6) != 0) {
+        if (foundMultipleModules) {
+          if (moduleName == NULL) {
+            moduleName = configVar->moduleName;
+            fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+          }
+          if (strcmp(configVar->moduleName, moduleName) != 0) {
+            fprintf(stdout, "\n");
+            fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+            moduleName = configVar->moduleName;
+          }
+        }
+        fprintf(stdout, "  %*s: ", longestName, configVar->varName);
+        fprintf(stdout, "%s", configVar->defaultValue);
+        if (configVar->setValue) {
+          fprintf(stdout, " (configured to %s)", configVar->setValue);
+        }
+        fprintf(stdout, "\n");
       }
     }
-    if (strcmp(configVar->moduleName, moduleName) != 0) {
-      fprintf(stdout, "\n");
-      fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
-      moduleName = configVar->moduleName;
-    }
-    fprintf(stdout, "  %*s: ", longestName, configVar->varName);
-    fprintf(stdout, "%s", configVar->defaultValue);
-    if (configVar->setValue) {
-      fprintf(stdout, " (configured to %s)", configVar->setValue);
-    }
-    fprintf(stdout, "\n");
   }
   exit(0);
 }

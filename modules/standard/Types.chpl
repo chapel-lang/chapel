@@ -16,3 +16,8 @@ def numBits(type t) where t == uint(64) return 64;
 def numBits(type t) where t == float(32) return 32;
 def numBits(type t) where t == float(64) return 64;
 def numBits(type t) where t == float(128) return 128;
+
+param bitsPerByte = 8;
+
+def numBytes(type t) return (numBits(t)/bitsPerByte);
+

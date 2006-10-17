@@ -9,5 +9,6 @@ use _chpl_indefinite;
 use _chpl_sparse;
 use _chpl_math;
 use _chpl_ds;
+use _chpl_machine;
 
 startTrackingMem();
