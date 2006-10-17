@@ -80768,3 +80768,15 @@ Log message:
 Added files:
 	chapel/test/modules/bradc/usemodulewithconst/: NOTEST 
 
+---------------------------------------------------------------------------
+
+10/17/06 12:01:57 -- marybeth
+
+Log message:
+	Checking in a test for an error that I got when updating the Random
+	module.
+
+Added files:
+	chapel/test/classes/marybeth/: test-init.chpl test-init.future 
+	                               test-init.good 
+
