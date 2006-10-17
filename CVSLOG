@@ -80780,3 +80780,17 @@ Added files:
 	chapel/test/classes/marybeth/: test-init.chpl test-init.future 
 	                               test-init.good 
 
+---------------------------------------------------------------------------
+
+10/17/06 12:08:05 -- bradc
+
+Log message:
+	Filing a bug in which functions with two default
+	arguments don't seem to set up the second default
+	value...  :(
+
+Added files:
+	chapel/test/functions/bradc/: defaultParamBoolInt.chpl 
+	                              defaultParamBoolInt.future 
+	                              defaultParamBoolInt.good 
+
