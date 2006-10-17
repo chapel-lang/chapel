@@ -80807,3 +80807,19 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+10/17/06 15:10:40 -- bradc
+
+Log message:
+	This is the bug that my Needle in the Haystack mails
+	were searching for.
+	
+	It seems that when a single program contains both
+	uint and int domains, it causes ambiguities in the
+	realloc routines.
+
+Added files:
+	chapel/test/arrays/bradc/: intuintarr.chpl intuintarr.future 
+	                           intuintarr.good 
+
