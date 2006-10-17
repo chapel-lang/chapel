@@ -1,0 +1,6 @@
+deitz -- verify pass
+
+For some reason, when a module defining a const is used,
+it results in an internal error.  When the const in the
+module is replaced with a variable, it suddenly works
+again.
