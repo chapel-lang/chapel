@@ -80758,3 +80758,13 @@ Added files:
 	chapel/test/modules/bradc/usemodulewithconst/: 
 	                                               moduleWithConst.chpl 
 
+---------------------------------------------------------------------------
+
+10/17/06 11:31:51 -- bradc
+
+Log message:
+	Forgot this file in my previous check-in.
+
+Added files:
+	chapel/test/modules/bradc/usemodulewithconst/: NOTEST 
+
