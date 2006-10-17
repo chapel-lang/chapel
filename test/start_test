@@ -267,14 +267,6 @@ set user = `whoami`
 unsetenv CHPL_SYSTEM_DIR
 unsetenv CHPL_DEVELOPER
 
-#
-# try to squelch GC warnings about large allocations -- we may want
-# to debug this eventually; they seem to flit in and out 
-# nondeterministically from one run to the next.  For now, we'll just
-# turn them off.
-#
-setenv GC_NO_BLACKLIST_WARNING 1
-
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
 ## tester does
@@ -429,21 +421,6 @@ if ($valgrind) then
 	echo ERROR: can\'t find valgrind |& tee -a $logtmp
 	exit 1
     endif
-    if ($compiler == "") then
-        set compiler = "../compiler/$platform/chpl-nogc"
-        test $compiler -nt ../compiler/$platform/chpl
-        if ($status == 1) then
-            echo
-            echo
-            echo 
-            echo "     *****************************************"
-            echo "     * WARNING: chpl-nogc is older than chpl *"
-            echo "     *****************************************"
-            echo 
-            echo
-            echo
-        endif
-    endif
 else
     setenv CHPL_TEST_VGRND_COMP off
     if ($valgrindexe) then
@@ -453,9 +430,10 @@ else
         echo \[valgrind: OFF\] |& tee -a $logfile
         setenv CHPL_TEST_VGRND_EXE off
     endif
-    if ($compiler == "") then
-        set compiler = "../compiler/$platform/chpl"
-    endif
+endif
+
+if ($compiler == "") then
+  set compiler = "../compiler/$platform/chpl"
 endif
 
 if ($interpret) then
