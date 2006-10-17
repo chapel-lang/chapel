@@ -80823,3 +80823,78 @@ Added files:
 	chapel/test/arrays/bradc/: intuintarr.chpl intuintarr.future 
 	                           intuintarr.good 
 
+---------------------------------------------------------------------------
+
+10/17/06 16:04:01 -- bradc
+
+Log message:
+	Added two new modules, one automatic, one standard:
+	
+	  _chpl_machine.chpl : defines machine-oriented
+	                       concepts like the "locale" type
+	
+	  Memory.chpl : defines optional memory-oriented
+	                routines
+	
+	Both of these could use more work, but provide a
+	starting point.  Added a few tests of the
+	_chpl_machine module.  Memory tests will come next.
+	
+	Also added a numBytes() function to the Types module,
+	which is implemented in terms of numBits().
+	
+	There are two expected REGRESSIONS which I need
+	to check into, but couldn't mentally handle juggling
+	anymore:
+	
+	[Error matching program output for memory/shannon/reallocWithoutMalloc]
+	[Error matching program output for memory/shannon/reallocWithoutMallocLineno]
+	
+	In more detail:
+	
+	_chpl_machine.chpl defines...
+	
+	  numLocales -- the number of locales the job is
+	                running on; currently hard-coded to 1
+	
+	  LocaleDomain -- a domain describing the domain of
+	                  locales the job is running on;
+	                  this should maybe be retired
+	
+	  locale -- the "opaque" locale type;  currently
+	            implemented as a class that prints out
+	            LOCALEk when written.
+	
+	It wants to define:
+	
+	  Locale -- the array of locales the job is running on
+	
+	except that this causes the intuintarr.chpl bug for
+	any tests that use a uint domain.
+	
+	Memory.chpl defines:
+	
+	  memUints -- an enumeration like the one in Time.chpl
+	              but for memory
+	
+	  physicalMemory -- a routine that takes a locale
+	                    number and returns the amount of
+	                    physical memory available on that
+	                    locale; currently hard-coded to
+	                    be the value on my machine.
+	
+	  Locale -- the array of locales the job is running on.
+	            This is here for now so that I can use it
+	            in certain tests without breaking others.
+
+Modified files:
+	chapel/runtime/src/: config.c 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: Types.chpl _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: Memory.chpl _chpl_machine.chpl 
+	chapel/test/modules/standard/machine/: machine.chpl machine.good 
+	                                       numLocales2.chpl 
+	                                       numLocales2.execopts 
+	                                       numLocales2.good 
+
