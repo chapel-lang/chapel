@@ -102,8 +102,6 @@ printDevelErrorHeader(BaseAST* ast) {
             err_fn = fn;
           }
           if (!err_fn->isCompilerTemp && err_fn->filename && err_fn->lineno) {
-            if (developer)
-              fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
             fprintf(stderr, "%s:%d: In function '%s':\n",
                     err_fn->filename, err_fn->lineno, err_fn->name);
           }
@@ -112,8 +110,6 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
-  if (developer)
-    fprintf(stderr, "[%s:%d] ", err_filename, err_lineno);
 
   if (ast && ast->filename && ast->lineno)
     fprintf(stderr, "%s:%d: ", ast->filename, ast->lineno);
@@ -123,7 +119,14 @@ printDevelErrorHeader(BaseAST* ast) {
   if (!err_user && !developer) {
     print_user_internal_error();
   }
+
 }
+
+static void printDevelErrorFooter(void) {
+  if (developer)
+    fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
+}
+
 
 
 void printProblem(char *fmt, ...) {
@@ -137,6 +140,8 @@ void printProblem(char *fmt, ...) {
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
+
+  printDevelErrorFooter();
 
   fprintf(stderr, "\n");
 
@@ -157,6 +162,8 @@ void printProblem(BaseAST* ast, char *fmt, ...) {
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
+
+  printDevelErrorFooter();
 
   fprintf(stderr, "\n");
 
