@@ -115,45 +115,77 @@ static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
   }
 }
 
+typedef enum _MemFlagType {MemMax, MemStat, MemTrack, MemThreshold, MemTrace, MOther} MemFlagType;
 
-static void parseMemFlag(char* memFlag) {
+static int parseMemFlag(char* memFlag) {
+  MemFlagType flag = MOther;
+  if (strncmp(memFlag, "memmax", 6) == 0) {
+    flag = MemMax;
+  } else if (strncmp(memFlag, "memstat", 7) == 0) {
+    flag = MemStat;
+  } else if (strncmp(memFlag, "memtrack", 8) == 0) {
+    flag = MemTrack;
+  } else if (strncmp(memFlag, "memthreshold", 12) == 0) {
+    flag = MemThreshold;
+  } else if (strncmp(memFlag, "memtrace", 8) == 0) {
+    flag = MemTrace;
+  }
+
+  if (flag == MOther) {
+    return 0;
+  }
+
   char* equalsSign = strchr(memFlag, '=');
   char* valueString = NULL;
 
   if (equalsSign) {
     *equalsSign = '\0';
     valueString = equalsSign + 1;
-  } 
-
-  if (strcmp(memFlag, "memmax") == 0) {
-    _int64 value;
-    value = getIntArg(valueString, memFlag);
-    setMemmax(value);
-
-  } else if (strcmp(memFlag, "memstat") == 0) {
-    exitIfEqualsSign(equalsSign, memFlag);
-    setMemstat();
-
-  } else if (strcmp(memFlag, "memtrack") == 0) {
-    exitIfEqualsSign(equalsSign, memFlag);
-    setMemtrack();
-
-  } else if ((strcmp(memFlag, "memthreshold") == 0) ||
-             (strcmp(memFlag, "memthresshold") == 0) ||
-             (strcmp(memFlag, "memthreshhold") == 0)) {
-    _int64 value;
-    value = getIntArg(valueString, memFlag);
-    setMemthreshold(value);
-
-  } else if (strcmp(memFlag, "memtrace") == 0) {
-    valueString = getStringArg(valueString, memFlag);
-    setMemtrace(valueString);
-    
-  } else {
-    char* message = _glom_strings(3, "\"", memFlag, "\" is not a valid "
-                                  "execution option");
-    printError(message);
   }
+
+  switch (flag) {
+  case MemMax:
+    {
+      _int64 value;
+      value = getIntArg(valueString, memFlag);
+      setMemmax(value);
+      break;
+    }
+
+  case MemStat:
+    {
+      exitIfEqualsSign(equalsSign, memFlag);
+      setMemstat();
+      break;
+    }
+   
+  case MemTrack:
+    {
+      exitIfEqualsSign(equalsSign, memFlag);
+      setMemtrack();
+      break;
+    }
+
+  case MemThreshold:
+    {
+      _int64 value;
+      value = getIntArg(valueString, memFlag);
+      setMemthreshold(value);
+      break;
+    }
+
+  case MemTrace:
+    {
+      valueString = getStringArg(valueString, memFlag);
+      setMemtrace(valueString);
+      break;
+    }
+
+  case MOther:
+    return 0;  // should never actually get here
+  }
+
+  return 1;
 }
 
 
@@ -179,17 +211,18 @@ void parseArgs(int argc, char* argv[]) {
           char* flag = currentArg + 2;
           if (strcmp(flag, "help") == 0) {
             printHelpMessage();
-          } else if (flag[0] == 'm') {
-            parseMemFlag(flag);
-          } else {
-            if (argLength < 3) {
-              char* message = _glom_strings(3, "\"", currentArg, 
-                                            "\" is not a valid argument");
-              printError(message);
-            }
-            int isSingleArg = 1;
-            addToConfigList(currentArg + 2, isSingleArg);
+            break;
           }
+          if (flag[0] == 'm' && parseMemFlag(flag)) {
+            break;
+          }
+          if (argLength < 3) {
+            char* message = _glom_strings(3, "\"", currentArg, 
+                                          "\" is not a valid argument");
+            printError(message);
+          }
+          int isSingleArg = 1;
+          addToConfigList(currentArg + 2, isSingleArg);
           break;
         }
 
