@@ -80982,3 +80982,17 @@ Added files:
 	chapel/test/studies/hpcc/RA/: .cvsignore 
 	chapel/test/studies/hpcc/STREAMS/bradc/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+10/18/06 09:52:44 -- bradc
+
+Log message:
+	Checking in a test of an iterator in a class that, if
+	we could get it working, would be really nice for
+	creating an iterator without our RandomStream class.
+
+Added files:
+	chapel/test/functions/iterators/bradc/: iteratorInClass.chpl 
+	                                        iteratorInClass.future 
+	                                        iteratorInClass.good 
+
