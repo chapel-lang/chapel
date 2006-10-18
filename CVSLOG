@@ -81043,3 +81043,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 14:56:03 -- marybeth
+
+Log message:
+	Checking in an updated fft.good which matches the output, given the
+	current Random module.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.good 
+
