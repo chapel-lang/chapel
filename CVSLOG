@@ -80996,3 +80996,28 @@ Added files:
 	                                        iteratorInClass.future 
 	                                        iteratorInClass.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 10:50:39 -- marybeth
+
+Log message:
+	I updated the Random module with the suggested changes by Brad
+	and Steve.
+	
+	- Now, only one seed is required to initialize the generator.
+	
+	- The seed is now an integer.
+	
+	- If the given seed is even, it is incremented by 1 so that is the
+	required odd integer.
+	
+	I updated the tests that use the module accordingly.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
+	chapel/test/studies/hpcc/STREAMS/: stream.chpl stream.good 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+
