@@ -1,13 +1,12 @@
 use Time;
 
 class RandomStream {
-
-  const currenttime = getCurrentTime(unit=microseconds):int(64);
-
-  const seed  = currenttime; 
+  const seed:int(64) = 0; 
   const arand = 1220703125.0;
 
   def initialize() {
+    if (seed == 0) then
+      seed = getCurrentTime(unit=microseconds):int(64);
     if (seed % 2 == 1) then
       seed += 1;
   }
@@ -83,8 +82,7 @@ class RandomStream {
 }
 
 
-def fillRandom(x:[], initseed: int(64) = (getCurrentTime(unit=microseconds):int(64))) {
-
+def fillRandom(x:[], initseed: int(64) = 0) {
   var randNums = RandomStream(initseed);
 
   randNums.fillRandom(x); 
