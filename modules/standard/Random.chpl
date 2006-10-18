@@ -1,11 +1,19 @@
 use Time;
 
+
+class SeedGeneratorClass {
+  // want this to be a param, but it doesn't work
+  var clockMS = -1;
+}
+
+var SeedGenerator = SeedGeneratorClass();
+
 class RandomStream {
-  const seed:int(64) = 0; 
+  const seed:int(64) = SeedGenerator.clockMS; 
   const arand = 1220703125.0;
 
   def initialize() {
-    if (seed == 0) then
+    if (seed == SeedGenerator.clockMS) then
       seed = getCurrentTime(unit=microseconds):int(64);
     if (seed % 2 == 1) then
       seed += 1;
@@ -82,7 +90,7 @@ class RandomStream {
 }
 
 
-def fillRandom(x:[], initseed: int(64) = 0) {
+def fillRandom(x:[], initseed: int(64) = SeedGenerator.clockMS) {
   var randNums = RandomStream(initseed);
 
   randNums.fillRandom(x); 
