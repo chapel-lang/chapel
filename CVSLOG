@@ -80927,3 +80927,25 @@ Added files:
 	                                  testProbSize.compopts 
 	                                  testProbSize.good 
 
+---------------------------------------------------------------------------
+
+10/17/06 17:00:08 -- bradc
+
+Log message:
+	Trying to clean up my version of the compiler --
+	this change affects Chapel developers by moving
+	the [filename.chpl:lineno] information that
+	points out where an internal error/warning
+	occurred to the end of an error line.  I've been
+	using this for 2-3 weeks or so now (since we
+	last disccussed it) and have been finding it
+	makes everything much easier to parse.
+	
+	If, after trying it for a few days, Steve and
+	Wayne disagree, we can change it back.  Last
+	we discussed people were either open to it,
+	or tired of arguing with me.  :)
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+
