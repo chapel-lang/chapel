@@ -81084,3 +81084,28 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/18/06 16:53:21 -- bradc
+
+Log message:
+	A small change to the Random number module.
+	Added a "SeedGenerator" which gives the
+	capability of having the module generate
+	seeds for you.  Currently, this is done by
+	using sentinel values (i.e., naming the 0
+	value that my previous checkin used).
+	However, I think the next version of this
+	should actually have the class generate
+	the seed and return it.  This provides the
+	right illusion for the HPCC codes, so I'm
+	going to come back to it later.
+	
+	Currently, the only seed that it will
+	generate is the "useClockMS" seed -- the
+	one that we've been using internally to
+	the module.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
