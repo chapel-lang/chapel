@@ -130,9 +130,11 @@ sub collect_logs {
     print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
 
     # Generate summary file
+    $summ_log = "$fin_log.summary";
+    unlink $summ_log if (-e $summ_log);
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
-    systemd ("grep '^\\[Error' $fin_log >> $fin_log.summary");
-    systemd ("grep '^Future' $fin_log >> $fin_log.summary");
+    systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
+    systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
     systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log.summary");
     systemd ("echo \\[END\\] >> $fin_log.summary");
 }
