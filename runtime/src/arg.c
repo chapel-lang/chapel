@@ -182,9 +182,13 @@ void parseArgs(int argc, char* argv[]) {
           } else if (flag[0] == 'm') {
             parseMemFlag(flag);
           } else {
-            char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
-                                          "valid execution option");
-            printError(message);
+            if (argLength < 3) {
+              char* message = _glom_strings(3, "\"", currentArg, 
+                                            "\" is not a valid argument");
+              printError(message);
+            }
+            int isSingleArg = 1;
+            addToConfigList(currentArg + 2, isSingleArg);
           }
           break;
         }

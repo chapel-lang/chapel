@@ -172,7 +172,7 @@ static void parseSingleArg(char* currentArg) {
     }
   } else {
     char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
-                                  "argument");
+                                  "configuration variable");
     printError(message);
   }
 }

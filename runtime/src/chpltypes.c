@@ -21,10 +21,16 @@ char* _default_format_write_complex256 = "%Lg + %Lgi";
 
 /* _glom_strings() expects every argument after the first to be 
    of type char*. */
+static int maxNumStrings = 0;
+static char** stringlist = NULL;
+
+
+int isGlomStringsMem(void* ptr) {
+  return (ptr == stringlist);
+}
+
 
 char* _glom_strings(int numstrings, ...) {
-  static int maxNumStrings = 0;
-  static char** stringlist = NULL;
   int i;
 
   if (numstrings > maxNumStrings) {
