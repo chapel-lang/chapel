@@ -81021,3 +81021,15 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	                                            stream.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 11:57:22 -- waynew
+
+Log message:
+	Changed additional instances using grep to tread input as text file.
+	Hopefully, this should remove the issues with a binary file being
+	generated for the log or summary file.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
