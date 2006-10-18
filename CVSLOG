@@ -80949,3 +80949,36 @@ Log message:
 Modified files:
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+10/17/06 17:03:45 -- bradc
+
+Log message:
+	This check-in adds support for setting configuration
+	variables using --varName=... in addition to the
+	traditional -svarName=...  (I think that there was
+	general support for this concept and that the more
+	contentious question was whether or not to continue
+	to support the -s flag).
+	
+	This check-in also fixes the two regressions caused
+	by my checkin of the Memory and _chpl_machine modules.
+	I think my use of strings and/or a halt() routine is
+	what caused them to regress, because the buffer space
+	allocated by glom_strings before we started tracking
+	memory was then reallocated after we started tracking
+	memory.  Got around this by special-casing that pointer
+	in the track memory routine for now (and this should
+	get cleaned up when I rewrite the memory tracking code
+	in Chapel).
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: arg.c chplmem.c chpltypes.c config.c 
+	chapel/test/execflags/shannon/: invalidExecOption.good 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarFileStringsNoEquals.good 
+Added files:
+	chapel/test/studies/hpcc/RA/: .cvsignore 
+	chapel/test/studies/hpcc/STREAMS/bradc/: .cvsignore 
+
