@@ -81109,3 +81109,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/18/06 16:54:21 -- bradc
+
+Log message:
+	My revision to the stream.chpl benchmark.  This is
+	the candidate I'd like to propose writing the paper
+	around.  Please review and send me comments as soon
+	as you get a chance.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+	                                   stream-candidate.compopts 
+	                                   stream-candidate.execopts 
+	                                   stream-candidate.good 
+
