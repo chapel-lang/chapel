@@ -81054,3 +81054,21 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 16:08:41 -- bradc
+
+Log message:
+	Learned that my config var setting via -- change
+	from the other day didn't work for config vars
+	that start with "m".  This remedies that slightly
+	by making all config vars that don't start with
+	the same name as any of our memory flags work.
+	The more general solution still waits for the
+	memory tracking code to be put into a Chapel
+	module.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/memory/shannon/: invalidMemFlag.good 
+
