@@ -81072,3 +81072,15 @@ Modified files:
 	chapel/runtime/src/: arg.c 
 	chapel/test/memory/shannon/: invalidMemFlag.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 16:23:38 -- bradc
+
+Log message:
+	Made a small change to the Random number module, such that
+	if "0" is passed in as the seed, it requests the module to
+	pick a seed at random (in particular, using the clock).
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
