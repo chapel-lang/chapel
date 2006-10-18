@@ -81033,3 +81033,13 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+10/18/06 14:50:49 -- marybeth
+
+Log message:
+	Correcting a typo in the stream.good file.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.good 
+
