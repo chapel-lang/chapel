@@ -37,8 +37,8 @@ config const useRandomSeed = true,
 def main() {
   printConfiguration();
 
-  const VecDomain: domain(1) distributed(Block) = [1..m];
-  var A, B, C: [VecDomain] elemType;
+  const ProblemSpace: domain(1) distributed(Block) = [1..m];
+  var A, B, C: [ProblemSpace] elemType;
 
   initVectors(B, C);
 
