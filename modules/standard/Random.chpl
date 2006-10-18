@@ -2,8 +2,16 @@ use Time;
 
 class RandomStream {
 
-  const seed = 2.0*(getCurrentTime(unit=microseconds))+1.0;
-  const arand = 2.0*(getCurrentTime() + getCurrentTime(unit=milliseconds)) + 1.0;
+  const currenttime = getCurrentTime(unit=microseconds):int(64);
+
+  const seed  = currenttime; 
+  const arand = 1220703125.0;
+
+  def initialize() {
+    if (seed % 2 == 1) then
+      seed += 1;
+  }
+
 
   var numGenerated = 0;
 
@@ -30,7 +38,7 @@ class RandomStream {
 
   def initrandlc(in n : int) : float {
     var i : int, t : float, g : float;
-    var x : float = seed;
+    var x  = seed:float;
     t = arand;
     while n != 0 do {
       i = n / 2;
@@ -75,11 +83,9 @@ class RandomStream {
 }
 
 
-def fillRandom(x:[], seed: float = (2.0*getCurrentTime(unit=microseconds)+1.0),
-               arand: float = (2.0*(getCurrentTime() 
-                                   + getCurrentTime(unit=milliseconds))+1.0)) {
+def fillRandom(x:[], initseed: int(64) = (getCurrentTime(unit=microseconds):int(64))) {
 
-  var randNums = RandomStream(seed,arand);
+  var randNums = RandomStream(initseed);
 
   randNums.fillRandom(x); 
 }

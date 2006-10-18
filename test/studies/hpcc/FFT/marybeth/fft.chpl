@@ -8,8 +8,7 @@ config const logN = 5;
 
 // pseudo-random input configs
 config const deterministic = false,
-             seed = 314159265.0,
-             arand = 1220703125.0;
+             seed = 314159265;
 
 // verification configs
 config const epsilon = 2.0 ** -51.0,
@@ -36,7 +35,7 @@ def main() {
 
   // generate pseudo-random input
   if deterministic then
-    fillRandom(z, seed=seed, arand=arand);
+    fillRandom(z, seed);
   else
     fillRandom(z);
 
