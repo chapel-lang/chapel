@@ -81125,3 +81125,13 @@ Added files:
 	                                   stream-candidate.execopts 
 	                                   stream-candidate.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 16:56:26 -- bradc
+
+Log message:
+	Oops, forgot one more renaming that I wanted.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+
