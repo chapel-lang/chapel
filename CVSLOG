@@ -81230,3 +81230,16 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-iter.chpl ra-iter.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 13:59:35 -- bradc
+
+Log message:
+	Added a second RA iterator test that generates
+	a piece of the random stream, given a starting
+	point.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-iter2.chpl ra-iter2.good 
+	                                    ra-nums.c 
+
