@@ -81149,3 +81149,20 @@ Modified files:
 	                              defaultParamBoolInt.future 
 	                              defaultParamBoolInt.good 
 
+---------------------------------------------------------------------------
+
+10/18/06 17:59:11 -- bradc
+
+Log message:
+	Fixed my streams norm calculation and naming of the norm
+	variable as pointed out by Mary Beth.
+	
+	Realized I hadn't checked in the routine to print out
+	the problem size in my common problem size module...
+	(Which is too bad because I had deleted it from my
+	private copy :(
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
