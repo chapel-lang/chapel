@@ -81177,3 +81177,14 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.good 
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/19/06 10:53:20 -- waynew
+
+Log message:
+	Added a delay to help remove the possibility of trying to access a log
+	in an inconsistent state.
+
+Modified files:
+	chapel/test/: paratest.client.pl 
+
