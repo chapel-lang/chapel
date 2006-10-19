@@ -81287,3 +81287,18 @@ Added files:
 	                                        iteratorInferReturn.future 
 	                                        iteratorInferReturn.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 16:31:21 -- bradc
+
+Log message:
+	Snapshotting a partial version of RA that's
+	generating good output in my version of the
+	compiler, but won't work in the project yet.
+	Don't want to lose this.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-snapshot1.chpl 
+	                                    ra-snapshot1.future 
+	                                    ra-snapshot1.good 
+
