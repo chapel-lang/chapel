@@ -16,6 +16,7 @@ $debug = 0;
 $logdir = "Logs";
 $synchdir = "Logs/.synch";
 $testcmd = "nice start_test";
+$publish_delay = 2;
 
 sub systemd {
     my ($cmd) = @_;
@@ -83,6 +84,8 @@ sub main {
         $testarg = "$testarg -startdir $testdir -norecurse";
     }
     systemd ("$testcmd $testarg");
+
+    sleep $publish_delay;
 
     systemd ("echo feed me > $synchfile");  # signal ready for more
 }
