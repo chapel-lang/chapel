@@ -81243,3 +81243,20 @@ Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-iter2.chpl ra-iter2.good 
 	                                    ra-nums.c 
 
+---------------------------------------------------------------------------
+
+10/19/06 14:24:09 -- bradc
+
+Log message:
+	Another iterator bug -- using a domain inside an
+	iterator compiles, but results in a runtime seg
+	fault.
+	
+	Again, not a priority for HPCC -- have a workaround.
+	But wanted to capture it for posterity.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-domainInIterator.chpl 
+	                                    ra-domainInIterator.future 
+	                                    ra-domainInIterator.good 
+
