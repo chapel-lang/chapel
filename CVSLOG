@@ -81260,3 +81260,16 @@ Added files:
 	                                    ra-domainInIterator.future 
 	                                    ra-domainInIterator.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 14:38:42 -- bradc
+
+Log message:
+	Added a test that creates some schedule-style
+	iterators for domains, expected to be of use
+	in RA.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-schedules.chpl 
+	                                    ra-schedules.good 
+
