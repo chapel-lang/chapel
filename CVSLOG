@@ -81273,3 +81273,17 @@ Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-schedules.chpl 
 	                                    ra-schedules.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 14:42:30 -- bradc
+
+Log message:
+	Adding a placeholder for iterators inferring their
+	return types.  This is medium priority for RA.chpl.
+
+Added files:
+	chapel/test/functions/iterators/bradc/: .cvsignore 
+	                                        iteratorInferReturn.chpl 
+	                                        iteratorInferReturn.future 
+	                                        iteratorInferReturn.good 
+
