@@ -81188,3 +81188,15 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl 
 
+---------------------------------------------------------------------------
+
+10/19/06 13:10:24 -- marybeth
+
+Log message:
+	I neglected to update this test when I updated the Random module.
+	It now uses the class and functions appropriately.
+
+Modified files:
+	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
+	                                               test-Random.good 
+
