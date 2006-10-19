@@ -1,5 +1,5 @@
 numArrays = 3
-returnPow2 = false
+returnPow2 = true
 memRatio = 4
 
 numArrays = 3
@@ -11,6 +11,6 @@ returnPow2 = true
 memRatio = 4
 
 numArrays = 3
-returnPow2 = true
+returnPow2 = false
 memRatio = 8
 

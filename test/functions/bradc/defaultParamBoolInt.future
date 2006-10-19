@@ -1,4 +1,5 @@
 default argument bug
 
-It seems that when there are two default arguments, the
-second one doesn't get set up?
+For generic params, the default expression is removed from the instantiated
+function.  Thus, the default value is not being setup correctly in the
+wrapper.
