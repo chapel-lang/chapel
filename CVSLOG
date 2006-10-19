@@ -81135,3 +81135,17 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/18/06 17:58:57 -- waynew
+
+Log message:
+	Changed test a little to show that no default values for the generic params
+	are being set correctly in the wrapper.  Previous test/note suspected that
+	it was only the latter generics in the list.
+
+Modified files:
+	chapel/test/functions/bradc/: defaultParamBoolInt.chpl 
+	                              defaultParamBoolInt.future 
+	                              defaultParamBoolInt.good 
+
