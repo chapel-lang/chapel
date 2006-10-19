@@ -3,7 +3,7 @@ use Time;
 use Types;
 use Random;
 
-// user module for determining HPCC problem sizes
+// user module for computing HPCC problem sizes
 use HPCCProblemSize;
 
 
@@ -79,9 +79,9 @@ def initVectors(B, C) {
 def verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
-  const norm = max reduce [i in A.domain] (A(i) - (B(i) + alpha * C(i)));
+  const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
 
-  return (norm <= epsilon);
+  return (infNorm <= epsilon);
 }
 
 

@@ -13,7 +13,7 @@ module HPCCProblemSize {
     if (returnPow2) {
       var lgProblemSize = lg(numIndices);
       numIndices = 0x1 << lgProblemSize;  // BLC: exponentiation
-      if (numIndices * bytesPerIndex < memoryTarget) {
+      if (numIndices * bytesPerIndex <= memoryTarget) {
         numIndices *= 2;
       }
     }
@@ -23,5 +23,13 @@ module HPCCProblemSize {
       halt("System is too heterogeneous: blocked data won't fit into memory");
 
     return numIndices;
+  }
+
+  def printProblemSize(type elemType, numArrays, problemSize) {
+    const bytesPerArray = problemSize * numBytes(elemType),
+          totalMemInGB = numArrays * bytesPerArray / (1024**3);
+    writeln("Problem size = ", problemSize);
+    writeln("Bytes per array = ", bytesPerArray);
+    writeln("Total memory required (GB) = ", totalMemInGB);
   }
 }
