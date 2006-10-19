@@ -81218,3 +81218,15 @@ Added files:
 	                                    ra-constInIterator.future 
 	                                    ra-constInIterator.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 13:47:46 -- bradc
+
+Log message:
+	Checking in a little test that creates an
+	iterator that generates the random numbers
+	from the RA benchmark in sequential order.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-iter.chpl ra-iter.good 
+
