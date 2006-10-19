@@ -1,0 +1,5 @@
+waynew
+
+When using a const in an iterator, the initialization
+does not seem as robust as when declaring a const outside
+of an iterator.
