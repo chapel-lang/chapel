@@ -81166,3 +81166,14 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/19/06 10:25:37 -- bradc
+
+Log message:
+	
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.good 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
