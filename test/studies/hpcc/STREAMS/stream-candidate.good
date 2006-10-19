@@ -1,4 +1,4 @@
-Problem size = 8
+Problem size = 8 (2**3)
 Bytes per array = 64
 Total memory required (GB) = 1.78814e-07
 Number of trials = 10

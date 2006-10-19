@@ -27,8 +27,13 @@ module HPCCProblemSize {
 
   def printProblemSize(type elemType, numArrays, problemSize) {
     const bytesPerArray = problemSize * numBytes(elemType),
-          totalMemInGB = numArrays * bytesPerArray / (1024**3);
-    writeln("Problem size = ", problemSize);
+          totalMemInGB = (numArrays * bytesPerArray):float / (1024**3),
+          lgProbSize = lg(problemSize);
+    write("Problem size = ", problemSize);
+    if (2**lgProbSize == problemSize) {
+      write(" (2**", lgProbSize, ")");
+    }
+    writeln();
     writeln("Bytes per array = ", bytesPerArray);
     writeln("Total memory required (GB) = ", totalMemInGB);
   }
