@@ -81200,3 +81200,21 @@ Modified files:
 	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
 	                                               test-Random.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 13:13:36 -- bradc
+
+Log message:
+	A future showing that const declarations and
+	initializations within an iterator do not
+	work the same/as solidly as they do outside
+	of an iterator.
+	
+	Low-to-not-a-priority for HPCC.  Just wanted
+	to capture it since I bumped into it.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.chpl 
+	                                    ra-constInIterator.future 
+	                                    ra-constInIterator.good 
+
