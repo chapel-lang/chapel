@@ -1,0 +1,3 @@
+waynew/deitz
+
+This shows that iterators can't infer their return types yet.
