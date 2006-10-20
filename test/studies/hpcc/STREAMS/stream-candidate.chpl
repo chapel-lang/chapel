@@ -21,7 +21,7 @@ config const numTrials = 10;
 // configuration constants for controlling output options
 config const printParams = true,
              printArrays = false,
-             printTiming = true;
+             printStats = true;
 
 // configuration constant for Triad scalar multiplier
 config const alpha = 3.0;
@@ -87,7 +87,7 @@ def verifyResults(A, B, C) {
 
 def printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
-  if (printTiming) {
+  if (printStats) {
     const totalTime = + reduce execTimes,
           avgTime = totalTime / numTrials,
           minTime = min reduce execTimes;
