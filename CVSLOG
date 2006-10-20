@@ -81554,3 +81554,15 @@ Added files:
 	                              ra-candidate.good 
 	                              ra-randstream.chpl 
 
+---------------------------------------------------------------------------
+
+10/20/06 14:43:29 -- bradc
+
+Log message:
+	Added some casts to my problem size printing
+	routine in order to make it work with both
+	int and uint problem sizes.
+
+Modified files:
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
