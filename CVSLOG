@@ -81464,3 +81464,17 @@ Added files:
 	chapel/test/functions/deitz/: test_type_fold1.chpl 
 	                              test_type_fold1.good 
 
+---------------------------------------------------------------------------
+
+10/20/06 10:52:40 -- deitz
+
+Log message:
+	Added test to capture weird behavior of int and uint arrays and
+	removed one that was working.
+
+Added files:
+	chapel/test/arrays/bradc/: intuintarr2.chpl intuintarr2.future 
+	                           intuintarr2.good 
+Removed files:
+	chapel/test/arrays/bradc/: intuintarr.future 
+
