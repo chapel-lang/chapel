@@ -1,6 +1,0 @@
-deitz
-
-Whole-array permutations don't seem to work.  For example:
-
-  A(Perm) = B;
-

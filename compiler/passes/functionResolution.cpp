@@ -286,6 +286,11 @@ computeActualFormalMap(FnSymbol* fn,
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actual_types->v[i];
           formal_params->v[j] = actual_params->v[i];
+          if (formal->type == dtSetterToken &&
+              actual_types->v[i] != dtSetterToken ||
+              formal->type != dtSetterToken &&
+              actual_types->v[i] == dtSetterToken)
+            return false;
           break;
         }
       }
@@ -306,6 +311,11 @@ computeActualFormalMap(FnSymbol* fn,
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actual_types->v[i];
           formal_params->v[j] = actual_params->v[i];
+          if (formal->type == dtSetterToken &&
+              actual_types->v[i] != dtSetterToken ||
+              formal->type != dtSetterToken &&
+              actual_types->v[i] == dtSetterToken)
+            return false;
           break;
         }
       }

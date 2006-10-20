@@ -30,7 +30,11 @@ class _array {
   def this(i...?k)
     return _value((...i));
 
-  def =this(i...?k, val: elt_type) {
+  def =this(i:dom._index_type, val: elt_type) {
+    _value(i) = val;
+  }
+
+  def =this(i:dom._dim_index_type...rank, val: elt_type) where rank > 1 {
     _value((...i)) = val;
   }
 
@@ -101,6 +105,7 @@ pragma "domain"
 class _domain {
   type _domain_type;
   type _index_type;
+  type _dim_index_type;
   param rank : int;
   var _value : _domain_type;
   var _arrs: seq(_abase);
@@ -133,11 +138,11 @@ class _domain {
 
   def _build_sparse_domain() {
     var x = _value._build_sparse_domain();
-    return _domain(x.type, _index_type, rank, x);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
   def _exclusive_upper
-    return _domain(_domain_type, _index_type, rank, _value._exclusive_upper);
+    return _domain(_domain_type, _index_type, _dim_index_type, rank, _value._exclusive_upper);
 
   def add(i) {
     _value.add(i);
@@ -155,22 +160,22 @@ class _domain {
 
   def expand(i...?k) {
     var x = _value.expand((...i));
-    return _domain(x.type, _index_type, rank, x);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
   def exterior(i...?k) {
     var x = _value.exterior((...i));
-    return _domain(x.type, _index_type, rank, x);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
   def interior(i...?k) {
     var x = _value.interior((...i));
-    return _domain(x.type, _index_type, rank, x);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
   def translate(i...?k) {
     var x = _value.translate((...i));
-    return _domain(x.type, _index_type, rank, x);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 }
 
@@ -187,7 +192,7 @@ def fwrite(f : file, a: _domain) {
 
 def by(a: _domain, b) {
   var x = a._value by b;
-  return _domain(x.type, a._index_type, a.rank, x);
+  return _domain(x.type, a._index_type, a._dim_index_type, a.rank, x);
 }
 
 ////////////////////////////////////////////////////
@@ -198,7 +203,7 @@ def _build_domain(x)
 def _build_domain(ranges : _aseq ...?rank) {
   type t = ranges(1).elt_type;
   var x = _adomain(rank, t, ranges);
-  return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
+  return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
 }
 
 def _build_domain_exclusive_upper(x...?rank)
@@ -206,12 +211,12 @@ def _build_domain_exclusive_upper(x...?rank)
 
 def _build_domain_type(param rank : int, type dimensional_index_type = int) {
   var x = _adomain(rank, dimensional_index_type);
-  return _domain(x.type, x.getValue(x.getHeadCursor()).type, rank, x);
+  return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
 }
 
 def _build_domain_type(type ind_type) {
   var x = _idomain(ind_type);
-  return _domain(x.type, ind_type, 1, x);
+  return _domain(x.type, ind_type, ind_type, 1, x);
 }
 
 def _build_sparse_domain_type(dom)
@@ -499,7 +504,7 @@ class _aarray: _abase {
       alias.str(i) = d(i)._stride;
       alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, rank, d));
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
   def slice(d: _adomain) {
@@ -520,7 +525,7 @@ class _aarray: _abase {
       alias.str(i) = str(i);
       alias.orig(i) = orig(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, rank, d));
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
   def reallocate(d: _domain) {
