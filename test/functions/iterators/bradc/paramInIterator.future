@@ -1,0 +1,5 @@
+waynew?
+
+When a parameter is used in an iterator, the code
+will not compile.
+
