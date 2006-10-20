@@ -1,5 +1,5 @@
 iterator I(): int {
-  const x = 7;
+  param x = 7;
 
   for i in 1..10 {
     yield x+i;
