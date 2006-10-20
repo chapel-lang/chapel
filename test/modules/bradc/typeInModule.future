@@ -1,0 +1,7 @@
+function resolution
+
+Depending on the order in which the two files are
+specified on the compile line, this test either
+works or does not work.  I've checked in the test
+so that when run with the testing system, it will
+not work.
