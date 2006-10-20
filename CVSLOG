@@ -81453,3 +81453,14 @@ Added files:
 	                                    atomicSingleStmt.future 
 	                                    atomicSingleStmt.good 
 
+---------------------------------------------------------------------------
+
+10/20/06 10:28:06 -- deitz
+
+Log message:
+	Added working type folding test.
+
+Added files:
+	chapel/test/functions/deitz/: test_type_fold1.chpl 
+	                              test_type_fold1.good 
+
