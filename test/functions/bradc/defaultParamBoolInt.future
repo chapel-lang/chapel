@@ -1,5 +1,0 @@
-default argument bug
-
-For generic params, the default expression is removed from the instantiated
-function.  Thus, the default value is not being setup correctly in the
-wrapper.
