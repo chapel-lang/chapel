@@ -81478,3 +81478,41 @@ Added files:
 Removed files:
 	chapel/test/arrays/bradc/: intuintarr.future 
 
+---------------------------------------------------------------------------
+
+10/20/06 11:39:22 -- deitz
+
+Log message:
+	Fixed a problem in function resolution in which method tokens and
+	setter tokens, used at call sites to indicate method calls and
+	assignments respectively, could be incorrectly instantiated to an
+	argument that takes any type.  These now are specially treated in
+	function resolution to ensure that they are only passed to an argument
+	that expects a method token type or a setter token type.
+	
+	Fixed array getter and setters to implement a type match on the
+	indexing arguments to allow scalar promotion over these types.  This
+	enables scalar promotion over array indexing allowing an array to be
+	indexed by an array.
+	
+	Futurized test/studies/hpcc/RA/marybeth/ra-uint-test1 waiting for a
+	better error message.
+	
+	Removed future for test/studies/hpcc/FFT/bradc/fft-perm.
+	
+	Note: Currently in function resolution, we scalar promote only over a
+	type that is specified, never over a generic any.  In addition, we
+	favor instantiating over promoting.  A better idea may be to extend
+	the semantics so we would scalar promote over any by trying to
+	instantiate with the scalar promotion type first.  We can think about
+	this with examples once we write out the function resolution
+	algorithm.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-perm.future 
+
