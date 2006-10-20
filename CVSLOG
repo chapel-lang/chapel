@@ -81367,3 +81367,19 @@ Added files:
 	                                        paramInIterator.future 
 	                                        paramInIterator.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 18:09:14 -- bradc
+
+Log message:
+	My fourth and final snapshot for the day --
+	trying to remove as many casts and type
+	specifications as possible.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-snapshot4.chpl 
+	                                    ra-snapshot4.compopts 
+	                                    ra-snapshot4.execopts 
+	                                    ra-snapshot4.future 
+	                                    ra-snapshot4.good 
+
