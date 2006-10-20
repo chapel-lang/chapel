@@ -81336,3 +81336,17 @@ Added files:
 	                                    ra-snapshot3.future 
 	                                    ra-snapshot3.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 17:47:39 -- bradc
+
+Log message:
+	Checking in a test showing that + reductions over
+	booleans don't work -- results in a compiler error.
+	
+	Medium priority for HPCC.
+
+Added files:
+	chapel/test/reductions/bradc/: boolAsInt.chpl boolAsInt.future 
+	                               boolAsInt.good 
+
