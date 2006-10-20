@@ -81416,3 +81416,20 @@ Added files:
 	chapel/test/modules/bradc/helperModules/: NOTEST 
 	                                          typeInModule2.chpl 
 
+---------------------------------------------------------------------------
+
+10/20/06 10:15:21 -- bradc
+
+Log message:
+	Checking in a test that shows that comma-separated
+	type declarations are not currently supported in
+	the parser.
+	
+	This is low-priority for the HPCC benchmarks.
+	Aesthetic/orthogonality only.
+
+Added files:
+	chapel/test/types/typedefs/bradc/: commaSeparatedTypes.chpl 
+	                                   commaSeparatedTypes.future 
+	                                   commaSeparatedTypes.good 
+
