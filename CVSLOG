@@ -81433,3 +81433,23 @@ Added files:
 	                                   commaSeparatedTypes.future 
 	                                   commaSeparatedTypes.good 
 
+---------------------------------------------------------------------------
+
+10/20/06 10:23:36 -- bradc
+
+Log message:
+	A test showing that an atomic statement must currently
+	use curly brackets.  Would be nice, aesthetically, if
+	it did not require them for a single statement atomic
+	like:
+	
+	        A(i) ^= temp;
+	
+	Low priority for HPCC -- aesthetics only.
+
+Added files:
+	chapel/test/parallel/atomic/bradc/: .cvsignore 
+	                                    atomicSingleStmt.chpl 
+	                                    atomicSingleStmt.future 
+	                                    atomicSingleStmt.good 
+
