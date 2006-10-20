@@ -156,8 +156,10 @@ void cleanup(Symbol* base) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, base);
 
-  // handle forall's in type declaration
+  // handle forall's in array type declaration with initialization
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
       if (call->isNamed( "_build_forall_init")) {
         if (call->parentStmt) {
@@ -179,6 +181,26 @@ void cleanup(Symbol* base) {
           }
         } else {
           INT_FATAL( call, "missing parent stmt");
+        }
+      }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
+      for_formals( arg, fn) {
+        SymExpr *s = dynamic_cast<SymExpr*>(arg->defaultExpr);
+        if (!fn->instantiatedFrom &&
+            s && 
+            !arg->defPoint->exprType &&
+            !arg->isTypeVariable) {
+          if (s->var->type != dtNil) {
+            arg->defPoint->exprType = new CallExpr( PRIMITIVE_TYPEOF,
+                                                    arg->defaultExpr->copy());
+            arg->type = dtUnknown;
+          }
         }
       }
     }
