@@ -81584,3 +81584,15 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/RA/: ra-randstream.notest 
 
+---------------------------------------------------------------------------
+
+10/20/06 16:29:17 -- waynew
+
+Log message:
+	Fix for generic args with default values.  They are no longer generic and
+	take the type of the default expression.  This bug was shown by the test
+	functions/bradc/defaultParamBoolInt.chpl.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
