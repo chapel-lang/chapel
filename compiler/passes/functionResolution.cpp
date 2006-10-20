@@ -1544,9 +1544,11 @@ resolve() {
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       if (!resolvedFns.set_in(a))
         a->defPoint->parentStmt->remove();
-    } else if (ClassType* a = dynamic_cast<ClassType*>(ast)) {
-      if (!resolvedFns.set_in(a->defaultConstructor))
-        a->symbol->defPoint->parentStmt->remove();
+    } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(a->type)) {
+        if (!resolvedFns.set_in(ct->defaultConstructor))
+          ct->symbol->defPoint->parentStmt->remove();
+      }
     }
   }
   remove_named_exprs();

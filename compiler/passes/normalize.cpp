@@ -928,7 +928,7 @@ static bool fold_call_expr(CallExpr* call) {
     return false;
   }
 
-  if (call->isNamed("_construct__tuple")) {
+  if (call->isNamed("_construct__tuple") && call->argList->length() > 1) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (var->immediate) {

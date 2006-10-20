@@ -19,22 +19,32 @@ class _array {
   var _value : _array_type;
   var dom : _domain;
 
-  def this(d : _domain)
+  def this(d: _domain)
     return _value.slice(d._value);
 
-  def =this(d : _domain, val: elt_type) {
+  def =this(d: _domain, val: elt_type) {
     for i in d do
       this(i) = val;
   }
 
-  def this(i...?k)
+  def this(i: dom._index_type)
+    return _value(i);
+
+  def this(i: dom._dim_index_type ...rank) where rank > 1
+    return _value(i);
+
+  def this(i: _aseq(dom._dim_index_type) ...rank)
     return _value((...i));
 
-  def =this(i:dom._index_type, val: elt_type) {
+  def =this(i: dom._index_type, val: elt_type) {
     _value(i) = val;
   }
 
-  def =this(i:dom._dim_index_type...rank, val: elt_type) where rank > 1 {
+  def =this(i: dom._dim_index_type ...rank, val: elt_type) where rank > 1 {
+    _value(i) = val;
+  }
+
+  def =this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) {
     _value((...i)) = val;
   }
 
@@ -158,23 +168,40 @@ class _domain {
     return _value.member?(i);
   }
 
-  def expand(i...?k) {
-    var x = _value.expand((...i));
+  def expand(i: int ...rank)
+    return expand(i);
+
+  def expand(i: rank*int) {
+    var x = _value.expand(i);
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def exterior(i...?k) {
-    var x = _value.exterior((...i));
+  def expand(i: int) where rank > 1 {
+    var x = _value.expand(i);
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def interior(i...?k) {
-    var x = _value.interior((...i));
+  def exterior(i: int ...rank)
+    return exterior(i);
+
+  def exterior(i: rank*int) {
+    var x = _value.exterior(i);
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def translate(i...?k) {
-    var x = _value.translate((...i));
+  def interior(i: int ...rank)
+    return interior(i);
+
+  def interior(i: rank*int) {
+    var x = _value.interior(i);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
+  }
+
+  def translate(i: int ...rank)
+    return translate(i);
+
+  def translate(i: rank*int) {
+    var x = _value.translate(i);
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 }
@@ -200,14 +227,14 @@ def by(a: _domain, b) {
 def _build_domain(x)
   return x;
 
-def _build_domain(ranges : _aseq ...?rank) {
+def _build_domain(ranges: _aseq ...?rank) {
   type t = ranges(1).elt_type;
   var x = _adomain(rank, t, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
 }
 
-def _build_domain_exclusive_upper(x...?rank)
-  return _build_domain((...x))._exclusive_upper;
+def _build_domain_exclusive_upper(x: _domain)
+  return x._exclusive_upper;
 
 def _build_domain_type(param rank : int, type dimensional_index_type = int) {
   var x = _adomain(rank, dimensional_index_type);
@@ -333,18 +360,14 @@ class _adomain {
   def _build_sparse_domain()
     return _sdomain(rank, dim_type, adomain=this);
 
-  def translate(dim : rank*int) {
+  def translate(dim: rank*int) {
     var x = _adomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
-  def translate(dim : int ...?numDims) {
-    return translate(dim);
-  }
-
-  def interior(dim : rank*int) {
+  def interior(dim: rank*int) {
     var x = _adomain(rank, int);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
@@ -356,22 +379,14 @@ class _adomain {
     return x;
   }
 
-  def interior(dim : int ...?numDims) {
-    return interior(dim);
-  }
-
-  def exterior(dim : rank*int) {
+  def exterior(dim: rank*int) {
     var x = _adomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
-  
-  def exterior(dim : int ...?numDims) {
-    return exterior(dim);
-  }
 
-  def expand(dim : rank*int) {
+  def expand(dim: rank*int) {
     var x = _adomain(rank, int);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
@@ -381,21 +396,11 @@ class _adomain {
     }
     return x;
   }  
-  
-  def expand(dim : int ...?numDims) {
+
+  def expand(dim: int) {
     var x = _adomain(rank, int);
-    if (rank == numDims) {
-      -- NOTE: would probably like to get rid of this assignment
-      -- since domain assignment is/will eventually be nontrivial
-      -- in cost;  yet returning expand(dim) currently causes
-      -- problems as captured in trivial/shannon/condReturn3.chpl
-      x = expand(dim);
-    } else if (numDims == 1) {
-      for i in 1..rank do
-        x.ranges(i) = ranges(i)._expand(dim(1));
-    } else {
-      halt("***Error: Rank mismatch between domain and expand() arguments (", rank, " != ", numDims, ")***");
-    }
+    for i in 1..rank do
+      x.ranges(i) = ranges(i)._expand(dim);
     return x;
   }
 }
@@ -457,17 +462,8 @@ class _aarray: _abase {
     data.init();
   }
 
-  def this(d : _adomain) {
-    var a : [d] elt_type;
-    for i in d do
-      a(i) = this(i);
-    return a;
-  }
-
-  def =this(d : _adomain, v) {
-    for i in d do
-      this(i) = v;
-  }
+  def this(ind: dim_type ...1) var where rank == 1
+    return this(ind);
 
   def this(ind : rank*dim_type) var {
     if boundsChecking
@@ -477,12 +473,8 @@ class _aarray: _abase {
     var sum : dim_type;
     for param i in 1..rank do
       sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - orig(i);
-//    write(" [", ind, " = ", sum, "] ");
     return data(sum:int); // !!ahh
   }
-
-  def this(ind : dim_type ...rank) var
-    return this(ind);
 
   def this(ind: _aseq(dim_type) ...rank) var {
     var d = [(...ind)];
