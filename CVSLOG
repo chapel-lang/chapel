@@ -81606,3 +81606,22 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: defaultParamBoolInt.future 
 
+---------------------------------------------------------------------------
+
+10/20/06 16:56:35 -- deitz
+
+Log message:
+	Simplified functions relating to arithmetic domains that required a
+	variable number of arguments.  They are more exact now.  The types
+	required are more exact now.  This should help with error messages,
+	coercions, and scalar promotion.
+	
+	Futurized one error message test pending a better error message.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/bradc/: twoDasTwoOneDs.future 
+
