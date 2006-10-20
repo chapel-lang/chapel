@@ -81566,3 +81566,21 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/20/06 16:22:58 -- bradc
+
+Log message:
+	Some minor changes:
+	- added a .notest file for ra-randstream.chpl, which is just
+	  a module for ra-candidate.chpl
+	- applied some comments from Steve to probSize.chpl
+	- fixed some unnecessary module uses in ra-candidate/randstream
+
+Modified files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+	                              ra-randstream.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+Added files:
+	chapel/test/studies/hpcc/RA/: ra-randstream.notest 
+
