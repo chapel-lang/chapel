@@ -3,7 +3,7 @@ module HPCCProblemSize {
   use Types;
 
   def computeProblemSize(type elemType, numArrays, returnPow2 = false,
-                         memRatio:int = 4) {
+                         memRatio = 4) {
     const totalMem = + reduce physicalMemory(Locale, unit = Bytes),
           memoryTarget = totalMem / memRatio,
           bytesPerIndex = numArrays * numBytes(elemType);
