@@ -81302,3 +81302,23 @@ Added files:
 	                                    ra-snapshot1.future 
 	                                    ra-snapshot1.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 17:09:00 -- bradc
+
+Log message:
+	Another snapshot implementing all of RA
+	that currently works only in my directory.
+	
+	Also, added compopts and execopts to the
+	first snapshot, which I forgot earlier.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-snapshot1.compopts 
+	                                    ra-snapshot1.execopts 
+	                                    ra-snapshot2.chpl 
+	                                    ra-snapshot2.compopts 
+	                                    ra-snapshot2.execopts 
+	                                    ra-snapshot2.future 
+	                                    ra-snapshot2.good 
+
