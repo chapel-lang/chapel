@@ -1,15 +1,13 @@
 module RARandomStream {
-  use Types;
-
   param randWidth = 64;
   // would like to use randWidth here, but cannot
   type randType = uint(64);
-
 
   param hiRandBit = 0x1:randType << (randWidth-1);
   // BLC: would eventually like these to be params as well
   const bitDom = [0..randWidth),
         m2: [bitDom] randType = computeM2Vals(randWidth);
+
 
   iterator RAStream(numvals, start:randType = 0): randType {
     var val = getNthRandom(start);

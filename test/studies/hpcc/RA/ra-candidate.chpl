@@ -1,5 +1,4 @@
-// standard modules for loop scheduling and timing
-use Schedules;
+// standard modules for timing
 use Time;
 
 // user modules for computing problem size and generating random numbers
