@@ -25,10 +25,10 @@ module HPCCProblemSize {
     return numIndices;
   }
 
-  def printProblemSize(type elemType, numArrays, problemSize) {
-    const bytesPerArray = problemSize * numBytes(elemType),
-          totalMemInGB = (numArrays * bytesPerArray):float / (1024**3),
-          lgProbSize = lg(problemSize);
+  def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
+    const bytesPerArray = problemSize * numBytes(elemType): psType,
+          totalMemInGB = (numArrays * bytesPerArray:float) / (1024**3),
+          lgProbSize = lg(problemSize):psType;
     write("Problem size = ", problemSize);
     if (2**lgProbSize == problemSize) {
       write(" (2**", lgProbSize, ")");
