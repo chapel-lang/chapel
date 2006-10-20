@@ -81350,3 +81350,20 @@ Added files:
 	chapel/test/reductions/bradc/: boolAsInt.chpl boolAsInt.future 
 	                               boolAsInt.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 18:03:00 -- bradc
+
+Log message:
+	Adding a future showing that when a parameter is
+	used in an iterator, compilation breaks.
+	
+	Medium priority for HPCC
+
+Modified files:
+	chapel/test/functions/iterators/bradc/: .cvsignore 
+Added files:
+	chapel/test/functions/iterators/bradc/: paramInIterator.chpl 
+	                                        paramInIterator.future 
+	                                        paramInIterator.good 
+
