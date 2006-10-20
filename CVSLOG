@@ -81394,3 +81394,25 @@ Log message:
 Modified files:
 	chapel/test/functions/iterators/bradc/: paramInIterator.chpl 
 
+---------------------------------------------------------------------------
+
+10/20/06 10:07:19 -- bradc
+
+Log message:
+	Checking in a future where a module's use of a type
+	declaration results in an unresolved function error
+	when the files are listed in a particular order.
+	
+	No priority for HPCC -- reordering the files fixes
+	the problems.
+
+Modified files:
+	chapel/test/modules/bradc/: .cvsignore 
+Added files:
+	chapel/test/modules/bradc/: typeInModule.chpl 
+	                            typeInModule.compopts 
+	                            typeInModule.future 
+	                            typeInModule.good 
+	chapel/test/modules/bradc/helperModules/: NOTEST 
+	                                          typeInModule2.chpl 
+
