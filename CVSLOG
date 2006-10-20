@@ -81516,3 +81516,16 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft-perm.future 
 
+---------------------------------------------------------------------------
+
+10/20/06 11:56:44 -- bradc
+
+Log message:
+	Renamed printTiming to printStats to reflect the
+	fact that time-dependent but non-timing statistics
+	are also printed out.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+	                                   stream-candidate.execopts 
+
