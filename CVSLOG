@@ -81383,3 +81383,14 @@ Added files:
 	                                    ra-snapshot4.future 
 	                                    ra-snapshot4.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 18:11:12 -- bradc
+
+Log message:
+	Oops, forgot to change the const back to a param
+	before checking in.
+
+Modified files:
+	chapel/test/functions/iterators/bradc/: paramInIterator.chpl 
+
