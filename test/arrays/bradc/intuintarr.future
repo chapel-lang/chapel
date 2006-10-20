@@ -1,4 +1,0 @@
-int/uint domains
-
-It seems that a single program cannot contain both an int
-and a uint array.

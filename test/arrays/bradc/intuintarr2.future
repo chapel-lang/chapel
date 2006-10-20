@@ -1,0 +1,3 @@
+deitz
+
+this test captures what Brad was trying to capture in the 1st.  The issue is that the reallocate method is called dynamically with all combinations of array and domain types, some of which are inconsistent.
