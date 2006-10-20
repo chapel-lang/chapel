@@ -81529,3 +81529,28 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
 	                                   stream-candidate.execopts 
 
+---------------------------------------------------------------------------
+
+10/20/06 14:36:13 -- bradc
+
+Log message:
+	This is my proposed version of RA for the paper.  It
+	currently works in my version of the compiler, but not
+	in the project version, so I'm filing it as a future in
+	order to get comments on it now while I work on merging
+	my changes safely into the project version of the
+	compiler.
+	
+	The other todo here is to understand the X1's
+	vectorization approach well enough to create a version
+	of this that uses a vectorizable inner loop -- I'm
+	working with the midwest guys to figure this out.
+
+Added files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+	                              ra-candidate.compopts 
+	                              ra-candidate.execopts 
+	                              ra-candidate.future 
+	                              ra-candidate.good 
+	                              ra-randstream.chpl 
+
