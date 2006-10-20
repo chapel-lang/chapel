@@ -81596,3 +81596,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+10/20/06 16:36:10 -- waynew
+
+Log message:
+	Forgot to remove .future when checking in the fix.
+
+Removed files:
+	chapel/test/functions/bradc/: defaultParamBoolInt.future 
+
