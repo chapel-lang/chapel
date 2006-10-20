@@ -81322,3 +81322,17 @@ Added files:
 	                                    ra-snapshot2.future 
 	                                    ra-snapshot2.good 
 
+---------------------------------------------------------------------------
+
+10/19/06 17:27:45 -- bradc
+
+Log message:
+	Next snapshot -- successfully got all types to uints.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-snapshot3.chpl 
+	                                    ra-snapshot3.compopts 
+	                                    ra-snapshot3.execopts 
+	                                    ra-snapshot3.future 
+	                                    ra-snapshot3.good 
+
