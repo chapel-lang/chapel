@@ -81636,3 +81636,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/20/06 17:02:42 -- deitz
+
+Log message:
+	Removed .future of passing test.
+
+Removed files:
+	chapel/test/types/complex/bradc/: 
+	                                  negativeimaginaryliteral.future 
+
