@@ -81625,3 +81625,14 @@ Modified files:
 Added files:
 	chapel/test/arrays/bradc/: twoDasTwoOneDs.future 
 
+---------------------------------------------------------------------------
+
+10/20/06 16:59:45 -- bradc
+
+Log message:
+	Removing an unnecessary argument type thanks
+	to Wayne's fix.
+
+Modified files:
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
