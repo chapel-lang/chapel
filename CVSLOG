@@ -81647,3 +81647,36 @@ Removed files:
 	chapel/test/types/complex/bradc/: 
 	                                  negativeimaginaryliteral.future 
 
+---------------------------------------------------------------------------
+
+10/20/06 17:05:52 -- bradc
+
+Log message:
+	Refactored standard module parsing code so that
+	fewer characters are required to add a new
+	standard module.
+	
+	Added a "Schedules" module that I'd originally
+	thought would be used for RA, but so far is
+	not (may yet be for the vector implementation).
+	Didn't want to lose this code, though it should
+	be considered more deeply before going into
+	the spec, e.g.
+	
+	Added low and high functions to the adomain
+	to return the low and high bounds as integers
+	for a 1D adomain.  Would like to return tuples
+	for higher-dimensional domains, but need more
+	help to get that working, so used a compilerError
+	in that case for now.
+	
+	Added a subBlocks iterator to use with adomains
+	as a stand-in until iterators are supported
+	within classes.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/modules/standard/: Schedules.chpl 
+
