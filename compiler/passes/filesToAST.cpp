@@ -8,31 +8,45 @@
 #include "yy.h"
 #include "runtime.h"
 
+static ModuleSymbol* parseStandardModule(char* name) {
+  static char* modulePath = NULL;
+  if (modulePath == NULL) {
+    modulePath = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
+  }
+  return ParseFile(stringcat(modulePath, name), MOD_STANDARD);
+}
+
+
+static void parseStandardModules(void) {
+  baseModule = parseStandardModule("_chpl_base.chpl");
+
+  if (!fnostdincs) {
+    fileModule = parseStandardModule("_chpl_file.chpl");
+    parseStandardModule("_chpl_complex.chpl");
+    tupleModule = parseStandardModule("_chpl_htuple.chpl");
+    domainModule = parseStandardModule("_chpl_adomain.chpl");
+    parseStandardModule("_chpl_indefinite.chpl");
+    parseStandardModule("_chpl_sparse.chpl");
+    parseStandardModule("_chpl_math.chpl");
+    seqModule = parseStandardModule("_chpl_seq.chpl");
+    parseStandardModule("_chpl_ds.chpl");
+    parseStandardModule("_chpl_machine.chpl");
+    standardModule = parseStandardModule("_chpl_standard.chpl");
+    parseStandardModule("Time.chpl");
+    parseStandardModule("Random.chpl");
+    parseStandardModule("Types.chpl");
+    parseStandardModule("BitOps.chpl");
+    parseStandardModule("Memory.chpl");
+    parseStandardModule("Schedules.chpl");
+  }
+  
+}
+  
+
 void parse(void) {
   yydebug = debugParserLevel;
 
-  char* path = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
-
-  baseModule = ParseFile(stringcat(path, "_chpl_base.chpl"), MOD_STANDARD);
-
-  if (!fnostdincs) {
-    fileModule = ParseFile(stringcat(path, "_chpl_file.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_complex.chpl"), MOD_STANDARD);
-    tupleModule = ParseFile(stringcat(path, "_chpl_htuple.chpl"), MOD_STANDARD);
-    domainModule = ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_indefinite.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_sparse.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_math.chpl"), MOD_STANDARD);
-    seqModule = ParseFile(stringcat(path, "_chpl_seq.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_ds.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_machine.chpl"), MOD_STANDARD);
-    standardModule = ParseFile(stringcat(path, "_chpl_standard.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "Time.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "Random.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "Types.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "BitOps.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "Memory.chpl"), MOD_STANDARD);
-  }
+  parseStandardModules();
 
   int filenum = 0;
   char* inputFilename = NULL;

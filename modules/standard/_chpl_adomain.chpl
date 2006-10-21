@@ -163,6 +163,8 @@ class _domain {
   }
 
   def numIndices return _value.numIndices;
+  def low return _value.low;
+  def high return _value.high;
 
   def member?(i) {
     return _value.member?(i);
@@ -354,6 +356,20 @@ class _adomain {
     // WANT: return * reduce (this(1..rank).length);
   }
 
+  def low {
+    if (rank == 1) then 
+      return ranges(1)._low;
+    else
+      compilerError("low currently implemented only for rank-1 domains");
+  }
+
+  def high {
+    if (rank == 1) then
+      return ranges(1)._high;
+    else
+      commpilerError("high currently implemented only for rank-1 domains");
+  }
+
   def _build_array(type elt_type)
     return _aarray(elt_type, rank, dim_type, dom=this);
 
@@ -403,6 +419,16 @@ class _adomain {
       x.ranges(i) = ranges(i)._expand(dim);
     return x;
   }
+
+}
+
+
+// this should eventually...
+// ...be an iterator
+// ...be in the distribtion's implementation of the blocked domain
+// ...yield a subBlock of the domain per thread per locale
+iterator subBlocks(D: ?DT): DT {
+  yield [D.low..D.high];
 }
 
 
