@@ -4,7 +4,7 @@ use Time;
 
 
 // problem size configs
-config const logN = 5;
+config const logN = 6;
 
 // pseudo-random input configs
 config const deterministic = false,
