@@ -81680,3 +81680,20 @@ Modified files:
 Added files:
 	chapel/modules/standard/: Schedules.chpl 
 
+---------------------------------------------------------------------------
+
+10/22/06 12:12:21 -- marybeth
+
+Log message:
+	Fixed fft.chpl to work with odd and even sizes of logN.  (Previously,
+	it only worked for odd sizes.)
+	
+	Added a test for logN=6.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
+Added files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft-test-even.execopts 
+	                                        fft-test-even.good 
+
