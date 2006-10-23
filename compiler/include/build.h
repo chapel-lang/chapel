@@ -18,14 +18,12 @@ BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body);
 BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body);
 BlockStmt* build_for_block(BlockTag tag,
                            AList* indices,
-                           AList* iterators,
+                           Expr* iterator,
                            BlockStmt* body,
-                           bool isSquare = false,
                            int only_once = 0);
 BlockStmt* build_for_expr(AList* indices,
-                          AList* iterators,
+                          Expr* iterator,
                           Expr* expr,
-                          bool isSquare = false,
                           Expr* cond = NULL);
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
 BlockStmt* build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs);

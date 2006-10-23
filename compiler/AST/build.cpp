@@ -183,28 +183,17 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 // builds body of for expression
 BlockStmt*
 build_for_expr(AList* indices,
-               AList* iterators,
+               Expr* iterator,
                Expr* expr,
-               bool isSquare,
                Expr* cond) {
   BlockStmt* stmts = build_chpl_stmt();
 
-  CallExpr* elt_type;
-  if (iterators->length() == 1) {
-    elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringSymbol("getHeadCursor"))));
-  } else {
-    elt_type = new CallExpr("_construct__tuple", new_IntSymbol(iterators->length()));
-    for_alist(Expr, iteratorExpr, iterators) {
-      elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringSymbol("getHeadCursor")))));
-    }
-  }
   VarSymbol* seq = new VarSymbol("_seq");
   seq->isCompilerTemp = true;
   LabelSymbol* break_out = new LabelSymbol("type_break");
 
   ASTMap map;
   AList* typeindices = indices->copy(&map);
-  AList* typeiterators = iterators->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(seq)));
@@ -217,8 +206,8 @@ build_for_expr(AList* indices,
   body->insertAtTail(new GotoStmt(goto_normal, break_out));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
-                                                    typeiterators,
-                                                    body, false, 1)));
+                                                    iterator->copy(),
+                                                    body, 1)));
   stmts->insertAtTail(new ExprStmt(new DefExpr(break_out)));
 
   ExprStmt* append_stmt =
@@ -227,8 +216,8 @@ build_for_expr(AList* indices,
         new CallExpr(".", seq, new_StringSymbol("_append_in_place")), expr));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     indices,
-                                                    iterators,
-                                                    cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt), isSquare)));
+                                                    iterator,
+                                                    cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt))));
   VarSymbol* rettmp = new VarSymbol("_ret_seq");
   rettmp->isCompilerTemp = true;
   stmts->insertAtTail(new ExprStmt(new DefExpr(rettmp)));
@@ -238,33 +227,12 @@ build_for_expr(AList* indices,
 }
 
 
-static BlockStmt*
-build_cross_block(BlockTag tag,
-                  AList* indices,
-                  AList* iterators,
-                  BlockStmt* body) {
-  if (indices->length() != iterators->length())
-    INT_FATAL("Unexpected arguments to build_cross_block");
-  while (indices->length()) {
-    AList* index = new AList(indices->first()->remove());
-    AList* iterator = new AList(iterators->first()->remove());
-    body = new BlockStmt(build_for_block(tag, index, iterator, body));
-  }
-  return build_chpl_stmt(body);
-}
-
-
 BlockStmt* build_for_block(BlockTag tag,
                            AList* indices,
-                           AList* iterators,
+                           Expr* iterator,
                            BlockStmt* body,
-                           bool isSquare, // cross product of iterators
                            int only_once) { // execute only once used
                                             // in build_for_expr
-  if (isSquare && only_once)
-    INT_FATAL("Unexpected arguments to build_for_block");
-  if (isSquare)
-    return build_cross_block(tag, indices, iterators, body);
   static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;
@@ -284,45 +252,25 @@ BlockStmt* build_for_block(BlockTag tag,
     indexDef->init = new SymExpr(index);
     body->insertAtHead(indexDef);
   }
-  int numIterators = iterators->length();
-  Vec<Symbol*> iterator;
-  for (int i = 0; i < numIterators; i++) {
-    Expr* iteratorExpr = dynamic_cast<Expr*>(iterators->get(1));
-    iteratorExpr->remove();
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iteratorExpr)) {
-      iterator.add(symExpr->var);
-    } else {
-      iterator.add(new VarSymbol(stringcat("_iterator_", intstring(i), "_", intstring(uid))));
-      stmts->insertAtTail(new ExprStmt(new DefExpr(iterator.v[i], iteratorExpr)));
-    }
-  }
-  Vec<VarSymbol*> cursor;
-  for (int i = 0; i < numIterators; i++) {
-    cursor.add(new VarSymbol(stringcat("_cursor_", intstring(i), "_", intstring(uid))));
-    stmts->insertAtTail(new ExprStmt(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getHeadCursor"))))));
-  }
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
-
-  for (int i = 0; i < numIterators; i++) {
-    stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
-  }
-
-  CallExpr* index_init;
-  if (numIterators == 1) {
-    index_init = new CallExpr(new CallExpr(".", iterator.v[0], new_StringSymbol("getValue")), cursor.v[0]);
+  Symbol* iteratorSym;
+  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iterator)) {
+    iteratorSym = symExpr->var;
   } else {
-    index_init = new CallExpr("_construct__tuple", new_IntSymbol(numIterators));
-    for (int i = 0; i < numIterators; i++) {
-      index_init->insertAtTail(new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getValue")), cursor.v[i]));
-    }
+    iteratorSym = new VarSymbol(stringcat("_iterator_", intstring(uid)));
+    stmts->insertAtTail(new DefExpr(iteratorSym, iterator));
   }
-  stmts->insertAtTail(new ExprStmt(new DefExpr(index, index_init)));
+  VarSymbol* cursor = new VarSymbol(stringcat("_cursor_", intstring(uid)));
+  stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor")))));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
+
+  stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
+
+  CallExpr* index_init = new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getValue")), cursor);
+  stmts->insertAtTail(new DefExpr(index, index_init));
   stmts->insertAtTail(body);
 
   if (!only_once) {
-    for (int i = 0; i < numIterators; i++) {
-      stmts->insertAtTail(new ExprStmt(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getNextCursor")), cursor.v[i]))));
-    }
+    stmts->insertAtTail(new ExprStmt(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor))));
     stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
 

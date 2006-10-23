@@ -888,7 +888,11 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_promotion_wrap_", cname);
   AList* indices = new AList();
-  AList* iterators = new AList();
+  CallExpr* iterator;
+  if (isSquare)
+    iterator = new CallExpr("_build_domain");
+  else
+    iterator = new CallExpr("_build_tuple");
   AList* wrapper_actuals = new AList();
   for_formals(formal, this) {
     Symbol* new_formal = formal->copy();
@@ -901,7 +905,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
       new_formal->type = ts->type;
       Symbol* new_index = new VarSymbol("_index");
       wrapper->insertFormalAtTail(new DefExpr(new_formal));
-      iterators->insertAtTail(new SymExpr(new_formal));
+      iterator->insertAtTail(new SymExpr(new_formal));
       indices->insertAtTail(new DefExpr(new_index));
       wrapper_actuals->insertAtTail(new SymExpr(new_index));
     } else {
@@ -914,13 +918,11 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
     actualCall = make_method_call_partial(actualCall);
   if (returns_void(this)) {
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
-                                         indices,
-                                         iterators,
+                                         indices, iterator,
                                          new BlockStmt(
-                                           new ExprStmt(actualCall)),
-                                         isSquare)));
+                                           new ExprStmt(actualCall)))));
   } else {
-    wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall, isSquare));
+    wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
 //     ReturnStmt* ret = dynamic_cast<ReturnStmt*>(wrapper->body->body->last());
 //     SymExpr* sym = dynamic_cast<SymExpr*>(ret->expr);
 //     if (wrapper->retRef)

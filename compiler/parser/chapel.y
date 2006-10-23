@@ -409,15 +409,15 @@ for_stmt:
 | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
     { $$ = build_param_for_stmt($3, $5, $7, $9, $10); }
 */
-| for_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
+| for_tag nonempty_expr_ls TIN expr parsed_block_stmt
     { $$ = build_for_block($1, exprsToIndices($2), $4, $5); }
-| for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
+| for_tag nonempty_expr_ls TIN expr TDO stmt
     { $$ = build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6)); }
 ;
 
 
 expr_for_stmt:
-  TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
+  TLSBR nonempty_expr_ls TIN expr TRSBR stmt
     { $$ = build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6)); }
 ;
 
@@ -1004,10 +1004,10 @@ opt_elt_type:
 array_type:
   TLSBR nonempty_expr_ls TRSBR opt_elt_type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR type
+| TLSBR nonempty_expr_ls TIN expr TRSBR type
 { 
   CallExpr *dom = new CallExpr("_build_domain", $4->copy());
-  $$ = new CallExpr("_build_array_type", dom, $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), new CallExpr("_build_forall_init_dom", $4))); }
+  $$ = new CallExpr("_build_array_type", dom, $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), dom->copy())); }
 | TLSBR TRSBR opt_elt_type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
 | TLSBR TQUESTION identifier TRSBR opt_elt_type
@@ -1233,7 +1233,7 @@ opt_expr:
 
 expr:
   top_level_expr
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
+| TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
@@ -1242,10 +1242,10 @@ expr:
     }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
+| TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       FnSymbol* forif_fn = new FnSymbol("_forif_fn");
-      forif_fn->insertAtTail(build_for_expr(exprsToIndices($2), $4, $9, false, $7));
+      forif_fn->insertAtTail(build_for_expr(exprsToIndices($2), $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 ;
