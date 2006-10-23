@@ -6,6 +6,6 @@ def testit(type elemType, numArrays, returnPow2:bool = true, memRatio = 4) {
 }
 
 testit(float(64), 3);
-// testit(float(64), 3, false);
-// testit(float(64), 3, true);
-// testit(float(64), 3, false, 8);
+testit(float(64), 3, false);
+testit(float(64), 3, true);
+testit(float(64), 3, false, 8);
