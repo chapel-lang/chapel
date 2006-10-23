@@ -81708,3 +81708,45 @@ Log message:
 Modified files:
 	chapel/test/functions/bradc/: defaultParamBoolInt.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 10:02:15 -- bradc
+
+Log message:
+	Now that there is a standard Schedules module,
+	I rewrote my ra-schedules.chpl test to use it,
+	which fixed this weekend's regressions.
+	
+	Removed the ra-schedules.* tests and also all
+	the placeholding snapshots of ra that I checked
+	in out of paranoia when I was feeling like I
+	was walking a tightrope with it last week.
+
+Added files:
+	chapel/test/modules/standard/Schedules/bradc/: .cvsignore 
+	                                               schedules.chpl 
+	                                               schedules.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-schedules.chpl 
+	                                    ra-schedules.good 
+	                                    ra-snapshot1.chpl 
+	                                    ra-snapshot1.compopts 
+	                                    ra-snapshot1.execopts 
+	                                    ra-snapshot1.future 
+	                                    ra-snapshot1.good 
+	                                    ra-snapshot2.chpl 
+	                                    ra-snapshot2.compopts 
+	                                    ra-snapshot2.execopts 
+	                                    ra-snapshot2.future 
+	                                    ra-snapshot2.good 
+	                                    ra-snapshot3.chpl 
+	                                    ra-snapshot3.compopts 
+	                                    ra-snapshot3.execopts 
+	                                    ra-snapshot3.future 
+	                                    ra-snapshot3.good 
+	                                    ra-snapshot4.chpl 
+	                                    ra-snapshot4.compopts 
+	                                    ra-snapshot4.execopts 
+	                                    ra-snapshot4.future 
+	                                    ra-snapshot4.good 
+
