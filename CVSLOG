@@ -81697,3 +81697,14 @@ Added files:
 	                                        fft-test-even.execopts 
 	                                        fft-test-even.good 
 
+---------------------------------------------------------------------------
+
+10/23/06 09:22:43 -- waynew
+
+Log message:
+	Ooops.  Checked in my debugging version of the test case by mistake.
+	Caused the night tests to fail... heh heh.
+
+Modified files:
+	chapel/test/functions/bradc/: defaultParamBoolInt.chpl 
+
