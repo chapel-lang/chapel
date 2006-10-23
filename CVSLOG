@@ -81873,3 +81873,31 @@ Added files:
 	chapel/test/types/seq/deitz/indefinite/: test_indefinite1.chpl 
 	                                         test_indefinite1.good 
 
+---------------------------------------------------------------------------
+
+10/23/06 16:26:39 -- deitz
+
+Log message:
+	Updated implementation of + reduce (but did not update other
+	reductions) to reflect a better semantics.
+	
+	Prior, the result of a + reduce had the same type as the input type.
+	This was a problem for a + reduction over values of bool type because
+	the result of + cannot not be stored in a bool with an explicit
+	coercion because of a loss of data.
+	
+	The new semantic is that given a reduction
+	
+	  op reduce expr
+	
+	the resulting type is the type of the expression
+	
+	  expr op expr.
+	
+	So the result of + reduce (/ true, false, true, false /) is 2.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+Removed files:
+	chapel/test/reductions/bradc/: boolAsInt.future 
+
