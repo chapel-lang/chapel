@@ -243,9 +243,11 @@ def _build_domain_type(param rank : int, type dimensional_index_type = int) {
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
 }
 
+// note: rank of indefinite domain is zero, should be 1? but doesn't matter
+// see note next to reallocate function
 def _build_domain_type(type ind_type) {
   var x = _idomain(ind_type);
-  return _domain(x.type, ind_type, ind_type, 1, x);
+  return _domain(x.type, ind_type, ind_type, 0, x);
 }
 
 def _build_sparse_domain_type(dom)
@@ -546,8 +548,11 @@ class _aarray: _abase {
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
+  // when condition compares d.type to dom.type
+  // when parameter folding is done in function resolution
+  // then rank of indefinite domain can be changed back to 1
   def reallocate(d: _domain) {
-    if (d.rank == rank) {
+    if (d.rank == rank && d._dim_index_type == dim_type) {
       var new = _aarray(elt_type, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);

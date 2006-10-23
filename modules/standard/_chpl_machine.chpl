@@ -15,6 +15,4 @@ def fwrite(outfile: file, loc: locale) {
   write("LOCALE", loc.id);
 }
 
-// would like this to be the following, but it breaks any 1D
-// array sized-by-uint tests.
-// const Locale: [loc in LocaleDomain] locale = locale(id = loc);
+const Locale: [loc in LocaleDomain] locale = locale(id = loc);

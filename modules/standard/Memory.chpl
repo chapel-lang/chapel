@@ -1,4 +1,3 @@
-
 enum MemUnits {Bytes, KB, MB, GB};
 
 def physicalMemory(loc: locale, unit: MemUnits = Bytes): int {
@@ -9,7 +8,4 @@ def physicalMemory(loc: locale, unit: MemUnits = Bytes): int {
     when MB do return bytesInLocale / 1024**2;
     when GB do return bytesInLocale / 1024**3;
   }
-
 }
-
-const Locale: [loc in LocaleDomain] locale = locale(id = loc);
