@@ -80,7 +80,7 @@ def verifyResults(T: [?TDom], updateSpace) {
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
-  const numErrors = + reduce [i in TDom] (T(i) != i):int;
+  const numErrors = + reduce [i in TDom] (T(i) != i);
   if (printStats) then writeln("Number of errors is: ", numErrors, "\n");
 
   return numErrors <= (errorTolerance * N_U);
