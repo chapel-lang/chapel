@@ -105,13 +105,12 @@ def bitReverse(val: ?valType, numBits = 64) {
 def dfft(A: [?AD] complex, W) {
   
   var l = 1;
-  var lasti:int;
   var m, m2, k1: int;
 
   const n = AD(1).length;
 
   for i in 2..logN by 2 {
-    m = l << 2;
+    m = 4*l;
     m2 = 2*m;
     if (m2 > n) then break;
     k1 = 0;
@@ -135,7 +134,6 @@ def dfft(A: [?AD] complex, W) {
       k1 += 1;
     }
     l *= 4;
-    lasti = i;
   }
 
   if ((l << 2) == n) {
