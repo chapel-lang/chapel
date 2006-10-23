@@ -81768,3 +81768,40 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 11:29:10 -- deitz
+
+Log message:
+	Changed the semantics of for loops so that if there is more than one
+	iterator expression, it needs to be enclosed in brackets (tensor
+	product) or parentheses (zipper).  Changed the implementation of this
+	to be more consistent with the implementation of domains.  Tuples now
+	support the iterator interface if the elements in the tuple are
+	iteratable.
+	
+	Added a new record in the modules called _square_tuple that implements
+	the tensor product.
+	
+	Removed code in the compiler to build tensor product and zipper
+	iteration loops.
+	
+	Fixed .good file of functions/deitz/test_square2 as we now iterate
+	over tensor product promotions in row-major order.
+	
+	This fixes numerous bugs with zipper and tensor product iteration only
+	some of which have shown up.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	chapel/test/functions/deitz/: test_square2.good 
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+	chapel/test/types/seq/deitz/: test_zipper1.chpl 
+Added files:
+	chapel/test/types/tuple/deitz/: test_iterate.chpl 
+	                                test_iterate.good 
+
