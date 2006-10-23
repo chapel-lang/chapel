@@ -349,7 +349,7 @@ class _adomain {
     return ranges(dim);
 
   def numIndices {
-    var sum = 1;
+    var sum = 1:dim_type;
     for param i in 1..rank do
       sum *= ranges(i).length;
     return sum;
