@@ -185,7 +185,6 @@ Is this "while x"(i); or "while x(i)";?
  
 %type <pt> formal_tag
 %type <ft> fn_tag
-%type <btag> atomic_cobegin
 %type <btag> for_tag
 
 %type <boolval> fnretref
@@ -543,13 +542,21 @@ assign_stmt:
 
 
 block_stmt:
-  atomic_cobegin TLCBR stmt_ls TRCBR
+  TLCBR stmt_ls TRCBR
     {
-      $$ = build_chpl_stmt(new BlockStmt($3, $1));
+      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
     }
- | TBEGIN stmt
+| TCOBEGIN TLCBR stmt_ls TRCBR
     {
-      $$ = build_chpl_stmt( new BlockStmt( $2, BLOCK_BEGIN));
+      $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_COBEGIN));
+    }
+| TATOMIC stmt
+    {
+      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_ATOMIC));
+    }
+| TBEGIN stmt
+    {
+      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_BEGIN));
     }
 ;
 
@@ -1375,15 +1382,6 @@ reduction:
 
 
 /** TAGS *********************************************************************/
-
-
-atomic_cobegin:
-    { $$ = BLOCK_NORMAL; }
-| TATOMIC
-    { $$ = BLOCK_ATOMIC; }
-| TCOBEGIN
-    { $$ = BLOCK_COBEGIN; }
-;
 
 
 for_tag:

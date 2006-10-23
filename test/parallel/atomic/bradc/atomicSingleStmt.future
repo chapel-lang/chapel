@@ -1,6 +1,0 @@
-parser
-
-It seems that atomics must currently be followed by a block statement.
-If possible, it would be nice if they could be followed by a singleton
-statement instead.
-
