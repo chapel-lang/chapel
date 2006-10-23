@@ -81936,3 +81936,20 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 16:51:48 -- deitz
+
+Log message:
+	Type declarations can now define multiple types as in
+	
+	  type t = int, t2 = float;
+	
+	Fixed a typo and removed a .future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/types/typedefs/bradc/: commaSeparatedTypes.chpl 
+Removed files:
+	chapel/test/types/typedefs/bradc/: commaSeparatedTypes.future 
+
