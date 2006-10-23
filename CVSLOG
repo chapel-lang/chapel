@@ -81823,3 +81823,14 @@ Modified files:
 Added files:
 	chapel/test/functions/waynew/: defaults.chpl defaults.good 
 
+---------------------------------------------------------------------------
+
+10/23/06 13:50:13 -- marybeth
+
+Log message:
+	Very minor changes to fft.chpl to get rid of an unused variable
+	and to use a multiply instead of a shift operator.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
+
