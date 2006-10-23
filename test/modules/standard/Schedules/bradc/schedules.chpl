@@ -1,3 +1,5 @@
+use Schedules;
+
 config const lo = 1;
 config const hi = 100;
 
@@ -6,6 +8,7 @@ config const blockSize = 15;
 
 var D = [lo..hi];
 
+/*
 iterator BlockSchedule(D: ?DT, numBlocks): DT {
   const lo = D(1)._low;
   const hi = D(1)._high;
@@ -28,6 +31,7 @@ iterator FixedBlockSchedule(D: ?DT, blockSize): DT {
     yield [blo..bhi];
   }
 }
+*/
 
 
 for b in BlockSchedule(D, numBlocks) {
