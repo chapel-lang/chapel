@@ -81834,3 +81834,24 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 15:12:45 -- deitz
+
+Log message:
+	Improved the reallocate method to be resilient in the face of multiple
+	domain types of the same rank.  It was resilient to multiple domain
+	types of different ranks (which prior to the addition of the domain
+	dimension index type was the only distinction).  This is still not how
+	it should be written (see comment in code).
+	
+	Moved Locale definition from Memory module to _chpl_machine module.
+	
+	This fixes the HPCC ``showstopper'' issue.
+
+Modified files:
+	chapel/modules/standard/: Memory.chpl _chpl_adomain.chpl 
+	                          _chpl_machine.chpl 
+Removed files:
+	chapel/test/arrays/bradc/: intuintarr2.future 
+
