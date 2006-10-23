@@ -81805,3 +81805,21 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_iterate.chpl 
 	                                test_iterate.good 
 
+---------------------------------------------------------------------------
+
+10/23/06 11:31:59 -- waynew
+
+Log message:
+	Added a test case to explore a little how tightly to bind a generic arg
+	to the default expression's type (inspired by a small talk with Brad while
+	waiting for a bus).  My call is that if the user really cares, they
+	shoudld specify the type or use a value/expression that subsumes the
+	allowable types.
+	
+	Oops. Forgot to remove another mod to Brad's original test.
+
+Modified files:
+	chapel/test/functions/bradc/: defaultParamBoolInt.chpl 
+Added files:
+	chapel/test/functions/waynew/: defaults.chpl defaults.good 
+
