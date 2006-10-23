@@ -193,7 +193,7 @@ def cft1st(A, W) {
   // BLC: would like to use an indefinite arithmetic array here
   // BLC: would also like to use () on both indices and zipping
   //      together of ranges
-  forall j,k1 in ([8..n) by 8, 1..(n-8)/8) {
+  forall j,k1 in ([8..n) by 8, 1..) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
@@ -231,7 +231,7 @@ def cftmd1(span, A, W) {
   const n = A.domain(1).length;
 
   cftmd0(span, A, W);
-  forall k,k1 in ([m2..n) by m2, 1..(n-m2)/m2) {
+  forall k,k1 in ([m2..n) by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
@@ -264,7 +264,7 @@ def cftmd2(span, A, W) {
   }
 
   forall j in [0..span) {
-    forall k,k1 in ([m2..n) by m2, 1..(n-m2)/m2) {
+    forall k,k1 in ([m2..n) by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
@@ -272,7 +272,7 @@ def cftmd2(span, A, W) {
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
-    forall k,k1 in ([m2..n) by m2, 1..(n-m2)/m2) {
+    forall k,k1 in ([m2..n) by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
@@ -290,7 +290,7 @@ def cftmd21(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
 
-  for k,k1 in ([m2..n) by m2, 1..(n-m2)/m2) {
+  for k,k1 in ([m2..n) by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
