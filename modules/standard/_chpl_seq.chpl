@@ -208,9 +208,14 @@ def _to_seq( i) {
 }
 
 
+def _sum_type(type elt_type) {
+  var x: elt_type;
+  return x + x;
+}
+
 class _sum {
   type elt_type;
-  var value : elt_type;   // assume default value is sum identity value
+  var value : _sum_type(elt_type).type;
   def accumulate(x) {
     value = value + x;
   }

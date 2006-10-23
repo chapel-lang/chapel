@@ -1,4 +1,0 @@
-reductions/coercions
-
-Can't seem to do a + reduction over booleans, 
-having them implicitly cast to integers.
