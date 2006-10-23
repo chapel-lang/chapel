@@ -675,7 +675,7 @@ def _extended_euclid(u: int, v: int) {
 }
 
 
--- Arithmetic sequence
+// Arithmetic sequence
 
 def _build_aseq(low: int, high: int) return _aseq(int, low, high);
 def _build_aseq(low: uint, high: uint) return _aseq(uint, low, high);
@@ -763,3 +763,67 @@ pragma "inline" def string.substring(s: _aseq)
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
     return __primitive("string_select", this, s._low, s._high);
+
+// indefinite arithmetic sequence
+
+def _build_iaseq(bound: int, param upper: int)
+  return _iaseq(int, upper, bound);
+def _build_iaseq(bound: uint, param upper: int)
+  return _iaseq(uint, upper, bound);
+def _build_iaseq(bound: int(64), param upper: int)
+  return _iaseq(int(64), upper, bound);
+def _build_iaseq(bound: uint(64), param upper: int)
+  return _iaseq(uint(64), upper, bound);
+
+def _build_iaseq(bound, upper) {
+  compilerError("arithmetic sequence bound is not of integral type");
+}
+
+record _iaseq {
+  type elt_type;
+  param _upper: int; // 0 bound is lower bound, 1 bound is upper bound
+  var _bound: elt_type;
+  var _stride : int = 1;
+
+  iterator this() : elt_type {
+    forall x in this
+      yield x; 
+  }
+
+  def getHeadCursor() {
+    if _upper == 1 && _stride > 0 then
+      halt("error: indefinite arithmetic sequence has positive stride and upper bound");
+    if _upper == 0 && _stride < 0 then
+      halt("error: indefinite arithmetic sequence has negative stride and lower bound");
+    return _bound;
+  }
+
+  def getNextCursor(c)
+    return c + _stride:elt_type;
+
+  def getValue(c)
+    return c;
+
+  def isValidCursor?(c)
+    return true;
+
+  def length {
+    halt("error: attempt to determine length of an indefinite arithmetic sequence");
+    return 0:elt_type;
+  }
+}
+
+def by(s : _iaseq, i : int) {
+  if i == 0 then
+    halt("illegal stride of 0");
+  return _iaseq(s.elt_type, s._upper, s._bound, s._stride * i);
+}
+
+def fwrite(f : file, s : _iaseq) {
+  if s._upper then
+    fwrite(f, "..", s._bound);
+  else
+    fwrite(f, s._bound, "..");
+  if (s._stride != 1) then
+    fwrite(f, " by ", s._stride);
+}

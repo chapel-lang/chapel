@@ -1266,6 +1266,10 @@ top_level_expr:
     }
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_aseq", $1, $3); }
+| expr TDOTDOT
+    { $$ = new CallExpr("_build_iaseq", $1, new_IntSymbol(0)); }
+| TDOTDOT expr
+    { $$ = new CallExpr("_build_iaseq", $2, new_IntSymbol(1)); }
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
