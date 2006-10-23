@@ -81901,3 +81901,14 @@ Modified files:
 Removed files:
 	chapel/test/reductions/bradc/: boolAsInt.future 
 
+---------------------------------------------------------------------------
+
+10/23/06 16:39:07 -- bradc
+
+Log message:
+	Removed the future for the current RA candidate,
+	since Steve fixed the remaining outstanding issue.
+
+Removed files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.future 
+
