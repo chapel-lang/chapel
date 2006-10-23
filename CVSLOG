@@ -81953,3 +81953,20 @@ Modified files:
 Removed files:
 	chapel/test/types/typedefs/bradc/: commaSeparatedTypes.future 
 
+---------------------------------------------------------------------------
+
+10/23/06 16:52:07 -- deitz
+
+Log message:
+	Atomic statements no longer require curly brackets, allowing for
+	something like
+	
+	  atomic x += 1;
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Removed files:
+	chapel/test/parallel/atomic/bradc/: atomicSingleStmt.future 
+
