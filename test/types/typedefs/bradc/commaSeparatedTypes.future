@@ -1,7 +1,0 @@
-parser
-
-It seems that the parser doesn't currently support
-comma-separated type specifications.  This seems like
-it would be nice for orthogonality with other
-declaration styles (except for defs and iterators,
-I suppose).

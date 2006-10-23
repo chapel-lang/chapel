@@ -202,7 +202,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt
 
-%type <pblockstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
+%type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
@@ -848,16 +848,31 @@ enum_item:
 ;
 
 
-typedef_decl_stmt:
-  TTYPE pragma_ls identifier TASSIGN type TSEMI
+typedef_decl_stmt_inner:
+  pragma_ls identifier TASSIGN type
     {
-      UserType* newtype = new UserType($5);
-      TypeSymbol* typeSym = new TypeSymbol($3, newtype);
-      typeSym->addPragmas($2);
-      delete $2;
+      UserType* newtype = new UserType($4);
+      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
+      typeSym->addPragmas($1);
+      delete $1;
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = build_chpl_stmt(def_expr);
     }
+| pragma_ls identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
+    {
+      UserType* newtype = new UserType($4);
+      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
+      typeSym->addPragmas($1);
+      delete $1;
+      DefExpr* def_expr = new DefExpr(typeSym);
+      $6->insertAtTail(def_expr);
+      $$ = $6;
+    }
+;
+
+typedef_decl_stmt:
+  TTYPE typedef_decl_stmt_inner TSEMI
+    { $$ = $2; }
 ;
 
 

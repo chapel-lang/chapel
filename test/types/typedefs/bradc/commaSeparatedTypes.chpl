@@ -2,7 +2,7 @@ type myFirstType = int,
      mySecondType = float;
 
 
-var x: myFirstInt = 1;
+var x: myFirstType = 1;
 var y: mySecondType = 2;
 
 
