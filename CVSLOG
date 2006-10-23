@@ -81924,3 +81924,15 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 16:44:46 -- bradc
+
+Log message:
+	Removed artificial upper bounds from
+	zippered iterations, using indefinite
+	notation that Steve just implemented.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+
