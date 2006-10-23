@@ -81750,3 +81750,21 @@ Removed files:
 	                                    ra-snapshot4.future 
 	                                    ra-snapshot4.good 
 
+---------------------------------------------------------------------------
+
+10/23/06 10:08:39 -- bradc
+
+Log message:
+	Made the numIndices function for adomains
+	return a value of the per-dimension index
+	type rather than int(32), as it was before.
+	This is a partial stepping stone to the
+	current proposed solution to parameterize
+	this function by a type and make the
+	per-dimension index type be the default
+	type (something that I didn't have time
+	to undertake on this check-in).
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
