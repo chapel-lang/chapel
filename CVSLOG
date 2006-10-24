@@ -82130,3 +82130,26 @@ Added files:
 	chapel/test/domains/deitz/: test_cross_domains.chpl 
 	                            test_cross_domains.good 
 
+---------------------------------------------------------------------------
+
+10/24/06 16:16:17 -- deitz
+
+Log message:
+	Add 3 tests in my directory not checked in:
+	
+	Added working uint test.
+	
+	Added future of "true + true" which currently yields "true" instead of
+	"2".
+	
+	Added future of arrays of arrays.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_of_array2.chpl 
+	                           test_array_of_array2.future 
+	                           test_array_of_array2.good 
+	chapel/test/trivial/deitz/: test_true_plus.chpl 
+	                            test_true_plus.future 
+	                            test_true_plus.good test_uint.chpl 
+	                            test_uint.good 
+
