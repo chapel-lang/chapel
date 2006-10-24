@@ -12,7 +12,7 @@ supplied to routines in this module to specify the desired time units.
 {\bf Functions for querying the system time and date}
 
 \begin{chapel}
-def getCurrentTime(unit: TimeUnits = seconds): float
+def getCurrentTime(unit: TimeUnits = seconds): real
 \end{chapel}
 Returns the elapsed time since midnight in the units specified.
 
@@ -48,7 +48,7 @@ def Timer.stop()
 Stops the timer.  It is an error to stop a timer that is not running.
 
 \begin{chapel}
-def Timer.elapsed(unit: TimeUnits = seconds): float
+def Timer.elapsed(unit: TimeUnits = seconds): real
 \end{chapel}
 Returns the cumulative elapsed time, in the units specified, between
 calls to \chpl{start} and \chpl{stop}.  If the timer is running, the

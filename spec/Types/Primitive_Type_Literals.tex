@@ -39,9 +39,9 @@ the digits: \chpl{int}, \chpl{int(64)}, \chpl{uint(64)}.  Explicit
 conversions are necessary to change the type of the literal to another
 integer size.
 
-Floating-point literals are designated by the following syntax:
+Real literals are designated by the following syntax:
 \begin{syntax}
-floating-point-literal:
+real-literal:
   digits[OPT] . digit digits[OPT] exponent-part[OPT]
 
 exponent-part:
@@ -50,29 +50,27 @@ exponent-part:
 sign: one of
   + -
 \end{syntax}
-The type of a floating-point literal is \chpl{float}.  Explicit
-conversions are necessary to change the type of the literal to another
-floating-point size.
+The type of a real literal is \chpl{real}.  Explicit conversions are
+necessary to change the type of the literal to another real
+size.
 
-Note that floating-point literals require that a digit follow the
+Note that real literals require that a digit follow the
 decimal point.  This is necessary to avoid an ambiguity in
 interpreting \chpl{2.e+2} that arises if a method called \chpl{e} is
 defined on integers.
 
-Complex literals are designated by the following syntax:
+Imaginary literals are designated by the following syntax:
 \begin{syntax}
-complex-literal:
-  floating-point-literal `i'
+imaginary-literal:
+  real-literal `i'
   integer-literal `i'
 \end{syntax}
-This complex-literal form specifies the imaginary part.  The real part
-can be specified in a separate integer or floating-point literal and
-then added to the imaginary part.
 
-Alternatively, a 2-tuple literal of expressions of integer or
-floating-point type can be cast to a complex.  These expressions can
-be literals, but do not need to be.  To create a complex literal or
-parameter, they must be literals or parameters.
+A complex number is specified by adding or subtracting an imaginary
+literal with a real literal.  Alternatively, a 2-tuple literal of
+expressions of integer or real type can be cast to a complex.  These
+expressions can be literals, but do not need to be.  To create a
+complex literal or parameter, they must be literals or parameters.
 
 \begin{example}
 The following codes represent the same complex literal:
