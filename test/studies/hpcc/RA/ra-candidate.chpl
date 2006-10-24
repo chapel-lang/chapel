@@ -9,8 +9,8 @@ use RARandomStream;
 // the number of tables we'll be using, the element type, and
 // the type used to index into the table
 param numTables = 1;
-type elemType = randType;
-type indexType = randType;
+type elemType = randType,
+     indexType = randType;
 
 // configuration constants for specifying the problem size and # of updates
 config const n = lg(computeProblemSize(elemType, numTables,
