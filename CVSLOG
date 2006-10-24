@@ -81970,3 +81970,13 @@ Modified files:
 Removed files:
 	chapel/test/parallel/atomic/bradc/: atomicSingleStmt.future 
 
+---------------------------------------------------------------------------
+
+10/23/06 17:21:32 -- bradc
+
+Log message:
+	Used new capability to comma-separate types.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+
