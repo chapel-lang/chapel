@@ -82044,3 +82044,15 @@ Modified files:
 	chapel/spec/Types/: Primitive_Type_Literals.tex 
 	                    Primitive_Types.tex 
 
+---------------------------------------------------------------------------
+
+10/24/06 15:57:13 -- bradc
+
+Log message:
+	Removed "useLog2ProbSize" flag from stream
+	benchmark since it isn't really a part of
+	the benchmark's specification.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+
