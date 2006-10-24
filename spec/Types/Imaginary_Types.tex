@@ -1,0 +1,11 @@
+The imaginary types can be parameterized by the number of bits used to
+represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
+The imaginary types that are supported are machine-dependent, but
+usually include \chpl{imag(32)} and \chpl{imag(64)}, and sometimes
+include \chpl{imag(128)}.
+
+\begin{rationale}
+The imaginary type is included to avoid numeric instabilities and
+under-optimized code stemming from always coercing real values to
+complex values with a zero imaginary part.
+\end{rationale}
