@@ -82056,3 +82056,77 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/24/06 16:12:13 -- deitz
+
+Log message:
+	Fixed implementation to match semantics of a single index expression.
+	This expression can be a tuple, which is then destructured.
+	
+	So
+	
+	  for i,j in D do { ... }
+	
+	is no longer legal and must be written
+	
+	  for (i,j) in D do { ... }
+	
+	Updated test cases.
+	
+	Overall, this simplifies the compiler slightly.
+	
+	Added a good test case of doubly destructured indexing as in
+	
+	  for ((i,j),(k,l)) in ([1..2,3..4],[5..6,7..8]) do ...
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/bradc/: domarr.chpl domarr2.chpl 
+	                           twoDasTwoOneDs.chpl 
+	chapel/test/arrays/deitz/: jacobi-no-inline.chpl 
+	                           jacobi-unoptimized.chpl jacobi.chpl 
+	                           jacobi2.chpl jacobi3.chpl 
+	                           jacobi4.chpl matrix.chpl 
+	                           test_anon_domain2.chpl 
+	                           test_array_uint.chpl 
+	                           test_domain_mixed_dim_types.chpl 
+	chapel/test/arrays/deitz/domains/: test_domains_2Db.chpl 
+	                                   test_domains_2Dc.chpl 
+	chapel/test/arrays/deitz/part1/: test_array_2Db.chpl 
+	                                 test_array_2Dc.chpl 
+	                                 test_array_3D.chpl 
+	                                 test_array_3D_float.chpl 
+	                                 test_array_8d.chpl 
+	                                 test_array_assign1.chpl 
+	                                 test_array_assign2.chpl 
+	                                 test_array_assign3.chpl 
+	chapel/test/arrays/deitz/part2/: test_array_integer_2d.chpl 
+	                                 test_array_integer_3d.chpl 
+	                                 test_array_of_class1.chpl 
+	                                 test_array_of_record1.chpl 
+	                                 test_array_traverse1.chpl 
+	chapel/test/arrays/deitz/stride/: test_stride1.chpl 
+	                                  test_stride2.chpl 
+	chapel/test/arrays/waynew/: init3.chpl 
+	chapel/test/demo/review_060130/: iterators.chpl jacobi.chpl 
+	                                 jacobi2.chpl 
+	chapel/test/domains/roxana/index/: test_index_expr.chpl 
+	chapel/test/flowanalysis/newast/: domarr.chpl 
+	chapel/test/interpreter/deitz/: domarr.chpl 
+	chapel/test/memory/shannon/: jacobi.chpl printMemTable.chpl 
+	chapel/test/no_infer/: jacobi.chpl 
+	chapel/test/performance/deitz/: test_for2d.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.chpl fft.chpl 
+	chapel/test/studies/jacobi/bocchino/: jacobi.chpl 
+	chapel/test/studies/jacobi/deitz/: jacobi.chpl 
+	chapel/test/studies/jacobi/waynew/: example1.chpl example2.chpl 
+	chapel/test/types/seq/deitz/: test_zipper1.chpl 
+Added files:
+	chapel/test/domains/deitz/: test_cross_domains.chpl 
+	                            test_cross_domains.good 
+
