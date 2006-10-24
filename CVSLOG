@@ -81990,3 +81990,22 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/24/06 10:54:19 -- deitz
+
+Log message:
+	Filled in rest of Types section.
+	
+	Fixed section references in Statements section.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Statements/: Assignment_Statements.tex Blocks.tex 
+	                         Statements.tex 
+	                         The_Type_Select_Statement.tex 
+	chapel/spec/Types/: Class_Types.tex Domain_and_Array_Types.tex 
+	                    Enumerated_Types.tex Record_Types.tex 
+	                    Sequence_Types.tex Tuple_Types.tex 
+	                    Type_Aliases.tex Union_Types.tex 
+
