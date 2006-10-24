@@ -12,8 +12,7 @@ param numVectors = 3;
 type elemType = float(64);
 
 // configuration constants for specifying the problem size
-config const usePow2ProbSize = false,
-             m = computeProblemSize(elemType, numVectors, usePow2ProbSize);
+config const m = computeProblemSize(elemType, numVectors);
 
 // configuration constants for the number of trials to run
 config const numTrials = 10;
