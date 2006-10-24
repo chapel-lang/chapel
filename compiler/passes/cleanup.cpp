@@ -161,16 +161,16 @@ void cleanup(Symbol* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
-      if (call->isNamed( "_build_forall_init")) {
+      if (call->isNamed( "_build_array_type") && call->argList->length() == 4) {
         if (call->parentStmt) {
           if (ExprStmt *stmt = dynamic_cast<ExprStmt*>(call->parentStmt)) {
             if (DefExpr *def = dynamic_cast<DefExpr*>(stmt->expr)) {
               CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
-              CallExpr *forinfo = dynamic_cast<CallExpr*>(tinfo->get(3)->remove());
-              AList *indices = dynamic_cast<CallExpr*>(forinfo->argList->head)->argList;
-              Expr *iter = dynamic_cast<Expr*>(forinfo->argList->tail);
+              Expr *indices = tinfo->get(3);
+              Expr *iter = tinfo->get(4);
+              indices->remove();
               iter->remove();
-              BlockStmt *forblk = build_for_expr( exprsToIndices(indices), iter, def->init->copy());
+              BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
 
               FnSymbol *forall_init = new FnSymbol( "_forallinit");
               forall_init->insertAtTail( forblk);

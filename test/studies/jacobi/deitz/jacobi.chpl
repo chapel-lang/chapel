@@ -10,7 +10,7 @@ A(D.exterior(1,0)) = 1.0;
 var delta = 0.0;
 
 do {
-  [i,j in D] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+  [(i,j) in D] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   -- also:
   --   Temp(D) = (A(D.translate(-1,0)) + A(D.translate(1,0)) + 
   --              A(D.translate(0,-1)) + A(D.translate(0,1))) / 4.0;

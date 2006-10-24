@@ -17,11 +17,11 @@ FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr);
 BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body);
 BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body);
 BlockStmt* build_for_block(BlockTag tag,
-                           AList* indices,
+                           BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body,
                            int only_once = 0);
-BlockStmt* build_for_expr(AList* indices,
+BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* iterator,
                           Expr* expr,
                           Expr* cond = NULL);
@@ -44,5 +44,4 @@ DefExpr* build_class(char* name, Type* type, AList* decls);
 DefExpr*
 build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable);
 
-AList* exprsToIndices(AList* indices);
 #endif

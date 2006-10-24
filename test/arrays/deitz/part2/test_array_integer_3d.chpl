@@ -12,11 +12,11 @@ forall i in D1 {
   A1(i) = 0;
 }
 
-forall i,j in D2 {
+forall (i,j) in D2 {
   A2(i,j) = 0;
 }
 
-forall i,j,k in D3 {
+forall (i,j,k) in D3 {
   A3(i,j,k) = 0;
 }
 

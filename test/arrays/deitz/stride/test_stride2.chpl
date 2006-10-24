@@ -6,7 +6,7 @@ writeln(D);
 
 var A: [D] int;
 
-for i,j in D do
+for (i,j) in D do
   A(i,j) = (i-1)*n + j;
 
 writeln(D);

@@ -23,7 +23,7 @@ def main() {
 // Put the stencil of X in Y
 // Return the max difference between the new and old stencils
 def stencil(X,Y) {
-  forall i,j in Inner {
+  forall (i,j) in Inner {
     Y(i,j) = (X(i+1,j) + X(i-1,j) + X(i,j+1) + X(i,j-1)) / 4;
   }
   return max reduce [i in Inner] abs(X(i) - Y(i));

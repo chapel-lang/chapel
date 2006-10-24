@@ -13,7 +13,7 @@ def fwrite(f: file, M: Matrix) {
 
 def Matrix.transpose() {
   var M: Matrix(elt_type, n, m);
-  for i,j in D do
+  for (i,j) in D do
     M(j,i) = this(i,j);
   return M;
 }
@@ -30,7 +30,7 @@ def *(M1: Matrix, M2: Matrix) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
   var M3: Matrix(M1(1,1)*M2(1,1), M1.m, M2.n);
-  [i,j in M3.D] M3(i,j) = + reduce [k in M1.D(2)] (M1(i,k) + M2(k,j));
+  [(i,j) in M3.D] M3(i,j) = + reduce [k in M1.D(2)] (M1(i,k) + M2(k,j));
   return M3;
 }
 
@@ -41,7 +41,7 @@ var m = 8, n = 4;
 var M: Matrix(float, m, n);
 var N: Matrix(float, m, n);
 
-for i,j in [1..m, 1..n] {
+for (i,j) in [1..m, 1..n] {
   M(i,j) = i-1 + (j-1)*m;
   N(i,j) = (i-1)*n + (j-1);
 }

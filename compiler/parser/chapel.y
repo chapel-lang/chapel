@@ -408,16 +408,20 @@ for_stmt:
 | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
     { $$ = build_param_for_stmt($3, $5, $7, $9, $10); }
 */
-| for_tag nonempty_expr_ls TIN expr parsed_block_stmt
-    { $$ = build_for_block($1, exprsToIndices($2), $4, $5); }
-| for_tag nonempty_expr_ls TIN expr TDO stmt
-    { $$ = build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6)); }
+| for_tag expr TIN expr parsed_block_stmt
+    { $$ = build_for_block($1, $2, $4, $5); }
+| for_tag expr TIN expr TDO stmt
+    { $$ = build_for_block($1, $2, $4, new BlockStmt($6)); }
 ;
 
 
 expr_for_stmt:
   TLSBR nonempty_expr_ls TIN expr TRSBR stmt
-    { $$ = build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6)); }
+    {
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = build_for_block(BLOCK_FORALL, $2->only()->remove(), $4, new BlockStmt($6));
+    }
 ;
 
 
@@ -1027,9 +1031,13 @@ array_type:
   TLSBR nonempty_expr_ls TRSBR opt_elt_type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR type
-{ 
-  CallExpr *dom = new CallExpr("_build_domain", $4->copy());
-  $$ = new CallExpr("_build_array_type", dom, $6, new CallExpr("_build_forall_init", new CallExpr("_build_forall_init_ind", $2), dom->copy())); }
+    { 
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = new CallExpr("_build_array_type",
+                        new CallExpr("_build_domain", $4), $6, $2->only()->remove(),
+                        new CallExpr("_build_domain", $4->copy()));
+    }
 | TLSBR TRSBR opt_elt_type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
 | TLSBR TQUESTION identifier TRSBR opt_elt_type
@@ -1257,17 +1265,21 @@ expr:
   top_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid index expression");
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
-      forall_iterator->insertAtTail(build_for_expr(exprsToIndices($2), $4, $6));
+      forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid index expression");
       FnSymbol* forif_fn = new FnSymbol("_forif_fn");
-      forif_fn->insertAtTail(build_for_expr(exprsToIndices($2), $4, $9, $7));
+      forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 ;

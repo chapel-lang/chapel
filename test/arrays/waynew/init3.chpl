@@ -4,5 +4,5 @@ def jam( j: int, k: int): int {
 
 var D: domain(2) = [1..5, 6..7];
 
-var A: [i,j in D] int = jam( i, j);
+var A: [(i,j) in D] int = jam( i, j);
 writeln( A);

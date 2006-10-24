@@ -567,22 +567,22 @@ class _aarray: _abase {
   }
 
   def assign(y : _aarray) {
-    for i,e in (dom,y) do
+    for (i,e) in (dom,y) do
       this(i) = e;
   }
 
   def assign(y : _adomain) {
-    for i,e in (dom,y) do
+    for (i,e) in (dom,y) do
       this(i) = e;
   }
 
   def assign(y : seq) {
-    for i,e in (dom,y) do
+    for (i,e) in (dom,y) do
       this(i) = e;
   }
 
   def assign(y: _aseq) {
-    for i,e in (dom,y) do
+    for (i,e) in (dom,y) do
       this(i) = e;
   }
 

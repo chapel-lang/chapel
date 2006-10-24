@@ -182,7 +182,7 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 
 // builds body of for expression
 BlockStmt*
-build_for_expr(AList* indices,
+build_for_expr(BaseAST* indices,
                Expr* iterator,
                Expr* expr,
                Expr* cond) {
@@ -193,7 +193,7 @@ build_for_expr(AList* indices,
   LabelSymbol* break_out = new LabelSymbol("type_break");
 
   ASTMap map;
-  AList* typeindices = indices->copy(&map);
+  BaseAST* typeindices = indices->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(seq)));
@@ -227,8 +227,36 @@ build_for_expr(AList* indices,
 }
 
 
+static void exprsToIndices(Vec<DefExpr*>* defs,
+                           BaseAST* indices,
+                           Expr* init) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
+    if (call->isPrimitive(PRIMITIVE_CAST)) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+        Expr* type = call->get(1);
+        type->remove();
+        defs->add(new DefExpr(new VarSymbol(sym->var->name), init, type));
+        //        call->replace(sym);
+      } else
+        USR_FATAL(call, "invalid index expression");
+    } else {
+      if (call->isNamed("_tuple")) {
+        int i = 0;
+        for_actuals(actual, call) {
+          if (i > 0) // skip first (size parameter)
+            exprsToIndices(defs, actual, new CallExpr(init->copy(), new_IntSymbol(i)));
+          i++;
+        }
+      }
+    }
+  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(indices)) {
+    defs->add(new DefExpr(new VarSymbol(sym->var->name), init));
+  }
+}
+
+
 BlockStmt* build_for_block(BlockTag tag,
-                           AList* indices,
+                           BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body,
                            int only_once) { // execute only once used
@@ -239,18 +267,10 @@ BlockStmt* build_for_block(BlockTag tag,
   BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
   VarSymbol* index = new VarSymbol(stringcat("_index_", intstring(uid)));
-  if (indices->length() > 1) {
-    int i = 1;
-    for_alist(DefExpr, indexDef, indices) {
-      indexDef->remove();
-      indexDef->init = new CallExpr(index, new_IntSymbol(i++));
-      body->insertAtHead(indexDef);
-    }
-  } else {
-    DefExpr* indexDef = dynamic_cast<DefExpr*>(indices->only());
-    indexDef->remove();
-    indexDef->init = new SymExpr(index);
-    body->insertAtHead(indexDef);
+  Vec<DefExpr*> defs;
+  exprsToIndices(&defs, indices, new SymExpr(index));
+  forv_Vec(DefExpr, def, defs) {
+    body->insertAtHead(def);
   }
   Symbol* iteratorSym;
   if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iterator)) {
@@ -580,32 +600,4 @@ build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
   if (!type)
     argSymbol->type = dtAny;
   return new DefExpr(argSymbol, NULL, type);
-}
-
-
-static void
-exprsToIndicesHelper(AList* defs,
-                     Expr* index,
-                     Type* type,
-                     Expr* exprType = NULL) {
-  if (SymExpr* expr = dynamic_cast<SymExpr*>(index)) {
-    defs->insertAtTail
-      (new DefExpr(new VarSymbol(expr->var->name, type), NULL, exprType));
-    return;
-  } else if (CallExpr* expr = dynamic_cast<CallExpr*>(index)) {
-    if (expr->isPrimitive(PRIMITIVE_CAST)) {
-      exprsToIndicesHelper(defs, expr->get(2), type, expr->get(1)->copy());
-      return;
-    }
-  }
-  INT_FATAL(index, "Error, Variable expected in index list");
-}
-
-
-AList* exprsToIndices(AList* indices) {
-  AList* defs = new AList();
-  for_alist(Expr, index, indices) {
-    exprsToIndicesHelper(defs, index, dtUnknown);
-  }
-  return defs;
 }

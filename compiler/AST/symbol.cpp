@@ -887,13 +887,14 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_promotion_wrap_", cname);
-  AList* indices = new AList();
+  CallExpr* indicesCall = new CallExpr("_tuple"); // to be destructured in build
   CallExpr* iterator;
   if (isSquare)
     iterator = new CallExpr("_build_domain");
   else
     iterator = new CallExpr("_build_tuple");
   AList* wrapper_actuals = new AList();
+  int i = 1;
   for_formals(formal, this) {
     Symbol* new_formal = formal->copy();
     if (_this == formal)
@@ -903,19 +904,24 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
       if (!ts)
         INT_FATAL(this, "error building promotion wrapper");
       new_formal->type = ts->type;
-      Symbol* new_index = new VarSymbol("_index");
       wrapper->insertFormalAtTail(new DefExpr(new_formal));
       iterator->insertAtTail(new SymExpr(new_formal));
-      indices->insertAtTail(new DefExpr(new_index));
-      wrapper_actuals->insertAtTail(new SymExpr(new_index));
+      indicesCall->insertAtTail(new SymExpr(astr("_p_i_", intstring(i))));
+      wrapper_actuals->insertAtTail(new SymExpr(astr("_p_i_", intstring(i))));
     } else {
       wrapper->insertFormalAtTail(new DefExpr(new_formal));
       wrapper_actuals->insertAtTail(new SymExpr(new_formal));
     }
+    i++;
   }
   CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
   if (isMethod)
     actualCall = make_method_call_partial(actualCall);
+  BaseAST* indices = indicesCall;
+  if (indicesCall->argList->length() == 1)
+    indices = indicesCall->argList->only()->remove();
+  else
+    indicesCall->insertAtHead(new_IntSymbol(indicesCall->argList->length()));
   if (returns_void(this)) {
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices, iterator,
@@ -931,6 +937,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint->parentStmt);
+  scopeResolve(wrapper);
   normalize(wrapper);
   return wrapper;
 }

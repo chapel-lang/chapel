@@ -8,7 +8,7 @@ var BigR : domain(2) = [0..n+1, 0..n+1];
 var A : [BigR] float;
 var Temp : [R] float;
 
-[i,j in BigR] A(i,j) = 0.0;
+[(i,j) in BigR] A(i,j) = 0.0;
 
 [j in 1..n] A(n+1,j) = 1.0;
 
@@ -21,9 +21,9 @@ var iteration : int = 0;
 var delta : float = 1.0;
 
 while (delta > epsilon) {
-  [i,j in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+  [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   delta = 0.0;
-  [i,j in R] {
+  [(i,j) in R] {
     delta += Temp(i,j)-A(i,j);
     A(i,j) = Temp(i,j);
   }

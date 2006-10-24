@@ -4,7 +4,7 @@ var D = [1..n, 1..n];
 
 var A: [D] float;
 
-[i,j in D] A(i,j) = i*10 + j;
+[(i,j) in D] A(i,j) = i*10 + j;
 
 writeln("A is:\n", A);
 

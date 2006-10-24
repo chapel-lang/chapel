@@ -20,9 +20,9 @@ def main() {
   var iteration = 0, delta = 1.0;
 
   while (delta > epsilon) {
-    [i,j in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+    [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
     delta = 0.0;
-    forall i,j in R {
+    forall (i,j) in R {
       delta += Temp(i,j)-A(i,j);
       A(i,j) = Temp(i,j);
     }

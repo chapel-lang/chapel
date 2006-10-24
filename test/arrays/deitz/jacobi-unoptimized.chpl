@@ -9,11 +9,11 @@ var South : domain(2) = [n+1..n+1, 1..n];
 var A : [BigR] float;
 var Temp : [R] float;
 
-forall i,j in BigR {
+forall (i,j) in BigR {
   A(i,j) = 0.0;
 }
 
-forall i,j in South {
+forall (i,j) in South {
   A(i,j) = 1.0;
 }
 
@@ -26,11 +26,11 @@ var iteration : int = 0;
 var delta : float = 1.0;
 
 while (delta > epsilon) {
-  forall i,j in R {
+  forall (i,j) in R {
     Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
   delta = 0.0;
-  forall i,j in R {
+  forall (i,j) in R {
     delta += Temp(i,j)-A(i,j);
     A(i,j) = Temp(i,j);
   }
