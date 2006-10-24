@@ -75,7 +75,7 @@ def verifyResults(T: [?TDom], updateSpace) {
   else
     forall i in updateSpace {
       const r = getNthRandom(i+1);   // BLC: would be nice to get rid of this
-      atomic { T(r & indexMask) ^= r; }
+      atomic T(r & indexMask) ^= r;
     }
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
