@@ -1,7 +1,11 @@
 Type aliases are declared with the following syntax:
 \begin{syntax}
 type-alias-declaration-statement:
-  `type' identifier type-part[OPT] ;
+  `type' type-alias-declaration ;
+
+type-alias-declaration:
+  identifier type-part[OPT]
+  identifier type-part[OPT] , type-alias-declaration
 
 type-part:
   = type ;
@@ -12,4 +16,4 @@ the type specified by \sntx{type-part} directly.
 
 The \sntx{type-part} is optional in the definition of a class, record,
 or union.  Its absence makes the class, record, or union
-generic \rsec{Generics}.
+generic~(\rsec{Generics}).
