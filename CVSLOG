@@ -82009,3 +82009,25 @@ Modified files:
 	                    Sequence_Types.tex Tuple_Types.tex 
 	                    Type_Aliases.tex Union_Types.tex 
 
+---------------------------------------------------------------------------
+
+10/24/06 11:07:14 -- deitz
+
+Log message:
+	Changed float to real in the spec.
+	
+	Added imag to the spec.
+	
+	Added new environment rationale to be used to explain choices.  Use
+	"\begin{rationale}".
+	
+	Changed real and imag methods to re and im.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Types/: Complex_Types.tex 
+Added files:
+	chapel/spec/Types/: Imaginary_Types.tex Real_Types.tex 
+Removed files:
+	chapel/spec/Types/: Floating-Point_Types.tex 
+
