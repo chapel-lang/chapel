@@ -82031,3 +82031,16 @@ Added files:
 Removed files:
 	chapel/spec/Types/: Floating-Point_Types.tex 
 
+---------------------------------------------------------------------------
+
+10/24/06 11:13:43 -- deitz
+
+Log message:
+	More changes of float to real and addition of imag (using grep for
+	completeness).
+
+Modified files:
+	chapel/spec/Standard_Modules/: Time.tex 
+	chapel/spec/Types/: Primitive_Type_Literals.tex 
+	                    Primitive_Types.tex 
+
