@@ -81980,3 +81980,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/23/06 17:29:24 -- bradc
+
+Log message:
+	Removed braces around singleton atomic statement.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+
