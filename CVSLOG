@@ -82635,3 +82635,17 @@ Modified files:
 	chapel/compiler/include/: baseAST.h stmt.h symbol.h symscope.h 
 	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+10/25/06 15:08:02 -- waynew
+
+Log message:
+	Slightly different interpretation of single variables. Used a broadcast
+	instead of a series of signals.  Added broadcast primitives.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: chplthreads.c 
+
