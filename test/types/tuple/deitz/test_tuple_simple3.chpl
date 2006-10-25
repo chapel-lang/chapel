@@ -1,4 +1,4 @@
-var tuple : (float, float);
+var tuple : (real, real);
 
 tuple = (2.71828, 3.14159);
 

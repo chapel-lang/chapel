@@ -1,11 +1,11 @@
 // Test single field in a class
 
 class D {
-  var s: single float;
+  var s: single real;
 }
 
 var d: D = D();
-var f: float;
+var f: real;
 
 begin {
   writeln( "2: got ", d.s);

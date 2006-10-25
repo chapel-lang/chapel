@@ -1,7 +1,7 @@
 
 class pair {
   var a: int;
-  var b: float;
+  var b: real;
 }
 
 var a: pair = pair();

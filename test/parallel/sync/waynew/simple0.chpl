@@ -5,8 +5,8 @@ s = 4;
 i = s;
 writeln( "i is ", i);
 
-var sf: sync float;
-var f: float;
+var sf: sync real;
+var f: real;
 
 sf = 1.2;
 f = sf;

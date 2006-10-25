@@ -19,4 +19,4 @@ def bar(c: C) {
 
 bar(C(x=3));
 bar(D(t=int, x=1, y=4));
-bar(D(t=float, x=2, y=4.0));
+bar(D(t=real, x=2, y=4.0));

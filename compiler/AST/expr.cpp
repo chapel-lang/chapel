@@ -104,12 +104,12 @@ static void genTostringRoutineName(FILE* outfile, Type* exprType) {
   } else if (exprType == dtUInt[INT_SIZE_64]) {
     fprintf(outfile, "uint64");
     
-  } else if (exprType == dtFloat[FLOAT_SIZE_32]) {
-    fprintf(outfile, "float32");
-  } else if (exprType == dtFloat[FLOAT_SIZE_64]) {
-    fprintf(outfile, "float64");
-  } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
-    fprintf(outfile, "float128");
+  } else if (exprType == dtReal[FLOAT_SIZE_32]) {
+    fprintf(outfile, "real32");
+  } else if (exprType == dtReal[FLOAT_SIZE_64]) {
+    fprintf(outfile, "real64");
+  } else if (exprType == dtReal[FLOAT_SIZE_128]) {
+    fprintf(outfile, "real128");
 
   } else if (exprType == dtImag[FLOAT_SIZE_32]) {
     fprintf(outfile, "imag32");
@@ -810,7 +810,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MIN_INT%d", get_width( t));
           } else if (is_uint_type( t)) {
             fprintf( outfile, "MIN_UINT%d", get_width( t));
-          } else if (is_float_type( t)) {
+          } else if (is_real_type( t)) {
             fprintf( outfile, "MIN_FLOAT%d", get_width( t));
           } else if (is_imag_type( t)) {
             fprintf( outfile, "MIN_IMAG%d", get_width( t));
@@ -830,7 +830,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MAX_INT%d", get_width( t));
           } else if (is_uint_type( t)) {
             fprintf( outfile, "MAX_UINT%d", get_width( t));
-          } else if (is_float_type( t)) {
+          } else if (is_real_type( t)) {
             fprintf( outfile, "MAX_FLOAT%d", get_width( t));
           } else if (is_imag_type( t)) {
             fprintf( outfile, "MAX_IMAG%d", get_width( t));
@@ -848,7 +848,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (is_arithmetic_type( t)) {
           if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "INT%d(1)", get_width( t));
-          } else if (is_float_type( t)) {
+          } else if (is_real_type( t)) {
             fprintf( outfile, "1.0");
           } else {
             fprintf( outfile, "_chpl_complex%d( 1.0, 0.0)", get_width( t)); 
@@ -866,7 +866,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "true");
           } else if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "1");
-          } else if (is_float_type( t)) {
+          } else if (is_real_type( t)) {
             fprintf( outfile, "1.0");
           } else {
             fprintf( outfile, "_chpl_complex%d(1.0, 1.0)", get_width( t));
@@ -885,7 +885,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "false");
           } else if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "0");
-          } else if (is_float_type( t)) {
+          } else if (is_real_type( t)) {
             fprintf( outfile, "0.0");
           } else {
             fprintf( outfile, "_chpl_complex%d(0.0, 0.0)", get_width( t));
@@ -899,7 +899,7 @@ void CallExpr::codegen(FILE* outfile) {
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
-          if (is_int_type( t) || is_uint_type( t) || is_float_type( t) ||
+          if (is_int_type( t) || is_uint_type( t) || is_real_type( t) ||
               is_imag_type(t)) {
             fprintf( outfile, "MAX_UINT%d", get_width( t));
           } else {   // must be (is_complex_type( t))
@@ -919,7 +919,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (is_arithmetic_type( t)) {
           if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "0");
-          } else if (is_float_type( t) || is_imag_type(t)) {
+          } else if (is_real_type( t) || is_imag_type(t)) {
             // sjd: why are we doing this on floats???
             fprintf( outfile, "0.0");
           } else {   // must be (is_complex_type( t))
@@ -1131,19 +1131,19 @@ void CallExpr::codegen(FILE* outfile) {
         int width1 = get_width(get(1)->typeInfo());
         fprintf( outfile, "_chpl_complex%d( ", width1);
         if (is_complex_type(get(2)->typeInfo())) {       // complex->complex
-          fprintf( outfile, "(_float%d)(", width1/2);
+          fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".re), ");
-          fprintf( outfile, "(_float%d)(", width1/2);
+          fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".im))");
-        } else if (is_float_type( get(2)->typeInfo()) || // float->complex
+        } else if (is_real_type( get(2)->typeInfo()) || // float->complex
                    is_int_type( get(2)->typeInfo())) { // int->complex
-          fprintf( outfile, "(_float%d)(", width1/2);
+          fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "), 0.0)");
         } else if (is_imag_type( get(2)->typeInfo())) {
-          fprintf( outfile, "0.0, (_float%d)(", width1/2);
+          fprintf( outfile, "0.0, (_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "))");
         } else {

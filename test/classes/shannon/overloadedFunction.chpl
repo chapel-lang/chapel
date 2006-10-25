@@ -1,5 +1,5 @@
-def foo(x: float) { 
-  writeln("and got the float foo.");
+def foo(x: real) { 
+  writeln("and got the real foo.");
 
 }
 

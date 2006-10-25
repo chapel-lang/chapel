@@ -1,6 +1,6 @@
 class point {
-  var x : float;
-  var y : float;
+  var x : real;
+  var y : real;
   def speak() {
     writeln("Hello");
   }

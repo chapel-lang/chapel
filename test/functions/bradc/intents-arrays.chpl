@@ -37,7 +37,7 @@ def callblank(x) {
 
 
 def main() {
-  var A: [D] float;
+  var A: [D] real;
 
   forall i in D {
     A(i) = i;

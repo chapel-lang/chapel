@@ -1,4 +1,4 @@
-var D: domain(float);
+var D: domain(real);
 
 D += 2.0;
 D += 3.14;

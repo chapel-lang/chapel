@@ -3,8 +3,8 @@
 var n: int = 5;
 var Full: domain(2) = [1..n,1..n];
 var Inner: subdomain(Full) = [2..n-1,2..n-1];
-var A: [Full] float, B: [Full] float;
-var threshold: float = 0.1;
+var A: [Full] real, B: [Full] real;
+var threshold: real = 0.1;
 
 def main() {
   initialize();

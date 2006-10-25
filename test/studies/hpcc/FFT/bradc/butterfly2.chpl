@@ -10,9 +10,9 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   abcd(1) = x0 + x2;
   x0 -= x2;
   abcd(3) = wk2 * x0;
-  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  x0 = (x1.re - x3.im, x1.im + x3.re):complex;
   abcd(2) = wk1 * x0;
-  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
+  x0 = (x1.re + x3.im, x1.im - x3.re):complex;
   abcd(4) = wk3 * x0;
 
 //  writeln("abcd is: ", abcd);

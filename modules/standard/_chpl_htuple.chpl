@@ -104,10 +104,10 @@ def _tuple_to_seq(t: _tuple) {
   return s;
 }
 
-pragma "inline" def _tuple_to_complex_help(real: float(?w), imag: float(w)) {
+pragma "inline" def _tuple_to_complex_help(re: real(?w), im: real(w)) {
   var x: complex(2*w);
-  x.real = real;
-  x.imag = imag;
+  x.re = re;
+  x.im = im;
   return x;
 }
 

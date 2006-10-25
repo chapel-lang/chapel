@@ -20,8 +20,8 @@ writeln( min( ui32.type));
 writeln( min( ui64.type));
 writeln( min( uint(64)));
 
-var f32:float(32);
-var f64:float;
+var f32:real(32);
+var f64:real;
 writeln( min( f32.type));
 writeln( min( f64.type));
-writeln( min( float));
+writeln( min( real));

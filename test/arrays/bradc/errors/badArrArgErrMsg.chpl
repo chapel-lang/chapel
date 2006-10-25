@@ -5,6 +5,6 @@ var A: [D] complex;
 
 foo(A);
 
-def foo(X: [?Dlocal] float) {
+def foo(X: [?Dlocal] real) {
   writeln("X is: ", X);
 }

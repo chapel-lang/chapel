@@ -8,20 +8,20 @@ const BigD: superdomain(2) = D.resize((-1,-1), (1, 1));
 
 param StencilD: domain(2) = [-1..1, -1..1];
 
-param weights: [StencilD] float = (/ (/ 0.00, 0.25, 0.00 /),
+param weights: [StencilD] real = (/ (/ 0.00, 0.25, 0.00 /),
                                      (/ 0.25, 0.00, 0.25 /),
                                      (/ 0.00, 0.25, 0.00 /) /);
 
 
 def main() {
-  var A: [BigD] float = 0.0;
-  var B: [D] float;
+  var A: [BigD] real = 0.0;
+  var B: [D] real;
 
   // initialize south boundary to 1.0
   [ij in D.exterior(south)] A(ij) = 1.0;
 
   // it's a shame not to be able to declare this when it's used
-  var bigdiff: float;
+  var bigdiff: real;
 
   do {
     // the hope is that some major constant folding/stencil

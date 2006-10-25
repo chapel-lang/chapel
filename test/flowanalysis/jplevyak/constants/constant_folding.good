@@ -1,5 +1,5 @@
  called from 16 in __init at constant_folding.v:7
-f::a(constant_folding.v:16) ( float64 )
+f::a(constant_folding.v:16) ( real64 )
 function __init constant_folding.v:7
 function f constant_folding.v:16
 globals
@@ -7,4 +7,4 @@ user::c1(constant_folding.v:7) ( int32 )
 user::c2(constant_folding.v:8) ( int32 )
 user::c3(constant_folding.v:9) ( int32 )
 user::c4(constant_folding.v:10) ( int32 )
-user::c50(constant_folding.v:11) ( float64 )
+user::c50(constant_folding.v:11) ( real64 )

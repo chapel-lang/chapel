@@ -1,6 +1,6 @@
 record point {
-  var x : float;
-  var y : float;
+  var x : real;
+  var y : real;
 }
 
 record cpoint : point {

@@ -1,5 +1,5 @@
 var d : domain(1) = [1..5];
-var a : [d] float;
+var a : [d] real;
 
 writeln(a);
 

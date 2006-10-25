@@ -7,10 +7,10 @@ config const scale = 9;
 -- executable's command-line using the -s flag
 config const totVertices: int = 2**scale;
 config const maxCliqueSize : int = 10;
-config const probUnidirectional: float = 0.3;
+config const probUnidirectional: real = 0.3;
 config const maxParallelEdges: int = 3;
-config const probIntercliqueEdges: float = 0.6;
-config const percentIntWeights: float = 0.6;
+config const probIntercliqueEdges: real = 0.6;
+config const percentIntWeights: real = 0.6;
 config const maxIntWeight: int = 8**scale;
 config const maxStrLen: int = ceil(scale/6.0);
 
@@ -50,14 +50,14 @@ record edgeTuple {
 -- random number stuff: currently unimplemented, and doing so in
 -- parallel will require some care
 
--- return a random float in [0.0, 1.0)
+-- return a random real in [0.0, 1.0)
 def randomFloat() {
   halt("Need to implement randomFloat()");
   return 0.0;
 }
 
 -- flip a coin, returning heads (true) with probability headsProb
-def coinFlip(headsProb: float = 0.5) {
+def coinFlip(headsProb: real = 0.5) {
   return (randomFloat() < headsProb);
 }
 

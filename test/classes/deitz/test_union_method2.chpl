@@ -1,6 +1,6 @@
 union foo {
   var i : int;
-  var f : float;
+  var f : real;
   def hello() {
     writeln("Hello");
   }

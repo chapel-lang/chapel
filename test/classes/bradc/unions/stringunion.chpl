@@ -1,6 +1,6 @@
 union U {
   var x: int;
-  var y: float;
+  var y: real;
   var z: string;
 }
 

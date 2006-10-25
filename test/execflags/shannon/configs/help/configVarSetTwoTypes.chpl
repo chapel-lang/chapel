@@ -7,7 +7,7 @@ module module1 {
 }
 
 module module2 {
-  config var x: float = 2.2;
+  config var x: real = 2.2;
   config var z: string = "this one doesn't require it";
 }
 

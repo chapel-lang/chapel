@@ -5,7 +5,7 @@ param N = 4;
 /*
 config const THRESHOLD = 0.00001;
 // config const THRESHOLD: = 0.00001; // generates "0.0 = 0.0001"
-// param MAXDELTAPOSSIBLE:float = 1.0;// error:value not known at compile time?
+// param MAXDELTAPOSSIBLE:real = 1.0;// error:value not known at compile time?
 */
 param THRESHOLD = 0.00001;
 
@@ -18,8 +18,8 @@ var southOfD: domain(2) = [M+1..M+1, 1..N];
 var westOfD : domain(2) = [1..M, 0..0];
 var eastOfD : domain(2) = [1..M, N+1..N+1];  // N+1..N+1
 
-var World:[D] float;
-var Temp:[outerD] float;
+var World:[D] real;
+var Temp:[outerD] real;
 
 // starting conditions
 [e in D] Temp(e) = 0.0;

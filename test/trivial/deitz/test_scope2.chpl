@@ -1,4 +1,4 @@
-def foo(i : int) : float {
+def foo(i : int) : real {
   return i * 3.0;
 }
 
@@ -8,7 +8,7 @@ def bar() {
   writeln(foo(3));
 
   var d : domain(1) = [1..3];
-  var foo : [d] float;
+  var foo : [d] real;
 
   foo(1) = 4.0;
   foo(2) = 2.0;

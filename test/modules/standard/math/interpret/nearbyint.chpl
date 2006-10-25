@@ -1,8 +1,8 @@
-var a: float = 0.123;
-var b: float = 0.567;
-var c: float = 10.4999;
-var d: float = 10.5;
-var e: float = 10.5001;
+var a: real = 0.123;
+var b: real = 0.567;
+var c: real = 10.4999;
+var d: real = 10.5;
+var e: real = 10.5001;
 
 writeln("a = ", a);
 writeln("nearbyint(a) = ", nearbyint(a));

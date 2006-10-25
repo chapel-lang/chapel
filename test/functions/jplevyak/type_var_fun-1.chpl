@@ -3,4 +3,4 @@ def mymin(type t) {
 }
 
 writeln("minint is: ", mymin(int));
-writeln("minfloat is: ", mymin(float));
+writeln("minreal is: ", mymin(real));

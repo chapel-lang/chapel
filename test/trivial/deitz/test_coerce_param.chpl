@@ -1,3 +1,3 @@
-param x : float = 1;
+param x : real = 1;
 
 writeln(x);

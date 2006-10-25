@@ -1,12 +1,12 @@
  called from 3 in __init at named.v:1
-f::a(named.v:1) ( float64 )
-f::b(named.v:1) ( float64 )
+f::a(named.v:1) ( real64 )
+f::b(named.v:1) ( real64 )
 f::c(named.v:1) ( int32 )
-f::d(named.v:1) ( float64 )
+f::d(named.v:1) ( real64 )
 function __init named.v:1
 function f named.v:1
 globals
-user::c(named.v:3) ( float64 )
-user::c(named.v:3) ( float64 )
+user::c(named.v:3) ( real64 )
+user::c(named.v:3) ( real64 )
 user::d(named.v:3) ( int32 )
-user::z(named.v:2) ( float64 )
+user::z(named.v:2) ( real64 )

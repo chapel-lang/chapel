@@ -1,10 +1,10 @@
-var a: float = -100000000.0;
-var b: float = -1.0;
-var c: float = 0.0;
-var d: float = 1.0;
-var e: float = 100000000.0;
+var a: real = -100000000.0;
+var b: real = -1.0;
+var c: real = 0.0;
+var d: real = 1.0;
+var e: real = 100000000.0;
 
-var f: float = 2;
+var f: real = 2;
 
 writeln("a = ", a);
 writeln("atan2(a) = ", atan2(a, f));

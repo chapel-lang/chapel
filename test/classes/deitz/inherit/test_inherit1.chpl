@@ -3,7 +3,7 @@ class C {
 }
 
 class D : C {
-  var y : float = 2.0;
+  var y : real = 2.0;
 }
 
 var c : C = C(), d : D = D();

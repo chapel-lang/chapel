@@ -11,8 +11,8 @@ def main() {
   }
 
   var D: domain = (1..m, 1..n);
-  var A: [D] float;
-  var a: float;
+  var A: [D] real;
+  var a: real;
 
   a = max reduce A;
   a = bar reduce A;

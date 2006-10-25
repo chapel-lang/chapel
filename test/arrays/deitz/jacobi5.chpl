@@ -10,8 +10,8 @@ const D = [1..n, 1..n];
 const BigD = D.expand(1);
 const SouthD = D.exterior(1, 0);
 
-var A : [BigD] float;
-var Temp : [BigD] float;
+var A : [BigD] real;
+var Temp : [BigD] real;
 
 A(SouthD) = 1.0;
 Temp(SouthD) = 1.0;

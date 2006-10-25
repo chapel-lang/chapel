@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 2;
-var c: float = 4;
-var d: float = 8;
-var e: float = 16;
+var a: real = 1;
+var b: real = 2;
+var c: real = 4;
+var d: real = 8;
+var e: real = 16;
 
 writeln("a = ", a);
 writeln("log2(a) = ", log2(a));

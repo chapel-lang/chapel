@@ -1,6 +1,6 @@
 record point {
-  var x : float;
-  var y : float;
+  var x : real;
+  var y : real;
 }
 
 record cpoint {
@@ -23,7 +23,7 @@ cp.coordinate.y = 3.3;
 
 writeln("cp { ", cp.coordinate.x, ", ", cp.coordinate.y, ", ", cp.color, " }");
 
-def foo(x : float) {
+def foo(x : real) {
   writeln(x);
 }
 

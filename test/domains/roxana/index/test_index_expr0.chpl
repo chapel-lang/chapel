@@ -2,7 +2,7 @@ config var n : int = 4;
 
 var D : domain(2) = [1..n, 1..n];
 
-var A : [D] float;
+var A : [D] real;
 
 var iD : index(D);
 --var i2 : index(2);

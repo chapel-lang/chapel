@@ -9,7 +9,7 @@ use HPCCProblemSize;
 
 // the number of vectors we'll be using and the element type
 param numVectors = 3;
-type elemType = float(64);
+type elemType = real(64);
 
 // configuration constants for specifying the problem size
 config const m = computeProblemSize(elemType, numVectors);
@@ -41,7 +41,7 @@ def main() {
 
   initVectors(B, C);
 
-  var execTime: [1..numTrials] float;
+  var execTime: [1..numTrials] real;
 
   for k in 1..numTrials {
     const startTime = getCurrentTime();

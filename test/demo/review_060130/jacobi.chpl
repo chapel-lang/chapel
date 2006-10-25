@@ -1,12 +1,12 @@
 config var n : int = 3;
-config var epsilon : float = 0.01;
+config var epsilon : real = 0.01;
 config var verbose : bool = true;
 
 var R : domain(2) = [1..n, 1..n];
 var BigR : domain(2) = [0..n+1, 0..n+1];
 
-var A : [BigR] float;
-var Temp : [R] float;
+var A : [BigR] real;
+var Temp : [R] real;
 
 def main() {
   [ij in BigR]  A(ij) = 0.0;

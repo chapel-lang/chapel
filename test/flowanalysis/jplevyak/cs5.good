@@ -15,7 +15,7 @@ globals
 makeC::a(cs5.v:3) ( int32 )
 makeC::c(cs5.v:3) ( C (cs5.v:1) )
 makeD::a(cs5.v:4) ( C (cs5.v:1) )
-makeD::a(cs5.v:4) ( float64 )
+makeD::a(cs5.v:4) ( real64 )
 makeD::d(cs5.v:4) ( D (cs5.v:2) )
 makeD::d(cs5.v:4) ( D (cs5.v:2) )
 user::c1(cs5.v:5) ( C (cs5.v:1) )

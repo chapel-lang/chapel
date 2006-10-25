@@ -147,7 +147,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TYIELD
 
 %token TIDENT
-%token INTLITERAL FLOATLITERAL IMAGLITERAL
+%token INTLITERAL REALLITERAL IMAGLITERAL
 %token <pch> STRINGLITERAL
 
 %token TASSIGN
@@ -982,8 +982,8 @@ parenop_type:
       CallExpr* call = new CallExpr($1, new DefExpr(new VarSymbol($4)));
       if (!(call->isNamed("int") ||
             call->isNamed("uint") ||
-            call->isNamed("float") ||
-            call->isNamed("imaginary") ||
+            call->isNamed("real") ||
+            call->isNamed("imag") ||
             call->isNamed("complex")))
         USR_FATAL(call, "nested queries not supported on non-primitive types");
       $$ = call;
@@ -1137,8 +1137,8 @@ literal:
       else
         $$ = new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
     }
-| FLOATLITERAL
-    { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
+| REALLITERAL
+    { $$ = new SymExpr(new_RealSymbol(yytext, strtod(yytext, NULL))); }
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';

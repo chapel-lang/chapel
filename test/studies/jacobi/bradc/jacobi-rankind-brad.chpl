@@ -7,7 +7,7 @@ const D: domain(rank) = [1..n]**rank;
 
 param StencilD: domain(rank) = [-1..1]**rank;
 
-param weights: [ijk in StencilD] float;
+param weights: [ijk in StencilD] real;
 
 for d in 1..rank {
   var ind: index(rank) = 0;
@@ -18,12 +18,12 @@ for d in 1..rank {
 }
 
 def main() {
-  var A, B: [D] float = 0.0;
+  var A, B: [D] real = 0.0;
 
   A.setBoundary(computeBoundary);
 
   // boy, it's a shame not to be able to declare this when it's used
-  var bigdiff: float;
+  var bigdiff: real;
 
   do {
     // the hope is that some major constant folding/stencil

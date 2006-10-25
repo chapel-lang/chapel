@@ -5,7 +5,7 @@ def testit(type elemType, numArrays, returnPow2 = true, memRatio = 4) {
   writeln();
 }
 
-testit(float(64), 3);
-testit(float(64), 3, false);
-testit(float(64), 3, true);
-testit(float(64), 3, false, 8);
+testit(real(64), 3);
+testit(real(64), 3, false);
+testit(real(64), 3, true);
+testit(real(64), 3, false, 8);

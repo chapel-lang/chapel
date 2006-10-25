@@ -1,12 +1,12 @@
 class C {
-  var bar: float;
+  var bar: real;
 
   def foo(x) {
     return x+0.1;
   }
 
-  iterator iterate(numValues, startPoint = 0.0): float {
-    var nextVal = startPoint:float;
+  iterator iterate(numValues, startPoint = 0.0): real {
+    var nextVal = startPoint:real;
     for i in 1..numValues {
       nextVal = foo(nextVal);
       yield nextVal;

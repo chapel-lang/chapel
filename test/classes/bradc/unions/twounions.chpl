@@ -1,11 +1,11 @@
 union myfirstunion {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 union mysecondunion {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 var a: myfirstunion;

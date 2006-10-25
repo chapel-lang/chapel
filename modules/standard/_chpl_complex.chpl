@@ -2,145 +2,145 @@
 // special type functions
 //
 
-pragma "inline" def _init(x : float(?w)) return 0.0:float(w);
-pragma "inline" def _init(x : imaginary(?w)) return 0.0:imaginary(w);
-pragma "inline" def _init(x: complex(?w)) return (0.0:float(w/2), 0.0:float(w/2)):complex;
+pragma "inline" def _init(x : real(?w)) return 0.0:real(w);
+pragma "inline" def _init(x : imag(?w)) return 0.0:imag(w);
+pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
 
 //
-// complex component methods real and imag
+// complex component methods re and im
 //
-//  bug? note: in setter, float argument should be parameterized over
+//  bug? note: in setter, real argument should be parameterized over
 //             complex bit width
 //
 
-def complex.real return __primitive( "complex_get_real", this);
-def complex.imag return __primitive( "complex_get_imag", this);
-def complex.=real(f:float) { __primitive( "complex_set_real", this, f); }
-def complex.=imag(f:float) { __primitive( "complex_set_imag", this, f); }
+def complex.re return __primitive( "complex_get_real", this);
+def complex.im return __primitive( "complex_get_imag", this);
+def complex.=re(f:real) { __primitive( "complex_set_real", this, f); }
+def complex.=im(f:real) { __primitive( "complex_set_imag", this, f); }
 
 //
 // assignment
 //
 
-pragma "inline" def =(a: float(?w), b: float(w)) return b;
-pragma "inline" def =(a: imaginary(?w), b: imaginary(w)) return b;
+pragma "inline" def =(a: real(?w), b: real(w)) return b;
+pragma "inline" def =(a: imag(?w), b: imag(w)) return b;
 pragma "inline" def =(a: complex(?w), b: complex(w)) return b;
 
 
 //
 // relational operators
 //
-//  question: should there be any over imaginary?  over complex?
+//  question: should there be any over imag?  over complex?
 //
 
-pragma "inline" def ==(a: float(?w), b: float(w)) return __primitive("==", a, b);
-pragma "inline" def !=(a: float(?w), b: float(w)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: float(?w), b: float(w)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: float(?w), b: float(w)) return __primitive(">=", a, b);
-pragma "inline" def <(a: float(?w), b: float(w)) return __primitive("<", a, b);
-pragma "inline" def >(a: float(?w), b: float(w)) return __primitive(">", a, b);
+pragma "inline" def ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
+pragma "inline" def !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
+pragma "inline" def <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
+pragma "inline" def >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
+pragma "inline" def <(a: real(?w), b: real(w)) return __primitive("<", a, b);
+pragma "inline" def >(a: real(?w), b: real(w)) return __primitive(">", a, b);
 
 //
 // unary + and -
 //
 
-pragma "inline" def +(a: float(?w)) return __primitive("u+", a);
-pragma "inline" def -(a: float(?w)) return __primitive("u-", a);
-pragma "inline" def +(a: imaginary(?w)) return __primitive("u+", a):imaginary(w);
-pragma "inline" def -(a: imaginary(?w)) return __primitive("u-", a):imaginary(w);
+pragma "inline" def +(a: real(?w)) return __primitive("u+", a);
+pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
+pragma "inline" def +(a: imag(?w)) return __primitive("u+", a):imag(w);
+pragma "inline" def -(a: imag(?w)) return __primitive("u-", a):imag(w);
 pragma "inline" def +(a: complex(?w)) return a;
-pragma "inline" def -(a: complex(?w)) return (-a.real, -a.imag):complex;
+pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
 
 //
 // binary + and -
 //
 
-pragma "inline" def _i2f(a: imaginary(?w)) return a:float(w);
+pragma "inline" def _i2f(a: imag(?w)) return a:real(w);
 
-pragma "inline" def +(a: float(?w), b: float(w)) return __primitive("+", a, b);
-pragma "inline" def +(a: float(?w), b: imaginary(w)) return (a, _i2f(b)):complex;
-pragma "inline" def +(a: imaginary(?w), b: float(w)) return (b, _i2f(a)):complex;
-pragma "inline" def +(a: float(?w), b: complex(w*2)) return (a+b.real, b.imag):complex;
-pragma "inline" def +(a: complex(?w), b: float(w/2)) return (a.real+b, a.imag):complex;
-pragma "inline" def +(a: imaginary(?w), b: imaginary(w)) return __primitive("+", a, b);
-pragma "inline" def +(a: imaginary(?w), b: complex(w*2)) return (b.real, _i2f(a)+b.imag):complex;
-pragma "inline" def +(a: complex(?w), b: imaginary(w/2)) return (a.real, a.imag+_i2f(b)):complex;
-pragma "inline" def +(a: complex(?w), b: complex(w)) return (a.real+b.real, a.imag+b.imag):complex;
+pragma "inline" def +(a: real(?w), b: real(w)) return __primitive("+", a, b);
+pragma "inline" def +(a: real(?w), b: imag(w)) return (a, _i2f(b)):complex;
+pragma "inline" def +(a: imag(?w), b: real(w)) return (b, _i2f(a)):complex;
+pragma "inline" def +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
+pragma "inline" def +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
+pragma "inline" def +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
+pragma "inline" def +(a: imag(?w), b: complex(w*2)) return (b.re, _i2f(a)+b.im):complex;
+pragma "inline" def +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2f(b)):complex;
+pragma "inline" def +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
 
-pragma "inline" def -(a: float(?w), b: float(w)) return __primitive("-", a, b);
-pragma "inline" def -(a: float(?w), b: imaginary(w)) return (a, -_i2f(b)):complex;
-pragma "inline" def -(a: imaginary(?w), b: float(w)) return (-b, _i2f(a)):complex;
-pragma "inline" def -(a: float(?w), b: complex(w*2)) return (a-b.real, -b.imag):complex;
-pragma "inline" def -(a: complex(?w), b: float(w/2)) return (a.real-b, a.imag):complex;
-pragma "inline" def -(a: imaginary(?w), b: imaginary(w)) return __primitive("-", a, b);
-pragma "inline" def -(a: imaginary(?w), b: complex(w*2)) return (-b.real, _i2f(a)-b.imag):complex;
-pragma "inline" def -(a: complex(?w), b: imaginary(w/2)) return (a.real, a.imag-_i2f(b)):complex;
-pragma "inline" def -(a: complex(?w), b: complex(w)) return (a.real-b.real, a.imag-b.imag):complex;
+pragma "inline" def -(a: real(?w), b: real(w)) return __primitive("-", a, b);
+pragma "inline" def -(a: real(?w), b: imag(w)) return (a, -_i2f(b)):complex;
+pragma "inline" def -(a: imag(?w), b: real(w)) return (-b, _i2f(a)):complex;
+pragma "inline" def -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
+pragma "inline" def -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
+pragma "inline" def -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
+pragma "inline" def -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2f(a)-b.im):complex;
+pragma "inline" def -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2f(b)):complex;
+pragma "inline" def -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
 
 //
 // * and /
 //
 
 
-pragma "inline" def *(a: float(?w), b: float(w)) return __primitive("*", a, b);
+pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
 
-pragma "inline" def *(a: float(?w), b: imaginary(w)) return (a*_i2f(b)):imaginary(w);
-pragma "inline" def *(a: imaginary(?w), b: float(w)) return (_i2f(a)*b):imaginary(w);
+pragma "inline" def *(a: real(?w), b: imag(w)) return (a*_i2f(b)):imag(w);
+pragma "inline" def *(a: imag(?w), b: real(w)) return (_i2f(a)*b):imag(w);
 
-pragma "inline" def *(a: float(?w), b: complex(w*2)) return (a*b.real, a*b.imag):complex;
-pragma "inline" def *(a: complex(?w), b: float(w/2)) return (a.real*b, a.imag*b):complex;
+pragma "inline" def *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
+pragma "inline" def *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
 
-pragma "inline" def *(a: imaginary(?w), b: imaginary(w)) return _i2f(__primitive("*", a, b));
+pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2f(__primitive("*", a, b));
 
-pragma "inline" def *(a: imaginary(?w), b: complex(w*2)) return (-_i2f(a)*b.imag, _i2f(a)*b.real):complex;
-pragma "inline" def *(a: complex(?w), b: imaginary(w/2)) return (-a.imag*_i2f(b), a.real*_i2f(b)):complex;
+pragma "inline" def *(a: imag(?w), b: complex(w*2)) return (-_i2f(a)*b.im, _i2f(a)*b.re):complex;
+pragma "inline" def *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2f(b), a.re*_i2f(b)):complex;
 
-pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.real*b.real-a.imag*b.imag, a.imag*b.real+a.real*b.imag):complex;
+pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
 
-pragma "inline" def /(a: float(?w), b: float(w)) return __primitive("/", a, b);
+pragma "inline" def /(a: real(?w), b: real(w)) return __primitive("/", a, b);
 
-pragma "inline" def /(a: float(?w), b: imaginary(w)) return (-a/_i2f(b)):imaginary(w);
-pragma "inline" def /(a: imaginary(?w), b: float(w)) return (_i2f(a)/b):imaginary(w);
+pragma "inline" def /(a: real(?w), b: imag(w)) return (-a/_i2f(b)):imag(w);
+pragma "inline" def /(a: imag(?w), b: real(w)) return (_i2f(a)/b):imag(w);
 
-pragma "inline" def /(a: float(?w), b: complex(w*2))
-  return let d = b.real*b.real+b.imag*b.imag in
-    (a*b.real/d, -a*b.imag/d):complex;
+pragma "inline" def /(a: real(?w), b: complex(w*2))
+  return let d = b.re*b.re+b.im*b.im in
+    (a*b.re/d, -a*b.im/d):complex;
 
-pragma "inline" def /(a: complex(?w), b: float(w/2))
-  return (a.real/b, a.imag/b):complex;
+pragma "inline" def /(a: complex(?w), b: real(w/2))
+  return (a.re/b, a.im/b):complex;
 
-pragma "inline" def /(a: imaginary(?w), b: imaginary(w)) return _i2f(__primitive("/", a, b));
+pragma "inline" def /(a: imag(?w), b: imag(w)) return _i2f(__primitive("/", a, b));
 
-pragma "inline" def /(a: imaginary(?w), b: complex(w*2))
-  return let d = b.real*b.real+b.imag*b.imag in
-    (_i2f(a)*b.imag/d, _i2f(a)*b.real/d):complex;
+pragma "inline" def /(a: imag(?w), b: complex(w*2))
+  return let d = b.re*b.re+b.im*b.im in
+    (_i2f(a)*b.im/d, _i2f(a)*b.re/d):complex;
 
-pragma "inline" def /(a: complex(?w), b: imaginary(w/2))
+pragma "inline" def /(a: complex(?w), b: imag(w/2))
   return let d = _i2f(b)*_i2f(b) in
-    (a.imag/_i2f(b), -a.real/_i2f(b)):complex;
+    (a.im/_i2f(b), -a.re/_i2f(b)):complex;
 
 pragma "inline" def /(a: complex(?w), b: complex(w))
-  return let d = b.real*b.real+b.imag*b.imag in
-    ((a.real*b.real+a.imag*b.imag)/d, (a.imag*b.real-a.real*b.imag)/d):complex;
+  return let d = b.re*b.re+b.im*b.im in
+    ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
 
 //
 // **
 //
 
-pragma "inline" def **(a: float(?w), b: float(w)) return __primitive("**", a, b);
+pragma "inline" def **(a: real(?w), b: real(w)) return __primitive("**", a, b);
 
 //
 // miscellaneous functions
 //
 pragma "inline" def conjg(a: complex(?w))
-  return (a.real, -a.imag):complex;
+  return (a.re, -a.im):complex;
 
 //
 // string conversions
 //
 pragma "inline" def _tostring(x: complex, format: string)
   return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x : float, format : string)
+pragma "inline" def _tostring(x : real, format : string)
   return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x : imaginary, format : string)
+pragma "inline" def _tostring(x : imag, format : string)
   return __primitive("to_string", format, x);

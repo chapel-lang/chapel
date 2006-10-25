@@ -1,13 +1,13 @@
 config var n : int = 5;
-config var epsilon : float = 0.00001;
+config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
 var R = [1..n, 1..n];
 var BigR = R.expand(1);
 var South = R.exterior(1, 0);
 
-var A : [BigR] float;
-var Temp : [R] float;
+var A : [BigR] real;
+var Temp : [R] real;
 
 forall ij in BigR do
   A(ij) = 0.0;
@@ -21,7 +21,7 @@ if (verbose) {
 }
 
 var iteration : int = 0;
-var delta : float = 1.0;
+var delta : real = 1.0;
 
 while (delta > epsilon) {
   forall (i,j) in R do

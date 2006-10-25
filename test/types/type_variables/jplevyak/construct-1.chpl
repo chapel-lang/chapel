@@ -3,6 +3,6 @@ record R {
   var x : t;
 }
 
-var r : R(t = float, x = 3);
+var r : R(t = real, x = 3);
 
 writeln(r);

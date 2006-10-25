@@ -1,9 +1,9 @@
-var a: float = -29.39;
-var b: float = -31.87;
-var c: float = 0;
-var d: float = 0.1111;
-var e: float = 1.1111;
-var f: float = 99.99;
+var a: real = -29.39;
+var b: real = -31.87;
+var c: real = 0;
+var d: real = 0.1111;
+var e: real = 1.1111;
+var f: real = 99.99;
 
 writeln("a = ", a);
 writeln("floor(a) = ", floor(a));

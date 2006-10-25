@@ -1,6 +1,6 @@
 class C {
   param p : int;
-  var x : float;
+  var x : real;
 }
 
 class D : C {

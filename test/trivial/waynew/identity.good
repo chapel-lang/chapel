@@ -62,7 +62,7 @@ logical xor = false
 bit-wise and = -1
 bit-wise or = 0
 bit-wise xor = 0
-        float(32)
+        real(32)
 product = 1.0
 logical and = true
 logical or = false
@@ -70,7 +70,7 @@ logical xor = false
 bit-wise and = 4.29497e+09
 bit-wise or = 0.0
 bit-wise xor = 0.0
-        float(64)
+        real(64)
 product = 1.0
 logical and = true
 logical or = false

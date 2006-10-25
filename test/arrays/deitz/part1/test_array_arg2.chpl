@@ -1,5 +1,5 @@
-def foo(a: [] float) {
-  writeln("array of floats");
+def foo(a: [] real) {
+  writeln("array of reals");
   writeln(a);
 }
 
@@ -8,7 +8,7 @@ def foo(a: [] int) {
   writeln(a);
 }
 
-var A: [1..4, 1..3] float;
+var A: [1..4, 1..3] real;
 
 foo(A);
 

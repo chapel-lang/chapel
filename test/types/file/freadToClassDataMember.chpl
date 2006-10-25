@@ -3,7 +3,7 @@
 
 class myClass {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 var a: myClass = myClass(x = 1, y = 2.3);

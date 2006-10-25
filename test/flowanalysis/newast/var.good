@@ -1,5 +1,5 @@
 ::__init_var ( __init_var (<internal>:-1) )
-::_tmp(var.chpl:2) ( float64 )
+::_tmp(var.chpl:2) ( real64 )
 ::main ( main (<internal>:-1) )
 ::x(var.chpl:1) ( int64 )
 globals

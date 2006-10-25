@@ -21,7 +21,7 @@ enum classVals {S, W, A, B, C, D, O};
 
 const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/),
       iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/),
-      checksum: [S..O] float  = (/0.0000530770700573,
+      checksum: [S..O] real  = (/0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
                                   0.00000180056440132,
@@ -45,7 +45,7 @@ config const numLevels = lg(min(nx,ny,nz)),
 
 config const warmup = true;
 
-type coeff = [0..3] float;
+type coeff = [0..3] real;
 
 const Levels: domain(1) = [1..numLevels];
 const Base: domain(3) distributed(Block(3)) = [1..nx, 1..ny, 1..nz];
@@ -57,8 +57,8 @@ def main() {
   var initTimer, benchTimer: timer;
 
   initTimer.start();
-    var V: [Base] float;
-    var U, R: [lvl in Levels] [Hier(lvl)] float;
+    var V: [Base] real;
+    var U, R: [lvl in Levels] [Hier(lvl)] real;
 
     initializeMG();
   initTimer.stop();
@@ -168,7 +168,7 @@ def mg3P(V, U, R) {
 
 def resid(R, V, U) {
   const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
-  const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
+  const a3d: [(i,j,k) in Stencil] real = a((i!=0) + (j!=0) + (k!=0));
 
   const UD = U.Domain,
         Ustr = U.stride;
@@ -180,7 +180,7 @@ def resid(R, V, U) {
 
 def psinv(U, R) {
   const c: coeff = initCValues();
-  const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
+  const c3d: [(i,j,k) in Stencil] real = c((i!=0) + (j!=0) + (k!=0));
 
   const RD = R.Domain,
         Rstr = R.stride;
@@ -191,7 +191,7 @@ def psinv(U, R) {
 
 def rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
-  const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
+  const w3d: [(i,j,k) in Stencil] real = w((i!=0) + (j!=0) + (k!=0));
 
   const SD = S.Domain,
         Rstr = R.stride;
@@ -203,7 +203,7 @@ def rprj3(S, R) {
 def interp(R, S) {
   const IDom: domain(3) = [-1..0, -1..0, -1..0];
   const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
-  const w: [ijk in IDom] float = 1.0 / IStn.numIndices();
+  const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
 
   const SD = S.Domain(),
         Rstr = R.stride,
@@ -285,7 +285,7 @@ def longRandlc(n) {
   var kk = n,
       t1 = s,
       t2 = arand,
-      t3: float;
+      t3: real;
 
   while (kk != 0) {
     var ik = kk / 2;
@@ -308,7 +308,7 @@ def randlc(x, a) {
         r46 = 0.5**46,
         t46 = 2.0**46;
 
-  var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
+  var t1, t2, t3, t4, a1, a2, x1, x2, y: real;
 
   t1 = r23 * x;
   a1 = t1:int;

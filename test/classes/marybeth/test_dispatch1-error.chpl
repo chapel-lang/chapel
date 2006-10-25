@@ -1,5 +1,5 @@
 class shoe {
-  var size:float;
+  var size:real;
   var color:string;
   def display() {
     writeln('Shoes:  size = ', size, '; color = ', color);
@@ -7,7 +7,7 @@ class shoe {
 }
 
 class pumps : shoe {
-  var heel: float;
+  var heel: real;
   def display() {
     writeln('Pumps:  size = ', size, '; color = ', color, '; heel ht = ', heel);
   }

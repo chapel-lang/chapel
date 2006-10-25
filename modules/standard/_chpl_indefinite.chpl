@@ -353,13 +353,13 @@ def _indefinite_hash(u: uint(64)): int(64) {
 }
 
 pragma "inline"
-def _indefinite_hash(f: float): int(64) {
-  return _gen_key(__primitive( "float2int", f));
+def _indefinite_hash(f: real): int(64) {
+  return _gen_key(__primitive( "real2int", f));
 }
 
 pragma "inline"
 def _indefinite_hash(c: complex): int(64) {
-  return _gen_key(c.real:int ^ c.imag:int); 
+  return _gen_key(c.re:int ^ c.im:int); 
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.

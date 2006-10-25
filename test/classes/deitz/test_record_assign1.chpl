@@ -1,6 +1,6 @@
 record A {
   var i : int = 1;
-  var f : float = 2.0;
+  var f : real = 2.0;
   var s : string = "three";
 }
 

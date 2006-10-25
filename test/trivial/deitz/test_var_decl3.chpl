@@ -1,4 +1,4 @@
-var a : float, b : int;
+var a : real, b : int;
 
 a = 2.3;
 b = 3;

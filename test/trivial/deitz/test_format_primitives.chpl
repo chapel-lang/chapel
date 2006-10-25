@@ -9,7 +9,7 @@ s = i:"%lld";
 // writeln(s);
 writeln(i:"%lld");
 
-var f : float = 1.23;
+var f : real = 1.23;
 
 writeln(f:"%e");
 

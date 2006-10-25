@@ -20,14 +20,14 @@ module HPCCProblemSize {
 
     const smallestMem = min reduce physicalMemory(Locale, unit = Bytes);
     if ((numIndices * bytesPerIndex)/numLocales > smallestMem) then
-      halt("System is too heterogeneous: blocked data won't fit into memory");
+      halt("System is too heterogeneous: evenly-divided data won't fit into memory");
 
     return numIndices;
   }
 
   def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
     const bytesPerArray = problemSize * numBytes(elemType): psType,
-          totalMemInGB = (numArrays * bytesPerArray:float) / (1024**3),
+          totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
           lgProbSize = lg(problemSize):psType;
     write("Problem size = ", problemSize);
     if (2**lgProbSize == problemSize) {

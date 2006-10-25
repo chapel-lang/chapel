@@ -7,7 +7,7 @@ Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
 8        1        8        0xnnnnnnnn  _int64
-8        1        8        0xnnnnnnnn  _float64
+8        1        8        0xnnnnnnnn  _real64
 
 And this is the memory hash table after the int variable has been freed:
 
@@ -18,5 +18,5 @@ And this is the memory hash table after the int variable has been freed:
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-8        1        8        0xnnnnnnnn  _float64
+8        1        8        0xnnnnnnnn  _real64
 

@@ -1,5 +1,5 @@
 def returntwo() {
-  var loc_t: (int, float) = (1, 2.3);
+  var loc_t: (int, real) = (1, 2.3);
   return loc_t;
 }
 

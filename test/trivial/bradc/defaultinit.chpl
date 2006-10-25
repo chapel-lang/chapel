@@ -1,6 +1,6 @@
 var a: bool;
 var b: int;
-var c: float;
+var c: real;
 var d: complex;
 var e: string;
 

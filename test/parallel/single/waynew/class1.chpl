@@ -1,7 +1,7 @@
 // Test single field in a class with multiple readers.
 
 class D {
-  var s: single float;
+  var s: single real;
 }
 
 var d: D = D();

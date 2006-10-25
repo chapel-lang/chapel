@@ -1,5 +1,5 @@
 class C {
-  def =foo(i : int, f : float) {
+  def =foo(i : int, f : real) {
     writeln(i);
     writeln(f);
   }

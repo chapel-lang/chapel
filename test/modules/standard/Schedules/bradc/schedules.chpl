@@ -25,7 +25,7 @@ iterator FixedBlockSchedule(D: ?DT, blockSize): DT {
   const lo = D(1)._low;
   const hi = D(1)._high;
   const numelems = hi - lo + 1;
-  forall i in 0..ceil(numelems:float/blockSize):int - 1 {
+  forall i in 0..ceil(numelems:real/blockSize):int - 1 {
     const blo = lo + i*blockSize;
     const bhi = min(lo + (i+1)*blockSize-1, hi);
     yield [blo..bhi];

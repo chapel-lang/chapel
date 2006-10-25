@@ -1,6 +1,6 @@
-var f32: float(32) = 1.0:float(32);
-var f64: float(64) = 2.0;
-var fdf: float     = 3.0;
+var f32: real(32) = 1.0:real(32);
+var f64: real(64) = 2.0;
+var fdf: real     = 3.0;
 
 var c64: complex(64) = (4.0 + 5.0i):complex(64);
 var c128: complex(128) = 6.0 + 7.0i;

@@ -1,3 +1,3 @@
-var x : float = 2;
+var x : real = 2;
 
 writeln(x);

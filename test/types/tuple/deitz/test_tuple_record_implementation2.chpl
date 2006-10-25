@@ -1,6 +1,6 @@
 record mytuple {
   var field1 : int;
-  var field2 : float;
+  var field2 : real;
 }
 
 def foo(t : mytuple, param i : int) where i == 1 {

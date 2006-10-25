@@ -1,5 +1,5 @@
 var tuple: (int, int) = (4, 5);
-var tuple2: (float, int) = (7.8, 9);
+var tuple2: (real, int) = (7.8, 9);
 
 writeln("hand-indexing tuple is: ", tuple(1), " ", tuple(2));
 writeln("tuple is: ", tuple);

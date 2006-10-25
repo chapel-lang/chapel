@@ -9,7 +9,7 @@ param numVectors = 3;
 config const memInMBs = 3;
 const memInBytes = memInMBs*MB;
 
-type elemType = float(64);
+type elemType = real(64);
 const elemSizeInBytes = bits(elemType)/bitsPerByte;
 
 const maxIntBits2 = bits(int) - 2;
@@ -39,11 +39,11 @@ def main() {
 
   if doIO {
     writeln(HLINE);
-    writeln("This system uses ", elemSizeInBytes, " bytes per 64-bit float.");
+    writeln("This system uses ", elemSizeInBytes, " bytes per 64-bit real.");
     writeln(HLINE);
     writeln("Array size (B) = ", vectorSize*elemSizeInBytes);
     writeln("Total memory required (GB) = ", 
-            (numVectors * elemSizeInBytes) * (vectorSize / GB:float));
+            (numVectors * elemSizeInBytes) * (vectorSize / GB:real));
   }
 
   A = 1.0;

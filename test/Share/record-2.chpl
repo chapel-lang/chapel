@@ -1,7 +1,7 @@
 record Base {
   var x : record {
      var y : int;
-     var z : float;
+     var z : real;
   }
 }
 

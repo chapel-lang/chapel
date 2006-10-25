@@ -83,38 +83,38 @@ block
      ident uint32
    qualified_ident
     ident uint64
- def_type builtin float32
-  ident float32
- def_type builtin float64
-  ident float64
- def_type builtin float80
-  ident float80
- def_type builtin float128
-  ident float128
- def_type builtin float
-  ident float
+ def_type builtin real32
+  ident real32
+ def_type builtin real64
+  ident real64
+ def_type builtin real80
+  ident real80
+ def_type builtin real128
+  ident real128
+ def_type builtin real
+  ident real
   qualified_ident
-   ident float64
- def_type builtin anyfloat
-  ident anyfloat
+   ident real64
+ def_type builtin anyreal
+  ident anyreal
   sum_type
    sum_type
     sum_type
      qualified_ident
-      ident float32
+      ident real32
      qualified_ident
-      ident float64
+      ident real64
     qualified_ident
-     ident float80
+     ident real80
    qualified_ident
-    ident float128
+    ident real128
  def_type builtin anynum
   ident anynum
   sum_type
    qualified_ident
     ident anyint
    qualified_ident
-    ident anyfloat
+    ident anyreal
  def_type builtin char
   ident char
   qualified_ident

@@ -1,8 +1,8 @@
-var a: float = -0.9999;
-var b: float = -1.0/2.0;
-var c: float = 0;
-var d: float = 1.0/2.0;
-var e: float = 0.999999;
+var a: real = -0.9999;
+var b: real = -1.0/2.0;
+var c: real = 0;
+var d: real = 1.0/2.0;
+var e: real = 0.999999;
 
 writeln("a = ", a);
 writeln("atanh(a) = ", atanh(a));

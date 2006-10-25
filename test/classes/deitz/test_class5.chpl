@@ -7,7 +7,7 @@ var f : foo(foo(int));
 writeln(f);
 
 record bar {
-  var y : foo(foo(float));
+  var y : foo(foo(real));
 }
 
 var b : bar;

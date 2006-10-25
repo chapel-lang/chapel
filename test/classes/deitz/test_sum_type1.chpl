@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var y : float = 2.0;
+  var y : real = 2.0;
 }
 
 def foo(c : C) {

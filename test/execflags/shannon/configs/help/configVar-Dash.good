@@ -20,4 +20,4 @@ CONFIG VARS:
 ============
    x: int (configured to 111)
   y?: string (configured to i wanted to see it work again)
-   z: float (configured to 99.9)
+   z: real (configured to 99.9)

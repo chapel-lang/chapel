@@ -3,8 +3,8 @@ def mymin(type t) {
 }
 
 var minint: int = mymin(int);
-var minfloat: float = mymin(float);
+var minreal: real = mymin(real);
 
 writeln("minint is: ", minint);
-writeln("minfloat is: ", minfloat);
+writeln("minreal is: ", minreal);
 

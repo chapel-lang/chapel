@@ -31,7 +31,7 @@ def main() {
   // problem domain and arrays
   const ProblemDom: domain(1) distributed(block) = [0..N);
   var Z, z: [ProblemDom] complex;
-  var realtemp, imagtemp: [ProblemDom] float;
+  var realtemp, imagtemp: [ProblemDom] real;
 
   // generate pseudo-random input
   if deterministic then
@@ -118,18 +118,18 @@ def dfft(A: [?AD] complex, W) {
     forall k in [0..n) by m2 {
       var wk2 = W[k1];
       var wk1 = W[2*k1];
-      var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
-                 2 * wk2.imag * wk1.real - wk1.imag):complex;
+      var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
+                 2 * wk2.im * wk1.re - wk1.im):complex;
       for j in [k..k+l) {
         butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
       }
 
       wk1 = W[2*k1+1];
-      wk3 = (wk1.real - 2 * wk2.real * wk1.imag,
-             2 * wk2.real * wk1.real - wk1.imag):complex;
+      wk3 = (wk1.re - 2 * wk2.re * wk1.im,
+             2 * wk2.re * wk1.re - wk1.im):complex;
 
       for j in [k+m..k+m+l) {
-        butterfly(wk1, (-wk2.imag, wk2.real):complex, wk3, A[j..j+3*l by l]);
+        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*l by l]);
       }
 
       k1 += 1;
@@ -163,7 +163,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
   dfft(Z, Twiddles);
 
   // BLC: need to check this against written spec
-  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
+  var maxerr = max reduce sqrt((z.re - Z.re)**2 + (z.im - Z.im)**2);
 
   maxerr = maxerr / logN / epsilon;
 
@@ -188,8 +188,8 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   A[1] = x0 + x2;
   x0 -= x2;
   A[3] = wk2 * x0;
-  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  x0 = (x1.re - x3.im, x1.im + x3.re):complex;
   A[2] = wk1 * x0;
-  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
+  x0 = (x1.re + x3.im, x1.im - x3.re):complex;
   A[4] = wk3 * x0;
 }

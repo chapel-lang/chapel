@@ -1,4 +1,4 @@
-var x : (int, string, float, bool);
+var x : (int, string, real, bool);
 
 x = (2, "three", 4.0, false);
 

@@ -15,11 +15,11 @@ class B : A {
 }
 
 class C { 
-  var x : float;
+  var x : real;
 }
 
 class D : C { 
-  var y : float;
+  var y : real;
 }
 
 var b = B(x = 1, y = 2);

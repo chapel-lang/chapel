@@ -1,5 +1,5 @@
 
-var f: float;
+var f: real;
 var c: complex;
 
 f = 1.0 / 0.0;
@@ -11,38 +11,38 @@ writeln("f is: ", f);
 f = -1.0 / 0.0;
 writeln("f is: ", f);
 
-f = -1.0 / max(float);
-f = f / max(float);
+f = -1.0 / max(real);
+f = f / max(real);
 writeln("f is: ", f);
 writeln();
 
-c.real = 1.0 / 0.0;
+c.re = 1.0 / 0.0;
 writeln("c is: ", c);
 
-c.real = sqrt(-1.0);
+c.re = sqrt(-1.0);
 writeln("c is: ", c);
 
-c.real = -1.0 / 0.0;
+c.re = -1.0 / 0.0;
 writeln("c is: ", c);
 
-c.real = -1.0 / max(float);
-c.real = c.real / max(float);
+c.re = -1.0 / max(real);
+c.re = c.re / max(real);
 writeln("c is: ", c);
 writeln();
 
 c = 0.0 + 0.0i;
 
-c.imag = 1.0 / 0.0;
+c.im = 1.0 / 0.0;
 writeln("c is: ", c);
 
-c.imag = sqrt(-1.0);
+c.im = sqrt(-1.0);
 writeln("c is: ", c);
 
-c.imag = -1.0 / 0.0;
+c.im = -1.0 / 0.0;
 writeln("c is: ", c);
 
-c.imag = -1.0 / max(float);
-c.imag = c.imag / max(float);
+c.im = -1.0 / max(real);
+c.im = c.im / max(real);
 writeln("c is: ", c);
 writeln();
 

@@ -2,7 +2,7 @@ var D = [1..6];
 
 var Perm: [D] index(D);
 
-var A, B: [i in D] float = i;
+var A, B: [i in D] real = i;
 
 Perm(1) = 2;
 Perm(2) = 1;

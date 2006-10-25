@@ -38,8 +38,8 @@ def *(M1: Matrix, M2: Matrix) {
 // test code
 
 var m = 8, n = 4;
-var M: Matrix(float, m, n);
-var N: Matrix(float, m, n);
+var M: Matrix(real, m, n);
+var N: Matrix(real, m, n);
 
 for (i,j) in [1..m, 1..n] {
   M(i,j) = i-1 + (j-1)*m;

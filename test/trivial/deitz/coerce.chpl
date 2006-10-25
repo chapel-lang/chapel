@@ -1,4 +1,4 @@
-def foo(f : float) {
+def foo(f : real) {
   writeln(f);
 }
 

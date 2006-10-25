@@ -1,7 +1,7 @@
 class dog {
-  var weight : float;
+  var weight : real;
   var paws : int;
-  def grow(pounds : float) {
+  def grow(pounds : real) {
     writeln("woof");
   }
 }

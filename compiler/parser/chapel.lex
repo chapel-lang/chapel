@@ -157,7 +157,7 @@ yield           processToken(TYIELD);
 
 {ident}         processToken(TIDENT);
 {intLiteral}    processToken(INTLITERAL);
-{floatLiteral}  processToken(FLOATLITERAL);
+{floatLiteral}  processToken(REALLITERAL);
 {intLiteral}i   processToken(IMAGLITERAL);
 {floatLiteral}i processToken(IMAGLITERAL);
 

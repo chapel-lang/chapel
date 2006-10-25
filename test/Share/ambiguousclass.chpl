@@ -1,10 +1,10 @@
 class myclass {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 class myotherclass {
-  var x: float;
+  var x: real;
   var y: int;
 }
 

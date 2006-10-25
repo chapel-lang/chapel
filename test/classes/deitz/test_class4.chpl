@@ -1,6 +1,6 @@
 class foo {
   var i : int = 17;
-  var f : float = 3.14;
+  var f : real = 3.14;
 }
 
 var x : foo = foo();

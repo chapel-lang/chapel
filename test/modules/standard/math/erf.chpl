@@ -1,8 +1,8 @@
-var a: float = -100;
-var b: float = -0.05;
-var c: float = 0;
-var d: float = 0.05;
-var e: float = 100;
+var a: real = -100;
+var b: real = -0.05;
+var c: real = 0;
+var d: real = 0.05;
+var e: real = 100;
 
 writeln("a = ", a);
 writeln("erf(a) = ", erf(a));

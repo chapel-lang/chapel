@@ -14,14 +14,14 @@ const east  = ( 0,  1);
 const west  = ( 0, -1);
 
 def main() {
-  var A: [BigD] float = 0.0;
-  var B: [D] float;
+  var A: [BigD] real = 0.0;
+  var B: [D] real;
 
   // initialize south boundary to 1.0
   [ij in D.exterior(south)] A(ij) = 1.0;
 
   // it's a shame not to be able to declare this when it's used
-  var bigdiff: float;
+  var bigdiff: real;
 
   do {
     // assumes promotion of + over homogeneous tuples

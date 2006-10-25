@@ -2,7 +2,7 @@ config var n = 8;
 
 var D = [1..n, 1..n];
 
-var A: [D] float;
+var A: [D] real;
 
 [(i,j) in D] A(i,j) = i*10 + j;
 

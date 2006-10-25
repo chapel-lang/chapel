@@ -1,5 +1,5 @@
 config var x: int = 111;
-config var y: float = 222.2;
+config var y: real = 222.2;
 
 writeln("x is initialized to 111");
 writeln("x is set to ", x);

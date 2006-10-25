@@ -2,7 +2,7 @@ var a: complex = 1.2 + 3.4i;
 
 writeln("a is: ", a);
 
-a.imag = -a.imag;
+a.im = -a.im;
 
 writeln("a is: ", a);
 
@@ -14,13 +14,13 @@ var D = [1..n];
 var A: [D] complex;
 
 [i in D] {
-  A[i].real = 2*i;
-  A[i].imag = 2*i + 1;
+  A[i].re = 2*i;
+  A[i].im = 2*i + 1;
 }
 
 writeln("A is: ", A);
 
-A.imag = -A.imag;
+A.im = -A.im;
 
 writeln("A is: ", A);
 

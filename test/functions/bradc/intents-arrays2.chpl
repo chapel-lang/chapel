@@ -1,6 +1,6 @@
 config var n: int = 6;
 var D: domain(1) = [1..n];
-var A: [D] float;
+var A: [D] real;
 
 def callin(in x) {
   writeln("in callin, x is: ", x);

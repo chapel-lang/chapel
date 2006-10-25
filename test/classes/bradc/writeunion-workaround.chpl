@@ -1,6 +1,6 @@
 union myunion {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 var a: myunion;

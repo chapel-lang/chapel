@@ -3,7 +3,7 @@
 writeln( "\ncomplex(64) numbers");
 var a64: complex(64);
 writeln( "a64 = ", a64);
-var f32: float(64) = 5.6:float(64);
+var f32: real(64) = 5.6:real(64);
 
 var b64:complex(64) = (1.2 + 3.4i):complex(64);
 writeln( "b64 = ", b64);
@@ -25,7 +25,7 @@ writeln( "conjg(a64) = ", conjg(a64));
 writeln( "\ncomplex(128) numbers");
 var a128:complex(128);
 writeln( "a128 = ", a128);
-var f64: float(64) = 5.6;
+var f64: real(64) = 5.6;
 
 var b128:complex(128) = 1.2 + 3.4i;
 writeln( "b128 = ", b128);
@@ -47,7 +47,7 @@ writeln( "conjg(a128) = ", conjg(a128));
 writeln( "\ncomplex numbers");
 var r128:complex;
 writeln( "r128 = ", r128);
-var t128: float = 5.6;
+var t128: real = 5.6;
 
 var s128:complex = 1.2 + 3.4i;
 writeln( "s128 = ", s128);

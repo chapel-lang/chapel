@@ -1,12 +1,12 @@
 config var n : int = 5;
-config var epsilon : float = 0.00001;
+config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
 var R : domain(2) = [1..n, 1..n];
 var BigR : domain(2) = [0..n+1, 0..n+1];
 
-var A : [BigR] float = 0.0;
-var Temp : [R] float;
+var A : [BigR] real = 0.0;
+var Temp : [R] real;
 
 [(i,j) in [n+1..n+1, 1..n]] A(i,j) = 1.0;
 
@@ -16,7 +16,7 @@ if (verbose) {
 }
 
 var iteration : int = 0;
-var delta : float = 1.0;
+var delta : real = 1.0;
 
 while (delta > epsilon) {
   [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;

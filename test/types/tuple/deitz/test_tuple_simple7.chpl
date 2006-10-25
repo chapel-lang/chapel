@@ -1,5 +1,5 @@
 var t = (1.0, "hello");
-var x : float, y : string;
+var x : real, y : string;
 
 x = 12.4;
 writeln(x);

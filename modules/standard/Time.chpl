@@ -12,7 +12,7 @@ def getCurrentDate()
 
 record Timer {
   var time: _timervalue;
-  var accumulated: float = 0.0;
+  var accumulated: real = 0.0;
   var running: bool = false;
 
   def initialize() {
@@ -66,7 +66,7 @@ def _diff_timer(t1: _timervalue, t2: _timervalue) {
 }
 
 // converts microseconds to another unit
-def _convert_microseconds(unit: TimeUnits, us: float) {
+def _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when microseconds do return us;
     when milliseconds do return us / 1.0e+3;

@@ -1,5 +1,5 @@
-def foo(x) where x == int || x == float {
-  writeln("int or float = ", x);
+def foo(x) where x == int || x == real {
+  writeln("int or real = ", x);
 }
 
 def foo(x) where x == complex || x == bool {

@@ -126,7 +126,7 @@ static void ensurePointZero(char* buffer) {
 }
 
 
-char* _chpl_tostring_float32(_float32 x, char* format) {
+char* _chpl_tostring_real32(_real32 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   if (isnan(x)) {
@@ -144,7 +144,7 @@ char* _chpl_tostring_float32(_float32 x, char* format) {
 }
 
 
-char* _chpl_tostring_float64(_float64 x, char* format) {
+char* _chpl_tostring_real64(_real64 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   if (isnan(x)) {
@@ -162,7 +162,7 @@ char* _chpl_tostring_float64(_float64 x, char* format) {
 }
 
 
-char* _chpl_tostring_float128(_float128 x, char* format) {
+char* _chpl_tostring_real128(_real128 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   if (isnan(x)) {
@@ -185,14 +185,14 @@ char* _chpl_tostring_complex64( _complex64 x, char* format) {
     return NANSTRING;
   }
   if (format == _default_format_write_complex64) {
-    char* re = _chpl_tostring_float32(x.re, "%g");
-    _float32 imval = x.im;
+    char* re = _chpl_tostring_real32(x.re, "%g");
+    _real32 imval = x.im;
     char* op = " + ";
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_float32(imval, "%g");
+    char* im = _chpl_tostring_real32(imval, "%g");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";
@@ -212,14 +212,14 @@ char* _chpl_tostring_complex128( _complex128 x, char* format) {
     return NANSTRING;
   }
   if (format == _default_format_write_complex128) {
-    char* re = _chpl_tostring_float64(x.re, "%g");
-    _float64 imval = x.im;
+    char* re = _chpl_tostring_real64(x.re, "%g");
+    _real64 imval = x.im;
     char* op = " + ";
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_float64(imval, "%g");
+    char* im = _chpl_tostring_real64(imval, "%g");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";
@@ -239,14 +239,14 @@ char* _chpl_tostring_complex256( _complex256 x, char* format) {
     return NANSTRING;
   }
   if (format == _default_format_write_complex256) {
-    char* re = _chpl_tostring_float128(x.re, "%Lg");
-    _float128 imval = x.im;
+    char* re = _chpl_tostring_real128(x.re, "%Lg");
+    _real128 imval = x.im;
     char* op = " + ";
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_float128(imval, "%Lg");
+    char* im = _chpl_tostring_real128(imval, "%Lg");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";
@@ -320,7 +320,7 @@ string_length(_string x) {
 
 
 _int64 
-float2int( _float64 f) {
+real2int( _real64 f) {
   return *(_uint64*)(&f);
 }
 
@@ -332,19 +332,19 @@ object2int( _chpl_object o) {
 
 
 _complex64 
-_chpl_complex64( _float32 r, _float32 i) {
+_chpl_complex64( _real32 r, _real32 i) {
   _complex64 ret_c = {r, i};
   return ret_c;
 }
 
 _complex128 
-_chpl_complex128( _float64 r, _float64 i) {
+_chpl_complex128( _real64 r, _real64 i) {
   _complex128 ret_c = {r, i};
   return ret_c;
 }
 
 _complex256 
-_chpl_complex256( _float128 r, _float128 i) {
+_chpl_complex256( _real128 r, _real128 i) {
   _complex256 ret_c = {r, i};
   return ret_c;
 }
@@ -383,14 +383,14 @@ _int32 _now_day(void) {
   return now->tm_mday;
 }
 
-_float64 _now_time(void) {
+_real64 _now_time(void) {
   struct tm * now;
   struct timezone tz;
   _timervalue t;
   gettimeofday(&t, &tz);
   now = localtime(&t.tv_sec);
-  return (_float64)(now->tm_hour)*3600.0e+6 +
-    (_float64)(now->tm_min)*60.0e+6 +
-    (_float64)(now->tm_sec)*1.0e+6 +
-    (_float64)(t.tv_usec);
+  return (_real64)(now->tm_hour)*3600.0e+6 +
+    (_real64)(now->tm_min)*60.0e+6 +
+    (_real64)(now->tm_sec)*1.0e+6 +
+    (_real64)(t.tv_usec);
 }

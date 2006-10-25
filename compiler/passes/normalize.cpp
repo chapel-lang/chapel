@@ -1028,7 +1028,7 @@ static bool fold_call_expr(CallExpr* call) {
       if (!ptype_p) {
         FIND_PRIMITIVE_TYPE( dtUInt, INT_SIZE_NUM, ptype_p);
         if (!ptype_p) {
-          FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_SIZE_NUM, ptype_p);
+          FIND_PRIMITIVE_TYPE( dtReal, FLOAT_SIZE_NUM, ptype_p);
           if (!ptype_p) {
             FIND_PRIMITIVE_TYPE( dtComplex, COMPLEX_SIZE_NUM, ptype_p);
             if (!ptype_p) {
@@ -1072,13 +1072,13 @@ static bool fold_call_expr(CallExpr* call) {
                     USR_FATAL( call, "illegal size %d for uint", size);
                   }
                   call->replace( new SymExpr(tsize));
-                } else if (ptype_p == dtFloat) {
+                } else if (ptype_p == dtReal) {
                   switch (size) {
-                  case 32:  tsize = dtFloat[FLOAT_SIZE_32]->symbol;  break;
-                  case 64:  tsize = dtFloat[FLOAT_SIZE_64]->symbol;  break;
-                  case 128: tsize = dtFloat[FLOAT_SIZE_128]->symbol; break;
+                  case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
+                  case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
+                  case 128: tsize = dtReal[FLOAT_SIZE_128]->symbol; break;
                   default:
-                    USR_FATAL( call, "illegal size %d for float", size);
+                    USR_FATAL( call, "illegal size %d for real", size);
                   }
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtImag) {
@@ -1138,11 +1138,11 @@ static bool fold_call_expr(CallExpr* call) {
         Immediate* i2 = v2->immediate;
         if (i1 && i2) {
           if (call->get(1)->typeInfo() == dtString ||
-              is_float_type(call->get(1)->typeInfo()) ||
+              is_real_type(call->get(1)->typeInfo()) ||
               is_imag_type(call->get(1)->typeInfo()) ||
               is_complex_type(call->get(1)->typeInfo()) ||
               call->get(2)->typeInfo() == dtString ||
-              is_float_type(call->get(2)->typeInfo()) ||
+              is_real_type(call->get(2)->typeInfo()) ||
               is_imag_type(call->get(2)->typeInfo()) ||
               is_complex_type(call->get(2)->typeInfo()))
             return false;
@@ -1183,7 +1183,7 @@ static bool fold_call_expr(CallExpr* call) {
         Immediate* i2 = NULL;
         if (i1) {
           if (call->get(1)->typeInfo() == dtString ||
-              is_float_type(call->get(1)->typeInfo()) ||
+              is_real_type(call->get(1)->typeInfo()) ||
               is_imag_type(call->get(1)->typeInfo()) ||
               is_complex_type(call->get(1)->typeInfo()))
             return false;
@@ -1639,11 +1639,11 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         }
       }
     }
-    if (fn->_this->type == dtFloat[FLOAT_SIZE_64]) {
+    if (fn->_this->type == dtReal[FLOAT_SIZE_64]) {
       for (int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++) {
-        if (dtFloat[i] && i != FLOAT_SIZE_64) {
+        if (dtReal[i] && i != FLOAT_SIZE_64) {
           FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtFloat[i];
+          nfn->_this->type = dtReal[i];
           fn->defPoint->parentStmt->insertBefore(new DefExpr(nfn));
         }
       }
@@ -1702,11 +1702,11 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
           fn->defPoint->parentStmt->remove();
-        } else if (call->isNamed("float") || call->isNamed("imaginary")) {
+        } else if (call->isNamed("real") || call->isNamed("imag")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
-            if (dtFloat[i])
+            if (dtReal[i])
               clone_for_parameterized_primitive_formals(fn, def,
-                                                        get_width(dtFloat[i]));
+                                                        get_width(dtReal[i]));
           fn->defPoint->parentStmt->remove();
         } else if (call->isNamed("complex")) {
           for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)

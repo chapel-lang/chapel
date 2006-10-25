@@ -2,7 +2,7 @@
 
 
 
-var A: float;
+var A: real;
 
 
   A    = 1;

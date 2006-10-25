@@ -1,8 +1,8 @@
  called from 2 in __init at cs1.v:1
  called from 5 in __init at cs1.v:1
-create::a(cs1.v:1) ( float64 )
+create::a(cs1.v:1) ( real64 )
 create::a(cs1.v:1) ( int32 )
-create::x(cs1.v:1) ( float64 )
+create::x(cs1.v:1) ( real64 )
 create::x(cs1.v:1) ( int32 )
 function __init cs1.v:1
 function create cs1.v:1

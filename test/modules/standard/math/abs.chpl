@@ -1,7 +1,7 @@
-var a: float = -29.39;
-var b: float = -100;
-var c: float = 0.0;
-var d: float = 1.1111;
+var a: real = -29.39;
+var b: real = -100;
+var c: real = 0.0;
+var d: real = 1.1111;
 
 var e: int = -29;
 var f: int = -100;

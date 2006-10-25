@@ -7,12 +7,12 @@ def bar(A: [2..4]) {
     writeln((i, A(i)));
 }
 
-def bar2(A: [2..4] float) {
+def bar2(A: [2..4] real) {
   for i in 2..4 do
     writeln((i, A(i)));
 }
 
-var A: [1..3] float = (/1.0, 2.0, 3.0/);
+var A: [1..3] real = (/1.0, 2.0, 3.0/);
 var B: [1..3] int = (/1, 2, 3/);
 
 foo(A);

@@ -2,8 +2,8 @@ param n = 10;
 
 var D: domain(1) = [1..n];
 
-var x : [D] float;
-var y : [D] float;
+var x : [D] real;
+var y : [D] real;
 var alpha = 2.0;
 
 for i in D do {

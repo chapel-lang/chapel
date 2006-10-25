@@ -12,6 +12,6 @@ filler(i);
 
 foo(i);
 
-var f : float = 2.3;
+var f : real = 2.3;
 
 foo(f);

@@ -1,7 +1,7 @@
 type newInt=  int;
 var  myInt:   newInt;
 
-type newFloat=    float;
+type newFloat=    real;
 var  myFloat:     newFloat;
 
 type newBoolean=  bool;
@@ -14,7 +14,7 @@ write("Enter an int: ");
 read(myInt);
 writeln("You entered ", myInt);
 
-write("Enter a float: ");
+write("Enter a real: ");
 read(myFloat);
 writeln("You entered ", myFloat);
 

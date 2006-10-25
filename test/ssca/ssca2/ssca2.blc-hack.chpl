@@ -7,10 +7,10 @@ config const scale = 9;
 -- executable's command-line using the -s flag
 config const totVertices: int = 2**scale;
 config const maxCliqueSize : int = 10;
-config const probUnidirectional: float = 0.3;
+config const probUnidirectional: real = 0.3;
 config const maxParallelEdges: int = 3;
-config const probIntercliqueEdges: float = 0.6;
-config const percentIntWeights: float = 0.6;
+config const probIntercliqueEdges: real = 0.6;
+config const percentIntWeights: real = 0.6;
 config const maxIntWeight: int = 8**scale;
 config const maxStrLen: int = ceil(scale/6.0);
 
@@ -40,7 +40,7 @@ def randomString(strlen: int) {
   return "<empty>";
 }
 
-def randomFloat(maxval: float = 1.0) {
+def randomFloat(maxval: real = 1.0) {
   halt("Need to implement randomFloat()");
   return 0.0;
 }

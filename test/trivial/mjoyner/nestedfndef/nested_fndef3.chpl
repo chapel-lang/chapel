@@ -15,7 +15,7 @@ def main() {
         superNested(); 
         
         def superNested() {
-          var z : float = 6.0;
+          var z : real = 6.0;
           writeln(z);
         }
       }

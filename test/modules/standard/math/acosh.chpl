@@ -1,8 +1,8 @@
-var a: float = 1.0;
-var b: float = 1.5;
-var c: float = 2.0;
-var d: float = 100000.0;
-var e: float = 1000000000.0;
+var a: real = 1.0;
+var b: real = 1.5;
+var c: real = 2.0;
+var d: real = 100000.0;
+var e: real = 1000000000.0;
 
 writeln("a = ", a);
 writeln("acosh(a) = ", acosh(a));

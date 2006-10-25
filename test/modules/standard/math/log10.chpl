@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 10;
-var c: float = 100;
-var d: float = 1000;
-var e: float = 10000;
+var a: real = 1;
+var b: real = 10;
+var c: real = 100;
+var d: real = 1000;
+var e: real = 10000;
 
 writeln("a = ", a);
 writeln("log10(a) = ", log10(a));

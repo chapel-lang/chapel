@@ -3,7 +3,7 @@ class C {
   var x : t;
 }
 
-var c = C(t = float);
+var c = C(t = real);
 var d : c.t;
 
 d = 1;

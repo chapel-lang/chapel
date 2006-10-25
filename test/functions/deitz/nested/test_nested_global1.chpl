@@ -13,5 +13,5 @@ def foo(type t) {
 }
 
 foo(int);
-foo(float);
+foo(real);
 bar(c);

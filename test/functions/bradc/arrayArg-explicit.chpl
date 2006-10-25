@@ -2,13 +2,13 @@ config var n: int = 4;
 
 var D: domain(1) = [1..n];
 
-var A: [D] float;
+var A: [D] real;
 
 forall i in D {
   A(i) = i;
 }
 
-def foo(X: [D] float) {
+def foo(X: [D] real) {
   writeln("X is: ", X);
 }
 

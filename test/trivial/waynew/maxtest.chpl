@@ -20,9 +20,9 @@ writeln( max( ui32.type));
 writeln( max( ui64.type));
 writeln( max( uint(64).type));
 
-var f32:float(32);
-var f64:float;
+var f32:real(32);
+var f64:real;
 writeln( max( f32.type));
 writeln( max( f64.type));
-writeln( max( float.type));
+writeln( max( real.type));
 

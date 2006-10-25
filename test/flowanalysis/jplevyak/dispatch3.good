@@ -4,13 +4,13 @@
 dispatch3.v:1: _ : f, ( x : anynum, y : int32) : tuple
 dispatch3.v:2: _ : f, ( x : int32, y : anynum) : tuple
 dispatch3.v:3: error: ambiguous call 'f'
-f::x(dispatch2.v:2) ( float64 )
+f::x(dispatch2.v:2) ( real64 )
 f::x(dispatch2.v:3) ( int32 )
 fail: program does not type
 function __init dispatch2.v:1
 function f dispatch2.v:2
 function f dispatch2.v:3
 function g dispatch2.v:1
-g::x(dispatch2.v:1) ( float64 )
+g::x(dispatch2.v:1) ( real64 )
 globals
 note: candidates are:

@@ -30,15 +30,15 @@ typedef unsigned char       _uint8;
 typedef unsigned short int  _uint16;
 typedef unsigned int        _uint32;
 typedef unsigned long long  _uint64;
-typedef float               _float32;
-typedef double              _float64;
-typedef long double         _float128;
+typedef float               _real32;
+typedef double              _real64;
+typedef long double         _real128;
 typedef float               _imag32;
 typedef double              _imag64;
 typedef long double         _imag128;
-typedef struct __complex64  {_float32 re; _float32 im;} _complex64;
-typedef struct __complex128 {_float64 re; _float64 im;} _complex128;
-typedef struct __complex256 {_float128 re; _float128 im;} _complex256;
+typedef struct __complex64  {_real32 re; _real32 im;} _complex64;
+typedef struct __complex128 {_real64 re; _real64 im;} _complex128;
+typedef struct __complex256 {_real128 re; _real128 im;} _complex256;
 typedef char*               _string;
 typedef _int64              _symbol;
 
@@ -81,13 +81,13 @@ char* _chpl_tostring_int32(_int32 x, char* format);
 char* _chpl_tostring_int64(_int64 x, char* format);
 char* _chpl_tostring_uint32(_uint32 x, char* format);
 char* _chpl_tostring_uint64(_uint64 x, char* format);
-char* _chpl_tostring_float32(_float32 x, char* format);
-char* _chpl_tostring_float64(_float64 x, char* format);
-char* _chpl_tostring_float128(_float128 x, char* format);
+char* _chpl_tostring_real32(_real32 x, char* format);
+char* _chpl_tostring_real64(_real64 x, char* format);
+char* _chpl_tostring_real128(_real128 x, char* format);
 
-#define _chpl_tostring_imag32 _chpl_tostring_float32
-#define _chpl_tostring_imag64 _chpl_tostring_float64
-#define _chpl_tostring_imag128 _chpl_tostring_float128
+#define _chpl_tostring_imag32 _chpl_tostring_real32
+#define _chpl_tostring_imag64 _chpl_tostring_real64
+#define _chpl_tostring_imag128 _chpl_tostring_real128
 
 char* _chpl_tostring_complex64(_complex64 x, char* format);
 char* _chpl_tostring_complex128(_complex128 x, char* format);
@@ -101,14 +101,14 @@ _string string_strided_select(_string x, int low, int high, int stride);
 _bool string_equal(_string x, _string y);
 _int64 string_length(_string x);
 
-_int64 float2int( _float64 f);       // return the raw bytes of the float
+_int64 real2int( _real64 f);       // return the raw bytes of the float
 _int64 object2int( _chpl_object o);  // return the ptr
 
 
 // Construction and assignment of complex numbers
-_complex64  _chpl_complex64( _float32 r, _float32 i);
-_complex128 _chpl_complex128( _float64 r, _float64 i);
-_complex256 _chpl_complex256( _float128 r, _float128 i);
+_complex64  _chpl_complex64( _real32 r, _real32 i);
+_complex128 _chpl_complex128( _real64 r, _real64 i);
+_complex256 _chpl_complex256( _real128 r, _real128 i);
 #define     complex_get_real(c)          &c.re
 #define     complex_get_imag(c)          &c.im
 #define     complex_set_real(c, r)        c.re=r

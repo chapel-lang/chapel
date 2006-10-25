@@ -186,7 +186,7 @@ TYPE_EXTERN PrimitiveType* dtSetterToken;
 TYPE_EXTERN PrimitiveType* dtBool;
 TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtFloat[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtComplex[COMPLEX_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
@@ -201,10 +201,10 @@ void initPrimitiveTypes(void);
 
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
-bool is_float_type(Type*);
+bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
-#define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_float_type(t) || is_imag_type(t) || is_complex_type(t))
+#define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
 
 #endif

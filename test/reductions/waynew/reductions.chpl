@@ -47,7 +47,7 @@ writeln( "max UI[D] = ", max reduce UI);
 writeln( "+ reduce UI[D] = ", + reduce UI);
 writeln( "* reduce UI[D] = ", * reduce UI);
 
-var F: [D] float;
+var F: [D] real;
 forall i in D do {
   neg = !neg;
   if (neg) {

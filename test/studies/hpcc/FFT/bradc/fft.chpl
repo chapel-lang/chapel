@@ -148,7 +148,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
   dfft(Z, Twiddles);
 
   // BLC: need to check this against written spec
-  var maxerr = max reduce sqrt((z.real - Z.real)**2 + (z.imag - Z.imag)**2);
+  var maxerr = max reduce sqrt((z.re - Z.re)**2 + (z.im - Z.im)**2);
 
   maxerr = maxerr / logN / epsilon;
 
@@ -171,7 +171,7 @@ def cft1st(A, W) {
   var x2 = A(2) + A(3);
   var x3rot = (A(2) - A(3))*1.0i;
 
-  const wk1r = W(1).real;
+  const wk1r = W(1).re;
 
   A(0) = x0 + x2;
   A(2) = x0 - x2;
@@ -184,11 +184,11 @@ def cft1st(A, W) {
   var x3 = A(6) - A(7);  // BLC: try to eliminate this
   x3rot = (A(6) - A(7))*1.0i;
   A(4) = x0 + x2;
-  A(6) = (x2.imag - x0.imag, x0.real - x2.real):complex;
+  A(6) = (x2.im - x0.im, x0.re - x2.re):complex;
   x0 = x1 + x3rot;
-  A(5) = wk1r * (x0.real - x0.imag, x0.real + x0.imag):complex;
-  x0 = (x3.imag + x1.real, x3.real - x1.imag):complex;
-  A(7) = wk1r * (x0.imag - x0.real, x0.imag + x0.real):complex;
+  A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):complex;
+  x0 = (x3.im + x1.re, x3.re - x1.im):complex;
+  A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
   // BLC: would like to use an indefinite arithmetic array here
   // BLC: would also like to use () on both indices and zipping
@@ -196,14 +196,14 @@ def cft1st(A, W) {
   forall (j,k1) in ([8..n) by 8, 1..) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
-    var wk3 = (wk1.real - 2* wk2.imag * wk1.imag, 
-               2 * wk2.imag * wk1.real - wk1.imag):complex;
+    var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
+               2 * wk2.im * wk1.re - wk1.im):complex;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
     wk1 = W(2*k1+1);
-    wk3 = (wk1.real - 2*wk2.real * wk1.imag, 
-           2*wk2.real * wk1.real - wk1.imag):complex;
+    wk3 = (wk1.re - 2*wk2.re * wk1.im, 
+           2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
     butterfly(wk1, wk2, wk3, A[j+4..j+7]);
   }
@@ -211,7 +211,7 @@ def cft1st(A, W) {
 
 
 def cftmd0(span, A, W) {
-  var wk1r = W(1).real;
+  var wk1r = W(1).re;
   const m = radix*span;
 
   forall j in [0..span) {
@@ -234,15 +234,15 @@ def cftmd1(span, A, W) {
   forall (k,k1) in ([m2..n) by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
-    var wk3 = (wk1.real - 2 * wk2.imag * wk1.imag,
-               2 * wk2.imag * wk1.real - wk1.imag):complex;
+    var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
+               2 * wk2.im * wk1.re - wk1.im):complex;
     for j in [k..k+span) {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
     wk1 = W[2*k1+1];
-    wk3 = (wk1.real - 2 * wk2.real * wk1.imag,
-           2 * wk2.real * wk1.real - wk1.imag):complex;
+    wk3 = (wk1.re - 2 * wk2.re * wk1.im,
+           2 * wk2.re * wk1.re - wk1.im):complex;
 
     for j in [k+m..k+m+span) {
       butterfly(wk1, wk2*1.0i, wk3, A[j..j+3*span by span]);
@@ -267,16 +267,16 @@ def cftmd2(span, A, W) {
     forall (k,k1) in ([m2..n) by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
-      var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
-                 2 * wk2.imag * wk1.real - wk1.imag):complex;
+      var wk3 = (wk1.re - 2*wk2.im * wk1.im,
+                 2 * wk2.im * wk1.re - wk1.im):complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall (k,k1) in ([m2..n) by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
-      var wk3 = (wk1.real - 2*wk2.real * wk1.imag,
-                 2*wk2.real * wk1.real - wk1.imag):complex;
+      var wk3 = (wk1.re - 2*wk2.re * wk1.im,
+                 2*wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2*1.0i;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
@@ -293,16 +293,16 @@ def cftmd21(span, A, W) {
   for (k,k1) in ([m2..n) by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
-    var wk3 = (wk1.real - 2*wk2.imag * wk1.imag,
-               2* wk2.imag * wk1.real - wk1.imag):complex;
+    var wk3 = (wk1.re - 2*wk2.im * wk1.im,
+               2* wk2.im * wk1.re - wk1.im):complex;
 
     forall j in [k..k+span) {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
     wk1 = W[2*k1 + 1];
-    wk3 = (wk1.real - 2*wk2.real * wk1.imag,
-           2*wk2.real * wk1.real - wk1.imag):complex;
+    wk3 = (wk1.re - 2*wk2.re * wk1.im,
+           2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
 
     forall j in [k+m..k+m+span) {

@@ -4,7 +4,7 @@ def foo(x : int = 4) {
   bar();
 }
 
-def bar(x : float = 2.0) {
+def bar(x : real = 2.0) {
   writeln("bar of ", x);
 }
 

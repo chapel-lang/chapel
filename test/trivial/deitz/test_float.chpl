@@ -1,4 +1,4 @@
-var x : float = 3.14;
+var x : real = 3.14;
 writeln(x);
 x = 1.0;
 writeln(x);

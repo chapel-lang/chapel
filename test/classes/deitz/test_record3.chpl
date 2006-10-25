@@ -1,6 +1,6 @@
 record foo {
   var i : int;
-  var f : float;
+  var f : real;
 }
 
 var x : foo = foo();

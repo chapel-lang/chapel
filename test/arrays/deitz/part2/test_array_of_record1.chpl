@@ -2,7 +2,7 @@ config var n : int = 4;
 
 record foo {
   var i : int;
-  var f : float;
+  var f : real;
 }
 
 var d : domain(2) = [1..n, 1..n];

@@ -1,6 +1,6 @@
 class myClass {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 var myFile: file = file(filename = "_test_freadClass.txt", mode = "w");

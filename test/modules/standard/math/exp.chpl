@@ -1,8 +1,8 @@
-var a: float = -3.0;
-var b: float = -1.0;
-var c: float = 0;
-var d: float = 2.0;
-var e: float = 4.0;
+var a: real = -3.0;
+var b: real = -1.0;
+var c: real = 0;
+var d: real = 2.0;
+var e: real = 4.0;
 
 writeln("a = ", a);
 writeln("exp(a) = ", exp(a));

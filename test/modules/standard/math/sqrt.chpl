@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 4;
-var c: float = 9;
-var d: float = 16;
-var e: float = 20;
+var a: real = 1;
+var b: real = 4;
+var c: real = 9;
+var d: real = 16;
+var e: real = 20;
 
 writeln("a = ", a);
 writeln("sqrt(a) = ", sqrt(a));

@@ -1,6 +1,6 @@
 record myrecord {
   var x: int;
-  var y: float;
+  var y: real;
 
   def fwrite(): void { 
     fwrite(f, x, " ", y);

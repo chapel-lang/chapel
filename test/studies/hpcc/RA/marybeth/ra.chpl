@@ -105,17 +105,17 @@ def main() {
 
   var i:int;
   var temp:uint(64);
-  var cputime:float;               /* CPU time to update table */
-  var realtime:float;              /* Real time to update table */
-  var GUPs: float;
+  var cputime:real;               /* CPU time to update table */
+  var realtime:real;              /* Real time to update table */
+  var GUPs: real;
   var failure:int;
-  var totalMem:float = (MEMSIZE:float)/8.0;
+  var totalMem:real = (MEMSIZE:real)/8.0;
   var TableSize:uint(64);
   var logTableSize:uint(64); 
   const TableDomain: int;
 
   /* calculate local memory per node for the update table */
-  totalMem = (MEMSIZE:float)/(8.0);
+  totalMem = (MEMSIZE:real)/(8.0);
 
   /* calculate the size of update array (must be a power of 2) */
   totalMem *= 0.5;

@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 8;
-var c: float = 27;
-var d: float = 64;
-var e: float = 100;
+var a: real = 1;
+var b: real = 8;
+var c: real = 27;
+var d: real = 64;
+var e: real = 100;
 
 writeln("a = ", a);
 writeln("cbrt(a) = ", cbrt(a));

@@ -5,7 +5,7 @@ param N = 4;
 param MAXDELTAPOSSIBLE = 1.0;
 param THRESHOLD = 0.00001;
 
-var maxdelta: float = MAXDELTAPOSSIBLE;
+var maxdelta: real = MAXDELTAPOSSIBLE;
 
 var outerD: domain(2) = [0..M+1, 0..N+1];
 var D: domain(2) = [1..M, 1..N];
@@ -14,9 +14,9 @@ var southOfD: domain(2) = [M+1..M+1, 1..N];
 var westOfD : domain(2) = [1..M, 0..0];
 var eastOfD : domain(2) = [1..M, N+1..N+1];
 
-var A:[outerD] float;
-var newA:[D] float;
-var delta:[D] float;
+var A:[outerD] real;
+var newA:[D] real;
+var delta:[D] real;
 
 // initialization of A
 [e in D] A(e) = 0.0;

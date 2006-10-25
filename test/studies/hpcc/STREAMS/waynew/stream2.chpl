@@ -12,7 +12,7 @@ param numVectors = 3;
 config const memInMBs = 3;
 const memInBytes = memInMBs*MB;
 
-type elemType = float(64);
+type elemType = real(64);
 const elemSizeInBytes = bits(elemType)/bitsPerByte;
 
 const maxIntBits2 = bits(int) - 2;
@@ -43,11 +43,11 @@ def main() {
   bytes[TRIAD] = 3 * elemSizeInBytes;
 
   writeln( HLINE);
-  writeln( "This system uses ", elemSizeInBytes, " bytes per 64-bit float.");
+  writeln( "This system uses ", elemSizeInBytes, " bytes per 64-bit real.");
   writeln( HLINE);
   writeln( "Array size (B) = ", vectorSize*elemSizeInBytes);
   writeln( "Total memory required (GB) = ", 
-           (numVectors * elemSizeInBytes) * (vectorSize / GB:float));
+           (numVectors * elemSizeInBytes) * (vectorSize / GB:real));
 
   A = 1.0;
   B = 2.0;
@@ -58,7 +58,7 @@ def main() {
   A = 2.0 * A;
 
   var clock: Timer;
-  var time: [COPY..TRIAD, 1..numIters] float;
+  var time: [COPY..TRIAD, 1..numIters] real;
   clock.start();
   for i in 1..numIters {
     time[COPY, i] = clock.elapsed();
@@ -82,7 +82,7 @@ def main() {
     writeln("Solution Failed!");
   }
 
-  var avgtime, sumtime, mintime, maxtime: [COPY..TRIAD] float;
+  var avgtime, sumtime, mintime, maxtime: [COPY..TRIAD] real;
   for test in COPY..TRIAD {
     sumtime[test] = + reduce time[test, 2..numIters];
     mintime[test] = min reduce time[test, 2..numIters];

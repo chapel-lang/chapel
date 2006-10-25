@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 5;
-var c: float = 10;
-var d: float = 100;
-var e: float = 1000;
+var a: real = 1;
+var b: real = 5;
+var c: real = 10;
+var d: real = 100;
+var e: real = 1000;
 
 writeln("a = ", a);
 writeln("lgamma(a) = ", lgamma(a));

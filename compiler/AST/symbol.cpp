@@ -1637,7 +1637,7 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size) {
+VarSymbol *new_RealSymbol(char *n, long double b, IF1_float_type size) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1651,7 +1651,7 @@ VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtFloat[size]);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtReal[size]);
   rootScope->define(s);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
@@ -1743,7 +1743,7 @@ immediate_type(Immediate *imm) {
     case NUM_KIND_INT:
       return dtInt[imm->num_index];
     case NUM_KIND_FLOAT:
-      return dtFloat[imm->num_index];
+      return dtReal[imm->num_index];
     case NUM_KIND_IMAG:
       return dtImag[imm->num_index];
     case NUM_KIND_COMPLEX:

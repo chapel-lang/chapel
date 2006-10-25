@@ -5,4 +5,4 @@ function __init destruct2.v:1
 function f destruct2.v:2
 globals
 user::x(destruct2.v:3) ( int32 )
-user::y(destruct2.v:3) ( float64 )
+user::y(destruct2.v:3) ( real64 )

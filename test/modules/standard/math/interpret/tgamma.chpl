@@ -1,8 +1,8 @@
-var a: float = 1;
-var b: float = 4;
-var c: float = 6;
-var d: float = 8;
-var e: float = 10;
+var a: real = 1;
+var b: real = 4;
+var c: real = 6;
+var d: real = 8;
+var e: real = 10;
 
 writeln("a = ", a);
 writeln("tgamma(a) = ", tgamma(a));

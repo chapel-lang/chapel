@@ -1,4 +1,4 @@
-var a: float = 100000000;
+var a: real = 100000000;
 
 writeln("a = ", a);
 writeln("cosh(a) = ", cosh(a));

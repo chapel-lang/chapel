@@ -1,8 +1,8 @@
-var a: float = -1;
-var b: float = -1.0/2.0;
-var c: float = 0.0;
-var d: float = 1.0/2.0;
-var e: float = 1;
+var a: real = -1;
+var b: real = -1.0/2.0;
+var c: real = 0.0;
+var d: real = 1.0/2.0;
+var e: real = 1;
 
 writeln("a = ", a);
 writeln("asin(a) = ", asin(a));

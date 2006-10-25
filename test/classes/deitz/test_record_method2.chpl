@@ -1,7 +1,7 @@
 record point {
-  var x : float;
-  var y : float;
-  def setx(newx : float) {
+  var x : real;
+  var y : real;
+  def setx(newx : real) {
     x = newx;
   }
 }

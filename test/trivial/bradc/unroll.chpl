@@ -3,8 +3,8 @@ def foo(x: int) {
   writeln("Got an int");
 }
 
-def foo(x: float) {
-  writeln("Got a float");
+def foo(x: real) {
+  writeln("Got a real");
 }
 
 def foo(x: string) {

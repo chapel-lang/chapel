@@ -15,7 +15,7 @@ def fwrite(f : file, val : mytuple) {
   fwrite(f, "(", val.f1, ", ", val.f2, ")");
 }
 
-var t : mytuple(int, float);
+var t : mytuple(int, real);
 
 t(1) = 12;
 t(2) = 14.0;

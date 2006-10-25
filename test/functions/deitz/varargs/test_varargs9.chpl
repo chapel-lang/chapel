@@ -13,8 +13,8 @@ def output(x : int) {
   writeln("output int ", x);
 }
 
-def output(x : float) {
-  writeln("output float ", x);
+def output(x : real) {
+  writeln("output real ", x);
 }
 
 def output(x : string) {

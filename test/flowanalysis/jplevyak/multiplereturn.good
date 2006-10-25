@@ -5,7 +5,7 @@ function f multiplereturn.v:1
 function g multiplereturn.v:6
 globals
 user::a(multiplereturn.v:2) ( int32 )
-user::b(multiplereturn.v:2) ( float64 )
+user::b(multiplereturn.v:2) ( real64 )
 user::c(multiplereturn.v:2) ( tuple )
 user::s(multiplereturn.v:7) ( int32 )
 user::t(multiplereturn.v:7) ( int32 )

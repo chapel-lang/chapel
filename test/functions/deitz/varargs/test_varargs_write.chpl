@@ -7,8 +7,8 @@ def foutput(x : int) {
   writeln("output int ", x);
 }
 
-def foutput(x : float) {
-  writeln("output float ", x);
+def foutput(x : real) {
+  writeln("output real ", x);
 }
 
 def foutput(x : string) {

@@ -11,9 +11,9 @@ def butterfly(wk1: complex, wk2: complex, wk3: complex,
   a = x0 + x2;
   x0 -= x2;
   c = wk2 * x0;
-  x0 = (x1.real - x3.imag, x1.imag + x3.real):complex;
+  x0 = (x1.re - x3.im, x1.im + x3.re):complex;
   b = wk1 * x0;
-  x0 = (x1.real + x3.imag, x1.imag - x3.real):complex;
+  x0 = (x1.re + x3.im, x1.im - x3.re):complex;
   d = wk3 * x0;
 }
 

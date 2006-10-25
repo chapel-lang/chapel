@@ -1,5 +1,5 @@
 def foo(d: domain) {
-  var a: [d] float;
+  var a: [d] real;
   writeln(a);
 }
 

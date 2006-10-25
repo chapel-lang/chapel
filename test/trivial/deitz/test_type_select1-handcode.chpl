@@ -5,8 +5,8 @@ def mywrite(x) {
   def bar(tmp:int) {
     writeln("mywrite int for       ", x);
   }
-  def bar(tmp:float) {
-    writeln("myrite float for          ", x);
+  def bar(tmp:real) {
+    writeln("myrite real for          ", x);
   }
   def bar(tmp) {
     writeln("mywrite not supported for ", x);

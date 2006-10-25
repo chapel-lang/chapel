@@ -1,5 +1,5 @@
 function __init bug1.v:1
 globals
 user::a(bug1.v:1) ( int32 )
-user::b(bug1.v:2) ( float64 )
-user::c(bug1.v:3) ( float64 )
+user::b(bug1.v:2) ( real64 )
+user::c(bug1.v:3) ( real64 )

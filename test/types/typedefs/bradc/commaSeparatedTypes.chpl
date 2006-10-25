@@ -1,5 +1,5 @@
 type myFirstType = int,
-     mySecondType = float;
+     mySecondType = real;
 
 
 var x: myFirstType = 1;

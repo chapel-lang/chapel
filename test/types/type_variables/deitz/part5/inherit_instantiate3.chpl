@@ -4,7 +4,7 @@ class C {
 
 class D : C {
   param p : int;
-  var y : float;
+  var y : real;
 }
 
 var d = D(p=2);

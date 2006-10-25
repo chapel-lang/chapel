@@ -158,9 +158,9 @@ bool Type::implementedUsingCVals(void) {
       this == dtUInt[INT_SIZE_16] ||
       this == dtUInt[INT_SIZE_32] ||
       this == dtUInt[INT_SIZE_64] ||
-      this == dtFloat[FLOAT_SIZE_32] ||
-      this == dtFloat[FLOAT_SIZE_64] ||
-      this == dtFloat[FLOAT_SIZE_128]) {
+      this == dtReal[FLOAT_SIZE_32] ||
+      this == dtReal[FLOAT_SIZE_64] ||
+      this == dtReal[FLOAT_SIZE_128]) {
     return true;
   } else {
     return false;
@@ -763,9 +763,9 @@ createPrimitiveType( char *name, char *cname) {
   dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "_uint" #width); \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIMITIVE_FLOAT( name, width)                                     \
-  dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
-  dtFloat[FLOAT_SIZE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+#define INIT_PRIMITIVE_REAL( name, width)                                     \
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
+  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
 #define INIT_PRIMITIVE_IMAG( name, width)                               \
   dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
@@ -841,13 +841,13 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_UINT( "uint", 32);
   INIT_PRIMITIVE_UINT( "uint(64)", 64);          // default size
 
-  INIT_PRIMITIVE_FLOAT( "float(32)", 32);
-  INIT_PRIMITIVE_FLOAT( "float", 64);            // default size
-  INIT_PRIMITIVE_FLOAT( "float(128)", 128);
+  INIT_PRIMITIVE_REAL( "real(32)", 32);
+  INIT_PRIMITIVE_REAL( "real", 64);            // default size
+  INIT_PRIMITIVE_REAL( "real(128)", 128);
 
-  INIT_PRIMITIVE_IMAG( "imaginary(32)", 32);
-  INIT_PRIMITIVE_IMAG( "imaginary", 64);            // default size
-  INIT_PRIMITIVE_IMAG( "imaginary(128)", 128);
+  INIT_PRIMITIVE_IMAG( "imag(32)", 32);
+  INIT_PRIMITIVE_IMAG( "imag", 64);            // default size
+  INIT_PRIMITIVE_IMAG( "imag(128)", 128);
 
   INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
   INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size
@@ -897,11 +897,11 @@ bool is_uint_type(Type *t) {
 }
 
 
-bool is_float_type(Type *t) {
+bool is_real_type(Type *t) {
   return
-    t == dtFloat[FLOAT_SIZE_32] ||
-    t == dtFloat[FLOAT_SIZE_64] ||
-    t == dtFloat[FLOAT_SIZE_128];
+    t == dtReal[FLOAT_SIZE_32] ||
+    t == dtReal[FLOAT_SIZE_64] ||
+    t == dtReal[FLOAT_SIZE_128];
 }
 
 
@@ -928,16 +928,16 @@ int get_width(Type *t) {
     return 16;
   if (t == dtInt[INT_SIZE_32] || 
       t == dtUInt[INT_SIZE_32] ||
-      t == dtFloat[FLOAT_SIZE_32] ||
+      t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
   if (t == dtInt[INT_SIZE_64] || 
       t == dtUInt[INT_SIZE_64] ||
-      t == dtFloat[FLOAT_SIZE_64] ||
+      t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_64])
     return 64;
-  if (t == dtFloat[FLOAT_SIZE_128] ||
+  if (t == dtReal[FLOAT_SIZE_128] ||
       t == dtImag[FLOAT_SIZE_128] ||
       t == dtComplex[COMPLEX_SIZE_128])
     return 128;

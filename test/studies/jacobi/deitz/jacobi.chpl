@@ -3,7 +3,7 @@ config const epsilon = 1.0e-5;
 
 const D = [1..n,1..n] distributed(block);
 
-var A, Temp : [D.expand(1)] float;
+var A, Temp : [D.expand(1)] real;
 
 A(D.exterior(1,0)) = 1.0;
 

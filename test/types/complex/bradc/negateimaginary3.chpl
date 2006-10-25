@@ -15,7 +15,7 @@ var N = 1024;
 
 var e = conjg(d) / N;
 
-var f = (d.real / N, -d.imag / N): complex;
+var f = (d.re / N, -d.im / N): complex;
 
 writeln("e is: ", e);
 

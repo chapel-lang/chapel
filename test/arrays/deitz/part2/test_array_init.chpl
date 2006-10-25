@@ -1,4 +1,4 @@
-var A : [1..5] float;
+var A : [1..5] real;
 
 writeln(A);
 

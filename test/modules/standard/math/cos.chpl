@@ -1,4 +1,4 @@
-var pi : float = 3.1415926535;
+var pi : real = 3.1415926535;
 
 writeln("pi = ", pi);
 

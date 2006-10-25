@@ -46,7 +46,7 @@ def randomAccessUpdate() {
   // BLC: Would prefer this initialization to be:
   // var Ran: [i in ranDom] uint(64) = HPCCstarts((numUpdates/numRandoms) * i);
   var Ran: [ranDom] uint(64);
-  // BLC: writing the following line results in the promotion-to-float problem
+  // BLC: writing the following line results in the promotion-to-real problem
   // [i in ranDom] Ran(i) = HPCCstarts((numUpdates/numRandoms) * i);
   // BLC: resulting in the following unfortunate cast:
   // BLC: Getting the ambiguity declared is priority #1 for me 

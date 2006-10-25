@@ -7,6 +7,6 @@ def sum(is: int...?k) {
 
 config const n = 5;
 
-var A : [1..n, 1..n] float = sum[n*(0..n-1), 0..n-1];
+var A : [1..n, 1..n] real = sum[n*(0..n-1), 0..n-1];
 
 writeln(A);

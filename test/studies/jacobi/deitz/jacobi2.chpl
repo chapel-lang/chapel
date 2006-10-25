@@ -7,7 +7,7 @@ const D = [1..n, 1..n] distributed(block);
 const BigD = D.expand(1);
 const SouthD = D.exterior(1, 0);
 
-var A, Temp : [BigD] float;
+var A, Temp : [BigD] real;
 
 Temp(SouthD) = 1.0;
 

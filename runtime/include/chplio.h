@@ -23,10 +23,10 @@
 #define _default_format_write_uint32      "%u"
 #define _default_format_write_uint64      "%llu"
 
-#define _default_format_read_float64      "%lg"  /* double */
+#define _default_format_read_real64      "%lg"  /* double */
 
-#define _default_format_write_float32     "%lg"
-#define _default_format_write_float64     "%lg"  /* double */
+#define _default_format_write_real32     "%lg"
+#define _default_format_write_real64     "%lg"  /* double */
 #define _default_format_write_imag32     "%lgi"
 #define _default_format_write_imag64     "%lgi"  /* double */
 

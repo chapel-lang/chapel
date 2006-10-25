@@ -1,11 +1,11 @@
-def returntwo(): (int, float) {
+def returntwo(): (int, real) {
   return (1, 2.3);
 }
 
 var x: int;
-var y: float;
+var y: real;
 
-var t: (int, float);
+var t: (int, real);
 
 t = returntwo();
 

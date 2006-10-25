@@ -1,8 +1,8 @@
-var a: float = -5.0;
-var b: float = -1.0;
-var c: float = 0.0;
-var d: float = 1.0;
-var e: float = 100.0;
+var a: real = -5.0;
+var b: real = -1.0;
+var c: real = 0.0;
+var d: real = 1.0;
+var e: real = 100.0;
 
 writeln("a = ", a);
 writeln("sinh(a) = ", sinh(a));

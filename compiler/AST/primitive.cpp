@@ -44,18 +44,18 @@ returnInfoUInt64(CallExpr* call) {
 
 static Type*
 returnInfoFloat(CallExpr* call) {
-  return dtFloat[FLOAT_SIZE_64];
+  return dtReal[FLOAT_SIZE_64];
 }
 
 static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
-    return dtFloat[FLOAT_SIZE_32];
+    return dtReal[FLOAT_SIZE_32];
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
-    return dtFloat[FLOAT_SIZE_64];
+    return dtReal[FLOAT_SIZE_64];
   } else if (t == dtComplex[COMPLEX_SIZE_256]) {
-    return dtFloat[FLOAT_SIZE_128];
+    return dtReal[FLOAT_SIZE_128];
   } else {
     INT_FATAL( call, "unsupported complex size");
   }
@@ -103,9 +103,9 @@ static Type*
 returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (is_int_type(t1) && is_float_type(t2))
+  if (is_int_type(t1) && is_real_type(t2))
     return t2;
-  if (is_float_type(t1) && is_int_type(t2))
+  if (is_real_type(t1) && is_int_type(t2))
     return t1;
   if (is_int_type(t1) && t2 == dtBool)
     return t1;
@@ -314,7 +314,7 @@ initPrimitive() {
   prim_def("string_length", returnInfoInt32);
   prim_def("ascii", returnInfoInt32);
   prim_def("sleep", returnInfoVoid);
-  prim_def("float2int", returnInfoInt64);
+  prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);
   prim_def("exit", returnInfoInt32);
 

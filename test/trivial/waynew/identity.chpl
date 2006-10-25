@@ -40,9 +40,9 @@ writeln( "        uint(64)");
 identities( ui64.type);
 
 
-var f32:float(32);
-writeln( "        float(32)");
+var f32:real(32);
+writeln( "        real(32)");
 identities( f32.type);
-var f64:float;
-writeln( "        float(64)");
+var f64:real;
+writeln( "        real(64)");
 identities( f64.type);

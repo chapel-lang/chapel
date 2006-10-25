@@ -50,7 +50,7 @@ HPCC_LocalVectorSize( params: HPCC_Params,
 
 var VectorSize: int;
 var Vector: domain(1);
-var a, b, c: [Vector] float;
+var a, b, c: [Vector] real;
 
 // param N = 2000000;      // purpose?
 param NTIMES = 10;
@@ -125,7 +125,7 @@ def checkSTREAMresults( doIO: bool): bool {
 
 
 def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
-  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bits(float)/8, false); 
+  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bits(real)/8, false); 
 
   Vector = [1..VectorSize];   // realloc a, b, and c
 
@@ -134,12 +134,12 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   // --- SETUP --- determine precision and check timing ---
   if doIO {
     writeln( HLINE);
-    var BytesPerWord = bits(float)/8;
+    var BytesPerWord = bits(real)/8;
     writeln( "This system uses ", BytesPerWord, " bytes per DOUBLE PRECISION word.");
 
     writeln( HLINE);
     writeln( "Array size (B) = ", VectorSize*BytesPerWord, " Offset = " , OFFSET);
-    writeln( "Total memory required (GB) = ", (NUM_VECTORS * BytesPerWord) * (VectorSize / GB:float));
+    writeln( "Total memory required (GB) = ", (NUM_VECTORS * BytesPerWord) * (VectorSize / GB:real));
   }
 
 

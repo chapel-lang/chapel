@@ -3,13 +3,13 @@ record intcoord {
   var y: int;
 }
 
-record floatcoord {
-  var w: float;
-  var z: float;
+record realcoord {
+  var w: real;
+  var z: real;
 }
 
 var a:intcoord;
-var b:floatcoord;
+var b:realcoord;
 
 a.x = 1;
 a.y = 2;

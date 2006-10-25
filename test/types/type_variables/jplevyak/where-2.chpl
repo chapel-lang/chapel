@@ -3,4 +3,4 @@ def f(type t, y) {
   writeln(x);
 }
 f(int, 1);
-f(float, 2);
+f(real, 2);

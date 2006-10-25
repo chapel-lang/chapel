@@ -2,22 +2,22 @@
   {
     morekeywords={
       and, array, atomic,
-      break,
-      call, class, cobegin, config, const, constructor, continue,
+      begin, bool, break,
+      call, class, cobegin, complex, config, const, constructor, continue,
       def, distribute, do, domain,
       else, enum, except,
-      for, forall, function,
+      for, forall,
       goto,
-      if, implements, in, inout, _invariant, iterator,
+      if, imag, implements, in, int, inout, _invariant, iterator,
       let, like,
       module,
       nil, not,
-      or, ordered, otherwise, out,
+      on, or, ordered, otherwise, out,
       param, _private, private, public,
-      record, _release, repeat, return,
-      select, serial, subtype,
+      real, record, _release, repeat, return,
+      select, serial, single, subtype, sync
       then, to, type, typeselect,
-      union, until, _unordered,
+      uint, union, until, _unordered,
       var, _view,
       when, where, while, with,
       yield
@@ -27,6 +27,9 @@
     morecomment=[l]{//},
     morecomment=[s]{/*}{*/},
     morestring=[b]",
+}
+
+\lstset{
     basicstyle=\footnotesize\tt,
     keywordstyle=\bf,
     commentstyle=\em,

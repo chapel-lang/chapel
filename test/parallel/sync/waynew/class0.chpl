@@ -13,11 +13,11 @@ writeln( "i is ", i);
 
 
 class E {
-  var sf: sync float;
+  var sf: sync real;
 }
 
 var e: E = E(); 
-var f: float;
+var f: real;
 
 e.sf = 1.2;
 f = e.sf;

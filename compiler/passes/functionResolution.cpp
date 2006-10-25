@@ -174,12 +174,12 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
-  if (is_float_type(formalType)) {
+  if (is_real_type(formalType)) {
     if (is_int_type(actualType))
       return true;
     if (is_uint_type(actualType))
       return true;
-    if (is_float_type(actualType) && 
+    if (is_real_type(actualType) && 
         get_width(actualType) < get_width(formalType))
       return true;
   }
@@ -188,7 +188,7 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
       return true;
     if (is_uint_type(actualType))
       return true;
-    if (is_float_type(actualType) && 
+    if (is_real_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)/2))
       return true;
     if (is_imag_type(actualType) && 
@@ -200,7 +200,7 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
   }
   if (formalType == dtString) {
     if (is_int_type(actualType) || is_uint_type(actualType) || 
-        is_float_type(actualType) || is_imag_type(actualType) ||
+        is_real_type(actualType) || is_imag_type(actualType) ||
         is_complex_type(actualType) ||
         actualType == dtBool)
       return true;

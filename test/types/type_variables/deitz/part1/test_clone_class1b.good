@@ -1,2 +1,2 @@
 test_clone_class1b.chpl:2: In function 'x':
-test_clone_class1b.chpl:2: error: type mismatch in assignment from float to int
+test_clone_class1b.chpl:2: error: type mismatch in assignment from real to int

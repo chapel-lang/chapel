@@ -12,21 +12,21 @@ const east  = ( 0,  1);
 const west  = ( 0, -1);
 
 def main() {
-  var A: [BigD] float = 0.0, 
-      B: [D] float;
+  var A: [BigD] real = 0.0, 
+      B: [D] real;
 
   var South: domain(2) = D.exterior(south);
 
   [ij in South] A(ij) = 1.0;
 
-  var bigdiff: float;
+  var bigdiff: real;
 
   do {
 
     [ij in D] B(ij) = (A(ij+north) + A(ij+south) + A(ij+east) + A(ij+west))/4.0;
 
-    //    bigdiff = max(float) reduce [ij in D] (A(ij) - B(ij));
-    bigdiff = max(float) reduce (A-B);
+    //    bigdiff = max(real) reduce [ij in D] (A(ij) - B(ij));
+    bigdiff = max(real) reduce (A-B);
 
     [ij in D] B(ij) = A(ij);
   } while (bigdiff > epsilon);

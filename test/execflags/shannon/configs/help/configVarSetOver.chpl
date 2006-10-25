@@ -8,6 +8,6 @@ module module1 {
 
 module module2 {
   config var x = 2;
-  config var z: float = 2.2;
+  config var z: real = 2.2;
 }
 

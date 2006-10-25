@@ -15,7 +15,7 @@ config var n: int = 10;
 var D: domain(1) = [1..n];
 
 var A: [D] int;
-var B: [D] float;
+var B: [D] real;
 var C: [D] string;
 
 forall i in D {
@@ -36,8 +36,8 @@ forall i in D {
 }
 
 {
-  var myreduce = mysumreduce(t = float);
-  var state: float = myreduce.ident();
+  var myreduce = mysumreduce(t = real);
+  var state: real = myreduce.ident();
   for i in D {
     state = myreduce.combine(state, B(i));
   }

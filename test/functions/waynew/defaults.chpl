@@ -1,6 +1,6 @@
 // Test how the default value determines the arg type. 
 
-def jam( a = true, b:float = 4, c = 1.234) {
+def jam( a = true, b:real = 4, c = 1.234) {
   writeln();
   writeln( "a = ", a);
   writeln( "b = ", b);

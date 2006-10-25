@@ -1,6 +1,6 @@
 record point {
-  var x : float = 3.0;
-  var y : float = 4.5;
+  var x : real = 3.0;
+  var y : real = 4.5;
 }
 
 var p : point = point();

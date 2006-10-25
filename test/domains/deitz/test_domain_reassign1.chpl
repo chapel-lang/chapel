@@ -1,6 +1,6 @@
 var D = [1..4, 1..4];
 
-var A: [D] float;
+var A: [D] real;
 
 A(2,2) = 47;
 

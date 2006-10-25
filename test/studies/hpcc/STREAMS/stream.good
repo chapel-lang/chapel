@@ -1,5 +1,5 @@
 -------------------------------------------------------------
-This system uses 8 bytes per 64-bit float.
+This system uses 8 bytes per 64-bit real.
 -------------------------------------------------------------
 Array size (B) = 1048576
 Total memory required (GB) = 0.00292969

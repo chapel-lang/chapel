@@ -29,8 +29,8 @@ const BigStepDomain = [0..bigStep);
 const LittleStepDomain = [0..littleStep);
 const UpdateDomain: domain(2) = [0..numStreams,0..bigStep);
 
-var realTime:float;
-var GUPs:float;
+var realTime:real;
+var GUPs:real;
 
 def main() {
 

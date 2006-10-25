@@ -280,8 +280,8 @@ def fread(f: file = stdin, inout val: uint) {
 }
 
 
-pragma "rename _chpl_fread_float"
-def fread(f: file = stdin, inout val: float) {
+pragma "rename _chpl_fread_real"
+def fread(f: file = stdin, inout val: real) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%lg", val);
     if (returnVal == _get_eof()) {
@@ -290,7 +290,7 @@ def fread(f: file = stdin, inout val: float) {
     if (returnVal < 0) {
       _fscanfError();
     } else if (returnVal == 0) {
-      halt("***Error: No float was read***");
+      halt("***Error: No real was read***");
     }
   } else {
     _fopenError(f, isRead = true);
@@ -300,8 +300,8 @@ def fread(f: file = stdin, inout val: float) {
 
 pragma "rename _chpl_fread_complex"
 def fread(f: file = stdin, inout val: complex) {
-  var realPart: float;
-  var imagPart: float;
+  var realPart: real;
+  var imagPart: real;
   var imagI: string;
   var matchingCharWasRead: int;
   var isNeg: bool;
@@ -322,11 +322,11 @@ def fread(f: file = stdin, inout val: complex) {
     halt("***Error: Incorrect format for complex numbers***");
   }
 
-  val.real = realPart;
+  val.re = realPart;
   if (isNeg) {
-    val.imag = -imagPart;
+    val.im = -imagPart;
   } else {
-    val.imag = imagPart;
+    val.im = imagPart;
   }
 }
 

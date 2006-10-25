@@ -1,12 +1,12 @@
-def foo(x : float) {
-  writeln("It's a float!");
+def foo(x : real) {
+  writeln("It's a real!");
 }
 
 def foo(x : complex) {
   writeln("It's a complex!");
 }
 
-var y : float;
+var y : real;
 
 writeln(y);
 foo(y);

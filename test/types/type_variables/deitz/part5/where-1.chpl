@@ -9,4 +9,4 @@ def f(type t, x : ?tt) where tt != t {
 }
 
 f(t = int, 1);
-f(t = float, 2);
+f(t = real, 2);

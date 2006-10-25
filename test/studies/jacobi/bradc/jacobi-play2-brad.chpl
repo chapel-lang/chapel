@@ -8,20 +8,20 @@ const D: domain(2) = [1..n, 1..n];
 
 param StencilD: domain(2) = [-1..1, -1..1];
 
-param weights: [StencilD] float = (/ (/ 0.00, 0.25, 0.00 /),
+param weights: [StencilD] real = (/ (/ 0.00, 0.25, 0.00 /),
                                      (/ 0.25, 0.00, 0.25 /),
                                      (/ 0.00, 0.25, 0.00 /) /);
 
 
 def main() {
-  var A, B: [D] float = 0.0;
+  var A, B: [D] real = 0.0;
 
   A.setBoundary(computeBoundary);
 
 
 
   // it's a shame not to be able to declare this when it's used
-  var bigdiff: float;
+  var bigdiff: real;
 
   do {
     // the hope is that some major constant folding/stencil

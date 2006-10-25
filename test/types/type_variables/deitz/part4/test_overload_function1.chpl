@@ -2,7 +2,7 @@ def foo(x : int) {
   writeln(x);
 }
 
-def foo(x : float) {
+def foo(x : real) {
   writeln(x);
 }
 
@@ -10,6 +10,6 @@ var i : int = 2;
 
 foo(i);
 
-var f : float = 2.3;
+var f : real = 2.3;
 
 foo(f);

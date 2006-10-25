@@ -1,6 +1,6 @@
 
 class A {
-  var a : float;
+  var a : real;
   def this(i) {
     return a;
   }

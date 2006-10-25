@@ -13,7 +13,7 @@ param numVectors = 3;
 config const memInMBs = 3;
 const memInBytes = memInMBs*MB;
 
-type elemType = float(64);
+type elemType = real(64);
 const elemSizeInBytes = bits(elemType)/bitsPerByte;
 const bytes = 3*elemSizeInBytes;
 
@@ -42,9 +42,9 @@ config const numIters = 10;
 const iterDomain = [1..numIters];
 
 // timing array and variables for results
-var time: [iterDomain] float;
-var avgtime, sumtime, mintime, maxtime: float;
-var curGBs: float;
+var time: [iterDomain] real;
+var avgtime, sumtime, mintime, maxtime: real;
+var curGBs: real;
 
 // setting the seed for the random number generator
 param seed = 314159265;
@@ -136,11 +136,11 @@ def checkSTREAMresults() {
 def writeStreamData() {
   param HLINE="-------------------------------------------------------------";
   writeln(HLINE);
-  writeln("This system uses ", elemSizeInBytes, " bytes per 64-bit float.");
+  writeln("This system uses ", elemSizeInBytes, " bytes per 64-bit real.");
   writeln(HLINE);
   writeln("Array size (B) = ", vectorSize*elemSizeInBytes);
   writeln("Total memory required (GB) = ",
-          (numVectors * elemSizeInBytes) * (vectorSize / GB:float));
+          (numVectors * elemSizeInBytes) * (vectorSize / GB:real));
   writeln(HLINE);
 }
 

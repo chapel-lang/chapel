@@ -6,7 +6,7 @@ b = 5.6 - 7.8i;
 writeln( "a = ", a);
 writeln( "b = ", b);
 
-var f:float = 2.3;
+var f:real = 2.3;
 
 writeln( "f = ", f);
 writeln( "a + f = ", a + f);

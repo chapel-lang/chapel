@@ -1,6 +1,6 @@
 record R {
   var x : int;
-  var y : float;
+  var y : real;
 }
 
 var r : R = R(1, 2.3);

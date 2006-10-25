@@ -5,7 +5,7 @@ class D1 : C {
 }
 
 class D2 : C {
-  var x : float;
+  var x : real;
 }
 
 var c1 : C = D1();

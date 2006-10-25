@@ -31,9 +31,9 @@ void _chpl_memtest_allocAndFree(void) {
   fprintf(stdout, "malloc'd abool\n");
   printMemStat();
 
-  _float64* f = (_float64*) _chpl_calloc(1, sizeof(_float64), "_float64");
+  _real64* f = (_real64*) _chpl_calloc(1, sizeof(_real64), "_real64");
   *f = 99.9;
-  fprintf(stdout, "calloc'd a float\n");
+  fprintf(stdout, "calloc'd a real\n");
   printMemStat();
   _complex64* c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64");
   c->re = 1.2;
@@ -47,12 +47,12 @@ void _chpl_memtest_allocAndFree(void) {
   fprintf(stdout, "freed the int, the bool, and the complex\n");
   printMemStat();
 
-  f = _chpl_realloc(f, 10, sizeof(_float64), "_float64");
-  fprintf(stdout, "realloc'd 10 times the float\n");
+  f = _chpl_realloc(f, 10, sizeof(_real64), "_real64");
+  fprintf(stdout, "realloc'd 10 times the real\n");
   printMemStat();
   
   _chpl_free(f);
-  fprintf(stdout, "freed the float\n");
+  fprintf(stdout, "freed the real\n");
   printMemStat();
 }
 
@@ -60,8 +60,8 @@ void _chpl_memtest_allocAndFree(void) {
 void _chpl_memtest_freedMalloc(void) {
   _int64* freedInt = (_int64*) _chpl_malloc(1, sizeof(_int64), 
                                                   "_int64");
-  _float64* unfreedFloat = (_float64*) _chpl_malloc(1, sizeof(_float64), 
-                                                   "_float64");
+  _real64* unfreedFloat = (_real64*) _chpl_malloc(1, sizeof(_real64), 
+                                                   "_real64");
   *unfreedFloat = 99.9;
   
   printMemTable(0);

@@ -1,8 +1,8 @@
-var a: float = 0.123;
-var b: float = 0.9999;
-var c: float = 1.0001;
-var d: float = 1.9999;
-var e: float = 10;
+var a: real = 0.123;
+var b: real = 0.9999;
+var c: real = 1.0001;
+var d: real = 1.9999;
+var e: real = 10;
 
 writeln("a = ", a);
 writeln("trunc(a) = ", trunc(a));

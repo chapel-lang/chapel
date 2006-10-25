@@ -6,6 +6,6 @@ var i : int = 2;
 
 foo(int, i);
 
-var j : float = 3.2;
+var j : real = 3.2;
 
-foo(float, j);
+foo(real, j);

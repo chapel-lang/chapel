@@ -1,6 +1,6 @@
 class myclass {
   var a: int;
-  var b: float;
+  var b: real;
 }
 
 record myrecord {

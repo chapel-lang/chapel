@@ -23,4 +23,4 @@ module1's config vars:
 
 module2's config vars:
   x: int
-  z: float (configured to 8888.88)
+  z: real (configured to 8888.88)

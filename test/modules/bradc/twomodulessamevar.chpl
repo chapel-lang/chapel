@@ -9,6 +9,6 @@ module foo {
 }
 
 module bar {
-  var x: float;
+  var x: real;
   var y: string = "this is another";
 }

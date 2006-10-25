@@ -15,7 +15,7 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-def nextrandlc(x : float, a : float) {
+def nextrandlc(x : real, a : real) {
   var t1 = r23 * a;
   var a1 = floor(t1);
   var a2 = a - t23 * a1;
@@ -31,9 +31,9 @@ def nextrandlc(x : float, a : float) {
   return (x3, r46 * x3);
 }
 
-def initrandlc(seed, a : float, in n : int) : float {
-  var i : int, t : float, g : float;
-  var x : float = seed;
+def initrandlc(seed, a : real, in n : int) : real {
+  var i : int, t : real, g : real;
+  var x : real = seed;
   t = a;
   while n != 0 do {
     i = n / 2;
@@ -46,9 +46,9 @@ def initrandlc(seed, a : float, in n : int) : float {
 }
 
 var randlc_last_n : int = -2,
-    randlc_last_x : float;
-def randlc(n : int) : float {
-  var result : float;
+    randlc_last_x : real;
+def randlc(n : int) : real {
+  var result : real;
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
   randlc_last_n = n;
@@ -86,12 +86,12 @@ var
   U0 : [DXYZ] complex,
   U1 : [DXYZ] complex,
   U2 : [DXYZ] complex,
-  Twiddle : [DXYZ] float;
+  Twiddle : [DXYZ] real;
 
 def compute_initial_conditions(X1) {
   forall i,j,k in DXYZ {
-    X1(i,j,k).real = randlc(((i*ny+j)*nz+k)*2);
-    X1(i,j,k).imag = randlc(((i*ny+j)*nz+k)*2+1);
+    X1(i,j,k).re = randlc(((i*ny+j)*nz+k)*2);
+    X1(i,j,k).im = randlc(((i*ny+j)*nz+k)*2+1);
   }
 }
 
@@ -108,15 +108,15 @@ var fftblock : int = 16, fftblockpad : int = 18;
 var u : [0..nz-1] complex;
 
 def fft_init() {
-  var t : float, ti : float;
+  var t : real, ti : real;
   var m = bpop(nz-1);
   var ku = 2;
   var ln = 1;
   u(0) = m+0i;
   for j in 1..m {
     for i in 0..ln-1 {
-      u(i+ku-1).real = cos(i*pi/ln);
-      u(i+ku-1).imag = sin(i*pi/ln);
+      u(i+ku-1).re = cos(i*pi/ln);
+      u(i+ku-1).im = sin(i*pi/ln);
     }
     ku += ln;
     ln *= 2;
@@ -300,32 +300,32 @@ const
        5.118822370068e+02+5.119794338060e+02i /);
 
 def verify() {
-  var rerr : float, ierr : float;
+  var rerr : real, ierr : real;
   for iter in 1..niter {
     select problem_class {
       when S {
-        rerr = (sums(iter).real - vdata_s(iter).real) / vdata_s(iter).real;
-        ierr = (sums(iter).imag - vdata_s(iter).imag) / vdata_s(iter).imag;
+        rerr = (sums(iter).re - vdata_s(iter).re) / vdata_s(iter).re;
+        ierr = (sums(iter).im - vdata_s(iter).im) / vdata_s(iter).im;
       }
       when W {
-        rerr = (sums(iter).real - vdata_w(iter).real) / vdata_w(iter).real;
-        ierr = (sums(iter).imag - vdata_w(iter).imag) / vdata_w(iter).imag;
+        rerr = (sums(iter).re - vdata_w(iter).re) / vdata_w(iter).re;
+        ierr = (sums(iter).im - vdata_w(iter).im) / vdata_w(iter).im;
       }
       when A {
-        rerr = (sums(iter).real - vdata_a(iter).real) / vdata_a(iter).real;
-        ierr = (sums(iter).imag - vdata_a(iter).imag) / vdata_a(iter).imag;
+        rerr = (sums(iter).re - vdata_a(iter).re) / vdata_a(iter).re;
+        ierr = (sums(iter).im - vdata_a(iter).im) / vdata_a(iter).im;
       }
       when B {
-        rerr = (sums(iter).real - vdata_b(iter).real) / vdata_b(iter).real;
-        ierr = (sums(iter).imag - vdata_b(iter).imag) / vdata_b(iter).imag;
+        rerr = (sums(iter).re - vdata_b(iter).re) / vdata_b(iter).re;
+        ierr = (sums(iter).im - vdata_b(iter).im) / vdata_b(iter).im;
       }
       when C {
-        rerr = (sums(iter).real - vdata_c(iter).real) / vdata_c(iter).real;
-        ierr = (sums(iter).imag - vdata_c(iter).imag) / vdata_c(iter).imag;
+        rerr = (sums(iter).re - vdata_c(iter).re) / vdata_c(iter).re;
+        ierr = (sums(iter).im - vdata_c(iter).im) / vdata_c(iter).im;
       }
       when D {
-        rerr = (sums(iter).real - vdata_d(iter).real) / vdata_d(iter).real;
-        ierr = (sums(iter).imag - vdata_d(iter).imag) / vdata_d(iter).imag;
+        rerr = (sums(iter).re - vdata_d(iter).re) / vdata_d(iter).re;
+        ierr = (sums(iter).im - vdata_d(iter).im) / vdata_d(iter).im;
       }
     }
     if !(abs(rerr) <= epsilon && abs(ierr) <= epsilon) then
@@ -340,7 +340,7 @@ def checksum(i, X1) {
   chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;
   if verbose then
-    writeln("T = ", i, "    Checksum = ", sums(i).real:"%15.12e", " ", sums(i).imag:"%15.12e");
+    writeln("T = ", i, "    Checksum = ", sums(i).re:"%15.12e", " ", sums(i).im:"%15.12e");
 }
 
 --

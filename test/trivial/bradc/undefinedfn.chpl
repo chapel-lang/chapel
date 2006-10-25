@@ -1,5 +1,5 @@
 def main() {
-  var x: float;
+  var x: real;
 
   x = foo();
   writeln("x is: ", x);

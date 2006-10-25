@@ -1,4 +1,4 @@
-var myFloat: float;
+var myFloat: real;
 var f: file = file(filename = "freadNoFloat.txt", mode = "r");
 
 f.open;

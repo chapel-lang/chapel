@@ -2,9 +2,9 @@
  called from 4 in __init at cs3.v:1
  called from 5 in __init at cs3.v:1
  called from 6 in __init at cs3.v:1
-aa::a(cs3.v:1) ( float64 )
+aa::a(cs3.v:1) ( real64 )
 aa::a(cs3.v:1) ( int32 )
-aa::x(cs3.v:1) ( float64 )
+aa::x(cs3.v:1) ( real64 )
 aa::x(cs3.v:1) ( int32 )
 bb::b(cs3.v:2) ( tuple )
 bb::x(cs3.v:2) ( tuple )

@@ -22,7 +22,7 @@ class RandomStream {
 
   var numGenerated = 0;
 
-  def nextrandlc(x : float, a: float = arand) {
+  def nextrandlc(x : real, a: real = arand) {
     const
       r23   = 0.5**23,
       t23   = 2.0**23,
@@ -43,9 +43,9 @@ class RandomStream {
     return (x3, r46 * x3);
   }
 
-  def initrandlc(in n : int) : float {
-    var i : int, t : float, g : float;
-    var x  = seed:float;
+  def initrandlc(in n : int) : real {
+    var i : int, t : real, g : real;
+    var x  = seed:real;
     t = arand;
     while n != 0 do {
       i = n / 2;
@@ -57,14 +57,14 @@ class RandomStream {
     return x;
   }
 
-  def fillRandom(x:[?D] float) {
+  def fillRandom(x:[?D] real) {
 
     if (D.rank > 1) {
       writeln ("Not yet implemented for 2D or higher arrays.");
       [i in D] x(i) = -1.0;
     }
     else {
-      var randlc_last_x: float = initrandlc(numGenerated+1);
+      var randlc_last_x: real = initrandlc(numGenerated+1);
       for i in D {
         (randlc_last_x,x(i)) = nextrandlc(randlc_last_x);    
         numGenerated += 1;
@@ -79,10 +79,10 @@ class RandomStream {
       [i in D] x(i) = -1.0;
     }
     else {
-      var randlc_last_x: float = initrandlc(numGenerated+1);
+      var randlc_last_x: real = initrandlc(numGenerated+1);
       for i in D {
-        (randlc_last_x,x(i).real) = nextrandlc(randlc_last_x);    
-        (randlc_last_x,x(i).imag) = nextrandlc(randlc_last_x);    
+        (randlc_last_x,x(i).re) = nextrandlc(randlc_last_x);    
+        (randlc_last_x,x(i).im) = nextrandlc(randlc_last_x);    
         numGenerated += 2;
       }
     }

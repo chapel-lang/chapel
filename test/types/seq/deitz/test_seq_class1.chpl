@@ -1,6 +1,6 @@
 class C {
   var x : int;
-  var y : float;
+  var y : real;
 }
 
 var c : C = C(1, 2.3);

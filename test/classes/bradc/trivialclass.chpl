@@ -1,6 +1,6 @@
 class myclass {
   var x: int;
-  var y: float;
+  var y: real;
 }
 
 var a: myclass = myclass();

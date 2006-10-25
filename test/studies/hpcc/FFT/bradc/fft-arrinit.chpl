@@ -2,7 +2,7 @@ config var n = 4;
 
 var D = [1..n];
 
-var W: [i in D] float = i;
+var W: [i in D] real = i;
 
 writeln("W is: ", W);
 

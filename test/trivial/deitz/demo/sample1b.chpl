@@ -14,7 +14,7 @@ def fwrite(f : file, t : trio) {
 }
 
 var t1 : trio(int) = trio(int, 1, 2, 3);
-var t2 : trio(float) = trio(float, x1=1.0);
+var t2 : trio(real) = trio(real, x1=1.0);
 
 writeln(t1);
 writeln(t1.sum());

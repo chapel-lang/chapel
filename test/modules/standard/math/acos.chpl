@@ -1,8 +1,8 @@
-var a: float = -1.0;
-var b: float = -1.0/2.0;
-var c: float = 0;
-var d: float = 1.0/2.0;
-var e: float = 1.0;
+var a: real = -1.0;
+var b: real = -1.0/2.0;
+var c: real = 0;
+var d: real = 1.0/2.0;
+var e: real = 1.0;
 
 writeln("a = ", a);
 writeln("acos(a) = ", acos(a));
