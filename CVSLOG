@@ -82649,3 +82649,49 @@ Modified files:
 	chapel/runtime/include/: chplthreads.h 
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+10/25/06 15:48:22 -- deitz
+
+Log message:
+	Made CallExpr::partialTag bool instead of an enum since it really only
+	has two states: can be partially called, cannot.  This is used for
+	method calls like
+	
+	  x.foo(y)
+	
+	which is translated into
+	
+	  foo(_mt, x)(y)
+	
+	where the inner call expression is marked as partial to allow for the
+	case where x.foo is a method or a field that is an array.
+	
+	Figured out what CallExpr::methodTag does.  It should be renamed
+	CallExpr::noParens to indicate that this is a function call that
+	requires no parens in the function to catch an error for calling
+	
+	  def Bar.x { ... }
+	
+	as
+	
+	  bar.x()
+	
+	instead of
+	
+	  bar.x
+	
+	Added a new command to GDB so you can now write
+	
+	  view ast
+	
+	instead of
+	
+	  call print_view(ast)
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: chplenum.h expr.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/compiler/util/: files.cpp 
+
