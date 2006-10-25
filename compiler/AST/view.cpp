@@ -183,11 +183,6 @@ BaseAST* ast(long id) {
 
 
 void iprint_view(long id) {
-  print_view(ast(id));
-}
-
-
-void inprint_view(long id) {
   nprint_view(ast(id));
 }
 
