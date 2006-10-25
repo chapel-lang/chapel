@@ -89,6 +89,7 @@ class BlockStmt : public Stmt {
   Expr* param_high; // for unrolling, high bound
   Expr* param_stride;
   Expr* param_index; // for unrolling, index variable
+  Vec<ModuleSymbol*> modUses; // modules used via use statement
 
   BlockStmt::BlockStmt(AList* init_body = new AList(), 
                        BlockTag init_blockTag = BLOCK_NORMAL);

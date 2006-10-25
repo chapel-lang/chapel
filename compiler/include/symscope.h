@@ -20,6 +20,9 @@ class SymScope {
   Symbol* lookupLocal(char* name, Vec<SymScope*>* alreadyVisited = NULL);
   Symbol* lookup(char* name);
 
+  void addModuleUse(ModuleSymbol* mod);
+  Vec<ModuleSymbol*>* getModuleUses();
+
   void print();
   void print(bool number, int indent);
 

@@ -104,8 +104,9 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
   if (sym)
     return sym;
 
-  if (astParent) {
-    forv_Vec(ModuleSymbol, module, astParent->modUses) {
+  Vec<ModuleSymbol*>* modUses = getModuleUses();
+  if (modUses) {
+    forv_Vec(ModuleSymbol, module, *modUses) {
       sym = module->modScope->lookupLocal(name, alreadyVisited);
       if (sym)
         return sym;
@@ -137,13 +138,30 @@ SymScope::lookup(char* name) {
 }
 
 
+void SymScope::addModuleUse(ModuleSymbol* mod) {
+  Vec<ModuleSymbol*>* modUses = getModuleUses();
+  if (!modUses)
+    INT_FATAL(astParent, "Bad call to addModuleUse");
+  modUses->add(mod);
+}
+
+
+Vec<ModuleSymbol*>* SymScope::getModuleUses() {
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent))
+    return &mod->modUses;
+  else if (BlockStmt* block = dynamic_cast<BlockStmt*>(astParent))
+    return &block->modUses;
+  return NULL;
+}
+
+
 void SymScope::print() {
   print(false, 0);
 }
 
 
 void SymScope::print(bool number, int indent) {
-  if (!symbols.n && (!astParent || !astParent->modUses.n))
+  if (!symbols.n && (!astParent || !getModuleUses()->n))
     return;
   for (int i = 0; i < indent; i++)
     printf(" ");
@@ -162,7 +180,7 @@ void SymScope::print(bool number, int indent) {
     printf(" ");
   printf("-----------------------------------------------------------------\n");
   if (astParent) {
-    forv_Vec(ModuleSymbol, mod, astParent->modUses) {
+    forv_Vec(ModuleSymbol, mod, *getModuleUses()) {
       if (mod) {
         for (int i = 0; i < indent; i++)
           printf(" ");
@@ -262,10 +280,13 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   Vec<FnSymbol*>* fs = visibleFunctions.get(name);
   if (fs)
     allVisibleFunctions->append(*fs);
-  if (astParent) {
-    forv_Vec(ModuleSymbol, module, astParent->modUses) {
+  Vec<ModuleSymbol*>* modUses = getModuleUses();
+  if (modUses) {
+    forv_Vec(ModuleSymbol, module, *modUses) {
       module->modScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
+  }
+  if (astParent) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
         fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);

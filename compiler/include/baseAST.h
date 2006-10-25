@@ -108,9 +108,6 @@ class BaseAST {
   char* filename;       // filename of location
   int lineno;           // line number of location
 
-  Vec<ModuleSymbol*> modUses; // modules used (BlockStmt,FnSymbol,...)
-                              // via SymScope::astParent
-
   static long getNumIDs(void);
 
   BaseAST(astType_t type = BASE);

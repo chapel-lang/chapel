@@ -557,7 +557,7 @@ visibility_distance(SymScope* scope, FnSymbol* fn,
   }
 
   if (scope->astParent) {
-    forv_Vec(ModuleSymbol, module, scope->astParent->modUses) {
+    forv_Vec(ModuleSymbol, module, *scope->getModuleUses()) {
       int dd = visibility_distance(module->modScope, fn, d, alreadyVisited);
       if (dd > 0)
         return dd;

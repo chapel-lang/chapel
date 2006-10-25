@@ -246,6 +246,7 @@ class ModuleSymbol : public Symbol {
   FnSymbol* initFn;
 
   SymScope* modScope;
+  Vec<ModuleSymbol*> modUses; // modules used via use statement
 
   ModuleSymbol(char* init_name, modType init_modtype);
   ~ModuleSymbol();
