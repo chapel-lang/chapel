@@ -82174,3 +82174,14 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+10/25/06 13:04:00 -- waynew
+
+Log message:
+	Bug fix that, hopefully, should cure the recurring dead lock in the
+	night tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+
