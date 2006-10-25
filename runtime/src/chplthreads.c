@@ -89,6 +89,12 @@ _chpl_condvar_signal( _chpl_condvar_p cond) {
 
 
 int
+_chpl_condvar_broadcast( _chpl_condvar_p cond) {
+  return pthread_cond_broadcast( cond);
+}
+
+
+int
 _chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex) {
   return pthread_cond_wait( cond, mutex);
 }

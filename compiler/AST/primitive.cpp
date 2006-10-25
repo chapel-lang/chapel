@@ -237,8 +237,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid);
   prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid);
   prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_signal_full", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNC_BROADCAST_FULL,"sync_broadcast_full",returnInfoVoid);
   prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full", returnInfoVoid);
   prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_signal_empty", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNC_BROADCAST_EMPTY,"sync_broadcast_empty",returnInfoVoid);
   prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty", returnInfoVoid);
   // sync/single var support
   prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP);

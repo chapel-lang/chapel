@@ -24,6 +24,7 @@ _chpl_condvar_p _chpl_condvar_new( void);  // malloc and init a condvar
 int _chpl_condvar_init( _chpl_condvar_p cond);
 int _chpl_condvar_destroy( _chpl_condvar_p cond);
 int _chpl_condvar_signal( _chpl_condvar_p cond);
+int _chpl_condvar_broadcast( _chpl_condvar_p cond);
 int _chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex);
 
 

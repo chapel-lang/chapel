@@ -1043,6 +1043,11 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_full)");
       break;
+    case PRIMITIVE_SYNC_BROADCAST_FULL:
+      fprintf( outfile, "_chpl_condvar_broadcast((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_full)");
+      break;
     case PRIMITIVE_SYNC_WAIT_FULL:
       fprintf( outfile, "_chpl_condvar_wait((");
       get(1)->codegen( outfile);
@@ -1052,6 +1057,11 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_SYNC_SIGNAL_EMPTY:
       fprintf( outfile, "_chpl_condvar_signal((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_empty)");
+      break;
+    case PRIMITIVE_SYNC_BROADCAST_EMPTY:
+      fprintf( outfile, "_chpl_condvar_broadcast((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_empty)");
       break;
