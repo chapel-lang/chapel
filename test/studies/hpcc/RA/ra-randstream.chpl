@@ -28,7 +28,7 @@ module RARandomStream {
     if (n == 0) then return 0x1;
 
     var ran: randType = 0x2;
-    for i in [0..lg(n)) by -1 {
+    for i in [0..log2(n)) by -1 {
       var val: randType = 0;
       for j in bitDom do
         if ((ran >> j) & 1) then val ^= m2(j);

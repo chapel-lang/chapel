@@ -39,7 +39,7 @@ config const nx = n,
              nz = n;
 
 
-config const numLevels = lg(min(nx,ny,nz)),
+config const numLevels = log2(min(nx,ny,nz)),
              numIters = iterations(Class),
              verifyValue = checksum(Class);
 

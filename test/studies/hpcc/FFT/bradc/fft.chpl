@@ -84,7 +84,7 @@ def computeTwiddles(W) {
 
 def bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
-  const reverse = lg(n);
+  const reverse = log2(n);
   var V: [WD] W.elt_type;  // BLC: rename elt_type to remove underscore?
   // BLC: would like to use:
   //  var Perm: [i in WD] int = bitReverse(i:uint(64), numBits = reverse):int;

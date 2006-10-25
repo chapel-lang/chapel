@@ -449,6 +449,7 @@ static void codegen_header(void) {
   cnames.put("stdout", 1);
   cnames.put("write", 1);
   cnames.put("y1", 1); // this is ridiculous...
+  cnames.put("log2", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {

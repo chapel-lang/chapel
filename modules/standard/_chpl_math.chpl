@@ -42,7 +42,18 @@ pragma "inline" def tgamma(x : real) return __primitive("tgamma", x);
 pragma "inline" def trunc(x : real) return __primitive("trunc", x);
 
 
-def lg(in x) {
+def log2(in x: int(?w)) {
+  var retval = -1;
+  while (x >= 1) {
+    x /= 2;
+    retval += 1;
+  }
+
+  return retval;
+}
+
+
+def log2(in x: uint(?w)) {
   var retval = -1;
   while (x >= 1) {
     x /= 2;

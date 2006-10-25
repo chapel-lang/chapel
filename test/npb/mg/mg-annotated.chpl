@@ -65,7 +65,7 @@ config const nx = n,
 // of the smallest dimension.  The user may specify a different number
 // of levels on the executable's command-line.
 
-config const numLevels = lg(min(nx,ny,nz)),
+config const numLevels = log2(min(nx,ny,nz)),
 
 
 // the number of iterations to run.  Again, determined by the problem

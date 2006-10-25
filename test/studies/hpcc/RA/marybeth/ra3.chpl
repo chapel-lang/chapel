@@ -10,7 +10,7 @@ config const doIO = true;
 config const showTiming = false;
 
 config const totalMemSize:int = 100000;
-const logTableSize:int  = lg(totalMemSize/2);
+const logTableSize:int  = log2(totalMemSize/2);
 const tableSize:uint(64) = (1 << logTableSize):uint(64);
 
 const numUpdates:uint(64) = 4*tableSize;
@@ -82,7 +82,7 @@ def randomStart(step0:int):uint(64) {
   if (step0 ==0) then 
     return 1;
   else
-    i = lg(step0);
+    i = log2(step0);
   while (i > 0) do {
     var temp:uint(64) = 0;
     [j in RandStepsDomain] if (( ran >> j) & 1) then temp ^= RandomSteps(j);

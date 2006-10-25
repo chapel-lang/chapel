@@ -18,7 +18,7 @@ writeln("V is: ", V);
 
 def bitReverse(W: [?WD] complex) {
   const n = WD(1).length;
-  const reverse = lg(n);
+  const reverse = log2(n);
   var V: [WD] complex;
   for i in WD {
     var ndx = bitReverse(i:uint(64), numBits=reverse);

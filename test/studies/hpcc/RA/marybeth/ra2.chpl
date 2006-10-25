@@ -7,7 +7,7 @@ config const verify = true;
 config const showtiming = false;
 
 config const TotalMemSize:int = 100000;
-const LogTableSize:int  = lg(TotalMemSize/2);
+const LogTableSize:int  = log2(TotalMemSize/2);
 const TableSize:uint(64) = (1 << LogTableSize):uint(64);
 
 const NumUpdates:uint(64) = 4*TableSize;
@@ -74,7 +74,7 @@ def RandomStart(step0:int):uint(64) {
   if (step0 ==0) then 
     return 1;
   else
-    i = lg(step0);
+    i = log2(step0);
   while (i > 0) do {
     var temp:uint(64) = 0;
     [j in RandStepsDomain] if (( ran >> j) & 1) then temp ^= RandomSteps(j);

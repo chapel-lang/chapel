@@ -75,7 +75,7 @@ def computeTwiddles(W) {
 // rename this?
 def bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
-  const reverse = lg(n);
+  const reverse = log2(n);
   var V: [WD] W.elt_type;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
   var P: [i in WD] index(WD) = i;

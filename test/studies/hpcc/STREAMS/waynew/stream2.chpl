@@ -17,7 +17,7 @@ const elemSizeInBytes = bits(elemType)/bitsPerByte;
 
 const maxIntBits2 = bits(int) - 2;
 const maxPossibleElems = (memInBytes/elemSizeInBytes)/numVectors;
-const flg2 = lg(maxPossibleElems);
+const flg2 = log2(maxPossibleElems);
 config const usePow2VectorSize = false;
 
 config const vectorSize = if flg2 <= maxIntBits2

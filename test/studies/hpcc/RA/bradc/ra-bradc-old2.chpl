@@ -2,7 +2,7 @@
 
 config const totMemSize = 1000;
 param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
-config const logTableSize = lg(totMemSize / tableElemSize);
+config const logTableSize = log2(totMemSize / tableElemSize);
 const tableSize = 0x1:uint(64) << logTableSize:uint; // BLC: unfortunate cast
 
 config const verify = true;

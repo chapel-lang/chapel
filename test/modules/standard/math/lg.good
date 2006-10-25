@@ -1,11 +1,11 @@
-lg(ns) = 5
-lg(nu) = 6
-lg(nf) = 7
-lg(ns) = -1
-lg(nf) = -1
-lg(ns) = -1
-lg(nu) = -1
-lg(nf) = -1
-lg(ns) = 0
-lg(nu) = 0
-lg(nf) = 0
+log2(ns) = 5
+log2(nu) = 6
+
+log2(ns) = -1
+
+log2(ns) = -1
+log2(nu) = -1
+
+log2(ns) = 0
+log2(nu) = 0
+

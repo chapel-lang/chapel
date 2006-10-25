@@ -11,7 +11,7 @@ module HPCCProblemSize {
     var numIndices = memoryTarget / bytesPerIndex;
 
     if (returnPow2) {
-      var lgProblemSize = lg(numIndices);
+      var lgProblemSize = log2(numIndices);
       numIndices = 2**lgProblemSize;
       if (numIndices * bytesPerIndex <= memoryTarget) {
         numIndices *= 2;
@@ -28,7 +28,7 @@ module HPCCProblemSize {
   def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
     const bytesPerArray = problemSize * numBytes(elemType): psType,
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
-          lgProbSize = lg(problemSize):psType;
+          lgProbSize = log2(problemSize):psType;
     write("Problem size = ", problemSize);
     if (2**lgProbSize == problemSize) {
       write(" (2**", lgProbSize, ")");

@@ -6,7 +6,7 @@ type tableElem = uint(64);
 
 config const totMemSizeInBytes = 1000;
 const tableElemSize = bits(tableElem)/bitsPerByte;
-config const logTableSize = lg(totMemSizeInBytes / tableElemSize);
+config const logTableSize = log2(totMemSizeInBytes / tableElemSize);
 const tableSize = 0x1:tableElem << logTableSize;
 
 config const verify = true;
