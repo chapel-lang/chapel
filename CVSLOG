@@ -82153,3 +82153,24 @@ Added files:
 	                            test_true_plus.good test_uint.chpl 
 	                            test_uint.good 
 
+---------------------------------------------------------------------------
+
+10/25/06 11:31:29 -- deitz
+
+Log message:
+	Added "--print-statistics nku" which prints out statistics about the
+	AST and memory usage.  If k is in the string passed to this flag, the
+	kilobytes is printed out, if n is in the flag paseed, the number of
+	nodes is printed out, if neither k nor n is passed, just the total
+	memory is passed.
+	
+	The number and memory required broken down by type of AST node is
+	printed out between each pass before and after cleaning (automatic
+	garbage AST collection) is done.  It is only printed if there has been
+	a change.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+
