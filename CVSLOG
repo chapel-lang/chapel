@@ -82695,3 +82695,36 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+10/25/06 16:02:50 -- bradc
+
+Log message:
+	Renamed the integer log-base-2 function from lg()
+	to log2(), overloading it with the floating point
+	log2() function.  Added "log2" to the set of C
+	symbols that Chapel should rename to avoid using
+	the rename pragma.  Updated tests.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/modules/standard/math/: lg.chpl lg.good 
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: bitreverse.chpl 
+	                                     bitreverse2.chpl fft.chpl 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft.chpl 
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+	                              ra-randstream.chpl ra.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old2.chpl 
+	                                    ra-bradc.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra2-param-test.chpl 
+	                                       ra2.chpl ra3.chpl 
+	chapel/test/studies/hpcc/STREAMS/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-bradc.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
