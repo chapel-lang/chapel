@@ -82728,3 +82728,23 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/25/06 16:09:07 -- deitz
+
+Log message:
+	Added gdb
+	  nview ast
+	command to call nprint_view(ast)
+	
+	Added gdb
+	  iview i
+	command to call iprint_iview(i)
+	
+	Note: these can be shorthanded as v, nv, and iv.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/include/: view.h 
+	chapel/compiler/util/: files.cpp 
+
