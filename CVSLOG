@@ -82616,3 +82616,22 @@ Modified files:
 	                                            where-3-error.good 
 	chapel/test/types/typedefs/bradc/: commaSeparatedTypes.chpl 
 
+---------------------------------------------------------------------------
+
+10/25/06 14:01:28 -- deitz
+
+Log message:
+	Moved modUses vector out of BaseAST and into both ModuleSymbol and
+	BlockStmt, the two nodes it can be associated with.  This reduces the
+	high memory mark of AST from 23439 to 17269 kilobytes.  It also
+	reduces the time to compile Jacobi from 10.14 to 8.72 seconds.  Though
+	interestingly when I experimented with increasing the size of the
+	BaseAST node by adding memory to it, that decreased the time 9.28
+	seconds.  These times are very consistent from run to run, but it may
+	still be consistent noise.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symbol.h symscope.h 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+
