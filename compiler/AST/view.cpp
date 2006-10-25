@@ -393,10 +393,8 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       } else {
         fprintf(html_file, "'%s' ", e->primitive->name);
       }
-      if (e->partialTag == PARTIAL_OK)
-        fprintf(html_file, "(partial ok) ");
-      if (e->partialTag == PARTIAL_ALWAYS)
-        fprintf(html_file, "(partial always) ");
+      if (e->partialTag)
+        fprintf(html_file, "(partial) ");
     } else {
       fprintf(html_file, "(%s", astTypeName[expr->astType]);
     }

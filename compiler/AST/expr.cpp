@@ -349,7 +349,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   baseExpr(NULL),
   argList(new AList()),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -373,7 +373,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   baseExpr(NULL),
   argList(new AList()),
   primitive(prim),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -388,7 +388,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   baseExpr(NULL),
   argList(new AList()),
   primitive(primitives[prim]),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -405,7 +405,7 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList()),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -422,7 +422,7 @@ CallExpr::CallExpr(BaseAST* base, AList* args) :
   baseExpr(NULL),
   argList(new AList()),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -443,7 +443,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, AList* args) :
   baseExpr(NULL),
   argList(new AList()),
   primitive(prim),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -456,7 +456,7 @@ CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
   baseExpr(NULL),
   argList(new AList()),
   primitive(primitives[prim]),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {
@@ -469,7 +469,7 @@ CallExpr::CallExpr(char* name, AList* args) :
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList()),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER),
+  partialTag(false),
   methodTag(false),
   square(false)
 {

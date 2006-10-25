@@ -696,7 +696,7 @@ static void apply_getters_setters(FnSymbol* fn) {
   //   x.f --> f(_mt, x)
   //   x.f(a) --> f(_mt, x)(a)
   // Note:
-  //   call(call or )( indicates PARTIAL_OK
+  //   call(call or )( indicates partial
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
@@ -726,7 +726,7 @@ static void apply_getters_setters(FnSymbol* fn) {
         call->replace(getter);
         if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
           if (parent->baseExpr == getter)
-            getter->partialTag = PARTIAL_OK;
+            getter->partialTag = true;
       } else if (call->isNamed("=")) {
         if (CallExpr* lhs = dynamic_cast<CallExpr*>(call->get(1))) {
           if (lhs->isNamed(".")) {
@@ -769,7 +769,7 @@ static void insert_call_temps(CallExpr* call) {
   if (dynamic_cast<DefExpr*>(call->parentExpr))
     return;
 
-  if (call->partialTag == PARTIAL_OK)
+  if (call->partialTag)
     return;
 
   if (call->primitive)
@@ -882,8 +882,6 @@ isSubType(Type* sub, Type* super) {
 
 
 static bool fold_call_expr(CallExpr* call) {
-  if (call->partialTag == PARTIAL_ALWAYS)
-    return false;
   if (call->isNamed("_copy")) {
     if (call->argList->length() == 1) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -1355,7 +1353,7 @@ compute_max_actuals() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       int num_actuals = call->argList->length();
-      if (call->partialTag == PARTIAL_OK) {
+      if (call->partialTag) {
         if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
           num_actuals += parent->argList->length();
         }

@@ -714,7 +714,7 @@ returns_void(FnSymbol* fn) {
 
 static CallExpr*
 make_method_call_partial(CallExpr* call) {
-  call->partialTag = PARTIAL_OK;
+  call->partialTag = true;
   CallExpr* outer = new CallExpr(call);
   while (call->argList->length() > 2) {
     Expr* arg = call->get(3);

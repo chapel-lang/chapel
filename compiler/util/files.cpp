@@ -348,6 +348,9 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "  set $_exitcode = 'r'\n");
   fprintf(gdbfile, "  run\n");
   fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define view\n");
+  fprintf(gdbfile, "  call print_view($arg0)\n");
+  fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "break gdbShouldBreakHere\n");
 
   closefile(gdbfile);

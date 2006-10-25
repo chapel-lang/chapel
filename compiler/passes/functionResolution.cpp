@@ -682,15 +682,13 @@ resolve_call(CallExpr* call,
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
-  bool methodTag = call->methodTag;
-
   if (!call->isResolved())
     call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
   else
     visibleFns.add(call->isResolved());
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (methodTag && !visibleFn->noParens)
+    if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
                  actual_types, actual_params, actual_names);
@@ -718,7 +716,7 @@ resolve_call(CallExpr* call,
     }
     resolve_call_error = CALL_AMBIGUOUS;
     best = NULL;
-  } else if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
+  } else if (call->partialTag && (!best || !best->noParens)) {
     resolve_call_error = CALL_PARTIAL;
     best = NULL;
   } else if (!best) {
@@ -1026,7 +1024,7 @@ resolveCall(CallExpr* call) {
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
     FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
-    if (!resolvedFn && call->partialTag == PARTIAL_OK) {
+    if (!resolvedFn && call->partialTag) {
       CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr);
       if (!parentCall)
         INT_FATAL(call, "Bad partial call");

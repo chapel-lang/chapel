@@ -20,10 +20,4 @@ enum intentTag {
   NUM_INTENT_TYPES
 };
 
-enum PartialTag {
-  PARTIAL_OK,
-  PARTIAL_NEVER,
-  PARTIAL_ALWAYS
-};
-
 #endif
