@@ -9,8 +9,9 @@
 #include "view.h"
 
 void verify();
-void cleanAst(long* astCount, int* liveCount);
+void cleanAst();
 void destroyAst();
+void printStatistics(char* pass);
 
 bool printPasses = false;
 
@@ -32,9 +33,6 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
-  static long lastAstCount = 0;
-  long astCount = 0;
-  int liveAstCount = 0;
 
   currentTraversal = stringcpy(passName);
   if (fdump_html) {
@@ -50,24 +48,28 @@ static void runPass(char *passName, void (*pass)(void)) {
                    stopTimeBetweenPasses.tv_usec) - 
                   (startTimeBetweenPasses.tv_sec*1e6+
                    startTimeBetweenPasses.tv_usec))) / 1e6;
+  }
+  if (strlen(fPrintStatistics) && strcmp(passName, "parse"))
+    printStatistics("clean");
+  if (printPasses) {
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
   }
   (*pass)();
-  cleanAst(&astCount, &liveAstCount);
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(stderr, "%8.3f seconds,",  
+    fprintf(stderr, "%8.3f seconds\n",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    fprintf(stderr, " asts = %6ld (+%6ld) (live = %6d)\n",
-            astCount, astCount-lastAstCount, liveAstCount);
-    lastAstCount = astCount;
-    gettimeofday(&startTimeBetweenPasses, &timezone);
     if (!strcmp(passName, "codegen"))
       fprintf(stderr, "%32s :%8.3f seconds\n", "time between passes",
               timeBetweenPasses);
+  }
+  if (strlen(fPrintStatistics))
+    printStatistics(passName);
+  if (printPasses) {
+    gettimeofday(&startTimeBetweenPasses, &timezone);
   }
 
   if (fdump_html) {
@@ -79,7 +81,7 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
   }
-
+  cleanAst();
   verify();
 }
 

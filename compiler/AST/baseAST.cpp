@@ -38,7 +38,148 @@ Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;
 static long uid = 1;
 
-void cleanAst(long* astCount, int* liveCount) {
+#define decl_counters(typeName, enumName)       \
+  int n##typeName = 0, k##typeName = 0
+
+#define case_counters(typeName, enumName)       \
+  case enumName: n##typeName++; break
+
+#define calc_counters(typeName, enumName)               \
+  k##typeName = n##typeName*sizeof(typeName)/1024
+
+void printStatistics(char* pass) {
+  static int last_asts = -1;
+
+  fprintf(stderr, "%s\n", pass);
+
+  if (last_asts == gAsts.n)
+    return;
+
+  decl_counters(ExprStmt, STMT_EXPR);
+  decl_counters(ReturnStmt, STMT_RETURN);
+  decl_counters(CondStmt, STMT_COND);
+  decl_counters(BlockStmt, STMT_BLOCK);
+  decl_counters(GotoStmt, STMT_GOTO);
+  decl_counters(SymExpr, EXPR_SYM);
+  decl_counters(DefExpr, EXPR_DEF);
+  decl_counters(CallExpr, EXPR_CALL);
+  decl_counters(NamedExpr, EXPR_NAMED);
+  decl_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
+  decl_counters(ModuleSymbol, SYMBOL_MODULE);
+  decl_counters(VarSymbol, SYMBOL_VAR);
+  decl_counters(ArgSymbol, SYMBOL_ARG);
+  decl_counters(TypeSymbol, SYMBOL_TYPE);
+  decl_counters(FnSymbol, SYMBOL_FN);
+  decl_counters(EnumSymbol, SYMBOL_ENUM);
+  decl_counters(LabelSymbol, SYMBOL_LABEL);
+  decl_counters(PrimitiveType, TYPE_PRIMITIVE);
+  decl_counters(FnType, TYPE_FN);
+  decl_counters(EnumType, TYPE_ENUM);
+  decl_counters(UserType, TYPE_USER);
+  decl_counters(ClassType, TYPE_CLASS);
+  forv_Vec(BaseAST, ast, gAsts) {
+    switch (ast->astType) {
+      case_counters(ExprStmt, STMT_EXPR);
+      case_counters(ReturnStmt, STMT_RETURN);
+      case_counters(CondStmt, STMT_COND);
+      case_counters(BlockStmt, STMT_BLOCK);
+      case_counters(GotoStmt, STMT_GOTO);
+      case_counters(SymExpr, EXPR_SYM);
+      case_counters(DefExpr, EXPR_DEF);
+      case_counters(CallExpr, EXPR_CALL);
+      case_counters(NamedExpr, EXPR_NAMED);
+      case_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
+      case_counters(ModuleSymbol, SYMBOL_MODULE);
+      case_counters(VarSymbol, SYMBOL_VAR);
+      case_counters(ArgSymbol, SYMBOL_ARG);
+      case_counters(TypeSymbol, SYMBOL_TYPE);
+      case_counters(FnSymbol, SYMBOL_FN);
+      case_counters(EnumSymbol, SYMBOL_ENUM);
+      case_counters(LabelSymbol, SYMBOL_LABEL);
+      case_counters(PrimitiveType, TYPE_PRIMITIVE);
+      case_counters(FnType, TYPE_FN);
+      case_counters(EnumType, TYPE_ENUM);
+      case_counters(UserType, TYPE_USER);
+      case_counters(ClassType, TYPE_CLASS);
+    default: break;
+    }
+  }
+  calc_counters(ExprStmt, STMT_EXPR);
+  calc_counters(ReturnStmt, STMT_RETURN);
+  calc_counters(CondStmt, STMT_COND);
+  calc_counters(BlockStmt, STMT_BLOCK);
+  calc_counters(GotoStmt, STMT_GOTO);
+  calc_counters(SymExpr, EXPR_SYM);
+  calc_counters(DefExpr, EXPR_DEF);
+  calc_counters(CallExpr, EXPR_CALL);
+  calc_counters(NamedExpr, EXPR_NAMED);
+  calc_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
+  calc_counters(ModuleSymbol, SYMBOL_MODULE);
+  calc_counters(VarSymbol, SYMBOL_VAR);
+  calc_counters(ArgSymbol, SYMBOL_ARG);
+  calc_counters(TypeSymbol, SYMBOL_TYPE);
+  calc_counters(FnSymbol, SYMBOL_FN);
+  calc_counters(EnumSymbol, SYMBOL_ENUM);
+  calc_counters(LabelSymbol, SYMBOL_LABEL);
+  calc_counters(PrimitiveType, TYPE_PRIMITIVE);
+  calc_counters(FnType, TYPE_FN);
+  calc_counters(EnumType, TYPE_ENUM);
+  calc_counters(UserType, TYPE_USER);
+  calc_counters(ClassType, TYPE_CLASS);
+  int nStmt = nExprStmt + nReturnStmt + nCondStmt + nBlockStmt + nGotoStmt;
+  int kStmt = kExprStmt + kReturnStmt + kCondStmt + kBlockStmt + kGotoStmt;
+  int nExpr = nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
+  int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
+  int nSymbol = nUnresolvedSymbol+nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kUnresolvedSymbol+kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+  int nType = nPrimitiveType+nFnType+nEnumType+nUserType+nClassType;
+  int kType = kPrimitiveType+kFnType+kEnumType+kUserType+kClassType;
+
+  fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Stmt %9d  Expr  %9d  Ret %9d  Cond %9d  Block %9d  Goto  %9d\n",
+            nStmt, nExprStmt, nReturnStmt, nCondStmt, nBlockStmt, nGotoStmt);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Stmt %9dK Expr  %9dK Ret %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+            kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Stmt %6dK Expr  %6dK Ret %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+            kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Expr %9d  Sym   %9d  Def %9d  Call %9d  Named %9d\n",
+            nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Expr %9dK Sym   %9dK Def %9dK Call %9dK Named %9dK\n",
+            kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Expr %6dK Sym   %6dK Def %6dK Call %6dK Named %6dK\n",
+            kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod %9d  Var  %9d  Arg   %9d  Type  %9d  Fn %9d  Enum %9d  Label %9d\n",
+            nSymbol, nUnresolvedSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod %9dK Var  %9dK Arg   %9dK Type  %9dK Fn %9dK Enum %9dK Label %9dK\n",
+            kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod %6dK Var  %6dK Arg   %6dK Type  %6dK Fn %6dK Enum %6dK Label %6dK\n",
+            kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Type %9d  Prim  %9d  Fn  %9d  Enum %9d  User  %9d  Class %9d\n",
+            nType, nPrimitiveType, nFnType, nEnumType, nUserType, nClassType);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Type %9dK Prim  %9dK Fn  %9dK Enum %9dK User  %9dK Class %9dK\n",
+            kType, kPrimitiveType, kFnType, kEnumType, kUserType, kClassType);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "  Type %6dK Prim  %6dK Fn  %6dK Enum %6dK User  %6dK Class %6dK\n",
+            kType, kPrimitiveType, kFnType, kEnumType, kUserType, kClassType);
+  last_asts = gAsts.n;
+}
+
+void cleanAst() {
   gFns.clear();
   gTypes.clear();
   Vec<BaseAST*> asts;
@@ -63,8 +204,6 @@ void cleanAst(long* astCount, int* liveCount) {
   gAsts.move(asts);
   forv_Vec(BaseAST, ast, gAsts)
     ast->clean();
-  *astCount = uid;
-  *liveCount = gAsts.n;
 }
 
 

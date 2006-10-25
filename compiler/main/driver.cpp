@@ -40,6 +40,7 @@ bool no_bounds_checking = false;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
+char fPrintStatistics[256] = "";
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
@@ -80,6 +81,7 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_PRINT_COMMANDS", NULL},
  {"parallel", 'p', "toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
+ {"print-statistics", ' ', "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"no-header-errors", ' ', "Squelch Header Errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},

@@ -27,6 +27,8 @@ extern bool no_scalar_replacement;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];
 
+extern char fPrintStatistics[256];
+
 extern int debugParserLevel;
 extern bool no_codegen;
 extern bool developer;
