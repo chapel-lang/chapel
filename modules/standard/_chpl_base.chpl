@@ -287,7 +287,7 @@ def _init( sv:_syncvar) {
 pragma "synchronization primitive" 
 def =( sv:_syncvar, value:sv.base_type) {
   __primitive( "sync_lock", sv);
-  if (sv.is_full) {
+  while (sv.is_full) {
     __primitive( "sync_wait_empty", sv);
   }
   sv.value = value;
@@ -301,7 +301,7 @@ def =( sv:_syncvar, value:sv.base_type) {
 pragma "synchronization primitive" 
 def writeFE( sv:_syncvar, value:sv.base_type) {
   __primitive( "sync_lock", sv);
-  if (!sv.is_full) {
+  while (!sv.is_full) {
     __primitive( "sync_wait_full", sv);
   }
   sv.value = value;
@@ -336,7 +336,7 @@ pragma "synchronization primitive"
 def readFE( sv:_syncvar) {
   var ret: sv.base_type;
   __primitive( "sync_lock", sv);
-  if (!sv.is_full) {
+  while (!sv.is_full) {
     __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
@@ -351,7 +351,7 @@ pragma "synchronization primitive"
 def readFF( sv:_syncvar) {
   var ret: sv.base_type;
   __primitive( "sync_lock", sv);
-  if (!sv.is_full) {
+  while (!sv.is_full) {
     __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
@@ -441,7 +441,7 @@ pragma "synchronization primitive"
 def readFF( sv:_singlevar) {
   var ret: sv.base_type;
   __primitive( "sync_lock", sv);
-  if (!sv.is_full) {
+  while (!sv.is_full) {
     __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
