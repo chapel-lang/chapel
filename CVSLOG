@@ -82763,3 +82763,15 @@ Log message:
 Added files:
 	chapel/test/modules/standard/math/: lg2.chpl lg2.future lg2.good 
 
+---------------------------------------------------------------------------
+
+10/26/06 12:15:44 -- deitz
+
+Log message:
+	Removed FnType.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp symscope.cpp 
+	                      type.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h type.h view.h 
+
