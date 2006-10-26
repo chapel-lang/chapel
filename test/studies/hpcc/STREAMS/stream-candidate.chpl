@@ -43,10 +43,10 @@ def main() {
 
   var execTime: [1..numTrials] real;
 
-  for k in 1..numTrials {
+  for iter in 1..numTrials {
     const startTime = getCurrentTime();
     A = B + alpha * C;
-    execTime[k] = getCurrentTime() - startTime;
+    execTime(iter) = getCurrentTime() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);
