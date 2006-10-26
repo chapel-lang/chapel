@@ -82748,3 +82748,18 @@ Modified files:
 	chapel/compiler/include/: view.h 
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+10/25/06 18:20:27 -- bradc
+
+Log message:
+	Oops, forgot to commit this test with my
+	previous work on lg() -- the old lg()
+	supported negative floats in a way that
+	the new log2() approach currently does
+	not.  This is a future I assigned to
+	myself.
+
+Added files:
+	chapel/test/modules/standard/math/: lg2.chpl lg2.future lg2.good 
+
