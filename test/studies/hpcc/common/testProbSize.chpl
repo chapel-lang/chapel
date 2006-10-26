@@ -8,8 +8,8 @@ def main() {
   writeln();
 
   writeln("For 2**k case:");
-  writeln("  Stream = ", computeProblemSize(real(64), 3, returnPow2 = true));
-  writeln("  RA     = ", computeProblemSize(uint(64), 1, returnPow2 = true));
-  writeln("  FFT    = ", computeProblemSize(real(64), 2, returnPow2 = true));
+  writeln("  Stream = ", 2**computeProblemSize(real(64), 3, returnLog2 = true));
+  writeln("  RA     = ", 2**computeProblemSize(uint(64), 1, returnLog2 = true));
+  writeln("  FFT    = ", 2**computeProblemSize(real(64), 2, returnLog2 = true));
 }
 

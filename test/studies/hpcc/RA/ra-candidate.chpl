@@ -13,8 +13,8 @@ type elemType = randType,
      indexType = randType;
 
 // configuration constants for specifying the problem size and # of updates
-config const n = log2(computeProblemSize(elemType, numTables,
-                                         returnPow2=true)): indexType,
+config const n = computeProblemSize(elemType, numTables,
+                                    returnLog2=true): indexType,
              N_U = 2**(n+2);   // numUpdates
 
 // configuration constants for controlling output options
@@ -52,7 +52,6 @@ def main() {
   const execTime = getCurrentTime() - startTime;
 
   const validAnswer = verifyResults(T, updateSpace);
-
   printResults(validAnswer, execTime);
 }
 
@@ -60,8 +59,7 @@ def main() {
 def printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numTables, m);
-    writeln("Number of updates = ", N_U);
-    writeln();
+    writeln("Number of updates = ", N_U, "\n");
   }
 }
 

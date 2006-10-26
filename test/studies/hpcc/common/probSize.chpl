@@ -2,19 +2,20 @@ module HPCCProblemSize {
   use Memory;
   use Types;
 
-  def computeProblemSize(type elemType, numArrays, returnPow2 = false,
+  def computeProblemSize(type elemType, numArrays, returnLog2 = false,
                          memRatio = 4) {
     const totalMem = + reduce physicalMemory(Locale, unit = Bytes),
           memoryTarget = totalMem / memRatio,
           bytesPerIndex = numArrays * numBytes(elemType);
 
     var numIndices = memoryTarget / bytesPerIndex;
+    var lgProblemSize = log2(numIndices);
 
-    if (returnPow2) {
-      var lgProblemSize = log2(numIndices);
+    if (returnLog2) {
       numIndices = 2**lgProblemSize;
       if (numIndices * bytesPerIndex <= memoryTarget) {
         numIndices *= 2;
+        lgProblemSize += 1;
       }
     }
 
@@ -22,7 +23,7 @@ module HPCCProblemSize {
     if ((numIndices * bytesPerIndex)/numLocales > smallestMem) then
       halt("System is too heterogeneous: evenly-divided data won't fit into memory");
 
-    return numIndices;
+    return if returnLog2 then lgProblemSize else numIndices;
   }
 
   def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
