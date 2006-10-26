@@ -170,7 +170,7 @@ void SymScope::print(bool number, int indent) {
     printf(" ");
   if (astParent) {
     if (number)
-      printf("%ld", astParent->id);
+      printf("%d", astParent->id);
     printf(" %s", astTypeName[astParent->astType]);
   }
   if (Symbol* sym = dynamic_cast<Symbol*>(astParent))
@@ -186,7 +186,7 @@ void SymScope::print(bool number, int indent) {
           printf(" ");
         printf("use %s", mod->name);
         if (number)
-          printf("[%ld]", mod->id);
+          printf("[%d]", mod->id);
         printf("\n");
       }
     }
@@ -199,7 +199,7 @@ void SymScope::print(bool number, int indent) {
       for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
         printf("%s", tmp->cname);
         if (number)
-          printf("[%ld]", tmp->id);
+          printf("[%d]", tmp->id);
         if (tmp->overload)
           printf(", ");
       }

@@ -36,7 +36,7 @@ astr(char* s1, char* s2, char* s3, char* s4) {
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;
-static long uid = 1;
+static int uid = 1;
 
 #define decl_counters(typeName, enumName)       \
   int n##typeName = 0, k##typeName = 0
@@ -73,7 +73,6 @@ void printStatistics(char* pass) {
   decl_counters(EnumSymbol, SYMBOL_ENUM);
   decl_counters(LabelSymbol, SYMBOL_LABEL);
   decl_counters(PrimitiveType, TYPE_PRIMITIVE);
-  decl_counters(FnType, TYPE_FN);
   decl_counters(EnumType, TYPE_ENUM);
   decl_counters(UserType, TYPE_USER);
   decl_counters(ClassType, TYPE_CLASS);
@@ -97,7 +96,6 @@ void printStatistics(char* pass) {
       case_counters(EnumSymbol, SYMBOL_ENUM);
       case_counters(LabelSymbol, SYMBOL_LABEL);
       case_counters(PrimitiveType, TYPE_PRIMITIVE);
-      case_counters(FnType, TYPE_FN);
       case_counters(EnumType, TYPE_ENUM);
       case_counters(UserType, TYPE_USER);
       case_counters(ClassType, TYPE_CLASS);
@@ -122,7 +120,6 @@ void printStatistics(char* pass) {
   calc_counters(EnumSymbol, SYMBOL_ENUM);
   calc_counters(LabelSymbol, SYMBOL_LABEL);
   calc_counters(PrimitiveType, TYPE_PRIMITIVE);
-  calc_counters(FnType, TYPE_FN);
   calc_counters(EnumType, TYPE_ENUM);
   calc_counters(UserType, TYPE_USER);
   calc_counters(ClassType, TYPE_CLASS);
@@ -132,50 +129,50 @@ void printStatistics(char* pass) {
   int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nUnresolvedSymbol+nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kUnresolvedSymbol+kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nFnType+nEnumType+nUserType+nClassType;
-  int kType = kPrimitiveType+kFnType+kEnumType+kUserType+kClassType;
+  int nType = nPrimitiveType+nEnumType+nUserType+nClassType;
+  int kType = kPrimitiveType+kEnumType+kUserType+kClassType;
 
   fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9d  Expr  %9d  Ret %9d  Cond %9d  Block %9d  Goto  %9d\n",
+    fprintf(stderr, "  Stmt %9d  Expr  %9d  Ret  %9d  Cond %9d  Block %9d  Goto %9d\n",
             nStmt, nExprStmt, nReturnStmt, nCondStmt, nBlockStmt, nGotoStmt);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9dK Expr  %9dK Ret %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+    fprintf(stderr, "  Stmt %9dK Expr  %9dK Ret  %9dK Cond %9dK Block %9dK Goto %9dK\n",
             kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %6dK Expr  %6dK Ret %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+    fprintf(stderr, "  Stmt %6dK Expr  %6dK Ret  %6dK Cond %6dK Block %6dK Goto %6dK\n",
             kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9d  Sym   %9d  Def %9d  Call %9d  Named %9d\n",
+    fprintf(stderr, "  Expr %9d  Sym   %9d  Def  %9d  Call %9d  Named %9d\n",
             nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9dK Sym   %9dK Def %9dK Call %9dK Named %9dK\n",
+    fprintf(stderr, "  Expr %9dK Sym   %9dK Def  %9dK Call %9dK Named %9dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %6dK Sym   %6dK Def %6dK Call %6dK Named %6dK\n",
+    fprintf(stderr, "  Expr %6dK Sym   %6dK Def  %6dK Call %6dK Named %6dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod %9d  Var  %9d  Arg   %9d  Type  %9d  Fn %9d  Enum %9d  Label %9d\n",
+    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod  %9d  Var  %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
             nSymbol, nUnresolvedSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod %9dK Var  %9dK Arg   %9dK Type  %9dK Fn %9dK Enum %9dK Label %9dK\n",
+    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod  %9dK Var  %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
             kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod %6dK Var  %6dK Arg   %6dK Type  %6dK Fn %6dK Enum %6dK Label %6dK\n",
+    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod  %6dK Var  %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
             kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9d  Prim  %9d  Fn  %9d  Enum %9d  User  %9d  Class %9d\n",
-            nType, nPrimitiveType, nFnType, nEnumType, nUserType, nClassType);
+    fprintf(stderr, "  Type %9d  Prim  %9d  Enum %9d  User  %9d  Class %9d\n",
+            nType, nPrimitiveType, nEnumType, nUserType, nClassType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9dK Prim  %9dK Fn  %9dK Enum %9dK User  %9dK Class %9dK\n",
-            kType, kPrimitiveType, kFnType, kEnumType, kUserType, kClassType);
+    fprintf(stderr, "  Type %9dK Prim  %9dK Enum %9dK User  %9dK Class %9dK\n",
+            kType, kPrimitiveType, kEnumType, kUserType, kClassType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %6dK Prim  %6dK Fn  %6dK Enum %6dK User  %6dK Class %6dK\n",
-            kType, kPrimitiveType, kFnType, kEnumType, kUserType, kClassType);
+    fprintf(stderr, "  Type %6dK Prim  %6dK Enum %6dK User  %6dK Class %6dK\n",
+            kType, kPrimitiveType, kEnumType, kUserType, kClassType);
   last_asts = gAsts.n;
 }
 
@@ -222,12 +219,7 @@ void destroyAst() {
 
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
-static void checkid(long id) {
-}
-
-
-long BaseAST::getNumIDs(void) {
-  return uid;
+static void checkid(int id) {
 }
 
 
@@ -552,7 +544,6 @@ char* astTypeName[AST_TYPE_END+1] = {
 
   "Type",
   "PrimitiveType",
-  "FnType",
   "EnumType",
   "UserType",
   "ClassType",
@@ -636,8 +627,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case SYMBOL_LABEL:
     break;
   case TYPE_PRIMITIVE:
-    break;
-  case TYPE_FN:
     break;
   case TYPE_ENUM:
     AST_ADD_LIST(EnumType, constants);

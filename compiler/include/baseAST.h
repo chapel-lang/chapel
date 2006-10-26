@@ -55,7 +55,6 @@ enum astType_t {
 
   TYPE,
   TYPE_PRIMITIVE,
-  TYPE_FN,
   TYPE_ENUM,
   TYPE_USER,
   TYPE_CLASS,
@@ -96,7 +95,7 @@ typedef struct _ASTContext {
 class BaseAST {
  public:
   astType_t astType;    // BaseAST subclass
-  long id;              // Unique ID
+  int id;               // Unique ID
 
   BaseAST* prev;        // List previous pointer
   BaseAST* next;        // List next pointer
@@ -107,8 +106,6 @@ class BaseAST {
 
   char* filename;       // filename of location
   int lineno;           // line number of location
-
-  static long getNumIDs(void);
 
   BaseAST(astType_t type = BASE);
   virtual ~BaseAST() { }

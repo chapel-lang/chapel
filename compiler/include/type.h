@@ -76,15 +76,6 @@ class Type : public BaseAST {
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 
-class FnType : public Type {
- public:
-  FnType(void);
-  virtual void verify(); 
-  virtual void codegen(FILE* outfile);
-  virtual void codegenDef(FILE* outfile);
-};
-
-
 class EnumType : public Type {
  public:
   AList* constants; // EnumSymbols

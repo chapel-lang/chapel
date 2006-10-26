@@ -211,32 +211,6 @@ void PrimitiveType::verify() {
 }
 
 
-FnType::FnType(void) :
-  Type(TYPE_FN, NULL)
-{}
-
-
-void FnType::verify() {
-  Type::verify();
-  if (astType != TYPE_FN) {
-    INT_FATAL(this, "Bad FnType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
-}
-
-
-void FnType::codegen(FILE* outfile) {
-  INT_FATAL(this, "FnType is not yet implemented!\n");
-}
-
-
-void FnType::codegenDef(FILE* outfile) {
-  INT_FATAL(this, "FnType is not yet implemented\n");
-}
-
-
 EnumType::EnumType(AList* init_constants) :
   Type(TYPE_ENUM, dynamic_cast<DefExpr*>(init_constants->first())->sym),
   constants(init_constants)

@@ -15,7 +15,7 @@ html_file_name( int pass, char *module) {
 }
 
 static void
-view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
+view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     printf("\n");
     for (int i = 0; i < indent; i++)
@@ -24,7 +24,7 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
     if (ast->id == mark)
       printf("***");
     if (number)
-      printf("%ld ", ast->id);
+      printf("%d ", ast->id);
     printf("%s", astTypeName[expr->astType]);
 
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
@@ -58,16 +58,16 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
       }
       printf("%s", sym->var->name);
       if (number)
-        printf("[%ld]", sym->var->id);
+        printf("[%d]", sym->var->id);
       if (sym->var->type && sym->var->type->symbol) {
         printf(":%s", sym->var->type->symbol->name);
         if (number)
-          printf("[%ld]", sym->var->type->symbol->id);
+          printf("[%d]", sym->var->type->symbol->id);
       }
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->var)) {
         printf(":%s", fn->retType->symbol->name);
         if (number)
-          printf("[%ld]", fn->retType->symbol->id);
+          printf("[%d]", fn->retType->symbol->id);
       }
 
       printf("'");
@@ -82,7 +82,7 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
     if (ast->id == mark)
       printf("***");
     if (number)
-      printf("%ld ", ast->id);
+      printf("%d ", ast->id);
     printf("%s", astTypeName[stmt->astType]);
 
     if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
@@ -104,16 +104,16 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
     }
     printf("%s", sym->name);
     if (number)
-      printf("[%ld]", sym->id);
+      printf("[%d]", sym->id);
     if (sym->type && sym->type->symbol) {
       printf(":%s", sym->type->symbol->name);
       if (number)
-        printf("[%ld]", sym->type->symbol->id);
+        printf("[%d]", sym->type->symbol->id);
     }
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
       printf(":%s", fn->retType->symbol->name);
       if (number)
-        printf("[%ld]", fn->retType->symbol->id);
+        printf("[%d]", fn->retType->symbol->id);
     }
     printf("'");
   }
@@ -172,7 +172,7 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-BaseAST* ast(long id) {
+BaseAST* ast(int id) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, a, asts)
@@ -182,7 +182,7 @@ BaseAST* ast(long id) {
 }
 
 
-void iprint_view(long id) {
+void iprint_view(int id) {
   nprint_view(ast(id));
 }
 
@@ -197,7 +197,7 @@ void nprint_symtab(BaseAST* ast) {
   fflush(stdout);
 }
 
-void mark_view(BaseAST* ast, long id) {
+void mark_view(BaseAST* ast, int id) {
   view_ast(ast, false, id);
   printf("\n\n");
   fflush(stdout);
@@ -215,10 +215,10 @@ static void
 html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
   if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
     if (def) {
-      fprintf(html_file, "<A NAME=\"SYM%ld\">", sym->id);
+      fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
     } else {
       if (sym->defPoint && sym->defPoint->parentSymbol && sym->defPoint->getModule()) {
-        fprintf(html_file, "<A HREF=\"%s#SYM%ld\">",
+        fprintf(html_file, "<A HREF=\"%s#SYM%d\">",
                 html_file_name( pass, sym->defPoint->getModule()->name),
                 sym->id);
       } else {
@@ -236,7 +236,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
   fprintf(html_file, "%s", sym->name);
   fprintf(html_file, "</FONT>");
   if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
-    fprintf(html_file, "<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
+    fprintf(html_file, "<FONT COLOR=\"grey\">[%d]</FONT>", sym->id);
   }
   fprintf(html_file, "</A>");
   if (def &&
@@ -318,7 +318,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
-        fprintf(html_file, "<CHPLTAG=\"FN%ld\">\n", fn->id);
+        fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
         fprintf(html_file, "<B>function ");
         html_print_fnsymbol( html_file, pass, fn);
         fprintf(html_file, "</B><UL>\n");
@@ -382,7 +382,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
       fprintf(html_file, "(%s = ", e->name);
     } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
-      fprintf(html_file, "(%ld ", e->id);
+      fprintf(html_file, "(%d ", e->id);
       if (!e->primitive) {
         fprintf(html_file, "<B>call</B> ");
       } else {
@@ -413,7 +413,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
            dynamic_cast<ClassType*>(e->sym->type))) {
         fprintf(html_file, "</UL>\n");
         if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
-          fprintf(html_file, "<CHPLTAG=\"FN%ld\">\n", fn->id);
+          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
         }
         fprintf(html_file, "</UL>\n");
       }

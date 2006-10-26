@@ -598,7 +598,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 
 
 FnSymbol::FnSymbol(char* initName) :
-  Symbol(SYMBOL_FN, initName, new FnType()),
+  Symbol(SYMBOL_FN, initName),
   formals(new AList()),
   retType(dtUnknown),
   where(NULL),
