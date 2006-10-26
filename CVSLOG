@@ -82795,3 +82795,24 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/26/06 16:14:18 -- bradc
+
+Log message:
+	Changed the compute problem size routine
+	for the HPCC benchmarks so that if it
+	is constrained to be a power of 2, it
+	returns the log2() of the value rather
+	than the value itself (since we were
+	then using log2() against it anyway).
+	Renamed it accordingly.
+	
+	Also, some minor formatting changes to
+	ra-candidate.chpl
+
+Modified files:
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+	                                  testProbSize.chpl 
+
