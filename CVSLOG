@@ -82775,3 +82775,13 @@ Modified files:
 	                      type.cpp view.cpp 
 	chapel/compiler/include/: baseAST.h type.h view.h 
 
+---------------------------------------------------------------------------
+
+10/26/06 16:12:41 -- bradc
+
+Log message:
+	Some small formatting changes.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/: ra-randstream.chpl 
+
