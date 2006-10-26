@@ -1,0 +1,6 @@
+bradc
+
+Need to catch EDOM return values from C's
+log2() function on floats to make it
+consistent with our log2() function on
+integers?
