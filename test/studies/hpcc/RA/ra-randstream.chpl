@@ -9,7 +9,7 @@ module RARandomStream {
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
 
-  iterator RAStream(numvals, start:randType = 0): randType {
+  iterator RAStream(numvals, start = 0:randType): randType {
     var val = getNthRandom(start);
     for i in 1..numvals {
       getNextRand(val);
@@ -19,13 +19,10 @@ module RARandomStream {
 
 
   def getNthRandom(in n) {
-    param period = 1317624576693539401;
+    param period = 0x7fffffffffffffff/7;
     
-    while (n & hiRandBit) do
-      n += period;
-    while (n > period) do
-      n -= period;
     if (n == 0) then return 0x1;
+    if (n > period) then n -= period;
 
     var ran: randType = 0x2;
     for i in [0..log2(n)) by -1 {
