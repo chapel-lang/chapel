@@ -82785,3 +82785,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/: ra-randstream.chpl 
 
+---------------------------------------------------------------------------
+
+10/26/06 16:13:16 -- bradc
+
+Log message:
+	Minor futzing with names.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+
