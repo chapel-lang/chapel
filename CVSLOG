@@ -82816,3 +82816,13 @@ Modified files:
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 	                                  testProbSize.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 09:32:14 -- deitz
+
+Log message:
+	Fixed index expressions (which now must be parenthesized) that I missed.
+
+Modified files:
+	chapel/test/npb/ft/: ft-serial.chpl 
+
