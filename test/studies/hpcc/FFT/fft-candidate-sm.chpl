@@ -53,8 +53,8 @@ def main() {
 def dfft(Z, W) {
   cft1st(Z, W);
 
-  var span = radix;
-  var lasti = 2;
+  var span = radix,
+      lasti = 2;
   for i in radix..n/2 by 2 {
     cftmd1(span, Z, W);
     span *= radix;
@@ -71,8 +71,8 @@ def dfft(Z, W) {
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
   else
     forall j in [0..span) {
-      var a = Z(j);
-      var b = Z(j+span);
+      const a = Z(j),
+            b = Z(j+span);
       Z(j) = a + b;
       Z(j+span) = a - b;
     }
@@ -157,13 +157,28 @@ def printResults(successful, execTime) {
 }
 
 
+def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
+  var x0 = A[1] + A[2],
+      x1 = A[1] - A[2],
+      x2 = A[3] + A[4],
+      x3rot = (A[3] - A[4])*1.0i;
+
+  A[1] = x0 + x2;
+  x0 -= x2;
+  A[3] = wk2 * x0;
+  x0 = x1 + x3rot;
+  A[2] = wk1 * x0;
+  x0 = x1 - x3rot;
+  A[4] = wk3 * x0;
+}
+
+
 def cft1st(A, W) {
   const n = A.numElements;
-  var x0 = A(0) + A(1);
-  var x1 = A(0) - A(1);
-  var x2 = A(2) + A(3);
-  var x3rot = (A(2) - A(3))*1.0i;
-
+  var x0 = A(0) + A(1),
+      x1 = A(0) - A(1),
+      x2 = A(2) + A(3),
+      x3rot = (A(2) - A(3))*1.0i;
   const wk1r = W(1).re;
 
   A(0) = x0 + x2;
@@ -174,7 +189,7 @@ def cft1st(A, W) {
   x0 = A(4) + A(5);
   x1 = A(4) - A(5);
   x2 = A(6) + A(7);
-  var x3 = A(6) - A(7);  // BLC: try to eliminate this
+  const x3 = A(6) - A(7);  // BLC: try to eliminate this
   x3rot = (A(6) - A(7))*1.0i;
   A(4) = x0 + x2;
   A(6) = (x2.im - x0.im, x0.re - x2.re):complex;
@@ -183,13 +198,10 @@ def cft1st(A, W) {
   x0 = (x3.im + x1.re, x3.re - x1.im):complex;
   A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
-  // BLC: would like to use an indefinite arithmetic array here
-  // BLC: would also like to use () on both indices and zipping
-  //      together of ranges
   forall (j,k1) in ([8..n) by 8, 1..) {
-    var wk2 = W(k1);
-    var wk1 = W(2*k1);
-    var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
+    var wk2 = W(k1),
+        wk1 = W(2*k1),
+        wk3 = (wk1.re - 2* wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
@@ -204,8 +216,8 @@ def cft1st(A, W) {
 
 
 def cftmd0(span, A, W) {
-  var wk1r = W(1).re;
-  const m = radix*span;
+  const wk1r = W(1).re,
+        m = radix*span;
 
   forall j in [0..span) do
     butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
@@ -223,9 +235,9 @@ def cftmd1(span, A, W) {
 
   cftmd0(span, A, W);
   forall (k,k1) in ([m2..n) by m2, 1..) {
-    var wk2 = W[k1];
-    var wk1 = W[2*k1];
-    var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
+    var wk2 = W[k1],
+        wk1 = W[2*k1],
+        wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
     for j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
@@ -241,9 +253,9 @@ def cftmd1(span, A, W) {
 
 
 def cftmd2(span, A, W) {
-  var m = radix*span;
-  var m2 = 2*m;
-  const n = A.numElements;
+  const m = radix*span,
+        m2 = 2*m,
+        n = A.numElements;
 
   cftmd0(span, A, W);
   if (m2 >= n) return;
@@ -254,18 +266,18 @@ def cftmd2(span, A, W) {
 
   forall j in [0..span) {
     forall (k,k1) in ([m2..n) by m2, 1..) {
-      var wk2 = W[k1];
-      var wk1 = W[k1 + k1];
-      var wk3 = (wk1.re - 2*wk2.im * wk1.im,
-                 2 * wk2.im * wk1.re - wk1.im):complex;
+      const wk2 = W[k1],
+            wk1 = W[k1 + k1],
+            wk3 = (wk1.re - 2*wk2.im * wk1.im,
+                   2 * wk2.im * wk1.re - wk1.im):complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall (k,k1) in ([m2..n) by m2, 1..) {
-      var wk2 = W[k1];
-      var wk1 = W[2*k1 + 1];
-      var wk3 = (wk1.re - 2*wk2.re * wk1.im,
-                 2*wk2.re * wk1.re - wk1.im):complex;
+      const wk2 = W[k1],
+            wk1 = W[2*k1 + 1],
+            wk3 = (wk1.re - 2*wk2.re * wk1.im,
+                   2*wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2*1.0i;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
@@ -275,14 +287,14 @@ def cftmd2(span, A, W) {
 
 
 def cftmd21(span, A, W) {
-  const n = A.numElements;
-  var m = radix*span;
-  var m2 = 2*m;
+  const n = A.numElements,
+        m = radix*span,
+        m2 = 2*m;
 
   for (k,k1) in ([m2..n) by m2, 1..) {
-    var wk2 = W[k1];
-    var wk1 = W[2*k1];
-    var wk3 = (wk1.re - 2*wk2.im * wk1.im,
+    var wk2 = W[k1],
+        wk1 = W[2*k1],
+        wk3 = (wk1.re - 2*wk2.im * wk1.im,
                2* wk2.im * wk1.re - wk1.im):complex;
 
     forall j in [k..k+span) do
@@ -297,21 +309,3 @@ def cftmd21(span, A, W) {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
   }
 }
-
-
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
-  var x0 = A[1] + A[2];
-  var x1 = A[1] - A[2];
-  var x2 = A[3] + A[4];
-  var x3rot = (A[3] - A[4])*1.0i;
-
-  A[1] = x0 + x2;
-  x0 -= x2;
-  A[3] = wk2 * x0;
-  x0 = x1 + x3rot;
-  A[2] = wk1 * x0;
-  x0 = x1 - x3rot;
-  A[4] = wk3 * x0;
-}
-
-
