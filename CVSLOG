@@ -82837,3 +82837,23 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_timer1.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 11:47:58 -- bradc
+
+Log message:
+	Working on generating the model FFT code (still using
+	John's structure -- will plug in Mary Beth's cleaner
+	version once I get the gross details correct).
+	
+	Also did some cleaning to the old fft.chpl based on
+	bug fixes.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft.chpl 
+Added files:
+	chapel/test/studies/hpcc/FFT/: .cvsignore fft-candidate-sm.chpl 
+	                               fft-candidate-sm.compopts 
+	                               fft-candidate-sm.execopts 
+	                               fft-candidate-sm.good 
+
