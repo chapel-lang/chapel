@@ -102,50 +102,47 @@ def bitReverse(val: ?valType, numBits = 64) {
 }
 
 
-def dfft(A: [?AD] complex, W) {
+def dfft(A, W) {
   
-  var l = 1;
-  var m, m2, k1: int;
+  var span = 1;
+  var m, m2: int;
 
-  const n = AD(1).length;
+  const numElements = A.numElements;
 
   for i in 2..logN by 2 {
-    m = 4*l;
+    m = 4*span;
     m2 = 2*m;
-    if (m2 > n) then break;
-    k1 = 0;
-    forall k in [0..n) by m2 {
+    if (m2 > numElements) then break;
+    forall (k,k1) in ([0..numElements) by m2,0..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1];
       var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
-      for j in [k..k+l) {
-        butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
+      for j in [k..k+span) {
+        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
       }
 
       wk1 = W[2*k1+1];
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
 
-      for j in [k+m..k+m+l) {
-        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*l by l]);
+      for j in [k+m..k+m+span) {
+        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
       }
-
-      k1 += 1;
     }
-    l *= 4;
+    span *= 4;
   }
 
-  if ((l << 2) == n) {
-    forall j in [0..l) {
-      butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
+  if ((span << 2) == numElements) {
+    forall j in [0..span) {
+      butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
     }
   } else {
-    forall j in [0..l) {
+    forall j in [0..span) {
       var a = A(j);
-      var b = A(j+l);
+      var b = A(j+span);
       A(j) = a + b;
-      A(j+l) = a - b;
+      A(j+span) = a - b;
     }
   }
 }
