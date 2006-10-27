@@ -50,18 +50,18 @@ def main() {
 }
 
 
-def dfft(Z, W) {
-  cft1st(Z, W);
+def dfft(Z, Twiddles) {
+  cft1st(Z, Twiddles);
 
   var span = radix,
       lasti = 2;
   for i in radix..n/2 by 2 {
-    cftmd1(span, Z, W);
+    cftmd1(span, Z, Twiddles);
     span *= radix;
     lasti = i;
   }
   for i in [lasti+2..n) by 2 {
-    cftmd2(span, Z, W);
+    cftmd2(span, Z, Twiddles);
     span *= radix;
   }
 
@@ -72,7 +72,7 @@ def dfft(Z, W) {
     forall j in [0..span) {
       const a = Z(j),
             b = Z(j+span);
-      Z(j) = a + b;
+      Z(j)      = a + b;
       Z(j+span) = a - b;
     }
 }
@@ -96,35 +96,35 @@ def initVectors(Twiddles, z) {
 }
 
 
-def computeTwiddles(W) {
-  const numTwids = W.numElements,
-        delta = 2.0 * atan(1.0) / numTwids;
+def computeTwiddles(Twiddles) {
+  const numTwdls = Twiddles.numElements,
+        delta = 2.0 * atan(1.0) / numTwdls;
 
-  W(0) = 1.0;
-  W(numTwids/2) = let x = cos(delta * numTwids/2)
-                   in (x, x):complex;
-  forall i in [1..numTwids/2) {
+  Twiddles(0) = 1.0;
+  Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
+                          in (x, x):complex;
+  forall i in [1..numTwdls/2) {
     const x = cos(delta*i),
           y = sin(delta*i);
-    W(i)            = (x, y):complex;
-    W(numTwids - i) = (y, x):complex;
+    Twiddles(i)            = (x, y):complex;
+    Twiddles(numTwdls - i) = (y, x):complex;
   }
 }
 
 
-def bitReverseShuffle(W: [?WD]) {
-  const numBits = log2(W.numElements),
-        Perm: [i in WD] index(WD) = bitReverse(i, revBits = numBits),
-        V = W(Perm);
-  W = V;
+def bitReverseShuffle(Vect: [?Dom]) {
+  const numBits = log2(Vect.numElements),
+        Perm: [i in Dom] index(Dom) = bitReverse(i, revBits = numBits),
+        Temp = Vect(Perm);
+  Vect = Temp;
 }
 
 
 // reverses numBits low-order bits of val
 def bitReverse(val: ?valType, revBits = 64) {
-  param mask: uint(64) = 0x0102040810204080;
-  const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
-  const valReverse = bitRotLeft(valReverse64, revBits);
+  param mask = 0x0102040810204080;
+  const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
+        valReverse = bitRotLeft(valReverse64, revBits);
   return valReverse: valType;
 }
 
@@ -157,27 +157,27 @@ def printResults(successful, execTime) {
 
 
 def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
-  var x0 = A[1] + A[2],
-      x1 = A[1] - A[2],
-      x2 = A[3] + A[4],
-      x3rot = (A[3] - A[4])*1.0i;
+  var x0 = A(1) + A(2),
+      x1 = A(1) - A(2),
+      x2 = A(3) + A(4),
+      x3rot = (A(3) - A(4))*1.0i;
 
-  A[1] = x0 + x2;
+  A(1) = x0 + x2;
   x0 -= x2;
-  A[3] = wk2 * x0;
+  A(3) = wk2 * x0;
   x0 = x1 + x3rot;
-  A[2] = wk1 * x0;
+  A(2) = wk1 * x0;
   x0 = x1 - x3rot;
-  A[4] = wk3 * x0;
+  A(4) = wk3 * x0;
 }
 
 
-def cft1st(A, W) {
+def cft1st(A, Twiddles) {
   var x0 = A(0) + A(1),
       x1 = A(0) - A(1),
       x2 = A(2) + A(3),
       x3rot = (A(2) - A(3))*1.0i;
-  const wk1r = W(1).re;
+  const wk1r = Twiddles(1).re;
 
   A(0) = x0 + x2;
   A(2) = x0 - x2;
@@ -197,14 +197,14 @@ def cft1st(A, W) {
   A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
   forall (j,k1) in ([8..A.numElements) by 8, 1..) {
-    var wk2 = W(k1),
-        wk1 = W(2*k1),
+    var wk2 = Twiddles(k1),
+        wk1 = Twiddles(2*k1),
         wk3 = (wk1.re - 2* wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
-    wk1 = W(2*k1+1);
+    wk1 = Twiddles(2*k1+1);
     wk3 = (wk1.re - 2*wk2.re * wk1.im, 
            2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
@@ -213,8 +213,8 @@ def cft1st(A, W) {
 }
 
 
-def cftmd0(span, A, W) {
-  const wk1r = W(1).re,
+def cftmd0(span, A, Twiddles) {
+  const wk1r = Twiddles(1).re,
         m = radix*span;
 
   forall j in [0..span) do
@@ -226,20 +226,20 @@ def cftmd0(span, A, W) {
 }
 
 
-def cftmd1(span, A, W) {
-  const m = radix*span;
-  const m2 = 2*m;
+def cftmd1(span, A, Twiddles) {
+  const m = radix*span,
+        m2 = 2*m;
 
-  cftmd0(span, A, W);
+  cftmd0(span, A, Twiddles);
   forall (k,k1) in ([m2..A.numElements) by m2, 1..) {
-    var wk2 = W[k1],
-        wk1 = W[2*k1],
+    var wk2 = Twiddles(k1),
+        wk1 = Twiddles(2*k1),
         wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
     for j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
-    wk1 = W[2*k1+1];
+    wk1 = Twiddles(2*k1+1);
     wk3 = (wk1.re - 2 * wk2.re * wk1.im,
            2 * wk2.re * wk1.re - wk1.im):complex;
 
@@ -249,30 +249,30 @@ def cftmd1(span, A, W) {
 }
 
 
-def cftmd2(span, A, W) {
+def cftmd2(span, A, Twiddles) {
   const m = radix*span,
         m2 = 2*m,
         numElems = A.numElements;
 
-  cftmd0(span, A, W);
+  cftmd0(span, A, Twiddles);
   if (m2 >= numElems) return;
   if (m2 >= numElems / 8) {
-    cftmd21(span, A, W);
+    cftmd21(span, A, Twiddles);
     return;
   }
 
   forall j in [0..span) {
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
-      const wk2 = W[k1],
-            wk1 = W[k1 + k1],
+      const wk2 = Twiddles(k1),
+            wk1 = Twiddles(k1 + k1),
             wk3 = (wk1.re - 2*wk2.im * wk1.im,
                    2 * wk2.im * wk1.re - wk1.im):complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
-      const wk2 = W[k1],
-            wk1 = W[2*k1 + 1],
+      const wk2 = Twiddles(k1),
+            wk1 = Twiddles(2*k1 + 1),
             wk3 = (wk1.re - 2*wk2.re * wk1.im,
                    2*wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2*1.0i;
@@ -283,20 +283,20 @@ def cftmd2(span, A, W) {
 }
 
 
-def cftmd21(span, A, W) {
+def cftmd21(span, A, Twiddles) {
   const m = radix*span,
         m2 = 2*m;
 
   for (k,k1) in ([m2..A.numElements) by m2, 1..) {
-    var wk2 = W[k1],
-        wk1 = W[2*k1],
+    var wk2 = Twiddles(k1),
+        wk1 = Twiddles(2*k1),
         wk3 = (wk1.re - 2*wk2.im * wk1.im,
-               2* wk2.im * wk1.re - wk1.im):complex;
+               2*wk2.im * wk1.re - wk1.im):complex;
 
     forall j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
-    wk1 = W[2*k1 + 1];
+    wk1 = Twiddles(2*k1 + 1);
     wk3 = (wk1.re - 2*wk2.re * wk1.im,
            2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
