@@ -82921,3 +82921,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 12:56:59 -- bradc
+
+Log message:
+	Moved complex interpolations out into helper
+	functions.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+
