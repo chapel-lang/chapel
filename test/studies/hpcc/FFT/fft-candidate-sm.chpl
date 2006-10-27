@@ -230,14 +230,16 @@ def cftmd1(span, A, Twiddles) {
   forall (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = Twiddles(k1),
         wk1 = Twiddles(2*k1),
-        wk3 = (wk1.re - 2 * wk2.im * wk1.im,
-               2 * wk2.im * wk1.re - wk1.im):complex;
+        wk3 = interp1(wk1, wk2);
+    //(wk1.re - 2 * wk2.im * wk1.im,
+    // 2 * wk2.im * wk1.re - wk1.im):complex;
     for j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = Twiddles(2*k1+1);
-    wk3 = (wk1.re - 2 * wk2.re * wk1.im,
-           2 * wk2.re * wk1.re - wk1.im):complex;
+    wk3 = interp2(wk1, wk2);
+    //(wk1.re - 2 * wk2.re * wk1.im,
+    // 2 * wk2.re * wk1.re - wk1.im):complex;
 
     for j in [k+m..k+m+span) do
       butterfly(wk1, wk2*1.0i, wk3, A[j..j+3*span by span]);
@@ -261,16 +263,18 @@ def cftmd2(span, A, Twiddles) {
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = Twiddles(k1),
             wk1 = Twiddles(k1 + k1),
-            wk3 = (wk1.re - 2*wk2.im * wk1.im,
-                   2 * wk2.im * wk1.re - wk1.im):complex;
+            wk3 = interp1(wk1, wk2);
+      //            wk3 = (wk1.re - 2*wk2.im * wk1.im,
+      //                   2 * wk2.im * wk1.re - wk1.im):complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = Twiddles(k1),
             wk1 = Twiddles(2*k1 + 1),
-            wk3 = (wk1.re - 2*wk2.re * wk1.im,
-                   2*wk2.re * wk1.re - wk1.im):complex;
+            wk3 = interp2(wk1, wk2);
+      //(wk1.re - 2*wk2.re * wk1.im,
+      //                   2*wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2*1.0i;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
@@ -286,18 +290,30 @@ def cftmd21(span, A, Twiddles) {
   for (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = Twiddles(k1),
         wk1 = Twiddles(2*k1),
-        wk3 = (wk1.re - 2*wk2.im * wk1.im,
-               2*wk2.im * wk1.re - wk1.im):complex;
+        wk3 = interp1(wk1, wk2);
+    //        wk3 = (wk1.re - 2*wk2.im * wk1.im,
+    //               2*wk2.im * wk1.re - wk1.im):complex;
 
     forall j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = Twiddles(2*k1 + 1);
-    wk3 = (wk1.re - 2*wk2.re * wk1.im,
-           2*wk2.re * wk1.re - wk1.im):complex;
+    wk3 = interp2(wk1, wk2);
+    //    wk3 = (wk1.re - 2*wk2.re * wk1.im,
+    //           2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
 
     forall j in [k+m..k+m+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
   }
 }
+
+
+def interp1(a, b)
+  return (a.re - 2*b.im*a.im,
+          2*b.im*a.re - a.im): complex;
+
+
+def interp2(a, b)
+  return (a.re - 2*b.re*a.im,
+          2*b.re*a.re - a.im): complex;
