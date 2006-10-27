@@ -82942,3 +82942,15 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 13:14:02 -- bradc
+
+Log message:
+	Changed Twiddles back to W in the
+	deep routines at Mary Beth's
+	suggestion.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+
