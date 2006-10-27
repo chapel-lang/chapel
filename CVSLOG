@@ -82974,3 +82974,15 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 14:30:35 -- marybeth
+
+Log message:
+	Checking in 1d fft using 2d ffts with transpose.  This version would
+	be suited for distributed memory architectures.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.chpl fft2d.good 
+	                                        fft2d.execopts 
+
