@@ -65,8 +65,7 @@ def dfft(Z, W) {
     span *= radix;
   }
 
-  const vectSize = Z.numElements;
-  if (radix*span == vectSize) then
+  if (radix*span == Z.numElements) then
     forall j in [0..span) do
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
   else
@@ -98,17 +97,17 @@ def initVectors(Twiddles, z) {
 
 
 def computeTwiddles(W) {
-  const nt = W.numElements;
-  const delta = 2.0 * atan(1.0) / nt;
+  const numTwids = W.numElements,
+        delta = 2.0 * atan(1.0) / numTwids;
 
   W(0) = 1.0;
-  W(nt/2) = let x = cos(delta * nt/2)
-            in (x, x):complex;
-  forall i in [1..nt/2) {
-    const x = cos(delta*i);
-    const y = sin(delta*i);
-    W(i)      = (x, y):complex;
-    W(nt - i) = (y, x):complex;
+  W(numTwids/2) = let x = cos(delta * numTwids/2)
+                   in (x, x):complex;
+  forall i in [1..numTwids/2) {
+    const x = cos(delta*i),
+          y = sin(delta*i);
+    W(i)            = (x, y):complex;
+    W(numTwids - i) = (y, x):complex;
   }
 }
 
@@ -174,7 +173,6 @@ def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
 
 
 def cft1st(A, W) {
-  const n = A.numElements;
   var x0 = A(0) + A(1),
       x1 = A(0) - A(1),
       x2 = A(2) + A(3),
@@ -198,7 +196,7 @@ def cft1st(A, W) {
   x0 = (x3.im + x1.re, x3.re - x1.im):complex;
   A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
-  forall (j,k1) in ([8..n) by 8, 1..) {
+  forall (j,k1) in ([8..A.numElements) by 8, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
         wk3 = (wk1.re - 2* wk2.im * wk1.im,
@@ -231,10 +229,9 @@ def cftmd0(span, A, W) {
 def cftmd1(span, A, W) {
   const m = radix*span;
   const m2 = 2*m;
-  const n = A.numElements;
 
   cftmd0(span, A, W);
-  forall (k,k1) in ([m2..n) by m2, 1..) {
+  forall (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = W[k1],
         wk1 = W[2*k1],
         wk3 = (wk1.re - 2 * wk2.im * wk1.im,
@@ -255,17 +252,17 @@ def cftmd1(span, A, W) {
 def cftmd2(span, A, W) {
   const m = radix*span,
         m2 = 2*m,
-        n = A.numElements;
+        numElems = A.numElements;
 
   cftmd0(span, A, W);
-  if (m2 >= n) return;
-  if (m2 >= n / 8) {
+  if (m2 >= numElems) return;
+  if (m2 >= numElems / 8) {
     cftmd21(span, A, W);
     return;
   }
 
   forall j in [0..span) {
-    forall (k,k1) in ([m2..n) by m2, 1..) {
+    forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = W[k1],
             wk1 = W[k1 + k1],
             wk3 = (wk1.re - 2*wk2.im * wk1.im,
@@ -273,7 +270,7 @@ def cftmd2(span, A, W) {
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
-    forall (k,k1) in ([m2..n) by m2, 1..) {
+    forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = W[k1],
             wk1 = W[2*k1 + 1],
             wk3 = (wk1.re - 2*wk2.re * wk1.im,
@@ -287,11 +284,10 @@ def cftmd2(span, A, W) {
 
 
 def cftmd21(span, A, W) {
-  const n = A.numElements,
-        m = radix*span,
+  const m = radix*span,
         m2 = 2*m;
 
-  for (k,k1) in ([m2..n) by m2, 1..) {
+  for (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = W[k1],
         wk1 = W[2*k1],
         wk3 = (wk1.re - 2*wk2.im * wk1.im,
