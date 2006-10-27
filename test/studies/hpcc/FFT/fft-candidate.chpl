@@ -28,10 +28,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TwiddleDom = [0..m/4);
+  const TwiddleDom: domain(1) distributed(Block) = [0..m/4);
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom = [0..m);
+  const ProblemDom: domain(1) distributed(Block) = [0..m);
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -48,52 +48,6 @@ def main() {
   printResults(validAnswer, execTime);
 }
 
-
-def dfft(A, W) {
-
-  var span = 1;
-  var m, m2: int;
-
-  const numElements = A.numElements;
-  const logn = log2(numElements);
-
-  for i in 2..logn by 2 {
-    m = 4*span;
-    m2 = 2*m;
-    if (m2 > numElements) then break;
-    forall (k,k1) in ([0..numElements) by m2,0..) {
-      var wk2 = W[k1];
-      var wk1 = W[2*k1];
-      var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
-                 2 * wk2.im * wk1.re - wk1.im):complex;
-      for j in [k..k+span) {
-        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
-      }
-
-      wk1 = W[2*k1+1];
-      wk3 = (wk1.re - 2 * wk2.re * wk1.im,
-             2 * wk2.re * wk1.re - wk1.im):complex;
-
-      for j in [k+m..k+m+span) {
-        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
-      }
-    }
-    span *= 4;
-  }
-
-  if ((span << 2) == numElements) {
-    forall j in [0..span) {
-      butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
-    }
-  } else {
-    forall j in [0..span) {
-      var a = A(j);
-      var b = A(j+span);
-      A(j) = a + b;
-      A(j+span) = a - b;
-    }
-  }
-}
 
 def printConfiguration() {
   if (printParams) then printProblemSize(elemType, numVectors, m);
@@ -145,6 +99,67 @@ def bitReverse(val: ?valType, revBits = 64) {
 }
 
 
+def dfft(A, W) {
+  const numElements = A.numElements;
+  var span = 1;
+
+  for i in 2..log2(numElements) by 2 {
+    const m = radix*span,
+          m2 = 2*m;
+
+    if (m2 > numElements) then break;
+    forall (k,k1) in ([0..numElements) by m2,0..) {
+      var wk2 = W(k1),
+          wk1 = W(2*k1),
+          wk3 = (wk1.re - 2 * wk2.im * wk1.im,
+                 2 * wk2.im * wk1.re - wk1.im):complex;
+
+      for j in [k..k+span) {
+        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
+      }
+
+      wk1 = W(2*k1+1);
+      wk3 = (wk1.re - 2 * wk2.re * wk1.im,
+             2 * wk2.re * wk1.re - wk1.im):complex;
+
+      for j in [k+m..k+m+span) {
+        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
+      }
+    }
+    span *= radix;
+  }
+
+  if ((span << 2) == numElements) {
+    forall j in [0..span) {
+      butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
+    }
+  } else {
+    forall j in [0..span) {
+      const a = A(j),
+            b = A(j+span);
+      A(j)      = a + b;
+      A(j+span) = a - b;
+    }
+  }
+}
+
+
+def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
+  var x0 = A(1) + A(2),
+      x1 = A(1) - A(2),
+      x2 = A(3) + A(4),
+      x3rot = (A(3) - A(4))*1.0i;
+
+  A(1) = x0 + x2;
+  x0 -= x2;
+  A(3) = wk2 * x0;
+  x0 = x1 + x3rot;
+  A(2) = wk1 * x0;
+  x0 = x1 - x3rot;
+  A(4) = wk3 * x0;
+}
+
+
 def verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
@@ -171,19 +186,5 @@ def printResults(successful, execTime) {
 }
 
 
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
-  var x0 = A(1) + A(2),
-      x1 = A(1) - A(2),
-      x2 = A(3) + A(4),
-      x3rot = (A(3) - A(4))*1.0i;
-
-  A(1) = x0 + x2;
-  x0 -= x2;
-  A(3) = wk2 * x0;
-  x0 = x1 + x3rot;
-  A(2) = wk1 * x0;
-  x0 = x1 - x3rot;
-  A(4) = wk3 * x0;
-}
 
 
