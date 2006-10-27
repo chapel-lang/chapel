@@ -82891,3 +82891,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 12:29:27 -- bradc
+
+Log message:
+	Next snapshot.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+
