@@ -182,11 +182,10 @@ def cft1st(A, W) {
   x0 = A(4) + A(5);
   x1 = A(4) - A(5);
   x2 = A(6) + A(7);
-  const x3 = A(6) - A(7);  // BLC: try to eliminate this
-  x3rot = (A(6) - A(7))*1.0i;
+  const x3 = A(6) - A(7);
   A(4) = x0 + x2;
   A(6) = (x2.im - x0.im, x0.re - x2.re):complex;
-  x0 = x1 + x3rot;
+  x0 = x1 + x3*1.0i;
   A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):complex;
   x0 = (x3.im + x1.re, x3.re - x1.im):complex;
   A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
@@ -229,12 +228,12 @@ def cftmd1(span, A, W) {
   forall (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
-        wk3 = interp1(wk1, wk2);
+        wk3 = interpIm(wk1, wk2);
     for j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = W(2*k1+1);
-    wk3 = interp2(wk1, wk2);
+    wk3 = interpRe(wk1, wk2);
 
     for j in [k+m..k+m+span) do
       butterfly(wk1, wk2*1.0i, wk3, A[j..j+3*span by span]);
@@ -258,14 +257,14 @@ def cftmd2(span, A, W) {
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = W(k1),
             wk1 = W(k1 + k1),
-            wk3 = interp1(wk1, wk2);
+            wk3 = interpIm(wk1, wk2);
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
     forall (k,k1) in ([m2..numElems) by m2, 1..) {
       const wk2 = W(k1),
             wk1 = W(2*k1 + 1),
-            wk3 = interp2(wk1, wk2);
+            wk3 = interpRe(wk1, wk2);
       wk2 = wk2*1.0i;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
@@ -281,13 +280,13 @@ def cftmd21(span, A, W) {
   for (k,k1) in ([m2..A.numElements) by m2, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
-        wk3 = interp1(wk1, wk2);
+        wk3 = interpIm(wk1, wk2);
 
     forall j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = W(2*k1 + 1);
-    wk3 = interp2(wk1, wk2);
+    wk3 = interpRe(wk1, wk2);
     wk2 = wk2*1.0i;
 
     forall j in [k+m..k+m+span) do
@@ -296,9 +295,9 @@ def cftmd21(span, A, W) {
 }
 
 
-def interp1(a, b)
+def interpIm(a, b)
   return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):complex;
 
 
-def interp2(a, b) 
+def interpRe(a, b) 
   return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):complex;
