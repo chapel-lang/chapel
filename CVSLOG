@@ -82857,3 +82857,13 @@ Added files:
 	                               fft-candidate-sm.execopts 
 	                               fft-candidate-sm.good 
 
+---------------------------------------------------------------------------
+
+10/27/06 11:56:04 -- bradc
+
+Log message:
+	Forgot a future for this test.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.future 
+
