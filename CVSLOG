@@ -82964,3 +82964,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 14:10:22 -- marybeth
+
+Log message:
+	Update of simple fft loop to reflect Brad's style.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft.chpl 
+
