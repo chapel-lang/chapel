@@ -89,7 +89,7 @@ var
   Twiddle : [DXYZ] real;
 
 def compute_initial_conditions(X1) {
-  forall i,j,k in DXYZ {
+  forall (i,j,k) in DXYZ {
     X1(i,j,k).re = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).im = randlc(((i*ny+j)*nz+k)*2+1);
   }
@@ -97,7 +97,7 @@ def compute_initial_conditions(X1) {
 
 def compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
-  forall i,j,k in DXYZ do
+  forall (i,j,k) in DXYZ do
     Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
                              ((j+ny/2) % ny - ny/2)**2 +
                              ((k+nz/2) % nz - nz/2)**2));
@@ -153,9 +153,9 @@ def cfftz(dir, m, n, ny, ny1 : int, x, y) {
 def cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   for j in DXYZ(2) {
     for kk in DXYZ(3) by ny {
-      [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
+      [(i1,_,i3) in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] X2(i1,j,i3) = x(i1,i3-kk);
+      [(i1,_,i3) in [0..n-1,j..j,kk..kk+ny-1]] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
 }
@@ -163,9 +163,9 @@ def cffts1(dir, n, X1, X2, ny, ny1, x, y) {
 def cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for kk in DXYZ(3) by ny {
-      [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
+      [(_,i2,i3) in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] X2(i,i2,i3) = x(i2,i3-kk);
+      [(_,i2,i3) in [i..i,0..n-1,kk..kk+ny-1]] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
 }
@@ -173,9 +173,9 @@ def cffts2(dir, n, X1, X2, ny, ny1, x, y) {
 def cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for jj in DXYZ(2) by ny {
-      [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
+      [(_,i2,i3) in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] X2(i,i2,i3) = x(i3,i2-jj);
+      [(_,i2,i3) in [i..i,jj..jj+ny-1,0..n-1]] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }
 }
