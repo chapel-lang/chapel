@@ -83028,3 +83028,14 @@ Modified files:
 Added files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate.good 
 
+---------------------------------------------------------------------------
+
+10/27/06 16:56:31 -- marybeth
+
+Log message:
+	Changed outer loop of iteration in dfft to remove unnecessary test
+	for m2 > numElements.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate.chpl 
+
