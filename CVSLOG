@@ -83009,3 +83009,22 @@ Added files:
 	                               fft-candidate-2d.execopts 
 	                               fft-candidate-2d.good 
 
+---------------------------------------------------------------------------
+
+10/27/06 16:53:51 -- bradc
+
+Log message:
+	Put fft-candidate.chpl into more of the HPCC
+	formatting style and reordered routines to
+	the order that I'm writing about them.
+	
+	Added distributions to both domains.
+	
+	Added a .good file.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+	                               fft-candidate.chpl 
+Added files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate.good 
+
