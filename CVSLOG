@@ -82826,3 +82826,14 @@ Log message:
 Modified files:
 	chapel/test/npb/ft/: ft-serial.chpl 
 
+---------------------------------------------------------------------------
+
+10/27/06 09:34:17 -- deitz
+
+Log message:
+	Increased timing window threshold of timer test to make it less likely
+	to regress.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_timer1.chpl 
+
