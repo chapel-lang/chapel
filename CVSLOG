@@ -82986,3 +82986,26 @@ Added files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.chpl fft2d.good 
 	                                        fft2d.execopts 
 
+---------------------------------------------------------------------------
+
+10/27/06 15:17:49 -- marybeth
+
+Log message:
+	Adding my implementations to Brad's framework.
+	
+	The simple fft is in fft-candidate.
+	
+	The 2d fft is in fft-candidate.  This one needs more work to be robust.
+	It works for size logN=8.  It should work for only even sizes of logN,
+	but it currently doesn't.  This implementation needs to be extended to handle
+	odd sizes of logN.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate.chpl 
+	                               fft-candidate.compopts 
+	                               fft-candidate.execopts 
+	                               fft-candidate-2d.chpl 
+	                               fft-candidate-2d.compopts 
+	                               fft-candidate-2d.execopts 
+	                               fft-candidate-2d.good 
+
