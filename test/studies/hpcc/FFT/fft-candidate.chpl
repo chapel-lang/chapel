@@ -103,11 +103,10 @@ def dfft(A, W) {
   const numElements = A.numElements;
   var span = 1;
 
-  for i in 2..log2(numElements) by 2 {
+  for i in [2..log2(numElements)) by 2 {
     const m = radix*span,
           m2 = 2*m;
 
-    if (m2 > numElements) then break;
     forall (k,k1) in ([0..numElements) by m2,0..) {
       var wk2 = W(k1),
           wk1 = W(2*k1),
