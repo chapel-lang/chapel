@@ -82867,3 +82867,17 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.future 
 
+---------------------------------------------------------------------------
+
+10/27/06 12:13:20 -- bradc
+
+Log message:
+	Sanity check snapshot of FFT code.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+	                               fft-candidate-sm.execopts 
+	                               fft-candidate-sm.good 
+Removed files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.future 
+
