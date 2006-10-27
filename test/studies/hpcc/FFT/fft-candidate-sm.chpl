@@ -35,16 +35,17 @@ def main() {
   const ProblemDom = [0..m);
   var Z, z: [ProblemDom] elemType;
 
-  initVectors(Twiddles, z, Z);
+  initVectors(Twiddles, z);
 
   const startTime = getCurrentTime();
 
+  Z = conjg(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
   const execTime = getCurrentTime() - startTime;
 
-  const validAnswer = verifyResults(z, Z, execTime, Twiddles);
+  const validAnswer = verifyResults(z, Z, Twiddles);
   printResults(validAnswer, execTime);
 }
 
@@ -79,23 +80,20 @@ def dfft(Z, W) {
 
 
 def printConfiguration() {
-  if (printStats) then printProblemSize(elemType, numVectors, m);
+  if (printParams) then printProblemSize(elemType, numVectors, m);
 }
 
 
-def initVectors(Twiddles, z, Z) {
+def initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
   fillRandom(z, seed);
-  Z = conjg(z);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");
     writeln("z is: ", z, "\n");
-    writeln("Z is: ", Z, "\n");
   }
-
 }
 
 
@@ -105,12 +103,12 @@ def computeTwiddles(W) {
 
   W(0) = 1.0;
   W(nt/2) = let x = cos(delta * nt/2)
-            in (x, x):elemType;
+            in (x, x):complex;
   forall i in [1..nt/2) {
     const x = cos(delta*i);
     const y = sin(delta*i);
-    W(i)      = (x, y):elemType;
-    W(nt - i) = (y, x):elemType;
+    W(i)      = (x, y):complex;
+    W(nt - i) = (y, x):complex;
   }
 }
 
@@ -133,13 +131,18 @@ def bitReverse(val: ?valType, revBits = 64) {
 
 
 
-def verifyResults(z, Z, execTime, Twiddles) {
+def verifyResults(z, Z, Twiddles) {
+  if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
+
   Z = conjg(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
+  if (printArrays) then writeln("After inverse FFT, Z is: ", Z, "\n");
+
   var maxerr = max reduce sqrt((z.re - Z.re)**2 + (z.im - Z.im)**2);
   maxerr /= (epsilon * n);
+  if (printStats) then writeln("error = ", maxerr);
 
   return (maxerr < threshold);
 }
@@ -174,11 +177,11 @@ def cft1st(A, W) {
   var x3 = A(6) - A(7);  // BLC: try to eliminate this
   x3rot = (A(6) - A(7))*1.0i;
   A(4) = x0 + x2;
-  A(6) = (x2.im - x0.im, x0.re - x2.re):elemType;
+  A(6) = (x2.im - x0.im, x0.re - x2.re):complex;
   x0 = x1 + x3rot;
-  A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):elemType;
-  x0 = (x3.im + x1.re, x3.re - x1.im):elemType;
-  A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):elemType;
+  A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):complex;
+  x0 = (x3.im + x1.re, x3.re - x1.im):complex;
+  A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
   // BLC: would like to use an indefinite arithmetic array here
   // BLC: would also like to use () on both indices and zipping
@@ -187,13 +190,13 @@ def cft1st(A, W) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
-               2 * wk2.im * wk1.re - wk1.im):elemType;
+               2 * wk2.im * wk1.re - wk1.im):complex;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
     wk1 = W(2*k1+1);
     wk3 = (wk1.re - 2*wk2.re * wk1.im, 
-           2*wk2.re * wk1.re - wk1.im):elemType;
+           2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
     butterfly(wk1, wk2, wk3, A[j+4..j+7]);
   }
@@ -208,7 +211,7 @@ def cftmd0(span, A, W) {
     butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
 
   forall j in [m..m+span) do
-    butterfly((wk1r, wk1r):elemType, 1.0i, (-wk1r, wk1r):elemType,
+    butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
               A[j..j+3*span by span]);
 }
 
@@ -223,13 +226,13 @@ def cftmd1(span, A, W) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
-               2 * wk2.im * wk1.re - wk1.im):elemType;
+               2 * wk2.im * wk1.re - wk1.im):complex;
     for j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = W[2*k1+1];
     wk3 = (wk1.re - 2 * wk2.re * wk1.im,
-           2 * wk2.re * wk1.re - wk1.im):elemType;
+           2 * wk2.re * wk1.re - wk1.im):complex;
 
     for j in [k+m..k+m+span) do
       butterfly(wk1, wk2*1.0i, wk3, A[j..j+3*span by span]);
@@ -254,7 +257,7 @@ def cftmd2(span, A, W) {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.re - 2*wk2.im * wk1.im,
-                 2 * wk2.im * wk1.re - wk1.im):elemType;
+                 2 * wk2.im * wk1.re - wk1.im):complex;
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
@@ -262,7 +265,7 @@ def cftmd2(span, A, W) {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.re - 2*wk2.re * wk1.im,
-                 2*wk2.re * wk1.re - wk1.im):elemType;
+                 2*wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2*1.0i;
 
       butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
@@ -280,14 +283,14 @@ def cftmd21(span, A, W) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2*wk2.im * wk1.im,
-               2* wk2.im * wk1.re - wk1.im):elemType;
+               2* wk2.im * wk1.re - wk1.im):complex;
 
     forall j in [k..k+span) do
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
     wk1 = W[2*k1 + 1];
     wk3 = (wk1.re - 2*wk2.re * wk1.im,
-           2*wk2.re * wk1.re - wk1.im):elemType;
+           2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
 
     forall j in [k+m..k+m+span) do
