@@ -53,15 +53,13 @@ def main() {
 def dfft(Z, Twiddles) {
   cft1st(Z, Twiddles);
 
-  var span = radix,
-      lasti = 2;
-  for i in radix..n/2 by 2 {
-    cftmd1(span, Z, Twiddles);
-    span *= radix;
-    lasti = i;
-  }
-  for i in [lasti+2..n) by 2 {
-    cftmd2(span, Z, Twiddles);
+  var span = radix;
+
+  for i in [radix..n) by 2 {
+    if (i <= n/2) then
+      cftmd1(span, Z, Twiddles);
+    else
+      cftmd2(span, Z, Twiddles);
     span *= radix;
   }
 
@@ -120,14 +118,12 @@ def bitReverseShuffle(Vect: [?Dom]) {
 }
 
 
-// reverses numBits low-order bits of val
 def bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
   return valReverse: valType;
 }
-
 
 
 def verifyResults(z, Z, Twiddles) {
