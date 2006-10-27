@@ -82881,3 +82881,13 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.future 
 
+---------------------------------------------------------------------------
+
+10/27/06 12:23:29 -- bradc
+
+Log message:
+	Next snapshot.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+
