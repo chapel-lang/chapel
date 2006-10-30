@@ -173,14 +173,44 @@ void printStatistics(char* pass) {
   last_asts = gAsts.n;
 }
 
+static bool
+isLive(Symbol* sym) {
+  if (sym->astType == SYMBOL_UNRESOLVED)
+    return true;
+  if (sym->parentScope == rootScope)
+    return true;
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+    if (var->immediate)
+      return true;
+  if (sym->defPoint->parentSymbol)
+    return true;
+  return false;
+}
+
 void cleanAst() {
   gFns.clear();
   gTypes.clear();
   Vec<BaseAST*> asts;
   forv_Vec(BaseAST, ast, gAsts) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+      if (isLive(sym)) {
+        if (sym->astType == SYMBOL_TYPE)
+          asts.add(sym->type);
+        asts.add(sym);
+      } else {
+        if (sym->astType == SYMBOL_TYPE)
+          delete sym->type;
+        delete sym;
+      }
+    } else if (dynamic_cast<Expr*>(ast)) {
+      asts.add(ast);
+    }
+  }
+  gAsts.clear();
+  forv_Vec(BaseAST, ast, asts) {
     if (Expr* expr = dynamic_cast<Expr*>(ast)) {
       if (expr->parentSymbol) {
-        asts.add(expr);
+        gAsts.add(expr);
         if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
           if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
             gFns.add(fn);
@@ -191,11 +221,9 @@ void cleanAst() {
         delete expr;
       }
     } else {
-      asts.add(ast);
+      gAsts.add(ast);
     }
   }
-  gAsts.clear();
-  gAsts.move(asts);
   forv_Vec(BaseAST, ast, gAsts)
     ast->clean();
 }
