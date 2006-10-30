@@ -83085,3 +83085,27 @@ Modified files:
 	                         verify.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+10/30/06 10:41:08 -- deitz
+
+Log message:
+	Removed about half of the uses of the new parentStmt() function.
+	
+	Renamed the parentStmt() function to getExprStmt() to better describe
+	what it does: return the statement-level AST.
+	
+	Added IS_STMT and IS_EXPR macros, currently used only in parentStmt(),
+	to distinguish the two types of expressions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp view.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp copy_propagation.cpp 
+	                         cullOverReferences.cpp 
+	                         flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp scopeResolve.cpp 
+
