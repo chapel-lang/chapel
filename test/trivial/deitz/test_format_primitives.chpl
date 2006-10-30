@@ -1,13 +1,13 @@
 var i : int = 3;
 
-writeln(i:"%lld");
-
+writeln(i:"%d");
 var s : string;
 
-s = i:"%lld";
+s = i:"%d";
 
-// writeln(s);
-writeln(i:"%lld");
+writeln(s);
+// writeln(i:"%d");
+
 
 var f : real = 1.23;
 
