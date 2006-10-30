@@ -83109,3 +83109,16 @@ Modified files:
 	                         inlineFunctions.cpp normalize.cpp 
 	                         parallel.cpp scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+10/30/06 11:14:30 -- deitz
+
+Log message:
+	Moved BaseAST::parentSymbol to Expr::parentSymbol.  Removed
+	verification that this was not used by Symbol and Type.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/util/: misc.cpp 
+
