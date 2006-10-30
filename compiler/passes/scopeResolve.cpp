@@ -27,12 +27,12 @@ name_matches_method(char* name, Type* type) {
 
 
 static BlockStmt*
-find_outer_loop(Stmt* stmt) {
+find_outer_loop(Expr* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
     if (block->isLoop())
       return block;
-  if (stmt->parentStmt)
-    return find_outer_loop(stmt->parentStmt);
+  if (stmt->parentStmt())
+    return find_outer_loop(stmt->parentStmt());
   return NULL;
 }
 
@@ -70,10 +70,7 @@ void scopeResolve(void) {
     scopeResolve(fn);
   forv_Vec(TypeSymbol, type, gTypes) {
     if (dynamic_cast<UserType*>(type->type)) {
-      if (type->defPoint->parentStmt)
-        type->defPoint->parentStmt->remove();
-      else
-        type->defPoint->remove();
+      type->defPoint->remove();
     }
   }
 

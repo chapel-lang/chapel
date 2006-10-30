@@ -9,13 +9,13 @@
 
 class AList {
  public:
-  BaseAST* head;
-  BaseAST* tail;
+  Expr* head;
+  Expr* tail;
   BaseAST* parent;
 
   // constructors
   AList();
-  AList(BaseAST*);
+  AList(Expr*);
 
   // copy routines
   virtual AList* copy(ASTMap* map = NULL, bool internal = false);
@@ -25,19 +25,19 @@ class AList {
   int length(void);
 
   // iteration
-  BaseAST* first(void); // begin iteration over a list
-  BaseAST* last(void);  // begin backwards iteration over a list
+  Expr* first(void); // begin iteration over a list
+  Expr* last(void);  // begin backwards iteration over a list
 
   // other ways to get elements from the list
-  BaseAST* only(void); // return the single element in a list
-  BaseAST* get(int index); // get the index-th element in a list
+  Expr* only(void); // return the single element in a list
+  Expr* get(int index); // get the index-th element in a list
 
   // add element(s) at beginning of list
-  void insertAtHead(BaseAST* new_ast);
+  void insertAtHead(Expr* new_ast);
   void insertAtHead(AList* new_ast);
 
   // add element(s) at end of list
-  void insertAtTail(BaseAST* new_ast);
+  void insertAtTail(Expr* new_ast);
   void insertAtTail(AList* new_ast);
 
   // different ways to print/codegen lists
@@ -54,7 +54,7 @@ class AList {
          _alist_next = (node) ? dynamic_cast<elt_type*>((node)->next) : NULL)
 
 #define for_asts(node, list)                        \
-  for (BaseAST *node = (list)->head,                \
+  for (Expr *node = (list)->head,                   \
          *_alist_next = (node) ? node->next : NULL; \
        node;                                        \
        node = _alist_next,                          \

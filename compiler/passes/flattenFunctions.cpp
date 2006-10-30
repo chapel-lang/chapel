@@ -124,7 +124,7 @@ void flattenFunctions(void) {
   // move nested functions to module level
   forv_Vec(FnSymbol, fn, all_nested_functions) {
     ModuleSymbol* mod = fn->getModule();
-    Stmt* stmt = fn->defPoint->parentStmt;
+    Expr* stmt = fn->defPoint->parentStmt();
     stmt->remove();
     mod->stmts->insertAtTail(stmt);
   }

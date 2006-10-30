@@ -32,7 +32,7 @@ isReferenced(SymExpr* sym) {
         return true;
     }
   }
-  if (dynamic_cast<ReturnStmt*>(sym->parentStmt) && sym->getFunction()->retRef)
+  if (dynamic_cast<ReturnStmt*>(sym->parentStmt()) && sym->getFunction()->retRef)
     return true;
   return false;
 }

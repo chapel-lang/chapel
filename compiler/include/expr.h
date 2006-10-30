@@ -12,13 +12,15 @@ class FnSymbol;
 
 class Expr : public BaseAST {
  public:
-  Stmt* parentStmt;
+  Expr* prev;       // alist previous pointer
+  Expr* next;       // alist next pointer
+  AList* list;      // alist pointer
   Expr* parentExpr;
 
   Expr(astType_t astType = EXPR);
   virtual ~Expr() { }
   COPY_DEF(Expr);
-  virtual void callReplaceChild(BaseAST* new_ast);
+  virtual void callReplaceChild(Expr* new_ast);
   virtual void verify();
   virtual ASTContext getContext(void);
   virtual bool inTree();
@@ -28,9 +30,21 @@ class Expr : public BaseAST {
   virtual bool isConst(void);
 
   virtual bool isRef(void);
-  Stmt* Expr::getStmt();
+
+  Expr* parentStmt();
 
   void codegenCastToString(FILE* outfile);
+
+
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+
+  Expr* remove(void);
+  void replace(Expr* new_ast);
+  virtual void insertBefore(Expr* new_ast);
+  virtual void insertAfter(Expr* new_ast);
+
+
+
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
@@ -45,7 +59,7 @@ class DefExpr : public Expr {
           BaseAST* initExprType = NULL);
   virtual void verify(); 
   COPY_DEF(DefExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
 
@@ -60,7 +74,7 @@ class SymExpr : public Expr {
   SymExpr(Symbol* init_var);
   SymExpr(char* init_var);
   COPY_DEF(SymExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
 
   Type* typeInfo(void);
@@ -97,7 +111,7 @@ class CallExpr : public Expr {
   virtual void verify(); 
   COPY_DEF(CallExpr);
 
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -125,7 +139,7 @@ class NamedExpr : public Expr {
   NamedExpr(char* init_name, Expr* init_actual);
   virtual void verify(); 
   COPY_DEF(NamedExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);

@@ -20,7 +20,7 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
           block->blockTag == BLOCK_BEGIN)
         continue;
       if (block->list) {
-        for_alist(Stmt, stmt, block->body)
+        for_alist(Expr, stmt, block->body)
           block->insertBefore(stmt->remove());
         block->remove();
       }
@@ -135,7 +135,7 @@ void deadVariableElimination(FnSymbol* fn) {
           CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
           move->replace(move->get(2)->remove());
         }
-        def->parentStmt->remove();
+        def->parentStmt()->remove();
       }
     }
   }
@@ -148,9 +148,9 @@ void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(ast))
-      if (dynamic_cast<SymExpr*>(exprStmt->expr))
-        exprStmt->remove();
+    if (Expr* expr = dynamic_cast<SymExpr*>(ast))
+      if (expr->parentExpr && expr == expr->parentStmt())
+        expr->remove();
   }
 }
 
@@ -162,10 +162,9 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast))
-      if (ExprStmt* labelStmt = dynamic_cast<ExprStmt*>(gotoStmt->next))
-        if (DefExpr* def = dynamic_cast<DefExpr*>(labelStmt->expr))
-          if (def->sym == gotoStmt->label)
-            gotoStmt->remove();
+      if (DefExpr* def = dynamic_cast<DefExpr*>(gotoStmt->next))
+        if (def->sym == gotoStmt->label)
+          gotoStmt->remove();
   }
 }
 
@@ -181,11 +180,10 @@ void removeUnusedLabels(FnSymbol* fn) {
       labels.set_add(gotoStmt->label);
   }
   forv_Vec(BaseAST, ast, asts) {
-    if (ExprStmt* labelStmt = dynamic_cast<ExprStmt*>(ast))
-      if (DefExpr* def = dynamic_cast<DefExpr*>(labelStmt->expr))
-        if (LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym))
-          if (!labels.set_in(label))
-            labelStmt->remove();
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+      if (LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym))
+        if (!labels.set_in(label))
+          def->remove();
   }
 }
 

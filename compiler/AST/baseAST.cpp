@@ -55,7 +55,6 @@ void printStatistics(char* pass) {
   if (last_asts == gAsts.n)
     return;
 
-  decl_counters(ExprStmt, STMT_EXPR);
   decl_counters(ReturnStmt, STMT_RETURN);
   decl_counters(CondStmt, STMT_COND);
   decl_counters(BlockStmt, STMT_BLOCK);
@@ -78,7 +77,6 @@ void printStatistics(char* pass) {
   decl_counters(ClassType, TYPE_CLASS);
   forv_Vec(BaseAST, ast, gAsts) {
     switch (ast->astType) {
-      case_counters(ExprStmt, STMT_EXPR);
       case_counters(ReturnStmt, STMT_RETURN);
       case_counters(CondStmt, STMT_COND);
       case_counters(BlockStmt, STMT_BLOCK);
@@ -102,7 +100,6 @@ void printStatistics(char* pass) {
     default: break;
     }
   }
-  calc_counters(ExprStmt, STMT_EXPR);
   calc_counters(ReturnStmt, STMT_RETURN);
   calc_counters(CondStmt, STMT_COND);
   calc_counters(BlockStmt, STMT_BLOCK);
@@ -123,8 +120,8 @@ void printStatistics(char* pass) {
   calc_counters(EnumType, TYPE_ENUM);
   calc_counters(UserType, TYPE_USER);
   calc_counters(ClassType, TYPE_CLASS);
-  int nStmt = nExprStmt + nReturnStmt + nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kExprStmt + kReturnStmt + kCondStmt + kBlockStmt + kGotoStmt;
+  int nStmt = nReturnStmt + nCondStmt + nBlockStmt + nGotoStmt;
+  int kStmt = kReturnStmt + kCondStmt + kBlockStmt + kGotoStmt;
   int nExpr = nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nUnresolvedSymbol+nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
@@ -135,33 +132,33 @@ void printStatistics(char* pass) {
   fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9d  Expr  %9d  Ret  %9d  Cond %9d  Block %9d  Goto %9d\n",
-            nStmt, nExprStmt, nReturnStmt, nCondStmt, nBlockStmt, nGotoStmt);
+    fprintf(stderr, "  Stmt %9d  Ret   %9d  Cond %9d  Block %9d  Goto  %9d\n",
+            nStmt, nReturnStmt, nCondStmt, nBlockStmt, nGotoStmt);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9dK Expr  %9dK Ret  %9dK Cond %9dK Block %9dK Goto %9dK\n",
-            kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+    fprintf(stderr, "  Stmt %9dK Ret   %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+            kStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %6dK Expr  %6dK Ret  %6dK Cond %6dK Block %6dK Goto %6dK\n",
-            kStmt, kExprStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+    fprintf(stderr, "  Stmt %6dK Ret   %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+            kStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9d  Sym   %9d  Def  %9d  Call %9d  Named %9d\n",
+    fprintf(stderr, "  Expr %9d  Sym   %9d  Def  %9d  Call  %9d  Named %9d\n",
             nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9dK Sym   %9dK Def  %9dK Call %9dK Named %9dK\n",
+    fprintf(stderr, "  Expr %9dK Sym   %9dK Def  %9dK Call  %9dK Named %9dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %6dK Sym   %6dK Def  %6dK Call %6dK Named %6dK\n",
+    fprintf(stderr, "  Expr %6dK Sym   %6dK Def  %6dK Call  %6dK Named %6dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod  %9d  Var  %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
+    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
             nSymbol, nUnresolvedSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod  %9dK Var  %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
+    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
             kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod  %6dK Var  %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
+    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
             kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
@@ -181,7 +178,7 @@ void cleanAst() {
   gTypes.clear();
   Vec<BaseAST*> asts;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+    if (dynamic_cast<Expr*>(ast)) {
       if (ast->parentSymbol) {
         asts.add(ast);
         if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
@@ -226,9 +223,6 @@ static void checkid(int id) {
 BaseAST::BaseAST(astType_t type) :
   astType(type),
   id(uid++),
-  prev(NULL),
-  next(NULL),
-  list(NULL),
   parentScope(NULL),
   parentSymbol(NULL),
   filename(yyfilename), 
@@ -252,10 +246,13 @@ BaseAST::copyInner(ASTMap* map) {
 }
 
 
+bool BaseAST::inTree(void) {
+  INT_FATAL(this, "Unexpected call to BaseAST::inTree()");
+  return false;
+}
+
+
 void BaseAST::verify() {
-  if (prev || next)
-    if (!list)
-      INT_FATAL(this, "BaseAST is in list but does not point at it");
 }
 
 
@@ -293,124 +290,6 @@ void BaseAST::codegen(FILE* outfile) {
 }
 
 
-void BaseAST::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to BaseAST::replaceChild(old, new)");
-}
-
-
-void BaseAST::callReplaceChild(BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to BaseAST::callReplaceChild(new)");
-}
-
-
-ASTContext BaseAST::getContext(void) {
-  ASTContext context;
-  INT_FATAL(this, "Unexpected call to BaseAST::getContext()");
-  return context;
-}
-
-
-bool BaseAST::inTree(void) {
-  INT_FATAL(this, "Unexpected call to BaseAST::inTree()");
-  return false;
-}
-
-
-BaseAST* BaseAST::remove(void) {
-  if (!this)
-    return this;
-  if (list) {
-    if (next)
-      next->prev = prev;
-    else
-      list->tail = prev;
-    if (prev)
-      prev->next = next;
-    else
-      list->head = next;
-    next = NULL;
-    prev = NULL;
-    list = NULL;
-  } else {
-    callReplaceChild(NULL);
-  }
-  remove_help(this);
-  return this;
-}
-
-
-void BaseAST::replace(BaseAST* new_ast) {
-  if (new_ast->parentSymbol)
-    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::replace");
-  if (new_ast->prev || new_ast->next)
-    INT_FATAL(new_ast, "Argument is in a list in BaseAST::replace");
-  if (list) {
-    new_ast->next = next;
-    new_ast->prev = prev;
-    new_ast->list = list;
-    if (next)
-      next->prev = new_ast;
-    else
-      list->tail = new_ast;
-    if (prev)
-      prev->next = new_ast;
-    else
-      list->head = new_ast;
-    next = NULL;
-    prev = NULL;
-    list = NULL;
-  } else {
-    callReplaceChild(new_ast);
-  }
-  ASTContext context = getContext();
-  remove_help(this);
-  insert_help(new_ast, context.parentExpr, context.parentStmt,
-              context.parentSymbol, context.parentScope);
-}
-
-
-void BaseAST::insertBefore(BaseAST* new_ast) {
-  if (new_ast->parentSymbol)
-    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertBefore");
-  if (!list)
-    INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
-  if (new_ast->list)
-    INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
-  if (dynamic_cast<Symbol*>(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertBefore");
-  new_ast->prev = prev;
-  new_ast->next = this;
-  new_ast->list = list;
-  if (prev)
-    prev->next = new_ast;
-  else
-    list->head = new_ast;
-  prev = new_ast;
-  sibling_insert_help(this, new_ast);
-}
-
-
-void BaseAST::insertAfter(BaseAST* new_ast) {
-  if (new_ast->parentSymbol)
-    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertAfter");
-  if (!list)
-    INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
-  if (new_ast->list)
-    INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
-  if (dynamic_cast<Symbol*>(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in BaseAST::insertAfter");
-  new_ast->prev = this;
-  new_ast->next = next;
-  new_ast->list = list;
-  if (next)
-    next->prev = new_ast;
-  else
-    list->tail = new_ast;
-  next = new_ast;
-  sibling_insert_help(this, new_ast);
-}
-
-
 char* BaseAST::stringLoc(void) {
   const int tmpBuffSize = 64;
   char tmpBuff[tmpBuffSize];
@@ -426,9 +305,7 @@ void BaseAST::printLoc(FILE* outfile) {
 
 
 void BaseAST::addPragma(char* str) {
-  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(this)) {
-    exprStmt->expr->addPragma(str);
-  } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
     defExpr->sym->addPragma(str);
   } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
     sym->pragmas.add(str);
@@ -519,18 +396,15 @@ int compar_baseast(const void *ai, const void *aj) {
 }
 
 char* astTypeName[AST_TYPE_END+1] = {
-  "Stmt",
-  "ExprStmt",
-  "ReturnStmt",
-  "BlockStmt",
-  "CondStmt",
-  "GotoStmt",
-
   "Expr",
   "SymExpr",
   "DefExpr",
   "CallExpr",
   "NamedExpr",
+  "ReturnStmt",
+  "BlockStmt",
+  "CondStmt",
+  "GotoStmt",
 
   "Symbol",
   "UnresolvedSymbol",
@@ -563,13 +437,9 @@ char* currentTraversal = NULL;
 void
 get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   switch (a->astType) {
-  case STMT:
   case EXPR:
   case SYMBOL:
   case TYPE:
-    break;
-  case STMT_EXPR:
-    AST_ADD_CHILD(ExprStmt, expr);
     break;
   case STMT_RETURN:
     AST_ADD_CHILD(ReturnStmt, expr);

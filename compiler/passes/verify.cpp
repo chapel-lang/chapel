@@ -22,7 +22,6 @@ static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
 static void
 verify_ast(BaseAST* ast,
                Expr* parentExpr,
-               Stmt* parentStmt,
                Symbol* parentSymbol,
                SymScope* parentScope) {
   ast->verify();
@@ -30,22 +29,6 @@ verify_ast(BaseAST* ast,
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
-    parentStmt = NULL;
-  }
-
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    if (stmt->parentScope != parentScope)
-      INT_FATAL(stmt, "Stmt's parentScope is incorrect");
-    if (!stmt->parentSymbol)
-      INT_FATAL(stmt, "Stmt has no parentSymbol");
-    if (!EQparentSymbol(stmt->parentSymbol, parentSymbol))
-      INT_FATAL(stmt, "Stmt's parentSymbol is incorrect");
-    if (stmt->parentStmt != parentStmt)
-      INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
-    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt))
-      if (blockStmt->blockTag != BLOCK_SCOPELESS)
-        parentScope = blockStmt->blkScope;
-    parentStmt = stmt;
   }
 
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
@@ -55,18 +38,14 @@ verify_ast(BaseAST* ast,
       INT_FATAL(expr, "Expr has no parentSymbol");
     if (!EQparentSymbol(expr->parentSymbol, parentSymbol))
       INT_FATAL(expr, "Expr's parentSymbol is incorrect");
-    if (expr->parentStmt != parentStmt)
-      INT_FATAL(expr, "Expr's parentStmt is incorrect");
-    if (expr->parentStmt &&
-        !EQparentSymbol(expr->parentStmt->parentSymbol, expr->parentSymbol))
-      INT_FATAL(expr, "Expr's parentStmt's parentSymbol is incorrect");
     if (expr->parentExpr != parentExpr)
       INT_FATAL(expr, "Expr's parentExpr is incorrect");
-    if (expr->parentExpr && expr->parentExpr->parentStmt != expr->parentStmt)
-      INT_FATAL(expr, "Expr's parentExpr's parentStmt is incorrect");
     if (expr->parentExpr &&
         !EQparentSymbol(expr->parentExpr->parentSymbol, expr->parentSymbol))
       INT_FATAL(expr, "Expr's parentExpr's parentSymbol is incorrect");
+    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(expr))
+      if (blockStmt->blockTag != BLOCK_SCOPELESS)
+        parentScope = blockStmt->blkScope;
     if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym))
         parentScope = fn->argScope;
@@ -80,12 +59,12 @@ verify_ast(BaseAST* ast,
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
-    verify_ast(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+    verify_ast(ast, parentExpr, parentSymbol, parentScope);
 }
 
 
 void
 verify() {
   forv_Vec(ModuleSymbol, mod, allModules)
-    verify_ast(mod, NULL, NULL, mod, mod->modScope);
+    verify_ast(mod, NULL, mod, mod->modScope);
 }

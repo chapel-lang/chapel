@@ -8,7 +8,7 @@
 
 BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
-ExprStmt* buildLabelStmt(char* name);
+DefExpr* buildLabelStmt(char* name);
 ModuleSymbol* build_module(char* name, modType type, AList* stmts);
 CallExpr* build_primitive_call(AList* exprs);
 

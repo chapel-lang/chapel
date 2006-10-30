@@ -134,8 +134,6 @@ void Symbol::verify() {
   BaseAST::verify();
   if (parentSymbol)
     INT_FATAL(this, "Symbol has parentSymbol set");
-  if (prev || next)
-    INT_FATAL(this, "Symbol is in AList");
   if (defPoint && !defPoint->parentSymbol && !dynamic_cast<ModuleSymbol*>(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
@@ -783,8 +781,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     wrapper->insertAtTail(call);
   else
     wrapper->insertAtTail(new ReturnStmt(call));
-  defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint->parentStmt);
+  defPoint->insertAfter(new DefExpr(wrapper));
+  clear_file_info(wrapper->defPoint);
   normalize(wrapper);
   addMapCache(&cw_cache, this, wrapper, coercion_map);
   return wrapper;
@@ -847,8 +845,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     wrapper->insertAtTail(call);
   else
     wrapper->insertAtTail(new ReturnStmt(call));
-  defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint->parentStmt);
+  defPoint->insertAfter(new DefExpr(wrapper));
+  clear_file_info(wrapper->defPoint);
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
   return wrapper;
@@ -876,8 +874,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
     wrapper->insertAtTail(call);
   else
     wrapper->insertAtTail(new ReturnStmt(call));
-  defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint->parentStmt);
+  defPoint->insertBefore(new DefExpr(wrapper));
+  clear_file_info(wrapper->defPoint);
   normalize(wrapper);
   return wrapper;
 }
@@ -925,8 +923,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   if (returns_void(this)) {
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices, iterator,
-                                         new BlockStmt(
-                                           new ExprStmt(actualCall)))));
+                                         new BlockStmt(actualCall))));
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
 //     ReturnStmt* ret = dynamic_cast<ReturnStmt*>(wrapper->body->body->last());
@@ -935,8 +932,8 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
 //       sym->var->isReference = true;
     wrapper->retRef = false;
   }
-  defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint->parentStmt);
+  defPoint->insertBefore(new DefExpr(wrapper));
+  clear_file_info(wrapper->defPoint);
   scopeResolve(wrapper);
   normalize(wrapper);
   return wrapper;
@@ -952,7 +949,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   clone->instantiatedFrom = fn;
   clone->substitutions.copy(*generic_subs);
   addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
-  fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
+  fn->defPoint->insertBefore(new DefExpr(clone));
 
   // update body of function with parameter substitutions and, for
   // constructors, with a return type substitution
@@ -1037,7 +1034,7 @@ static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
   int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
-  Stmt* last = dynamic_cast<Stmt*>(fn->body->body->last());
+  Expr* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
@@ -1249,7 +1246,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     clone->cname = stringcat(clone->cname, "_B_");
     clone->name = astr(clone->name, ")");
 
-    retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
+    retType->symbol->defPoint->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
     if (clone->hasPragma( "synchronization primitive"))
       clone->type->defaultValue = NULL;
@@ -1298,10 +1295,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   instantiatedTo->add(newfn);
 
   if (!newfn->isGeneric && newfn->where) {
-    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(newfn->where->body->last());
-    if (!exprStmt)
-      INT_FATAL(where, "Bad where");
-    SymExpr* symExpr = dynamic_cast<SymExpr*>(exprStmt->expr);
+    SymExpr* symExpr = dynamic_cast<SymExpr*>(newfn->where->body->last());
     if (!symExpr)
       USR_FATAL(where, "Illegal where clause");
     if (!strcmp(symExpr->var->name, "false")) {
@@ -1396,13 +1390,13 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
 
 void
-FnSymbol::insertAtHead(BaseAST* ast) {
+FnSymbol::insertAtHead(Expr* ast) {
   body->insertAtHead(ast);
 }
 
 
 void
-FnSymbol::insertAtTail(BaseAST* ast) {
+FnSymbol::insertAtTail(Expr* ast) {
   body->insertAtTail(ast);
 }
 

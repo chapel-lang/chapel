@@ -24,7 +24,7 @@ static void change_cast_in_where(FnSymbol* fn);
 
 static void
 flatten_scopeless_block(BlockStmt* block) {
-  for_alist(Stmt, stmt, block->body) {
+  for_alist(Expr, stmt, block->body) {
     stmt->remove();
     block->insertBefore(stmt);
   }
@@ -42,9 +42,9 @@ process_import_expr(CallExpr* call) {
   } else
     INT_FATAL(call, "Use primitive has no module");
   if (mod != compilerModule)
-    call->parentStmt->insertBefore(new CallExpr(mod->initFn));
+    call->parentStmt()->insertBefore(new CallExpr(mod->initFn));
   call->parentScope->addModuleUse(mod);
-  call->parentStmt->remove();
+  call->parentStmt()->remove();
 }
 
 
@@ -162,23 +162,21 @@ void cleanup(Symbol* base) {
     currentFilename = ast->filename;
     if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
       if (call->isNamed( "_build_array_type") && call->argList->length() == 4) {
-        if (call->parentStmt) {
-          if (ExprStmt *stmt = dynamic_cast<ExprStmt*>(call->parentStmt)) {
-            if (DefExpr *def = dynamic_cast<DefExpr*>(stmt->expr)) {
-              CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
-              Expr *indices = tinfo->get(3);
-              Expr *iter = tinfo->get(4);
-              indices->remove();
-              iter->remove();
-              BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
-
-              FnSymbol *forall_init = new FnSymbol( "_forallinit");
-              forall_init->insertAtTail( forblk);
-              def->parentStmt->insertBefore( new DefExpr( forall_init));
-              def->init->replace( new CallExpr( forall_init));
-            } else {
-              INT_FATAL( call, "missing parent def expr");
-            }
+        if (call->parentStmt()) {
+          if (DefExpr *def = dynamic_cast<DefExpr*>(call->parentStmt())) {
+            CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
+            Expr *indices = tinfo->get(3);
+            Expr *iter = tinfo->get(4);
+            indices->remove();
+            iter->remove();
+            BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
+            
+            FnSymbol *forall_init = new FnSymbol( "_forallinit");
+            forall_init->insertAtTail( forblk);
+            def->parentStmt()->insertBefore( new DefExpr( forall_init));
+            def->init->replace( new CallExpr( forall_init));
+          } else {
+            INT_FATAL( call, "missing parent def expr");
           }
         } else {
           INT_FATAL( call, "missing parent stmt");
@@ -263,12 +261,12 @@ void cleanup(Symbol* base) {
 
 
 static BlockStmt*
-getBlock(Stmt* stmt) {
+getBlock(Expr* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
     if (block->blkScope)
       return block;
   }
-  return getBlock(stmt->parentStmt);
+  return getBlock(stmt->parentExpr);
 }
 
 
@@ -285,11 +283,11 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_reduce_fn", def->sym->name, 10)) ||
       (!strncmp("_scan_fn", def->sym->name, 8)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
-    Stmt* stmt = def->parentStmt;
+    Expr* stmt = def->parentStmt();
     BlockStmt* block = getBlock(stmt);
     if (block->getFunction()->body == block &&
         block->getFunction() == block->getModule()->initFn)
-      stmt = stmt->getFunction()->defPoint->parentStmt;
+      stmt = stmt->getFunction()->defPoint->parentStmt();
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }
@@ -307,10 +305,11 @@ static void destructure_tuple(CallExpr* call) {
   CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
   if (!parent || !parent->isNamed("=") || parent->get(1) != call)
     return;
-  Stmt* stmt = parent->parentStmt;
+  Expr* stmt = parent->parentStmt();
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
-  parent->replace(new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove()));
+  stmt = new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove());
+  parent->replace(stmt);
   int i = 1;
   for_actuals(expr, call) {
     if (i > 1)
@@ -363,7 +362,7 @@ static void build_constructor(ClassType* ct) {
   }
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
-  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
+  ct->symbol->defPoint->parentStmt()->insertBefore(new DefExpr(fn));
 
   fn->_this = new VarSymbol("this", ct);
 
@@ -388,11 +387,11 @@ static void build_constructor(ClassType* ct) {
           fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
           fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                         new_StringSymbol(field->name), tmp));
-          fn->insertAtTail(new CondStmt(new SymExpr(formal), new ExprStmt(new CallExpr("=",
+          fn->insertAtTail(new CondStmt(new SymExpr(formal), new CallExpr("=",
                              new CallExpr(".",
                                           fn->_this,
                                           new_StringSymbol(field->name)),
-                                                                                       formal))));
+                                                                                       formal)));
         } else {
           Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                            new_StringSymbol(field->name), formal);
@@ -418,12 +417,12 @@ static void build_constructor(ClassType* ct) {
 
 static void flatten_primary_methods(FnSymbol* fn) {
   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
-    Stmt* insertPoint = ts->defPoint->parentStmt;
+    Expr* insertPoint = ts->defPoint->parentStmt();
     while (dynamic_cast<TypeSymbol*>(insertPoint->parentSymbol))
-      insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
+      insertPoint = insertPoint->parentSymbol->defPoint->parentStmt();
     DefExpr* def = fn->defPoint;
     def->remove();
-    insertPoint->insertBefore(new ExprStmt(def));
+    insertPoint->insertBefore(def);
     if (ts->hasPragma( "synchronization primitive"))
       fn->addPragma( "synchronization primitive");
   }

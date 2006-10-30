@@ -62,22 +62,22 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 
 
 void collect_top_asts(Vec<BaseAST*>* asts, AList* ast) {
-  for_alist(Stmt, stmt, ast) {
-    collect_top_asts(asts, stmt);
+  for_alist(Expr, expr, ast) {
+    collect_top_asts(asts, expr);
   }
 }
 
 
 void collect_asts(Vec<BaseAST*>* asts, AList* ast) {
-  for_alist(Stmt, stmt, ast) {
-    collect_asts(asts, stmt);
+  for_alist(Expr, expr, ast) {
+    collect_asts(asts, expr);
   }
 }
 
 
 void collect_asts_postorder(Vec<BaseAST*>* asts, AList* ast) {
-  for_alist(Stmt, stmt, ast) {
-    collect_asts_postorder(asts, stmt);
+  for_alist(Expr, expr, ast) {
+    collect_asts_postorder(asts, expr);
   }
 }
 
@@ -92,9 +92,9 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
 }
 
 
-void reset_file_info(AList* stmts, int lineno, char* filename) {
-  for_alist(Stmt, stmt, stmts) {
-    reset_file_info(stmt, lineno, filename);
+void reset_file_info(AList* exprs, int lineno, char* filename) {
+  for_alist(Expr, expr, exprs) {
+    reset_file_info(expr, lineno, filename);
   }
 }
 
@@ -252,45 +252,33 @@ void remove_static_formals() {
 
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
-  Stmt* parentStmt = NULL;
   Symbol* parentSymbol = NULL;
   SymScope* parentScope = NULL;
   if (Expr* expr = dynamic_cast<Expr*>(sibling)) {
     parentExpr = expr->parentExpr;
-    parentStmt = expr->parentStmt;
     parentSymbol = expr->parentSymbol;
     parentScope = expr->parentScope;
-  } else if (Stmt* stmt = dynamic_cast<Stmt*>(sibling)) {
-    parentStmt = stmt->parentStmt;
-    parentSymbol = stmt->parentSymbol;
-    parentScope = stmt->parentScope;
   } else if (sibling)
     INT_FATAL(ast, "major error in sibling_insert_help");
   if (parentSymbol)
-    insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+    insert_help(ast, parentExpr, parentSymbol, parentScope);
 }
 
 
-void parent_insert_help(BaseAST* parent, BaseAST* ast) {
+void parent_insert_help(BaseAST* parent, Expr* ast) {
   if (!parent || !parent->inTree())
     return;
   Expr* parentExpr = NULL;
-  Stmt* parentStmt = NULL;
   Symbol* parentSymbol = NULL;
   SymScope* parentScope = NULL;
   if (Expr* expr = dynamic_cast<Expr*>(parent)) {
     parentExpr = expr;
-    parentStmt = expr->parentStmt;
     parentSymbol = expr->parentSymbol;
-    parentScope = expr->parentScope;
-  } else if (Stmt* stmt = dynamic_cast<Stmt*>(parent)) {
-    parentStmt = stmt;
-    parentSymbol = stmt->parentSymbol;
-    BlockStmt* block = dynamic_cast<BlockStmt*>(stmt);
+    BlockStmt* block = dynamic_cast<BlockStmt*>(expr);
     if (block && block->blkScope)
       parentScope = block->blkScope;
     else
-      parentScope = stmt->parentScope;
+      parentScope = expr->parentScope;
   } else if (Symbol* symbol = dynamic_cast<Symbol*>(parent)) {
     parentSymbol = symbol;
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symbol))
@@ -313,13 +301,12 @@ void parent_insert_help(BaseAST* parent, BaseAST* ast) {
       parentScope = type->symbol->parentScope;
   } else if (parent)
     INT_FATAL(ast, "major error in parent_insert_help");
-  insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+  insert_help(ast, parentExpr, parentSymbol, parentScope);
 }
 
 
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
-                 Stmt* parentStmt,
                  Symbol* parentSymbol,
                  SymScope* parentScope) {
   if (dynamic_cast<ModuleSymbol*>(ast))
@@ -328,15 +315,14 @@ void insert_help(BaseAST* ast,
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
-    parentStmt = NULL;
   }
 
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    stmt->parentScope = parentScope;
-    stmt->parentSymbol = parentSymbol;
-    stmt->parentStmt = parentStmt;
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    expr->parentScope = parentScope;
+    expr->parentSymbol = parentSymbol;
+    expr->parentExpr = parentExpr;
 
-    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
+    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(expr)) {
       if (blockStmt->blockTag != BLOCK_SCOPELESS) {
         if (blockStmt->blkScope &&
             blockStmt->blkScope->astParent == blockStmt)
@@ -348,21 +334,12 @@ void insert_help(BaseAST* ast,
         parentScope = blockStmt->blkScope;
       }
     }
-    parentStmt = stmt;
-  }
-
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    expr->parentScope = parentScope;
-    expr->parentSymbol = parentSymbol;
-    expr->parentStmt = parentStmt;
-    expr->parentExpr = parentExpr;
-
     if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
         ModuleSymbol* outer = dynamic_cast<ModuleSymbol*>(def_expr->parentSymbol);
         mod->defPoint->sym = NULL;
         mod->defPoint = NULL;
-        parentStmt->remove();
+        parentExpr->remove();
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
         mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
@@ -394,7 +371,7 @@ void insert_help(BaseAST* ast,
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
-    insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+    insert_help(ast, parentExpr, parentSymbol, parentScope);
 }
 
 
@@ -407,10 +384,10 @@ void remove_help(BaseAST* ast) {
   forv_Vec(BaseAST, a, asts)
     remove_help(a);
 
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    stmt->parentScope = NULL;
-    stmt->parentSymbol = NULL;
-    stmt->parentStmt = NULL;
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    expr->parentScope = NULL;
+    expr->parentSymbol = NULL;
+    expr->parentExpr = NULL;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
       if (block->blockTag != BLOCK_SCOPELESS) {
         if (block->blkScope) {
@@ -421,12 +398,6 @@ void remove_help(BaseAST* ast) {
         }
       }
     }
-  }
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    expr->parentScope = NULL;
-    expr->parentSymbol = NULL;
-    expr->parentStmt = NULL;
-    expr->parentExpr = NULL;
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
       if (defExpr->sym && !dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
         if (defExpr->sym->parentScope)

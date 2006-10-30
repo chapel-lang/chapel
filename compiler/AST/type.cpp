@@ -205,9 +205,6 @@ void PrimitiveType::verify() {
   if (astType != TYPE_PRIMITIVE) {
     INT_FATAL(this, "Bad PrimitiveType::astType");
   }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
 }
 
 
@@ -230,9 +227,6 @@ void EnumType::verify() {
   Type::verify();
   if (astType != TYPE_ENUM) {
     INT_FATAL(this, "Bad EnumType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
   }
   if (constants->parent != this)
     INT_FATAL(this, "Bad AList::parent in EnumType");
@@ -371,7 +365,7 @@ BlockStmt* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol
   CondStmt* body = NULL;
   for_alist(DefExpr, constant, constants) {
     body = new CondStmt(new CallExpr("==", arg, constant->sym),
-                        new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(constant->sym->name))),
+                        new CallExpr("fwrite", fileArg, new_StringSymbol(constant->sym->name)),
                         body);
   }
   return new BlockStmt(body);
@@ -386,17 +380,15 @@ bool EnumType::hasDefaultReadFunction(void) {
 BlockStmt* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   BlockStmt* body = new BlockStmt();
   Symbol* valString = new VarSymbol("valString");
-  body->insertAtTail(new ExprStmt(new DefExpr(valString, new_StringSymbol(""))));
-  body->insertAtTail(new ExprStmt(new CallExpr("fread", fileArg, valString)));
-  Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
-                                  new_StringSymbol("***Error: Not of "), 
-                                  new_StringSymbol(arg->type->symbol->name), 
-                                  new_StringSymbol(" type***")));
-  Stmt* elseStmt = haltStmt;
-
+  body->insertAtTail(new DefExpr(valString, new_StringSymbol("")));
+  body->insertAtTail(new CallExpr("fread", fileArg, valString));
+  Expr* elseStmt = new CallExpr("halt", 
+                                new_StringSymbol("***Error: Not of "), 
+                                new_StringSymbol(arg->type->symbol->name), 
+                                new_StringSymbol(" type***"));
   for_alist_backward(DefExpr, constant, this->constants) {
     Expr* cond = new CallExpr("==", valString, new_StringSymbol(constant->sym->name));
-    Stmt* thenStmt = new ExprStmt(new CallExpr("=", arg, constant->sym));
+    Expr* thenStmt = new CallExpr("=", arg, constant->sym);
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
     
   }
@@ -415,9 +407,6 @@ void UserType::verify() {
   Type::verify();
   if (astType != TYPE_USER) {
     INT_FATAL(this, "Bad UserType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
   }
 }
 
@@ -477,9 +466,6 @@ void ClassType::verify() {
   Type::verify();
   if (astType != TYPE_CLASS) {
     INT_FATAL(this, "Bad ClassType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
   }
   if (classTag != CLASS_CLASS &&
       classTag != CLASS_RECORD &&
@@ -608,9 +594,9 @@ BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbo
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("{"))));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("{")));
   } else {
-    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("("))));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("(")));
   }
 
   if (classTag == CLASS_UNION) {
@@ -630,20 +616,20 @@ BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbo
       if (tmp->isTypeVariable)
         continue;
       if (!first) {
-        body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(", "))));
+        body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(", ")));
       }
-      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name))));
-      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(" = "))));
-      body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, 
-                                        new CallExpr(".", arg, new_StringSymbol(tmp->name)))));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name)));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(" = ")));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, 
+                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
       first = false;
     }
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol("}"))));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("}")));
   } else {
-    body->insertAtTail(new ExprStmt(new CallExpr("fwrite", fileArg, new_StringSymbol(")"))));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(")")));
   }
 
   return body;
@@ -658,14 +644,14 @@ bool ClassType::hasDefaultReadFunction(void) {
 BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   BlockStmt* body = new BlockStmt();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
-  body->insertAtTail(new ExprStmt(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue))));
+  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
-  body->insertAtTail(new ExprStmt(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0))));
+  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
   CallExpr* fileArgFP = new CallExpr(".", fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
-  body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readOpenBrace)));
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("!", matchingCharWasRead);
-  Stmt* readError = new ExprStmt(new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("_get_errno")));
+  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("_get_errno"));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);
   bool first = true;
@@ -674,27 +660,27 @@ BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
-      body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readComma)));
+      body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
       body->insertAtTail(readErrorCond->copy());
     }  
     Symbol* fieldName = new VarSymbol("fieldName");
-    body->insertAtTail(new ExprStmt(new DefExpr(fieldName, new_StringSymbol(""))));
+    body->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
     CallExpr* readFieldName = new CallExpr("fread", fileArg, fieldName);
-    body->insertAtTail(new ExprStmt(readFieldName));
+    body->insertAtTail(readFieldName);
     Symbol* name = new_StringSymbol(tmp->name);
     Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
     CondStmt* fieldNameCond = new CondStmt(confirmFieldName, readError->copy());
     body->insertAtTail(fieldNameCond);
     CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("="), ignoreWhiteSpace);
-    body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readEqualSign)));
+    body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
     body->insertAtTail(readErrorCond->copy());
     CallExpr* argName = new CallExpr(".", arg, name);
     CallExpr* readValue = new CallExpr("fread", fileArg, argName);
-    body->insertAtTail(new ExprStmt(readValue));
+    body->insertAtTail(readValue);
     first = false;
   }
   CallExpr* readCloseBrace = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("}"), ignoreWhiteSpace);
-  body->insertAtTail(new ExprStmt(new CallExpr("=", matchingCharWasRead, readCloseBrace)));
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
   body->insertAtTail(readErrorCond->copy());
   return body;
 }

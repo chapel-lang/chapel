@@ -54,11 +54,10 @@ void remove_static_formals();
 
 // replaces Fixup
 void remove_help(BaseAST* ast);
-void parent_insert_help(BaseAST* parent, BaseAST* ast);
+void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
-                 Stmt* parentStmt,
                  Symbol* parentSymbol,
                  SymScope* parentScope);
 

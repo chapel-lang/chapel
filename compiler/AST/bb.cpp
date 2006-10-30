@@ -33,7 +33,7 @@ BasicBlock::BasicBlock(int init_id) : id(init_id) {}
   out->ins.add(in); \
   in->outs.add(out)
 
-void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
+void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
   static BasicBlock* basicBlock;
   static Map<LabelSymbol*,Vec<BasicBlock*>*> gotoMaps;
   static Map<LabelSymbol*,BasicBlock*> labelMaps;
@@ -53,26 +53,10 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
     BBB(fn->body);
     BB_STOP();
   } else {
-    if (ExprStmt* s = dynamic_cast<ExprStmt*>(stmt)) {
-      DefExpr* def = dynamic_cast<DefExpr*>(s->expr);
-      if (def && dynamic_cast<LabelSymbol*>(def->sym)) {
-        BasicBlock* top = basicBlock;
-        BB_RESTART();
-        BasicBlock* bottom = basicBlock;
-        BB_THREAD(top, bottom);
-        LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym);
-        if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
-          forv_Vec(BasicBlock, basicBlock, *vbb) {
-            BB_THREAD(basicBlock, bottom);
-          }
-        }
-        labelMaps.put(label, bottom);
-      } else
-        BB_ADD(s->expr);
-    } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
+    if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
       BB_ADD(s->expr);
     } else if (BlockStmt* s = dynamic_cast<BlockStmt*>(stmt)) {
-      for_alist(Stmt, stmt, s->body) {
+      for_alist(Expr, stmt, s->body) {
         BBB(stmt);
       }
     } else if (CondStmt* s = dynamic_cast<CondStmt*>(stmt)) {
@@ -105,7 +89,21 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
       }
       BB_RESTART();
     } else {
-      INT_FATAL(stmt, "Unexpected stmt in buildBasicBlocks");
+      DefExpr* def = dynamic_cast<DefExpr*>(stmt);
+      if (def && dynamic_cast<LabelSymbol*>(def->sym)) {
+        BasicBlock* top = basicBlock;
+        BB_RESTART();
+        BasicBlock* bottom = basicBlock;
+        BB_THREAD(top, bottom);
+        LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym);
+        if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
+          forv_Vec(BasicBlock, basicBlock, *vbb) {
+            BB_THREAD(basicBlock, bottom);
+          }
+        }
+        labelMaps.put(label, bottom);
+      } else
+        BB_ADD(stmt);
     }
   }
 }

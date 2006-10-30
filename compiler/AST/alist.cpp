@@ -15,7 +15,7 @@ AList::AList() :
 }
 
 
-AList::AList(BaseAST* elem) :
+AList::AList(Expr* elem) :
   head(NULL),
   tail(NULL),
   parent(NULL)
@@ -39,17 +39,17 @@ int AList::length(void) {
 }
 
 
-BaseAST* AList::first(void) {
+Expr* AList::first(void) {
   return head;
 }
 
 
-BaseAST* AList::last(void) {
+Expr* AList::last(void) {
   return tail;
 }
 
 
-BaseAST* AList::only(void) {
+Expr* AList::only(void) {
   if (!head)
     INT_FATAL("only() called on empty list");
   if (head == tail)
@@ -60,7 +60,7 @@ BaseAST* AList::only(void) {
 }
 
 
-BaseAST* AList::get(int index) {
+Expr* AList::get(int index) {
   if (index <=0) {
     INT_FATAL("Indexing list must use positive integer");
   }
@@ -76,7 +76,7 @@ BaseAST* AList::get(int index) {
 }
 
 
-void AList::insertAtHead(BaseAST* new_ast) {
+void AList::insertAtHead(Expr* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
   if (new_ast->list)
@@ -98,14 +98,14 @@ void AList::insertAtHead(BaseAST* new_ast) {
 
 
 void AList::insertAtHead(AList* new_ast) {
-  for_alist_backward(BaseAST, elem, new_ast) {
+  for_alist_backward(Expr, elem, new_ast) {
     elem->remove();
     insertAtHead(elem);
   }
 }
 
 
-void AList::insertAtTail(BaseAST* new_ast) {
+void AList::insertAtTail(Expr* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
   if (new_ast->prev || new_ast->next)
@@ -175,7 +175,7 @@ AList* AList::copy(ASTMap* map, bool internal) {
 
   AList* newList = new AList();
   for_asts(node, this) {
-    BaseAST* newnode = COPY_INT(node);
+    Expr* newnode = COPY_INT(node);
     newnode->next = NULL;
     newnode->prev = NULL;
     newnode->list = NULL;

@@ -1,7 +1,6 @@
 PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
-        parallel.cpp \
 	codegen.cpp \
         copy_propagation.cpp \
         cullOverReferences.cpp \
@@ -9,6 +8,7 @@ PASSES_SRCS = \
         flattenFunctions.cpp \
         functionResolution.cpp \
         inlineFunctions.cpp \
+        parallel.cpp \
 	printProgram.cpp \
         normalize.cpp \
         scopeResolve.cpp \

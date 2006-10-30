@@ -30,7 +30,7 @@ begin_encapsulation() {
           char *fname = stringcat( "_begin_block", intstring( ufid++));
           FnSymbol *fn = new FnSymbol( fname);
           fn->retType = dtVoid;
-          for_alist( Stmt, stmt, b->body) {
+          for_alist(Expr, stmt, b->body) {
             stmt->remove();
             fn->insertAtTail( stmt);        // move stmts to new begin function
           }
@@ -59,7 +59,7 @@ cobegin_encapsulation() {
           // replace with a new block w/ each stmt -> function call
           BlockStmt *newb = new BlockStmt();
           newb->blockTag = b->blockTag;
-          for_alist( Stmt, stmt, b->body) {
+          for_alist(Expr, stmt, b->body) {
             char *fname = stringcat( "_cobegin_stmt", intstring( ufid++));
             FnSymbol *fn = new FnSymbol( fname);
             fn->retType = dtVoid;
@@ -103,17 +103,13 @@ begin_mark_locals() {
       BlockStmt *b = dynamic_cast<BlockStmt*>(ast);
       if (b && (BLOCK_BEGIN == b->blockTag)) {
         // note, should only be one call expr in the body of the begin
-        for_alist( Stmt, stmt, b->body) {
-          if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
-            if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
-              // add the args that need to be heap allocated
-              for_actuals(arg, fcall) {
-                if (SymExpr *s = dynamic_cast<SymExpr*>(arg)) {
-                  arglist.add( s);
-                }
+        for_alist( Expr, stmt, b->body) {
+          if (CallExpr *fcall = dynamic_cast<CallExpr*>(stmt)) {
+            // add the args that need to be heap allocated
+            for_actuals(arg, fcall) {
+              if (SymExpr *s = dynamic_cast<SymExpr*>(arg)) {
+                arglist.add( s);
               }
-            } else {
-              INT_FATAL( b, "not a call expression in begin block");
             }
           }
         }
@@ -133,7 +129,7 @@ begin_mark_locals() {
       INT_FATAL( se->var, "currently can only handle locals (not args)");
     }
 
-    Stmt      *localdef = local->defPoint->parentStmt;
+    Expr      *localdef = local->defPoint->parentStmt();
 
     if (!local->on_heap) {        // no reference counter associated yet
       local->on_heap = true;
@@ -180,8 +176,8 @@ begin_mark_locals() {
                                          local,
                                          local->refc,
                                          local->refcMutex));
-    BlockStmt *mainfb = dynamic_cast<BlockStmt*>(localdef->parentStmt);
-    Stmt      *laststmt = dynamic_cast<Stmt*>(mainfb->body->last());
+    BlockStmt *mainfb = dynamic_cast<BlockStmt*>(localdef->parentExpr);
+    Expr      *laststmt = mainfb->body->last();
     if (dynamic_cast<ReturnStmt*>(laststmt)) {
       laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                             local,
@@ -195,10 +191,10 @@ begin_mark_locals() {
     }
 
     // add touch + release for the begin block
-    se->parentStmt->parentStmt->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
-                                                            local,
-                                                            local->refc,
-                                                            local->refcMutex));
+    se->parentStmt()->parentExpr->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+                                                              local,
+                                                              local->refc,
+                                                              local->refcMutex));
     ArgSymbol *fa = dynamic_cast<ArgSymbol*>( actual_to_formal( se));
     fn->body->body->last()->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE,
                                                         fa,
@@ -218,7 +214,7 @@ begin_mark_locals() {
           CallExpr *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
                                           vs->type->symbol, 
                                           new_StringSymbol("heap alloc'd via begin"));
-          Stmt     *vsdef = vs->defPoint->parentStmt;
+          Expr     *vsdef = vs->defPoint->parentStmt();
           vsdef->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
                                             vs->defPoint->sym,
                                             alloc));
@@ -244,73 +240,71 @@ thread_args() {
       if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
         if ((BLOCK_BEGIN == b->blockTag) ||
             (BLOCK_COBEGIN == b->blockTag)) {
-          for_alist( Stmt, stmt, b->body) {
-            if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
-              if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
-                // create a new class to capture refs to locals
-                char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
-                ClassType* ctype = new ClassType( CLASS_CLASS);
-                TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
-                                                              fname),
-                                                    ctype);
-
-
-                // add the function args as fields in the class
-                for_actuals(arg, fcall) {
-                  SymExpr *s = dynamic_cast<SymExpr*>(arg);
-                  Symbol  *var = s->var; // arg or var
-                  VarSymbol* field = new VarSymbol(var->name, var->type);
-                  field->is_ref = true;
-                  ctype->fields->insertAtTail(new DefExpr(field));
-                }
-                mod->stmts->insertAtHead( new ExprStmt(new DefExpr( new_c)));
-
-                // create the class variable instance and allocate it
-                VarSymbol *tempc = new VarSymbol( stringcat( "_args_for", 
-                                                             fname),
+          for_alist(Expr, expr, b->body) {
+            if (CallExpr *fcall = dynamic_cast<CallExpr*>(expr)) {
+              // create a new class to capture refs to locals
+              char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
+              ClassType* ctype = new ClassType( CLASS_CLASS);
+              TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
+                                                            fname),
                                                   ctype);
-                b->insertBefore( new DefExpr( tempc));
-                CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
-                                                      ctype->symbol,
-                                                      new_StringSymbol( stringcat( "instance of class ", ctype->symbol->name)));
-                b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
-                                               tempc,
-                                               tempc_alloc));
 
-                // set the references in the class instance
-                for_actuals(arg, fcall) {
-                  SymExpr *s = dynamic_cast<SymExpr*>(arg);
-                  Symbol  *var = s->var; // var or arg
-                  CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER_REF_TO,
-                                              tempc,
-                                              ctype->getField(var->name),
-                                              var);
-                  b->insertBefore( setc);
-                }
-
-                // create wrapper-function that uses the class instance
-                FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
-                DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
-                ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-                wrap_fn->insertFormalAtTail( wrap_c);
-                mod->stmts->insertAtTail(new ExprStmt( new DefExpr( wrap_fn)));
-                b->insertAtHead( new CallExpr( wrap_fn, tempc));
-
-                // translate the original cobegin function
-                CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
-                for_fields(field, ctype) {  // insert args
-                  new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_REF_TO,
-                                                       wrap_c,
-                                                       field));
-                }
-                wrap_fn->retType = dtVoid;
-                fcall->parentStmt->remove();               // rm orig. call
-                wrap_fn->insertAtHead( new_cofn);          // add new call
-                fcall_def->parentStmt->remove();           // move orig. def
-                mod->stmts->insertAtTail(new ExprStmt(fcall_def));      // to top-level
-
-                build( wrap_fn);
+              
+              // add the function args as fields in the class
+              for_actuals(arg, fcall) {
+                SymExpr *s = dynamic_cast<SymExpr*>(arg);
+                Symbol  *var = s->var; // arg or var
+                VarSymbol* field = new VarSymbol(var->name, var->type);
+                field->is_ref = true;
+                ctype->fields->insertAtTail(new DefExpr(field));
               }
+              mod->stmts->insertAtHead(new DefExpr(new_c));
+              
+              // create the class variable instance and allocate it
+              VarSymbol *tempc = new VarSymbol( stringcat( "_args_for", 
+                                                           fname),
+                                                ctype);
+              b->insertBefore( new DefExpr( tempc));
+              CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
+                                                    ctype->symbol,
+                                                    new_StringSymbol( stringcat( "instance of class ", ctype->symbol->name)));
+              b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
+                                             tempc,
+                                             tempc_alloc));
+              
+              // set the references in the class instance
+              for_actuals(arg, fcall) {
+                SymExpr *s = dynamic_cast<SymExpr*>(arg);
+                Symbol  *var = s->var; // var or arg
+                CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER_REF_TO,
+                                            tempc,
+                                            ctype->getField(var->name),
+                                            var);
+                b->insertBefore( setc);
+              }
+              
+              // create wrapper-function that uses the class instance
+              FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
+              DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
+              ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
+              wrap_fn->insertFormalAtTail( wrap_c);
+              mod->stmts->insertAtTail(new DefExpr(wrap_fn));
+              b->insertAtHead( new CallExpr( wrap_fn, tempc));
+              
+              // translate the original cobegin function
+              CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
+              for_fields(field, ctype) {  // insert args
+                new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_REF_TO,
+                                                     wrap_c,
+                                                     field));
+              }
+              wrap_fn->retType = dtVoid;
+              fcall->parentStmt()->remove();               // rm orig. call
+              wrap_fn->insertAtHead( new_cofn);          // add new call
+              fcall_def->parentStmt()->remove();           // move orig. def
+              mod->stmts->insertAtTail(fcall_def);      // to top-level
+              
+              build( wrap_fn);
             }
           }
         }

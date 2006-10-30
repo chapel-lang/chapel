@@ -94,7 +94,7 @@ setupError(char *filename, int lineno, bool fatal, bool user, bool cont,
 static void
 printDevelErrorHeader(BaseAST* ast) {
   if (!err_print) {
-    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+    if (dynamic_cast<Expr*>(ast)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast->parentSymbol)) {
         if (fn != err_fn) {
           err_fn = fn;

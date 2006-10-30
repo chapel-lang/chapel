@@ -20,8 +20,6 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
   if (!ast)
     block = new BlockStmt();
   else if (Expr* a = dynamic_cast<Expr*>(ast))
-    block = new BlockStmt(new ExprStmt(a));
-  else if (Stmt* a = dynamic_cast<Stmt*>(ast))
     block = new BlockStmt(a);
   else
     INT_FATAL(ast, "Illegal argument to build_chpl_stmt");
@@ -30,24 +28,23 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
 }
 
 
-ExprStmt*
+DefExpr*
 buildLabelStmt(char* name) {
-  return new ExprStmt(new DefExpr(new LabelSymbol(name)));
+  return new DefExpr(new LabelSymbol(name));
 }
 
 
-static bool stmtIsGlob(Stmt* stmt) {
+static bool stmtIsGlob(Expr* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
     if (block->body->length() != 1)
       return false;
-    stmt = dynamic_cast<Stmt*>(block->body->only());
+    stmt = block->body->only();
   }
-  if (ExprStmt* expr = dynamic_cast<ExprStmt*>(stmt))
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr->expr))
-      if (dynamic_cast<FnSymbol*>(def->sym) ||
-          dynamic_cast<ModuleSymbol*>(def->sym) ||
-          dynamic_cast<TypeSymbol*>(def->sym))
-        return true;
+  if (DefExpr* def = dynamic_cast<DefExpr*>(stmt))
+    if (dynamic_cast<FnSymbol*>(def->sym) ||
+        dynamic_cast<ModuleSymbol*>(def->sym) ||
+        dynamic_cast<TypeSymbol*>(def->sym))
+      return true;
   return false;
 }
 
@@ -58,7 +55,7 @@ static void createInitFn(ModuleSymbol* mod) {
 
   mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
   mod->initFn->isCompilerTemp = true;
-  mod->stmts->insertAtHead(new ExprStmt(new DefExpr(mod->initFn)));
+  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
   mod->initFn->retType = dtVoid;
   mod->initFn->body->blkScope = mod->modScope;
 
@@ -80,7 +77,7 @@ static void createInitFn(ModuleSymbol* mod) {
     }
   }
 
-  for_alist(Stmt, stmt, mod->stmts) {
+  for_alist(Expr, stmt, mod->stmts) {
     if (!stmtIsGlob(stmt)) {
       stmt->remove();
       mod->initFn->insertAtTail(stmt);
@@ -91,7 +88,7 @@ static void createInitFn(ModuleSymbol* mod) {
 
 ModuleSymbol* build_module(char* name, modType type, AList* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type);
-  for_alist(Stmt, stmt, stmts) {
+  for_alist(Expr, stmt, stmts) {
     stmt->remove();
     mod->stmts->insertAtTail(stmt);
   }
@@ -154,10 +151,10 @@ BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
   BlockStmt* stmts = build_chpl_stmt();
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new CondStmt(cond, body));
   body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
 
@@ -172,10 +169,10 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   BlockStmt* stmts = build_chpl_stmt();
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->pre_loop)));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
   block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
 
@@ -196,32 +193,30 @@ build_for_expr(BaseAST* indices,
   BaseAST* typeindices = indices->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
-  stmts->insertAtTail(new ExprStmt(new DefExpr(seq)));
+  stmts->insertAtTail(new DefExpr(seq));
 
   BlockStmt* body = 
     new BlockStmt(
-      new ExprStmt(
         new CallExpr(PRIMITIVE_MOVE,
-                     seq, new CallExpr("_construct_seq", typeexpr))));
+                     seq, new CallExpr("_construct_seq", typeexpr)));
   body->insertAtTail(new GotoStmt(goto_normal, break_out));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
                                                     iterator->copy(),
                                                     body, 1)));
-  stmts->insertAtTail(new ExprStmt(new DefExpr(break_out)));
+  stmts->insertAtTail(new DefExpr(break_out));
 
-  ExprStmt* append_stmt =
-    new ExprStmt(
+  Expr* append_stmt =
       new CallExpr(
-        new CallExpr(".", seq, new_StringSymbol("_append_in_place")), expr));
+        new CallExpr(".", seq, new_StringSymbol("_append_in_place")), expr);
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     indices,
                                                     iterator,
                                                     cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt))));
   VarSymbol* rettmp = new VarSymbol("_ret_seq");
   rettmp->isCompilerTemp = true;
-  stmts->insertAtTail(new ExprStmt(new DefExpr(rettmp)));
-  stmts->insertAtTail(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, rettmp, seq)));
+  stmts->insertAtTail(new DefExpr(rettmp));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rettmp, seq));
   stmts->insertAtTail(new ReturnStmt(rettmp));
   return stmts;
 }
@@ -290,11 +285,11 @@ BlockStmt* build_for_block(BlockTag tag,
   stmts->insertAtTail(body);
 
   if (!only_once) {
-    stmts->insertAtTail(new ExprStmt(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor))));
+    stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor)));
     stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
 
-  stmts->insertAtTail(new ExprStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   uid++;
   return stmts;
 }
@@ -327,7 +322,7 @@ BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, new CallExpr("+", tmp, rhs->copy()))));
-  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  stmt->insertAtTail(new DefExpr(fn));
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
   fn->insertFormalAtTail(
@@ -336,8 +331,8 @@ BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
       new SymExpr("_domain")));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("add")), rhs->copy()));
-  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
-  stmt->insertAtTail(new ExprStmt(new CallExpr(fn->name, tmp)));
+  stmt->insertAtTail(new DefExpr(fn));
+  stmt->insertAtTail(new CallExpr(fn->name, tmp));
   uid++;
   return stmt;
 }
@@ -355,7 +350,7 @@ BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, new CallExpr("-", tmp, rhs->copy()))));
-  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  stmt->insertAtTail(new DefExpr(fn));
 
   fn = new FnSymbol(stringcat("_assignminus", intstring(uid)));
   fn->insertFormalAtTail(
@@ -364,8 +359,8 @@ BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
       new SymExpr("_domain")));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("remove")), rhs->copy()));
-  stmt->insertAtTail(new ExprStmt(new DefExpr(fn)));
-  stmt->insertAtTail(new ExprStmt(new CallExpr(fn->name, tmp)));
+  stmt->insertAtTail(new DefExpr(fn));
+  stmt->insertAtTail(new CallExpr(fn->name, tmp));
   uid++;
   return stmt;
 }
@@ -400,7 +395,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
 
-  for_alist(Stmt, stmt, whenstmts->body) {
+  for_alist(Expr, stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -447,7 +442,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   BlockStmt* stmts = build_chpl_stmt();
   bool has_otherwise = false;
 
-  for_alist(Stmt, stmt, whenstmts->body) {
+  for_alist(Expr, stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -469,7 +464,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
       }
       fn->addPragma("inline");
       fn->insertAtTail(when->thenStmt->body->copy());
-      stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
+      stmts->insertAtTail(new DefExpr(fn));
     } else {
       if (conds->argList->length() != exprs->length())
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
@@ -484,10 +479,10 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
       }
       fn->addPragma("inline");
       fn->insertAtTail(when->thenStmt->body->copy());
-      stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
+      stmts->insertAtTail(new DefExpr(fn));
     }
   }
-  stmts->insertAtTail(new ExprStmt(new CallExpr(fn->name, exprs)));
+  stmts->insertAtTail(new CallExpr(fn->name, exprs));
   return stmts;
 }
 
@@ -538,18 +533,16 @@ void
 backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
-  for_alist_backward(Stmt, stmt, stmts->body) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (def->init || def->exprType) {
-          init = def->init;
-          type = def->exprType;
-        } else {
-          def->init = init ? init->copy() : NULL;
-          def->exprType = type ? type->copy() : NULL;
-        }
-        continue;
+  for_alist_backward(Expr, stmt, stmts->body) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
+      if (def->init || def->exprType) {
+        init = def->init;
+        type = def->exprType;
+      } else {
+        def->init = init ? init->copy() : NULL;
+        def->exprType = type ? type->copy() : NULL;
       }
+      continue;
     }
     INT_FATAL(stmt, "Major error in backPropagateInitsTypes");
   }
@@ -558,14 +551,12 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 void
 setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
-  for_alist(Stmt, stmt, stmts->body) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
-          var->consClass = constag;
-          var->varClass = vartag;
-          continue;
-        }
+  for_alist(Expr, stmt, stmts->body) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+        var->consClass = constag;
+        var->varClass = vartag;
+        continue;
       }
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");

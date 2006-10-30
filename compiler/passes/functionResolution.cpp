@@ -966,8 +966,8 @@ resolveCall(CallExpr* call) {
       base->replace(new SymExpr("this"));
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
       call->insertAtHead(new SymExpr(this_temp));
-      call->parentStmt->insertBefore(new DefExpr(this_temp));
-      call->parentStmt->insertBefore(move);
+      call->parentStmt()->insertBefore(new DefExpr(this_temp));
+      call->parentStmt()->insertBefore(move);
       resolveCall(move);
     }
     Vec<Type*> atypes;
@@ -997,7 +997,7 @@ resolveCall(CallExpr* call) {
               continue;
 
             VarSymbol *temp = new VarSymbol( stringcat( stringcat( "_to_seq_temp", intstring( call->id)), stringcat( "_", intstring( pos))));
-            call->parentStmt->insertBefore( new DefExpr( temp));
+            call->parentStmt()->insertBefore( new DefExpr( temp));
             subs.put( aparams.v[pos], temp);
             CallExpr  *toseq = new CallExpr( "_to_seq", 
                                              aparams.v[pos]);
@@ -1005,7 +1005,7 @@ resolveCall(CallExpr* call) {
                                                 temp,
                                                 toseq);
             // CallExpr  *toseqass = new CallExpr( "=", temp, toseq);
-            call->parentStmt->insertBefore( toseqass);
+            call->parentStmt()->insertBefore( toseqass);
             resolveCall( toseq);
             resolveFns( toseq->isResolved());
             resolveCall( toseqass);
@@ -1113,10 +1113,10 @@ resolveCall(CallExpr* call) {
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp = new VarSymbol("_expand_temp");
       DefExpr* def = new DefExpr(tmp);
-      call->parentStmt->insertBefore(def);
+      call->parentStmt()->insertBefore(def);
       CallExpr* e = new CallExpr(sym->copy(), new_IntSymbol(i));
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
-      call->parentStmt->insertBefore(move);
+      call->parentStmt()->insertBefore(move);
       call->insertBefore(new SymExpr(tmp));
       callStack.add(e);
       resolveCall(e);
@@ -1510,7 +1510,7 @@ resolve() {
           if_fn->retType = key->retType;
           if (key->retType == dtUnknown)
             INT_FATAL(call, "bad parent virtual function return type");
-          call->parentStmt->insertBefore(new DefExpr(if_fn));
+          call->parentStmt()->insertBefore(new DefExpr(if_fn));
           call->replace(new CallExpr(if_fn));
           tmp->replace(call);
           subcall->baseExpr->replace(new SymExpr(fn));
@@ -1541,11 +1541,11 @@ resolve() {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       if (!resolvedFns.set_in(a))
-        a->defPoint->parentStmt->remove();
+        a->defPoint->parentStmt()->remove();
     } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
       if (ClassType* ct = dynamic_cast<ClassType*>(a->type)) {
         if (!resolvedFns.set_in(ct->defaultConstructor))
-          ct->symbol->defPoint->parentStmt->remove();
+          ct->symbol->defPoint->parentStmt()->remove();
       }
     }
   }

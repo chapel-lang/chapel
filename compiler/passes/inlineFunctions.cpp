@@ -24,8 +24,8 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       char* temp_name =  stringcat("_inline_temp_", formal->cname);
       VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
       temp->isCompilerTemp = true;
-      call->parentStmt->insertBefore(new DefExpr(temp));
-      call->parentStmt->insertBefore
+      call->parentStmt()->insertBefore(new DefExpr(temp));
+      call->parentStmt()->insertBefore
         (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));
       map->put(formal, new SymExpr(temp));
     }
@@ -33,7 +33,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
 }
 
 
-static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
+static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
   FnSymbol* fn = call->findFnSymbol();
   ASTMap map;
   mapFormalsToActuals(call, &map);
@@ -47,11 +47,11 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   return_stmt->remove();
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn_body);
-  for_alist(Stmt, stmt, fn_body)
+  for_alist(Expr, stmt, fn_body)
     stmts->add(stmt);
-  for_alist(Stmt, stmt, fn_body) {
+  for_alist(Expr, stmt, fn_body) {
     stmt->remove();
-    call->parentStmt->insertBefore(stmt);
+    call->parentStmt()->insertBefore(stmt);
   }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
@@ -60,7 +60,7 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
     }
   }
   if (fn->retType == dtVoid)
-    call->parentStmt->remove();
+    call->parentStmt()->remove();
   else
     call->replace(return_value);
 }
@@ -70,7 +70,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->primitive || !call->parentStmt)
+      if (call->primitive || !call->parentStmt())
         continue;
       FnSymbol* fn = call->findFnSymbol();
       if (!fn || !fn->hasPragma("inline"))
@@ -81,9 +81,9 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
       else if (inline_stack->in(fn))
         INT_FATAL(fn, "Recursive inlining detected");
       inline_stack->add(fn);
-      Vec<Stmt*> stmts;
+      Vec<Expr*> stmts;
       inline_call(call, &stmts);
-      forv_Vec(Stmt, stmt, stmts)
+      forv_Vec(Expr, stmt, stmts)
         inline_calls(stmt, inline_stack);
       inline_stack->pop();
       if (report_inlining)
@@ -102,7 +102,7 @@ void inlineFunctions(void) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
         if (fn->hasPragma("inline")) {
-          fn->defPoint->parentStmt->remove();
+          fn->defPoint->remove();
         }
       }
     }

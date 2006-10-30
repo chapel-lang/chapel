@@ -17,7 +17,7 @@ class BasicBlock {
 };
 
 // stmt argument is internal only
-void buildBasicBlocks(FnSymbol* fn, Stmt* stmt = NULL);
+void buildBasicBlocks(FnSymbol* fn, Expr* stmt = NULL);
 
 void printBasicBlocks(FnSymbol* fn);
 

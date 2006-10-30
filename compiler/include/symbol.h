@@ -211,8 +211,8 @@ class FnSymbol : public Symbol {
 
   void printDef(FILE* outfile);
 
-  void insertAtHead(BaseAST* ast);
-  void insertAtTail(BaseAST* ast);
+  void insertAtHead(Expr* ast);
+  void insertAtTail(Expr* ast);
 
   void insertAtHead(AList* ast);
   void insertAtTail(AList* ast);

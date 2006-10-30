@@ -5,6 +5,7 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "symbol.h"
+#include "expr.h"
 
 
 extern bool printCppLineno;
@@ -12,42 +13,9 @@ extern bool printChplLineno;
 extern bool inUserModule;
 extern bool justStartedGeneratingFunction;
 
-class Expr;
-class DefExpr;
+void codegenStmt(FILE* outfile, Expr* stmt);
 
-class Stmt : public BaseAST {
- public:
-  Stmt* parentStmt;
-
-  Stmt(astType_t astType = STMT);
-  virtual ~Stmt() { }
-  virtual void verify();
-  COPY_DEF(Stmt);
-  virtual void codegen(FILE* outfile);
-  virtual void callReplaceChild(BaseAST* new_ast);
-  virtual ASTContext getContext(void);
-  virtual bool inTree();
-  virtual void insertBefore(BaseAST* new_ast);
-  virtual void insertAfter(BaseAST* new_ast);
-};
-#define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
-
-
-class ExprStmt : public Stmt {
- public:
-  Expr* expr;
-
-  ExprStmt(Expr* initExpr);
-  virtual void verify();
-  COPY_DEF(ExprStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
-  virtual void print(FILE* outfile);
-  virtual void codegen(FILE* outfile);
-};
-
-
-class ReturnStmt : public Stmt {
+class ReturnStmt : public Expr {
  public:
   Expr* expr;
   bool yield;
@@ -56,7 +24,7 @@ class ReturnStmt : public Stmt {
   ReturnStmt(char* initExpr, bool init_yield = false);
   virtual void verify();
   COPY_DEF(ReturnStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   bool returnsVoid();
@@ -78,7 +46,7 @@ enum BlockTag {
 };
 
 
-class BlockStmt : public Stmt {
+class BlockStmt : public Expr {
  public:
   BlockTag blockTag;
   AList* body;
@@ -93,17 +61,17 @@ class BlockStmt : public Stmt {
 
   BlockStmt::BlockStmt(AList* init_body = new AList(), 
                        BlockTag init_blockTag = BLOCK_NORMAL);
-  BlockStmt::BlockStmt(Stmt* init_body,
+  BlockStmt::BlockStmt(Expr* init_body,
                        BlockTag init_blockTag = BLOCK_NORMAL);
   BlockStmt::~BlockStmt();
   virtual void verify();
   COPY_DEF(BlockStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 
-  void insertAtHead(BaseAST* ast);
-  void insertAtTail(BaseAST* ast);
+  void insertAtHead(Expr* ast);
+  void insertAtTail(Expr* ast);
   void insertAtHead(AList* ast);
   void insertAtTail(AList* ast);
 
@@ -111,7 +79,7 @@ class BlockStmt : public Stmt {
 };
 
 
-class CondStmt : public Stmt {
+class CondStmt : public Expr {
  public:
   Expr* condExpr;
   BlockStmt* thenStmt;
@@ -120,7 +88,7 @@ class CondStmt : public Stmt {
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   virtual void verify();
   COPY_DEF(CondStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -134,7 +102,7 @@ enum gotoType {
 };
 
 
-class GotoStmt : public Stmt {
+class GotoStmt : public Expr {
  public:
   Symbol* label;
   gotoType goto_type;

@@ -79,7 +79,7 @@ Is this "while x"(i); or "while x(i)";?
   Expr* pexpr;
   DefExpr* pdefexpr;
 
-  Stmt* pstmt;
+  Expr* pstmt;
   BlockStmt* pblockstmt;
 
   Type* ptype;
@@ -621,7 +621,7 @@ use_stmt:
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
     {
-      $$ = build_chpl_stmt(new ExprStmt(new DefExpr(build_module($2, MOD_USER, $4))));
+      $$ = build_chpl_stmt(new DefExpr(build_module($2, MOD_USER, $4)));
     }
 ;
 
@@ -643,7 +643,7 @@ fn_decl_stmt:
       $2->buildSetter = $4;
       $2->retExprType = $5;
       if ($6)
-        $2->where = new BlockStmt(new ExprStmt($6));
+        $2->where = new BlockStmt($6);
       $2->body = new BlockStmt($7);
       $$ = build_chpl_stmt(new DefExpr($2));
     }
@@ -932,7 +932,7 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = new ExprStmt(new DefExpr(var, $3, $2));
+      $$ = new DefExpr(var, $3, $2);
     }
 ;
 

@@ -18,7 +18,6 @@ class FnSymbol;
 class TypeSymbol;
 class VarSymbol;
 class Type;
-class Stmt;
 class Expr;
 class SymScope;
 
@@ -30,18 +29,15 @@ extern Vec<TypeSymbol*> gTypes;
  **  Note: update astType_t and astTypeName together always.
  **/
 enum astType_t {
-  STMT = 0,
-  STMT_EXPR,
-  STMT_RETURN,
-  STMT_BLOCK,
-  STMT_COND,
-  STMT_GOTO,
-
   EXPR,
   EXPR_SYM,
   EXPR_DEF,
   EXPR_CALL,
   EXPR_NAMED,
+  STMT_RETURN,
+  STMT_BLOCK,
+  STMT_COND,
+  STMT_GOTO,
 
   SYMBOL,
   SYMBOL_UNRESOLVED,
@@ -88,7 +84,6 @@ extern char* astTypeName[];
 typedef struct _ASTContext {
   SymScope* parentScope;
   Symbol* parentSymbol;
-  Stmt* parentStmt;
   Expr* parentExpr;
 } ASTContext;
 
@@ -96,10 +91,6 @@ class BaseAST {
  public:
   astType_t astType;    // BaseAST subclass
   int id;               // Unique ID
-
-  BaseAST* prev;        // List previous pointer
-  BaseAST* next;        // List next pointer
-  AList* list;          // List pointer
 
   SymScope* parentScope;
   Symbol* parentSymbol;
@@ -120,16 +111,7 @@ class BaseAST {
 
   virtual void codegen(FILE* outfile);
 
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void callReplaceChild(BaseAST* new_ast);
-
-  virtual ASTContext getContext(void);
   virtual bool inTree(void);
-
-  BaseAST* remove(void);
-  void replace(BaseAST* new_ast);
-  virtual void insertBefore(BaseAST* new_ast);
-  virtual void insertAfter(BaseAST* new_ast);
 
   char* stringLoc(void);
   void printLoc(FILE* outfile);

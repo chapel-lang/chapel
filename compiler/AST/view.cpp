@@ -27,6 +27,11 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf("%d ", ast->id);
     printf("%s", astTypeName[expr->astType]);
 
+    if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
+      printf( " ");
+      view_ast( gs->label, number, mark, indent+1);
+    }
+
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
       if (call->primitive)
         printf(" %s", call->primitive->name);
@@ -74,23 +79,6 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     }
   }
 
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    printf("\n");
-    for (int i = 0; i < indent; i++)
-      printf(" ");
-    printf("(");
-    if (ast->id == mark)
-      printf("***");
-    if (number)
-      printf("%d ", ast->id);
-    printf("%s", astTypeName[stmt->astType]);
-
-    if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
-      printf( " ");
-      view_ast( gs->label, number, mark, indent+1);
-    }
-  }
-
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     printf("'");
     if (ast->id == mark)
@@ -123,9 +111,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   forv_Vec(BaseAST, ast, asts)
     view_ast(ast, number, mark, indent + 2);
 
-  if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+  if (dynamic_cast<Expr*>(ast))
     printf(")");
-  }
 }
 
 static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
@@ -277,9 +264,9 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
 
 static void
 html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    fprintf(html_file, "<DL>\n");
-    if (BlockStmt *b=dynamic_cast<BlockStmt*>(stmt)) {
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (BlockStmt *b=dynamic_cast<BlockStmt*>(expr)) {
+      fprintf(html_file, "<DL>\n");
       fprintf(html_file, "{");
       switch( b->blockTag) {
       case BLOCK_ATOMIC: fprintf( html_file, "atomic"); break;
@@ -292,7 +279,8 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       default:
         break;
       }
-    } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
+    } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(expr)) {
+      fprintf(html_file, "<DL>\n");
       switch (s->goto_type) {
       case goto_normal: fprintf(html_file, "<B>goto</B> "); break;
       case goto_break: fprintf(html_file, "<B>break</B> "); break;
@@ -300,57 +288,56 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       }
       if (s->label)
         html_print_symbol( html_file, pass, s->label, true);
-    } else if (dynamic_cast<CondStmt*>(stmt)) {
+    } else if (dynamic_cast<CondStmt*>(expr)) {
+      fprintf(html_file, "<DL>\n");
       fprintf(html_file, "<B>if</B> ");
-    } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
+    } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(expr)) {
+      fprintf(html_file, "<DL>\n");
       if (s->yield)
         fprintf(html_file, "<B>yield</B> ");
       else
         fprintf(html_file, "<B>return</B> ");
-    } else if (!dynamic_cast<ExprStmt*>(ast)) {
-      fprintf(html_file, "%s", astTypeName[stmt->astType]);
-    }
-  }
-
-
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    fprintf(html_file, " ");
-    if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
-        fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
-        fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
-        fprintf(html_file, "<B>function ");
-        html_print_fnsymbol( html_file, pass, fn);
-        fprintf(html_file, "</B><UL>\n");
-      } else if (structuralTypeSymbol(e->sym)) {
-        fprintf(html_file, "<UL CLASS =\"mktree\">\n");
-        fprintf(html_file, "<LI>");
-        if (DefExpr *def = dynamic_cast<DefExpr*>( ast))
-          if (def->sym->hasPragma( "sync var")) {
-            fprintf( html_file, "<B>sync</B> ");
-          } else if (def->sym->hasPragma( "single var")) {
-            fprintf( html_file, "<B>single</B> ");
+    } else {
+      if (expr->parentStmt() && expr->parentStmt() == expr) {
+        fprintf(html_file, "<DL>\n");
+      }
+      fprintf(html_file, " ");
+      if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+          fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
+          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+          fprintf(html_file, "<B>function ");
+          html_print_fnsymbol( html_file, pass, fn);
+          fprintf(html_file, "</B><UL>\n");
+        } else if (structuralTypeSymbol(e->sym)) {
+          fprintf(html_file, "<UL CLASS =\"mktree\">\n");
+          fprintf(html_file, "<LI>");
+          if (DefExpr *def = dynamic_cast<DefExpr*>( ast))
+            if (def->sym->hasPragma( "sync var")) {
+              fprintf( html_file, "<B>sync</B> ");
+            } else if (def->sym->hasPragma( "single var")) {
+              fprintf( html_file, "<B>single</B> ");
+            }
+          fprintf(html_file, "<B>type ");
+          html_print_symbol( html_file, pass, e->sym, true);
+          fprintf(html_file, "</B><UL>\n");
+        } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
+          fprintf(html_file, "<B>type </B> ");
+          html_print_symbol( html_file, pass, e->sym, true);
+        } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
+          if (vs->type->symbol->hasPragma( "sync var")) {
+            fprintf( html_file, "<B>sync </B>");
+          } else if (vs->type->symbol->hasPragma( "single var")) {
+            fprintf( html_file, "<B>single </B>");
           }
-        fprintf(html_file, "<B>type ");
-        html_print_symbol( html_file, pass, e->sym, true);
-        fprintf(html_file, "</B><UL>\n");
-      } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
-        fprintf(html_file, "<B>type </B> ");
-        html_print_symbol( html_file, pass, e->sym, true);
-      } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
-        if (vs->type->symbol->hasPragma( "sync var")) {
-          fprintf( html_file, "<B>sync </B>");
-        } else if (vs->type->symbol->hasPragma( "single var")) {
-          fprintf( html_file, "<B>single </B>");
-        }
-        if (vs->on_heap) 
-          fprintf( html_file, "<B>heap </B>");
-        if (vs->is_ref || vs->isReference)  
-          fprintf( html_file, "<B>ref </B> ");
-        fprintf(html_file, "<B>var </B> ");
-        html_print_symbol( html_file, pass, e->sym, true);
-      } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
-        switch (s->intent) {
+          if (vs->on_heap) 
+            fprintf( html_file, "<B>heap </B>");
+          if (vs->is_ref || vs->isReference)  
+            fprintf( html_file, "<B>ref </B> ");
+          fprintf(html_file, "<B>var </B> ");
+          html_print_symbol( html_file, pass, e->sym, true);
+        } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
+          switch (s->intent) {
           case INTENT_IN: fprintf(html_file, "<B>in</B> "); break;
           case INTENT_INOUT: fprintf(html_file, "<B>inout</B> "); break;
           case INTENT_OUT: fprintf(html_file, "<B>out</B> "); break;
@@ -359,39 +346,40 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           case INTENT_PARAM: fprintf(html_file, "<B>param</B> "); break;
           case INTENT_TYPE: fprintf(html_file, "<B>type</B> "); break;
           default: break;
+          }
+          fprintf(html_file, "<B>arg</B> ");
+          html_print_symbol( html_file, pass, e->sym, true);
+        } else if (dynamic_cast<LabelSymbol*>(e->sym)) {
+          fprintf(html_file, "<B>label</B> ");
+          html_print_symbol( html_file, pass, e->sym, true);
+        } else {
+          fprintf(html_file, "<B>def</B> ");
+          html_print_symbol( html_file, pass, e->sym, true);
         }
-        fprintf(html_file, "<B>arg</B> ");
-        html_print_symbol( html_file, pass, e->sym, true);
-      } else if (dynamic_cast<LabelSymbol*>(e->sym)) {
-        fprintf(html_file, "<B>label</B> ");
-        html_print_symbol( html_file, pass, e->sym, true);
+      } else if (VarSymbol* e = get_constant(expr)) {
+        if (e->immediate) {
+          char imm[128];
+          sprint_imm(imm, *e->immediate);
+          fprintf(html_file, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(e->type) ? "i" : "");
+        } else {
+          fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
+        }
+      } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+        html_print_symbol( html_file, pass, e->var, false);
+      } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+        fprintf(html_file, "(%s = ", e->name);
+      } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+        fprintf(html_file, "(%d ", e->id);
+        if (!e->primitive) {
+          fprintf(html_file, "<B>call</B> ");
+        } else {
+          fprintf(html_file, "'%s' ", e->primitive->name);
+        }
+        if (e->partialTag)
+          fprintf(html_file, "(partial) ");
       } else {
-        fprintf(html_file, "<B>def</B> ");
-        html_print_symbol( html_file, pass, e->sym, true);
+        fprintf(html_file, "(%s", astTypeName[expr->astType]);
       }
-    } else if (VarSymbol* e = get_constant(expr)) {
-      if (e->immediate) {
-        char imm[128];
-        sprint_imm(imm, *e->immediate);
-        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(e->type) ? "i" : "");
-      } else {
-        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
-      }
-    } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
-      html_print_symbol( html_file, pass, e->var, false);
-    } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
-      fprintf(html_file, "(%s = ", e->name);
-    } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
-      fprintf(html_file, "(%d ", e->id);
-      if (!e->primitive) {
-        fprintf(html_file, "<B>call</B> ");
-      } else {
-        fprintf(html_file, "'%s' ", e->primitive->name);
-      }
-      if (e->partialTag)
-        fprintf(html_file, "(partial) ");
-    } else {
-      fprintf(html_file, "(%s", astTypeName[expr->astType]);
     }
   }
 
@@ -399,12 +387,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
     html_view_ast( html_file, pass, ast);
-
-  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
-    if (dynamic_cast<BlockStmt*>(stmt))
-      fprintf(html_file, "}");
-    fprintf(html_file, "</DL>\n");
-  }
 
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
@@ -418,9 +400,21 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         fprintf(html_file, "</UL>\n");
       }
     } else if (dynamic_cast<SymExpr*>(expr)) {
-    } else {
+    } else if (dynamic_cast<CallExpr*>(expr) ||
+               dynamic_cast<NamedExpr*>(expr)) {
       fprintf(html_file, ")");
     }
+
+    if (dynamic_cast<BlockStmt*>(expr) ||
+        dynamic_cast<CondStmt*>(expr) ||
+        dynamic_cast<GotoStmt*>(expr) ||
+        dynamic_cast<ReturnStmt*>(expr) ||
+        expr->parentStmt() && expr->parentStmt() == expr) {
+      if (dynamic_cast<BlockStmt*>(expr))
+        fprintf(html_file, "}");
+      fprintf(html_file, "</DL>\n");
+    }
+
   }
 }
 
@@ -445,7 +439,7 @@ void html_view() {
     fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, currentTraversal);
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
     fprintf(html_file, "<B>module %s</B>\n", mod->name);
-    for_alist(Stmt, stmt, mod->stmts)
+    for_alist(Expr, stmt, mod->stmts)
       html_view_ast( html_file, uid, stmt);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);

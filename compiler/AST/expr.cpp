@@ -10,9 +10,32 @@
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
-  parentStmt(NULL),
+  prev(NULL),
+  next(NULL),
+  list(NULL),
   parentExpr(NULL)
 {}
+
+
+Expr* Expr::parentStmt() {
+  if (astType == STMT_RETURN ||
+      astType == STMT_BLOCK ||
+      astType == STMT_COND ||
+      astType == STMT_GOTO)
+    return parentExpr;
+  if (!parentExpr) {
+    if (dynamic_cast<ModuleSymbol*>(parentSymbol))
+      return this;
+    return NULL;
+  }
+  if (parentExpr->astType == STMT_BLOCK)
+    return this;
+  if (parentExpr->astType == STMT_COND ||
+      parentExpr->astType == STMT_GOTO ||
+      parentExpr->astType == STMT_RETURN)
+    return parentExpr;
+  return parentExpr->parentStmt();
+}
 
 
 Expr*
@@ -24,6 +47,9 @@ Expr::copyInner(ASTMap* map) {
 
 void Expr::verify() {
   BaseAST::verify();
+  if (prev || next)
+    if (!list)
+      INT_FATAL(this, "Expr is in list but does not point at it");
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
 }
@@ -33,7 +59,6 @@ ASTContext Expr::getContext(void) {
   ASTContext context;
   context.parentScope = parentScope;
   context.parentSymbol = parentSymbol;
-  context.parentStmt = parentStmt;
   context.parentExpr = parentExpr;
   return context;
 }
@@ -47,11 +72,9 @@ bool Expr::inTree(void) {
 }
 
 
-void Expr::callReplaceChild(BaseAST* new_ast) {
+void Expr::callReplaceChild(Expr* new_ast) {
   if (parentExpr) {
     parentExpr->replaceChild(this, new_ast);
-  } else if (parentStmt) {
-    parentStmt->replaceChild(this, new_ast);
   } else {
     parentSymbol->replaceChild(this, new_ast);
   }
@@ -71,11 +94,6 @@ bool Expr::isConst(void) {
 
 bool Expr::isParam(void){
   return false;
-}
-
-
-Stmt* Expr::getStmt() {
-  return (parentStmt) ? parentStmt : parentSymbol->defPoint->getStmt();
 }
 
 
@@ -153,6 +171,105 @@ bool Expr::isRef() {
 }
 
 
+void Expr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "Unexpected call to Expr::replaceChild(old, new)");
+}
+
+
+Expr* Expr::remove(void) {
+  if (!this)
+    return this;
+  if (list) {
+    if (next)
+      next->prev = prev;
+    else
+      list->tail = prev;
+    if (prev)
+      prev->next = next;
+    else
+      list->head = next;
+    next = NULL;
+    prev = NULL;
+    list = NULL;
+  } else {
+    callReplaceChild(NULL);
+  }
+  remove_help(this);
+  return this;
+}
+
+
+void Expr::replace(Expr* new_ast) {
+  if (new_ast->parentSymbol)
+    INT_FATAL(new_ast, "Argument is already in AST in Expr::replace");
+  if (new_ast->prev || new_ast->next)
+    INT_FATAL(new_ast, "Argument is in a list in Expr::replace");
+  if (list) {
+    new_ast->next = next;
+    new_ast->prev = prev;
+    new_ast->list = list;
+    if (next)
+      next->prev = new_ast;
+    else
+      list->tail = new_ast;
+    if (prev)
+      prev->next = new_ast;
+    else
+      list->head = new_ast;
+    next = NULL;
+    prev = NULL;
+    list = NULL;
+  } else {
+    callReplaceChild(new_ast);
+  }
+  ASTContext context = getContext();
+  remove_help(this);
+  insert_help(new_ast, context.parentExpr, context.parentSymbol, context.parentScope);
+}
+
+
+void Expr::insertBefore(Expr* new_ast) {
+  if (new_ast->parentSymbol)
+    INT_FATAL(new_ast, "Argument is already in AST in Expr::insertBefore");
+  if (!list)
+    INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
+  if (new_ast->list)
+    INT_FATAL(new_ast, "Argument is in a list in Expr::insertBefore");
+  if (dynamic_cast<Symbol*>(new_ast))
+    INT_FATAL(new_ast, "Argument is a symbol in Expr::insertBefore");
+  new_ast->prev = prev;
+  new_ast->next = this;
+  new_ast->list = list;
+  if (prev)
+    prev->next = new_ast;
+  else
+    list->head = new_ast;
+  prev = new_ast;
+  sibling_insert_help(this, new_ast);
+}
+
+
+void Expr::insertAfter(Expr* new_ast) {
+  if (new_ast->parentSymbol)
+    INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
+  if (!list)
+    INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");
+  if (new_ast->list)
+    INT_FATAL(new_ast, "Argument is in a list in Expr::insertAfter");
+  if (dynamic_cast<Symbol*>(new_ast))
+    INT_FATAL(new_ast, "Argument is a symbol in Expr::insertAfter");
+  new_ast->prev = this;
+  new_ast->next = next;
+  new_ast->list = list;
+  if (next)
+    next->prev = new_ast;
+  else
+    list->tail = new_ast;
+  next = new_ast;
+  sibling_insert_help(this, new_ast);
+}
+
+
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(EXPR_SYM),
   var(init_var)
@@ -169,10 +286,8 @@ SymExpr::SymExpr(char* init_var) :
 
 
 void 
-SymExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (var == old_ast) {
-    old_ast = dynamic_cast<Symbol*>(new_ast);
-  }
+SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
 
@@ -216,7 +331,11 @@ void SymExpr::print(FILE* outfile) {
 
 
 void SymExpr::codegen(FILE* outfile) {
+  if (parentStmt() && parentStmt() == this)
+    codegenStmt(outfile, this);
   var->codegen(outfile);
+  if (parentStmt() && parentStmt() == this)
+    fprintf(outfile, ";\n");
 }
 
 
@@ -275,7 +394,7 @@ DefExpr::copyInner(ASTMap* map) {
 }
 
 
-void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == init) {
     init = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == exprType) {
@@ -312,7 +431,7 @@ void DefExpr::print(FILE* outfile) {
 
 void DefExpr::codegen(FILE* outfile) {
   if (dynamic_cast<LabelSymbol*>(sym))
-    fprintf(outfile, "%s:", sym->cname);
+    fprintf(outfile, "%s:;\n", sym->cname);
 }
 
 
@@ -508,7 +627,7 @@ CallExpr::copyInner(ASTMap* map) {
 }
 
 
-void CallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -540,7 +659,7 @@ CallExpr::insertAtHead(BaseAST* ast) {
   if (Symbol* a = dynamic_cast<Symbol*>(ast))
     argList->insertAtHead(new SymExpr(a));
   else
-    argList->insertAtHead(ast);
+    argList->insertAtHead(dynamic_cast<Expr*>(ast));
 }
 
 
@@ -549,7 +668,7 @@ CallExpr::insertAtTail(BaseAST* ast) {
   if (Symbol* a = dynamic_cast<Symbol*>(ast))
     argList->insertAtTail(new SymExpr(a));
   else
-    argList->insertAtTail(ast);
+    argList->insertAtTail(dynamic_cast<Expr*>(ast));
 }
 
 
@@ -654,6 +773,9 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
 
 
 void CallExpr::codegen(FILE* outfile) {
+  if (parentStmt() && parentStmt() == this)
+    codegenStmt(outfile, this);
+
   if (primitive) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
@@ -697,6 +819,8 @@ void CallExpr::codegen(FILE* outfile) {
       }
       if (get(1)->typeInfo() == dtVoid) {
         get(2)->codegen(outfile);
+        if (parentStmt() && parentStmt() == this)
+          fprintf(outfile, ";\n");
         return;
       } 
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
@@ -1190,6 +1314,8 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "Impossible");
       break;
     }
+    if (parentStmt() && parentStmt() == this)
+      fprintf(outfile, ";\n");
     return;
   }
 
@@ -1197,6 +1323,8 @@ void CallExpr::codegen(FILE* outfile) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
       if (argList->length() == 0) {
         fprintf(outfile, "0");
+        if (parentStmt() && parentStmt() == this)
+          fprintf(outfile, ";\n");
         return;
       }
     }
@@ -1219,6 +1347,8 @@ void CallExpr::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     get(2)->codegenCastToString(outfile);
     fprintf(outfile, ")");
+    if (parentStmt() && parentStmt() == this)
+      fprintf(outfile, ";\n");
     return;
   }
 
@@ -1243,6 +1373,8 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");
+  if (parentStmt() && parentStmt() == this)
+    fprintf(outfile, ";\n");
 }
 
 
@@ -1281,7 +1413,7 @@ NamedExpr::copyInner(ASTMap* map) {
 }
 
 
-void NamedExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == actual) {
     actual = dynamic_cast<Expr*>(new_ast);
   } else {

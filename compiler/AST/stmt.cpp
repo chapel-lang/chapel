@@ -8,152 +8,41 @@
 #include "stringutil.h"
 #include "symscope.h"
 
+
 static int inBlockStmt = 0;
 bool printCppLineno = false;
 bool printChplLineno = false;
 bool inUserModule = false;
 bool justStartedGeneratingFunction = false;
 
-Stmt::Stmt(astType_t astType) :
-  BaseAST(astType),
-  parentStmt(NULL)
-{}
 
+void codegenStmt(FILE* outfile, Expr* stmt) {
+  static char* priorFilename = "";
+  static int priorLineno = -1;
 
-void Stmt::verify() {
-  BaseAST::verify();
-  if (!list) {
-    if (!dynamic_cast<BlockStmt*>(this)) {
-      INT_FATAL(this, "Statement is not in a list");
-    }
-  }
-}
-
-
-Stmt*
-Stmt::copyInner(ASTMap* map) {
-  INT_FATAL(this, "Illegal call to Stmt::copy");
-  return NULL;
-}
-
-
-static char* priorFilename = "";
-static int priorLineno = -1;
-
-void Stmt::codegen(FILE* outfile) {
-  if (lineno > 0) {
+  if (stmt->lineno > 0) {
     if (printCppLineno) {
-      fprintf(outfile, "/* ZLINE: %d %s */\n", lineno, filename);
+      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->filename);
     } 
     
     if (printChplLineno && inBlockStmt && inUserModule) {
-      if (strcmp(filename, priorFilename) != 0 ||  
+      if (strcmp(stmt->filename, priorFilename) != 0 ||  
           justStartedGeneratingFunction) {
-        fprintf(outfile, "chpl_input_filename = \"%s\";\n", filename);
-        priorFilename = stringcpy(filename);
+        fprintf(outfile, "chpl_input_filename = \"%s\";\n", stmt->filename);
+        priorFilename = stringcpy(stmt->filename);
         justStartedGeneratingFunction = false;
       }
-      if (lineno != priorLineno) {
-        fprintf(outfile, "chpl_input_lineno = %d;\n", lineno);
-        priorLineno = lineno;
+      if (stmt->lineno != priorLineno) {
+        fprintf(outfile, "chpl_input_lineno = %d;\n", stmt->lineno);
+        priorLineno = stmt->lineno;
       }
     }
   }
-}
-
-
-ASTContext Stmt::getContext(void) {
-  ASTContext context;
-  context.parentScope = parentScope;
-  context.parentSymbol = parentSymbol;
-  context.parentStmt = parentStmt;
-  context.parentExpr = NULL;
-  return context;
-}
-
-
-bool Stmt::inTree(void) {
-  if (parentSymbol)
-    return true;
-  else
-    return false;
-}
-
-
-void Stmt::insertBefore(BaseAST* new_ast) {
-  if (Expr* a = dynamic_cast<Expr*>(new_ast))
-    new_ast = new ExprStmt(a);
-  BaseAST::insertBefore(new_ast);
-}
-
-
-void Stmt::insertAfter(BaseAST* new_ast) {
-  if (Expr* a = dynamic_cast<Expr*>(new_ast))
-    new_ast = new ExprStmt(a);
-  BaseAST::insertAfter(new_ast);
-}
-
-
-void Stmt::callReplaceChild(BaseAST* new_ast) {
-  if (parentStmt) {
-    parentStmt->replaceChild(this, new_ast);
-  } else {
-    parentSymbol->replaceChild(this, new_ast);
-  }
-}
-
-
-ExprStmt::ExprStmt(Expr* initExpr) :
-  Stmt(STMT_EXPR),
-  expr(initExpr) 
-{
-  if (expr && expr->parentSymbol) {
-    INT_FATAL(this, "ExprStmt initialized with expr already in tree");
-  }
-}
-
-
-void ExprStmt::verify() {
-  Stmt::verify();
-  if (astType != STMT_EXPR) {
-    INT_FATAL(this, "Bad ExprStmt::astType");
-  }
-}
-
-
-ExprStmt*
-ExprStmt::copyInner(ASTMap* map) {
-  return new ExprStmt(COPY_INT(expr));
-}
-
-
-void ExprStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ExprStmt::replaceChild");
-  }
-}
-
-
-void ExprStmt::print(FILE* outfile) {
-  expr->print(outfile);
-  fprintf(outfile, ";");
-}
-
-
-void ExprStmt::codegen(FILE* outfile) {
-  Stmt::codegen(outfile);
-  if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-    if (!dynamic_cast<LabelSymbol*>(def->sym))
-      return;
-  expr->codegen(outfile);
-  fprintf(outfile, ";\n");
 }
 
 
 ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
-  Stmt(STMT_RETURN),
+  Expr(STMT_RETURN),
   expr(initExpr),
   yield(init_yield)
 {
@@ -164,20 +53,20 @@ ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
 }
 
 ReturnStmt::ReturnStmt(Symbol* initExpr, bool init_yield) :
-  Stmt(STMT_RETURN),
+  Expr(STMT_RETURN),
   expr(new SymExpr(initExpr)),
   yield(init_yield)
 { }
 
 ReturnStmt::ReturnStmt(char* initExpr, bool init_yield) :
-  Stmt(STMT_RETURN),
+  Expr(STMT_RETURN),
   expr(new SymExpr(new UnresolvedSymbol(initExpr))),
   yield(init_yield)
 { }
 
 
 void ReturnStmt::verify() {
-  Stmt::verify();
+  Expr::verify();
   if (astType != STMT_RETURN) {
     INT_FATAL(this, "Bad ReturnStmt::astType");
   }
@@ -202,7 +91,7 @@ ReturnStmt::copyInner(ASTMap* map) {
 }
 
 
-void ReturnStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void ReturnStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -223,7 +112,7 @@ void ReturnStmt::print(FILE* outfile) {
 
 
 void ReturnStmt::codegen(FILE* outfile) {
-  Stmt::codegen(outfile);
+  codegenStmt(outfile, this);
   if (yield)
     INT_FATAL(this, "Yield should be removed before codegen");
   SymExpr* sym = dynamic_cast<SymExpr*>(expr);
@@ -250,7 +139,7 @@ bool ReturnStmt::returnsVoid() {
 
 
 BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
-  Stmt(STMT_BLOCK),
+  Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(init_body),
   blkScope(NULL),
@@ -265,8 +154,8 @@ BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
 }
 
 
-BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
-  Stmt(STMT_BLOCK),
+BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
+  Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(new AList(init_body)),
   blkScope(NULL),
@@ -289,7 +178,7 @@ BlockStmt::~BlockStmt() {
 
 
 void BlockStmt::verify() {
-  Stmt::verify();
+  Expr::verify();
   if (astType != STMT_BLOCK) {
     INT_FATAL(this, "Bad BlockStmt::astType");
   }
@@ -309,7 +198,7 @@ BlockStmt::copyInner(ASTMap* map) {
 }
 
 
-void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == param_low) {
     param_low = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == param_high) {
@@ -354,19 +243,15 @@ codegenCobegin( FILE* outfile, AList *body) {
   // gen code for the function pointer array
   fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist (Stmt, stmt, body) {
-    if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
-      if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-        if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
-          fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
-        } else {
-          INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
-        } 
+  for_alist(Expr, stmt, body) {
+    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
+      if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
+        fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
       } else {
-        INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
-      }
+        INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
+      } 
     } else {
-      INT_FATAL(stmt, "cobegin codegen - statement not an ExprStmt");
+      INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
     }
     stmt_cnt++;
     if (stmt_cnt < num_stmts) {
@@ -378,27 +263,25 @@ codegenCobegin( FILE* outfile, AList *body) {
   // ok, walk through again and gen code for the argument array
   fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist (Stmt, stmt, body) {
-    if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
-      if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-        Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first());
-        // pass exactly one class object containing ptrs to locals
-        fprintf (outfile, "(_chpl_threadarg_t)");
-        if (actuals) {
-          /*
-            FnSymbol *fnsym = cexpr->findFnSymbol();
-            DefExpr  *formals = fnsym->formals->first();
-            if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
-            fprintf (outfile, "&");
-            }
-          */
-          fprintf (outfile, "(");
-          actuals->codegen (outfile);
-          fprintf (outfile, ")");
-        } else {
-          fprintf (outfile, "NULL");
-        }
-      } 
+  for_alist(Expr, stmt, body) {
+    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
+      Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first());
+      // pass exactly one class object containing ptrs to locals
+      fprintf (outfile, "(_chpl_threadarg_t)");
+      if (actuals) {
+        /*
+          FnSymbol *fnsym = cexpr->findFnSymbol();
+          DefExpr  *formals = fnsym->formals->first();
+          if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
+          fprintf (outfile, "&");
+          }
+        */
+        fprintf (outfile, "(");
+        actuals->codegen (outfile);
+        fprintf (outfile, ")");
+      } else {
+        fprintf (outfile, "NULL");
+      }
     }
     stmt_cnt++;
     if (stmt_cnt < num_stmts) {
@@ -421,25 +304,21 @@ codegenBegin( FILE* outfile, AList *body) {
     INT_FATAL("begin codegen - expect only one function call");
 
   fprintf( outfile, "_chpl_begin( ");
-  for_alist (Stmt, stmt, body) {
-    if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
-      if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-        if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
-          fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
-          fprintf (outfile, "(_chpl_threadarg_t) ");
-          if (Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first())) {
-            actuals->codegen (outfile);
-          } else {
-            fprintf( outfile, "NULL");
-          }
+  for_alist (Expr, stmt, body) {
+    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
+      if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
+        fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
+        fprintf (outfile, "(_chpl_threadarg_t) ");
+        if (Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first())) {
+          actuals->codegen (outfile);
         } else {
-          INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
-        } 
+          fprintf( outfile, "NULL");
+        }
       } else {
-        INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
-      }
+        INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
+      } 
     } else {
-      INT_FATAL(stmt, "cobegin codegen - statement not an ExprStmt");
+      INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
     }
   }
   fprintf (outfile, ");\n");
@@ -447,7 +326,7 @@ codegenBegin( FILE* outfile, AList *body) {
 
 
 void BlockStmt::codegen(FILE* outfile) {
-  Stmt::codegen(outfile);
+  codegenStmt(outfile, this);
   fprintf(outfile, "{\n");
   inBlockStmt++;
   if (blkScope) {
@@ -476,17 +355,13 @@ void BlockStmt::codegen(FILE* outfile) {
 
 
 void
-BlockStmt::insertAtHead(BaseAST* ast) {
-  if (Expr* a = dynamic_cast<Expr*>(ast))
-    ast = new ExprStmt(a);
+BlockStmt::insertAtHead(Expr* ast) {
   body->insertAtHead(ast);
 }
 
 
 void
-BlockStmt::insertAtTail(BaseAST* ast) {
-  if (Expr* a = dynamic_cast<Expr*>(ast))
-    ast = new ExprStmt(a);
+BlockStmt::insertAtTail(Expr* ast) {
   body->insertAtTail(ast);
 }
 
@@ -515,17 +390,17 @@ BlockStmt::isLoop(void) {
 
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(STMT_COND),
+  Expr(STMT_COND),
   condExpr(iCondExpr),
   thenStmt(NULL),
   elseStmt(NULL)
 {
-  if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt))
+  if (Expr* s = dynamic_cast<Expr*>(iThenStmt))
     thenStmt = new BlockStmt(s);
   else
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   if (iElseStmt) {
-    if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt))
+    if (Expr* s = dynamic_cast<Expr*>(iElseStmt))
       elseStmt = new BlockStmt(s);
     else
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
@@ -534,7 +409,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 
 
 void CondStmt::verify() {
-  Stmt::verify();
+  Expr::verify();
   if (astType != STMT_COND) {
     INT_FATAL(this, "Bad CondStmt::astType");
   }
@@ -569,7 +444,7 @@ CondStmt::copyInner(ASTMap* map) {
 }
 
 
-void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == condExpr) {
     condExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == thenStmt) {
@@ -594,7 +469,7 @@ void CondStmt::print(FILE* outfile) {
 }
 
 void CondStmt::codegen(FILE* outfile) {
-  Stmt::codegen(outfile);
+  codegenStmt(outfile, this);
   fprintf(outfile, "if (");
   condExpr->codegen(outfile);
   fprintf(outfile, ") ");
@@ -607,7 +482,7 @@ void CondStmt::codegen(FILE* outfile) {
 
 
 GotoStmt::GotoStmt(gotoType init_goto_type) :
-  Stmt(STMT_GOTO),
+  Expr(STMT_GOTO),
   label(NULL),
   goto_type(init_goto_type)
 {
@@ -615,7 +490,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type) :
 
 
 GotoStmt::GotoStmt(gotoType init_goto_type, char* init_label) :
-  Stmt(STMT_GOTO),
+  Expr(STMT_GOTO),
   label(init_label ? new UnresolvedSymbol(init_label) : NULL),
   goto_type(init_goto_type)
 {
@@ -623,7 +498,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type, char* init_label) :
 
 
 GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
-  Stmt(STMT_GOTO),
+  Expr(STMT_GOTO),
   label(init_label),
   goto_type(init_goto_type)
 {
@@ -631,7 +506,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
 
 
 void GotoStmt::verify() {
-  Stmt::verify();
+  Expr::verify();
   if (astType != STMT_GOTO) {
     INT_FATAL(this, "Bad GotoStmt::astType");
   }
@@ -662,7 +537,7 @@ void GotoStmt::print(FILE* outfile) {
 
 
 void GotoStmt::codegen(FILE* outfile) {
-  Stmt::codegen(outfile);
+  codegenStmt(outfile, this);
   fprintf(outfile, "goto ");
   label->codegen(outfile);
   fprintf(outfile, ";\n");
