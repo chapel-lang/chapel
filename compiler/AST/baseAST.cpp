@@ -178,17 +178,17 @@ void cleanAst() {
   gTypes.clear();
   Vec<BaseAST*> asts;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (dynamic_cast<Expr*>(ast)) {
-      if (ast->parentSymbol) {
-        asts.add(ast);
-        if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+      if (expr->parentSymbol) {
+        asts.add(expr);
+        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
           if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
             gFns.add(fn);
           if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
             gTypes.add(type);
         }
       } else {
-        delete ast;
+        delete expr;
       }
     } else {
       asts.add(ast);
@@ -224,7 +224,6 @@ BaseAST::BaseAST(astType_t type) :
   astType(type),
   id(uid++),
   parentScope(NULL),
-  parentSymbol(NULL),
   filename(yyfilename), 
   lineno(yystartlineno)
 {
@@ -335,8 +334,11 @@ ModuleSymbol* BaseAST::getModule() {
     return x->symbol->getModule();
   else if (Symbol* x = dynamic_cast<Symbol*>(this))
     return x->defPoint->getModule();
+  else if (Expr* x = dynamic_cast<Expr*>(this))
+    return x->parentSymbol->getModule();
   else
-    return parentSymbol->getModule();
+    INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
+  return NULL;
 }
 
 
@@ -351,8 +353,11 @@ FnSymbol* BaseAST::getFunction() {
     return x->symbol->getFunction();
   else if (Symbol* x = dynamic_cast<Symbol*>(this))
     return x->defPoint->getFunction();
+  else if (Expr* x = dynamic_cast<Expr*>(this))
+    return x->parentSymbol->getFunction();
   else
-    return parentSymbol->getFunction();
+    INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  return NULL;
 }
 
 

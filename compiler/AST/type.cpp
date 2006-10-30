@@ -32,8 +32,6 @@ Type::~Type() {
 
 void Type::verify() {
   BaseAST::verify();
-  if (parentSymbol)
-    INT_FATAL(this, "Type has parentSymbol set");
 }
 
 

@@ -13,7 +13,8 @@ Expr::Expr(astType_t astType) :
   prev(NULL),
   next(NULL),
   list(NULL),
-  parentExpr(NULL)
+  parentExpr(NULL),
+  parentSymbol(NULL)
 {}
 
 

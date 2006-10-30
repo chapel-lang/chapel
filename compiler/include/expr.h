@@ -24,6 +24,7 @@ class Expr : public BaseAST {
   Expr* next;       // alist next pointer
   AList* list;      // alist pointer
   Expr* parentExpr;
+  Symbol* parentSymbol;
 
   Expr(astType_t astType = EXPR);
   virtual ~Expr() { }

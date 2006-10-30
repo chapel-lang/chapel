@@ -93,7 +93,6 @@ class BaseAST {
   int id;               // Unique ID
 
   SymScope* parentScope;
-  Symbol* parentSymbol;
 
   char* filename;       // filename of location
   int lineno;           // line number of location

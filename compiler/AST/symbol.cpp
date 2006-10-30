@@ -132,8 +132,6 @@ Symbol::~Symbol() {
 
 void Symbol::verify() {
   BaseAST::verify();
-  if (parentSymbol)
-    INT_FATAL(this, "Symbol has parentSymbol set");
   if (defPoint && !defPoint->parentSymbol && !dynamic_cast<ModuleSymbol*>(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
