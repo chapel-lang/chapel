@@ -83164,3 +83164,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: codegen.cpp copy_propagation.cpp 
 
+---------------------------------------------------------------------------
+
+10/30/06 13:43:31 -- deitz
+
+Log message:
+	Updated .good
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+
