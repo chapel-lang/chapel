@@ -83174,3 +83174,19 @@ Log message:
 Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 
+---------------------------------------------------------------------------
+
+10/30/06 14:46:58 -- deitz
+
+Log message:
+	Started deleting symbols and types when they are removed from the AST.
+	Note: UnresolvedSymbols and Immediates are never deleted.
+	
+	This drops the memory usage at codegen time from 6833k to 2928k.  The
+	maximum memory used (AST after function resolution) decreases only
+	slightly.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: symbol.h 
+
