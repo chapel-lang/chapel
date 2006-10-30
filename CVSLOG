@@ -83039,3 +83039,49 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-candidate.chpl 
 
+---------------------------------------------------------------------------
+
+10/30/06 09:36:17 -- deitz
+
+Log message:
+	Removed ExprStmt and Stmt classes.  Moved subclasses of Stmt
+	(BlockStmt, ReturnStmt, GotoStmt, CondStmt) under Expr.
+	
+	Made AList contain an Expr rather than a BaseAST.  This is an
+	advantage since we no longer need to verify that Symbols or Types are
+	not in a list.  They cannot be in a list.
+	
+	Moved the following fields from BaseAST to Expr: prev, next, list.
+	Moved related functionality to the Expr class as well.
+	
+	For compiling Jacobi, this change decreases memory usage by 17% and
+	decreases compilation time by 11%.
+	
+	To do:
+	
+	  Rename and refactor parentStmt() function.  This function is
+	  designed to return the statement-level expression, i.e., the top
+	  Expr or the Expr whose parentExpr is a Stmt.  A better name is
+	  getStmtExpr() or simply getStmt().
+	
+	  Add verification to make sure no STMT_* expressions are children of
+	  CallExpr.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp astutil.cpp baseAST.cpp bb.cpp 
+	                      build.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp view.cpp 
+	chapel/compiler/include/: alist.h astutil.h baseAST.h bb.h 
+	                          build.h expr.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp copy_propagation.cpp 
+	                         cullOverReferences.cpp 
+	                         flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp scopeResolve.cpp 
+	                         verify.cpp 
+	chapel/compiler/util/: misc.cpp 
+
