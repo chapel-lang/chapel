@@ -298,7 +298,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       else
         fprintf(html_file, "<B>return</B> ");
     } else {
-      if (expr->parentStmt() && expr->parentStmt() == expr) {
+      if (expr->getStmtExpr() && expr->getStmtExpr() == expr) {
         fprintf(html_file, "<DL>\n");
       }
       fprintf(html_file, " ");
@@ -409,7 +409,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         dynamic_cast<CondStmt*>(expr) ||
         dynamic_cast<GotoStmt*>(expr) ||
         dynamic_cast<ReturnStmt*>(expr) ||
-        expr->parentStmt() && expr->parentStmt() == expr) {
+        expr->getStmtExpr() && expr->getStmtExpr() == expr) {
       if (dynamic_cast<BlockStmt*>(expr))
         fprintf(html_file, "}");
       fprintf(html_file, "</DL>\n");

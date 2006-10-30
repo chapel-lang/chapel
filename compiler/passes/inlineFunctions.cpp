@@ -24,8 +24,8 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       char* temp_name =  stringcat("_inline_temp_", formal->cname);
       VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
       temp->isCompilerTemp = true;
-      call->parentStmt()->insertBefore(new DefExpr(temp));
-      call->parentStmt()->insertBefore
+      call->getStmtExpr()->insertBefore(new DefExpr(temp));
+      call->getStmtExpr()->insertBefore
         (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));
       map->put(formal, new SymExpr(temp));
     }
@@ -51,7 +51,7 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
     stmts->add(stmt);
   for_alist(Expr, stmt, fn_body) {
     stmt->remove();
-    call->parentStmt()->insertBefore(stmt);
+    call->getStmtExpr()->insertBefore(stmt);
   }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
@@ -60,7 +60,7 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
     }
   }
   if (fn->retType == dtVoid)
-    call->parentStmt()->remove();
+    call->getStmtExpr()->remove();
   else
     call->replace(return_value);
 }
@@ -70,7 +70,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->primitive || !call->parentStmt())
+      if (call->primitive || !call->getStmtExpr())
         continue;
       FnSymbol* fn = call->findFnSymbol();
       if (!fn || !fn->hasPragma("inline"))

@@ -135,7 +135,7 @@ void deadVariableElimination(FnSymbol* fn) {
           CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
           move->replace(move->get(2)->remove());
         }
-        def->parentStmt()->remove();
+        def->remove();
       }
     }
   }
@@ -149,7 +149,7 @@ void deadExpressionElimination(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (Expr* expr = dynamic_cast<SymExpr*>(ast))
-      if (expr->parentExpr && expr == expr->parentStmt())
+      if (expr->parentExpr && expr == expr->getStmtExpr())
         expr->remove();
   }
 }

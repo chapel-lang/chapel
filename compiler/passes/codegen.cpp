@@ -28,7 +28,7 @@ convertReturnsToArgs() {
           if (!call->parentExpr) {
             VarSymbol* tmp = new VarSymbol("_ignored_ret", ct);
             tmp->isCompilerTemp = true;
-            call->parentStmt()->insertBefore(new DefExpr(tmp));
+            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->insertAtTail(tmp);
           } else {
             CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
@@ -108,12 +108,12 @@ static void handleMUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       rhs = rhs->copy();
       rhs->var->uses.add(rhs);
     }
-    call->parentStmt()->insertBefore(
+    call->getStmtExpr()->insertBefore(
       new CallExpr(PRIMITIVE_MOVE, sym,
         new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->getField(i))));
     i++;
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 // _MOVE(SYM, USE)
@@ -125,11 +125,11 @@ static void handleMSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       lhs = lhs->copy();
       lhs->var->uses.add(lhs);
     }
-    call->parentStmt()->insertBefore(
+    call->getStmtExpr()->insertBefore(
       new CallExpr(PRIMITIVE_SET_MEMBER, lhs, ct->getField(i), sym));
     i++;
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 // _SET(USE, SYM, SYM)
@@ -138,9 +138,9 @@ static void handleSUSS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
   int i = 0;
   for_fields(field, ct) {
     if (!strcmp(setter->var->name, field->name)) {
-      call->parentStmt()->insertBefore(
+      call->getStmtExpr()->insertBefore(
         new CallExpr(PRIMITIVE_MOVE, syms.v[i], call->get(3)->remove()));
-      call->parentStmt()->remove();
+      call->getStmtExpr()->remove();
       break;
     }
     i++;
@@ -163,12 +163,12 @@ static void handleSSUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       rhs = rhs->copy();
       rhs->var->uses.add(rhs);
     }
-    call->parentStmt()->insertBefore(
+    call->getStmtExpr()->insertBefore(
       new CallExpr(PRIMITIVE_SET_MEMBER, _this, sym,
         new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->getField(i))));
     i++;
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 // _SET(*, *, USE)
@@ -187,12 +187,12 @@ static void handleSSSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       lhs = lhs->copy();
       lhs->var->uses.add(lhs);
     }
-    call->parentStmt()->insertBefore(
+    call->getStmtExpr()->insertBefore(
       new CallExpr(PRIMITIVE_SET_MEMBER, _this,
         new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->getField(i)), sym));
     i++;
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 // _GET(USE, SYM)
@@ -225,13 +225,13 @@ static void handleGSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
       _this = _this->copy();
       _this->var->uses.add(_this);
     }
-    move->parentStmt()->insertBefore(
+    move->getStmtExpr()->insertBefore(
       new CallExpr(PRIMITIVE_MOVE,
         new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->getField(i)),
         new CallExpr(PRIMITIVE_GET_MEMBER, _this, sym)));
     i++;
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 static void
@@ -244,10 +244,7 @@ makeScalarReplacements(ClassType* ct, Vec<Symbol*>& syms, DefExpr* def) {
       VarSymbol* sym = new VarSymbol(name, field->type);
       sym->isCompilerTemp = def->sym->isCompilerTemp;
       syms.add(sym);
-      if (def->parentStmt())
-        def->parentStmt()->insertBefore(new DefExpr(sym));
-      else
-        def->insertBefore(new DefExpr(sym));
+      def->insertBefore(new DefExpr(sym));
     } else if (arg) {
       ArgSymbol* sym = new ArgSymbol(arg->intent, name, field->type);
       if (!strcmp(arg->name, "this"))
@@ -256,10 +253,7 @@ makeScalarReplacements(ClassType* ct, Vec<Symbol*>& syms, DefExpr* def) {
       def->insertBefore(new DefExpr(sym));
     }
   }
-  if (def->parentStmt())
-    def->parentStmt()->remove();
-  else
-    def->remove();
+  def->remove();
 }
 
 static void
@@ -285,7 +279,7 @@ scalarReplaceSyms(Vec<Symbol*>& symbols) {
         if (use == call->get(1)) {
           if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
             if (rhs && rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
-              call->parentStmt()->remove();
+              call->getStmtExpr()->remove();
             } else {
               INT_FATAL("unexpected use");
             }
@@ -339,7 +333,7 @@ scalarReplace(Vec<ClassType*>& typeSet) {
         continue;
       ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym);
       VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
-      if (var && !var->defPoint->parentStmt())
+      if (var && !var->defPoint->getStmtExpr())
         fields.add(var);
       else if (var)
         vars.add(var);

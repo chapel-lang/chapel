@@ -96,7 +96,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access"))));
   fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
   build(fn);
   fns.add(fn);
@@ -154,7 +154,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
-  ct->symbol->defPoint->parentStmt()->insertBefore(new DefExpr(fn));
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
   build(fn);
   fns.add(fn);
@@ -267,7 +267,7 @@ static void build_record_equality_function(ClassType* ct) {
   }
   fn->body = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -296,7 +296,7 @@ static void build_record_inequality_function(ClassType* ct) {
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   fn->body = retStmt;
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -314,7 +314,7 @@ static void build_enum_assignment_function(EnumType* et) {
   fn->insertFormalAtTail(arg2);
   fn->insertAtTail(new ReturnStmt(arg2));
   DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->parentStmt()->insertBefore(def);
+  et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -336,7 +336,7 @@ static void build_record_assignment_function(ClassType* ct) {
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   fn->insertAtTail(new ReturnStmt(arg1));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -359,7 +359,7 @@ static void build_union_assignment_function(ClassType* ct) {
       fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntSymbol(tmp->id)), new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
   fn->insertAtTail(new ReturnStmt(arg1));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -378,7 +378,7 @@ static void build_record_copy_function(ClassType* ct) {
     call->insertAtTail(new CallExpr(".", arg, new_StringSymbol(tmp->name)));
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -403,7 +403,7 @@ static void build_record_init_function(ClassType* ct) {
   }
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore(def);
+  ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -443,7 +443,7 @@ static void build_record_hash_function( ClassType *ct) {
     fn->insertAtTail( new ReturnStmt( call));
   }
   DefExpr *def = new DefExpr( fn);
-  ct->symbol->defPoint->parentStmt()->insertBefore( def);
+  ct->symbol->defPoint->insertBefore( def);
   reset_file_info( def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
   fns.add(fn);
@@ -467,7 +467,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->retType = dtVoid;
       fn->body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->parentStmt()->insertBefore(def);
+      type->symbol->defPoint->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
       fns.add(fn);
@@ -486,7 +486,7 @@ void buildDefaultIOFunctions(Type* type) {
       fn->retType = dtVoid;
       fn->body = type->buildDefaultReadFunctionBody(fileArg, arg);
       DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->parentStmt()->insertBefore(def);
+      type->symbol->defPoint->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
     }

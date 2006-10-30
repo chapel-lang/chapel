@@ -238,8 +238,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         if (v->isCompilerTemp)
           continue;
 
-        Expr* def_stmt= def->parentStmt();
-        Expr* def_init = def->init;
+         Expr* def_init = def->init;
         Expr* def_type = def->exprType;
         def_init->remove();
         def_type->remove();
@@ -247,7 +246,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         // need to reset default value (make re-entrant)
         if (!def_init)
           def_init = new CallExpr("_init", new CallExpr(".", _this, new_StringSymbol(v->name)));
-        def_stmt->replace(new CallExpr("=", new CallExpr(".", _this, new_StringSymbol(v->name)), def_init));
+        def->replace(new CallExpr("=", new CallExpr(".", _this, new_StringSymbol(v->name)), def_init));
 
         if (def_type) {
           ic->fields->insertAtTail(new DefExpr(v, NULL, def_type->copy()));
@@ -461,7 +460,7 @@ iterator_transform( FnSymbol *fn) {
     actuals.insertAtTail( new SymExpr( a));
   }
   fn->body->replace( new BlockStmt( new ReturnStmt( new CallExpr( ic->defaultConstructor, &actuals))));
-  normalize( fn->defPoint->parentStmt());
+  normalize( fn->defPoint);
 }
 
 
@@ -506,7 +505,7 @@ enable_scalar_promotion( FnSymbol *fn) {
 
 static void build_lvalue_function(FnSymbol* fn) {
   FnSymbol* new_fn = fn->copy();
-  fn->defPoint->parentStmt()->insertAfter(new DefExpr(new_fn));
+  fn->defPoint->insertAfter(new DefExpr(new_fn));
   if (fn->_this)
     fn->_this->type->methods.add(new_fn);
   fn->buildSetter = false;
@@ -578,7 +577,7 @@ static void normalize_returns(FnSymbol* fn) {
         ret_expr = new CallExpr(PRIMITIVE_CAST, fn->retExprType->copy(), ret_expr);
       ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
-    if (ret->next != label->defPoint->parentStmt()) {
+    if (ret->next != label->defPoint) {
       ret->replace(new GotoStmt(goto_normal, label));
       label_is_used = true;
     } else {
@@ -586,7 +585,7 @@ static void normalize_returns(FnSymbol* fn) {
     }
   }
   if (!label_is_used)
-    label->defPoint->parentStmt()->remove();
+    label->defPoint->remove();
 }
 
 
@@ -649,10 +648,10 @@ static void
 decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
   for_actuals(actual, call) {
     actual->remove();
-    call->parentStmt()->insertBefore
+    call->getStmtExpr()->insertBefore
       (new CallExpr(new_name, first_actual->copy(), actual));
   }
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 
@@ -759,10 +758,10 @@ static void apply_getters_setters(FnSymbol* fn) {
 
 
 static void insert_call_temps(CallExpr* call) {
-  if (!call->parentExpr || !call->parentStmt())
+  if (!call->parentExpr || !call->getStmtExpr())
     return;
 
-  if (call == call->parentStmt())
+  if (call == call->getStmtExpr())
     return;
   
   if (dynamic_cast<DefExpr*>(call->parentExpr))
@@ -781,7 +780,7 @@ static void insert_call_temps(CallExpr* call) {
       call = parentCall;
   }
 
-  Expr* stmt = call->parentStmt();
+  Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
   tmp->isCompilerTemp = true;
   tmp->canReference = true;
@@ -793,7 +792,7 @@ static void insert_call_temps(CallExpr* call) {
 
 static void fix_user_assign(CallExpr* call) {
   if (!call->parentExpr ||
-      call->parentStmt() == call->parentExpr ||
+      call->getStmtExpr() == call->parentExpr ||
       !call->isNamed("="))
     return;
   CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
@@ -809,19 +808,19 @@ static void fix_def_expr(DefExpr* def) {
       // expression to the type
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
         if (var->consClass == VAR_PARAM) {
-          def->parentStmt()->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_CAST, def->exprType->remove(), def->init->remove())));
+          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_CAST, def->exprType->remove(), def->init->remove())));
           return;
         }
       }
-      def->parentStmt()->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
+      def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
     }
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->isTypeVariable = true;
-    def->parentStmt()->insertBefore(new DefExpr(typeTemp));
-    def->parentStmt()->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
-    def->parentStmt()->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
+    def->insertBefore(new DefExpr(typeTemp));
+    def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
+    def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
   } else if (def->init) {
-    def->parentStmt()->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
+    def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
   }
 }
 
@@ -937,12 +936,12 @@ static bool fold_call_expr(CallExpr* call) {
               INT_FATAL(call, "bad homogeneous tuple");
             Expr* expr = call->get(2);
             for (int i = 1; i < rank; i++) {
-              if (call->parentStmt()) {
+              if (call->getStmtExpr()) {
                 VarSymbol* tmp = new VarSymbol("_tmp");
                 tmp->isCompilerTemp = true;
                 tmp->canReference = true;
-                call->parentStmt()->insertBefore(new DefExpr(tmp));
-                call->parentStmt()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", expr->copy())));
+                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", expr->copy())));
                 call->insertAtTail(tmp);
               } else {
                 call->insertAtTail(new CallExpr("_copy", expr->copy()));
@@ -1236,11 +1235,11 @@ static bool fold_def_expr(DefExpr* def) {
     }
   }
   if (value) {
-    move->parentStmt()->remove();
+    move->getStmtExpr()->remove();
     forv_Vec(SymExpr, sym, def->sym->uses) {
       sym->var = value;
     }
-    def->parentStmt()->remove();
+    def->remove();
     return true;
   } else
     return false;
@@ -1376,7 +1375,7 @@ expand_var_args(FnSymbol* fn) {
       for (int i = 1; i <= max_actuals; i++) {
         arg->variableExpr->replace(new SymExpr(new_IntSymbol(i)));
         FnSymbol* new_fn = fn->copy();
-        fn->defPoint->parentStmt()->insertBefore(new DefExpr(new_fn));
+        fn->defPoint->insertBefore(new DefExpr(new_fn));
         DefExpr* new_def = def->copy();
         new_def->init = new SymExpr(new_IntSymbol(i));
         new_fn->insertAtHead(new_def);
@@ -1385,7 +1384,7 @@ expand_var_args(FnSymbol* fn) {
         update_symbols(new_fn, &update);
         expand_var_args(new_fn);
       }
-      fn->defPoint->parentStmt()->remove();
+      fn->defPoint->remove();
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
       // handle expansion of variable argument list where number of
       // variable arguments is a parameter
@@ -1487,12 +1486,12 @@ static void tag_global(FnSymbol* fn) {
     rootScope->addVisibleFunction(fn);
     if (dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
       ModuleSymbol* mod = fn->getModule();
-      Expr* stmt = fn->defPoint->parentStmt();
+      Expr* def = fn->defPoint;
       CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
-      stmt->insertBefore(noop);
+      def->insertBefore(noop);
       fn->visiblePoint = noop;
-      stmt->remove();
-      mod->stmts->insertAtTail(stmt);
+      def->remove();
+      mod->stmts->insertAtTail(def);
     }
   }
 }
@@ -1517,11 +1516,11 @@ change_types_to_values(BaseAST* base) {
           typecall = new CallExpr(type->type->defaultConstructor);
         else
           INT_FATAL(type, "Bad type");
-        if (sym->parentStmt()) {
+        if (sym->getStmtExpr()) {
           VarSymbol* typeTemp = new VarSymbol("_typeTmp", type->type);
           typeTemp->isTypeVariable = true;
-          sym->parentStmt()->insertBefore(new DefExpr(typeTemp));
-          sym->parentStmt()->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));
+          sym->getStmtExpr()->insertBefore(new DefExpr(typeTemp));
+          sym->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));
           sym->replace(new SymExpr(typeTemp));
         } else {
           sym->replace(typecall);
@@ -1622,7 +1621,7 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         if (dtInt[i] && i != INT_SIZE_32) {
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtInt[i];
-          fn->defPoint->parentStmt()->insertBefore(new DefExpr(nfn));
+          fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
     }
@@ -1631,7 +1630,7 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         if (dtUInt[i] && i != INT_SIZE_32) {
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtUInt[i];
-          fn->defPoint->parentStmt()->insertBefore(new DefExpr(nfn));
+          fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
     }
@@ -1640,7 +1639,7 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         if (dtReal[i] && i != FLOAT_SIZE_64) {
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtReal[i];
-          fn->defPoint->parentStmt()->insertBefore(new DefExpr(nfn));
+          fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
     }
@@ -1649,7 +1648,7 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         if (dtImag[i] && i != FLOAT_SIZE_64) {
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtImag[i];
-          fn->defPoint->parentStmt()->insertBefore(new DefExpr(nfn));
+          fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
     }
@@ -1658,7 +1657,7 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
         if (dtComplex[i] && i != COMPLEX_SIZE_128) {
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtComplex[i];
-          fn->defPoint->parentStmt()->insertBefore(new DefExpr(nfn));
+          fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
     }
@@ -1679,7 +1678,7 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
     SymExpr* newsym = dynamic_cast<SymExpr*>(map.get(sym));
     newsym->var = new_IntSymbol(width);
   }
-  fn->defPoint->parentStmt()->insertAfter(new DefExpr(newfn));
+  fn->defPoint->insertAfter(new DefExpr(newfn));
   fixup_parameterized_primitive_formals(newfn);
 }
 
@@ -1697,19 +1696,19 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
             if (dtInt[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
-          fn->defPoint->parentStmt()->remove();
+          fn->defPoint->remove();
         } else if (call->isNamed("real") || call->isNamed("imag")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
             if (dtReal[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtReal[i]));
-          fn->defPoint->parentStmt()->remove();
+          fn->defPoint->remove();
         } else if (call->isNamed("complex")) {
           for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
             if (dtComplex[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtComplex[i]));
-          fn->defPoint->parentStmt()->remove();
+          fn->defPoint->remove();
         }
       }
     }
@@ -1739,7 +1738,5 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals->get(2)->remove();
   fn->formals->get(1)->remove();
   update_symbols(fn, &map);
-  Expr* stmt = fn->defPoint->parentStmt();
-  stmt->remove();
-  ct->symbol->defPoint->parentStmt()->insertBefore(stmt);
+  ct->symbol->defPoint->insertBefore(fn->defPoint->remove());
 }

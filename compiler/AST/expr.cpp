@@ -17,12 +17,9 @@ Expr::Expr(astType_t astType) :
 {}
 
 
-Expr* Expr::parentStmt() {
-  if (astType == STMT_RETURN ||
-      astType == STMT_BLOCK ||
-      astType == STMT_COND ||
-      astType == STMT_GOTO)
-    return parentExpr;
+Expr* Expr::getStmtExpr() {
+  if (!IS_EXPR(this))
+    INT_FATAL(this, "Expr::getStmtExpr() not called on EXPR");
   if (!parentExpr) {
     if (dynamic_cast<ModuleSymbol*>(parentSymbol))
       return this;
@@ -30,11 +27,9 @@ Expr* Expr::parentStmt() {
   }
   if (parentExpr->astType == STMT_BLOCK)
     return this;
-  if (parentExpr->astType == STMT_COND ||
-      parentExpr->astType == STMT_GOTO ||
-      parentExpr->astType == STMT_RETURN)
+  else if (IS_STMT(parentExpr))
     return parentExpr;
-  return parentExpr->parentStmt();
+  return parentExpr->getStmtExpr();
 }
 
 
@@ -331,10 +326,10 @@ void SymExpr::print(FILE* outfile) {
 
 
 void SymExpr::codegen(FILE* outfile) {
-  if (parentStmt() && parentStmt() == this)
+  if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
   var->codegen(outfile);
-  if (parentStmt() && parentStmt() == this)
+  if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
 }
 
@@ -773,7 +768,7 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
 
 
 void CallExpr::codegen(FILE* outfile) {
-  if (parentStmt() && parentStmt() == this)
+  if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
 
   if (primitive) {
@@ -819,7 +814,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       if (get(1)->typeInfo() == dtVoid) {
         get(2)->codegen(outfile);
-        if (parentStmt() && parentStmt() == this)
+        if (getStmtExpr() && getStmtExpr() == this)
           fprintf(outfile, ";\n");
         return;
       } 
@@ -1314,7 +1309,7 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "Impossible");
       break;
     }
-    if (parentStmt() && parentStmt() == this)
+    if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
     return;
   }
@@ -1323,7 +1318,7 @@ void CallExpr::codegen(FILE* outfile) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
       if (argList->length() == 0) {
         fprintf(outfile, "0");
-        if (parentStmt() && parentStmt() == this)
+        if (getStmtExpr() && getStmtExpr() == this)
           fprintf(outfile, ";\n");
         return;
       }
@@ -1347,7 +1342,7 @@ void CallExpr::codegen(FILE* outfile) {
     fprintf(outfile, ", ");
     get(2)->codegenCastToString(outfile);
     fprintf(outfile, ")");
-    if (parentStmt() && parentStmt() == this)
+    if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
     return;
   }
@@ -1373,7 +1368,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");
-  if (parentStmt() && parentStmt() == this)
+  if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
 }
 

@@ -10,6 +10,14 @@
 class Stmt;
 class FnSymbol;
 
+#define IS_EXPR(e)                                          \
+  ((e)->astType == EXPR_CALL || (e)->astType == EXPR_SYM || \
+   (e)->astType == EXPR_DEF || (e)->astType == EXPR_NAMED)
+
+#define IS_STMT(e)                                              \
+  ((e)->astType == STMT_RETURN || (e)->astType == STMT_BLOCK || \
+   (e)->astType == STMT_COND || (e)->astType == STMT_GOTO)
+
 class Expr : public BaseAST {
  public:
   Expr* prev;       // alist previous pointer
@@ -31,7 +39,7 @@ class Expr : public BaseAST {
 
   virtual bool isRef(void);
 
-  Expr* parentStmt();
+  Expr* getStmtExpr();
 
   void codegenCastToString(FILE* outfile);
 

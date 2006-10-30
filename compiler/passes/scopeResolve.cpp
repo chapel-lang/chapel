@@ -31,8 +31,8 @@ find_outer_loop(Expr* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
     if (block->isLoop())
       return block;
-  if (stmt->parentStmt())
-    return find_outer_loop(stmt->parentStmt());
+  if (stmt->parentExpr)
+    return find_outer_loop(stmt->parentExpr);
   return NULL;
 }
 

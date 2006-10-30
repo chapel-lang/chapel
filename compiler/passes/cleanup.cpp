@@ -42,9 +42,9 @@ process_import_expr(CallExpr* call) {
   } else
     INT_FATAL(call, "Use primitive has no module");
   if (mod != compilerModule)
-    call->parentStmt()->insertBefore(new CallExpr(mod->initFn));
+    call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
   call->parentScope->addModuleUse(mod);
-  call->parentStmt()->remove();
+  call->getStmtExpr()->remove();
 }
 
 
@@ -162,8 +162,8 @@ void cleanup(Symbol* base) {
     currentFilename = ast->filename;
     if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
       if (call->isNamed( "_build_array_type") && call->argList->length() == 4) {
-        if (call->parentStmt()) {
-          if (DefExpr *def = dynamic_cast<DefExpr*>(call->parentStmt())) {
+        if (call->getStmtExpr()) {
+          if (DefExpr *def = dynamic_cast<DefExpr*>(call->getStmtExpr())) {
             CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
             Expr *indices = tinfo->get(3);
             Expr *iter = tinfo->get(4);
@@ -173,7 +173,7 @@ void cleanup(Symbol* base) {
             
             FnSymbol *forall_init = new FnSymbol( "_forallinit");
             forall_init->insertAtTail( forblk);
-            def->parentStmt()->insertBefore( new DefExpr( forall_init));
+            def->insertBefore( new DefExpr( forall_init));
             def->init->replace( new CallExpr( forall_init));
           } else {
             INT_FATAL( call, "missing parent def expr");
@@ -283,11 +283,11 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_reduce_fn", def->sym->name, 10)) ||
       (!strncmp("_scan_fn", def->sym->name, 8)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
-    Expr* stmt = def->parentStmt();
+    Expr* stmt = def->getStmtExpr();
     BlockStmt* block = getBlock(stmt);
     if (block->getFunction()->body == block &&
         block->getFunction() == block->getModule()->initFn)
-      stmt = stmt->getFunction()->defPoint->parentStmt();
+      stmt = stmt->getFunction()->defPoint->getStmtExpr();
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }
@@ -305,7 +305,7 @@ static void destructure_tuple(CallExpr* call) {
   CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
   if (!parent || !parent->isNamed("=") || parent->get(1) != call)
     return;
-  Expr* stmt = parent->parentStmt();
+  Expr* stmt = parent->getStmtExpr();
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
   stmt = new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove());
@@ -362,7 +362,7 @@ static void build_constructor(ClassType* ct) {
   }
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
-  ct->symbol->defPoint->parentStmt()->insertBefore(new DefExpr(fn));
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   fn->_this = new VarSymbol("this", ct);
 
@@ -417,9 +417,9 @@ static void build_constructor(ClassType* ct) {
 
 static void flatten_primary_methods(FnSymbol* fn) {
   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
-    Expr* insertPoint = ts->defPoint->parentStmt();
+    Expr* insertPoint = ts->defPoint;
     while (dynamic_cast<TypeSymbol*>(insertPoint->parentSymbol))
-      insertPoint = insertPoint->parentSymbol->defPoint->parentStmt();
+      insertPoint = insertPoint->parentSymbol->defPoint;
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);

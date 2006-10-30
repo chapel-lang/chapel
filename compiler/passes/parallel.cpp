@@ -129,7 +129,7 @@ begin_mark_locals() {
       INT_FATAL( se->var, "currently can only handle locals (not args)");
     }
 
-    Expr      *localdef = local->defPoint->parentStmt();
+    Expr      *localdef = local->defPoint;
 
     if (!local->on_heap) {        // no reference counter associated yet
       local->on_heap = true;
@@ -191,7 +191,7 @@ begin_mark_locals() {
     }
 
     // add touch + release for the begin block
-    se->parentStmt()->parentExpr->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+    se->getStmtExpr()->parentExpr->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
                                                               local,
                                                               local->refc,
                                                               local->refcMutex));
@@ -214,12 +214,10 @@ begin_mark_locals() {
           CallExpr *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
                                           vs->type->symbol, 
                                           new_StringSymbol("heap alloc'd via begin"));
-          Expr     *vsdef = vs->defPoint->parentStmt();
-          vsdef->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
-                                            vs->defPoint->sym,
-                                            alloc));
+          vs->defPoint->insertAfter(new CallExpr(PRIMITIVE_SET_HEAPVAR,
+                                                 vs->defPoint->sym,
+                                                 alloc));
         }
-      
       }
     }
   }
@@ -299,11 +297,10 @@ thread_args() {
                                                      field));
               }
               wrap_fn->retType = dtVoid;
-              fcall->parentStmt()->remove();               // rm orig. call
-              wrap_fn->insertAtHead( new_cofn);          // add new call
-              fcall_def->parentStmt()->remove();           // move orig. def
-              mod->stmts->insertAtTail(fcall_def);      // to top-level
-              
+              fcall->remove();                     // rm orig. call
+              wrap_fn->insertAtHead( new_cofn);    // add new call
+              fcall_def->remove();                 // move orig. def
+              mod->stmts->insertAtTail(fcall_def); // to top-level
               build( wrap_fn);
             }
           }
