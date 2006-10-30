@@ -83122,3 +83122,21 @@ Modified files:
 	chapel/compiler/include/: baseAST.h expr.h 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+10/30/06 11:40:33 -- waynew
+
+Log message:
+	Corrected test.  Was failing because we changed the default int's width
+	from 64->32b. The format string was expecting a 64b integer.
+	
+	Added a .future showing a problem with literals and non-default width
+	types.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_format_primitives.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_format_primitives2.chpl 
+	                            test_format_primitives2.future 
+	                            test_format_primitives2.good 
+
