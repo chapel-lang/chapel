@@ -83140,3 +83140,27 @@ Added files:
 	                            test_format_primitives2.future 
 	                            test_format_primitives2.good 
 
+---------------------------------------------------------------------------
+
+10/30/06 13:42:57 -- deitz
+
+Log message:
+	Simplified generated code names of types and functions slightly.  Some
+	of the type names are still rather long.
+	
+	Improved copy propagation to apply to actual arguments that are in the
+	available set.  I was previously not doing this as I was worried about
+	pass by reference.  Now with references more clear, this turned out to
+	be easy.
+	
+	Improved copy propagation to apply through casts.
+	
+	These copy propagation changes decrease the LOC for the generated code
+	for Jacobi from 8736 to 7952 (about 9%).
+	
+	Added a bunch more symbols to the "must mangle" list.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: codegen.cpp copy_propagation.cpp 
+
