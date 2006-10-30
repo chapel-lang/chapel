@@ -39,20 +39,23 @@ void localCopyPropagation(BasicBlock* bb) {
   ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
   forv_Vec(Expr, expr, bb->exprs) {
     // Replace rhs that match available
-    // It would be easier to replace more if we didn't worry about
-    // pass by reference!
     if (CallExpr* move = dynamic_cast<CallExpr*>(expr))
       if (move->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2)))
           if (Symbol* copy = available.get(rhs->var))
             rhs->var = copy;
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2)))
-          if (rhs->primitive)
-            for_actuals(actual, rhs) {
-              if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
-                if (Symbol* copy = available.get(sym->var))
-                  sym->var = copy;
-            }
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
+          for_actuals(actual, rhs) {
+            if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
+              if (Symbol* copy = available.get(sym->var))
+                sym->var = copy;
+            if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
+              if (call->isPrimitive(PRIMITIVE_CAST))
+                if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
+                  if (Symbol* copy = available.get(sym->var))
+                    sym->var = copy;
+          }
+        }
       }
 
     // Remove pairs of invalidated copies
@@ -148,9 +151,14 @@ void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (Expr* expr = dynamic_cast<SymExpr*>(ast))
+    if (SymExpr* expr = dynamic_cast<SymExpr*>(ast)) {
       if (expr->parentExpr && expr == expr->getStmtExpr())
         expr->remove();
+    } else if (CallExpr* expr = dynamic_cast<CallExpr*>(ast)) {
+      if (expr->isPrimitive(PRIMITIVE_CAST))
+        if (expr->parentExpr && expr == expr->getStmtExpr())
+          expr->remove();
+    }
   }
 }
 

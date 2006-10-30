@@ -942,7 +942,6 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   ASTMap map;
 
   FnSymbol* clone = fn->copy(&map);
-  clone->cname = stringcat("_inst_", clone->cname);
   clone->visible = false;
   clone->instantiatedFrom = fn;
   clone->substitutions.copy(*generic_subs);
@@ -1210,16 +1209,20 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
           defPoint->parentScope->addModuleUse(type->getModule());
 
     // compute instantiatedWith vector and rename instantiated type
-    clone->cname = stringcat(clone->cname, "_A_");
     clone->name = astr(clone->name, "(");
+    clone->cname = stringcat(clone->cname, "_A_");
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
         if (Type* type = dynamic_cast<Type*>(value)) {
-          if (!first && !strncmp(clone->name, "_tuple", 6))
+          if (!first && !strncmp(clone->name, "_tuple", 6)) {
             clone->name = astr("(");
-          if (first)
+            clone->cname = "_tuple_A_";
+          }
+          if (first) {
             clone->name = astr(clone->name, ",");
+            clone->cname = stringcat(clone->cname, "_");
+          }
           clone->cname = stringcat(clone->cname, type->symbol->cname);
           clone->name = astr(clone->name, type->symbol->name);
           if (!clone->type->instantiatedWith)
@@ -1227,22 +1230,26 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
           clone->type->instantiatedWith->add(type);
           first = true;
         } else if (Symbol* symbol = dynamic_cast<Symbol*>(value)) {
-          if (first)
+          if (first) {
             clone->name = astr(clone->name, ",");
-          clone->cname = stringcat(clone->cname, symbol->cname);
+            clone->cname = stringcat(clone->cname, "_");
+          }
           VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
           if (var && var->immediate) {
             char imm[128];
             sprint_imm(imm, *var->immediate);
             clone->name = astr(clone->name, imm);
-          } else
+            clone->cname = stringcat(clone->cname, imm);
+          } else {
             clone->name = astr(clone->name, symbol->cname);
+            clone->cname = stringcat(clone->cname, symbol->cname);
+          }
           first = true;
         }
       }
     }
-    clone->cname = stringcat(clone->cname, "_B_");
     clone->name = astr(clone->name, ")");
+    clone->cname = stringcat(clone->cname, "_B");
 
     retType->symbol->defPoint->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
