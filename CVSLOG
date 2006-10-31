@@ -83268,3 +83268,19 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+10/31/06 13:52:05 -- bradc
+
+Log message:
+	Adding a future capturing the casts of floating
+	point tuples to complexes that I think should
+	work to be consistent with the language's
+	use of casts in other contexts.  Currently only
+	casting to a default "complex" type works.
+
+Added files:
+	chapel/test/types/complex/bradc/: tuple2complex.chpl 
+	                                  tuple2complex.future 
+	                                  tuple2complex.good 
+
