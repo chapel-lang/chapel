@@ -68,6 +68,8 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
   virtual bool isRef(void);
+  virtual bool isConfig();
+  virtual bool isImmediate();
 
   char* hasPragma(char* str);
   void removePragma(char* str);
@@ -114,6 +116,8 @@ class VarSymbol : public Symbol {
   void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual bool isRef(void);
+  virtual bool isConfig();
+  virtual bool isImmediate();
 };
 
 

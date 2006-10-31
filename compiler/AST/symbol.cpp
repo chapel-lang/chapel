@@ -269,6 +269,16 @@ char* Symbol::hasPragmaPrefix(char* str) {
 }
 
 
+bool Symbol::isConfig() {
+  return false;
+}
+
+
+bool Symbol::isImmediate() {
+  return false;
+}
+
+
 UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 { }
@@ -441,6 +451,16 @@ void VarSymbol::codegenDef(FILE* outfile) {
 
 bool VarSymbol::isRef(void) {
   return isReference;
+}
+
+
+bool VarSymbol::isConfig() {
+  return varClass == VAR_CONFIG;
+}
+
+
+bool VarSymbol::isImmediate() {
+  return immediate != NULL;
 }
 
 
