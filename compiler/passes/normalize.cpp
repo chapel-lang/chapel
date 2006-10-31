@@ -816,6 +816,7 @@ static void fix_def_expr(DefExpr* def) {
     }
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->isTypeVariable = true;
+    typeTemp->isTypeVariable = true;
     def->insertBefore(new DefExpr(typeTemp));
     def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
     def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
@@ -1521,6 +1522,7 @@ change_types_to_values(BaseAST* base) {
           INT_FATAL(type, "Bad type");
         if (sym->getStmtExpr()) {
           VarSymbol* typeTemp = new VarSymbol("_typeTmp", type->type);
+          typeTemp->isCompilerTemp = true;
           typeTemp->isTypeVariable = true;
           sym->getStmtExpr()->insertBefore(new DefExpr(typeTemp));
           sym->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));

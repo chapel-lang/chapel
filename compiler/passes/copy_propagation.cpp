@@ -35,28 +35,51 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
 //
 // In the presence of threads, made even more conservative; compiler
 // temps only.
+
+void updateCall(CallExpr* call, ChainHashMap<Symbol*,PointerHashFns,Symbol*>& available) {
+  if (call->primitive) {
+    for_actuals(actual, call) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
+        if (Symbol* copy = available.get(sym->var))
+          sym->var = copy;
+      if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
+        if (call->isPrimitive(PRIMITIVE_CAST))
+          if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
+            if (Symbol* copy = available.get(sym->var))
+              sym->var = copy;
+    }
+  } else {
+    for_formals_actuals(formal, actual, call) {
+      if (formal->intent != INTENT_BLANK)
+        continue;
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
+        if (Symbol* copy = available.get(sym->var))
+          sym->var = copy;
+      if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
+        if (call->isPrimitive(PRIMITIVE_CAST))
+          if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
+            if (Symbol* copy = available.get(sym->var))
+              sym->var = copy;
+    }
+  }
+}
+
+
 void localCopyPropagation(BasicBlock* bb) {
   ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
   forv_Vec(Expr, expr, bb->exprs) {
     // Replace rhs that match available
-    if (CallExpr* move = dynamic_cast<CallExpr*>(expr))
-      if (move->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2)))
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
           if (Symbol* copy = available.get(rhs->var))
             rhs->var = copy;
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
-          for_actuals(actual, rhs) {
-            if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
-              if (Symbol* copy = available.get(sym->var))
-                sym->var = copy;
-            if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
-              if (call->isPrimitive(PRIMITIVE_CAST))
-                if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
-                  if (Symbol* copy = available.get(sym->var))
-                    sym->var = copy;
-          }
-        }
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
+          updateCall(rhs, available);
+      } else {
+        updateCall(call, available);
       }
+    }
 
     // Remove pairs of invalidated copies
     // This would be alot easier if we didn't have to worry about pass
@@ -78,12 +101,12 @@ void localCopyPropagation(BasicBlock* bb) {
             if (key->parentScope != ast->parentScope)
               available.del(key);
     }
-
+    
     // Insert pairs of available copies
-    if (CallExpr* move = dynamic_cast<CallExpr*>(expr)) {
-      if (move->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
-          if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2))) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
+          if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
 
             if (!lhs->var->isCompilerTemp) // only compiler temps
               continue;
@@ -117,28 +140,41 @@ void deadVariableElimination(FnSymbol* fn) {
   compute_sym_uses(fn);
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (is_global && !def->sym->isCompilerTemp)
-        continue;
-      if (!dynamic_cast<VarSymbol*>(def->sym)) // labels, types, ...?
-        continue;
-      if (!def->sym->isCompilerTemp && def->parentSymbol != fn) // nested types not pulled out
-        continue;
-      bool used = false;
-      forv_Vec(SymExpr, use, def->sym->uses) {
-        if (!use->parentSymbol)
+  bool change = true;
+  while (change) {
+    change = false;
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+        if (!def->parentSymbol)
           continue;
-        CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
-        if (!move || !move->isPrimitive(PRIMITIVE_MOVE) || move->get(1) != use)
-          used = true;
-      }
-      if (!used) {
+        if (is_global && !def->sym->isCompilerTemp)
+          continue;
+        if (!dynamic_cast<VarSymbol*>(def->sym)) // labels, types, ...?
+          continue;
+        if (!def->sym->isCompilerTemp && def->parentSymbol != fn) // nested types not pulled out
+          continue;
+        bool used = false;
         forv_Vec(SymExpr, use, def->sym->uses) {
-          CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
-          move->replace(move->get(2)->remove());
+          if (use->parentSymbol) {
+            CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
+            if (!move || !move->isPrimitive(PRIMITIVE_MOVE) || move->get(1) != use)
+              used = true;
+          }
         }
-        def->remove();
+        if (!used) {
+          forv_Vec(SymExpr, use, def->sym->uses) {
+            if (use->parentSymbol) {
+              CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
+              Expr* rhs = move->get(2);
+              if (rhs->astType == EXPR_SYM)
+                move->remove();
+              else
+                move->replace(rhs->remove());
+            }
+          }
+          def->remove();
+          change = true;
+        }
       }
     }
   }
@@ -155,9 +191,15 @@ void deadExpressionElimination(FnSymbol* fn) {
       if (expr->parentExpr && expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = dynamic_cast<CallExpr*>(ast)) {
-      if (expr->isPrimitive(PRIMITIVE_CAST))
+      if (expr->isPrimitive(PRIMITIVE_CAST) ||
+          expr->isPrimitive(PRIMITIVE_GET_MEMBER))
         if (expr->parentExpr && expr == expr->getStmtExpr())
           expr->remove();
+      if (expr->isPrimitive(PRIMITIVE_MOVE))
+        if (SymExpr* lhs = dynamic_cast<SymExpr*>(expr->get(1)))
+          if (SymExpr* rhs = dynamic_cast<SymExpr*>(expr->get(2)))
+            if (lhs->var == rhs->var)
+              expr->remove();
     }
   }
 }

@@ -30,6 +30,7 @@ static void runPass(char *passName, void (*pass)(void)) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
   static double timeBetweenPasses = -1.0;
+  static double totalTime = 0.0;
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
@@ -62,9 +63,14 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(stderr, "%8.3f seconds\n",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    if (!strcmp(passName, "codegen"))
+    totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
+                           (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
+    if (!strcmp(passName, "codegen")) {
       fprintf(stderr, "%32s :%8.3f seconds\n", "time between passes",
               timeBetweenPasses);
+      fprintf(stderr, "%32s :%8.3f seconds\n", "total time",
+              totalTime+timeBetweenPasses);
+    }
   }
   if (strlen(fPrintStatistics))
     printStatistics(passName);

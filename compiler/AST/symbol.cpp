@@ -405,8 +405,10 @@ void VarSymbol::codegen(FILE* outfile) {
     int64 iconst = immediate->int_value();
     if (iconst == (1ll<<63)) {
       fprintf(outfile, "-INT64(9223372036854775807) - INT64(1)");
-    } else {
+    } else if (iconst <= -2147483648ll || iconst >= 2147483647ll) {
       fprintf(outfile, "INT64(%lld)", iconst);
+    } else {
+      fprintf(outfile, "%lld", iconst);
     }
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
@@ -806,6 +808,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     } else {
       char* temp_name = stringcat("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
+      temp->isCompilerTemp = true;
       copy_map.put(formal, temp);
       Expr* temp_init = NULL;
       Expr* temp_type = NULL;
@@ -1057,6 +1060,7 @@ instantiate_tuple_set(FnSymbol* fn) {
   int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
   fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, dynamic_cast<DefExpr*>(fn->formals->last())->sym)));
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name))));
   fn->insertAtHead(new DefExpr(tmp));
