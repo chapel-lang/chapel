@@ -1,4 +1,4 @@
-\noindent @@@\hrulefill \\
+The \chpl{serial} statement can be used to control the degree of parallelism.
 The serial statement is used to control the parallelism encountered
 dynamically in the execution.  The syntax for the serial statement is
 given by
@@ -6,15 +6,10 @@ given by
 serial-statement:
   `serial' expression block-level-statement
 \end{syntax}
-\noindent @@@\hrulefill \\
+where \chpl{exprression} evaluates to a \chpl{bool}.  Regardless of
+that value, \chpl{block-level-statement} is evaluated. If
+the \chpl{expression} evaluates to \chpl{true}, any dynamically
+encountered \chpl{forall} or \chpl{cobegin} statement is executed
+sequentially within that computation.
 
-The \chpl{serial} statement is used to control the parallelism.
-The syntax of \chpl{serial} is
-\begin{chapel}
-serial <expr> <block> ;
-\end{chapel}
-where \chpl{<expr>} evaluates to a \chpl{bool}.  Regardless of that
-value, \chpl{<block>} is evaluated. If the value evaluates to
-\chpl{true} however, any dynamically encountered \chpl{forall} or
-\chpl{cobegin} statement is executed sequentially. 
 

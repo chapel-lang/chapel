@@ -3,7 +3,7 @@ permit multiple assignments over its lifetime. Synchronized variables
 are declared with the type attribute \chpl{sync}. The synchronized
 variable syntax is
 \begin{chapel}
-[[var]] <symbol>: sync <type> [= <expr>];
+[var] <symbol>: sync <type> [= <expr>];
 \end{chapel}
 A sync variable is logically either {\em full} or {\em empty}. When it
 is empty, computations that attempt to read that variable are delayed

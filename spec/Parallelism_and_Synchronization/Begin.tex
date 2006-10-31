@@ -1,4 +1,3 @@
-\noindent @@@\hrulefill \\
 The begin statement spawns a computation to execute the statement
 embedded in it.  Control continues simultaneously with the next
 statement.  The syntax for the begin statement is given by
@@ -6,14 +5,14 @@ statement.  The syntax for the begin statement is given by
 begin-statement:
   `begin' statement
 \end{syntax}
-\noindent @@@\hrulefill \\
 
 The third form of creating parallelism is with the \chpl{begin}
 statement. The \chpl{begin} statement syntax is
-\begin{chapel}
-begin <statement>;
-\end{chapel}
-A second computation is created to execute \chpl{<statement>}.
+\begin{syntax}
+begin-statement:
+  `begin' statement
+\end{syntax}
+A second computation is created to execute \chpl{statement}.
 This second computation is executed concurrently with the balance of
 the initiating computation which continues with the statement
 following the \chpl{begin}. Using \chpl{begin} is an unstructured way to 
