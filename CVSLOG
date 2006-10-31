@@ -83238,3 +83238,33 @@ Removed files:
 	                                              Scan_and_Reduce.tex 
 	                                              Sequence.tex 
 
+---------------------------------------------------------------------------
+
+10/31/06 12:55:06 -- deitz
+
+Log message:
+	Fixed code generation of integer literals to not print out the INT64
+	macro if the integer literal is small.
+	
+	Marked Symbol::isCompilerTemp to true for a few more temporaries
+	inserted by the compiler.
+	
+	Made --print-passes print out the total time of all the passes (and
+	the time between the passes).
+	
+	Improved copy propagation to work on function calls not nested in
+	moves.
+	
+	Improved dead variable elimination by making it iterative until it
+	stops removing dead variables.
+	
+	Eliminated more dead expressions including getters with no purpose and
+	assignments from x to x.
+	
+	This change decreases the LOC in the generated code of Jacobi by 9%.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
+
