@@ -83299,3 +83299,14 @@ Added files:
 	                                    ra-condexpr.future 
 	                                    ra-condexpr.good 
 
+---------------------------------------------------------------------------
+
+10/31/06 14:15:27 -- deitz
+
+Log message:
+	Added Symbol::isConfig() and Symbol::isImmediate() convenience functions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+
