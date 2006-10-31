@@ -1,0 +1,11 @@
+complex cast
+
+This test casts floating point tuples into
+complexes of various widths and via a user
+type symbol.  Currently, complex casting
+only works for pure "complex" types which
+seems inconsistent with how other types
+work.
+
+When we get this working, the FFT code that
+we submitted for HPCC can be improved.
