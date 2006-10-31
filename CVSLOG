@@ -83210,3 +83210,31 @@ Modified files:
 	chapel/compiler/include/: expr.h primitive.h stmt.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+10/30/06 17:31:15 -- waynew
+
+Log message:
+	Made some changes to Section 9. Still under construction. Checkpoint.
+
+Modified files:
+	chapel/spec/: spec.tex 
+	chapel/spec/Parallelism_and_Synchronization/: Begin.tex 
+	                                              Cobegin.tex 
+	                                              Forall.tex 
+	                                              Ordered_Expressions.tex 
+	                                              Ordered_Forall.tex 
+	                                              Parallel_Array_Assignment.tex 
+	                                              Parallelism_and_Synchronization.tex 
+	                                              Serial.tex 
+	                                              Single_Assignment_Variables.tex 
+	                                              Sync_Variables.tex 
+Added files:
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Implicit_Parallelism.tex 
+	                                              Parallel_Expressions.tex 
+Removed files:
+	chapel/spec/Parallelism_and_Synchronization/: 
+	                                              Scan_and_Reduce.tex 
+	                                              Sequence.tex 
+
