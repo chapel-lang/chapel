@@ -83284,3 +83284,18 @@ Added files:
 	                                  tuple2complex.future 
 	                                  tuple2complex.good 
 
+---------------------------------------------------------------------------
+
+10/31/06 14:00:29 -- bradc
+
+Log message:
+	Another future being filed to capture workarounds in
+	the HPCC codes.  This one captures a test in which
+	an explicit type was required to make param values
+	in a conditional expression typecheck.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-condexpr.chpl 
+	                                    ra-condexpr.future 
+	                                    ra-condexpr.good 
+
