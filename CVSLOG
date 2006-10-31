@@ -83190,3 +83190,23 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+10/30/06 16:02:23 -- deitz
+
+Log message:
+	Refactored code related to param for loops.  Before this change, param
+	loops were special-cased using four fields in the BlockStmt.  This
+	change adds a new primitive that just needs to appear inside the
+	BlockStmt to signal that it controls the parameter for loop.
+	
+	This fixes a bug in parameter for loops that require parameter folding
+	as in "for param i in 1..5+5 do."  It also simplifies our
+	representation, but does not impact memory much.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp stmt.cpp 
+	chapel/compiler/include/: expr.h primitive.h stmt.h 
+	chapel/compiler/passes/: normalize.cpp 
+
