@@ -83310,3 +83310,19 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+10/31/06 14:21:19 -- bradc
+
+Log message:
+	Fixed the SeedGenerator class so that rather than
+	returning a sentinel that was checked for in the
+	Random Number generator, it actually creates the
+	seed value itself.  Eventually need to clean this
+	up to be parameterized by a type, but this keeps
+	the interface we argued for in the HPCC paper
+	but implements it more properly.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
