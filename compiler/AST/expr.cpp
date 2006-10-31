@@ -483,7 +483,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 }
 
 
-CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
+CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList()),
@@ -495,10 +495,11 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
+  callExprHelper(this, arg4);
   argList->parent = this;
 }
 
-CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
+CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList()),
@@ -510,6 +511,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
+  callExprHelper(this, arg4);
   argList->parent = this;
 }
 
@@ -1304,6 +1306,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_TUPLE_EXPAND:
     case PRIMITIVE_ERROR:
     case PRIMITIVE_WHEN:
+    case PRIMITIVE_LOOP_PARAM:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case NUM_KNOWN_PRIMS:

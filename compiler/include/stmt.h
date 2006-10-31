@@ -53,10 +53,6 @@ class BlockStmt : public Expr {
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
-  Expr* param_low; // for unrolling, low bound
-  Expr* param_high; // for unrolling, high bound
-  Expr* param_stride;
-  Expr* param_index; // for unrolling, index variable
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
   BlockStmt::BlockStmt(AList* init_body = new AList(), 

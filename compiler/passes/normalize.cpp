@@ -1269,40 +1269,41 @@ static void fold_cond_stmt(CondStmt* if_stmt) {
   }
 }
 
-static void fold_param_for(BlockStmt* block) {
-  if (block->param_low || block->param_high) {
-    if (SymExpr* lse = dynamic_cast<SymExpr*>(block->param_low)) {
-      if (SymExpr* hse = dynamic_cast<SymExpr*>(block->param_high)) {
-        if (SymExpr* sse = dynamic_cast<SymExpr*>(block->param_stride)) {
-        if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
-          if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
-          if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
-            if (lvar->immediate && hvar->immediate && svar->immediate) {
-              int low = lvar->immediate->v_int64;
-              int high = hvar->immediate->v_int64;
-              int stride = svar->immediate->v_int64;
-              block->param_low->remove();
-              block->param_high->remove();
-              Expr* index_expr = block->param_index;
-              block->param_index->remove();
-              block->blockTag = BLOCK_NORMAL;
-              Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
-              if (stride < 0)
-                INT_FATAL("fix this");
-              for (int i = low; i <= high; i += stride) {
-                VarSymbol* new_index = new VarSymbol(index->name);
-                new_index->consClass = VAR_PARAM;
-                block->insertBefore(new DefExpr(new_index, new_IntSymbol(i)));
-                ASTMap map;
-                map.put(index, new_index);
-                block->insertBefore(block->copy(&map));
+static void fold_param_for(CallExpr* loop) {
+  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->parentExpr);
+  if (!block || block->blockTag != BLOCK_PARAM_FOR)
+    INT_FATAL(loop, "bad param loop primitive");
+  if (loop && loop->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
+    if (SymExpr* lse = dynamic_cast<SymExpr*>(loop->get(2))) {
+      if (SymExpr* hse = dynamic_cast<SymExpr*>(loop->get(3))) {
+        if (SymExpr* sse = dynamic_cast<SymExpr*>(loop->get(4))) {
+          if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
+            if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
+              if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
+                if (lvar->immediate && hvar->immediate && svar->immediate) {
+                  int low = lvar->immediate->v_int64;
+                  int high = hvar->immediate->v_int64;
+                  int stride = svar->immediate->v_int64;
+                  Expr* index_expr = loop->get(1);
+                  loop->remove();
+                  block->blockTag = BLOCK_NORMAL;
+                  Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
+                  if (stride < 0)
+                    INT_FATAL("fix this");
+                  for (int i = low; i <= high; i += stride) {
+                    VarSymbol* new_index = new VarSymbol(index->name);
+                    new_index->consClass = VAR_PARAM;
+                    block->insertBefore(new DefExpr(new_index, new_IntSymbol(i)));
+                    ASTMap map;
+                    map.put(index, new_index);
+                    block->insertBefore(block->copy(&map));
+                  }
+                  normalize(block->parentSymbol);
+                  block->remove();
+                }
               }
-              normalize(block->parentSymbol);
-              block->remove();
             }
           }
-          }
-        }
         }
       }
     }
@@ -1324,15 +1325,17 @@ static void fold_params(BaseAST* base) {
   do {
     change = false;
     forv_Vec(BaseAST, ast, asts) {
-      if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
-        if (a->parentSymbol) // in ast
-          change |= fold_call_expr(a);
+      if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+        if (a->parentSymbol) {// in ast
+          if (a->isPrimitive(PRIMITIVE_LOOP_PARAM))
+            fold_param_for(a);
+          else
+            change |= fold_call_expr(a);
+        }
+      }
       if (CondStmt* a = dynamic_cast<CondStmt*>(ast))
         if (a->parentSymbol) // in ast
           fold_cond_stmt(a);
-      if (BlockStmt* a = dynamic_cast<BlockStmt*>(ast))
-        if (a->parentSymbol) // in ast
-          fold_param_for(a);
     }
     compute_sym_uses(base);
     forv_Vec(DefExpr, def, defs) {

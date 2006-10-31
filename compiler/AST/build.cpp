@@ -298,14 +298,10 @@ BlockStmt* build_for_block(BlockTag tag,
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
-  block->param_low = low;
-  block->param_high = high;
-  block->param_stride = stride;
   VarSymbol* index_var = new VarSymbol(index);
-  block->param_index = new SymExpr(index_var);
+  block->insertAtHead(new CallExpr(PRIMITIVE_LOOP_PARAM, new SymExpr(index_var), low, high, stride));
   BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
-  block->insertBefore(new CallExpr("=", index_var, index_var)); // because otherwise it is dead leading to an analysis problem
   return build_chpl_stmt(outer);
 }
 

@@ -107,9 +107,9 @@ class CallExpr : public Expr {
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(BaseAST* base, AList* args);

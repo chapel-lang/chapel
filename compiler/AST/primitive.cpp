@@ -266,6 +266,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid);
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
+  prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);
+
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);
   prim_def("asin", returnInfoFloat);
