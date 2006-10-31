@@ -83326,3 +83326,17 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+10/31/06 14:52:14 -- bradc
+
+Log message:
+	A future I found during HPCC in which we generate
+	a confusing error message when two modules of the
+	same name are found in the user code.
+
+Added files:
+	chapel/test/modules/bradc/: multipleModulesSameName.chpl 
+	                            multipleModulesSameName.future 
+	                            multipleModulesSameName.good 
+
