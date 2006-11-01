@@ -83865,3 +83865,14 @@ Added files:
 	chapel/runtime/include/: chplfp.h 
 	chapel/runtime/include/sunos/: chplfp.h 
 
+---------------------------------------------------------------------------
+
+11/01/06 14:44:48 -- deitz
+
+Log message:
+	Increased window of test passing to mirror the changes I made to
+	test_timer1 a few weeks ago.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_timer2.chpl 
+
