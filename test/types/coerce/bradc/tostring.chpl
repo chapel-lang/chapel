@@ -60,8 +60,6 @@ dotype(f32);
 dotype(f64);
 dotype(fdf);
 
-/* no min/max on complex types
 dotype(c64);
 dotype(c128);
 dotype(cdf);
-*/

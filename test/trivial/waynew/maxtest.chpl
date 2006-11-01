@@ -26,3 +26,8 @@ writeln( max( f32.type));
 writeln( max( f64.type));
 writeln( max( real.type));
 
+var c1:complex(64);
+var c2:complex(128);
+writeln( max( c1.type));
+writeln( max( c2.type));
+

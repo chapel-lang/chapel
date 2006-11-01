@@ -936,7 +936,10 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MIN_FLOAT%d", get_width( t));
           } else if (is_imag_type( t)) {
             fprintf( outfile, "MIN_IMAG%d", get_width( t));
-          } else {   // must be (is_complex_type( t))
+          } else if (is_complex_type( t)) {
+            fprintf( outfile, "_chpl_complex%d( MIN_FLOAT%d, MIN_FLOAT%d)", 
+                     get_width( t), get_width( t)/2, get_width( t)/2);
+          } else {
             INT_FATAL( t, "cannot do min on complex types");
           }
         } else {
@@ -956,7 +959,10 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "MAX_FLOAT%d", get_width( t));
           } else if (is_imag_type( t)) {
             fprintf( outfile, "MAX_IMAG%d", get_width( t));
-          } else {   // must be (is_complex_type( t))
+          } else if (is_complex_type( t)) {
+            fprintf( outfile, "_chpl_complex%d( MAX_FLOAT%d, MAX_FLOAT%d)", 
+                     get_width( t), get_width( t)/2, get_width( t)/2);
+          } else {
             INT_FATAL( t, "cannot do max on complex types");
           }
         } else {

@@ -25,3 +25,8 @@ var f64:real;
 writeln( min( f32.type));
 writeln( min( f64.type));
 writeln( min( real));
+
+var c1:complex(64);
+var c2:complex(128);
+writeln( min( c1.type));
+writeln( min( c2.type));
