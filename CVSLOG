@@ -83804,3 +83804,13 @@ Log message:
 Removed files:
 	chapel/spec/: README 
 
+---------------------------------------------------------------------------
+
+11/01/06 10:00:07 -- deitz
+
+Log message:
+	Removed stub.
+
+Removed files:
+	chapel/spec/: stub.tex 
+
