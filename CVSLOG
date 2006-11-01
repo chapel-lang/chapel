@@ -83814,3 +83814,13 @@ Log message:
 Removed files:
 	chapel/spec/: stub.tex 
 
+---------------------------------------------------------------------------
+
+11/01/06 10:13:44 -- deitz
+
+Log message:
+	Updated listings settings and changed font to times based on the hpcc work.
+
+Modified files:
+	chapel/spec/: chapel_listing.tex spec.tex syntax_listing.tex 
+
