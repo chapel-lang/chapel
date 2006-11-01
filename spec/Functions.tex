@@ -1,20 +1,18 @@
 \sekshun{Functions}
 \label{Functions}
 
-This is a stub.  This portion of the document does not exist.
+This section defines functions.  Methods and iterators are functions
+and most of this section applies to them as well.  They are defined
+separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 
 \subsection{Function Definitions}
 \label{Function_Definitions}
 
-Functions, iterators, and methods (collectively referred to as
-functions in places) are declared with the following syntax:
+Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
-  `def' type-binding[OPT] function-name argument-list[OPT]
+  `def' function-name argument-list var-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
-
-type-binding:
-  identifier .
 
 function-name:
   identifier
@@ -48,9 +46,40 @@ variable-argument-expression:
 
 formal-tag: one of
   in out inout param type
+
+var-clause:
+  `var'
+
+where-clause:
+  `where' expression
 \end{syntax}
-Iterators are discussed in Section~\ref{Iterators}.  Methods are
-discussed in Section~\ref{Class_Methods}.
+
+Operator overloading is supported in Chapel on the operators listed
+above under operator name.  Operator and function overloading is
+discussed in~\rsec{Function_Overloading}.
+
+The intents \chpl{in}, \chpl{out}, and \chpl{inout} are discussed
+in~\rsec{Intents}.  The formal tags \chpl{param} and \chpl{type} make
+a function generic and are discussed in~\rsec{Generics}.  If the
+formal argument's type is elided, generic, or prefixed with a question
+mark, the function is also generic and is discussed
+in~\rsec{Generics}.
+
+Default expressions allow for the omission of actual arguments at the
+call site, resulting in the implicit passing of a default value.
+Default values are discussed in~\rsec{Default_Values}.
+
+Functions can take a variable number of arguments.  Such functions are
+discussed in Section~\rsec{Variable_Length_Argument_Lists}.
+
+The optional var clause defines a variable function discussed
+in~\rsec{Variable_Functions}.  A variable setter function can be
+defined explicitly by prefixing the function's name with the
+assignment operator.  This type of variable function is discussed
+in~\rsec{Explicit_Setter_Functions}.
+
+The optional where clause is only applicable if the function is
+generic.  It is discussed in~\rsec{Where_Expressions}.
 
 \subsection{The Return Statement}
 \label{The_Return_Statement}
@@ -64,25 +93,82 @@ return-statement:
   `return' expression[OPT] ;
 \end{syntax}
 
+\begin{example}
+The following code defines a function that returns the sum of three
+integers:
+\begin{chapel}
+def sum(i1: int, i2: int, i3: int)
+  return i1 + i2 + i3;
+\end{chapel}
+\end{example}
+
 \subsection{Function Calls}
 \label{Function_Calls}
 
-This is a stub.  This portion of the document does not exist.
+Functions are called in call expressions described
+in~\rsec{Call_Expressions}.  The function that is called is resolved
+according to the algorithm described in~\rsec{Function_Resolution}.
 
 \subsection{Formal Arguments}
 \label{Formal_Arguments}
 
-This is a stub.  This portion of the document does not exist.
+Chapel supports an intuitive formal argument passing mechanism.  An
+argument is passed by value unless it is a class, array, or domain in
+which case it is passed by reference.
+
+Intents~(\rsec{Intents}) result in potential assignments to temporary
+variables during a function call.
 
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
 
-This is a stub.  This portion of the document does not exist.
+A formal argument can be named at the call site to explicitly map an
+actual argument to a formal argument.
+
+\begin{example}
+In the code
+\begin{chapel}
+def foo(x: int, y: int) { ... }
+
+foo(x=2, y=3);
+foo(y=3, x=2);
+\end{chapel}
+named argument passing is used to map the actual arguments to the
+formal arguments.  The two function calls are equivalent.
+\end{example}
+
+Named arguments are sometimes necessary to disambiguate calls or
+ignore arguments with default values.  For a function that has many
+arguments, it is sometimes good practice to name the arguments at the
+callsite for compiler-checked documentation.
 
 \subsubsection{Default Values}
 \label{Default_Values}
 
-This is a stub.  This portion of the document does not exist.
+Default values can be specified for a formal argument by appending the
+assignment operator and a default expression the declaration of the
+formal argument.  If the actual argument is omitted from the function
+call, the default expression is evaluated when the function call is
+made and the evaluated result is passed to the formal argument as if
+it were passed from the call site.
+
+\begin{example}
+In the code
+\begin{chapel}
+def foo(x: int = 5, y: int = 7) { ... }
+
+foo();
+foo(7);
+foo(y=5);
+\end{chapel}
+default values are specified for the formal arguments \chpl{x}
+and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
+following three calls where the actual arguments are
+explicit: \chpl{foo(5, 7)}, \chpl{foo(7, 7)}, and \chpl{foo(5, 5)}.
+Note that named arguments are necessary to pass actual arguments to
+formal arguments but use default values for arguments that are
+specified earlier in the formal argument list.
+\end{example}
 
 \subsection{Intents}
 \label{Intents}

@@ -70,7 +70,20 @@ This is a stub.  This portion of the document does not exist.
 \subsubsection{Class Method Declarations}
 \label{Class_Method_Declarations}
 
-This is a stub.  This portion of the document does not exist.
+Methods are functions that are bound to a class.  They are declared
+with the following syntax:
+\begin{syntax}
+method-declaration-statement:
+  `def' type-binding function-name argument-list[OPT] var-clause[OPT]
+    return-type[OPT] where-clause[OPT] block-level-statement
+
+type-binding:
+  identifier .
+\end{syntax}
+
+If a method is declared within the lexical scope of a class, record,
+or union, the type binding can be omitted and is taken to be the
+innermost class, record, or union that the method is defined in.
 
 \subsubsection{The {\em this} Reference}
 \label{The_em_this_Reference}
