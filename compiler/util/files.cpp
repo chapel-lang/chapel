@@ -15,14 +15,11 @@ char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
 char ccflags[256] = "-g";
 
-FILE* codefile;
-
 static char* tmpdirname = NULL;
 static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
 static const int MAX_CHARS_PER_PID = 32;
 
-static FILE* makefile;
 static char* intExeFilename;
 static int numLibFlags = 0;
 static char** libFlag = NULL;
@@ -213,24 +210,6 @@ void closeCFile(fileinfo* fi) {
 }
 
 
-void openCFiles(char* modulename, fileinfo* outfile) {
-  genCFilenames(modulename, &(outfile->filename));
-  outfile->pathname = genIntFilename(outfile->filename);
-
-  fprintf(makefile, "\t%s \\\n", outfile->pathname);
-  
-  outfile->fptr = openfile(outfile->pathname);
-
-  codefile = outfile->fptr;
-}
-
-
-void closeCFiles(fileinfo* outfile) {
-  closefile(outfile->fptr);
-  beautify(outfile);
-}
-
-
 fileinfo* openTmpFile(char* tmpfilename) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
@@ -239,54 +218,6 @@ fileinfo* openTmpFile(char* tmpfilename) {
   openfile(newfile, "w");
 
   return newfile;
-}
-
-
-static void genMakefileHeader(char* srcfilename, char* systemDir) {
-  char* strippedExeFilename = stripdirectories(executableFilename);
-  intExeFilename = genIntFilename(strippedExeFilename);
-  // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., a.out and ./a.out)
-  intExeFilename = stringcat(intExeFilename, ".tmp");
-  // BLC: We generate a TMPBINNAME which is the name that will be used
-  // by the C compiler in creating the executable, and is in the
-  // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user, or a.out by
-  // default -- after linking is done.  As it turns out, this saves a
-  // factor of 5 or so in time in running the test system, as opposed
-  // to specifying BINNAME on the C compiler command line.
-  fprintf(makefile, "CFLAGS = %s\n", ccflags);
-  fprintf(makefile, "BINNAME = %s\n", executableFilename);
-  fprintf(makefile, "TMPBINNAME = %s\n", intExeFilename);
-  fprintf(makefile, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(systemDir));
-  fprintf(makefile, "CHPLSRC = \\\n");
-}
-
-
-static void
-genMakefileLibs () {
-  fprintf(makefile, "\nLIBS =");
-  int i;
-  for (i=0; i<numLibFlags; i++) {
-    fprintf(makefile, " %s", libFlag[i]);
-  }
-  fprintf(makefile, "\n");
-}
-
-
-void openMakefile(char* srcfilename, char* systemDir) {
-  char* makefilename = genIntFilename("Makefile");
-  makefile = openfile(makefilename);
-  genMakefileHeader(srcfilename, systemDir);
-}
-
-
-void closeMakefile() {
-  genMakefileLibs();
-  fprintf(makefile, "\n");
-  fprintf(makefile, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
-
-  closefile(makefile);
 }
 
 

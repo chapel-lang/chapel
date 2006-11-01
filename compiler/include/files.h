@@ -7,8 +7,6 @@ extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 extern char ccflags[256];
 
-extern FILE* codefile;
-
 struct fileinfo {
   FILE* fptr;
   char* filename;
@@ -21,16 +19,11 @@ char* sysdirToChplRoot(char* systemDir);
 void deleteTmpDir(void);
 
 void genCFilenames(char* modulename, char** outfilename);
-void openCFiles(char* modulename, fileinfo* outfile);
-void closeCFiles(fileinfo* outfile);
 
 void openCFile(fileinfo* fi, char* name, char* ext = NULL);
 void closeCFile(fileinfo* fi);
 
 fileinfo* openTmpFile(char* tmpfilename);
-
-void openMakefile(char* srcfilename, char* systemDir);
-void closeMakefile(void);
 
 void openfile(fileinfo* thefile, char* mode);
 void closefile(fileinfo* thefile);
@@ -46,4 +39,3 @@ char* createGDBFile(int argc, char* argv[]);
 void makeBinary(void);
 
 #endif
-
