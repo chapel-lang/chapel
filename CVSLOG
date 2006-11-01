@@ -83375,3 +83375,15 @@ Added files:
 	                            ra-paramWidth.good 
 	chapel/test/modules/bradc/helperModules/: ra-randstream.chpl 
 
+---------------------------------------------------------------------------
+
+10/31/06 16:19:41 -- bradc
+
+Log message:
+	Checking utilities into our util/ directory
+	- diffLatexCode: script for diffing latex code
+	- replstring: script for replacing text in files
+
+Added files:
+	chapel/util/: diffLatexCode replstring 
+
