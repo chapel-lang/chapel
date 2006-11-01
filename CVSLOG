@@ -83898,3 +83898,14 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/06 14:52:39 -- deitz
+
+Log message:
+	Removed some dead code.
+
+Modified files:
+	chapel/compiler/include/: files.h 
+	chapel/compiler/util/: files.cpp 
+
