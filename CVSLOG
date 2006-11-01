@@ -83876,3 +83876,25 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_timer2.chpl 
 
+---------------------------------------------------------------------------
+
+11/01/06 14:46:22 -- deitz
+
+Log message:
+	Simplfied code generation code and some file generation code.  Pruning
+	and dead code elimination to follow.
+	
+	Added to the generated code another file, called _main.c, that
+	contains a #include of the header file and all the module's C files.
+	This file is then compiled by the c compiler.  Prior, each of the C
+	files was compiled and preprocessed separately and each included the
+	header file.
+	
+	This change improves compilation time by 27% when compiling Jacobi.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp 
+	chapel/compiler/include/: files.h symbol.h 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/util/: files.cpp 
+
