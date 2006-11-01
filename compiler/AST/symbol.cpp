@@ -1534,27 +1534,14 @@ void ModuleSymbol::setModScope(SymScope* init_modScope) {
 }
 
 
-void ModuleSymbol::codegenDef(void) {
-  fileinfo outfileinfo;
-
+void ModuleSymbol::codegenDef(FILE* outfile) {
   inUserModule = (modtype == MOD_USER);
-  openCFiles(name, &outfileinfo);
-
-  fprintf(codefile, "#include \"_chpl_header.h\"\n");
-
-  modScope->codegenFunctions(codefile);
-
-  closeCFiles(&outfileinfo);
+  modScope->codegenFunctions(outfile);
 }
 
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
-}
-
-
-bool ModuleSymbol::isFileModule(void) {
-  return (lineno == 0);
 }
 
 

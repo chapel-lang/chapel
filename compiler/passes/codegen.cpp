@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "astutil.h"
+#include "beautify.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -488,7 +489,10 @@ static void codegen_header(void) {
     }
   }
 
-  FILE* outfile = openCFile("_chpl_header.h");
+  fileinfo header;
+  openCFile(&header, "_chpl_header", "h");
+  FILE* outfile = header.fptr;
+
   fprintf(outfile, "#include \"stdchpl.h\"\n");
   fprintf(outfile, "\n");
 
@@ -545,43 +549,36 @@ static void codegen_header(void) {
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
     varSymbol->codegenDef(outfile);
   }
-  closeCFile(outfile);
+  closeCFile(&header);
 }
 
 
 static void
-codegen_config() {
-  fileinfo outfileinfo;
-  char* rtconfigFile = "rtconfig";
-  openCFiles(rtconfigFile, &outfileinfo);
-  fprintf(codefile, "#include \"stdchpl.h\"\n\n");
-  fprintf(codefile, "void CreateConfigVarTable(void) {\n");
-  fprintf(codefile, "initConfigVarTable();\n");
+codegen_config(FILE* outfile) {
+  fprintf(outfile, "void CreateConfigVarTable(void) {\n");
+  fprintf(outfile, "initConfigVarTable();\n");
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      codefile = outfileinfo.fptr;
       VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
       if (var && var->varClass == VAR_CONFIG) {
-        fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
-        fprintf(codefile, var->type->symbol->name);
-        fprintf(codefile, "\", \"%s\");\n", var->getModule()->name);
+        fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
+        fprintf(outfile, var->type->symbol->name);
+        fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
       }
     }
   }
 
-  codefile = outfileinfo.fptr;
-  fprintf(codefile, "if (askedToParseArgs()) {\n");
-  fprintf(codefile, "  parseConfigArgs();\n");
-  fprintf(codefile, "}\n");
+  fprintf(outfile, "if (askedToParseArgs()) {\n");
+  fprintf(outfile, "  parseConfigArgs();\n");
+  fprintf(outfile, "}\n");
 
-  fprintf(codefile, "if (askedToPrintHelpMessage()) {\n");
-  fprintf(codefile, "  printHelpTable();\n");
-  fprintf(codefile, "  printConfigVarTable();\n");
-  fprintf(codefile, "}\n");
+  fprintf(outfile, "if (askedToPrintHelpMessage()) {\n");
+  fprintf(outfile, "  printHelpTable();\n");
+  fprintf(outfile, "  printConfigVarTable();\n");
+  fprintf(outfile, "}\n");
   
-  fprintf(codefile, "}\n");
-  closeCFiles(&outfileinfo);
+  fprintf(outfile, "}\n");
 }
 
 
@@ -589,18 +586,29 @@ void codegen(void) {
   if (no_codegen)
     return;
 
+  fileinfo mainfile;
+  openCFile(&mainfile, "_main", "c");
+  fprintf(mainfile.fptr, "#include \"_chpl_header.h\"\n");
+
+  codegen_makefile(&mainfile);
+
   codegen_header();
 
-  openMakefile(allModules.v[0]->filename, system_dir);
-
-  codegen_config();
+  codegen_config(mainfile.fptr);
 
   forv_Vec(ModuleSymbol, currentModule, allModules) {
     mysystem(stringcat("# codegen-ing module", currentModule->name),
              "generating comment for --print-commands option");
-    currentModule->codegenDef();
+
+    fileinfo modulefile;
+    openCFile(&modulefile, currentModule->name, "c");
+    currentModule->codegenDef(modulefile.fptr);
+    closeCFile(&modulefile);
+    fprintf(mainfile.fptr, "#include \"%s%s\"\n", currentModule->name, ".c");
+    beautify(&modulefile);
   }
 
-  closeMakefile();
+  closeCFile(&mainfile);
+  beautify(&mainfile);
   makeBinary();
 }

@@ -15,6 +15,7 @@ struct fileinfo {
   char* pathname;
 };
 
+void codegen_makefile(fileinfo* mainfile);
 char* sysdirToChplRoot(char* systemDir);
 
 void deleteTmpDir(void);
@@ -23,8 +24,8 @@ void genCFilenames(char* modulename, char** outfilename);
 void openCFiles(char* modulename, fileinfo* outfile);
 void closeCFiles(fileinfo* outfile);
 
-FILE* openCFile(char* name);
-void closeCFile(FILE* f);
+void openCFile(fileinfo* fi, char* name, char* ext = NULL);
+void closeCFile(fileinfo* fi);
 
 fileinfo* openTmpFile(char* tmpfilename);
 

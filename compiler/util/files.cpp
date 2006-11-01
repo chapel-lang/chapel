@@ -198,14 +198,18 @@ void closefile(fileinfo* thefile) {
 }
 
 
-FILE* openCFile(char* name) {
-  name = genIntFilename(name);
-  return fopen(name, "w");
+void openCFile(fileinfo* fi, char* name, char* ext) {
+  if (ext)
+    fi->filename = stringcat(name, ".", ext);
+  else
+    fi->filename = stringcpy(name);
+  fi->pathname = genIntFilename(fi->filename);
+  fi->fptr = fopen(fi->pathname, "w");
 }
 
 
-void closeCFile(FILE* f) {
-  fclose(f);
+void closeCFile(fileinfo* fi) {
+  fclose(fi->fptr);
 }
 
 
@@ -373,3 +377,33 @@ void makeBinary(void) {
 }
 
 
+void
+codegen_makefile(fileinfo* mainfile) {
+  fileinfo makefile;
+  openCFile(&makefile, "Makefile");
+  char* strippedExeFilename = stripdirectories(executableFilename);
+  intExeFilename = genIntFilename(strippedExeFilename);
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., a.out and ./a.out)
+  intExeFilename = stringcat(intExeFilename, ".tmp");
+  // BLC: We generate a TMPBINNAME which is the name that will be used
+  // by the C compiler in creating the executable, and is in the
+  // --savec directory (a /tmp directory by default).  We then copy it
+  // over to BINNAME -- the name given by the user, or a.out by
+  // default -- after linking is done.  As it turns out, this saves a
+  // factor of 5 or so in time in running the test system, as opposed
+  // to specifying BINNAME on the C compiler command line.
+  fprintf(makefile.fptr, "CFLAGS = %s\n", ccflags);
+  fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
+  fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
+  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(system_dir));
+  fprintf(makefile.fptr, "CHPLSRC = \\\n");
+  fprintf(makefile.fptr, "\t%s \\\n", mainfile->pathname);
+  fprintf(makefile.fptr, "\nLIBS =");
+  for (int i=0; i<numLibFlags; i++)
+    fprintf(makefile.fptr, " %s", libFlag[i]);
+  fprintf(makefile.fptr, "\n");
+  fprintf(makefile.fptr, "\n");
+  fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
+  closeCFile(&makefile);
+}

@@ -257,8 +257,7 @@ class ModuleSymbol : public Symbol {
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void codegenDef(void);
-  bool isFileModule(void);
+  void codegenDef(FILE* outfile);
 
   static int numUserModules(Vec<ModuleSymbol*>* moduleList);
 };

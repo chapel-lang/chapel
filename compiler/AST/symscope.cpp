@@ -227,8 +227,8 @@ void SymScope::codegenFunctions(FILE* outfile) {
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(tmp)) {
-        ts->type->codegenStringToType(codefile);
-        ts->type->codegenConfigVarRoutines(codefile);
+        ts->type->codegenStringToType(outfile);
+        ts->type->codegenConfigVarRoutines(outfile);
       }
     }
   }
