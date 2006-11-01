@@ -83794,3 +83794,13 @@ Removed files:
 	                        Synchronization_Variables.tex 
 	                        Variable_Declarations.tex Variables.tex 
 
+---------------------------------------------------------------------------
+
+11/01/06 09:57:07 -- deitz
+
+Log message:
+	Removed README which explained the preprocess script (no longer used).
+
+Removed files:
+	chapel/spec/: README 
+
