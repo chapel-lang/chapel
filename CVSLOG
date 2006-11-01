@@ -83824,3 +83824,14 @@ Log message:
 Modified files:
 	chapel/spec/: chapel_listing.tex spec.tex syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/01/06 11:29:45 -- deitz
+
+Log message:
+	Filled in the first four parts of the function section and moved the
+	method syntax to the class section.
+
+Modified files:
+	chapel/spec/: Classes.tex Functions.tex 
+
