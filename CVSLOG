@@ -83835,3 +83835,13 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Functions.tex 
 
+---------------------------------------------------------------------------
+
+11/01/06 11:44:46 -- deitz
+
+Log message:
+	Added function intents section.
+
+Modified files:
+	chapel/spec/: Functions.tex 
+
