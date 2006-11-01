@@ -1,0 +1,180 @@
+\sekshun{Functions}
+\label{Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Function Definitions}
+\label{Function_Definitions}
+
+Functions, iterators, and methods (collectively referred to as
+functions in places) are declared with the following syntax:
+\begin{syntax}
+function-declaration-statement:
+  `def' type-binding[OPT] function-name argument-list[OPT]
+    return-type[OPT] where-clause[OPT] block-level-statement
+
+type-binding:
+  identifier .
+
+function-name:
+  identifier
+  = identifier
+  operator-name
+
+operator-name: one of
+  + - * / % ** && || ! == <= >= < > << >> & | ^ ~ #
+
+argument-list:
+  ( formals[OPT] )
+
+formals:
+  formal
+  formal , formals
+
+formal:
+  formal-tag identifier formal-type[OPT] default-expression[OPT]
+  formal-tag identifier formal-type[OPT] variable-argument-expression
+
+formal-type:
+  : type
+  : TQUESTION identifier
+
+default-expression:
+  = expression
+
+variable-argument-expression:
+  ... expression
+  ... TQUESTION identifier
+
+formal-tag: one of
+  in out inout param type
+\end{syntax}
+Iterators are discussed in Section~\ref{Iterators}.  Methods are
+discussed in Section~\ref{Class_Methods}.
+
+\subsection{The Return Statement}
+\label{The_Return_Statement}
+
+The return statement must appear in a function.  It exits that
+function, returning control to the point at which that function was
+called.  It can optionally return a value.  The syntax of the return
+statement is given by
+\begin{syntax}
+return-statement:
+  `return' expression[OPT] ;
+\end{syntax}
+
+\subsection{Function Calls}
+\label{Function_Calls}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Formal Arguments}
+\label{Formal_Arguments}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Named Arguments}
+\label{Named_Arguments}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Default Values}
+\label{Default_Values}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Intents}
+\label{Intents}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{The Blank Intent}
+\label{The_Blank_Intent}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{The In Intent}
+\label{The_In_Intent}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{The Out Intent}
+\label{The_Out_Intent}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{The Inout Intent}
+\label{The_Inout_Intent}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Variable Functions}
+\label{Variable_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Explicit Setter Functions}
+\label{Explicit_Setter_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Function Overloading}
+\label{Function_Overloading}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Function Resolution}
+\label{Function_Resolution}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Identifying Visible Functions}
+\label{Identifying_Visible_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Determining Candidate Functions}
+\label{Determining_Candidate_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Determining More Specific Functions}
+\label{Determining_More_Specific_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Visibility and Function Resolution}
+\label{Visibility_and_Function_Resolution}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Functions with Class Arguments}
+\label{Functions_with_Class_Arguments}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Most Specific Function}
+\label{Most_Specific_Function}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Nested Functions}
+\label{Nested_Functions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Accessing Outer Variables}
+\label{Accessing_Outer_Variables}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Variable Length Argument Lists}
+\label{Variable_Length_Argument_Lists}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Special Functions}
+\label{Special_Functions}
+
+This is a stub.  This portion of the document does not exist.

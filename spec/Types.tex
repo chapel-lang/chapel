@@ -1,0 +1,333 @@
+\sekshun{Types}
+\label{Types}
+
+Chapel is a statically typed language with a rich set of types.  These
+include a set of predefined primitive types, enumerated types,
+classes, records, unions, tuples, sequences, domains, and arrays.
+This section defines the primitive types, enumerated types, and type
+aliases.
+
+Programmers can define their own enumerated types, classes, records,
+unions, and type aliases in type declaration statements summarized by
+the following syntax:
+\begin{syntax}
+type-declaration-statement:
+  enum-declaration-statement
+  class-declaration-statement
+  record-declaration-statement
+  union-declaration-statement
+  type-alias-declaration-statement
+\end{syntax}
+
+Classes are discussed in Section~\ref{Classes}.  Records are discussed
+in Section~\ref{Records}.  Unions are discussed in
+Section~\ref{Unions}.  Tuples are discussed in Section~\ref{Tuples}.
+Sequences are discussed in Section~\ref{Sequences}.  Domains and
+arrays are discussed in Section~\ref{Domains_and_Arrays}.
+
+
+\subsection{Primitive Types}
+\label{Primitive_Types}
+
+The primitive types include the following
+types: \chpl{bool}, \chpl{int}, \chpl{uint}, \chpl{real},
+\chpl{complex}, \chpl{imag}, \chpl{string}, and \chpl{locale}.
+These primitive types are defined in this section except for
+the \chpl{locale} type which is defined in
+Section~\ref{The_Locale_Type}.
+
+\subsubsection{The Bool Type}
+\label{The_Bool_Type}
+
+Chapel defines a logical data type designated by the symbol
+\chpl{bool} with the two predefined values \chpl{true} and
+\chpl{false}.
+
+The relational operators return values of \chpl{bool} type and the
+logical operators operate on values of \chpl{bool} type.
+
+Some statements require expressions of \chpl{bool} type and Chapel
+supports a special conversion of values to \chpl{bool} type when used
+in this context (Section~\ref{Implicit_Statement_Bool_Conversions}).
+For example, an integer can be used as the condition in a conditional
+statement.  It is converted to \chpl{false} if it is zero, and
+otherwise, it is converted to \chpl{true}.
+
+\subsubsection{Signed and Unsigned Integral Types}
+\label{Signed_and_Unsigned_Integral_Types}
+
+The integral types can be parameterized by the number of bits used to
+represent them.  The default signed integral type, \chpl{int}, and the
+default unsigned integral type, \chpl{uint}, are 32 bits.
+
+The integral types and their ranges are given in the following table:
+
+\begin{center}
+\begin{tabular}{|l|r|r|}
+\hline
+{\bf Type} & {\bf Minimum Value} & {\bf Maximum Value} \\
+\hline
+{\tt int(8)} & -128 & 127 \\
+{\tt uint(8)} & 0 & 255 \\
+{\tt int(16)} & -32768 & 127 \\
+{\tt uint(16)} & 0 & 65535 \\
+{\tt int(32)}, {\tt int} & -2147483648 & 2147483647 \\
+{\tt uint(32)}, {\tt uint} & 0 & 4294967295 \\
+{\tt int(64)} & -9223372036854775808 & 9223372036854775807 \\
+{\tt uint(64)} & 0 & 18446744073709551615 \\
+\hline
+\end{tabular}
+\end{center}
+
+The unary and binary operators that are pre-defined over the integral
+types operate with 32- and 64-bit precision.  Using these operators on
+integral types represented with fewer bits results in a coercion
+according to the rules defined in Section~\ref{Implicit_Conversions}.
+
+\subsubsection{Real Types}
+\label{Real_Types}
+
+Like the integral types, the real types can be parameterized by the
+number of bits used to represent them.  The default real
+type, \chpl{real}, is 64 bits.  The real types that are supported are
+machine-dependent, but usually include \chpl{real(32)}
+and \chpl{real(64)}, and sometimes include \chpl{real(128)}.
+
+Arithmetic over real values follows the IEEE 754 standard.
+
+\subsubsection{Complex Types}
+\label{Complex_Types}
+
+Like the integral and real types, the complex types can be
+parameterized by the number of bits used to represent them.  A complex
+number is composed of two real numbers so the number of bits used to
+represent a complex is twice the number of bits used to represent the
+real numbers.  The default complex type, \chpl{complex}, is 128 bits.
+The complex types that are supported are machine-dependent, but
+usually include \chpl{complex(64)} and \chpl{complex(128)}, and
+sometimes include \chpl{complex(256)}.
+
+The real and imaginary components can be accessed via the methods
+\chpl{re} and \chpl{im}.  The type of these components is real.
+
+\begin{example}
+Given a complex number \chpl{3.14+2.72i}, the expressions
+\chpl{c.re} and \chpl{c.im} refer to \chpl{3.14} and \chpl{2.72}
+respectively.
+\end{example}
+
+\subsubsection{Imaginary Types}
+\label{Imaginary_Types}
+
+The imaginary types can be parameterized by the number of bits used to
+represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
+The imaginary types that are supported are machine-dependent, but
+usually include \chpl{imag(32)} and \chpl{imag(64)}, and sometimes
+include \chpl{imag(128)}.
+
+\begin{rationale}
+The imaginary type is included to avoid numeric instabilities and
+under-optimized code stemming from always coercing real values to
+complex values with a zero imaginary part.
+\end{rationale}
+
+\subsubsection{The String Type}
+\label{The_String_Type}
+
+Strings are a primitive type designated by the symbol \chpl{string}.
+Their length is unbounded.
+
+\subsubsection{Primitive Type Literals}
+\label{Primitive_Type_Literals}
+
+Bool literals are designated by the following syntax:
+\begin{syntax}
+bool-literal: one of
+  `true' `false'
+\end{syntax}
+
+Signed and unsigned integer literals are designated by the following
+syntax:
+\begin{syntax}
+integer-literal:
+  digits
+  0 'x' hexadecimal-digits
+  0 'b' binary-digits
+
+digits:
+  digit
+  digit digits
+
+digit: one of
+  0 1 2 3 4 5 6 7 8 9
+
+hexadecimal-digits:
+  hexadecimal-digit
+  hexadecimal-digit hexadecimal-digits
+
+hexadecimal-digits: one of
+  0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+
+binary-digits:
+  binary-digit
+  binary-digit binary-digits
+
+binary-digits: one of
+  0 1
+\end{syntax}
+Suffixes, like those in C, are not necessary.  The type of an integer
+literal is the first type of the following that can hold the value of
+the digits: \chpl{int}, \chpl{int(64)}, \chpl{uint(64)}.  Explicit
+conversions are necessary to change the type of the literal to another
+integer size.
+
+Real literals are designated by the following syntax:
+\begin{syntax}
+real-literal:
+  digits[OPT] . digit digits[OPT] exponent-part[OPT]
+
+exponent-part:
+  `e' sign[OPT] digits
+
+sign: one of
+  + -
+\end{syntax}
+The type of a real literal is \chpl{real}.  Explicit conversions are
+necessary to change the type of the literal to another real
+size.
+
+Note that real literals require that a digit follow the
+decimal point.  This is necessary to avoid an ambiguity in
+interpreting \chpl{2.e+2} that arises if a method called \chpl{e} is
+defined on integers.
+
+Imaginary literals are designated by the following syntax:
+\begin{syntax}
+imaginary-literal:
+  real-literal `i'
+  integer-literal `i'
+\end{syntax}
+
+A complex number is specified by adding or subtracting an imaginary
+literal with a real literal.  Alternatively, a 2-tuple literal of
+expressions of integer or real type can be cast to a complex.  These
+expressions can be literals, but do not need to be.  To create a
+complex literal or parameter, they must be literals or parameters.
+
+\begin{example}
+The following codes represent the same complex literal:
+\begin{center}
+\chpl{2.0i}, \hspace{1pc} \chpl{0.0+2.0i}, \hspace{1pc}
+\chpl{(0.0,2.0):complex}.
+\end{center}
+\end{example}
+
+String literals are designated by the following syntax:
+\begin{syntax}
+string-literal:
+  " characters "
+  ' characters '
+
+characters:
+  character
+  character characters
+
+character:
+  any-character
+\end{syntax}
+
+\begin{implementation}
+Strings are currently restricted to ASCII characters.  In a future
+version of Chapel, strings will be defined over alphabets to allow for
+more exotic characters.
+\end{implementation}
+
+\subsection{Enumerated Types}
+\label{Enumerated_Types}
+
+Enumerated types are declared with the following syntax:
+\begin{syntax}
+enum-declaration-statement:
+  `enum' identifier { enum-constant-list } ;
+
+enum-constant-list
+  enum-constant
+  enum-constant , enum-constant-list
+
+enum-constant:
+  identifier init-part[OPT]
+
+init-part:
+  = expression
+\end{syntax}
+
+An enumerated type defines a set of named constants.  These are
+associated with parameters of integral type.  Each enumerated type is
+a distinct type.
+
+\subsection{Class Types}
+\label{Class_Types}
+
+The class type defines a type that contains variables and constants,
+called fields, and functions, called methods.  Classes are defined
+in~\rsec{Classes}.  The class type can also contain type aliases and
+parameters.  Such a class is generic and is defined
+in~\rsec{Generics}.
+
+\subsection{Record Types}
+\label{Record_Types}
+
+The record type is similar to a class type; the primary difference is
+that a record is a value rather than a reference.  The difference
+between classes and records is elaborated on in~\rsec{Records}.
+
+\subsection{Union Types}
+\label{Union_Types}
+
+The union type defines a type that contains one of a set of variables.
+Like classes and records, unions may also define methods.  Unions are
+defined in~\rsec{Unions}.
+
+\subsection{Tuple Types}
+\label{Tuple_Types}
+
+A tuple is a light-weight record that consists of one or more
+anonymous fields.  If all the fields are of the same type, the tuple
+is homogeneous.  Tuples are defines in~\rsec{Tuples}.
+
+\subsection{Sequence Types}
+\label{Sequence_Types}
+
+A sequence defines an ordered set of values of some type.  Sequences
+are defined in~\rsec{Sequences}.
+
+\subsection{Domain and Array Types}
+\label{Domain_and_Array_Types}
+
+Domains are index sets.  Arrays are types that contain a set of zero
+or more elements all of the same type.  The elements are referenced
+via indices that are in the domain that the array is declared over.
+Domains and arrays are defined in~\rsec{Domains_and_Arrays}.
+
+\subsection{Type Aliases}
+\label{Type_Aliases}
+
+Type aliases are declared with the following syntax:
+\begin{syntax}
+type-alias-declaration-statement:
+  `type' type-alias-declaration ;
+
+type-alias-declaration:
+  identifier type-part[OPT]
+  identifier type-part[OPT] , type-alias-declaration
+
+type-part:
+  = type ;
+\end{syntax}
+A type alias is a symbol that aliases any type as specified in the
+\sntx{type-part}.  A use of a type alias has the same meaning as using
+the type specified by \sntx{type-part} directly.
+
+The \sntx{type-part} is optional in the definition of a class, record,
+or union.  Its absence makes the class, record, or union
+generic~(\rsec{Generics}).

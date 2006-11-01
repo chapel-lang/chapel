@@ -1,0 +1,638 @@
+\sekshun{Parallelism and Synchronization}
+\label{Parallelism_and_Synchronization}
+
+Chapel is an explicitly parallel programming language. Parallelism is
+introduced into a program by the user with three constructs,
+\chpl{forall}, \chpl{begin}, and \chpl{cobegin}.  Synchronization is
+provided with \emph{synchronizing variables} and atomic statements. To
+avoid any unintended implications, we use the terms \emph{computation}
+and \emph{sub-computation} to refer to distinct, concurrently
+executing portions of the program.
+
+
+\subsection{Implicit Parallelism}
+\label{Implicit_Parallelism}
+
+
+\subsubsection{Parallel Expressions}
+\label{Parallel_Expressions}
+
+A sequence expression preceded by an iterator expression can be
+executed in parallel. The sub-expressions are evaluated once for each
+iteration in the list and these sub-expressions can be evaluated
+concurrently. The syntax is:
+\begin{syntax}
+sequence-statement:
+   [index-list `in' iterator-list] expression
+\end{syntax}
+
+\begin{example}
+\begin{chapel}
+[i in S] f(i);
+\end{chapel}
+The function \chpl{f} is evaluated once for each value in \chpl{S}. \chpl{S}
+may be a sequence, array, or domain.
+\end{example}
+
+\subsubsection{Parallel Array Assignment}
+\label{Parallel_Array_Assignment}
+
+The semantics of array assignments is that each array element is
+assigned in parallel. If there are duplicate values in the sequence,
+then the order of the element-wise assignments is arbitrary.
+
+\begin{example}
+\begin{chapel}
+X(S) = Y;
+\end{chapel}
+X is an array and S a sequence of index values. The execution of all X(S$_i$)=Y
+occurs concurrently. The compiler and runtime will decide how many computations
+are used to execute the array assignment.
+\end{example}
+
+
+\subsubsection{Ordered Expressions}
+\label{Ordered_Expressions}
+
+The \chpl{ordered} keyword can be used as an unary operator to
+suppress parallel execution of a sequence expression that can involve
+side-effects to memory. The \chpl{ordered} keyword does not inhibit
+parallelism within the sub-expression. The syntax is:
+\begin{syntax}
+ordered-expression:
+   `ordered' expression
+\end{syntax}
+
+\begin{example}
+\begin{chapel}
+ordered [i in S] f(i) 
+\end{chapel}
+In this example \chpl{f} is a function and \chpl{S} is a
+sequence. Each instance of \chpl{f(i)} is executed once for each value
+in \chpl{S} and in sequence order. The \chpl{ordered} constraint does
+not propagate to inhibit parallelism within \chpl{f}.
+\end{example}
+
+\subsection{Parallel Statements}
+\label{Parallel_Statements}
+
+
+
+\subsubsection{Forall}
+\label{Forall}
+
+The first form of explicitly creating parallelism is with the forall
+loop. The forall loop is a variant of for loop that allows concurrent
+execution of the loop body. The for loop is described in
+Section~\ref{The_For_Loop}. The forall loop syntax is:
+\begin{syntax}
+forall-statement:
+   `forall' index-list `in' iterator-list `do' statement
+   `forall' index-list `in' iterator-list block-level-statement
+\end{syntax}
+
+The forall loop evaluates the loop body once for each element in the
+sequence returned by the iterator list. The evaluation of each of
+these loop bodies can be executed concurrently and is considered a
+separate computation. Similarly, the iterator-list may be executed
+concurrently with the statements. The keyword \chpl{ordered} which is
+later described in Section~\ref{Ordered Forall}) can be used to constrain
+the parallelism to generate a partial order on the sequence.
+
+Control continues with the statement following the forall loop only
+after all statement instances have been completely evaluated.
+Control transfers such as \chpl{goto}, \chpl{break}, \chpl{continue},
+and \chpl{return} are not permitted either into or out of the body of
+a forall loop.  However, \chpl{yield} statements are permitted.
+
+\begin{example}
+\begin{chapel}
+forall i in 1..10000 do
+  a(i) = b(i);
+\end{chapel}
+In this example the user has stated that the element-wise assignments can
+execute concurrently. The compiler and runtime will decide how many
+computations are used to assign all 10,000 elements.
+\end{example}
+
+\subsubsection{Alternative Forall Loop Syntax}
+\label{Alternative_Forall_Loop_Syntax}
+
+The forall loop may be specified with a more concise syntax given by
+another alternative:
+\begin{syntax}
+for-statement:
+  [ index-list `in' iterator-list ] statement
+\end{syntax}
+The semantics of this alternative syntax are unchanged.
+
+\begin{example}
+The following statements are equivalent:
+\begin{chapel}
+forall i in 1..n do
+  sum += i;
+\end{chapel}
+\begin{chapel}
+[i in 1..n] sum += i;
+\end{chapel}
+\end{example}
+
+\subsubsection{Ordered Forall}
+\label{Ordered_Forall}
+
+The \chpl{ordered} keyword can be used to constrain the parallelism
+within the iterator-list generation to that specified by the iterator.
+The syntax is:
+\begin{syntax}
+forall-statement:
+   ordered `forall' index-list `in' iterator-list `do' statement
+   ordered `forall' index-list `in' iterator-list block-level-statement
+\end{syntax}
+
+The \chpl{ordered} constraint only affects order of evaluation only
+when the iterator-list is an iterator. There is no effect if the
+iterator-list is a sequence value.
+
+By default a forall loop allows complete concurrent evaluation within
+the iterator-list and with evaluation of the statements. When
+the \chpl{ordered} keyword is present, the only concurrency between
+statements is the concurrency that is explicitly specified in the
+iterator itself. This allows an iterator to not only define a sequence of
+values, but to impose a partial order on that sequence.
+
+% \footnote{It might be tempting to generate a warning when the
+% keyword is ignored but those warnings may be spurious in a generic
+% context where we are reusing an abstract function definition.}
+
+\begin{example}
+\begin{chapel}
+forall i in 1..10000 do
+  a(i) = b(i);
+
+def jam() {
+  yield me;
+  cobegin {
+  }
+}
+\end{chapel}
+In this example the user has stated that the element-wise assignments can
+execute concurrently. The compiler and runtime will decide how many
+computations are used to assign all 10,000 elements.
+\end{example}
+
+
+\subsubsection{Cobegin}
+\label{Cobegin}
+
+The cobegin statement spawns a computation for each of the statements
+in the block-statement that it immediately precedes.  When each of
+these computations finish, control continues with the next statement.
+The syntax for the cobegin statement is given by
+\begin{syntax}
+cobegin-statement:
+  `cobegin' block-statement
+\end{syntax}
+
+The second form of creating parallelism is with the \chpl{cobegin}
+statement. The \chpl{cobegin} statement syntax is
+\begin{syntax}
+cobegin-statement:
+  `cobegin' block-statement
+\end{syntax}
+Each statement in the \chpl{block-statement} is executed concurrently
+and is considered a separate computation. Control continues after all
+of the statements within the \chpl{block-statement} have been
+evaluated. As with \chpl{forall}, control transfers are not permitted
+either into or out of the body of a \chpl{cobegin} statement. As
+with \chpl{forall}, \chpl{yield} statements are allowed.
+
+Variables declared in the \chpl{cobegin} compound statment are {\em single
+assignment variables} \ref{Single_Assignment_Variables}. 
+
+\subsubsection{Begin}
+\label{Begin}
+
+The begin statement spawns a computation to execute the statement
+embedded in it.  Control continues simultaneously with the next
+statement.  The syntax for the begin statement is given by
+\begin{syntax}
+begin-statement:
+  `begin' statement
+\end{syntax}
+
+The third form of creating parallelism is with the \chpl{begin}
+statement. The \chpl{begin} statement syntax is
+\begin{syntax}
+begin-statement:
+  `begin' statement
+\end{syntax}
+A second computation is created to execute \chpl{statement}.
+This second computation is executed concurrently with the balance of
+the initiating computation which continues with the statement
+following the \chpl{begin}. Using \chpl{begin} is an unstructured way to 
+create a new computation executed only for its side-effects.
+
+Control transfers in to or out of \chpl{<statement>} are prohibited. Unlike
+\chpl{forall} and \chpl{cobegin}, \chpl{yield} statement are not permitted.
+
+% including \chpl{return} 
+
+\subsubsection{Serial}
+\label{Serial}
+
+The \chpl{serial} statement can be used to control the degree of parallelism.
+The serial statement is used to control the parallelism encountered
+dynamically in the execution.  The syntax for the serial statement is
+given by
+\begin{syntax}
+serial-statement:
+  `serial' expression block-level-statement
+\end{syntax}
+where \chpl{exprression} evaluates to a \chpl{bool}.  Regardless of
+that value, \chpl{block-level-statement} is evaluated. If
+the \chpl{expression} evaluates to \chpl{true}, any dynamically
+encountered \chpl{forall} or \chpl{cobegin} statement is executed
+sequentially within that computation.
+
+
+
+\subsection{Parallel Iterators}
+\label{Parallel_Iterators}
+
+\begin{example}
+\begin{chapel}      
+class Tree {
+  var is_leaf : bool;
+  var left    : Tree;
+  var right   : Tree;
+}
+
+iterator Tree.walk() {
+  if (is_leaf) then
+    yield this;
+  else
+    serial (height <= 10) cobegin {
+      yield left.walk();
+      yield right.walk();
+    }
+}
+\end{chapel}
+In this example, a recursive tree iterator uses the tree's height to
+determine when concurrency should be created.
+\end{example}
+
+% This iterator could be used in conjunction with an \chpl{ordered
+% forall} to aggregate work to avoid parallelism overhead.\footnote{My
+% expectation is that we clone functions that may be executed in a
+% serial context so we can avoid the overhead of testing and suppressing
+% parallelism.}
+
+\subsection{Implicit Synchronization on Variables}
+\label{Implicit_Synchronization_on_Variables}
+
+This section describes {\em synchronized variables} which are used as
+a mechanism for coordinating accesses to shared variables. There are
+two kinds of synchronized variables, \chpl{single} and \chpl{sync}
+variable, whose semantics include execution order and memory
+consistency requirements.
+
+
+
+\subsubsection{Single Assignment Variables}
+\label{Single_Assignment_Variables}
+
+Single assignment variable can only be assigned once during their
+dynamic lifetime.  Any reference to the single assignment variable
+before it is defined causes the computation's execution to be
+suspended until the variable is assigned. Otherwise, the reference
+proceeds as with normal variables.  After a single assigment variable is
+assigned, all computations with pending references are resumed in an
+unspecified order. The syntax of a single assignment variable is
+\begin{chapel}
+[var] <symbol>: single <type> [= <expr>];
+\end{chapel}
+The keyword \chpl{single} is used as a type modifier. 
+
+\begin{example}
+\begin{chapel}
+class Tree {
+  var is_leaf : bool;
+  var left    : Tree;
+  var right   : Tree;
+  var value   : int;
+}
+
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var x:single int;
+  begin x = left.sum();
+  var y = right.sum();
+  return x+y;
+}
+\end{chapel}
+While a \chpl{cobegin} might be a more suitable formulation, this
+fragment creates an asynchronous computation to compute the sum of the
+left sub-tree while the main computation continues with the right
+sub-tree. The final reference to variable x will be delayed until the
+assignment to x completes and that value will be used as a summand.
+\end{example}
+
+When a \chpl{single} variable has an initializer, the evaluation of
+that initializer is implicitly performed as an asynchronous
+computation. 
+\begin{example}
+\begin{chapel}
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var x: single int = left.sum;
+  var y = right.sum();
+  return x+y;
+}
+\end{chapel}
+This is equivalent to the above where the declaration and assignment are
+separated.
+\end{example}
+
+Any variable declaration in a \chpl{cobegin} is implicitly treated as
+a \chpl{single} variable for references in other statements of the
+\chpl{cobegin}.  The above example might then be written as:
+\begin{example}
+\begin{chapel}
+def Tree.sum() {
+  if (is_leaf) then return value;
+  var z;
+  cobegin {
+    var x = left.sum();
+    var y = right.sum();
+    z = x+y;
+  }
+  return z;
+}
+\end{chapel}
+The computation with assignment to z waits for the other computations 
+to assign to x and y before it reference x and y in order to assign to z.
+\end{example}
+
+\subsubsection{Sync Variables}
+\label{Sync_Variables}
+
+A synchronized variable generalizes the single assignment variable to
+permit multiple assignments over its lifetime. Synchronized variables
+are declared with the type attribute \chpl{sync}. The synchronized
+variable syntax is
+\begin{chapel}
+[var] <symbol>: sync <type> [= <expr>];
+\end{chapel}
+A sync variable is logically either {\em full} or {\em empty}. When it
+is empty, computations that attempt to read that variable are delayed
+until it becomes full by the next assignment to it which atomically
+changes the state to full. When the variable is full, a variable
+reference consumes the value and atomically transitions the state back
+to empty. If there are more than one computation waiting, one is
+non-deterministically selected to receive the value resume execution.
+The other computations continue to wait for the next
+assignment. Otherwise, the state transistions to empty. 
+
+If a computation attempts to assign to a synchronized variable that is
+full, the computation is suspended and the assignment is delayed. When
+the variable becomes empty, the computation is resumed and the
+assignment proceeds, transistioning the state back to full. If there
+are multiple computations attempting such an assignment, one is
+non-deterministically selected to proceed and the other computations
+continue to wait until the sync variable is emptied again.
+
+\chpl{sync} variables allow a sequence of values to be communicated
+between computations using a single shared variable. They also can be
+used as building blocks for more traditional synchronization
+primitives such as semaphores and monitors.
+
+\subsubsection{Synchronization Variables of Record Type}
+\label{Synchronization_Variables_of_Record_Type}
+
+A \chpl{single} variable can have \chpl{record} type but in this case
+all fields must be assigned at the same time. Assignments to
+individual fields are not permitted.
+
+A \chpl{sync} variable can hold a value of \chpl{record} type but in
+this case the entire record must be read and written. Reads and writes
+of individual non-\chpl{const} fields are not permitted.
+
+
+
+\subsubsection{Synchronization Variables of Class Type}
+\label{Synchronization_Variables_of_Class_Type}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Functions on Synchronization Variables}
+\label{Functions_on_Synchronization_Variables}
+
+Synchronized variables support a number of special methods. These
+include the following on synchronized variable s
+\begin{chapel}
+purge(s)      // force s to be empty
+writeFE(s, v) // wait for full, assign s=v, and leave empty
+writeXF(s, v) // no wait, assign s=v, and leave full
+writeXE(s, v) // no wait, assign s=v, and leave empty
+readFF(s)     // wait full, leave full, and return s's value
+readXF(s)     // no wait, leave full, and return s's value
+readXX(s)     // no wait, leave F/E unchanged, and return s's value
+\end{chapel}
+
+\subsection{Memory Consistency}
+\label{Memory_Consistency}
+
+\paragraph{Memory Consistency}
+The Chapel implementation permits holding the values of variables in
+alternate locations which we will refer to as {\em caches}.  The
+implementation may {\em prefetch} by copying a value from a variable
+to a cache before an access to that variable is executed. It may store
+a value into a cache after it is assigned but not write it to the
+variable in which case we say the cache is {\em dirty}.
+ 
+There are restrictions on caching to ensure effective communication
+between concurrent computations. These restrictions are defined in
+terms of {\em input} and {\em output synchronization points}.
+
+An input synchronization point occurs when a computation performs an
+operation, such as reading a synchronized variable, that may cause
+that computation to be delayed. This also includes waiting for
+sub-computations associated with {\tt forall} and \chpl{cobegin}
+statements. Any cached value of a variable that might have been
+modified by concurrent computation must be treated as invalid at the
+input synchronization point.  This is called {\em invalidating} the
+cache.
+
+An output synchronization point occurs when a computation performs an
+operation that may enable another computation to begin or resume
+execution. This includes starting a \chpl{forall} or \chpl{cobegin} or
+accessing a synchronized variable.  Any dirty value of a variable that
+might be accessed by another computation must be {\em flushed} from
+cache back to the location of the variable.
+
+Chapel does not guarantee communication of values between concurrent
+computations unless there is appropriate synchronization to coordinate
+the producer and consumer.
+
+Because of their role in coordinating threads, synchronized variables
+can not generally be cached.
+
+\subsection{Atomic Transactions}
+\label{Atomic_Transactions}
+
+\noindent @@@\hrulefill \\
+The atomic statement creates an atomic transaction around a statement
+or block of statements.  The syntax for the atomic statement is given
+by
+\begin{syntax}
+atomic-statement:
+  `atomic' block-level-statement
+\end{syntax}
+\noindent @@@\hrulefill \\
+
+An {\em atomic transaction} is a region of the program that appears to
+execute as if all other computations in the program are suspended. It
+is indicated as:
+\begin{chapel}
+atomic <<block>>;
+\end{chapel}
+where \chpl{<<block>>} is executed as if it were serialized by a
+\chpl{serial} statement.
+
+The behavior of an atomic statement is defined operationally in terms
+of acquiring ownership of variables. Each variable in the program may
+have an {\em owning} computation. Inside an atomic statement, before
+each variable reference, the current computation attempts to acquire
+ownership of the variable. If the variable is owned by another
+computation, a deadlock might occur if the computation naively
+waits. At such a point the implementation may {\em abort} the
+statement. This means we release ownership of all variables owned by
+the current computation without changing any of their values, and we
+restart execution at the beginning of \chpl{<<block>>}.  Visible
+side-effects to variables are delayed until \chpl{<<block>>}
+completes. At this point we say the atomic statement {\em commits},
+and all variables it owns are released and any modifications to
+variables are made.
+
+The implementation of the atomic statement must ensure forward
+progress, but the details of how ownership information is maintained
+and when computations are aborted is not defined here.
+
+Here is an example of an atomic transaction:
+\begin{chapel}
+var found = false;
+atomic {
+  if(head == obj) {
+    found = true;
+    head = obj.next;
+  } else  {
+    var last = head;
+    while(last != null) {
+    if (last.next == obj) {
+      found = true;
+      last.next = object.next;
+      break;
+    }
+    last = last.next;
+  }
+}
+\end{chapel}
+Inside the atomic statement is a simple sequential implementation of
+removing a particular object denoted by \chpl{obj} from a singly
+linked list.  This is an operation that is well-defined, assuming only
+one computation is attempting it at a time. The atomic statement
+insures that, for example, the value of \chpl{head} does not change
+after it is first in the first comparison and subsequently read to
+initialize \chpl{last}. The variables eventually owned by this
+computation are \chpl{found}, \chpl{head}, \chpl{obj}, and the various
+\chpl{next} fields on examined objects.
+
+The effect of an atomic statement extends into called functions. Thus
+if we have some method associated with a list that removes an object,
+that method may not be parallel safe but could be invoked inside an
+atomic statement for safety:
+\begin{chapel}
+var found;
+atomic found = head.remove(obj);
+\end{chapel}
+
+Chapel defines three operations that are used to optimize atomic
+statements to avoid overheads.  They are the \chpl{_invariant},
+\chpl{_private}, and \chpl{_release} operations. The first two are
+similar in that they identify variables that are either known to be
+invariant over a program interval, or known to not be accessed by any
+other computation. In either case, the protocol to assert ownership
+and delay side-effects can be avoided. The \chpl{_release} operator
+identifies a variable currently owned by the computation that has not
+been modified and will not be accessed again. The current
+computation's ownership is revoked and another computation can assert
+ownership.
+
+These operations might be used to tune the above code to reduce
+overheads. For example:
+\begin{chapel}
+var found;
+atomic {
+  _private found = false;	   
+  if (head == _invariant obj) {
+    found = true;
+    head = _invariant obj.next;
+  } else {
+    var last = _release head;
+    while(last != null) {
+      if(last.next == obj) {
+        found = true;
+        last.next = _invariant obj.next;
+        break;
+      }
+      last = _release last.next;
+    }
+  }
+}
+\end{chapel}
+These avoid overheads on the computation's private variables
+\chpl{obj} and \chpl{found}.  It also allows a list-removal operation
+to be pipelined by releasing ownership of the list head and various
+link fields as soon as they will no longer be referenced. The
+assertion that \chpl{obj.next} is invariant reflects the fact that no
+other variables need to be acquired to allow the transaction to
+complete, not that the field is actually invariant. The implementation
+is free to prove these attributes and apply them automatically. For
+example, we would expect the implementation to identify \chpl{last} as
+a private variable without programmer assertion.
+
+Chapel allows variables to have an \chpl{atomic} attribute to allow
+optimization of ownership. For example:
+\begin{chapel}
+class ObjType {
+  atomic var next : ObjType;
+  ...
+}
+\end{chapel}
+This declaration treats a definitions of such fields as if they are in
+short atomic sections. Thus, a statement of the form:
+\begin{chapel}
+e1.x = e2;
+\end{chapel}
+where \chpl{x} is atomic would be evaluated as:
+\begin{chapel}
+var t1 = e1;
+var t2 = e2;
+atomic (_invariant t1).x = _invariant t2;
+\end{chapel}
+
+The declaration also encourages the implementation to allocate any
+extra storage needed to maintain ownership adjacent to the variable
+itself, avoiding the overhead of mapping the variable to sparsely
+maintained information.
+
+
+\subsubsection{Strong Atomicity}
+\label{Strong_Atomicity}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Weak Atomicity}
+\label{Weak_Atomicity}
+
+This is a stub.  This portion of the document does not exist.

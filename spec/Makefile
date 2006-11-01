@@ -1,14 +1,9 @@
 all:
-	perl preprocess.pl < spec.tex > spec_pl.tex
-	latex spec_pl
-	makeindex spec_pl
-	cp spec_pl.idx spec.idx
-	cp spec_pl.ind spec.ind
-	latex spec_pl
-	mv spec_pl.dvi spec.dvi
+	latex spec
+	makeindex spec
+	latex spec
 	dvips -P cmz -t letter -o spec.ps spec.dvi
 	ps2pdf spec.ps spec.pdf
-	cat .preprocess.pl.log
 
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log

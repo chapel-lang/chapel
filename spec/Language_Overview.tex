@@ -1,0 +1,218 @@
+\sekshun{Language Overview}
+\label{Language_Overview}
+
+In HPC applications, the current dominant parallel programming paradigm 
+is characterized by a localized
+view of the computation combined with explicit control
+over message passing, as exemplified by a combination
+of Fortran or C/C++ with MPI. Such a fragmented memory
+model provides the programmer with full control over data
+distribution and communication, at the expense of productivity,
+conciseness, and clarity.
+
+Chapel is a new parallel programming language that 
+strives to improve the programmability of parallel computer systems.
+It provides a higher level of expression 
+than current parallel languages do and it improves the separation between 
+algorithmic expression and data structure implementation details. 
+
+Chapel supports a global-view parallel programming model at a high level by 
+supporting abstractions for data parallelism, task parallelism, and nested parallelism. 
+It supports optimization for the locality of data and computation in the program 
+via abstractions for data distribution and data-driven placement of subcomputations. 
+It supports code reuse and generality via object-oriented concepts and generic 
+programming features. While Chapel borrows concepts from many preceding languages, 
+its parallel concepts are most closely based on ideas from High-Performance Fortran 
+(HPF), ZPL, and the Cray MTA's extensions to Fortran/C. 
+
+The key features of the Chapel language for productive parallel programming are as 
+follows: 
+\begin{itemize}
+\item {\bf Locale type} - an opaque type used for organizing and referring to 
+units of machine locality.
+\item {\bf Domains} - first-class index sets that can potentially be distributed 
+between multiple locales.  Domains are Chapel's primary vehicle for global-view 
+data parallelism.
+\item {\bf Arrays} - generalized support for distributed data aggregates, including 
+dynamic multidimensional rectilinear arrays, potentially strided and/or sparse 
+in each dimension; associative arrays; set- and graph-based arrays.
+\item {\bf User-defined distributions} - a capability for users to specify the 
+low-level distributed implementation of domains and arrays orthogonally 
+to the computations that operate on these concepts.
+\item {\bf \chpl{forall} loops and iterators} - concepts for specifying parallel 
+iteration in a manner that separates algorithm and implementation.
+\item {\bf Index types} - types representing domain indices to support code 
+clarity and bounds-checking optimizations.    
+\item {\bf User-defined reductions and scans} - a framework for expressing parallel 
+prefix operations over data aggregates cleanly and efficiently.
+\item {\bf \chpl{cobegin} and \chpl{begin} statements} - statement types for 
+supporting task-parallel computations.
+\item {\bf Sync and single-assignment variables} - variable types that support 
+synchronization between parallel tasks.
+\item {\bf Atomic sections} - compound statements that support atomic execution 
+from the perspective of other threads.
+\item {\bf \chpl{On} clauses} - specifications that support explicit placement of 
+data values and computation on the machine's locales.
+\item {\bf Value and reference classes} - object-oriented software containers 
+that support encapsulation of state and the separation of interfaces from 
+implementations.
+\item {\bf Function and operator overloading, multiple dispatch, pass-by-argument name, 
+default argument values} - concepts that support modern and productive function call 
+capabilities.
+\item {\bf Type variables and latent types} - capabilities for writing algorithms 
+independently of types to support code reuse, exploratory programming, and 
+generic functions and data structures.
+\item {\bf Modules} - software containers for namespace management and programming 
+in-the-large.
+\item {\bf Other features for productive programming} - tuples, type-safe unions, 
+sequences, etc.
+\end{itemize}
+
+
+
+
+\subsection{Motivating Principles}
+\label{Motivating_Principles}
+
+Chapel pushes the state-of-the-art in parallel programming
+by focusing on productivity and not just performance. In particular
+Chapel combines the goal of highest possible
+object code performance with that of programmability
+by supporting a high level interface resulting in
+shorter time-to-solution and reduced application development
+cost. The design of Chapel is guided by four key
+areas of programming language technology: global-view programming,
+locality-awareness, object-orientation, and generic
+programming.
+
+\subsubsection{Global View Programming Model}
+\label{Global_View_Programming_Model}
+
+Parallel programming models can be divided into two types of models:
+{\em fragmented} and {\em global-view}.  Fragmented programming models
+require programmers to express algorithms on a task-by-task basis so that
+the tasks can execute in parallel.  Global-view programming models
+allow programmers to express a parallel algorithm as a whole, similar to
+a serial algorithm.  The compiler and runtime libraries identify and assign
+tasks to run in parallel across processors.  Chapel provides a global-view 
+programming model.
+
+The global-view programming model is is able:
+\begin{itemize}
+\item to operate on distributed data structures monolithically as 
+though they were local to the executing thread's memory, and 
+\item to express parallelism within a single source text without requiring 
+multiple executables to be run simultaneously. 
+\end{itemize}
+While the global-view programming model can be implemented on any distributed memory 
+machine, specific architectures provide an ideal target for this model.  
+Global-view models map particularly well to architectures that 
+support a global address space, DGAS and PGAS memory segments, a high performance 
+network, lightweight synchronization, and latency-tolerant processors.  This 
+synergy results in improved performance as compared to implementations on less-
+productive architectures.
+
+We believe that the dominance of the fragmented programming model is the primary
+inhibitor of parallel programmability today, and therefore recommend that new
+productivity-oriented languages focus on supporting a global view of parallel
+programming.  
+
+
+
+
+
+\subsubsection{Locality Aware Programming}
+\label{Locality_Aware_Programming}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Object-Oriented Programming}
+\label{Object-Oriented_Programming}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Generic Programming}
+\label{Generic_Programming}
+
+Generic programming and type-inference simplify the
+type systems presented to users. High-performance computing
+requires type systems to provide data structure details
+that allow for efficient implementation. Generic programming
+avoids the need for explicit specification of such
+details when they can be inferred from the source or from
+specialization of program templates.
+
+\subsection{Basic Language Features}
+\label{Basic_Language_Features}
+
+Chapel is an imperative programming language.  The basic concepts of the
+language should be familiar to users of C, Fortran, Java, Modula and Ada.
+However, the syntax of the Chapel language does not directly build upon any of 
+these existing languages.   Programmers should start afresh when programming in 
+Chapel and not be limited to the constructs of existing languages.
+
+
+\subsubsection{Programs and Modules}
+\label{Programs_and_Modules}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Data Types and Variables}
+\label{Data_Types_and_Variables}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Statements and Expressions}
+\label{Statements_and_Expressions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Structured Data Types}
+\label{Structured_Data_Types}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Functions and Methods}
+\label{Functions_and_Methods}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Sequences and Iterators}
+\label{Sequences_and_Iterators}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Arrays and Distributions}
+\label{Arrays_and_Distributions}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Parallel Features}
+\label{Parallel_Features}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Data Parallel Constructs}
+\label{Data_Parallel_Constructs}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Task Parallel Constructs}
+\label{Task_Parallel_Constructs}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Exploiting Data Locality}
+\label{Exploiting_Data_Locality}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Synchronizing and Serializing Tasks}
+\label{Synchronizing_and_Serializing_Tasks}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Data Distributions}
+\label{Data_Distributions}
+
+This is a stub.  This portion of the document does not exist.
