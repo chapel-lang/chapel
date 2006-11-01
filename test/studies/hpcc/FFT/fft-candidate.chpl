@@ -113,16 +113,17 @@ def dfft(A, W) {
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
 
-      for j in [k..k+span) {
+      forall j in [k..k+span) {
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
       }
 
       wk1 = W(2*k1+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
+      wk2 = wk2*1.0i;
 
-      for j in [k+m..k+m+span) {
-        butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
+      forall j in [k+m..k+m+span) {
+        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
       }
     }
     span *= radix;
@@ -183,7 +184,3 @@ def printResults(successful, execTime) {
     writeln("Performance (Gflop/s) = ", 5.0 * (m * n) / execTime / 1.0e-9);
   }
 }
-
-
-
-
