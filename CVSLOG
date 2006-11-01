@@ -83845,3 +83845,23 @@ Log message:
 Modified files:
 	chapel/spec/: Functions.tex 
 
+---------------------------------------------------------------------------
+
+11/01/06 13:38:00 -- bradc
+
+Log message:
+	Checking in a fix for the lack of isinf() on Sun boxes --
+	implemented it as a macro in a new chplfp.h file and
+	specialized this file for the Sun platform.
+	
+	Note that Sun compilations currently enter an infinite
+	loop in the normalize pass, unrelated to this change
+	but undetected since this change has broken testing
+	(after other mail-related settings broke it previously).
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+Added files:
+	chapel/runtime/include/: chplfp.h 
+	chapel/runtime/include/sunos/: chplfp.h 
+
