@@ -2,22 +2,22 @@
   {
     morekeywords={
       and, array, atomic,
-      begin, bool, break,
+      begin, bool, break, by,
       call, class, cobegin, complex, config, const, constructor, continue,
-      def, distribute, do, domain,
+      def, distributed, do, domain,
       else, enum, except,
-      for, forall,
+      false, for, forall,
       goto,
       if, imag, implements, in, int, inout, _invariant, iterator,
-      let, like,
+      let, like, locale,
       module,
       nil, not,
       on, or, ordered, otherwise, out,
-      param, _private, private, public,
-      real, record, _release, repeat, return,
-      select, serial, single, subtype, sync
-      then, to, type, typeselect,
-      uint, union, until, _unordered,
+      param, pragma, _private, private, public,
+      real, record, reduce, _release, repeat, return,
+      scan, select, serial, single, subtype, sync
+      then, to, true, type, typeselect,
+      uint, union, until, _unordered, use,
       var, _view,
       when, where, while, with,
       yield
@@ -30,8 +30,8 @@
 }
 
 \lstset{
-    basicstyle=\footnotesize\tt,
-    keywordstyle=\bf,
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\bfseries,
     commentstyle=\em,
     showstringspaces=false,
     flexiblecolumns=false,
@@ -42,6 +42,6 @@
     stepnumber=0
   }
 
-\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\normalsize\tt,keywordstyle=]!#1!}
+\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\normalsize\ttfamily,keywordstyle=]!#1!}
 
 \lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=2pc}}{}
