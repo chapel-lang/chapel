@@ -83340,3 +83340,21 @@ Added files:
 	                            multipleModulesSameName.future 
 	                            multipleModulesSameName.good 
 
+---------------------------------------------------------------------------
+
+10/31/06 16:02:25 -- bradc
+
+Log message:
+	These are some minor changes that were made to
+	the HPCC study benchmarks prior to submitting the
+	paper but which I didn't have time to check
+	in.  I still need to do a comparison to get the
+	codes we submitted locked into the testing system,
+	and to remove some old drafts that aren't worth
+	keeping around for testing purposes.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/: fft-candidate.chpl 
+	chapel/test/studies/hpcc/RA/: .cvsignore ra-candidate.chpl 
+	                              ra-randstream.chpl 
+
