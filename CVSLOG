@@ -83387,3 +83387,31 @@ Log message:
 Added files:
 	chapel/util/: diffLatexCode replstring 
 
+---------------------------------------------------------------------------
+
+11/01/06 09:41:51 -- deitz
+
+Log message:
+	Reorganized the spec so that we use a single file per section rather
+	than a directory per section and a file per subsection and
+	subsubsection in each directory.
+	
+	The tex files in these directories are no longer used.  To be removed.
+
+Modified files:
+	chapel/spec/: Makefile spec.tex 
+Added files:
+	chapel/spec/: Acknowledgments.tex Classes.tex Conversions.tex 
+	              Domains_and_Arrays.tex Expressions.tex 
+	              Functions.tex Generics.tex Input_and_Output.tex 
+	              Iterators.tex Language_Overview.tex 
+	              Lexical_Structure.tex 
+	              Locality_and_Distribution.tex Modules.tex 
+	              Notation.tex Organization.tex 
+	              Parallelism_and_Synchronization.tex Records.tex 
+	              Reductions_and_Scans.tex Scope.tex Sequences.tex 
+	              Standard_Modules.tex Statements.tex Tuples.tex 
+	              Types.tex Unions.tex Variables.tex 
+Removed files:
+	chapel/spec/: preprocess.pl 
+
