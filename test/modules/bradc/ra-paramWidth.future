@@ -1,0 +1,9 @@
+param folding
+
+This test demonstrates that if a type is defined by
+a parameter in one module and used in another, it
+results in an internal error.
+
+When this test is fixed, it should be folded into
+test/studies/hpcc/RA/ra*.chpl and this test can
+be removed.
