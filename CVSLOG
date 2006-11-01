@@ -83909,3 +83909,18 @@ Modified files:
 	chapel/compiler/include/: files.h 
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/06 14:59:52 -- waynew
+
+Log message:
+	For those who like complex, min/max are back in.
+	
+	Added tests and renable use in one of Brad's test.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/test/trivial/waynew/: maxtest.chpl maxtest.good 
+	                             mintest.chpl mintest.good 
+	chapel/test/types/coerce/bradc/: tostring.chpl tostring.good 
+
