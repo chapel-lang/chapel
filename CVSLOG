@@ -83358,3 +83358,20 @@ Modified files:
 	chapel/test/studies/hpcc/RA/: .cvsignore ra-candidate.chpl 
 	                              ra-randstream.chpl 
 
+---------------------------------------------------------------------------
+
+10/31/06 16:16:52 -- bradc
+
+Log message:
+	A future showing that types defined by named params
+	can't be used in separate modules.  When this is fixed
+	it can be folded into the official RA and this test
+	can be removed.
+
+Added files:
+	chapel/test/modules/bradc/: ra-paramWidth.chpl 
+	                            ra-paramWidth.compopts 
+	                            ra-paramWidth.future 
+	                            ra-paramWidth.good 
+	chapel/test/modules/bradc/helperModules/: ra-randstream.chpl 
+
