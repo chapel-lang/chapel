@@ -173,27 +173,54 @@ specified earlier in the formal argument list.
 \subsection{Intents}
 \label{Intents}
 
-This is a stub.  This portion of the document does not exist.
+Intents allow the actual arguments to be copied to a formal argument
+and also to be copied back.
 
 \subsubsection{The Blank Intent}
 \label{The_Blank_Intent}
 
-This is a stub.  This portion of the document does not exist.
+If the intent is omitted, it is called a blank intent.  In such a
+case, the value is copied in using the assignment operator.  Thus
+classes are passed by reference and records are passed by value.
+Arrays and domains are an exception because assignment does not apply
+from the actual to the formal.  Instead, arrays and domains are passed
+by reference.
+
+With the exception of arrays, any argument that has blank intent
+cannot be assigned within the function.
 
 \subsubsection{The In Intent}
 \label{The_In_Intent}
 
-This is a stub.  This portion of the document does not exist.
+If \chpl{in} is specified as the intent, the actual argument is copied
+to the formal argument as usual, but it may also be assigned to within
+the function.  This assignment is not reflected back at the call site.
+
+If an array is passed to a formal argument that has \chpl{in} intent,
+a copy of the array is made via assignment.  Changes to the elements
+within the array are thus not reflected back at the call site.
+Domains cannot be passed to a function via the \chpl{in} intent.
 
 \subsubsection{The Out Intent}
 \label{The_Out_Intent}
 
-This is a stub.  This portion of the document does not exist.
+If \chpl{out} is specified as the intent, the actual argument is
+ignored when the call is made, but after the call, the formal argument
+is assigned to the actual argument at the call site.  The actual
+argument must be a valid lvalue.
+
+The formal argument cannot not be generic and is treated as a variable
+declaration.  Domains cannot be passed to a function via
+the \chpl{out} intent.
 
 \subsubsection{The Inout Intent}
 \label{The_Inout_Intent}
 
-This is a stub.  This portion of the document does not exist.
+If \chpl{inout} is specified as the intent, the actual argument is
+both passed to the formal argument as if the \chpl{in} intent applied
+and then copied back as if the \chpl{out} intent applied.  The formal
+argument can be generic and takes its type from the actual argument.
+Domains cannot be passed to a function via the \chpl{inout} intent.
 
 \subsection{Variable Functions}
 \label{Variable_Functions}
