@@ -83924,3 +83924,13 @@ Modified files:
 	                             mintest.chpl mintest.good 
 	chapel/test/types/coerce/bradc/: tostring.chpl tostring.good 
 
+---------------------------------------------------------------------------
+
+11/01/06 16:28:42 -- bradc
+
+Log message:
+	Added "new" to the C-reserved identifiers list.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
