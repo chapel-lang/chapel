@@ -1103,7 +1103,7 @@ resolveCall(CallExpr* call) {
     for (int i = 0; i < var->type->substitutions.n; i++) {
       if (var->type->substitutions.v[i].key) {
         if (!strcmp("size", dynamic_cast<Symbol*>(var->type->substitutions.v[i].key)->name)) {
-          size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[i].value)->immediate->v_int64;
+          size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[i].value)->immediate->int_value();
           break;
         }
       }

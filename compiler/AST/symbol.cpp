@@ -1053,7 +1053,7 @@ check_promoter(ClassType *at) {
 static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
-  int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
+  int64 size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
@@ -1069,7 +1069,7 @@ instantiate_tuple(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
-  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->v_int64;
+  int64 index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->int_value();
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   return fn;
@@ -1077,7 +1077,7 @@ instantiate_tuple_get(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_set(FnSymbol* fn) {
-  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->v_int64;
+  int64 index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->int_value();
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;

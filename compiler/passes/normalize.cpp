@@ -931,7 +931,7 @@ static bool fold_call_expr(CallExpr* call) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (var->immediate) {
-          int rank = var->immediate->v_int64;
+          int rank = var->immediate->int_value();
           if (rank != call->argList->length() - 1) {
             if (call->argList->length() != 2)
               INT_FATAL(call, "bad homogeneous tuple");
@@ -1282,14 +1282,14 @@ static void fold_param_for(CallExpr* loop) {
             if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
               if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
                 if (lvar->immediate && hvar->immediate && svar->immediate) {
-                  int low = lvar->immediate->v_int64;
-                  int high = hvar->immediate->v_int64;
-                  int stride = svar->immediate->v_int64;
+                  int64 low = lvar->immediate->int_value();
+                  int64 high = hvar->immediate->int_value();
+                  int64 stride = svar->immediate->int_value();
                   Expr* index_expr = loop->get(1);
                   loop->remove();
                   block->blockTag = BLOCK_NORMAL;
                   Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
-                  if (stride < 0)
+                  if (stride <= 0)
                     INT_FATAL("fix this");
                   for (int i = low; i <= high; i += stride) {
                     VarSymbol* new_index = new VarSymbol(index->name);
@@ -1394,7 +1394,7 @@ expand_var_args(FnSymbol* fn) {
       // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
-          int n = n_var->immediate->v_int64;
+          int n = n_var->immediate->int_value();
           CallExpr* tupleCall = new CallExpr("_tuple");
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
