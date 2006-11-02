@@ -502,16 +502,62 @@ is determined by the following steps:
 
 \subsection{Nested Functions}
 \label{Nested_Functions}
+\index{functions!nested}
 
-This is a stub.  This portion of the document does not exist.
+A function defined in another function is called a nested function.
+Nesting of functions may be done to arbitrary degrees, i.e., a
+function can be nested in a nested function.
+
+Nested functions are only visible to function calls within the scope
+in which they are defined.  An exception is to a function that has an
+argument that is a class type.  Such functions are globally visible.
 
 \subsubsection{Accessing Outer Variables}
 \label{Accessing_Outer_Variables}
 
-This is a stub.  This portion of the document does not exist.
+Nested functions may refer to variables defined in the function in
+which they are nested.  If the function has class arguments, and is
+thus globally visible, it is a compiler error to refer to a variable
+in the outer function.
+
+\begin{rationale}
+It may be too strict to make this a compiler error.  Are there
+advantages to making this a runtime error?
+\end{rationale}
 
 \subsection{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
 
-This is a stub.  This portion of the document does not exist.
+Functions can be defined to take a variable number of arguments.  This
+allows the call site to pass a different number of actual arguments.
+
+If the variable argument expression is an identifier prepended by a
+question mark, the number of arguments is variable.  Alternatively,
+the variable expression can evaluate to an integer parameter value
+requiring the call site to pass that number of arguments to the
+function.
+
+In the function, the formal argument is a tuple of the actual
+arguments.
+
+\begin{example}
+The code
+\begin{chapel}
+def mywriteln(x: int ...?k) {
+  for param i in 1..k do
+    writeln(x(i));
+}
+\end{chapel}
+defines a function called \chpl{mywriteln} that takes a variable
+number of arguments and then writes them out on separate lines.  The
+parameter for-loop~(\rsec{Parameter_For_Loops}) is unrolled by the
+compiler so that \chpl{i} is a parameter, rather than a variable.
+This function can be made generic~(\rsec{Generics}) to take arguments
+of different types by eliding the type.
+\end{example}
+
+A tuple of variables arguments can be passed to a function that takes
+variable arguments by destructuring the tuple in a tuple destructuring
+expressions defined in~\rsec{Tuple_Destructuring_Expressions}.  This
+allows for the forwarding of variable arguments as variable arguments.
