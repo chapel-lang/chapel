@@ -448,6 +448,7 @@ static void codegen_header(void) {
   cnames.put("remove", 1);
   cnames.put("fprintf", 1);
   cnames.put("clone", 1);
+  cnames.put("new", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
