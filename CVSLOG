@@ -84003,3 +84003,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_file.chpl 
 
+---------------------------------------------------------------------------
+
+11/02/06 12:13:17 -- deitz
+
+Log message:
+	Added first pass of function resolution section.  Added class
+	promotion to Classes section to discuss user-defined scalar promotion.
+
+Modified files:
+	chapel/spec/: Classes.tex Functions.tex 
+
