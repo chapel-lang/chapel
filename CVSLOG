@@ -84014,3 +84014,32 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Functions.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 14:26:45 -- bradc
+
+Log message:
+	Fixed cases in parameter folding where the
+	int64 field of a union was assumed when in
+	fact it was the int32 field.
+	
+	This points out a potentially worrisome
+	aspect of this code which is that if it's
+	assuming that it knows the size of both
+	arguments when it doesn't, it makes me
+	worry that it thinks it knows whether
+	both arguments are signed/unsigned when
+	in fact it may not (in particular, there
+	seems as if there used to be an assumption
+	that both arguments were the same type/width.
+	The new assumption is that they are both the
+	same int/uint-ness.  In general, it seems like
+	the full cross-product should be handled
+	unless I'm missing something obvious).
+	
+	In any case, this change doesn't make this
+	code any worse...
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+
