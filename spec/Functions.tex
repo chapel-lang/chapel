@@ -332,14 +332,35 @@ to the last argument.
 \label{Function_Overloading}
 \index{functions!overloading}
 
-This is a stub.  This portion of the document does not exist.
+Functions that have the same name but different argument lists are
+called overloaded functions.  Function calls to overloaded functions
+are resolved according to the algorithm in~\rsec{Function_Resolution}.
+
+Operator overloading is achieved by defining a function with a name
+specified by that operator.  The operators that may be overloaded are
+listed in the following table:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf arity} & {\bf operators} \\
+\hline
+unary & \verb@+ - ! ~@ \\
+binary & \verb@+ - * / % ** && || ! == <= >= < > << >> & | ^ #@ \\
+\hline
+\end{tabular}
+\end{center}
+
+The arity and precedence of the operator must be maintained when it is
+overloaded.  Operator resolution follows the same algorithm as
+function resolution.
 
 \subsection{Function Resolution}
 \label{Function_Resolution}
 
 Given a function call, the function that the call resolves to is
 determined according to the following algorithm:
-\begin{enumerate}
+\begin{itemize}
 \item
 Identify the set of visible functions.  A visible function is any
 function with the same name that satisfies the criteria
@@ -356,9 +377,9 @@ determined.  The most specific function is a candidate function that
 is more specific than every other candidate function.  If there is no
 function that is more specific than every other candidate function,
 the function call is ambiguous and a compiler error occurs.  The term
-``more specific function'' is defined
-in~\rsec{Determining_the_Most_Specific_Function}.
-\end{enumerate}.
+{\em more specific function} is defined
+in~\rsec{Determining_More_Specific_Functions}.
+\end{itemize}.
 
 \subsubsection{Identifying Visible Functions}
 \label{Identifying_Visible_Functions}
@@ -376,14 +397,108 @@ the location of their definition.
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
 
-This is a stub.  This portion of the document does not exist.
+A function is a candidate function if there is a {\em valid mapping}
+from the function call to the function and each actual argument is
+mapped to a formal argument that is a {\em legal argument mapping}.
 
-\subsubsection{Determining the Most Specific Function}
-\label{Determining_the_Most_Specific_Function}
+\paragraph{Valid Mapping}
 
-This is a stub.  This portion of the document does not exist.
+A function call is mapped to a function according to the following
+steps:
+\begin{itemize}
+\item
+Each actual argument that is passed by name is matched to the formal
+argument with that name.  If there is no formal argument with that
+name, there is no valid mapping.
+\item
+The remaining actual arguments are mapped in order to the remaining
+formal arguments in order.  If there are more actual arguments then
+formal arguments, there is no valid mapping.  If any formal argument
+that is not mapped to by an actual argument does not have a default
+value, there is no valid mapping.
+\item
+The valid mapping is the mapping of actual arguments to formal
+arguments plus default values to formal arguments that are not mapped
+to by actual arguments.
+\end{itemize}
 
-visibility as a tie-breaker
+\paragraph{Legal Argument Mapping}
+
+An actual argument of type $T_A$ can be mapped to a formal argument of
+type $T_F$ if any of the following conditions hold:
+\begin{itemize}
+\item $T_A$ and $T_F$ are the same type.
+\item There is an implicit coercion from $T_A$ to $T_F$.
+\item $T_A$ is derived from $T_F$.
+\item $T_A$ is scalar promotable to $T_F$.
+\end{itemize}
+
+\subsubsection{Determining More Specific Functions}
+\label{Determining_More_Specific_Functions}
+
+Given two functions $F_1$ and $F_2$, $F_1$ is determined to be more
+specific than $F_2$ by the following steps:
+\begin{itemize}
+\item
+If at least one of the legal argument mappings to $F_1$ is a {\em more
+specific argument mapping} than the corresponding legal argument
+mapping to $F_2$ and none of the legal argument mappings to $F_2$ is a
+more specific argument mapping than the corresponding legal argument
+mapping to $F_1$, then $F_1$ is more specific.
+\item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
+\item $F_1$ is not more specific than $F_2$.
+\end{itemize}
+
+Given an argument mapping, $M_1$, from an actual argument, $A$, of
+type $T_A$ to a formal argument, $F1$, of type $T_{F1}$ and an
+argument mapping, $M_2$, from the same actual argument to a formal
+argument, $F2$, of type $T_{F2}$, the more specific argument mapping
+is determined by the following steps:
+\begin{itemize}
+\item
+ If $T_{F1}$ and $T_{F2}$ are the same type and $F1$ is an
+ instantiated parameter, $M_1$ is more specific.
+\item
+ If $T_{F1}$ and $T_{F2}$ are the same type and $F2$ is an
+ instantiated parameter, $M_2$ is more specific.
+\item
+ If $M_1$ requires scalar promotion and $M_2$ does not require scalar
+ promotion, $M_2$ is more specific.
+\item
+ If $M_2$ requires scalar promotion and $M_1$ does not require scalar
+ promotion, $M_1$ is more specific.
+\item
+ If $F1$ is generic over all types and $F2$ is not generic over all
+ types, $M_2$ is more specific.
+\item
+ If $F2$ is generic over all types and $F1$ is not generic over all
+ types, $M_1$ is more specific.
+\item
+ If $T_{F1}$ and $T_{F2}$ are the same type, neither mapping is more
+ specific.
+\item
+ If $T_A$ and $T_{F1}$ are the same type, $M_1$ is more specific.
+\item
+ If $T_A$ and $T_{F2}$ are the same type, $M_2$ is more specific.
+\item
+ If $T_{F1}$ is derived from $T_{F2}$, then $M_1$ is more specific.
+\item
+ If $T_{F2}$ is derived from $T_{F1}$, then $M_2$ is more specific.
+\item
+ If there is an implicit coercion from $T_{F1}$ to $T_{F2}$, then
+ $M_1$ is more specific.
+\item
+ If there is an implicit coercion from $T_{F2}$ to $T_{F1}$, then
+ $M_2$ is more specific.
+\item
+ If $T_{F1}$ is any \chpl{int} type and $T_{F2}$ is any \chpl{uint}
+ type, $M_1$ is more specific.
+\item
+ If $T_{F2}$ is any \chpl{int} type and $T_{F1}$ is any \chpl{uint}
+ type, $M_2$ is more specific.
+\item
+ Otherwise neither mapping is more specific.
+\end{itemize}
 
 \subsection{Nested Functions}
 \label{Nested_Functions}
