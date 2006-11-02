@@ -84043,3 +84043,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: num.cpp 
 
+---------------------------------------------------------------------------
+
+11/02/06 14:33:31 -- deitz
+
+Log message:
+	Finished first pass writeup of the Functions section, adding nested
+	functions and variable length argument lists sections.
+	
+	Added stub section to Statements section to discuss parameter for loops.
+	
+	Added stub section to Tuples section to discuss tuple destructuring
+	expressions, e.g., (...x) where x is a tuple.
+
+Modified files:
+	chapel/spec/: Functions.tex Statements.tex Tuples.tex 
+
