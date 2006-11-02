@@ -1069,7 +1069,10 @@ instantiate_tuple(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
-  int64 index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->int_value();
+  VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
+  if (var->immediate->const_kind != NUM_KIND_INT)
+    return fn;
+  int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   return fn;
@@ -1077,7 +1080,10 @@ instantiate_tuple_get(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_set(FnSymbol* fn) {
-  int64 index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)))->immediate->int_value();
+  VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
+  if (var->immediate->const_kind != NUM_KIND_INT)
+    return fn;
+  int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
