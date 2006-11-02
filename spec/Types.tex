@@ -19,11 +19,11 @@ type-declaration-statement:
   type-alias-declaration-statement
 \end{syntax}
 
-Classes are discussed in Section~\ref{Classes}.  Records are discussed
-in Section~\ref{Records}.  Unions are discussed in
-Section~\ref{Unions}.  Tuples are discussed in Section~\ref{Tuples}.
-Sequences are discussed in Section~\ref{Sequences}.  Domains and
-arrays are discussed in Section~\ref{Domains_and_Arrays}.
+Classes are discussed in~\rsec{Classes}.  Records are discussed
+in~\rsec{Records}.  Unions are discussed in~\ref{Unions}.  Tuples are
+discussed in~\rsec{Tuples}.  Sequences are discussed
+in~\rsec{Sequences}.  Domains and arrays are discussed
+in~\rsec{Domains_and_Arrays}.
 
 
 \subsection{Primitive Types}
@@ -33,8 +33,7 @@ The primitive types include the following
 types: \chpl{bool}, \chpl{int}, \chpl{uint}, \chpl{real},
 \chpl{complex}, \chpl{imag}, \chpl{string}, and \chpl{locale}.
 These primitive types are defined in this section except for
-the \chpl{locale} type which is defined in
-Section~\ref{The_Locale_Type}.
+the \chpl{locale} type which is defined in~\rsec{The_Locale_Type}.
 
 \subsubsection{The Bool Type}
 \label{The_Bool_Type}
@@ -48,7 +47,7 @@ logical operators operate on values of \chpl{bool} type.
 
 Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
-in this context (Section~\ref{Implicit_Statement_Bool_Conversions}).
+in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 For example, an integer can be used as the condition in a conditional
 statement.  It is converted to \chpl{false} if it is zero, and
 otherwise, it is converted to \chpl{true}.
@@ -82,7 +81,7 @@ The integral types and their ranges are given in the following table:
 The unary and binary operators that are pre-defined over the integral
 types operate with 32- and 64-bit precision.  Using these operators on
 integral types represented with fewer bits results in a coercion
-according to the rules defined in Section~\ref{Implicit_Conversions}.
+according to the rules defined in~\rsec{Implicit_Conversions}.
 
 \subsubsection{Real Types}
 \label{Real_Types}
