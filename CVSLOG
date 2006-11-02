@@ -84059,3 +84059,15 @@ Log message:
 Modified files:
 	chapel/spec/: Functions.tex Statements.tex Tuples.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 15:28:48 -- deitz
+
+Log message:
+	Fixed Statements section in spec to define the new semantics of for
+	loops where parentheses need to be used, as opposed to an index list
+	or iterator list that is not parenthesized.
+
+Modified files:
+	chapel/spec/: Statements.tex 
+
