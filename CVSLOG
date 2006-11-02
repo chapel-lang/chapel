@@ -83934,3 +83934,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/06 16:30:30 -- bradc
+
+Log message:
+	Replaced all instances of immediate->v_int64 with
+	immediate->int_value() in order to get rid of
+	endianness assumptions causing infinite loops
+	and other errors on the Sun platform.
+	
+	This causes two regressions that I haven't had
+	a chance to investigate yet:
+	
+	[Error matching compiler output for arrays/deitz/test_indefinite2]
+	[Error matching compiler output for arrays/deitz/test_indefinite7]
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
