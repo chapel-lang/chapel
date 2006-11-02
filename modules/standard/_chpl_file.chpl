@@ -231,7 +231,7 @@ def _fscanfError() {
 pragma "rename _chpl_fread_int" 
 def fread(f: file = stdin, inout val: int) {
   if (f.isOpen) {
-    var returnVal: int = fscanf(f.fp, "%lld", val);
+    var returnVal: int = fscanf(f.fp, "%d", val);
     if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
