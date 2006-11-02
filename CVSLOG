@@ -84071,3 +84071,21 @@ Log message:
 Modified files:
 	chapel/spec/: Statements.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 15:32:18 -- deitz
+
+Log message:
+	Changed all references to sections via
+	
+	  in Section~\ref{section_label}
+	
+	to
+	
+	  in~\rsec{section_label}
+	
+	which is the preferred way and inserts the section symbol.
+
+Modified files:
+	chapel/spec/: Functions.tex Types.tex 
+
