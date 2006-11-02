@@ -277,7 +277,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
+              imm->v_uint64 = im1.uint_value() _op im2.uint_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -293,7 +293,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
+              imm->v_int64 = im1.int_value() _op im2.int_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -326,7 +326,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_uint32 = (uint32)_op(im1.v_uint32, im2.v_uint32); break; \
             case INT_SIZE_64: \
-              imm->v_uint64 = (uint64)_op(im1.v_uint64, im2.v_uint64); break; \
+              imm->v_uint64 = (uint64)_op(im1.uint_value(), im2.uint_value()); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -342,7 +342,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = (int32)_op(im1.v_int32, im2.v_int32); break; \
             case INT_SIZE_64: \
-              imm->v_int64 = (int64)_op(im1.v_int64, im2.v_int64); break; \
+              imm->v_int64 = (int64)_op(im1.int_value(), im2.int_value()); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -375,7 +375,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_bool = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_bool = im1.v_uint64 _op im2.v_uint64; break; \
+              imm->v_bool = im1.uint_value() _op im2.uint_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -391,7 +391,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_bool = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_bool = im1.v_int64 _op im2.v_int64; break; \
+              imm->v_bool = im1.int_value() _op im2.int_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -424,7 +424,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
+              imm->v_uint64 = im1.uint_value() _op im2.uint_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -440,7 +440,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
+              imm->v_int64 = im1.int_value() _op im2.int_value(); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -483,7 +483,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = _op im1.v_int64; break; \
+              imm->v_int64 = _op im1.int_value(); break;        \
             default: assert(!"case"); \
           } \
           break; \
@@ -532,7 +532,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = _op im1.v_int64; break; \
+              imm->v_int64 = _op im1.int_value(); break;        \
             default: assert(!"case"); \
           } \
           break; \
