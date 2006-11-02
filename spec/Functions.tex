@@ -1,5 +1,6 @@
 \sekshun{Functions}
 \label{Functions}
+\index{functions}
 
 This section defines functions.  Methods and iterators are functions
 and most of this section applies to them as well.  They are defined
@@ -7,6 +8,7 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 
 \subsection{Function Definitions}
 \label{Function_Definitions}
+\index{functions!syntax}
 
 Functions are declared with the following syntax:
 \begin{syntax}
@@ -83,6 +85,7 @@ generic.  It is discussed in~\rsec{Where_Expressions}.
 
 \subsection{The Return Statement}
 \label{The_Return_Statement}
+\index{return@\chpl{return}}
 
 The return statement must appear in a function.  It exits that
 function, returning control to the point at which that function was
@@ -104,6 +107,7 @@ def sum(i1: int, i2: int, i3: int)
 
 \subsection{Function Calls}
 \label{Function_Calls}
+\index{function calls}
 
 Functions are called in call expressions described
 in~\rsec{Call_Expressions}.  The function that is called is resolved
@@ -111,6 +115,7 @@ according to the algorithm described in~\rsec{Function_Resolution}.
 
 \subsection{Formal Arguments}
 \label{Formal_Arguments}
+\index{formal arguments}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
 argument is passed by value unless it is a class, array, or domain in
@@ -121,6 +126,7 @@ variables during a function call.
 
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
+\index{named arguments}
 
 A formal argument can be named at the call site to explicitly map an
 actual argument to a formal argument.
@@ -144,6 +150,7 @@ callsite for compiler-checked documentation.
 
 \subsubsection{Default Values}
 \label{Default_Values}
+\index{default values}
 
 Default values can be specified for a formal argument by appending the
 assignment operator and a default expression the declaration of the
@@ -172,6 +179,7 @@ specified earlier in the formal argument list.
 
 \subsection{Intents}
 \label{Intents}
+\index{intents}
 
 Intents allow the actual arguments to be copied to a formal argument
 and also to be copied back.
@@ -191,6 +199,7 @@ cannot be assigned within the function.
 
 \subsubsection{The In Intent}
 \label{The_In_Intent}
+\index{in@\chpl{in}}
 
 If \chpl{in} is specified as the intent, the actual argument is copied
 to the formal argument as usual, but it may also be assigned to within
@@ -203,6 +212,7 @@ Domains cannot be passed to a function via the \chpl{in} intent.
 
 \subsubsection{The Out Intent}
 \label{The_Out_Intent}
+\index{out@\chpl{out}}
 
 If \chpl{out} is specified as the intent, the actual argument is
 ignored when the call is made, but after the call, the formal argument
@@ -215,6 +225,7 @@ the \chpl{out} intent.
 
 \subsubsection{The Inout Intent}
 \label{The_Inout_Intent}
+\index{inout@\chpl{inout}}
 
 If \chpl{inout} is specified as the intent, the actual argument is
 both passed to the formal argument as if the \chpl{in} intent applied
@@ -224,53 +235,155 @@ Domains cannot be passed to a function via the \chpl{inout} intent.
 
 \subsection{Variable Functions}
 \label{Variable_Functions}
+\index{variable functions}
+\index{functions!setters}
 
-This is a stub.  This portion of the document does not exist.
+A variable function is a function that can be assigned a value.  Note
+that a variable function does not return a reference.  That is, the
+reference cannot be captured.
+
+A variable function is specified by following the argument list with
+the \chpl{var} keyword.  A variable function must return an expression
+that can be assigned.
+
+When a variable function is called on the left-hand side of an
+assignment statement, the expression that is normally returned is
+instead assigned the result of the expression on the right-hand side
+of the assignment statement.  Note that the right-hand side expression
+is evaluated before the variable function is called.  Otherwise a
+variable function evaluates normally and returns the result of the
+expression that it returns.
+
+\begin{example}
+The following code creates a function that can be interpreted as a
+simple two-element array where the elements are actually global
+variables:
+\begin{chapel}
+var x, y = 0;
+
+def A(i: int) var {
+  if i < 0 || i > 1 then
+    halt("array access out of bounds");
+  return if i == 0 then x else y;
+}
+\end{chapel}
+This function can be assigned to in order to write to the ``elements''
+of the array as in
+\begin{chapel}
+A(0) = 1;
+A(1) = 2;
+\end{chapel}
+It can be called as an expression to access the ``elements'' as in
+\begin{chapel}
+writeln(A(0) + A(1));
+\end{chapel}
+This code outputs the number \chpl{3}.
+\end{example}
 
 \subsubsection{Explicit Setter Functions}
 \label{Explicit_Setter_Functions}
+\index{functions!setters}
 
-This is a stub.  This portion of the document does not exist.
+Variable functions can be created by overloading a normal function
+with an explicit setter function.  Alternatively, an explicit setter
+function can be defined without a normal counterpart to create a
+function that can only be assigned values.
+
+An explicit setter function is defined by prepending the assignment
+operator to the function name.  Setter functions can only be called
+from the left-hand side of an assignment statement.
+
+Setter functions require an extra formal argument (that must be the
+last argument).  This argument is passed the value on the right-hand
+side of the assignment statement.
+
+\begin{example}
+The following code defines a function \chpl{A} and a setter
+function \chpl{A}.  These two definitions of \chpl{A} are equivalent
+to the one definition in the previous section.
+\begin{chapel}
+var x, y = 0;
+
+def A(i: int) {
+  if i < 0 || i > 1 then
+    halt("array access out of bounds");
+  return if i == 0 then x else y;
+}
+
+def =A(i: int, value: int) {
+  if i < 0 || i > 1 then
+    halt("array access out of bounds");
+  (if i == 0 then x else y) = value;
+}
+\end{chapel}
+This code has the extra constraint that the expression on the
+right-hand side of the assignment statement needs to be able to be
+passed to an argument of type \chpl{int}.  For type \chpl{int}, the
+constraints between assignment and argument passing are the same, so
+these functions are equivalent to in the previous section.
+
+In the variable function, there is no type constraint on the
+expression other than any constraint placed on it by the assignment
+statement.  The equivalent setter function would be generic in respect
+to the last argument.
+\end{example}
 
 \subsection{Function Overloading}
 \label{Function_Overloading}
+\index{functions!overloading}
 
 This is a stub.  This portion of the document does not exist.
 
 \subsection{Function Resolution}
 \label{Function_Resolution}
 
-This is a stub.  This portion of the document does not exist.
+Given a function call, the function that the call resolves to is
+determined according to the following algorithm:
+\begin{enumerate}
+\item
+Identify the set of visible functions.  A visible function is any
+function with the same name that satisfies the criteria
+in~\rsec{Identifying_Visible_Functions}.
+\item
+From the set of visible functions, determine the set of candidate
+functions.  A function is a candidate if the function is a valid
+application of the function call's actual arguments as determined
+in~\rsec{Determining_Candidate_Functions}.  A compiler error occurs if
+there are no candidate functions,
+\item
+From the set of candidate functions, the most specific function is
+determined.  The most specific function is a candidate function that
+is more specific than every other candidate function.  If there is no
+function that is more specific than every other candidate function,
+the function call is ambiguous and a compiler error occurs.  The term
+``more specific function'' is defined
+in~\rsec{Determining_the_Most_Specific_Function}.
+\end{enumerate}.
 
 \subsubsection{Identifying Visible Functions}
 \label{Identifying_Visible_Functions}
+\index{functions!visibility}
 
-This is a stub.  This portion of the document does not exist.
+A function is a visible function to a function call if the name of the
+function is the same as the name of the function call and the function
+is defined or used in a lexical outer scope.
+
+\index{functions!with class arguments}
+Additionally, functions that have arguments of class type are
+considered globally visible and so are always visible regardless of
+the location of their definition.
 
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Determining More Specific Functions}
-\label{Determining_More_Specific_Functions}
+\subsubsection{Determining the Most Specific Function}
+\label{Determining_the_Most_Specific_Function}
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Visibility and Function Resolution}
-\label{Visibility_and_Function_Resolution}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Functions with Class Arguments}
-\label{Functions_with_Class_Arguments}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Most Specific Function}
-\label{Most_Specific_Function}
-
-This is a stub.  This portion of the document does not exist.
+visibility as a tie-breaker
 
 \subsection{Nested Functions}
 \label{Nested_Functions}
@@ -284,10 +397,6 @@ This is a stub.  This portion of the document does not exist.
 
 \subsection{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Special Functions}
-\label{Special_Functions}
+\index{functions!variable number of arguments}
 
 This is a stub.  This portion of the document does not exist.
