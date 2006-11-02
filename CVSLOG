@@ -84089,3 +84089,18 @@ Log message:
 Modified files:
 	chapel/spec/: Functions.tex Types.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 15:34:12 -- deitz
+
+Log message:
+	Fixed a bug that showed up when the tuple get and tuple set function
+	were over-instantiated (instantiated even when they shouldn't be).
+	There is no way of getting around this.  Although we can prune
+	over-instantiation, we cannot do so completely.
+	
+	This fixes last night's two regressions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
