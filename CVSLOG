@@ -83954,3 +83954,17 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/06 16:56:15 -- bradc
+
+Log message:
+	Made a change to the platform script so that if CHPL_PLATFORM
+	is already set, it will return that value rather than trying
+	to determine what platform you're on.  I've convinced myself
+	that this shouldn't break anything, but please let me know
+	if it creates problems for anyone's setup.
+
+Modified files:
+	chapel/util/: platform 
+
