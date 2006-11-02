@@ -83989,3 +83989,17 @@ Log message:
 Modified files:
 	chapel/spec/: Functions.tex chapel_listing.tex spec.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 12:10:18 -- bradc
+
+Log message:
+	Changed the %d string literal for reading in
+	an int from %lld to %d.  This code is still
+	really hacky and nonportable, though.  Need
+	to somehow abstract formatting strings to
+	be less architecture specific.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+
