@@ -83968,3 +83968,24 @@ Log message:
 Modified files:
 	chapel/util/: platform 
 
+---------------------------------------------------------------------------
+
+11/01/06 17:04:40 -- deitz
+
+Log message:
+	Filled in the variable function section.
+	
+	Started to write the function resolution section.
+	
+	Added some index terms to the Functions section.
+	
+	Removed "Special Functions" section.  What was this supposed to be?
+	
+	Corrected chapel listing keywords (no comma after then).
+	
+	Made example, implementation, and rational a quote rather than a
+	minipage so page breaks could appear inside them.
+
+Modified files:
+	chapel/spec/: Functions.tex chapel_listing.tex spec.tex 
+
