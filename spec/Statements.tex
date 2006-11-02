@@ -15,6 +15,7 @@ statement:
   while-do-statement
   do-while-statement
   for-statement
+  param-for-statement
   return-statement
   yield-statement
   module-declaration-statement
@@ -82,6 +83,7 @@ block-level-statement:
   select-statement
   while-do-statement
   for-statement
+  param-for-statement
   return-statement
   yield-statement
   type-select-statement
@@ -133,11 +135,11 @@ hand side is any expression that can be assigned the value on the
 right-hand side.  It is evaluated second and then assigned the value.
 
 The assignment operators that contain a binary operator as a prefix is
-a short-hand for applying the binary operator to the left and right-hand
-side expressions and
-then assigning the value of that application to the already evaluated
-left-hand side.  Thus, for example, \chpl{x += y} is equivalent to
-\chpl{x = x + y} where the expression \chpl{x} is evaluated once.
+a short-hand for applying the binary operator to the left and
+right-hand side expressions and then assigning the value of that
+application to the already evaluated left-hand side.  Thus, for
+example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
+expression \chpl{x} is evaluated once.
 
 Values of one primitive or enumerated type can be assigned to another
 primitive or enumerated type if an implicit coercion exists between
@@ -282,41 +284,35 @@ any class that implements the structural iterator interface.  The
 syntax of the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' index-list `in' iterator-list `do' statement
-  `for' index-list `in' iterator-list block-level-statement
+  `for' index-expression `in' iterator-expression `do' statement
+  `for' index-expression `in' iterator-expression block-level-statement
 
-index-list:
-  expression-list[OPT]
-
-iterator-list:
-  expression-list[OPT]
-  ( expression-list[OPT] )
-  [ expression-list[OPT] ]
-
-expression-list
+index-expression:
   expression
-  expression , expression-list
+
+iterator-expression:
+  expression
 \end{syntax}
 
-When there is single expression in the iterator list, that expression
-is iterated over, and on each iteration, the value returned by the
-iterator is assigned to the expressions in the index list and the
-statement is executed.
+The index-expression can be an identifier or a tuple of identifiers.
+The identifiers are declared to be new variables for the scope of this
+statement.
 
-Where there are multiple expressions in the iterator list, if they are
-surrounded in parentheses or unsurrounded, the expressions are
-iterated over using a zipper iteration described in
-Section~\ref{Zipper_Iteration}.  If the expressions are surrounded by
-brackets, they are iterated over using a tensor product iteration
-described in Section~\ref{Tensor_Product_Iteration}.
+If the iterator-expression is a tuple, the components of the tuple
+must support iteration, e.g., a tuple of arrays, and thse components
+are iterated over using a zipper iteration defined
+in~\rsec{Zipper_Iteration}.  If the iterator-expression is a tuple
+delimited by square brackets, the components of the tuple must support
+iteration and these components are iterated over using a tensor
+product iteration defined in~\rsec{Tensor_Product_Iteration}.
 
 \subsubsection{Zipper Iteration}
 \label{Zipper_Iteration}
 
-When multiple expressions are iterated over in a zipper context, on
-each iteration, each expression is iterated over, the values are
-returned by the iterators in a tuple and assigned to the expressions
-in the index list, and the statement is executed.
+When multiple iterators are iterated over in a zipper context, on each
+iteration, each expression is iterated over, the values are returned
+by the iterators in a tuple and assigned to the index, and the
+statement is executed.
 
 The shape of each iterator, the rank and the extents in each
 dimension, must be identical.
@@ -324,7 +320,7 @@ dimension, must be identical.
 \begin{example}
 The output of
 \begin{chapel}
-for i, j in 1..3, 4..6 do
+for (i, j) in (1..3, 4..6) do
   write(i, " ", j, " ");
 \end{chapel}
 is ``1 4 2 5 3 6 ''.
@@ -333,15 +329,15 @@ is ``1 4 2 5 3 6 ''.
 \subsubsection{Tensor Product Iteration}
 \label{Tensor_Product_Iteration}
 
-When multiple expressions are iterated over in a tensor product
-context, they are iterated over as if they were nested in distinct for
-loops.  There is no constraint on the iterators as there is in the
-zipper context.
+When multiple iterators are iterated over in a tensor product context,
+they are iterated over as if they were nested in distinct for loops.
+There is no constraint on the iterators as there is in the zipper
+context.
 
 \begin{example}
 The output of
 \begin{chapel}
-for i, j in [1..3, 4..6] do
+for (i, j) in [1..3, 4..6] do
   write(i, " ", j, " ");
 \end{chapel}
 is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''. The statement is
@@ -356,7 +352,17 @@ for i in 1..3 do
 \subsubsection{Parameter For Loops}
 \label{Parameter_For_Loops}
 
-This is a stub.  This portion of the document does not exist.
+Parameter for loops are unrolled by the compiler so that the index
+variable is a parameter rather than a variable.  The syntax for a
+parameter for loop statement is given by:
+\begin{syntax}
+param-for-statement:
+  `for' `param' identifier `in' arithmetic-sequence `do' statement
+  `for' `param' identifier `in' arithmetic-sequence block-level-statement
+\end{syntax}
+Parameter for loops are restricted to iteration over arithmetic
+sequence literals the bounds of which must also be parameters.  The
+loop is then unrolled for each iteration.
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}
