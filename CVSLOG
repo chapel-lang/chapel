@@ -84190,3 +84190,16 @@ Added files:
 Removed files:
 	chapel/compiler/ifa/: cast_code.cc 
 
+---------------------------------------------------------------------------
+
+11/03/06 14:39:45 -- bradc
+
+Log message:
+	Modified gen_release script to build tarball from
+	a fresh copy of the sources checked out into /tmp
+	(or $TMPDIR if set).  Result is left in $CHPLHOME
+	if set.  In /tmp or $TMPDIR otherwise.
+
+Modified files:
+	chapel/util/: gen_release 
+
