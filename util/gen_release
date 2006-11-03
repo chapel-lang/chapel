@@ -1,5 +1,24 @@
 #!/usr/bin/perl
 
+
+# check out a clean copy of the sources into a temporary directory
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+$uwusername = $ENV{'CHPL_UW_CVS_USERNAME'};
+if ($uwusername eq "") {
+    $uwusername = $user;
+}
+$tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
+$chapeldir = "$tmpdir/chapel";
+$cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
+system("mkdir $tmpdir > /dev/null");
+system("cd $tmpdir && cvs -d $cvsroot checkout nightly");
+
+
 #$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
 $cvsignores = "CVS|RCS";
 
@@ -29,10 +48,7 @@ $cvsignores = "CVS|RCS";
 );
 
 
-if (defined($ENV{"CHPLHOME"})) {
-    chdir $ENV{"CHPLHOME"};
-}                          # else, assume we are there already
-chdir "..";
+chdir "$tmpdir";
 
 foreach $file (@files) {
     # print "$file\n";
@@ -52,7 +68,7 @@ foreach $dir (@code_dirs) {
         $file =~ s/(\S+\/)+//g;
         # print "$file\n";
         # print "$fullpath\n";
-        if ($file =~ /(\.(h|cpp|c|cc|y|lex)$)|Makefile|README|DIRS|FILES/) {
+        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README|DIRS|FILES/) {
             # print "$fullpath\n";
             push @tarfiles, $fullpath;
         }
@@ -77,6 +93,16 @@ foreach $file (@tarfiles) {
     }
 }
 
-$cmd = "tar -cz -f chapel/chapel.tar.gz @tarfiles";
+if (defined($ENV{"CHPLHOME"})) {
+    $resultdir = $ENV{"CHPLHOME"};
+} else {
+    $resultdir = $basetmpdir;
+}
+
+$cmd = "tar -cz -f $resultdir/chapel.tar.gz @tarfiles";
 #print "$cmd\n";
 system ($cmd);
+
+print "Left result in $resultdir/chapel.tar.gz\n";
+
+system("rm -r $tmpdir");
