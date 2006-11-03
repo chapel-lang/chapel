@@ -16,7 +16,7 @@ to->v_bool = (bool)!!from->v_uint16; break;
 case 3:
 to->v_bool = (bool)!!from->v_uint32; break;
 case 4:
-to->v_bool = (bool)!!from->v_uint64; break;
+to->v_bool = (bool)!!from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -35,7 +35,7 @@ to->v_bool = (bool)!!from->v_int16; break;
 case 3:
 to->v_bool = (bool)!!from->v_int32; break;
 case 4:
-to->v_bool = (bool)!!from->v_int64; break;
+to->v_bool = (bool)!!from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -77,7 +77,7 @@ to->v_uint8 = (uint8)from->v_uint16; break;
 case 3:
 to->v_uint8 = (uint8)from->v_uint32; break;
 case 4:
-to->v_uint8 = (uint8)from->v_uint64; break;
+to->v_uint8 = (uint8)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -96,7 +96,7 @@ to->v_uint8 = (uint8)from->v_int16; break;
 case 3:
 to->v_uint8 = (uint8)from->v_int32; break;
 case 4:
-to->v_uint8 = (uint8)from->v_int64; break;
+to->v_uint8 = (uint8)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -138,7 +138,7 @@ to->v_uint16 = (uint16)from->v_uint16; break;
 case 3:
 to->v_uint16 = (uint16)from->v_uint32; break;
 case 4:
-to->v_uint16 = (uint16)from->v_uint64; break;
+to->v_uint16 = (uint16)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -157,7 +157,7 @@ to->v_uint16 = (uint16)from->v_int16; break;
 case 3:
 to->v_uint16 = (uint16)from->v_int32; break;
 case 4:
-to->v_uint16 = (uint16)from->v_int64; break;
+to->v_uint16 = (uint16)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -199,7 +199,7 @@ to->v_uint32 = (uint32)from->v_uint16; break;
 case 3:
 to->v_uint32 = (uint32)from->v_uint32; break;
 case 4:
-to->v_uint32 = (uint32)from->v_uint64; break;
+to->v_uint32 = (uint32)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -218,7 +218,7 @@ to->v_uint32 = (uint32)from->v_int16; break;
 case 3:
 to->v_uint32 = (uint32)from->v_int32; break;
 case 4:
-to->v_uint32 = (uint32)from->v_int64; break;
+to->v_uint32 = (uint32)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -260,7 +260,7 @@ to->v_uint64 = (uint64)from->v_uint16; break;
 case 3:
 to->v_uint64 = (uint64)from->v_uint32; break;
 case 4:
-to->v_uint64 = (uint64)from->v_uint64; break;
+to->v_uint64 = (uint64)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -279,7 +279,7 @@ to->v_uint64 = (uint64)from->v_int16; break;
 case 3:
 to->v_uint64 = (uint64)from->v_int32; break;
 case 4:
-to->v_uint64 = (uint64)from->v_int64; break;
+to->v_uint64 = (uint64)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -330,7 +330,7 @@ to->v_bool = (bool)from->v_uint16; break;
 case 3:
 to->v_bool = (bool)from->v_uint32; break;
 case 4:
-to->v_bool = (bool)from->v_uint64; break;
+to->v_bool = (bool)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -349,7 +349,7 @@ to->v_bool = (bool)from->v_int16; break;
 case 3:
 to->v_bool = (bool)from->v_int32; break;
 case 4:
-to->v_bool = (bool)from->v_int64; break;
+to->v_bool = (bool)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -391,7 +391,7 @@ to->v_int8 = (int8)from->v_uint16; break;
 case 3:
 to->v_int8 = (int8)from->v_uint32; break;
 case 4:
-to->v_int8 = (int8)from->v_uint64; break;
+to->v_int8 = (int8)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -410,7 +410,7 @@ to->v_int8 = (int8)from->v_int16; break;
 case 3:
 to->v_int8 = (int8)from->v_int32; break;
 case 4:
-to->v_int8 = (int8)from->v_int64; break;
+to->v_int8 = (int8)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -452,7 +452,7 @@ to->v_int16 = (int16)from->v_uint16; break;
 case 3:
 to->v_int16 = (int16)from->v_uint32; break;
 case 4:
-to->v_int16 = (int16)from->v_uint64; break;
+to->v_int16 = (int16)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -471,7 +471,7 @@ to->v_int16 = (int16)from->v_int16; break;
 case 3:
 to->v_int16 = (int16)from->v_int32; break;
 case 4:
-to->v_int16 = (int16)from->v_int64; break;
+to->v_int16 = (int16)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -513,7 +513,7 @@ to->v_int32 = (int32)from->v_uint16; break;
 case 3:
 to->v_int32 = (int32)from->v_uint32; break;
 case 4:
-to->v_int32 = (int32)from->v_uint64; break;
+to->v_int32 = (int32)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -532,7 +532,7 @@ to->v_int32 = (int32)from->v_int16; break;
 case 3:
 to->v_int32 = (int32)from->v_int32; break;
 case 4:
-to->v_int32 = (int32)from->v_int64; break;
+to->v_int32 = (int32)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -574,7 +574,7 @@ to->v_int64 = (int64)from->v_uint16; break;
 case 3:
 to->v_int64 = (int64)from->v_uint32; break;
 case 4:
-to->v_int64 = (int64)from->v_uint64; break;
+to->v_int64 = (int64)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -593,7 +593,7 @@ to->v_int64 = (int64)from->v_int16; break;
 case 3:
 to->v_int64 = (int64)from->v_int32; break;
 case 4:
-to->v_int64 = (int64)from->v_int64; break;
+to->v_int64 = (int64)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -646,7 +646,7 @@ to->v_float32 = (float32)from->v_uint16; break;
 case 3:
 to->v_float32 = (float32)from->v_uint32; break;
 case 4:
-to->v_float32 = (float32)from->v_uint64; break;
+to->v_float32 = (float32)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -665,7 +665,7 @@ to->v_float32 = (float32)from->v_int16; break;
 case 3:
 to->v_float32 = (float32)from->v_int32; break;
 case 4:
-to->v_float32 = (float32)from->v_int64; break;
+to->v_float32 = (float32)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -709,7 +709,7 @@ to->v_float64 = (float64)from->v_uint16; break;
 case 3:
 to->v_float64 = (float64)from->v_uint32; break;
 case 4:
-to->v_float64 = (float64)from->v_uint64; break;
+to->v_float64 = (float64)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -728,7 +728,7 @@ to->v_float64 = (float64)from->v_int16; break;
 case 3:
 to->v_float64 = (float64)from->v_int32; break;
 case 4:
-to->v_float64 = (float64)from->v_int64; break;
+to->v_float64 = (float64)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -776,7 +776,7 @@ to->v_float128 = (float128)from->v_uint16; break;
 case 3:
 to->v_float128 = (float128)from->v_uint32; break;
 case 4:
-to->v_float128 = (float128)from->v_uint64; break;
+to->v_float128 = (float128)from->uint_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -795,7 +795,7 @@ to->v_float128 = (float128)from->v_int16; break;
 case 3:
 to->v_float128 = (float128)from->v_int32; break;
 case 4:
-to->v_float128 = (float128)from->v_int64; break;
+to->v_float128 = (float128)from->int_value(); break;
 case 5:
 assert(!"case"); break;
 case 6:

@@ -292,8 +292,10 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_int16 = im1.v_int16 _op im2.v_int16; break; \
             case INT_SIZE_32: \
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
-            case INT_SIZE_64: \
-              imm->v_int64 = im1.int_value() _op im2.int_value(); break; \
+          case INT_SIZE_64: {                                            \
+              imm->v_int64 = im1.int_value() _op im2.int_value(); \
+              break; \
+          } \
             default: assert(!"case"); \
           } \
           break; \
@@ -311,22 +313,64 @@ coerce_immediate(Immediate *from, Immediate *to) {
           break; \
       }
 
-#define DO_FOLDF(_op) \
+#define COMPUTE_INT_POW(type, b, e)       \
+  type base = b;                               \
+  type exp = e;                                  \
+  type res = 1;                                  \
+  if (exp < 0) {                                 \
+    res = 0;                                     \
+  } else {                                       \
+    int i;                                       \
+    for (i=0; i<exp; i++) {                      \
+      res *= base;                               \
+    }                                            \
+  }
+    
+#define COMPUTE_UINT_POW(type, b, e)      \
+  type base = b;                     \
+  type exp = e;                      \
+  type res = 1;                                 \
+  uint32 i;                                        \
+  for (i=0; i<exp; i++) {                       \
+    res *= base;                                \
+  }
+
+#define DO_FOLDPOW(_op) \
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
-              imm->v_bool = (bool)_op(im1.v_bool, im2.v_bool); break; \
+              {                                                         \
+                COMPUTE_UINT_POW(uint8, im1.v_bool, im2.v_bool);       \
+                imm->v_bool = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_8:  \
-              imm->v_uint8 = (uint8)_op(im1.v_uint8, im2.v_uint8); break; \
+              {                                                         \
+                COMPUTE_UINT_POW(uint8, im1.v_uint8, im2.v_uint8);       \
+                imm->v_uint8 = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_16: \
-              imm->v_uint16 = (uint16)_op(im1.v_uint16, im2.v_uint16); break; \
+              {                                                         \
+                COMPUTE_UINT_POW(uint16, im1.v_uint16, im2.v_uint16);       \
+                imm->v_uint16 = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_32: \
-              imm->v_uint32 = (uint32)_op(im1.v_uint32, im2.v_uint32); break; \
+              {                                                         \
+                COMPUTE_UINT_POW(uint32, im1.v_uint32, im2.v_uint32);       \
+                imm->v_uint32 = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_64: \
-              imm->v_uint64 = (uint64)_op(im1.uint_value(), im2.uint_value()); break; \
+              {                                                         \
+                COMPUTE_UINT_POW(uint64, im1.uint_value(), im2.uint_value()); \
+                imm->v_uint64 = res;                                     \
+                break;                                                  \
+              }                                                         \
             default: assert(!"case"); \
           } \
           break; \
@@ -334,15 +378,37 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
-              imm->v_bool = (bool)_op(im1.v_bool, im2.v_bool); break; \
-            case INT_SIZE_8:  \
-              imm->v_int8 = (int8)_op(im1.v_int8, im2.v_int8); break; \
+              {                                                         \
+                COMPUTE_INT_POW(int8, im1.v_bool, im2.v_bool);       \
+                imm->v_bool = res;                                     \
+                break;                                                  \
+              }                                                         \
+            case INT_SIZE_8: \
+              {                                                         \
+                COMPUTE_INT_POW(int8, im1.v_int8, im2.v_int8);       \
+                imm->v_int8 = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_16: \
-              imm->v_int16 = (int16)_op(im1.v_int16, im2.v_int16); break; \
+              {                                                         \
+                COMPUTE_INT_POW(int16, im1.v_int16, im2.v_int16);       \
+                imm->v_int16 = res;                                     \
+                break;                                                  \
+              }                                                         \
             case INT_SIZE_32: \
-              imm->v_int32 = (int32)_op(im1.v_int32, im2.v_int32); break; \
-            case INT_SIZE_64: \
-              imm->v_int64 = (int64)_op(im1.int_value(), im2.int_value()); break; \
+              {                                                         \
+                COMPUTE_INT_POW(int32, im1.v_int32, im2.v_int32);       \
+                imm->v_int32 = res;                                     \
+                break;                                                  \
+              }                                                         \
+          case INT_SIZE_64: { \
+              {                                                         \
+                COMPUTE_INT_POW(int64, im1.int_value(), im2.int_value()); \
+                imm->v_int64 = res;                                     \
+                break;                                                  \
+              }                                                         \
+              break; \
+} \
             default: assert(!"case"); \
           } \
           break; \
@@ -702,7 +768,10 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;
     case P_prim_lnot: DO_FOLD1(!); break;
-    case P_prim_pow: DO_FOLDF(pow); break;
+  case P_prim_pow: {
+    DO_FOLDPOW(pow);
+    break;
+  }
   }
 }
 
