@@ -84203,3 +84203,13 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/03/06 14:57:15 -- deitz
+
+Log message:
+	Finished first pass at sequences section.
+
+Modified files:
+	chapel/spec/: Sequences.tex 
+
