@@ -14,9 +14,10 @@
 #include "primitive.h"
 
 
-static void version(ArgumentState *arg_state, char *arg_unused);
-static void help(ArgumentState *arg_state, char *arg_unused);
-static void copyright(ArgumentState *arg_state, char *arg_unused);
+static void printVersionAndExit(ArgumentState *arg_state, char *arg_unused);
+static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused);
+static void printCopyrightAndExit(ArgumentState *arg_state, char *arg_unused);
+static void printLicenseAndExit(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 
@@ -83,9 +84,10 @@ static ArgumentDescription arg_desc[] = {
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"print-statistics", ' ', "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"no-header-errors", ' ', "Squelch Header Errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
- {"version", ' ', "Show Version", NULL, NULL, NULL, version},
- {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
- {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
+ {"version", ' ', "Show Version", NULL, NULL, NULL, printVersionAndExit},
+ {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, printCopyrightAndExit},
+ {"license", ' ', "Show License", NULL, NULL, NULL, printLicenseAndExit},
+ {"help", 'h', "Help (show this list)", NULL, NULL, NULL, printHelpAndExit},
  {0}
 };
 
@@ -96,37 +98,41 @@ static ArgumentState arg_state = {
   arg_desc
 };
 
-static void
-copyright(ArgumentState *arg_state, char *arg_unused) {
-  fprintf(stderr, "\n"
+static void printLicenseAndExit(ArgumentState *arg_state, char *arg_unused) {
+  fprintf(stderr,
 #include "LICENSE"
-          "\n"
           );
   clean_exit(0);
 }
 
-static void printShortCopyright(void) {
-  fprintf(stderr, "\n"
+static void printCopyright(void) {
+  fprintf(stderr,
 #include "COPYRIGHT"
           );
+}
+
+
+static void printCopyrightAndExit(ArgumentState* arg_state, char* arg_unused) {
+  printCopyright();
+  clean_exit(0);
 }
 
 static void printVersion(ArgumentState* arg_state) {
   char ver[30];
   get_version(ver);
-  fprintf(stderr, "%s Version %s", arg_state->program_name, ver);  
-  printShortCopyright();
+  fprintf(stderr, "%s Version %s\n", arg_state->program_name, ver);  
+  printCopyright();
 }
 
-static void version(ArgumentState* arg_state, char* arg_unused) {
+static void printVersionAndExit(ArgumentState* arg_state, char* arg_unused) {
   printVersion(arg_state);
-  exit(0);
+  clean_exit(0);
 }
 
-static void
-help(ArgumentState *arg_state, char *arg_unused) {
+static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused) {
   printVersion(arg_state);
   usage(arg_state, arg_unused);
+  clean_exit(0);
 }
 
 static void 
@@ -193,7 +199,7 @@ main(int argc, char *argv[]) {
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
   if (arg_state.nfile_arguments < 1)
-    help(&arg_state, NULL);
+    printHelpAndExit(&arg_state, NULL);
   if (rungdb)
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))

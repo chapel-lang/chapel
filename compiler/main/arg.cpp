@@ -218,7 +218,6 @@ usage(ArgumentState *arg_state, char *arg_unused) {
     }
     fprintf(stderr," %s\n",desc[i].description);
   }
-  exit(1);
 }
 
 void
