@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+
+#$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
+$cvsignores = "CVS|RCS";
+
+# explicit files to include
+@files = (
+       "BUILD_VERSION",
+       "COPYRIGHT", 
+       "DIRS",
+       "LICENSE",
+       "Makefile",
+#       "doc",             # currently empty dir for release
+#       "example",         # currently empty dir for release
+       "util/platform"
+);
+
+# C/C++ sources
+@code_dirs = (
+    "compiler"
+);
+
+# include these dirs and their entire contents
+@complete_dirs = (
+    "etc",
+    "make",
+    "modules",
+    "runtime"
+);
+
+
+if (defined($ENV{"CHPLHOME"})) {
+    chdir $ENV{"CHPLHOME"};
+}                          # else, assume we are there already
+chdir "..";
+
+foreach $file (@files) {
+    # print "$file\n";
+    $dfile = "chapel/$file";
+    if (!(-e $dfile)) {
+        print "$dfile does not exist\n";
+        exit( 9);
+    }
+    push @tarfiles, $dfile;
+}
+
+foreach $dir (@code_dirs) {
+    @filelist = `find chapel/$dir`;
+    foreach $fullpath (@filelist) {
+        chomp $fullpath;
+        $file = $fullpath;
+        $file =~ s/(\S+\/)+//g;
+        # print "$file\n";
+        # print "$fullpath\n";
+        if ($file =~ /(\.(h|cpp|c|cc|y|lex)$)|Makefile|README|DIRS|FILES/) {
+            # print "$fullpath\n";
+            push @tarfiles, $fullpath;
+        }
+    }
+}
+
+foreach $dir (@complete_dirs) {
+    @filelist = `find chapel/$dir`;
+    foreach $fullpath (@filelist) {
+        chomp $fullpath;
+        next if ((-d $fullpath) || ($fullpath =~ /$cvsignores/));
+        # print "$fullpath\n";
+        push @tarfiles, $fullpath;
+    }
+}
+
+
+# verify only files are listed
+foreach $file (@tarfiles) {
+    if (-d $file) {
+        print "error: directory '$file' included\n";
+    }
+}
+
+$cmd = "tar -cz -f chapel/chapel.tar.gz @tarfiles";
+#print "$cmd\n";
+system ($cmd);
