@@ -84213,3 +84213,13 @@ Log message:
 Modified files:
 	chapel/spec/: Sequences.tex 
 
+---------------------------------------------------------------------------
+
+11/03/06 14:58:03 -- deitz
+
+Log message:
+	Fixed an undefined reference.
+
+Modified files:
+	chapel/spec/: Parallelism_and_Synchronization.tex 
+
