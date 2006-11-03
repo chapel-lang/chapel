@@ -84134,3 +84134,44 @@ Log message:
 Added files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/03/06 13:10:19 -- bradc
+
+Log message:
+	Check-in to fix more Sun regressions.  This code
+	addresses a to-me inexplicable inconsistency
+	between the Sun and Linux builds of the compiler
+	in which a cast of a double value greater than
+	MAX_INT down to an int32 resulted in different
+	behaviors on different platforms in folding the
+	pow() function.
+	
+	Rather than solve this problem, I beat my head
+	against it for several hours and then decided
+	that using pow() to implement integer exponentiation
+	was a bad idea anyway, so rewrote the integer cases
+	to perform the math explicitly using integer values.
+	This could certainly be optimized, but at least is
+	generating correct, portable values.
+	
+	As with yesterday's checkins, I have lingering
+	concerns about folding ** operators that take
+	operands of different types; but like yesterday's
+	check-in, this one merely propagates the
+	existing assumptions, fixes the portability issues,
+	and doesn't break anything that currently works.
+	
+	This change also includes some changes to cast_code.cc
+	from direct accesses to the 64-bit int/uint fields
+	of the union to use the int_value()/uint_value()
+	methods.  In retrospect, these are probably
+	unnecessary (and in fact, I now believe that they
+	should be unnecessary everywhere if we were using
+	unions in a typesafe manner, suggesting that
+	we aren't), but also don't hurt and cause greps
+	for v_int64 to result in fewer hits.
+
+Modified files:
+	chapel/compiler/ifa/: cast_code.cc num.cpp 
+
