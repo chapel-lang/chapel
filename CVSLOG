@@ -84223,3 +84223,13 @@ Log message:
 Modified files:
 	chapel/spec/: Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+11/03/06 15:04:44 -- deitz
+
+Log message:
+	Fixed a slight problem with my last checkin.
+
+Modified files:
+	chapel/spec/: Sequences.tex 
+
