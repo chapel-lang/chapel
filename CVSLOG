@@ -84175,3 +84175,18 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: cast_code.cc num.cpp 
 
+---------------------------------------------------------------------------
+
+11/03/06 14:35:08 -- bradc
+
+Log message:
+	Renamed cast_code.cpp as cast_code.cc because I never
+	find the .cc file in any of my greppings of the sources.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+Added files:
+	chapel/compiler/ifa/: cast_code.cpp 
+Removed files:
+	chapel/compiler/ifa/: cast_code.cc 
+
