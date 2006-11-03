@@ -84124,3 +84124,13 @@ Log message:
 Modified files:
 	chapel/spec/: Lexical_Structure.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 16:58:43 -- waynew
+
+Log message:
+	Script to tar up the necessary files for a release.
+
+Added files:
+	chapel/util/: gen_release 
+
