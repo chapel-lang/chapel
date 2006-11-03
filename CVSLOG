@@ -84114,3 +84114,13 @@ Log message:
 Modified files:
 	chapel/spec/: Types.tex 
 
+---------------------------------------------------------------------------
+
+11/02/06 16:50:59 -- deitz
+
+Log message:
+	Started writing lexical structure section.  Checkpoint.
+
+Modified files:
+	chapel/spec/: Lexical_Structure.tex 
+
