@@ -84233,3 +84233,26 @@ Log message:
 Modified files:
 	chapel/spec/: Sequences.tex 
 
+---------------------------------------------------------------------------
+
+11/03/06 15:27:18 -- bradc
+
+Log message:
+	Switched our LICENSE file over to the MIT license
+	in anticipation of the release.
+	
+	Changed the --copyright flag to only print the
+	copyright and added a --license flag to print
+	out the full license (as the copyright used to).
+	Removed blank lines from both flags' output.
+	Added a test of the license flag and updated
+	the copyright flag test.
+
+Modified files:
+	./: LICENSE 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/copyright/: .cvsignore PREDIFF 
+Added files:
+	chapel/test/compflags/bradc/license/: .cvsignore COMPOPTS NOEXEC 
+	                                      PREDIFF declint.chpl 
+
