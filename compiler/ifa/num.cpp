@@ -259,7 +259,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
 
 void
 coerce_immediate(Immediate *from, Immediate *to) {
-#include "cast_code.cc"
+#include "cast_code.cpp"
 }
 
 #define DO_FOLD(_op) \
