@@ -84256,3 +84256,13 @@ Added files:
 	chapel/test/compflags/bradc/license/: .cvsignore COMPOPTS NOEXEC 
 	                                      PREDIFF declint.chpl 
 
+---------------------------------------------------------------------------
+
+11/03/06 16:18:49 -- deitz
+
+Log message:
+	Finished first pass of Lexical Structure section.
+
+Modified files:
+	chapel/spec/: Expressions.tex Lexical_Structure.tex 
+
