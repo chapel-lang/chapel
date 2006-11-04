@@ -1,12 +1,7 @@
 \sekshun{Lexical Structure}
 \label{Lexical_Structure}
 
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Programs}
-\label{Programs}
-
-This is a stub.  This portion of the document does not exist.
+This section describes the lexical components of Chapel programs.
 
 \subsection{Comments}
 \label{Comments}
@@ -56,29 +51,83 @@ The following are legal identifiers:
 \subsubsection{Keywords}
 \label{Keywords}
 
-This is a stub.  This portion of the document does not exist.
+The following keywords are reserved:
+\begin{chapel}
+atomic      begin       bool        break       by
+class       cobegin     complex     config      const
+continue    def         distributed do          domain
+else        enum        false       for         forall
+goto        if          imag        in          int
+inout       iterator    let         locale      module
+nil         on          ordered     otherwise   out
+param       pragma      real        record      reduce
+return      scan        select      serial      single
+sync        then        true        type        uint
+union       use         var         when        where
+while       yield
+\end{chapel}
 
 \subsubsection{Literals}
 \label{Literals}
 
-This is a stub.  This portion of the document does not exist.
+Literal values for primitive types are described
+in~\ref{Primitive_Type_Literals}.
 
 \subsubsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
 
-This is a stub.  This portion of the document does not exist.
+The following special characters are interpreted by the syntax of the
+language specially:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf symbols} & {\bf use} \\
+\hline
+\verb@= += -= *= /= **= %= &= |= ^= &&= ||= #= <<= >>=@ & assignment \\
+\verb@..@ & arithmetic sequences \\
+\verb@...@ & variable argument lists \\
+\verb@&& || !@ & logical operators \\
+\verb@& | ^ ~ << >>@ & bitwise operators \\
+\verb@== != <= >= < >@ & relational operators \\
+\verb@+ - * / % **@ & arithmetic operators \\
+\verb@#@ & sequence concatenation operator \\
+\verb@:@ & types \\
+\verb@;@ & statement separator \\
+\verb@,@ & expression separator \\
+\verb@.@ & member access \\
+\verb@?@ & query types \\
+\verb@" '@ & string delimiters \\
+\hline
+\end{tabular}
+\end{center}
 
 \subsubsection{Grouping Tokens}
 \label{Grouping_Tokens}
 
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Compile-Time Conditionals}
-\label{Compile-Time_Conditionals}
-
-This is a stub.  This portion of the document does not exist.
+The following braces are part of the Chapel language:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf braces} & {\bf use} \\
+\hline
+\verb@( )@ & parenthesization, function calls, and tuples \\
+\verb@[ ]@ & domains, square tuples, forall expressions, and function calls \\
+\verb@(/ /)@ & sequence literals \\
+\verb@{ }@ & type scopes and blocks \\
+\hline
+\end{tabular}
+\end{center}
 
 \subsection{User-Defined Compiler Errors}
 \label{User-Defined_Compiler_Errors}
 
-This is a stub.  This portion of the document does not exist.
+The special compiler error statement given by
+\begin{syntax}
+compiler-error-statement:
+  `compilerError' ( string-literal ) ;
+\end{syntax}
+invokes a compiler error if the function that the statement is located
+within may be called by the program following the rules of parameter
+folding.
+
+The string literal is the message in the compiler error.
