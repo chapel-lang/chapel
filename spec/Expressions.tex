@@ -41,7 +41,35 @@ This is a stub.  This portion of the document does not exist.
 \subsubsection{Casts}
 \label{Casts}
 
-This is a stub.  This portion of the document does not exist.
+A cast is specified with the following syntax:
+\begin{syntax}
+cast-expression:
+  expression : type
+\end{syntax}
+The expression is converted to the specified type.  Except for the
+casts listed below, casts are restricted to valid explicit
+conversions~(\rsec{Explicit_Conversions}).
+
+The following casts have special meanings and do not correspond to an
+explicit conversion:
+\begin{itemize}
+\item
+  A cast to the keyword \chpl{seq} converts a tuple to a sequence as
+  described in~\rsec{Conversions_Between_Sequences_and_Tuples}.
+\item
+  A cast to a parameter expression of integral type converts a
+  sequence to a tuple as described
+  in~\rsec{Conversions_Between_Sequences_and_Tuples}.
+\item
+  A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
+  complex where the first component becomes the real part and the
+  second component becomes the imaginary part.  The size of the
+  complex is determined from the size of the components based on
+  implicit conversions.
+\item
+  A cast from any primitive type to a string literal that is a C-style
+  format string creates a formatted string based on that format.
+\end{itemize}
 
 \subsection{Operator Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}

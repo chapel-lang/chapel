@@ -1,20 +1,73 @@
 \lstdefinelanguage{syntax}
   {
-    morekeywords={one, of},
+    morekeywords={},
     sensitive=false,
     mathescape=true,
-    basicstyle=\footnotesize\ttfamily,
-    keywordstyle=\footnotesize\ttfamily,
+    basicstyle=\footnotesize,
+    keywordstyle=\footnotesize,
     commentstyle=\footnotesize\ttfamily,
     identifierstyle=\footnotesize\itshape,
     morecomment=[s]{`}{'},
-    literate={[[}{{$[$}}{1}
-             {]]}{{$]$}}{1}
-             {[[,...]]}{{$[$, $\ldots]$}}{5}
-             {[[...]]}{{$[\ldots]$}}{3}
-             {[OPT]}{{$_{\mbox{opt}}$}}{3}
+    literate={[OPT]}{{{\scriptsize $_{opt}$}}}{2}
+             {`atomic'}{{\ttfamily atomic}}{6}
+             {`begin'}{{\ttfamily begin}}{5}
+             {`bool'}{{\ttfamily bool}}{4}
+             {`break'}{{\ttfamily break}}{5}
+             {`by'}{{\ttfamily by}}{2}
+             {`class'}{{\ttfamily class}}{5}
+             {`cobegin'}{{\ttfamily cobegin}}{7}
+             {`complex'}{{\ttfamily complex}}{7}
+             {`config'}{{\ttfamily config}}{6}
+             {`const'}{{\ttfamily const}}{5}
+             {`continue'}{{\ttfamily continue}}{8}
+             {`def'}{{\ttfamily def}}{3}
+             {`distributed'}{{\ttfamily distributed}}{11}
+             {`do'}{{\ttfamily do}}{2}
+             {`domain'}{{\ttfamily domain}}{6}
+             {`else'}{{\ttfamily else}}{4}
+             {`enum'}{{\ttfamily enum}}{4}
+             {`false'}{{\ttfamily false}}{5}
+             {`for'}{{\ttfamily for}}{3}
+             {`forall'}{{\ttfamily forall}}{6}
+             {`goto'}{{\ttfamily goto}}{4}
+             {`if'}{{\ttfamily if}}{2}
+             {`imag'}{{\ttfamily imag}}{4}
+             {`in'}{{\ttfamily in}}{2}
+             {`int'}{{\ttfamily int}}{3}
+             {`inout'}{{\ttfamily inout}}{5}
+             {`iterator'}{{\ttfamily iterator}}{8}
+             {`let'}{{\ttfamily let}}{3}
+             {`locale'}{{\ttfamily locale}}{6}
+             {`module'}{{\ttfamily module}}{6}
+             {`nil'}{{\ttfamily nil}}{3}
+             {`on'}{{\ttfamily on}}{2}
+             {`ordered'}{{\ttfamily ordered}}{7}
+             {`otherwise'}{{\ttfamily otherwise}}{9}
+             {`out'}{{\ttfamily out}}{3}
+             {`param'}{{\ttfamily param}}{5}
+             {`pragma'}{{\ttfamily pragma}}{6}
+             {`real'}{{\ttfamily real}}{4}
+             {`record'}{{\ttfamily record}}{6}
+             {`reduce'}{{\ttfamily reduce}}{6}
+             {`return'}{{\ttfamily return}}{6}
+             {`scan'}{{\ttfamily scan}}{4}
+             {`select'}{{\ttfamily select}}{6}
+             {`serial'}{{\ttfamily serial}}{6}
+             {`single'}{{\ttfamily single}}{6}
+             {`sync'}{{\ttfamily sync}}{4}
+             {`then'}{{\ttfamily then}}{4}
+             {`true'}{{\ttfamily true}}{4}
+             {`type'}{{\ttfamily type}}{4}
+             {`uint'}{{\ttfamily uint}}{4}
+             {`union'}{{\ttfamily union}}{5}
+             {`use'}{{\ttfamily use}}{3}
+             {`var'}{{\ttfamily var}}{3}
+             {`when'}{{\ttfamily when}}{4}
+             {`where'}{{\ttfamily where}}{5}
+             {`while'}{{\ttfamily while}}{5}
+             {`yield'}{{\ttfamily yield}}{5}
   }
 
 \lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}
 
-\newcommand{\sntx}[1]{\lstinline[language=syntax,basicstyle=\normalsize\tt,identifierstyle=\normalsize\it]!#1!}
+\newcommand{\sntx}[1]{\lstinline[language=syntax]!#1!}

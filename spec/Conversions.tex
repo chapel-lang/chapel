@@ -9,16 +9,10 @@ expression on the right-hand side to the variable on the left-hand
 side) or during a function call (from the actual expression to the
 formal argument).  An implicit conversion does not require a cast.
 
-Explicit conversions require a cast in the code.  The syntax of a cast
-is
-\begin{syntax}
-cast-expression:
-  expression : type
-\end{syntax}
-where the expression is converted to the specified type.  Explicit
-conversions are supported between more types than implicit
-conversions, but explicit conversions are not supported between all
-types.
+Explicit conversions require a cast in the code.  Casts are defined
+in~\rsec{Casts}.  Explicit conversions are supported between more
+types than implicit conversions, but explicit conversions are not
+supported between all types.
 
 \subsection{Implicit Conversions}
 \label{Implicit_Conversions}

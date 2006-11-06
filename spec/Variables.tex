@@ -1,7 +1,11 @@
 \sekshun{Variables}
 \label{Variables}
 
-This is a stub.  This portion of the document does not exist.
+A variable is a symbol that represents memory.  Chapel is a
+statically-typed, type-safe language so every variable has a type that
+is known at compile-time and the compiler enforces that values
+assigned to the variable can be stored in that variable as specified
+by the type.
 
 \subsection{Variable Declarations}
 \label{Variable_Declarations}
@@ -9,9 +13,9 @@ This is a stub.  This portion of the document does not exist.
 Variables are declared with the following syntax:
 \begin{syntax}
 variable-declaration-statement:
-  `config' const-tag variable-declaration-list ;
+  `config'[OPT] variable-kind variable-declaration ;
 
-const-tag: one of
+variable-kind: one of
   `param' `const' `var'
 
 variable-declaration-list:
@@ -19,15 +23,49 @@ variable-declaration-list:
   variable-declaration , variable-declaration-list
 
 variable-declaration:
-  identifier type-part init-part[OPT]
-  identifier init-part
+  identifier-list type-part[OPT] initialization-part
+  identifier-list type
+
+identifier-list:
+  identifier
+  identifier , identifier-list
 
 type-part:
   : type
 
-init-part:
+initialization-part:
   = expression
 \end{syntax}
+A \sntx{variable-declaration-statement} is used to define one or more
+variables.  If the statement is a top-level module statement, the
+variables are global; otherwise they are local.  Global variables are
+discussed in~\rsec{Global_Variables}.  Local variables are discussed
+in~\rsec{Local_Variables}.
+
+The optional keyword \chpl{config} specifies that the variables are
+configuration variables, described in
+Section~\rsec{Configuration_Variables}.
+
+The \sntx{variable-kind} specifies whether the variables are
+parameters (\chpl{param}), constants (\chpl{const}), or regular
+variables (\chpl{var}).  Parameters are compile-time constants whereas
+constants are runtime constants.  Both levels of constants are
+discussed in~\rsec{Constants}.
+
+Multiple variables can be defined in the same variable declaration
+list.  All variables defined in the same \sntx{identifier-list} are
+defined to have the same type and initialization expression.
+
+The \sntx{type-part} of a variable declaration specifies the type of
+the variable.  It is optional if the \sntx{initialization-part} is
+specified.  If the \sntx{type-part} is omitted, the type of the
+variable is inferred using local type inference described
+in~\rsec{Local_Type_Inference}.
+
+The \sntx{initialization-part} of a variable declaration specifies an
+initial expression to assign to the variable.  If
+the \sntx{initialization-part} is omitted, the variable is initialized
+to a default value described in~\rsec{Default_Initialization}.
 
 \subsubsection{Default Initialization}
 \label{Default_Initialization}
@@ -38,6 +76,9 @@ This is a stub.  This portion of the document does not exist.
 \label{Local_Type_Inference}
 
 This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Multiple Variable Declarations}
+\label{Multiple_Variables}
 
 \subsection{Global Variables}
 \label{Global_Variables}
@@ -66,15 +107,5 @@ This is a stub.  This portion of the document does not exist.
 
 \subsection{Configuration Variables}
 \label{Configuration_Variables}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Synchronization Variables}
-\label{Synchronization_Variables}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Single Variables}
-\label{Single_Variables}
 
 This is a stub.  This portion of the document does not exist.
