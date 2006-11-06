@@ -84458,3 +84458,28 @@ Modified files:
 	chapel/make/: Makefile.release 
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/06/06 14:55:48 -- bradc
+
+Log message:
+	Next generation of license-oriented changes:
+	
+	- removed etc/ directory which contained our mods to
+	  emacs files because they are GPL and I didn't want
+	  to risk infecting our source tree with that.  We
+	  can always release the emacs mode files separately
+	  to fix this issue, or write them to merge with
+	  emacs' provided files rather than copying and
+	  modifying the files
+	
+	- changed the format of the C COPYRIGHT comment
+	  slightly.
+
+Modified files:
+	chapel/make/: Makefile.release 
+	chapel/util/: gen_release 
+Added files:
+	chapel/test/npb/ft/: .cvsignore 
+	chapel/test/studies/hpcc/FFT/marybeth/: .cvsignore 
+
