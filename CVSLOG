@@ -84500,3 +84500,16 @@ Modified files:
 	chapel/spec/: Conversions.tex Expressions.tex Variables.tex 
 	              chapel_listing.tex syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/06/06 15:49:34 -- deitz
+
+Log message:
+	Added default initialization section to Variables section.
+	
+	Set the column spacing of syntax listings to fixed, the default, after
+	having trouble with the other spacing formats.
+
+Modified files:
+	chapel/spec/: Variables.tex syntax_listing.tex 
+
