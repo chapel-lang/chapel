@@ -84276,3 +84276,41 @@ Log message:
 Modified files:
 	chapel/spec/: Conversions.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/06/06 13:31:46 -- bradc
+
+Log message:
+	In preparation for the release...
+	
+	Added separation of arguments into user and developer
+	categories, and also added capability to add separators
+	that group flags into categories for output of --help.
+	Feel free to give feedback on how it looks/could be
+	improved.
+	
+	Renamed a few flags to keep columns lined up/clarify:
+	--print-tokens => --print-code-size
+	--no-bounds-checking => -no-bounds-check
+	--instantiation-limit => -instantiate-max
+	
+	Added tests of help displays for users and developers.
+
+Modified files:
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/tokenflags/: tokentest3.compopts 
+	chapel/test/compflags/deitz/: 
+	                              test_no_bounds_checking_false.compopts 
+	                              test_no_bounds_checking_false2.compopts 
+	chapel/test/types/type_variables/deitz/part3/: 
+	                                               test_overinstantiate1a.compopts 
+Added files:
+	chapel/test/compflags/bradc/help/: develhelp.chpl 
+	                                   develhelp.compopts 
+	                                   develhelp.good 
+	                                   develhelp.prediff 
+	                                   develhelp.txt userhelp.chpl 
+	                                   userhelp.compopts 
+	                                   userhelp.good 
+	                                   userhelp.prediff userhelp.txt 
+
