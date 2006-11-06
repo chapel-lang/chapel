@@ -1,64 +1,139 @@
 \sekshun{Conversions}
 \label{Conversions}
 
-This is a stub.  This portion of the document does not exist.
+A conversion allows an expression of one type to be converted into
+another type.  Conversions can be either implicit or explicit.
+
+Implicit conversions can occur during an assignment (from the
+expression on the right-hand side to the variable on the left-hand
+side) or during a function call (from the actual expression to the
+formal argument).  An implicit conversion does not require a cast.
+
+Explicit conversions require a cast in the code.  The syntax of a cast
+is
+\begin{syntax}
+cast-expression:
+  expression : type
+\end{syntax}
+where the expression is converted to the specified type.  Explicit
+conversions are supported between more types than implicit
+conversions, but explicit conversions are not supported between all
+types.
 
 \subsection{Implicit Conversions}
 \label{Implicit_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+Implicit conversions are allowed between numeric
+types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
+numeric types~(\rsec{Implicit_Enumeration_Conversions}), between class
+types~(\rsec{Implicit_Class_Conversions}), and between record
+types~(\rsec{Implicit_Record_Conversions}).  A special set of implicit
+conversions are allowed from compile-time constants of type \chpl{int}
+and \chpl{int(64)} to other smaller numeric types if the value is in
+the range of the smaller numeric
+type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).  Lastly,
+implicit conversions are supported from integeral and class types to
+bool in the context of a
+statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
 \subsubsection{Implicit Numeric Conversions}
 \label{Implicit_Numeric_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+Let $i$, $j$, and $k$ range over the constants $8$, $16$, $32$, and
+$64$ when parameterizing \chpl{int} and \chpl{uint} and over the
+constants $32$, $64$, and $128$ when
+parameterizing \chpl{real}, \chpl{imag}, and \chpl{complex}.  The
+implicit numeric conversions are as follows:
+\begin{itemize}
+\item From \chpl{bool} to \chpl{int($j$)}, \chpl{uint($j$)}, or \chpl{string}
+\item From \chpl{int($i$)} to \chpl{int($j$)}, \chpl{real($k$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$
+\item From \chpl{uint($i$)} to \chpl{int($j$)}, \chpl{uint($j$)}, \chpl{real($k$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$
+\item From \chpl{real($i$)} to \chpl{real($j$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$ and $k \geq i$
+\item From \chpl{imag($i$)} to \chpl{imag($j$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$ and $k \geq i$
+\item From \chpl{complex($i$)} to \chpl{complex($j$)}, or \chpl{string} where $j > i$
+\end{itemize}
+
+The implicit numeric conversions do not result in any loss of
+information except for the conversions from any of the \chpl{int}
+and \chpl{uint} types to any of the \chpl{real} and \chpl{complex}
+types and from any of the \chpl{real}, \chpl{imag}, and \chpl{complex}
+types to \chpl{string} where there is a loss of precision.
 
 \subsubsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+An expression that is an enumerated type can be implicitly converted
+to any integral type as long as all of the constants defined by the
+enumerated type are within range of the integral type.  It can also be
+implicitly converted to \chpl{string} where the string is the name of
+the enumerated constant.
 
 \subsubsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+An expression of class type \chpl{C} can be implicitly converted to
+another class type \chpl{D} provided that \chpl{C} is derived
+from \chpl{D}.
 
 \subsubsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+An expression of record type \chpl{C} can be implicitly converted to
+another record type \chpl{D} provided that \chpl{C} is derived
+from \chpl{D}.
 
 \subsubsection{Implicit Compile-Time Constant Conversions}
-\label{Implicit_Compile-Time_Constant_Conversions}
+\label{Implicit_Compile_Time_Constant_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+The following two implicit conversions of parameters are supported:
+\begin{itemize}
+\item A parameter of type \chpl{int(32)} can be implicitly converted
+to \chpl{int(8)}, \chpl{int(16)}, or any unsigned integral type if the
+value of the parameter is within the range of the target type.
+\item A parameter of type \chpl{int(64)} can be implicitly converted
+to \chpl{uint(64)} if the value of the parameter is nonnegative.
+\end{itemize}
 
 \subsubsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+In the condition of an if-statement, while-loop, and do-while-loop,
+the following implicit conversions are supported:
+\begin{itemize}
+\item An expression of integral type is taken to be true if it is non-zero and is otherwise false.
+\item An expression of a class type is taken to be true if is not nil and is otherwise false.
+\end{itemize}
 
 \subsection{Explicit Conversions}
 \label{Explicit_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+The explicit conversions are a superset of the implicit conversions.
 
 \subsubsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+Explicit conversions are allowed from any numeric type to any other
+numeric type, bool, or string, and vice versa.
 
 \subsubsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+Explicit conversions are allowed from any enumerated types to any
+numeric type, bool, or string, and vice versa.
 
 \subsubsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+An expression of class type \chpl{C} can be explicitly converted to
+another class type \chpl{D} provided that \chpl{C} is derived
+from \chpl{D} or \chpl{D} is derived from \chpl{C}.  In the event
+that \chpl{D} is derived from \chpl{C}, the runtime type of \chpl{D}
+must be a \chpl{C}.
 
 \subsubsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
 
-This is a stub.  This portion of the document does not exist.
+An expression of record type \chpl{C} can be explicitly converted to
+another record type \chpl{D} provided that \chpl{C} is derived
+from \chpl{D}.  There are no explicit record conversions that are not
+also implicit record conversions.
