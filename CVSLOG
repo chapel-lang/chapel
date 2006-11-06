@@ -84445,3 +84445,16 @@ Removed files:
 	                                                   solaris_threads.h 
 	                                                   specific.h 
 
+---------------------------------------------------------------------------
+
+11/06/06 14:28:46 -- bradc
+
+Log message:
+	Modified gen_release script to tag all source and
+	Makefile files with Cray copyright information
+	before tarring them up.
+
+Modified files:
+	chapel/make/: Makefile.release 
+	chapel/util/: gen_release 
+
