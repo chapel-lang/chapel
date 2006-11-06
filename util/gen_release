@@ -93,6 +93,10 @@ foreach $file (@tarfiles) {
     }
 }
 
+
+system("cd chapel && make -f make/Makefile.release");
+
+
 if (defined($ENV{"CHPLHOME"})) {
     $resultdir = $ENV{"CHPLHOME"};
 } else {

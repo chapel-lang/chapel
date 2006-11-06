@@ -1,6 +1,7 @@
 RELCOMPDIR = compiler
 RELRTDIR = runtime
 RELMAKEDIR = make
+RELMODDIR = modules
 RELCOPYRIGHT = .COPYRIGHT
 PREPEND = util/prepend
 ADDCOPYRIGHT = $(PREPEND) $(RELCOPYRIGHT)
@@ -29,6 +30,11 @@ addcopyrights: $(PREPEND) FORCE
 	find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	echo -n "// " > $(RELCOPYRIGHT)
+	cat COPYRIGHT >> $(RELCOPYRIGHT)
+	echo >> $(RELCOPYRIGHT)
+	echo >> $(RELCOPYRIGHT)
+	find $(RELMODDIR) -name "*.chpl" -exec $(ADDCOPYRIGHT) {} \;
 	rm $(RELCOPYRIGHT)
 	rm $(PREPEND)
 
