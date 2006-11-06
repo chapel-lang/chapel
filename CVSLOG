@@ -84266,3 +84266,13 @@ Log message:
 Modified files:
 	chapel/spec/: Expressions.tex Lexical_Structure.tex 
 
+---------------------------------------------------------------------------
+
+11/06/06 13:16:19 -- deitz
+
+Log message:
+	Finished first pass of writing Conversions section.
+
+Modified files:
+	chapel/spec/: Conversions.tex chapel_listing.tex 
+
