@@ -84314,3 +84314,15 @@ Added files:
 	                                   userhelp.good 
 	                                   userhelp.prediff userhelp.txt 
 
+---------------------------------------------------------------------------
+
+11/06/06 14:10:27 -- bradc
+
+Log message:
+	Reworking old release-oriented Makefile rules to support
+	addition of copyrights to source files and Makefiles.
+
+Modified files:
+	./: Makefile 
+	chapel/make/: Makefile.release 
+
