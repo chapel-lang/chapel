@@ -84513,3 +84513,15 @@ Log message:
 Modified files:
 	chapel/spec/: Variables.tex syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/06/06 15:50:28 -- bradc
+
+Log message:
+	Made the gen_release script run the bison and flex
+	steps of building the release to avoid relying on
+	the users of the release having these tools.
+
+Modified files:
+	chapel/util/: gen_release 
+
