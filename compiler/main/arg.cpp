@@ -165,12 +165,31 @@ usage(ArgumentState *arg_state, char *arg_unused) {
   int i;
 
   (void)arg_unused;
-  fprintf(stderr,"Usage: %s [flags|args]\n",arg_state->program_name);
+  fprintf(stderr,"Usage: %s [flags|source files]\n",arg_state->program_name);
   for (i = 0;; i++) {
     if (!desc[i].name)
       break;
-    if (!desc[i].description)
-      continue;
+    if (desc[i].name[0] == '\0') {
+      if (strcmp(desc[i].description, "Developer Flags") == 0) {
+        if (developer) {
+          fprintf(stderr, "\n\n%s\n", desc[i].description);
+          fprintf(stderr, "===============\n");
+          continue;
+        } else {
+          break;
+        }
+      } else {
+        int len = strlen(desc[i].description);
+        int j;
+        fprintf(stderr, "\n%s:\n", desc[i].description);
+        for (j=0; j<= len; j++) {
+          fprintf(stderr, "-");
+        }
+        fprintf(stderr, "\n");
+        //        fprintf(stderr, "-------------------------\n");
+        continue;
+      }
+    }
     fprintf(stderr,"  %c%c%c %s%s%s%s", 
             desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
             (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
@@ -218,6 +237,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
     }
     fprintf(stderr," %s\n",desc[i].description);
   }
+  exit(1);
 }
 
 void

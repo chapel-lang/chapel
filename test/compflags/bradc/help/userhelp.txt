@@ -1,0 +1,45 @@
+Usage: chpl [flags|source files]
+
+Compilation Traces:
+-------------------
+      --print-passes      set on   false     Print compiler passes
+      --print-commands    set on   false     Print system commands
+
+Code Size Statistics:
+---------------------
+      --print-code-size   set on   false     Print Tokens
+      --count-tokens      set on   false     Count tokens
+
+Optimization Control:
+---------------------
+      --no-bounds-checks  set on   false     Disable bounds checking
+      --no-inline         set on   false     Do not inline functions
+      --unoptimized       set on   false     Generate naive code (many temps)
+
+Code Generation:
+----------------
+      --cg-cpp-lines      set on   false     Generate #line annotations
+      --cg-chpl-lineno    set on   false     Generate line numbers for errors
+      --savec             path     (null)    Save generated C code
+  -p, --parallel          toggle   true      toggle threaded code generation
+
+Linker Control:
+---------------
+  -o, --output            path     a.out     Name output executable
+  -L, --lib-search-path   path     (null)    C library search path
+  -l, --lib-linkage       path     (null)    C library linkage
+      --ccflags           string   -g        Back-end C compiler flags
+
+Miscellaneous Flags:
+--------------------
+      --gdb               set on   false     Run compiler in gdb
+      --instantiate-max   int      256       Limit number of instantiations
+  -S, --sysdir            path     /users/.. System Directory
+      --devel             set on   false     Compile as developer
+
+Compiler Information:
+---------------------
+      --version                              Show Version
+      --copyright                            Show Copyright
+      --license                              Show License
+  -h, --help                                 Help (show this list)

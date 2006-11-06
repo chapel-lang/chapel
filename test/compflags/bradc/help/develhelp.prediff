@@ -1,0 +1,7 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+set compiler = $3
+
+$3 --version >& $1.good
+cat develhelp.txt >> $1.good
