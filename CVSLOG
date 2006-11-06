@@ -84483,3 +84483,20 @@ Added files:
 	chapel/test/npb/ft/: .cvsignore 
 	chapel/test/studies/hpcc/FFT/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+11/06/06 15:21:41 -- deitz
+
+Log message:
+	Changed syntax listing so apostrophes are not printed out in the
+	syntax diagram.  Improved the syntax diagram.  Apostrophes are still
+	required in the latex code.
+	
+	Filled in Variables section introduction.
+	
+	Filled in cast expression section and refactored explicit conversions section.
+
+Modified files:
+	chapel/spec/: Conversions.tex Expressions.tex Variables.tex 
+	              chapel_listing.tex syntax_listing.tex 
+
