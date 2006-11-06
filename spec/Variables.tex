@@ -70,7 +70,16 @@ to a default value described in~\rsec{Default_Initialization}.
 \subsubsection{Default Initialization}
 \label{Default_Initialization}
 
-This is a stub.  This portion of the document does not exist.
+If there is no initialization, a variable is initialized to the
+default value of its type.  The default values are as follows:
+\begin{itemize}
+\item For numeric types, the default value is zero.
+\item For \chpl{bool} type, the default value is \chpl{false}.
+\item For \chpl{string} type, the default value is \chpl{""}.
+\item For enumerated types, the default value is the first enumeration constant.
+\item For class types, the default value is \chpl{nil}.
+\item For record types, the default value is defined to be a newly constructed record.
+\end{itemize}
 
 \subsubsection{Local Type Inference}
 \label{Local_Type_Inference}
