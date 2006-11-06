@@ -8,41 +8,41 @@ ADDCOPYRIGHT = $(PREPEND) $(RELCOPYRIGHT)
 
 
 addcopyrights: $(PREPEND) FORCE
-	echo "/*" > $(RELCOPYRIGHT)
-	echo -n "  " >> $(RELCOPYRIGHT)
-	cat COPYRIGHT >> $(RELCOPYRIGHT)
-	echo "*/" >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	find $(RELCOMPDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "*.cpp" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "*.lex" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "*.y" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "*.g" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELRTDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELRTDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	echo -n "# " > $(RELCOPYRIGHT)
-	cat COPYRIGHT >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	find $(RELCHPLDIR) -name "Make*" -maxdepth 1 -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
-	echo -n "// " > $(RELCOPYRIGHT)
-	cat COPYRIGHT >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	echo >> $(RELCOPYRIGHT)
-	find $(RELMODDIR) -name "*.chpl" -exec $(ADDCOPYRIGHT) {} \;
-	rm $(RELCOPYRIGHT)
-	rm $(PREPEND)
+	@echo "/**************************************************************************" > $(RELCOPYRIGHT)
+	@echo -n "  " >> $(RELCOPYRIGHT)
+	@cat COPYRIGHT >> $(RELCOPYRIGHT)
+	@echo "**************************************************************************/" >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@find $(RELCOMPDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "*.cpp" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "*.lex" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "*.y" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "*.g" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELRTDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELRTDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
+	@echo -n "# " > $(RELCOPYRIGHT)
+	@cat COPYRIGHT >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@find $(RELCHPLDIR) -name "Make*" -maxdepth 1 -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	@echo -n "// " > $(RELCOPYRIGHT)
+	@cat COPYRIGHT >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@echo >> $(RELCOPYRIGHT)
+	@find $(RELMODDIR) -name "*.chpl" -exec $(ADDCOPYRIGHT) {} \;
+	@rm $(RELCOPYRIGHT)
+	@rm $(PREPEND)
 
 $(PREPEND):
-	echo "#!/bin/sh" > $@
-	echo "cp \$$2 /tmp/prepend.tmp.deleteme" >> $@
-	echo "cat \$$1 /tmp/prepend.tmp.deleteme > \$$2" >> $@
-	echo "rm /tmp/prepend.tmp.deleteme" >> $@
-	chmod ugo+x $@
+	@echo "#!/bin/sh" > $@
+	@echo "cp \$$2 /tmp/prepend.tmp.deleteme" >> $@
+	@echo "cat \$$1 /tmp/prepend.tmp.deleteme > \$$2" >> $@
+	@echo "rm /tmp/prepend.tmp.deleteme" >> $@
+	@chmod ugo+x $@
 
 FORCE:

@@ -41,7 +41,6 @@ $cvsignores = "CVS|RCS";
 
 # include these dirs and their entire contents
 @complete_dirs = (
-    "etc",
     "make",
     "modules",
     "runtime"
