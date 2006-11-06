@@ -36,6 +36,4 @@ depend: FORCE
 	cd compiler && $(MAKE) depend
 	cd runtime && $(MAKE) depend
 
--include make/Makefile.release
-
 FORCE:

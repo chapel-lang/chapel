@@ -1,21 +1,12 @@
-RELDIR = /tmp/chapel-release.deleteme
-RELCHPLDIR = $(RELDIR)/chapel
-RELCOMPDIR = $(RELCHPLDIR)/compiler
-RELRTDIR = $(RELCHPLDIR)/runtime
-RELUTILDIR = $(RELCHPLDIR)/util
-RELMAKEDIR = $(RELCHPLDIR)/make
-RELCOPYRIGHT = $(RELDIR)/COPYRIGHT
-ADDCOPYRIGHT = util/prepend $(RELCOPYRIGHT)
+RELCOMPDIR = compiler
+RELRTDIR = runtime
+RELMAKEDIR = make
+RELCOPYRIGHT = .COPYRIGHT
+PREPEND = util/prepend
+ADDCOPYRIGHT = $(PREPEND) $(RELCOPYRIGHT)
 
 
-checkout: FORCE
-	rm -rf $(RELDIR)
-	mkdir -p $(RELDIR)
-	cd $(RELDIR) && rm -rf ./chapel
-	cd $(RELDIR) && cvs checkout chapel
-
-addcopyrights: checkout FORCE
-	-find $(RELDIR) -name "CVS" -exec rm -r {} \; >& /dev/null
+addcopyrights: $(PREPEND) FORCE
 	echo "/*" > $(RELCOPYRIGHT)
 	echo -n "  " >> $(RELCOPYRIGHT)
 	cat COPYRIGHT >> $(RELCOPYRIGHT)
@@ -30,10 +21,6 @@ addcopyrights: checkout FORCE
 	find $(RELCOMPDIR) -name "*.g" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELRTDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELRTDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELUTILDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELUTILDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELUTILDIR) -name "*.l" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELUTILDIR) -name "*.y" -exec $(ADDCOPYRIGHT) {} \;
 	echo -n "# " > $(RELCOPYRIGHT)
 	cat COPYRIGHT >> $(RELCOPYRIGHT)
 	echo >> $(RELCOPYRIGHT)
@@ -41,22 +28,15 @@ addcopyrights: checkout FORCE
 	find $(RELCHPLDIR) -name "Make*" -maxdepth 1 -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
-	find $(RELUTILDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	rm $(RELCOPYRIGHT)
+	rm $(PREPEND)
 
-tarball: FORCE addcopyrights
-	cd $(RELDIR) && tar cf chapel-internal.tar chapel
-	cd $(RELDIR) && gzip chapel-internal.tar
-	cp $(RELDIR)/chapel-internal.tar.gz .
-	rm -r $(RELDIR)
+$(PREPEND):
+	echo "#!/bin/sh" > $@
+	echo "cp \$$2 /tmp/prepend.tmp.deleteme" >> $@
+	echo "cat \$$1 /tmp/prepend.tmp.deleteme > \$$2" >> $@
+	echo "rm /tmp/prepend.tmp.deleteme" >> $@
+	chmod ugo+x $@
 
-release: FORCE addcopyrights
-	cd $(RELCHPLDIR) && rm -r examples
-	cd $(RELCHPLDIR) && rm -r test
-	cd $(RELCHPLDIR) && rm -r util
-	cd $(RELCHPLDIR) && rm CVSLOG
-	cd $(RELMAKEDIR) && rm Makefile.release
-	cd $(RELDIR) && tar cf chapel-release.tar chapel
-	cd $(RELDIR) && gzip chapel-release.tar
-	cp $(RELDIR)/chapel-release.tar.gz .
-	rm -r $(RELDIR)
+FORCE:
