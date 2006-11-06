@@ -2,6 +2,9 @@
 
 
 # check out a clean copy of the sources into a temporary directory
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
 if ($basetmpdir eq "") {
     $basetmpdir = $ENV{'TMPDIR'};
 }
@@ -16,7 +19,8 @@ $tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
 system("mkdir $tmpdir > /dev/null");
-system("cd $tmpdir && cvs -d $cvsroot checkout nightly");
+print "Checking out the sources...\n";
+system("cd $tmpdir && cvs -q -d $cvsroot checkout nightly > /dev/null");
 
 
 #$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
@@ -48,6 +52,12 @@ $cvsignores = "CVS|RCS";
 
 
 chdir "$tmpdir";
+
+print "Tagging the files with copyright messages...\n";
+system("cd chapel && make -f make/Makefile.release");
+
+print "Generating the bison/flex files...\n";
+system("cd chapel/compiler/parser && make lex.yy.c > /dev/null");
 
 foreach $file (@files) {
     # print "$file\n";
@@ -91,9 +101,6 @@ foreach $file (@tarfiles) {
         print "error: directory '$file' included\n";
     }
 }
-
-
-system("cd chapel && make -f make/Makefile.release");
 
 
 if (defined($ENV{"CHPLHOME"})) {
