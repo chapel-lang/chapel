@@ -84627,3 +84627,14 @@ Modified files:
 	chapel/compiler/: .cvsignore Makefile 
 	chapel/test/: paratest.client.pl paratest.server.pl start_test 
 
+---------------------------------------------------------------------------
+
+11/07/06 15:17:34 -- deitz
+
+Log message:
+	Added subsection titled Forall Expressions to this section with label
+	that I reference in the Expressions sections.
+
+Modified files:
+	chapel/spec/: Parallelism_and_Synchronization.tex 
+
