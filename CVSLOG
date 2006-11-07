@@ -84602,3 +84602,28 @@ Removed files:
 	chapel/test/functions/jplevyak/: 
 	                                 zeroarity-bound-error-1.compopts 
 
+---------------------------------------------------------------------------
+
+11/07/06 14:04:09 -- bradc
+
+Log message:
+	This change places the compiler into the directory:
+	
+	     chapel/bin/$platform/
+	
+	rather than
+	
+	     chapel/compiler/$platform/
+	
+	as was done previously.  It also changes the test
+	scripts to refer to this new location by default.
+	A copy of the compiler is also left in:
+	
+	     chapel/compiler/
+	
+	as before.
+
+Modified files:
+	chapel/compiler/: .cvsignore Makefile 
+	chapel/test/: paratest.client.pl paratest.server.pl start_test 
+
