@@ -84525,3 +84525,13 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/07/06 10:07:07 -- deitz
+
+Log message:
+	Finished first pass of Variables section.
+
+Modified files:
+	chapel/spec/: Variables.tex 
+
