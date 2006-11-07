@@ -84535,3 +84535,70 @@ Log message:
 Modified files:
 	chapel/spec/: Variables.tex 
 
+---------------------------------------------------------------------------
+
+11/07/06 11:50:22 -- bradc
+
+Log message:
+	This change has four components:
+	
+	1) removed CHPL_SYSTEM_DIR/--sys-dir capability and replaced it
+	   with a CHPLHOME/--chplhome capability.
+	
+	2) removed dead compiler flags:
+	   --premalloc
+	   --no-header-errors
+	
+	3) removed dead code:
+	   compiler/etc/c_runtime.h
+	   compiler/etc/valgrind.suppressions
+	   init_system() routine which seemed very erroneous (e.g.,
+	      memcpy's based on sizeof a char*, stringcats that dropped
+	      the returned string on the floor
+	
+	4) fixed help tests by setting chplhome to a bogus value for the
+	   purposes of diffing
+	
+	In a bit more detail:
+	
+	1) We used to support a poorly-named --sys-dir/$CHPL_SYSTEM_DIR
+	capability, which pointed to the location of the compiler
+	directory.  From this, we often inferred the value of CHPLHOME,
+	which points to the root of the chapel directory structure,
+	and which we set in our environment for other reasons.  Got
+	rid of the "system directory" capability and now use CHPLHOME
+	as the single location that needs to be defined from which
+	other locations are found.
+	
+	2) These flags didn't seem to serve any purpose any longer.
+	
+	3) The files here are out-of-date, related to low-level codegen
+	(which doesn't exist anymore) and using valgrind with BoehmGC
+	(which we don't do anymore).  The routine mentioned was simply
+	buggy through-and-through and didn't serve a clear purpose.
+	
+	4) chplhome is set by default to the location of the compiler
+	with ../../ appended, so the help tests were failing because
+	the output was dependent on where the tests were run.  Set
+	chplhome explicitly on the command line to get around this
+	problem.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/include/: driver.h files.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/test/: start_test 
+	chapel/test/compflags/bradc/help/: develhelp.compopts 
+	                                   develhelp.good develhelp.txt 
+	                                   userhelp.compopts 
+	                                   userhelp.good userhelp.txt 
+	chapel/test/flowanalysis/newast/: COMPOPTS 
+Added files:
+	chapel/test/compflags/bradc/help/: .cvsignore 
+Removed files:
+	chapel/compiler/etc/: c_runtime.h valgrind.suppressions 
+	chapel/test/functions/jplevyak/: 
+	                                 zeroarity-bound-error-1.compopts 
+
