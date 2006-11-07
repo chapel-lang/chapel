@@ -59,7 +59,7 @@ sub main {
     print "\n* $node up @ $workingdir *\n";
 
     $platform = `../util/platform`; chomp $platform;
-    $compiler = ($ARGV[5] == 1) ? "../compiler/$platform/chpl-nogc" : "../compiler/$platform/chpl";
+    $compiler = "../bin/$platform/chpl";
     unless (-e $compiler) {
         print "Error: cannot find chpl as '$compiler'\n";
         exit (2);

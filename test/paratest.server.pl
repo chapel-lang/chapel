@@ -20,7 +20,7 @@
 #
 # Requirements:
 #  - paratest.server.pl is run in $CHPLHOME/test.
-#  - Chapel compiler bin as $CHPLHOME/compiler/"platform"/chpl.
+#  - Chapel compiler bin as $CHPLHOME/bin/"platform"/chpl.
 #  - Scripts start_test and paratest.client.pl in the same directory
 #      as paratest.server.pl. It will create a temporary directory
 #      (.synch) to synchronize the distribution of work to the client
@@ -28,7 +28,7 @@
 #  - Be able to run start_test remotely. This may include the following:
 #    - Chapel built without node-specific local temporary directories.
 #        Nodes must be able to execute start_test. For example, the
-#        start_test script may invoke the compiler as ../compiler/linux/chpl.
+#        start_test script may invoke the compiler as ../bin/linux/chpl.
 #        If Chapel is built with CHPLDEVTMP defined to a machine-specific local
 #        tmp directory (e.g., /ptmp), the script may not be able to execute
 #        chpl on a different machine. A good check is to run start_test with 

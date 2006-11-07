@@ -68,14 +68,18 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 # target-based rules
 #
 
-$(CHPL): $(PLATFORM)/$(CHPL)
+$(CHPL): ../bin/$(PLATFORM)/$(CHPL)
 	cp -f $< $@
 
-$(PLATFORM)/$(CHPL): $(PLATFORM_DIR_DIR) $(CHPL_OBJS)
+../bin/$(PLATFORM)/$(CHPL): ../bin/$(PLATFORM) $(PLATFORM_DIR_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags $(ALL_SRCS) */*.h
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+
+../bin/$(PLATFORM):
+	mkdir -p $@
+
 
 
 #

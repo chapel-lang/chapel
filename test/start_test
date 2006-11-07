@@ -37,7 +37,7 @@
 #
 #   option     argument               default value
 #   ---------  ---------------------  -------------
-#   -compiler  <compiler executable>  ../compiler/chpl
+#   -compiler  <compiler executable>  ../bin/<platform>/chpl
 #   -compopts  <option list>          ""
 #   -execopts  <option list>          ""
 #   -startdir  <test subdir>          .
@@ -390,7 +390,7 @@ while ( $#argv > 0 )
         case --help
 		echo Usage and defaults\:
 		echo "     start_test"
-		echo "          -compiler ../compiler/$platform/chpl[.nogc]"
+		echo "          -compiler ../bin/$platform/chpl"
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
 		echo "          -startdir ."
@@ -433,7 +433,7 @@ else
 endif
 
 if ($compiler == "") then
-  set compiler = "../compiler/$platform/chpl"
+  set compiler = "../bin/$platform/chpl"
 endif
 
 if ($interpret) then
