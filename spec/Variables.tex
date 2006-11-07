@@ -70,51 +70,136 @@ to a default value described in~\rsec{Default_Initialization}.
 \subsubsection{Default Initialization}
 \label{Default_Initialization}
 
-If there is no initialization, a variable is initialized to the
-default value of its type.  The default values are as follows:
-\begin{itemize}
-\item For numeric types, the default value is zero.
-\item For \chpl{bool} type, the default value is \chpl{false}.
-\item For \chpl{string} type, the default value is \chpl{""}.
-\item For enumerated types, the default value is the first enumeration constant.
-\item For class types, the default value is \chpl{nil}.
-\item For record types, the default value is defined to be a newly constructed record.
-\end{itemize}
+If a variable declaration has no initialization expression, a variable
+is initialized to the default value of its type.  The default values
+are as follows:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf Type} & {\bf Default Value} \\
+\hline
+{\tt bool} & {\tt false} \\
+{\tt int(*)} & {\tt 0} \\
+{\tt unt(*)} & {\tt 0} \\
+{\tt real(*)} & {\tt 0.0} \\
+{\tt imag(*)} & {\tt 0.0i} \\
+{\tt complex(*)} & {\tt 0.0 + 0.0i} \\
+{\tt string} & {\tt ""} \\
+enums & first enum constant \\
+classes & {\tt nil} \\
+records & default constructed record \\
+sequences & {\tt (/ /)} \\
+arrays & elements are default values \\
+tuples & components are default values \\
+\hline
+\end{tabular}
+\end{center}
 
 \subsubsection{Local Type Inference}
 \label{Local_Type_Inference}
 
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Multiple Variable Declarations}
-\label{Multiple_Variables}
+If the type is omitted from a variable declaration, the type of the
+variable becomes the type of the initialization expression.
 
 \subsection{Global Variables}
 \label{Global_Variables}
 
-This is a stub.  This portion of the document does not exist.
+Variables declared in statements that are in a module but not in a
+function or block within that module are global variables.  Global
+variables can be accessed anywhere within that module after the
+declaration of that variable.  They can also be accessed in other
+modules that use that module.
 
 \subsection{Local Variables}
 \label{Local_Variables}
 
-This is a stub.  This portion of the document does not exist.
+Local variables are variables that are not global.  Local variables
+are declared within block statements.  They can only be accessed
+within the scope of that block statement (including all nested block
+statements and functions).
+
+A local variable only exists during the execution of code that lies
+within that block statement.  This time is called the lifetime of the
+variable.  When execution has finished within that block statement,
+the local variable and the storage it represents is removed.
+Variables of class type are the sole exception.  Constructors of class
+types create storage that is not associated with any scope.  Such
+storage is managed automatically as discussed
+in~\rsec{Automatic_Memory_Management}.
 
 \subsection{Constants}
 \label{Constants}
 
-This is a stub.  This portion of the document does not exist.
+Constants are divided into two categories: parameters, specified with
+the keyword \chpl{param}, are compile-time constants and constants,
+specified with the keyword \chpl{const}, are runtime constants.
 
 \subsubsection{Compile-Time Constants}
 \label{Compile-Time_Constants}
 
-This is a stub.  This portion of the document does not exist.
+A compile-time constant or parameters must have a single value that is
+known by the compiler.  Parameters are restricted to primitive and
+enumerated types.
+
+Parameters can be assigned expressions that are parameter expressions.
+Parameter expressions are restricted to the following constructs:
+\begin{itemize}
+\item
+ Literals of primitive type.
+\item
+ Parenthesized parameter expressions.
+\item
+ Casts of parameter expressions to primitive or enumerated types.
+\item
+ Parameter expressions applied to the unary
+ operators: \verb@+@, \verb@-@, \verb@!@, or \verb@~@.
+\item
+ Two parameter expressions applied to the binary
+ operators: \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@,
+ or \verb@>@.
+\item
+ The conditional expression where the condition is a parameter and the
+ then- and else-expressions are parameters.
+\end{itemize}
+
+There is an expectation that parameters will be expanded to more types
+and more operations, and that functions that return parameters will be
+introduced.
 
 \subsubsection{Runtime Constants}
 \label{Runtime_Constants}
 
-This is a stub.  This portion of the document does not exist.
+Constants, as opposed to parameters, do not have the restrictions that
+are associated with parameters.  Constants can be any type.  They
+require an initialization expression and contain the value of that
+expression throughout their lifetime.
+
+Variables of class type that are constants are constant references.
+The fields of the class can be modified, but the variable always
+points to the object that it was initialized to reference.
 
 \subsection{Configuration Variables}
 \label{Configuration_Variables}
 
-This is a stub.  This portion of the document does not exist.
+If the keyword \chpl{config} precedes the
+keyword \chpl{var}, \chpl{const}, or \chpl{param}, the variable,
+constant, or parameter is called a configuration variable,
+configuration constant, or configuration parameter respectively.  Such
+variables, constants, and parameters must be global.
+
+The initialization of these variables can be set via implementation
+dependent means, such as command-line switches or environment
+variables.  The initialization expression in the program is ignored if
+the initialization is alternatively set.
+
+Configuration parameters are set during compilation time via
+compilation flags or other implementation dependent means.
+\begin{example}
+A configuration parameter is set via a compiler flag.  It may be used
+to control the target that is being compiled.  For example, the code
+\begin{chapel}
+config param target: string = "XT3";
+\end{chapel}
+sets a string parameter \chpl{target} to \chpl{"XT3"}.  This can be
+checked to compile different code for this target.
+\end{example}
