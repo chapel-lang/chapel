@@ -1,4 +1,4 @@
-chpl Version 0.3.4014
+chpl Version 0.3.4024
 Copyright (c) 2004-2006 Cray Inc.  (See LICENSE file for more details)
 Usage: chpl [flags|source files]
 
@@ -36,7 +36,7 @@ Miscellaneous Flags:
 --------------------
       --gdb               set on   false     Run compiler in gdb
       --instantiate-max   int      256       Limit number of instantiations
-  -S, --sysdir            path     /users/.. System Directory
+      --chplhome          path     .         Chapel location
       --devel             set on   true      Compile as developer
 
 Compiler Information:
@@ -70,8 +70,3 @@ Overriding defaults:
       --no-codegen        set on   false     Suppress code generation
       --ignore-errors     set on   false     Attempt to ignore errors
       --scalar-promotion  toggle   true      Enable scalar promotion
-
-Miscellaneous:
---------------
-  -m, --premalloc         int      0         Pre-malloc
-      --no-header-errors  toggle   false     Squelch header errors

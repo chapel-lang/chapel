@@ -34,7 +34,7 @@ Miscellaneous Flags:
 --------------------
       --gdb               set on   false     Run compiler in gdb
       --instantiate-max   int      256       Limit number of instantiations
-  -S, --sysdir            path     /users/.. System Directory
+      --chplhome          path     .         Chapel location
       --devel             set on   true      Compile as developer
 
 Compiler Information:
@@ -68,8 +68,3 @@ Overriding defaults:
       --no-codegen        set on   false     Suppress code generation
       --ignore-errors     set on   false     Attempt to ignore errors
       --scalar-promotion  toggle   true      Enable scalar promotion
-
-Miscellaneous:
---------------
-  -m, --premalloc         int      0         Pre-malloc
-      --no-header-errors  toggle   false     Squelch header errors

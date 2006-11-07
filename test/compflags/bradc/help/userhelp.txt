@@ -34,7 +34,7 @@ Miscellaneous Flags:
 --------------------
       --gdb               set on   false     Run compiler in gdb
       --instantiate-max   int      256       Limit number of instantiations
-  -S, --sysdir            path     /users/.. System Directory
+      --chplhome          path     .         Chapel location
       --devel             set on   false     Compile as developer
 
 Compiler Information:

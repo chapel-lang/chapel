@@ -25,28 +25,6 @@ static int numLibFlags = 0;
 static char** libFlag = NULL;
 
 
-char* sysdirToChplRoot(char* systemDir) {
-  char* chplroot = stringcpy(systemDir);
-  char* compilerSubdir = strstr(chplroot, "compiler");
-  if (!compilerSubdir) {
-    INT_FATAL("Can't convert systemDir to chapel root");
-  }
-  char* anotherCompilerSubdir;
-  do {
-    anotherCompilerSubdir = strstr(compilerSubdir+1, "compiler");
-    if (anotherCompilerSubdir) {
-      compilerSubdir = anotherCompilerSubdir;
-    }
-  } while (anotherCompilerSubdir);
-  if (compilerSubdir == chplroot) {
-    chplroot = stringcpy(".");
-  } else {
-    *(compilerSubdir-1) = '\0';
-  }
-  return chplroot;
-}
-
-
 void addLibInfo(char* libName) {
   static int libSpace = 0;
 
@@ -327,7 +305,7 @@ codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "CFLAGS = %s\n", ccflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(system_dir));
+  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n", mainfile->pathname);
   fprintf(makefile.fptr, "\nLIBS =");

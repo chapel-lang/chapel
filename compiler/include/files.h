@@ -14,7 +14,6 @@ struct fileinfo {
 };
 
 void codegen_makefile(fileinfo* mainfile);
-char* sysdirToChplRoot(char* systemDir);
 
 void deleteTmpDir(void);
 

@@ -264,7 +264,7 @@ set user = `whoami`
 #
 # unset things that users may have set in their environment
 #
-unsetenv CHPL_SYSTEM_DIR
+unsetenv CHPLHOME
 unsetenv CHPL_DEVELOPER
 
 # Commented this out, because it only seems useful in shared environments:

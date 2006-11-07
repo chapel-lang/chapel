@@ -27,7 +27,6 @@ int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
-static int pre_malloc = 0;
 bool formalTemps = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
@@ -40,14 +39,13 @@ bool no_scalar_replacement = true;
 bool no_bounds_checking = false;
 bool no_inline = false;
 bool report_inlining = false;
-char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
+char chplhome[FILENAME_MAX] = ".";
 char fPrintStatistics[256] = "";
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
 bool parallelPass = true;
 int scalar_promotion = 1;
-int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', "Compilation Traces", NULL, NULL, NULL, NULL},
@@ -78,7 +76,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', "Miscellaneous Flags", NULL, NULL, NULL, NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
- {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
+ {"chplhome", ' ', "Chapel location", "P", chplhome, "CHPLHOME", NULL},
  {"devel", ' ', "Compile as developer", "F", &developer, "CHPL_DEVELOPER", NULL},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},
@@ -105,10 +103,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"scalar-promotion", ' ', "Enable scalar promotion", "T", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
-
- {"", ' ', "Miscellaneous", NULL, NULL, NULL, NULL},
- {"premalloc", 'm', "Pre-malloc", "I", &pre_malloc, "CHPL_PRE_malloc", NULL},
- {"no-header-errors", ' ', "Squelch header errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
 
  {0}
 };
@@ -176,18 +170,6 @@ compile_all(void) {
 }
 
 static void
-init_system() {
-  char cwd[FILENAME_MAX];
-  if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
-    getcwd(cwd, FILENAME_MAX);
-    strcat(cwd, system_dir + 1);
-    memcpy(system_dir, cwd, sizeof(system_dir));
-  }
-  if (system_dir[strlen(system_dir)-1] != '/') 
-    strcat(system_dir, "/");
-}
-
-static void
 compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
   char* argv0 = stringcpy(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
@@ -200,7 +182,7 @@ compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
     *name = lastslash+1;
     *loc = argv0;
   }
-  strcpy(system_dir, *loc);
+  snprintf(chplhome, FILENAME_MAX, "%s", stringcat(*loc, "/../.."));
 }
 
 
@@ -214,8 +196,6 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
 int
 main(int argc, char *argv[]) {
-  if (pre_malloc)
-    (void)malloc(pre_malloc);
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
@@ -226,7 +206,6 @@ main(int argc, char *argv[]) {
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
-  init_system();
   compile_all();
   free_args(&arg_state);
   clean_exit(0);

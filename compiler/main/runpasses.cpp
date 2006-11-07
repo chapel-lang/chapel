@@ -96,10 +96,10 @@ void dump_index_header(FILE* f) {
   fprintf(f, "<HTML>\n");
   fprintf(f, "<HEAD>\n");
   fprintf(f, "<TITLE> Compilation Dump </TITLE>\n");
-  fprintf(f, "<SCRIPT SRC=\"%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
-         system_dir);
-  fprintf(f, "<LINK REL=\"stylesheet\" HREF=\"%s/etc/www/mktree.css\">", 
-         system_dir);
+  fprintf(f, "<SCRIPT SRC=\"%s/compiler/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+         chplhome);
+  fprintf(f, "<LINK REL=\"stylesheet\" HREF=\"%s/compiler/etc/www/mktree.css\">", 
+         chplhome);
   fprintf(f, "</HEAD>\n");
   fprintf(f, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(f, "Compilation Dump<br><br></span></big></big>\n");

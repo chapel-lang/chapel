@@ -5,8 +5,6 @@
 
 #include <stdio.h>
 
-#define DEFAULT_SYSTEM_DIR      "."
-
 extern FILE* html_index_file;
 
 // Begin temporary development flags
@@ -25,7 +23,7 @@ extern bool no_bounds_checking;
 extern bool no_inline;
 extern bool no_scalar_replacement;
 extern bool report_inlining;
-extern char system_dir[FILENAME_MAX];
+extern char chplhome[FILENAME_MAX];
 
 extern char fPrintStatistics[256];
 

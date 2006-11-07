@@ -11,7 +11,7 @@
 static ModuleSymbol* parseStandardModule(char* name) {
   static char* modulePath = NULL;
   if (modulePath == NULL) {
-    modulePath = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
+    modulePath = stringcat(chplhome, "/modules/standard/");
   }
   return ParseFile(stringcat(modulePath, name), MOD_STANDARD);
 }
