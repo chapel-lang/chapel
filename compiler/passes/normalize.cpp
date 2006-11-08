@@ -471,25 +471,23 @@ enable_scalar_promotion( FnSymbol *fn) {
     USR_FATAL(fn, "Cannot infer iterator return type yet");
   Type *seqElementType = seqType->typeInfo();
   
-  if (scalar_promotion) {
-    if (!strcmp("_promoter", fn->name)) {
-      if (seqElementType != dtUnknown) {
-        fn->_this->type->scalarPromotionType = seqElementType;
-      } else {
-        if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
-          if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {
-            if (!strcmp(".", b->var->name) && c->argList->length() == 2) {
-              if (SymExpr *a1 = dynamic_cast<SymExpr*>(c->argList->get(1))) {
-                if (a1->var == fn->_this) {
-                  if (SymExpr *a2 = dynamic_cast<SymExpr*>(c->argList->get(2))) {
-                    if (VarSymbol *vs = dynamic_cast<VarSymbol*>(a2->var)) {
-                      if (vs->immediate) {
-                        char *s = vs->immediate->v_string;
-                        ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
-                        for_fields(field, ct)
-                          if (!strcmp(field->name, s))
-                            field->addPragma("promoter");
-                      }
+  if (!strcmp("_promoter", fn->name)) {
+    if (seqElementType != dtUnknown) {
+      fn->_this->type->scalarPromotionType = seqElementType;
+    } else {
+      if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
+        if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {
+          if (!strcmp(".", b->var->name) && c->argList->length() == 2) {
+            if (SymExpr *a1 = dynamic_cast<SymExpr*>(c->argList->get(1))) {
+              if (a1->var == fn->_this) {
+                if (SymExpr *a2 = dynamic_cast<SymExpr*>(c->argList->get(2))) {
+                  if (VarSymbol *vs = dynamic_cast<VarSymbol*>(a2->var)) {
+                    if (vs->immediate) {
+                      char *s = vs->immediate->v_string;
+                      ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
+                      for_fields(field, ct)
+                        if (!strcmp(field->name, s))
+                          field->addPragma("promoter");
                     }
                   }
                 }

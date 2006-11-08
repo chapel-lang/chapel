@@ -1025,8 +1025,6 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
 
 static void
 check_promoter(ClassType *at) {
-  if (!scalar_promotion)
-    return;
   ClassType *t = dynamic_cast<ClassType*>(at->instantiatedFrom);
   for_fields(field, t) {
     if (field->hasPragma("promoter")) {

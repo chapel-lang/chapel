@@ -36,6 +36,5 @@ extern bool ignore_errors;
 extern int squelch_header_errors;
 
 extern bool parallelPass;
-extern int scalar_promotion;
 
 #endif
