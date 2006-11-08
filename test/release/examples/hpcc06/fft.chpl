@@ -107,7 +107,7 @@ def dfft(A, W) {
     const m = radix*span,
           m2 = 2*m;
 
-    forall (k,k1) in ([0..numElements) by m2,0..) {
+    forall (k,k1) in ([0..numElements) by m2, 0..) {
       var wk2 = W(k1),
           wk1 = W(2*k1),
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
@@ -120,7 +120,7 @@ def dfft(A, W) {
       wk1 = W(2*k1+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
-      wk2 = wk2*1.0i;
+      wk2 = wk2 * 1.0i;
 
       forall j in [k+m..k+m+span) {
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);

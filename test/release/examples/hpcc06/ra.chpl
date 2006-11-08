@@ -1,35 +1,26 @@
-// standard modules for timing
 use Time;
 
-// user modules for computing problem size and generating random numbers
 use HPCCProblemSize;
 use RARandomStream;
 
 
-// the number of tables we'll be using, the element type, and
-// the type used to index into the table
 param numTables = 1;
 type elemType = randType,
      indexType = randType;
 
-// configuration constants for specifying the problem size and # of updates
 config const n = computeProblemSize(elemType, numTables,
                                     returnLog2=true): indexType,
              N_U = 2**(n+2);   // numUpdates
 
-// configuration constants for controlling output options
-config const printParams = true,
-             printArrays = false,
-             printStats = true;
+const m = 2**n,                // probSize
+      indexMask = m-1;
 
-// configuration constants for performing the verification
 config const sequentialVerify = false,
              errorTolerance = 1.0e-2;
 
-
-// constants related to the problem size
-const m = 2**n,                // probSize
-      indexMask = m-1;         // mask for indexing into table
+config const printParams = true,
+             printArrays = false,
+             printStats = true;
 
 
 def main() {
@@ -44,7 +35,6 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  // want this to be UpdateSpace.subBlocks but can't put iterator in class
   forall block in subBlocks(UpdateSpace) do
     for r in RAStream(block.numIndices, block.low) do
       T(r & indexMask) ^= r;
@@ -72,7 +62,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
       T(r & indexMask) ^= r;
   else
     forall i in UpdateSpace {
-      const r = getNthRandom(i+1);   // BLC: would be nice to get rid of this
+      const r = getNthRandom(i+1);
       atomic T(r & indexMask) ^= r;
     }
 

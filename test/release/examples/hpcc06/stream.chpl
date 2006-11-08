@@ -1,36 +1,25 @@
-// standard modules for timing, type size, and random number routines
 use Time;
 use Types;
 use Random;
 
-// user module for computing HPCC problem sizes
 use HPCCProblemSize;
 
 
-// the number of vectors we'll be using and the element type
 param numVectors = 3;
 type elemType = real(64);
 
-// configuration constants for specifying the problem size
-config const m = computeProblemSize(elemType, numVectors);
+config const m = computeProblemSize(elemType, numVectors),
+             alpha = 3.0;
 
-// configuration constants for the number of trials to run
-config const numTrials = 10;
+config const numTrials = 10,
+             epsilon = 0.0;
 
-// configuration constants for controlling output options
+config const useRandomSeed = true,
+             seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
+
 config const printParams = true,
              printArrays = false,
              printStats = true;
-
-// configuration constant for Triad scalar multiplier
-config const alpha = 3.0;
-
-// configuration constant for error tolerance in verifying result
-config const epsilon = 0.0;
-
-// configuration constants for seeding the random number generator
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
 
 
 def main() {
@@ -43,10 +32,10 @@ def main() {
 
   var execTime: [1..numTrials] real;
 
-  for iter in 1..numTrials {
+  for trial in 1..numTrials {
     const startTime = getCurrentTime();
     A = B + alpha * C;
-    execTime(iter) = getCurrentTime() - startTime;
+    execTime(trial) = getCurrentTime() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);
