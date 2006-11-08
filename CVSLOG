@@ -84743,3 +84743,14 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 09:28:43 -- deitz
+
+Log message:
+	Fixed all Section references to use \rsec.
+
+Modified files:
+	chapel/spec/: Modules.tex Parallelism_and_Synchronization.tex 
+	              Statements.tex Types.tex 
+
