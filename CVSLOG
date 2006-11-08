@@ -84857,3 +84857,15 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+11/08/06 11:36:00 -- deitz
+
+Log message:
+	Added example GenericStack that is an example program showing
+	implementation and use of a generic stack class.
+
+Added files:
+	chapel/test/release/examples/: GenericStack.chpl 
+	                               GenericStack.good 
+
