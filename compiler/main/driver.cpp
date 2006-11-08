@@ -95,7 +95,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Optimization Control", NULL, NULL, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
- {"no-scalar-replacement", ' ', "**INVERTED** Do not scalar replace marked records (e.g. tuples)", "T", &no_scalar_replacement, NULL, NULL},
+ {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
  {"", ' ', "Overriding defaults", NULL, NULL, NULL, NULL},
  {"nostdincs", ' ', "No standard modules", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
