@@ -35,6 +35,7 @@ $cvsignores = "CVS|RCS";
        "Makefile",
        "README",
        "doc/README.building",
+       "doc/README.compiling",
 #       "example",         # currently empty dir for release
        "util/platform"
 );

@@ -1,0 +1,45 @@
+Compiling Using the Chapel Compiler
+===================================
+
+If you have set up your environment as described in the top-level
+README file and built the compiler as described in README.building,
+you should be able to see the Chapel compiler's help message using:
+
+     chpl --help
+
+This displays the compiler's command-line flags sorted by categories,
+in four columns: (1) the flag, (2) the type of argument it takes, 
+(3) the current or default value of the flag, (4) a brief description
+of the flag.
+
+We call out some of the most useful flags here:
+
+     -o <filename> : specify the filename of the generated executable,
+                     otherwise ./a.out is used by default
+
+     --print-passes : print the compiler passes as they execute
+
+     --print-commands : print the system commands that the compiler
+                        executes
+
+     --cg-chpl-lineno : causes certain runtime error messages to
+                        provide better information about the source
+                        line that caused the problem
+
+     --ccflags <flags> : specify flags that should be used with the
+                         back-end C compiler
+
+     --gdb : run the compiler in a gdb debugging session (use "halt"
+             to exit the session if "quit" ever fails you)
+
+     --cg-cpp-lines : add #line directives to the generated C code
+                      (supports some degree of breakpointing and
+                      debugging the target executable within gdb)
+
+     --savec <dir> : saves the generated C code in the specified
+                     directory
+
+     --print-code-size : prints some code size statistics about the
+                         number of lexical tokens per line, as well as
+                         the number of code, comment, and blank lines
+
