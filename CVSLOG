@@ -84764,3 +84764,79 @@ Log message:
 Modified files:
 	chapel/spec/: Modules.tex Statements.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 11:26:07 -- bradc
+
+Log message:
+	Moved all HPCC example codes into a subdirectory of
+	the release examples directory (I don't think all
+	release examples need to go into subdirectories, but
+	there are enough helper files and such for HPCC --
+	and they will be a publicly-documented suite of
+	codes -- that I thought it made sense in this instance).
+	
+	Removed all candidate versions of the HPCC benchmarks,
+	made sure that the top-level versions matched those
+	in the paper line by line (thanks to Steve's diffLatexCode
+	script), and renamed the published versions using hpcc06
+	in their names.
+	
+	Moved the sclc script (the HPCS team's script for language-
+	independent line (and token?) counting) into the util directory.
+
+Modified files:
+	papers/hpcc06/: probsize-code.tex 
+	chapel/test/studies/hpcc/RA/: ra-randstream.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+Added files:
+	chapel/test/release/examples/hpcc06/: .cvsignore fft-mta.chpl 
+	                                      fft-mta.compopts 
+	                                      fft-mta.execopts 
+	                                      fft-mta.good fft.chpl 
+	                                      fft.compopts fft.execopts 
+	                                      fft.good probSize.chpl 
+	                                      probSize.notest 
+	                                      ra-randstream.chpl 
+	                                      ra-randstream.notest 
+	                                      ra.chpl ra.compopts 
+	                                      ra.execopts ra.good 
+	                                      stream.chpl 
+	                                      stream.compopts 
+	                                      stream.execopts 
+	                                      stream.good 
+	chapel/test/studies/hpcc/FFT/: fft-hpcc06-mta.chpl 
+	                               fft-hpcc06-mta.compopts 
+	                               fft-hpcc06-mta.execopts 
+	                               fft-hpcc06-mta.good 
+	                               fft-hpcc06.chpl 
+	                               fft-hpcc06.compopts 
+	                               fft-hpcc06.execopts 
+	                               fft-hpcc06.good 
+	chapel/test/studies/hpcc/RA/: ra-hpcc06.chpl ra-hpcc06.compopts 
+	                              ra-hpcc06.execopts ra-hpcc06.good 
+	chapel/test/studies/hpcc/STREAMS/: stream-hpcc06.chpl 
+	                                   stream-hpcc06.compopts 
+	                                   stream-hpcc06.execopts 
+	                                   stream-hpcc06.good 
+	chapel/util/: sclc.pl 
+Removed files:
+	chapel/test/studies/hpcc/: sclc.pl 
+	chapel/test/studies/hpcc/FFT/: fft-candidate-sm.chpl 
+	                               fft-candidate-sm.compopts 
+	                               fft-candidate-sm.execopts 
+	                               fft-candidate-sm.good 
+	                               fft-candidate.chpl 
+	                               fft-candidate.compopts 
+	                               fft-candidate.execopts 
+	                               fft-candidate.good 
+	chapel/test/studies/hpcc/RA/: ra-candidate.chpl 
+	                              ra-candidate.compopts 
+	                              ra-candidate.execopts 
+	                              ra-candidate.good ra.chpl ra.good 
+	chapel/test/studies/hpcc/STREAMS/: stream-candidate.chpl 
+	                                   stream-candidate.compopts 
+	                                   stream-candidate.execopts 
+	                                   stream-candidate.good 
+	                                   stream.chpl stream.good 
+
