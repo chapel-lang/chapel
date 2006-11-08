@@ -84697,3 +84697,14 @@ Added files:
 	./: README 
 	chapel/doc/: README.building 
 
+---------------------------------------------------------------------------
+
+11/07/06 18:04:10 -- bradc
+
+Log message:
+	Updated gen_release script to grab README files
+	and etc/dotFiles directory and contents.
+
+Modified files:
+	chapel/util/: gen_release 
+
