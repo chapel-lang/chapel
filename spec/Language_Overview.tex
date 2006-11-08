@@ -154,29 +154,8 @@ However, the syntax of the Chapel language does not directly build upon any of
 these existing languages.   Programmers should start afresh when programming in 
 Chapel and not be limited to the constructs of existing languages.
 
-\subsubsection{Programs and Modules}
-\label{Programs_and_Modules}
+\subsubsection{Getting Started}
 
-All Chapel code is organized using \emph{modules} which serve as code
-containers to help manage code complexity as programs grow in size.
-One module may ``\chpl{use}'' another, giving it access to that
-module's public global symbols.  A module may be declared using a
-module declaration that specifies its name as follows:
-
-\begin{chapel}
-module (*\emph{<moduleName>}*) { (*$\ldots$*) }
-\end{chapel}
-
-Alternatively, for convenience in exploratory programming,
-explicit module declarations are not required.  If code is specified 
-without a module declaration, the code's
-filename is used as the module name for the code that it contains.
-
-All Chapel programs must define a single subroutine named
-\fnname{main()} that specifies the entry point for the program.  
-This entry point is executed by a single logical thread.
-
-\begin{example}
 Consider the classic first program.  The program file,
 \chpl{helloworld.chpl} contains:
 \begin{chapel}
@@ -201,9 +180,36 @@ The following output is shown:
 \begin{verbatim}
 > hello, world
 \end{verbatim}
-\end{example}
 
-%% More here on compiling multiple files?
+\subsubsection{Programs and Modules}
+\label{Programs_and_Modules}
+
+All Chapel code is organized using \emph{modules} which serve as code
+containers to help manage code complexity as programs grow in size.
+One module may ``\chpl{use}'' another, giving it access to that
+module's public global symbols.  In the following example, the
+standard Chapel module \chpl{Types} is used.  This module contains
+the \chpl{numBits} function that returns the size of a Chapel numeric
+type in bits. 
+\begin{chapel}
+use Types;
+
+writeln("The default size of Chapel integers is ",numBits(int)," bits.");
+\end{chapel}
+The output of this example is:
+\begin{verbatim}
+The default size of Chapel integers is 32 bits.
+\end{verbatim}
+
+For convenience in exploratory programming,
+explicit module declarations are not required.  If code is specified 
+without a module declaration, the code's
+filename is used as the module name for the code that it contains.
+
+All Chapel programs must define a single subroutine named
+\fnname{main()} that specifies the entry point for the program.  
+This entry point is executed by a single logical thread.
+
 Chapel provides standard modules for bit level operations, computing
 random numbers and quering the system time.  See~\rsec{Standard_Modules}
 for more details about these modules and how to use them.
@@ -211,29 +217,35 @@ for more details about these modules and how to use them.
 \subsubsection{Data Types and Variables}
 \label{Data_Types_and_Variables}
 
-Variable declarations in Chapel take the following basic form:
-
+The following example demonstrates some variable declarations in Chapel.
 \begin{chapel}
-(*\emph{<variable-kind>}*) (*\emph{<identifier>}*) (*$[\,$*): (*\emph{<definition>}*)(*$\,]$*) (*$[\,$*)= (*\emph{<initializer>}*)(*$\,]$*);
+config const n = 10;
+
+var x = 1.0,
+    y = n:real,
+    z: real;
 \end{chapel}
 
-\noindent where \emph{variable-kind} indicates the kind of variable
-being created, \emph{identifier} specifies the variable's name,
-\emph{definition} indicates the variable's ``type'' (loosely
-construed), and \emph{initializer} specifies its initial value.  A
-variable's initializer may be omitted, in which case it will be
-initialized to an value dependent on its definition for safety (\eg,
-``zero'' for numerical types).  Alternatively, a variable's definition
+The constant \chpl{n} can be set at runtime, as indicated by \chpl{config}, 
+or it is set to its default value of \chpl{10}.  It is inferred to be of 
+type \chpl{int} from this integer default value.  Similarly, \chpl{x} and 
+\chpl{y} are inferred to be of type \chpl{real}.  The variable \chpl{x}
+is initialized to \chpl{1.0} and the variable \chpl{y} is initialized to
+the value of \chpl{n}, converted from an integer value to a real value.
+The variable \chpl{z} has an explicit type declaration.  
+Because \chpl{z} is not initialized, it has a default intial value of \chpl{0.0}.
+
+Variable declarations in Chapel include the kind of variable, the variable's
+name, type and initial value.  A variable's initialization may be omitted, 
+in which case it will be initialized to an value dependent on its definition for 
+safety (\eg, ``zero'' for numerical types).  Alternatively, a variable's type 
 may be omitted, in which case it will be inferred from its
 initializer.
 
-Variable-kinds are specified in Chapel as follows:
-
-\begin{chapel}
-(*$[\,$*)config(*$\,]$*) (*$\{\,$*)param(*$\,|\,$*)const(*$\,|\,$*)var(*$\,\}$*)
-\end{chapel}
-
-\noindent Working backwards, the \chpl{var} keyword indicates that a
+There are three kinds of variables in Chapel specified by the following 
+keywords:  \chpl{var}, \chpl{const},
+and \chpl{param}.  The optional keyword \chpl{config} may precede
+any of these variable keywords.  The \chpl{var} keyword indicates that a
 variable is truly ``variable'' and may be modified throughout its
 lifetime.  The \chpl{const} keyword indicates that a variable is a
 constant, meaning that it \emph{must} be initialized and that its
@@ -254,15 +266,14 @@ compiler itself (for \chpl{config param} declarations).
 
 Variable declarations may also be specified in a variety of
 comma-separated ways which allow multiple variables to share the same
-variable-kind, definition or initializer.  
+variable-kind, type definition or initializer.  
 
 Chapel has support for boolean, integer and floating point primitive types,
 including the support for unsigned integers and complex types.  There is
-also support for strings as primitive types.  Table~\ref{typeSizeTable}
+also support for strings as primitive types.  The following table
 lists the set of primitive types.  For each type, the default size and
 all possible sizes are given.
 
-\begin{table}[h]
 \begin{center}
 \begin{tabular}{|l|l|llll|}
 \hline
@@ -279,10 +290,7 @@ all possible sizes are given.
 {\tt string} & unbounded & {\tt string} & & &\\
 \hline
 \end{tabular}
-\caption{Sizes of Chapel primitive types.}  
 \end{center}
-\label{typeSizeTable}
-\end{table}
 
 %% Should locale be listed in the above table?
 
@@ -291,26 +299,6 @@ casts are often required by the compiler.  Details of implicit and explicit
 conversions are discussed in~\rsec{Conversions}.
 
 %% Not sure how much to say about coercions and conversions here.
-
-\begin{example}
-The following lines of Chapel code give examples of different
-kinds of variable declarations.
-\begin{chapel}
-config const n = 10;
-
-var x = 1.0,
-    y = n:real,
-    z: real;
-\end{chapel}
-
-The constant \chpl{n} can be set at runtime, or it is set to its
-default value of \chpl{10}.  It is inferred to be of type \chpl{int} from
-this integer default value.  Similarly, \chpl{x} and \chpl{y} are
-inferred to be of type \chpl{real} and are initialized to \chpl{1.0}
-and \chpl{10.0} respectively.  The  variable \chpl{z} is the only
-one that has an explicit type declaration.  Because \chpl{z} is not
-initialized, it has a default intial value of \chpl{0.0}.
-\end{example}
 
 Beyond these primitive types, there is support for enumerated types, tuples and
 unions.  Additionally, arrays, domains, sequences, classes and records are
@@ -321,7 +309,6 @@ the \chpl{type} keyword.  Like parameter variables, type definitions
 must be known at compile-time.  The example below demonstrates a use of a type
 definition.
 
-\begin{example}
 \begin{chapel}
 type elemType = real(32);
 var alpha: elemType;
@@ -332,7 +319,6 @@ The first line of the example code defines the identifier
 an alias for a \chpl{real(32)}---Chapel's 32-bit floating point type.
 The identifier \typename{elemType} may be used to specify a variable's
 definition or anywhere else that a type is allowed.  
-\end{example}
 
 \subsubsection{Statements and Expressions}
 \label{Statements_and_Expressions}
@@ -347,8 +333,8 @@ definition or anywhere else that a type is allowed.
 \label{Sequences_and_Iterators}
 
 
-\subsubsection{Arrays and Distributions}
-\label{Arrays_and_Distributions}
+\subsubsection{Arrays and Domains}
+\label{Arrays_and_Domains}
 
 
 \subsection{Parallel Features}
