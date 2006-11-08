@@ -84869,3 +84869,15 @@ Added files:
 	chapel/test/release/examples/: GenericStack.chpl 
 	                               GenericStack.good 
 
+---------------------------------------------------------------------------
+
+11/08/06 11:49:58 -- marybeth
+
+Log message:
+	Made modifications to Language Overview that were suggested by Steve.
+	Got rid of syntax diagrams and added a few examples.  I inlined the table
+	and examples, rather than using the table and example environment.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
