@@ -1,0 +1,55 @@
+============================================
+Chapel Examples Directory and Testing System
+============================================
+
+This directory contains several Chapel example codes:
+
+     genericStack.chpl      : a stack class written using generic-programming
+     hpcc06/                : our code for the 2006 HPC Challenge competition
+       probSize.chpl        : a common module for computing problem sizes
+       stream.chpl          : our global STREAM Triad entry
+       ra.chpl              : our global Random Access entry
+       ra-randstream.chpl   : the random stream generator for our RA entry
+       fft.chpl             : our global 1D FFT entry
+       fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
+
+
+--------------------------------
+Files related to the test system
+--------------------------------
+
+In addition to the codes themselves, it contains files used by our
+regression testing infrastructure to automatically compile, run, and
+test sample codes.  For a test foo.chpl, the following files may be
+used:
+
+     foo.compopts   : command-line options to be used when compiling the test
+     foo.execopts   : command-line options to be used when executing the test
+     foo.good       : the expected output for the test
+     foo.notest     : indicates that foo.chpl should not be tested
+
+
+---------------------
+Using the test system
+---------------------
+
+To launch the test system, cd into this directory and use:
+
+     start_test
+
+which will cause all of the tests in this directory to be compiled and
+executed, printing out a summary at the end and creating log files of
+the test run in a Logs/ subdirectory.  Some other useful ways to run
+the test system are:
+
+     start_test -startdir <dir>
+     start_test -onetest <foo.chpl>
+
+which run the test system starting from a single directory, or on a
+single test, respectively.  For a list of other test system options,
+use:
+
+     start_test -help
+
+And for complete documentation on the testing system, refer to the
+comments at the top of the start_test file.
