@@ -84962,3 +84962,13 @@ Log message:
 Modified files:
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+11/08/06 14:36:02 -- deitz
+
+Log message:
+	Finished first pass of Organization section.
+
+Modified files:
+	chapel/spec/: Organization.tex Scope.tex 
+
