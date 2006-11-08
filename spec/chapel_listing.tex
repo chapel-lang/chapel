@@ -39,9 +39,19 @@
     numbersep=5pt,
     numberstyle=\tiny,
     numberblanklines=false,
-    stepnumber=0
+    stepnumber=0,
+    escapeinside={(*}{*)},
+    language=chapel,
   }
 
-\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\normalsize\ttfamily,keywordstyle=]!#1!}
+%\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\ttfamily,keywordstyle=\bfseries]!#1!}
+\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\ttfamily,keywordstyle=]!#1!}
+\newcommand{\varname}[1]{\emph{#1}}
+\newcommand{\typename}[1]{\emph{#1}}
+\newcommand{\fnname}[1]{\chpl{#1}}
 
-\lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=2pc}}{}
+\lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=2pc,stepnumber=0}}{}
+
+\lstnewenvironment{chapelcode}{\lstset{language=chapel,stepnumber=1}}{}
+
+\lstnewenvironment{commandline}{\lstset{keywordstyle=,xleftmargin=2pc}}{}
