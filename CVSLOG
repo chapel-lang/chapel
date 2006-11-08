@@ -84656,3 +84656,14 @@ Modified files:
 	              Statements.tex Variables.tex chapel_listing.tex 
 	              spec.tex syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/07/06 17:02:04 -- bradc
+
+Log message:
+	Added sample dot-files for users to refer to when
+	setting up their Chapel environment.
+
+Added files:
+	chapel/etc/dotFiles/: dot_bashrc dot_cshrc 
+
