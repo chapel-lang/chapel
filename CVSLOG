@@ -84881,3 +84881,19 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 12:04:52 -- bradc
+
+Log message:
+	Added an initial README directory to the examples directory
+	and renamed Steve's files to use an initial lowercase letter
+	(with his blessing).
+
+Added files:
+	chapel/test/release/examples/: README genericStack.chpl 
+	                               genericStack.good 
+Removed files:
+	chapel/test/release/examples/: GenericStack.chpl 
+	                               GenericStack.good 
+
