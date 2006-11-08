@@ -84708,3 +84708,16 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/07/06 18:29:29 -- bradc
+
+Log message:
+	Initial stab at a README on using the Chapel compiler.
+
+Modified files:
+	./: README 
+	chapel/util/: gen_release 
+Added files:
+	chapel/doc/: README.compiling 
+
