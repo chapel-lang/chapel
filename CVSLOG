@@ -84972,3 +84972,13 @@ Log message:
 Modified files:
 	chapel/spec/: Organization.tex Scope.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 15:06:17 -- deitz
+
+Log message:
+	Made spacing between section numbers and section titles in table of contents bigger so that spaces actually appear when subsection numbers are high.
+
+Modified files:
+	chapel/spec/: spec.tex 
+
