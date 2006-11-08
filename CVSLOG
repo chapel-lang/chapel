@@ -84920,3 +84920,14 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+11/08/06 13:30:55 -- deitz
+
+Log message:
+	Fixed two more warnings on the Mac.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/util/: misc.cpp 
+
