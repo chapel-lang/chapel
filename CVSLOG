@@ -84931,3 +84931,13 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+11/08/06 13:32:24 -- bradc
+
+Log message:
+	Updated help message for release.
+
+Modified files:
+	chapel/test/: start_test 
+
