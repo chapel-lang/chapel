@@ -84840,3 +84840,20 @@ Removed files:
 	                                   stream-candidate.good 
 	                                   stream.chpl stream.good 
 
+---------------------------------------------------------------------------
+
+11/08/06 11:33:46 -- deitz
+
+Log message:
+	Made "index(Domain)" useable in an expression context.  This has to do
+	with a problem parsing types.  This needs to be revisited so we can
+	parse things like
+	
+	  var s: Stack((int, int));
+	
+	Since here (int, int) is used in the context of an expression.  This
+	is already captured as a future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
