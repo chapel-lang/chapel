@@ -47,7 +47,7 @@
 #   -valgrind
 #   -futures
 #   -futuresonly
-#   -interpret
+#   -interpret (DEPRECATED)
 #
 # These options can be used with a double-dash as well 
 # (e.g. --compopts).
@@ -104,7 +104,9 @@
 # Future tests, those utilizing executable options (execopts), and
 # those that are not executed (noexec) tests are skipped when this
 # flag is invoked.  In addition, a directory can be requested to
-# be skipped by dropping a NOINTERP file into it.
+# be skipped by dropping a NOINTERP file into it.  Because the
+# Chapel compiler's interpreter feature is currently disabled, this
+# flags is currenty deprecated.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -393,12 +395,15 @@ while ( $#argv > 0 )
 		echo "          -compiler ../bin/$platform/chpl"
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
+                echo "          -onetest"
 		echo "          -startdir ."
                 echo "          -norecurse"
-		echo "          -logfile ./Logs/$user.$platform.log"
+                echo "          -futures"
+                echo "          -futuresonly"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
-                echo "          -interpret (or -i)"
+#                echo "          -interpret (or -i)"
+		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -h, -help"
 		exit 0
 		breaksw
