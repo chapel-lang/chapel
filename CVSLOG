@@ -84754,3 +84754,13 @@ Modified files:
 	chapel/spec/: Modules.tex Parallelism_and_Synchronization.tex 
 	              Statements.tex Types.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 10:34:26 -- deitz
+
+Log message:
+	Finished first pass of Modules section.
+
+Modified files:
+	chapel/spec/: Modules.tex Statements.tex 
+
