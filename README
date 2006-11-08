@@ -1,0 +1,48 @@
+Chapel Compiler Release README
+==============================
+
+This is a preliminary release of the Chapel compiler, intended for
+release to a small audience for evaluation and feedback purposes.  
+See the LICENSE file for information about legal usage, and please
+also keep in mind any informal discussions you've had with the
+Chapel team about intended use of this release.
+
+
+To get started, there are three environment settings that you should
+make in order to use this release effectively:
+
+1) Set the CHPLHOME environment variable to point to the location of
+   the chapel/ directory in which this README is contained.  For
+   example:
+
+        setenv CHPLHOME ~/chapel
+
+2) Set the CHPL_PLATFORM environment variable to the string returned
+   by the $CHPLHOME/util/platform script.  For example:
+
+        setenv CHPL_PLATFORM `$CHPLHOME/util/platform`
+
+   Note: Chapel's currently supported platforms include 32- and 64-bit
+   Linux, Cygwin, SunOS, and Mac OS X.  Other UNIX-based environments
+   ought to work conceptually, but may not be supported by our current
+   Makefile structure.  For help getting such details sorted out,
+   please contact us at: chapel_info@cray.com
+
+3) Set your path to include the directory $CHPLHOME/bin/$CHPL_PLATFORM
+   which will be created when you build the compiler.  For example:
+
+        set path = ($path $CHPLHOME/bin/$CHPL_PLATFORM)
+
+The directory $CHPLHOME/etc/dotFiles contains sample lines for
+inclusion in a shell's resource file to set these values.  They
+require modification in order to specify the location of your
+installation.
+
+
+For the next steps on building and using the Chapel compiler, please
+refer to the following README files:
+
+  doc/README.building  -- how to build the compiler
+  doc/README.compiling -- how to use the compiler
+  doc/README.executing -- how to execute compiler-generated codes
+  doc/README.bugs      -- how to report bugs

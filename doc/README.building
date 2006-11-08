@@ -1,0 +1,71 @@
+Building the Chapel Compiler and Runtime Support Libraries
+==========================================================
+
+To build the Chapel compiler, set up your environment as described in
+the top-level README file, cd to $CHPLHOME, and type:
+
+     gmake
+
+(or simply "make" if your make utility is gmake-compatible).  
+
+
+If everything works as intended, you ought to see:
+
+1) each of the compiler source subdirectories being compiled,
+
+2) the compiler binary getting linked and ending up at:
+
+        $CHPLHOME/bin/$CHPL_PLATFORM/chpl
+
+3) the runtime support libraries being compiled, archived, and stored
+   in $CHPLHOME/runtime/src/$CHPL_PLATFORM/
+
+Otherwise, if you get an error or failure during the make process,
+please let us know about it (as well as any workaround that you might
+come up with) at: chapel_bugs@cray.com
+
+
+Note that a single $CHPLHOME directory can be used to support Chapel
+on multiple platforms simultaneously because subdirectories named
+$CHPL_PLATFORM are used to store any platform-specific files.
+
+
+If you have set up your environment as described in the top-level
+README, you should now be able to run the compiler and display its
+help message using:
+
+        chpl --help
+
+In which case, you will be ready to move on to compiling with the
+Chapel compiler (described in README.compiling).  The rest of this
+file gives more information about Chapel's Makefiles for advanced
+users or developers of Chapel.
+
+
+
+Makefile Targets
+----------------
+The Chapel sources are structured so that "gmake" can be used in any
+source directory to build the sources contained in that directory as
+well as its children.  These Makefiles support the following targets:
+
+     (nothing)  :
+     default    : Build all targets in subdirectores and this one
+     all        :
+
+     depend     : Compute dependences for targets and subdirectories
+
+     clean      : Remove target files built by the Makefiles
+
+     clobber    : Remove everything created by the Makefiles
+
+
+Platform-specific Settings
+--------------------------
+The architecture of Chapel's Makefiles is to store any
+architecture-specific settings in $CHPLHOME/Makefile.$CHPL_PLATFORM.
+We have been factoring architectural-specific assumptions out of the
+Makefiles as we run into them, so it is likely that additional changes
+will be required as Chapel starts getting used on a wider variety of
+platforms and architectures.  We welcome your contributions to making
+our make environment more portable at: chapel_info@cray.com
