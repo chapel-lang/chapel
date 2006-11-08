@@ -98,7 +98,7 @@ printDevelErrorHeader(BaseAST* ast) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->parentSymbol)) {
         if (fn != err_fn) {
           err_fn = fn;
-          while (fn = dynamic_cast<FnSymbol*>(err_fn->defPoint->parentSymbol)) {
+          while ((fn = dynamic_cast<FnSymbol*>(err_fn->defPoint->parentSymbol))) {
             err_fn = fn;
           }
           if (!err_fn->isCompilerTemp && err_fn->filename && err_fn->lineno) {
