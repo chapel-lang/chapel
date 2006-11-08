@@ -84721,3 +84721,15 @@ Modified files:
 Added files:
 	chapel/doc/: README.compiling 
 
+---------------------------------------------------------------------------
+
+11/07/06 23:09:52 -- marybeth
+
+Log message:
+	Checking in some sections for Language Overview.  Since I grabbed
+	some text from Brad's hpcc paper, I included some of his environment
+	definitions.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex spec.tex chapel_listing.tex 
+
