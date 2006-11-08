@@ -84667,3 +84667,22 @@ Log message:
 Added files:
 	chapel/etc/dotFiles/: dot_bashrc dot_cshrc 
 
+---------------------------------------------------------------------------
+
+11/07/06 17:15:29 -- bradc
+
+Log message:
+	Enabled "default" and "all" make targets for the
+	top-level Makefile.  Now that we no longer have
+	a third-party directory, the main reasons that I
+	disabled these rules (namely, the fact that the
+	third-party directory always rebuilt itself) are
+	gone.  This will also make things clearer for the
+	users.
+	
+	All existing targets remain, for those of us whose
+	brains have rewired themselves to always make comprt.
+
+Modified files:
+	./: Makefile 
+
