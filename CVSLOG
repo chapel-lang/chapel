@@ -84982,3 +84982,13 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 15:10:54 -- deitz
+
+Log message:
+	Caught ToC indents up to ToC number spacing change.
+
+Modified files:
+	chapel/spec/: spec.tex 
+
