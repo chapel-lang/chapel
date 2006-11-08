@@ -84941,3 +84941,14 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+11/08/06 13:32:53 -- bradc
+
+Log message:
+	Updated gen_release script to create examples
+	directory.
+
+Modified files:
+	chapel/util/: gen_release 
+
