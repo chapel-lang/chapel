@@ -36,7 +36,6 @@ $cvsignores = "CVS|RCS";
        "README",
        "doc/README.building",
        "doc/README.compiling",
-#       "example",         # currently empty dir for release
        "util/platform"
 );
 
@@ -48,6 +47,7 @@ $cvsignores = "CVS|RCS";
 # include these dirs and their entire contents
 @complete_dirs = (
     "etc/dotFiles",
+    "examples",
     "make",
     "modules",
     "runtime"
@@ -61,6 +61,11 @@ system("cd chapel && make -f make/Makefile.release");
 
 print "Generating the bison/flex files...\n";
 system("cd chapel/compiler/parser && make lex.yy.c > /dev/null");
+
+print "Creating the examples directory...\n";
+system("cd chapel && rm -r examples");
+system("cd chapel && cp -r test/release/examples .");
+system("cd chapel/test && cp start_test sub_test start_clean sub_clean ../examples/");
 
 foreach $file (@files) {
     # print "$file\n";
