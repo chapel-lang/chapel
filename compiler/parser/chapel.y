@@ -1293,6 +1293,8 @@ top_level_expr:
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = new CallExpr(new DefExpr(build_let_expr($2, $4))); }
+| TINDEX TLP expr_ls TRP
+    { $$ = new CallExpr("_build_index_type", $3); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     {
