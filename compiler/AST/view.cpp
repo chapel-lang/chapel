@@ -209,7 +209,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
                 html_file_name( pass, sym->defPoint->getModule()->name),
                 sym->id);
       } else {
-        fprintf(html_file, "<A>", sym->id);
+        fprintf(html_file, "<A>");
       }
     }
   }
