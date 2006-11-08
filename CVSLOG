@@ -84638,3 +84638,21 @@ Log message:
 Modified files:
 	chapel/spec/: Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+11/07/06 16:37:09 -- deitz
+
+Log message:
+	Finished first pass of Expressions section.
+	
+	Inserted \cleardoublepage commands between sections so that each
+	section starts on an odd page.
+	
+	Some other minor fixes/changes.
+
+Modified files:
+	chapel/spec/: Expressions.tex Functions.tex 
+	              Lexical_Structure.tex Records.tex Sequences.tex 
+	              Statements.tex Variables.tex chapel_listing.tex 
+	              spec.tex syntax_listing.tex 
+
