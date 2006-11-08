@@ -84897,3 +84897,13 @@ Removed files:
 	chapel/test/release/examples/: GenericStack.chpl 
 	                               GenericStack.good 
 
+---------------------------------------------------------------------------
+
+11/08/06 12:59:20 -- deitz
+
+Log message:
+	Removed a thinko in a printf in which an argument was passed even though it was ignored.  Mac gcc issues a warning.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
