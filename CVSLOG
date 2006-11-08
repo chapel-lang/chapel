@@ -84686,3 +84686,14 @@ Log message:
 Modified files:
 	./: Makefile 
 
+---------------------------------------------------------------------------
+
+11/07/06 17:58:23 -- bradc
+
+Log message:
+	Started authoring some READMEs for the release.
+
+Added files:
+	./: README 
+	chapel/doc/: README.building 
+
