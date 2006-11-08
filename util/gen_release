@@ -33,7 +33,8 @@ $cvsignores = "CVS|RCS";
        "DIRS",
        "LICENSE",
        "Makefile",
-#       "doc",             # currently empty dir for release
+       "README",
+       "doc/README.building",
 #       "example",         # currently empty dir for release
        "util/platform"
 );
@@ -45,6 +46,7 @@ $cvsignores = "CVS|RCS";
 
 # include these dirs and their entire contents
 @complete_dirs = (
+    "etc/dotFiles",
     "make",
     "modules",
     "runtime"
