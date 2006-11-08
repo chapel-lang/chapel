@@ -86,8 +86,8 @@ not propagate to inhibit parallelism within \chpl{f}.
 
 The first form of explicitly creating parallelism is with the forall
 loop. The forall loop is a variant of for loop that allows concurrent
-execution of the loop body. The for loop is described in
-Section~\ref{The_For_Loop}. The forall loop syntax is:
+execution of the loop body. The for loop is described
+in~\rsec{The_For_Loop}. The forall loop syntax is:
 \begin{syntax}
 forall-statement:
    `forall' index-list `in' iterator-list `do' statement
@@ -210,7 +210,7 @@ either into or out of the body of a \chpl{cobegin} statement. As
 with \chpl{forall}, \chpl{yield} statements are allowed.
 
 Variables declared in the \chpl{cobegin} compound statment are {\em single
-assignment variables} \ref{Single_Assignment_Variables}. 
+assignment variables}~(\rsec{Single_Assignment_Variables}). 
 
 \subsubsection{Begin}
 \label{Begin}
