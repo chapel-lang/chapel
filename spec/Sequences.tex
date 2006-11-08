@@ -446,12 +446,10 @@ is a sequence but not an arithmetic sequence.
 \label{Strided_Arithmetic_Sequences}
 
 The \chpl{by} operator can be applied to any arithmetic sequence to
-create a strided arithmetic sequence.  The syntax for the \chpl{by}
-operator is given by:
-\begin{syntax}
-by-expression:
-  arithmetic-sequence-expression `by' integral-expression
-\end{syntax}
+create a strided arithmetic sequence.  It is predefined over an
+arithmetic sequence and an integer to yield a new arithmetic sequence
+that is strided by the integer.  Striding of strided sequences is
+accomplished by multiplying the strides.
 
 \subsubsection{Indefinite Sequences}
 \label{Indefinite_Sequences}

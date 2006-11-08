@@ -151,12 +151,11 @@ Parameter expressions are restricted to the following constructs:
 \item
  Casts of parameter expressions to primitive or enumerated types.
 \item
- Parameter expressions applied to the unary
- operators: \verb@+@, \verb@-@, \verb@!@, or \verb@~@.
+ Applications of the unary operators \verb@+@, \verb@-@, \verb@!@,
+ and \verb@~@ on operands that are bool or integral parameter
+ expressions.
 \item
- Two parameter expressions applied to the binary
- operators: \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@,
- or \verb@>@.
+ Applications of the binary operators verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
 \item
  The conditional expression where the condition is a parameter and the
  then- and else-expressions are parameters.
@@ -164,7 +163,7 @@ Parameter expressions are restricted to the following constructs:
 
 There is an expectation that parameters will be expanded to more types
 and more operations, and that functions that return parameters will be
-introduced.
+introduced, in the future.
 
 \subsubsection{Runtime Constants}
 \label{Runtime_Constants}

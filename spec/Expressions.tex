@@ -1,44 +1,132 @@
 \sekshun{Expressions}
 \label{Expressions}
 
-This is a stub.  This portion of the document does not exist.
+This section defines expressions in Chapel.  Forall expressions are
+described in~\rsec{Forall_Expressions}.
 
-\subsection{Primary Expressions}
-\label{Primary_Expressions}
+The syntax for an expression is given by:
+\begin{syntax}
+expression:
+  literal-expression
+  variable-expression
+  member-access-expression
+  call-expression
+  query-expression
+  cast-expression
+  lvalue-expression
+  unary-expression
+  binary-expression
+  let-expression
+  if-expression
+  forall-expression
+\end{syntax}
 
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Literal Expressions}
+\subsection{Literal Expressions}
 \label{Literal_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+A literal value for any of the built-in types is a literal expression.
+These are defined where the type is defined.  The list of literal
+values is given by the following syntax:
+\begin{syntax}
+literal-expression:
+  bool-literal
+  integer-literal
+  real-literal
+  imaginary-literal
+  string-literal
+  sequence-literal
+  domain-literal
+\end{syntax}
 
-\subsubsection{Variable Expressions}
+\subsection{Variable Expressions}
 \label{Variable_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+A use of a variable is itself an expression.  The syntax of a variable
+expression is given by:
+\begin{syntax}
+variable-expression:
+  identifier
+\end{syntax}
 
-\subsubsection{Member Access Expressions}
-\label{Member_Access_Expressions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Call Expressions}
+\subsection{Call Expressions}
 \label{Call_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+The syntax to call a function is given by:
+\begin{syntax}
+call-expression:
+  expression ( named-expression-list )
+
+named-expression-list:
+  named-expression
+  named-expression , named-expression-list
+
+named-expression:
+  expression
+  identifier = expression
+\end{syntax}
+
+A \sntx{call-expression} is resolved to a particular function
+according to the algorithm for function resolution described
+in~\rsec{Function_Resolution}.
+
+A \sntx{named-expression} is an expression that may be optionally
+named.  The optional \sntx{identifier} represents a named actual
+argument described in~\rsec{Named_Arguments}.
 
 \subsubsection{Indexing Expressions}
 \label{Indexing_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+Indexing into arrays, sequences, tuples, and domains shares the same
+syntax of a call expression.  Indexing, at its core, is nothing more
+than a call to the indexing function defined on these types.
 
-\subsubsection{The Type Query Expression}
-\label{The_Type_Query_Expression}
+\subsubsection{Member Access Expressions}
+\label{Member_Access_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+Member access expressions are call expressions to members of classes,
+records, or unions.  The syntax for a member access is given by:
+\begin{syntax}
+member-access-expression:
+  expression . identifier
+\end{syntax}
+The member access may be an access of a field or a function inside a
+class, record, or union.
 
-\subsubsection{Casts}
+\subsection{The Query Expression}
+\label{The_Query_Expression}
+
+A query expression is used to query a type or value within a formal
+argument type expression.  The syntax of a query expression is given
+by:
+\begin{syntax}
+query-expression:
+  ? identifier
+\end{syntax}
+Querying is restricted to querying the type of a formal argument, the
+element type of an formal argument that is an array, the domain of
+a formal argument that is an array, or the size of a primitive type.
+\begin{example}
+The following code defines a generic function where the type of the
+first parameter is queried and stored in the type alias \chpl{t} and
+the domain of the second argument is queried and stored in the
+variable \chpl{D}:
+\begin{chapel}
+def foo(x: ?t, y: [?D] t) {
+  for i in D do
+    y[i] = x;
+}
+\end{chapel}
+The type alias \chpl{t} is used to specify the element type of
+array \chpl{y}.  Arrays passed to this function must have element
+type \chpl{y}.  The body of the function iterates over the domain
+of \chpl{y} captured in variable \chpl{D} and assigns the value of
+argument \chpl{x} to each element in array \chpl{y}.
+\end{example}
+
+There is an expectation that query expressions will be allowed in more
+places in the future.
+
+\subsection{Casts}
 \label{Casts}
 
 A cast is specified with the following syntax:
@@ -71,167 +159,802 @@ explicit conversion:
   format string creates a formatted string based on that format.
 \end{itemize}
 
+\subsection{LValue Expressions}
+\label{lvalue}
+\index{lvalue}
+
+An {\em lvalue} is an expression that can be used on the left-hand
+side of an assignment statement, passed to a formal argument of a
+function that has \chpl{out} or \chpl{inout} intent, or returned by a
+variable function.  Valid lvalue expressions include the following:
+\begin{itemize}
+\item
+ Variable expressions.
+\item
+ Member access expressions.
+\item
+ Call expressions that are either setters or variable functions.
+\item
+ Indexing expressions.
+\item
+ Casts of lvalue expressions.
+\item
+ Let expressions where the inner expression is an lvalue expression.
+\item
+ Conditional expressions where the then- and else-expressions are
+ lvalue expressions.
+\end{itemize}
+
+LValue expressions are given by the following syntax:
+\begin{syntax}
+lvalue-expression:
+  variable-expression
+  member-access-expression
+  call-expression
+  cast-expression
+  let-expression
+  conditional-expression.
+\end{syntax}
+The syntax is more relaxed than the definition above.  For example, not
+all \sntx{call-expression}s are lvalues.
+
 \subsection{Operator Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
 
-This is a stub.  This portion of the document does not exist.
+The following table summarizes the precedence of operators and their
+associativity.  Operators listed earlier have higher precedence than
+those listed later.
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+{\bf operators} & {\bf associativity} & {\bf use} \\
+\hline
+\verb@.@ & left & member access \\
+\verb@() []@ & left & function call, index expression \\
+\verb@:@ & left & cast\\
+\verb@**@ & right & exponentiation \\
+unary \verb@+ - ~@ & right & sign and bitwise negation \\
+\verb@* / %@ & left & multiply, divide, and modulus \\
+\verb@+ -@ & left & plus and minus \\
+\verb@&@ & left & bitwise and \\
+\verb@^@ & left & bitwise xor \\
+\verb@<< >>@ & left & shift left and shift right \\
+\verb@|@ & left & bitwise or \\
+\verb@<= >= < >@ & left & ordered comparison \\
+\verb@== !=@ & left & equality comparison \\
+\verb@!@ & right & logical negation \\
+\verb@&&@ & left & logical and \\
+\verb@||@ & left & logical or \\
+\verb@#@ & left & sequence concatenation \\
+\verb@..@ & left & arithmetic sequences \\
+\verb@in@ & left & forall expressions \\
+\verb@by@ & left & striding sequences \\
+\verb@if@ & left & conditional expressions \\
+\verb@reduce scan@ & left & reductions and scans\\
+\verb@,@ & left & comma separated expressions \\
+\hline
+\end{tabular}
+\end{center}
 
-\subsection{Operator Overloading}
-\label{Operator_Overloading}
+\subsection{Operator Expressions}
+\label{Binary_Expressions}
+\label{Unary_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+The application of operators to expressions is itself an expression.
+The syntax of a unary expression is given by:
+\begin{syntax}
+unary-expression:
+  unary-operator expression
+
+unary-operator: one of
+  + - / *
+\end{syntax}
+
+The syntax of a binary expression is given by:
+\begin{syntax}
+binary-expression:
+  expression binary-operator expression
+
+binary-operator: one of
+  + - * / % ** & | ^ << >> && || == != <= >= < > #
+\end{syntax}
+
+The operators are defined in subsequent sections.
 
 \subsection{Arithmetic Operators}
 \label{Arithmetic_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes the predefined arithmetic operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
+
+All arithmetic operators are implemented over integral types of size
+32 and 64 only.  For example, adding two 8-bit integers is done by
+first converting them to 32-bit integers.
 
 \subsubsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The unary plus operators are predefined as follows:
+\begin{chapel}
+def +(a: int(32)): int(32)
+def +(a: int(64)): int(64)
+def +(a: uint(32)): uint(32)
+def +(a: uint(64)): uint(64)
+def +(a: real(32)): real(32)
+def +(a: real(64)): real(64)
+def +(a: real(128)): real(128)
+def +(a: imag(32)): imag(32)
+def +(a: imag(64)): imag(64)
+def +(a: imag(128)): imag(128)
+def +(a: complex(32)): complex(32)
+def +(a: complex(64)): complex(64)
+def +(a: complex(128)): complex(128)
+\end{chapel}
+For each of these definitions, the result is the value of the operand.
 
 \subsubsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The unary minus operators are predefined as follows:
+\begin{chapel}
+def -(a: int(32)): int(32)
+def -(a: int(64)): int(64)
+def -(a: uint(64))
+def -(a: real(32)): real(32)
+def -(a: real(64)): real(64)
+def -(a: real(128)): real(128)
+def -(a: imag(32)): imag(32)
+def -(a: imag(64)): imag(64)
+def -(a: imag(128)): imag(128)
+def -(a: complex(32)): complex(32)
+def -(a: complex(64)): complex(64)
+def -(a: complex(128)): complex(128)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+negation of the value of the operand.  For integral types, this
+corresponds to subtracting the value from zero.  For real and
+imaginary types, this corresponds to inverting the sign.  For complex
+types, this corresponds to inverting the signs of both the real and
+imaginary parts.
+
+It is an error to try to negate a value of type \chpl{uint(64)}.  Note
+that negating a value of type \chpl{uint(32)} first converts the type
+to \chpl{int(64)} using an implicit conversion.
 
 \subsubsection{Addition Operators}
 \label{Addition_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The addition operators are predefined as follows:
+\begin{chapel}
+def +(a: int(32), b: int(32)): int(32)
+def +(a: int(64), b: int(64)): int(64)
+def +(a: uint(32), b: uint(32)): uint(32)
+def +(a: uint(64), b: uint(64)): uint(64)
+def +(a: uint(64), b: int(64))
+def +(a: int(64), b: uint(64))
+
+def +(a: real(32), b: real(32)): real(32)
+def +(a: real(64), b: real(64)): real(64)
+def +(a: real(128), b: real(128)): real(128)
+
+def +(a: imag(32), b: imag(32)): imag(32)
+def +(a: imag(64), b: imag(64)): imag(64)
+def +(a: imag(128), b: imag(128)): imag(128)
+
+def +(a: complex(64), b: complex(64)): complex(64)
+def +(a: complex(128), b: complex(128)): complex(128)
+def +(a: complex(256), b: complex(256)): complex(256)
+
+def +(a: real(32), b: imag(32)): complex(64)
+def +(a: imag(32), b: real(32)): complex(64)
+def +(a: real(64), b: imag(64)): complex(128)
+def +(a: imag(64), b: real(64)): complex(128)
+def +(a: real(128), b: imag(128)): complex(256)
+def +(a: imag(128), b: real(128)): complex(256)
+
+def +(a: real(32), b: complex(64)): complex(64)
+def +(a: complex(64), b: real(32)): complex(64)
+def +(a: real(64), b: complex(128)): complex(128)
+def +(a: complex(128), b: real(64)): complex(128)
+def +(a: real(128), b: complex(256)): complex(256)
+def +(a: complex(256), b: real(128)): complex(256)
+
+def +(a: imag(32), b: complex(64)): complex(64)
+def +(a: complex(64), b: imag(32)): complex(64)
+def +(a: imag(64), b: complex(128)): complex(128)
+def +(a: complex(128), b: imag(64)): complex(128)
+def +(a: imag(128), b: complex(256)): complex(256)
+def +(a: complex(256), b: imag(128)): complex(256)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+sum of the two operands.
+
+It is a compile-time error to add a value of type \chpl{uint(64)} and
+a value of type \chpl{int(64)}.
+
+Addition over a value of real type and a value of imaginary type
+produces a value of complex type.  Addition of values of complex type
+and either real or imaginary types also produces a value of complex
+type.
 
 \subsubsection{Subtraction Operators}
 \label{Subtraction_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The subtraction operators are predefined as follows:
+\begin{chapel}
+def -(a: int(32), b: int(32)): int(32)
+def -(a: int(64), b: int(64)): int(64)
+def -(a: uint(32), b: uint(32)): uint(32)
+def -(a: uint(64), b: uint(64)): uint(64)
+def -(a: uint(64), b: int(64))
+def -(a: int(64), b: uint(64))
+
+def -(a: real(32), b: real(32)): real(32)
+def -(a: real(64), b: real(64)): real(64)
+def -(a: real(128), b: real(128)): real(128)
+
+def -(a: imag(32), b: imag(32)): imag(32)
+def -(a: imag(64), b: imag(64)): imag(64)
+def -(a: imag(128), b: imag(128)): imag(128)
+
+def -(a: complex(64), b: complex(64)): complex(64)
+def -(a: complex(128), b: complex(128)): complex(128)
+def -(a: complex(256), b: complex(256)): complex(256)
+
+def -(a: real(32), b: imag(32)): complex(64)
+def -(a: imag(32), b: real(32)): complex(64)
+def -(a: real(64), b: imag(64)): complex(128)
+def -(a: imag(64), b: real(64)): complex(128)
+def -(a: real(128), b: imag(128)): complex(256)
+def -(a: imag(128), b: real(128)): complex(256)
+
+def -(a: real(32), b: complex(64)): complex(64)
+def -(a: complex(64), b: real(32)): complex(64)
+def -(a: real(64), b: complex(128)): complex(128)
+def -(a: complex(128), b: real(64)): complex(128)
+def -(a: real(128), b: complex(256)): complex(256)
+def -(a: complex(256), b: real(128)): complex(256)
+
+def -(a: imag(32), b: complex(64)): complex(64)
+def -(a: complex(64), b: imag(32)): complex(64)
+def -(a: imag(64), b: complex(128)): complex(128)
+def -(a: complex(128), b: imag(64)): complex(128)
+def -(a: imag(128), b: complex(256)): complex(256)
+def -(a: complex(256), b: imag(128)): complex(256)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+value obtained by subtracting the second operand from the first
+operand.
+
+It is a compile-time error to subtract a value of type \chpl{uint(64)}
+from a value of type \chpl{int(64)}, and vice versa.
+
+Subtraction of a value of real type from a value of imaginary type,
+and vice versa, produces a value of complex type.  Subtraction of
+values of complex type from either real or imaginary types, and vice
+versa, also produces a value of complex type.
 
 \subsubsection{Multiplication Operators}
 \label{Multiplication_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The multiplication operators are predefined as follows:
+\begin{chapel}
+def *(a: int(32), b: int(32)): int(32)
+def *(a: int(64), b: int(64)): int(64)
+def *(a: uint(32), b: uint(32)): uint(32)
+def *(a: uint(64), b: uint(64)): uint(64)
+def *(a: uint(64), b: int(64))
+def *(a: int(64), b: uint(64))
+
+def *(a: real(32), b: real(32)): real(32)
+def *(a: real(64), b: real(64)): real(64)
+def *(a: real(128), b: real(128)): real(128)
+
+def *(a: imag(32), b: imag(32)): real(32)
+def *(a: imag(64), b: imag(64)): real(64)
+def *(a: imag(128), b: imag(128)): real(128)
+
+def *(a: complex(64), b: complex(64)): complex(64)
+def *(a: complex(128), b: complex(128)): complex(128)
+def *(a: complex(256), b: complex(256)): complex(256)
+
+def *(a: real(32), b: imag(32)): imag(32)
+def *(a: imag(32), b: real(32)): imag(32)
+def *(a: real(64), b: imag(64)): imag(64)
+def *(a: imag(64), b: real(64)): imag(64)
+def *(a: real(128), b: imag(128)): imag(128)
+def *(a: imag(128), b: real(128)): imag(128)
+
+def *(a: real(32), b: complex(64)): complex(64)
+def *(a: complex(64), b: real(32)): complex(64)
+def *(a: real(64), b: complex(128)): complex(128)
+def *(a: complex(128), b: real(64)): complex(128)
+def *(a: real(128), b: complex(256)): complex(256)
+def *(a: complex(256), b: real(128)): complex(256)
+
+def *(a: imag(32), b: complex(64)): complex(64)
+def *(a: complex(64), b: imag(32)): complex(64)
+def *(a: imag(64), b: complex(128)): complex(128)
+def *(a: complex(128), b: imag(64)): complex(128)
+def *(a: imag(128), b: complex(256)): complex(256)
+def *(a: complex(256), b: imag(128)): complex(256)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+product of the two operands.
+
+It is a compile-time error to multiply a value of type \chpl{uint(64)} and
+a value of type \chpl{int(64)}.
+
+Multiplication of values of imaginary type produces a value of real
+type.  Multiplication over a value of real type and a value of
+imaginary type produces a value of imaginary type.  Multiplication of
+values of complex type and either real or imaginary types produces a
+value of complex type.
 
 \subsubsection{Division Operators}
 \label{Division_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The division operators are predefined as follows:
+\begin{chapel}
+def /(a: int(32), b: int(32)): int(32)
+def /(a: int(64), b: int(64)): int(64)
+def /(a: uint(32), b: uint(32)): uint(32)
+def /(a: uint(64), b: uint(64)): uint(64)
+def /(a: uint(64), b: int(64))
+def /(a: int(64), b: uint(64))
+
+def /(a: real(32), b: real(32)): real(32)
+def /(a: real(64), b: real(64)): real(64)
+def /(a: real(128), b: real(128)): real(128)
+
+def /(a: imag(32), b: imag(32)): real(32)
+def /(a: imag(64), b: imag(64)): real(64)
+def /(a: imag(128), b: imag(128)): real(128)
+
+def /(a: complex(64), b: complex(64)): complex(64)
+def /(a: complex(128), b: complex(128)): complex(128)
+def /(a: complex(256), b: complex(256)): complex(256)
+
+def /(a: real(32), b: imag(32)): imag(32)
+def /(a: imag(32), b: real(32)): imag(32)
+def /(a: real(64), b: imag(64)): imag(64)
+def /(a: imag(64), b: real(64)): imag(64)
+def /(a: real(128), b: imag(128)): imag(128)
+def /(a: imag(128), b: real(128)): imag(128)
+
+def /(a: real(32), b: complex(64)): complex(64)
+def /(a: complex(64), b: real(32)): complex(64)
+def /(a: real(64), b: complex(128)): complex(128)
+def /(a: complex(128), b: real(64)): complex(128)
+def /(a: real(128), b: complex(256)): complex(256)
+def /(a: complex(256), b: real(128)): complex(256)
+
+def /(a: imag(32), b: complex(64)): complex(64)
+def /(a: complex(64), b: imag(32)): complex(64)
+def /(a: imag(64), b: complex(128)): complex(128)
+def /(a: complex(128), b: imag(64)): complex(128)
+def /(a: imag(128), b: complex(256)): complex(256)
+def /(a: complex(256), b: imag(128)): complex(256)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+quotient of the two operands.
+
+It is a compile-time error to divide a value of type \chpl{uint(64)} by
+a value of type \chpl{int(64)}, and vice versa.
+
+Division of values of imaginary type produces a value of real type.
+Division over a value of real type and a value of imaginary type
+produces a value of imaginary type.  Division of values of complex
+type and either real or imaginary types produces a value of complex
+type.
 
 \subsubsection{Modulus Operators}
 \label{Modulus_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The modulus operators are predefined as follows:
+\begin{chapel}
+def /(a: int(32), b: int(32)): int(32)
+def /(a: int(64), b: int(64)): int(64)
+def /(a: uint(32), b: uint(32)): uint(32)
+def /(a: uint(64), b: uint(64)): uint(64)
+def /(a: uint(64), b: int(64))
+def /(a: int(64), b: uint(64))
+\end{chapel}
+For each of these definitions that return a value, the result is the
+remainder when the first operand is divided by the second operand.
+
+It is a compile-time error to take the remainder of a value of
+type \chpl{uint(64)} and a value of type \chpl{int(64)}, and vice
+versa.
+
+There is an expectation that the predefined modulus operators will be
+extended to handle real, imaginary, and complex types in the future.
 
 \subsubsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The exponentiation operators are predefined as follows:
+\begin{chapel}
+def **(a: int(32), b: int(32)): int(32)
+def **(a: int(64), b: int(64)): int(64)
+def **(a: uint(32), b: uint(32)): uint(32)
+def **(a: uint(64), b: uint(64)): uint(64)
+def **(a: uint(64), b: int(64))
+def **(a: int(64), b: uint(64))
+
+def **(a: real(32), b: real(32)): real(32)
+def **(a: real(64), b: real(64)): real(64)
+def **(a: real(128), b: real(128)): real(128)
+\end{chapel}
+For each of these definitions that return a value, the result is the
+value of the first operand raised to the power of the second operand.
+
+It is a compile-time error to take the exponent of a value of
+type \chpl{uint(64)} by a value of type \chpl{int(64)}, and vice
+versa.
+
+There is an expectation that the predefined exponentiation operators
+will be extended to handle imaginary and complex types in the future.
 
 \subsection{Bitwise Operators}
 \label{Bitwise_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes the predefined bitwise operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The bitwise complement operators are predefined as follows:
+\begin{chapel}
+def ~(a: bool): bool
+def ~(a: int(32)): int(32)
+def ~(a: int(64)): int(64)
+def ~(a: uint(32)): uint(32)
+def ~(a: uint(64)): uint(64)
+\end{chapel}
+For each of these definitions, the result is the bitwise complement of
+the operand.
 
 \subsubsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The bitwise and operators are predefined as follows:
+\begin{chapel}
+def &(a: bool, b: bool): bool
+def &(a: int(32), b: int(32)): int(32)
+def &(a: int(64), b: int(64)): int(64)
+def &(a: uint(32), b: uint(32)): uint(32)
+def &(a: uint(64), b: uint(64)): uint(64)
+def &(a: uint(64), b: int(64))
+def &(a: int(64), b: uint(64))
+\end{chapel}
+For each of these definitions that return a value, the result is
+computed by applying the AND operation to the bits of the operands.
+
+It is a compile-time error to apply the bitwise and operator to a
+value of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and
+vice versa.
 
 \subsubsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The bitwise or operators are predefined as follows:
+\begin{chapel}
+def |(a: bool, b: bool): bool
+def |(a: int(32), b: int(32)): int(32)
+def |(a: int(64), b: int(64)): int(64)
+def |(a: uint(32), b: uint(32)): uint(32)
+def |(a: uint(64), b: uint(64)): uint(64)
+def |(a: uint(64), b: int(64))
+def |(a: int(64), b: uint(64))
+\end{chapel}
+For each of these definitions that return a value, the result is
+computed by applying the OR operation to the bits of the operands.
+
+It is a compile-time error to apply the bitwise or operator to a value
+of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and vice
+versa.
 
 \subsubsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The bitwise xor operators are predefined as follows:
+\begin{chapel}
+def ^(a: bool, b: bool): bool
+def ^(a: int(32), b: int(32)): int(32)
+def ^(a: int(64), b: int(64)): int(64)
+def ^(a: uint(32), b: uint(32)): uint(32)
+def ^(a: uint(64), b: uint(64)): uint(64)
+def ^(a: uint(64), b: int(64))
+def ^(a: int(64), b: uint(64))
+\end{chapel}
+For each of these definitions that return a value, the result is
+computed by applying the XOR operation to the bits of the operands.
+
+It is a compile-time error to apply the bitwise xor operator to a
+value of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and
+vice versa.
 
 \subsection{Shift Operators}
 \label{Shift_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes the predefined shift operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
+
+The shift operators are predefined as follows:
+\begin{chapel}
+def <<(a: int(32), b): int(32)
+def >>(a: int(32), b): int(32)
+def <<(a: int(64), b): int(64)
+def >>(a: int(64), b): int(64)
+def <<(a: uint(32), b): uint(32)
+def >>(a: uint(32), b): uint(32)
+def <<(a: uint(64), b): uint(64)
+def >>(a: uint(64), b): uint(64)
+\end{chapel}
+The type of the second actual argument must be any integral type.
+
+The \chpl{<<} operator shifts the bits of \chpl{a} left by the
+integer \chpl{b}.  The new low-order bits are set to zero.
+
+The \chpl{>>} operator shifts the bits of \chpl{a} right by the
+integer \chpl{b}.  When \chpl{a} is negative, the new high-order bits
+are set to one; otherwise the new high-order bits are set to zero.
+
+The value of \chpl{b} must be at least zero and at most the number of
+bits used to represent \chpl{a}.
 
 \subsection{Logical Operators}
 \label{Logical_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes the predefined logical operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
 
-\subsubsection{Logical Negation Operators}
+\subsubsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The logical negation operator is predefined as follows:
+\begin{chapel}
+def !(a: bool): bool
+\end{chapel}
+The result is the logical negation of the operand.
 
-\subsubsection{Logical And Operators}
+\subsubsection{The Logical And Operator}
 \label{Logical_And_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The logical and operator is predefined as follows:
+\begin{chapel}
+def &&(a: bool, b: bool): bool
+\end{chapel}
+The result of \chpl{a && b} is true if both \chpl{a} and \chpl{b} are
+true; otherwise the result is false.
 
-\subsubsection{Logical Or Operators}
+\subsubsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The logical or operator is predefined as follows:
+\begin{chapel}
+def ||(a: bool, b: bool): bool
+\end{chapel}
+The result of \chpl{a || b} is true if either \chpl{a} or \chpl{b} is
+true; otherwise the result is false.
 
 \subsection{Relational Operators}
 \label{Relational_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes the predefined relational operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The ``less than'' comparison operators are predefined as follows:
+\begin{chapel}
+def <(a: int(32), b: int(32)): bool
+def <(a: int(64), b: int(64)): bool
+def <(a: uint(32), b: uint(32)): bool
+def <(a: uint(64), b: uint(64)): bool
+def <(a: real(32), b: real(32)): bool
+def <(a: real(64), b: real(64)): bool
+def <(a: real(128), b: real(128)): bool
+def <(a: imag(32), b: imag(32)): bool
+def <(a: imag(64), b: imag(64)): bool
+def <(a: imag(128), b: imag(128)): bool
+\end{chapel}
+The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
+otherwise the result is false.
+
+The ``greater than'' comparison operators are predefined as follows:
+\begin{chapel}
+def >(a: int(32), b: int(32)): bool
+def >(a: int(64), b: int(64)): bool
+def >(a: uint(32), b: uint(32)): bool
+def >(a: uint(64), b: uint(64)): bool
+def >(a: real(32), b: real(32)): bool
+def >(a: real(64), b: real(64)): bool
+def >(a: real(128), b: real(128)): bool
+def >(a: imag(32), b: imag(32)): bool
+def >(a: imag(64), b: imag(64)): bool
+def >(a: imag(128), b: imag(128)): bool
+\end{chapel}
+The result of \chpl{a > b} is true if \chpl{a} is greater
+than \chpl{b}; otherwise the result is false.
+
+The ``less than or equal to'' comparison operators are predefined as
+follows:
+\begin{chapel}
+def <=(a: int(32), b: int(32)): bool
+def <=(a: int(64), b: int(64)): bool
+def <=(a: uint(32), b: uint(32)): bool
+def <=(a: uint(64), b: uint(64)): bool
+def <=(a: real(32), b: real(32)): bool
+def <=(a: real(64), b: real(64)): bool
+def <=(a: real(128), b: real(128)): bool
+def <=(a: imag(32), b: imag(32)): bool
+def <=(a: imag(64), b: imag(64)): bool
+def <=(a: imag(128), b: imag(128)): bool
+\end{chapel}
+The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
+to \chpl{b}; otherwise the result is false.
+
+The ``greater than or equal to'' comparison operators are predefined
+as follows:
+\begin{chapel}
+def >=(a: int(32), b: int(32)): bool
+def >=(a: int(64), b: int(64)): bool
+def >=(a: uint(32), b: uint(32)): bool
+def >=(a: uint(64), b: uint(64)): bool
+def >=(a: real(32), b: real(32)): bool
+def >=(a: real(64), b: real(64)): bool
+def >=(a: real(128), b: real(128)): bool
+def >=(a: imag(32), b: imag(32)): bool
+def >=(a: imag(64), b: imag(64)): bool
+def >=(a: imag(128), b: imag(128)): bool
+\end{chapel}
+The result of \chpl{a >= b} is true if \chpl{a} is greater than or
+equal to \chpl{b}; otherwise the result is false.
 
 \subsubsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
 
-This is a stub.  This portion of the document does not exist.
+The equality comparison operators are predefined over bool and the
+numeric types as follows:
+\begin{chapel}
+def ==(a: int(32), b: int(32)): bool
+def ==(a: int(64), b: int(64)): bool
+def ==(a: uint(32), b: uint(32)): bool
+def ==(a: uint(64), b: uint(64)): bool
+def ==(a: real(32), b: real(32)): bool
+def ==(a: real(64), b: real(64)): bool
+def ==(a: real(128), b: real(128)): bool
+def ==(a: imag(32), b: imag(32)): bool
+def ==(a: imag(64), b: imag(64)): bool
+def ==(a: imag(128), b: imag(128)): bool
+def ==(a: complex(64), b: complex(64)): bool
+def ==(a: complex(128), b: complex(128)): bool
+def ==(a: complex(256), b: complex(256)): bool
+\end{chapel}
+The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
+the same value; otherwise the result is false.  The result of \chpl{a
+!= b} is equivalent to \chpl{!(a == b)}.
+
+The equality comparison operators are predefined over classes as
+follows:
+\begin{chapel}
+def ==(a: object, b: object): bool
+def !=(a: object, b: object): bool
+\end{chapel}
+The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
+the same storage location; otherwise the result is false.  The result
+of \chpl{a != b} is equivalent to \chpl{!(a == b)}.
+
+Default equality comparison operators are generated for records if the
+user does not define them.  These operators are described
+in~\rsec{Record_Comparison_Operators}.
+
+The equality comparison operators are predefined over strings as
+follows:
+\begin{chapel}
+def ==(a: string, b: string): bool
+def !=(a: string, b: string): bool
+\end{chapel}
+The result of \chpl{a == b} is true if the sequence of characters
+in \chpl{a} matches exactly the sequence of characters in \chpl{b};
+otherwise the result is false.  The result of \chpl{a != b} is
+equivalent to \chpl{!(a == b)}.
 
 \subsection{Miscellaneous Operators}
 \label{Miscellaneous_Operators}
 
-This is a stub.  This portion of the document does not exist.
+This section describes several miscellaneous operators.  These
+operators can be redefined over different types using operator
+overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 
-This is a stub.  This portion of the document does not exist.
+The string concatenation operator is predefined as follows:
+\begin{chapel}
+def +(a: string, b: string): string
+\end{chapel}
+The result is the concatenation of \chpl{a} followed by \chpl{b}.
+\begin{example}
+Since integers can be implicitly converted to strings, an integer can
+be appended to a string using the string concatenation operator.  The
+code
+\begin{chapel}
+"result: "+i
+\end{chapel}
+where \chpl{i} is an integer appends the value of \chpl{i} to the
+string literal.  If \chpl{i} is \chpl{3}, then the resulting string
+would be \chpl{"result: 3"}.
+\end{example}
 
 \subsubsection{The Sequence Concatenation Operator}
 \label{The_Sequence_Concatenation_Operator}
 
-This is a stub.  This portion of the document does not exist.
+The operator \chpl{#} is predefined on sequences and their element
+types.  It is described in~\rsec{Sequence_Concatenation}.
 
 \subsubsection{The Arithmetic Domain By Operator}
 \label{The_Arithmetic_Domain_By_Operator}
 
-This is a stub.  This portion of the document does not exist.
+The operator \chpl{by} is predefined on arithmetic domains.  It is
+described in~\rsec{Strided_Arithmetic_Domains_and_Arrays}.
 
-\subsubsection{The Sequence By Operator}
+\subsubsection{The Arithmetic Sequence By Operator}
 \label{The_Sequence_By_Operator}
 
-This is a stub.  This portion of the document does not exist.
+The operator \chpl{by} is predefined on arithmetic sequences.  It is
+described in~\rsec{Strided_Arithmetic_Sequences}.
 
 \subsection{Let Expressions}
 \label{Let_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+A let expression allows variables to be declared at the expression
+level and used within that expression.  The syntax of a let expression
+is given by:
+\begin{syntax}
+let-expression:
+  `let' variable-declaration-list `in' expression
+\end{syntax}
+The scope of the variables is the let-expression.
+\begin{example}
+Let expressions are useful for defining variables in the context of
+expression.  In the code
+\begin{chapel}
+  let x: real = a*b, y = x*x in 1/y
+\end{chapel}
+the value determined by \chpl{a*b} is computed and converted to type
+real if it is not already a real.  The square of the real is then
+stored in \chpl{y} and the result of the expression is the reciprocal
+of that value.
+\end{example}
 
 \subsection{Conditional Expressions}
 \label{Conditional_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+A conditional expression is given by the following syntax:
+\begin{syntax}
+conditional-expression:
+  `if' expression `then' expression `else' expression
+  `if' expression `then' expression
+\end{syntax}
+The conditional expression is evaluated in two steps.  First, the
+expression following the \chpl{if} keyword is evaluated.  Then, if the
+expression evaluated to true, the expression following the \chpl{then}
+keyword is evaluated and taken to be the value of this expression.
+Otherwise, the expression following the \chpl{else} keyword is
+evaluated and taken to be the value of this expression.  In both
+cases, the unselected expression is not evaluated.
 
-\subsection{Forall Expressions}
-\label{Forall_Expressions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Constant Expressions}
-\label{Constant_Expressions}
-
-This is a stub.  This portion of the document does not exist.
+The `else' keyword can be omitted only when the conditional expression
+is immediately nested inside a forall expression.  Such an expression
+is used to filter predicates as described
+in~\rsec{Filtering_Predicates}.
