@@ -84907,3 +84907,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+11/08/06 13:25:56 -- deitz
+
+Log message:
+	Removed --scalar-promotion flag.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+
