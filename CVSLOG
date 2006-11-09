@@ -85082,3 +85082,13 @@ Log message:
 Modified files:
 	chapel/spec/: Expressions.tex Notation.tex 
 
+---------------------------------------------------------------------------
+
+11/09/06 15:53:29 -- deitz
+
+Log message:
+	Updated Notation section (meant to fix this before my last checkin).
+
+Modified files:
+	chapel/spec/: Notation.tex 
+
