@@ -85024,3 +85024,14 @@ Modified files:
 Added files:
 	./: CONTRIBUTORS 
 
+---------------------------------------------------------------------------
+
+11/08/06 18:01:49 -- bradc
+
+Log message:
+	Continued fiddling with READMEs.
+
+Modified files:
+	./: README 
+	chapel/doc/: README.building README.compiling 
+
