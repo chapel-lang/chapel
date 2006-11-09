@@ -1,69 +1,174 @@
 \sekshun{Tuples}
 \label{Tuples}
 
-This is a stub.  This portion of the document does not exist.
+A tuple is an ordered set of components that allows for the
+specification of a light-weight record with anonymous fields.
 
 \subsection{Tuple Expressions}
 \label{Tuple_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+A tuple expression is a comma-separated list of expressions that is
+enclosed in parentheses.  The number of expressions is the size of the
+tuple and the types of the expressions determine the component types
+of the tuple.
+
+The syntax of a tuple expression is given by:
+\begin{syntax}
+tuple-expression:
+  ( expression-list )
+
+expression-list:
+  expression
+  expression , expression-list
+\end{syntax}
+
+\begin{example}
+The statement
+\begin{chapel}
+var x = (1, 2);
+\end{chapel}
+defines a variable \chpl{x} that is a 2-tuple containing the values
+\chpl{1} and \chpl{2}.
+\end{example}
 
 \subsection{Tuple Type Definitions}
 \label{Tuple_Type_Definitions}
 
-This is a stub.  This portion of the document does not exist.
+A tuple type is a comma-separated list of types.  The number of types
+in the list defines the size of the tuple, which is part of the
+tuple's type.  The syntax of a tuple type is given by:
+\begin{syntax}
+tuple-type:
+  ( type-list )
+
+type-list:
+  type
+  type , type-list
+\end{syntax}
+
+\begin{example}
+Given a tuple expression \chpl{(1, 2)}, the type of the tuple value is
+\chpl{(int, int)}, referred to as a 2-tuple of integers.
+\end{example}
 
 \subsection{Tuple Assignment}
 \label{Tuple_Assignment}
 
-This is a stub.  This portion of the document does not exist.
+In tuple assignment, the compoonents of the tuple on the left-hand
+side of the assignment operator are each assigned the components of
+the tuple on the right-hand side of the assignment.  The assignments
+are simultaneous so that each component expression on the right-hand
+side is fully evaluated before being assigned to the left-hand side.
 
 \subsection{Tuple Destructuring}
 \label{Tuple_Destructuring}
 
-This is a stub.  This portion of the document does not exist.
+When a tuple expression appears on the left-hand side of an assignment
+statement, the expression on the right-hand side is said to be {\em
+destructured}.  The components of the tuple on the right-hand side are
+assigned to each of the component expressions on the left-hand side.
+This assignment is simultaneous in that the right-hand side is
+evaluated before the assignments are made.
+\begin{example}
+Given two variables of the same type, x and y, they can be swapped by
+the following single assignment statement:
+\begin{chapel}
+(x, y) = (y, x);
+\end{chapel}
+\end{example}
 
 \subsubsection{Variable Declarations in a Tuple}
 \label{Variable_Declarations_in_a_Tuple}
 
-This is a stub.  This portion of the document does not exist.
+Variables can be defined in a tuple to facilitate capturing the values
+from a function that returns a tuple.  The extension to the syntax of
+variable declarations is as follows:
+\begin{syntax}
+tuple-variable-declaration-statement:
+  `config'[OPT] variable-kind tuple-variable-declaration ;
+
+tuple-variable-declaration:
+  ( identifier-list ) type-part[OPT] initialization-part
+  ( identifier-list ) type-part
+\end{syntax}
+The identifiers defined within the \sntx{identifier-list} are declared
+to be new variables in the scope of the statement.  The
+\sntx{type-part} and/or \sntx{initialization-part} defines a tuple
+that is destructured when assigned to the new variables.
+
+\begin{implementation}
+Variable declarations are not supported with a tuple currently.
+\end{implementation}
 
 \subsubsection{Ignoring Values with Underscore}
 \label{Ignoring_Values_with_Underscore}
 
-This is a stub.  This portion of the document does not exist.
+If an underscore appears as a component in a tuple expression in a
+destructuring context, the expression on the right-hand side is
+ignored, though it is still evaluated.
 
-\subsubsection{Tuple Destructuring Expressions}
-\label{Tuple_Destructuring_Expressions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Tuple Indexing}
-\label{Tuple_Indexing}
-
-This is a stub.  This portion of the document does not exist.
+\begin{implementation}
+Underscores are currently not treated specially.  The only way to
+ignore values when destructuring a tuple is to put them into variables
+that are never read.
+\end{implementation}
 
 \subsection{Homogeneous Tuples}
 \label{Homogeneous_Tuples}
 
-This is a stub.  This portion of the document does not exist.
+A homogeneous tuple is a special-case of a general tuple where the
+types of the components are identical.  Homogeneous tuples have less
+restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
 
 \subsubsection{Declaring Homogeneous Tuples}
 \label{Declaring_Homogeneous_Tuples}
 
-This is a stub.  This portion of the document does not exist.
+A homogeneous tuple type may be specified with the following syntax if
+it appears as a top-level type in a variable declaration or type alias
+declaration:
+\begin{syntax}
+homogeneous-tuple-type:
+  integer-parameter-expression * type
 
-\subsubsection{Indexing of Homogeneous Tuples}
-\label{Indexing_of_Homogeneous_Tuples}
+integer-parameter-expression:
+  expression
+\end{syntax}
+The homogeneous tuple type specification is syntactic sugar for the
+type explicitly replicated a number of times equal to the
+\sntx{integer-parameter-expression}.
+\begin{example}
+The following types are equivalent:
+\begin{center}
+\chpl{3*int}     \chpl{(int, int, int)}
+\end{center}
+\end{example}
 
-This is a stub.  This portion of the document does not exist.
+\subsection{Tuple Indexing}
+\label{Tuple_Indexing}
+
+A tuple may be indexed into by an integer.  Indexing a tuple is given
+by the following syntax:
+\begin{syntax}
+tuple-indexing-expression:
+  expression ( integer-expression )
+\end{syntax}
+
+The result of indexing a tuple by integer $k$ is the value of the
+$k$th component.  If the tuple is not homogeneous, the tuple can only
+be indexed by an integer parameter.  This ensures that the type of the
+indexing expression can be known at compile-time.
 
 \subsection{Formal Arguments of Tuple Type}
 \label{Formal_Arguments_of_Tuple_Type}
 
-This is a stub.  This portion of the document does not exist.
+\begin{implementation}
+Formal arguments of tuple type are treated as if they were records.
+Conversions are not applied to the components.
+\end{implementation}
 
 \subsubsection{Formal Argument Declarations in a Tuple}
 \label{Formal_Argument_Declarations_in_a_Tuple}
 
-This is a stub.  This portion of the document does not exist.
+\begin{implementation}
+Formal arguments cannot be grouped together in a tuple.
+\end{implementation}
