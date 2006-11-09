@@ -1,3 +1,4 @@
+===================================
 Compiling Using the Chapel Compiler
 ===================================
 
@@ -12,7 +13,7 @@ in four columns: (1) the flag, (2) the type of argument it takes,
 (3) the current or default value of the flag, (4) a brief description
 of the flag.
 
-We call out some of the most useful flags here:
+We note some of the most useful flags here:
 
      -o <filename> : specify the filename of the generated executable,
                      otherwise ./a.out is used by default

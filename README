@@ -1,3 +1,4 @@
+=========================================
 Chapel Compiler Release: top-level README
 =========================================
 
@@ -7,6 +8,10 @@ See the LICENSE file for information about legal usage, and please
 also keep in mind any informal discussions you've had with the
 Chapel team about intended use of this release.
 
+
+---------------------------
+Setting up your environment
+---------------------------
 
 To get started, there are three environment settings that you should
 make in order to use this release effectively:
@@ -38,6 +43,10 @@ inclusion in a shell's resource file to set these values.  They
 require modification in order to specify the location of your
 installation.
 
+
+------------
+What's next?
+------------
 
 For the next steps on building and using the Chapel compiler, please
 refer to the following README files:

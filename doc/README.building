@@ -1,3 +1,4 @@
+==========================================================
 Building the Chapel Compiler and Runtime Support Libraries
 ==========================================================
 
@@ -42,9 +43,10 @@ file gives more information about Chapel's Makefiles for advanced
 users or developers of Chapel.
 
 
-
+----------------
 Makefile Targets
 ----------------
+
 The Chapel sources are structured so that "gmake" can be used in any
 source directory to build the sources contained in that directory as
 well as its children.  These Makefiles support the following targets:
@@ -60,8 +62,10 @@ well as its children.  These Makefiles support the following targets:
      clobber    : Remove everything created by the Makefiles
 
 
+--------------------------
 Platform-specific Settings
 --------------------------
+
 The architecture of Chapel's Makefiles is to store any
 architecture-specific settings in $CHPLHOME/Makefile.$CHPL_PLATFORM.
 We have been factoring architectural-specific assumptions out of the
