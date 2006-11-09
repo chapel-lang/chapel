@@ -85048,3 +85048,17 @@ Modified files:
 	chapel/spec/: Domains_and_Arrays.tex 
 	              Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+11/09/06 09:06:08 -- bradc
+
+Log message:
+	Next pass on cleaning up the compiler help message.
+
+Modified files:
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/help/: .cvsignore develhelp.txt 
+	                                   userhelp.txt 
+Removed files:
+	chapel/test/compflags/bradc/help/: develhelp.good userhelp.good 
+
