@@ -85035,3 +85035,16 @@ Modified files:
 	./: README 
 	chapel/doc/: README.building README.compiling 
 
+---------------------------------------------------------------------------
+
+11/08/06 18:29:59 -- waynew
+
+Log message:
+	Check point.  Some more edits on parallel section.
+	
+	Moved array assignment section to domain/array section.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex 
+	              Parallelism_and_Synchronization.tex 
+
