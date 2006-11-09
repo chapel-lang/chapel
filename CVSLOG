@@ -85002,3 +85002,13 @@ Log message:
 Modified files:
 	chapel/spec/: Tuples.tex Variables.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 17:07:41 -- deitz
+
+Log message:
+	Finished first pass write-up of Iterators section.
+
+Modified files:
+	chapel/spec/: Iterators.tex 
+
