@@ -46,7 +46,18 @@ This is a stub.  This portion of the document does not exist.
 \subsubsection{Array Assignment}
 \label{Array_Assignment}
 
-This is a stub.  This portion of the document does not exist.
+The semantics of array assignment is that each array element is
+assigned in parallel. If there are duplicate values in the sequence,
+then the order of the element-wise assignments is arbitrary.
+
+\begin{example}
+\begin{chapel}
+X(S) = y;
+\end{chapel}
+In this example \chpl{X} is an array and \chpl{S} a sequence of index
+values. The execution of all $X(S_i)=y$ may occur concurrently. 
+\end{example}
+
 
 \subsubsection{Formal Arguments of Array Type}
 \label{Formal_Arguments_of_Array_Type}
