@@ -84992,3 +84992,13 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 16:20:50 -- deitz
+
+Log message:
+	Finished first pass write-up of Tuples section.
+
+Modified files:
+	chapel/spec/: Tuples.tex Variables.tex 
+
