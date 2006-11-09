@@ -1,41 +1,40 @@
 Usage: chpl [flags|source files]
 
-Compilation Traces:
--------------------
-      --print-passes      set on   false     Print compiler passes
-      --print-commands    set on   false     Print system commands
+Compilation Traces:       default   type     description
+-------------------       --------  -------  --------------------------------
+      --print-passes      false     ->true   Print compiler passes
+      --print-commands    false     ->true   Print system commands
 
 Code Size Statistics:
 ---------------------
-      --print-code-size   set on   false     Print Tokens
-      --count-tokens      set on   false     Count tokens
+      --print-code-size   false     ->true   Print code size statistics
+      --count-tokens      false     ->true   Count tokens
 
 Optimization Control:
 ---------------------
-      --no-bounds-checks  set on   false     Disable bounds checking
-      --no-inline         set on   false     Do not inline functions
-      --unoptimized       set on   false     Generate naive code (many temps)
+      --no-bounds-checks  false     ->true   Disable bounds checking
+      --no-inline         false     ->true   Do not inline functions
+      --unoptimized       false     ->true   Generate naive code (many temps)
 
 Code Generation:
 ----------------
-      --cg-cpp-lines      set on   false     Generate #line annotations
-      --cg-chpl-lineno    set on   false     Generate line numbers for errors
-      --savec             path     (null)    Save generated C code
-  -p, --parallel          toggle   true      toggle threaded code generation
+      --cg-cpp-lines      false     ->true   Generate #line annotations
+      --cg-chpl-lineno    false     ->true   Generate line numbers for errors
+      --savec             (null)    path     Save generated C code
+  -p, --parallel          true      toggle   Toggle threaded code generation
 
 Linker Control:
 ---------------
-  -o, --output            path     a.out     Name output executable
-  -L, --lib-search-path   path     (null)    C library search path
-  -l, --lib-linkage       path     (null)    C library linkage
-      --ccflags           string   -g        Back-end C compiler flags
+  -o, --output            a.out     path     Name output executable
+  -L, --lib-search-path   (null)    path     C library search path
+  -l, --lib-linkage       (null)    path     C library linkage
+      --ccflags           -g        string   Back-end C compiler flags
 
 Miscellaneous Flags:
 --------------------
-      --gdb               set on   false     Run compiler in gdb
-      --instantiate-max   int      256       Limit number of instantiations
-      --chplhome          path     .         Chapel location
-      --devel             set on   true      Compile as developer
+      --instantiate-max   256       int      Limit number of instantiations
+      --chplhome          .         path     Over-ride $CHPLHOME
+      --devel             true      ->true   Compile as developer
 
 Compiler Information:
 ---------------------
@@ -50,21 +49,21 @@ Developer Flags
 
 Debug Output:
 -------------
-  -t, --html              toggle   false     Dump IR in HTML
-      --print-statistics  string   (null)    Print AST statistics
-  -D, --parser-debug      incr     0         Parser debug level
-      --report-inlining   set on   false     Print inlined functions
-  -d, --log               string   (null)    Debug logging flags
-      --log-dir           path     ./log     Log directory
+  -t, --html              false     toggle   Dump IR in HTML
+      --print-statistics  (null)    string   Print AST statistics
+  -D, --parser-debug      0         incr     Set parser debug level
+      --report-inlining   false     ->true   Print inlined functions
+  -d, --log               (null)    string   Specify debug logs
+      --log-dir           ./log     path     Specify log directory
 
-Optimization Control:
----------------------
-      --formal-temps      set on   false     Insert temps for formals
-      --no-scalar-replacement toggle   true      **INVERTED** Do not scalar replace marked records (e.g. tuples)
+Developer Workarounds:
+----------------------
+      --formal-temps      false     ->true   Insert temps for formals
+      --scalar-replace    true      toggle   Replace tuples with scalars
 
-Overriding defaults:
---------------------
-      --nostdincs         toggle   false     No standard modules
-      --no-codegen        set on   false     Suppress code generation
-      --ignore-errors     set on   false     Attempt to ignore errors
-      --scalar-promotion  toggle   true      Enable scalar promotion
+Misc. Developer Flags:
+----------------------
+      --gdb               false     ->true   Run compiler in gdb
+      --nostdincs         false     toggle   Don't use standard modules
+      --no-codegen        false     ->true   Suppress code generation
+      --ignore-errors     false     ->true   Attempt to ignore errors

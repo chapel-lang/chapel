@@ -12,8 +12,8 @@ static char *arg_types_desc[] = {
   (char *)"path    ",
   (char *)"string  ",
   (char *)"double  ",
-  (char *)"set off ",
-  (char *)"set on  ",
+  (char *)"->false ",
+  (char *)"->true  ",
   (char *)"incr    ",
   (char *)"toggle  ",
   (char *)"int64   ",
@@ -181,34 +181,41 @@ usage(ArgumentState *arg_state, char *arg_unused) {
       } else {
         int len = strlen(desc[i].description);
         int j;
-        fprintf(stderr, "\n%s:\n", desc[i].description);
+        static bool firstDesc = true;
+        fprintf(stderr, "\n%s:", desc[i].description);
+        if (firstDesc) {
+          fprintf(stderr, "       default   type     description");
+        }
+        fprintf(stderr, "\n");
         for (j=0; j<= len; j++) {
           fprintf(stderr, "-");
+        }
+        if (firstDesc) {
+          fprintf(stderr, "       --------  -------  --------------------------------");
+          firstDesc = false;
         }
         fprintf(stderr, "\n");
         //        fprintf(stderr, "-------------------------\n");
         continue;
       }
     }
-    fprintf(stderr,"  %c%c%c %s%s%s%s", 
+    fprintf(stderr,"  %c%c%c %s%s%s  ", 
             desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
             (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
             (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
             desc[i].name,
-            (strlen(desc[i].name) + 61 < 79) ?
-             &SPACES[strlen(desc[i].name)+61] : " ",
-            arg_types_desc[desc[i].type?strchr(arg_types_keys,desc[i].type[0])-
-                arg_types_keys : strlen(arg_types_keys)]);
+            (strlen(desc[i].name) + 63 < 79) ?
+            &SPACES[strlen(desc[i].name)+63] : "");
     switch(desc[i].type?desc[i].type[0]:0) {
-      case 0: fprintf(stderr, "          "); break;
+      case 0: fprintf(stderr, "         "); break;
       case 'L':
         fprintf(stderr,
 #ifdef __alpha
-                " %-9ld",
+                "%-9ld",
 #elifdef FreeBSD
-                " %-9qd",
+                "%-9qd",
 #else
-                " %-9lld",
+                "%-9lld",
 #endif
                 *(int64*)desc[i].location);
         break;
@@ -216,25 +223,29 @@ usage(ArgumentState *arg_state, char *arg_unused) {
       case 'S':
         if (*(char*)desc[i].location) {
           if (strlen((char*)desc[i].location) < 10)
-            fprintf(stderr, " %-9s", (char*)desc[i].location);
+            fprintf(stderr, "%-9s", (char*)desc[i].location);
           else {
             ((char*)desc[i].location)[7] = 0;
-            fprintf(stderr, " %-7s..", (char*)desc[i].location);
+            fprintf(stderr, "%-7s..", (char*)desc[i].location);
           }
         } else
-          fprintf(stderr, " (null)   ");
+          fprintf(stderr, "(null)   ");
         break;
       case 'D':
-        fprintf(stderr, " %-9.3e", *(double*)desc[i].location);
+        fprintf(stderr, "%-9.3e", *(double*)desc[i].location);
         break;
       case '+': 
       case 'I':
-        fprintf(stderr, " %-9d", *(int *)desc[i].location);
+        fprintf(stderr, "%-9d", *(int *)desc[i].location);
         break;
       case 'T': case 'f': case 'F':
-        fprintf(stderr, " %-9s", *(bool *)desc[i].location?"true ":"false");
+        fprintf(stderr, "%-9s", *(bool *)desc[i].location?"true ":"false");
         break;
     }
+    fprintf(stderr, " %s", 
+            arg_types_desc[desc[i].type?strchr(arg_types_keys,desc[i].type[0])-
+                           arg_types_keys : strlen(arg_types_keys)]);
+
     fprintf(stderr," %s\n",desc[i].description);
   }
   exit(1);

@@ -52,7 +52,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-commands", ' ', "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
 
  {"", ' ', "Code Size Statistics", NULL, NULL, NULL, NULL},
- {"print-code-size", ' ', "Print Tokens", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
+ {"print-code-size", ' ', "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"count-tokens", ' ', "Count tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
 
  {"", ' ', "Optimization Control", NULL, NULL, NULL, NULL},
@@ -64,7 +64,7 @@ static ArgumentDescription arg_desc[] = {
  {"cg-cpp-lines", ' ', "Generate #line annotations", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"cg-chpl-lineno", ' ', "Generate line numbers for errors", "F", &printChplLineno, "CHPL_CG_CHPL_LINENO", NULL},
  {"savec", ' ', "Save generated C code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
- {"parallel", 'p', "toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
+ {"parallel", 'p', "Toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
 
  {"", ' ', "Linker Control", NULL, NULL, NULL, NULL},
  {"output", 'o', "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
@@ -73,9 +73,8 @@ static ArgumentDescription arg_desc[] = {
  {"ccflags", ' ', "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
 
  {"", ' ', "Miscellaneous Flags", NULL, NULL, NULL, NULL},
- {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
- {"chplhome", ' ', "Chapel location", "P", chplhome, "CHPLHOME", NULL},
+ {"chplhome", ' ', "Over-ride $CHPLHOME", "P", chplhome, "CHPLHOME", NULL},
  {"devel", ' ', "Compile as developer", "F", &developer, "CHPL_DEVELOPER", NULL},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},
@@ -88,17 +87,18 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', "Debug Output", NULL, NULL, NULL, NULL},
  {"html", 't', "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"print-statistics", ' ', "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
- {"parser-debug", 'D', "Parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
+ {"parser-debug", 'D', "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
- {"log", 'd', "Debug logging flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
- {"log-dir", ' ', "Log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log", 'd', "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"log-dir", ' ', "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
 
- {"", ' ', "Optimization Control", NULL, NULL, NULL, NULL},
+ {"", ' ', "Developer Workarounds", NULL, NULL, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
- {"", ' ', "Overriding defaults", NULL, NULL, NULL, NULL},
- {"nostdincs", ' ', "No standard modules", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
+ {"", ' ', "Misc. Developer Flags", NULL, NULL, NULL, NULL},
+ {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
+ {"nostdincs", ' ', "Don't use standard modules", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
 
