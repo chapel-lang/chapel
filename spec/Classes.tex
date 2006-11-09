@@ -1,7 +1,11 @@
 \sekshun{Classes}
 \label{Classes}
 
-This is a stub.  This portion of the document does not exist.
+Classes are an abstraction of a data structures.where the storage
+location is allocated independent of the scope of the variable of
+class type.  Each call to the constructor creates a new data object
+and returns a reference to the object.  Storage is reclaimed
+automatically as described in~\rsec{Automatic_Memory_Management}.
 
 \subsection{Class Declarations}
 \label{Class_Declarations}
@@ -9,38 +13,79 @@ This is a stub.  This portion of the document does not exist.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `class' identifier inherit-expression[OPT] {
-    class-statements }
+  `class' identifier inherit-type-list[OPT] {
+    class-statement-list }
 
-class-statements:
+inherit-expression-list:
+  class-type
+  class-type , inherit-expression-list
+
+class-statement-list:
   class-statement
-  class-statement class-statements
+  class-statement class-statement-list
 
 class-statement:
   type-declaration-statement
   function-declaration-statement
   variable-declaration-statement
 \end{syntax}
+A \sntx{class-declaration-statement} defines a new type symbol
+specified by the identifier.  Classes inherit data and functionality
+from other classes if the \sntx{inherit-type-list} is specified.
+Inheritance is described in~\rsec{Inheritance}.
+
+The body of a class declaration consists of a sequence of statements
+where each of the statements either defines a variable, called a
+field, a function, called a method, or a type.
+
+If a class contains a type alias or a parameter, the class is generic.
+Generic classes are described in~\rsec{Generics}.
 
 \subsubsection{Class Fields}
 \label{Class_Fields}
 
-This is a stub.  This portion of the document does not exist.
+Variables and constants declared within class declarations define
+fields within that class.  (Parameters make a class generic.)  Fields
+define the storage associated with a class.
+
+\begin{example}
+The code
+\begin{chapel}
+class Actor {
+  var name: string;
+  var age: uint;
+}
+\end{chapel}
+defines a new class type called \chpl{Actor} that has two fields: the
+string field \chpl{name} and the unsigned integer field \chpl{age}.
+\end{example}
 
 \subsubsection{Class Field Accesses}
 \label{Class_Field_Accesses}
 
-This is a stub.  This portion of the document does not exist.
+The field in a class is accessed via a member access expression as
+described in~\rsec{Member_Access_Expressions}.  Fields in a class can
+be modified via an assignment statement where the left-hand side of
+the assignment is a member access.
+\begin{example}
+Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
+the code
+\begin{chapel}
+var s: string = anActor.name;
+anActor.age = 27;
+\end{chapel}
+reads the field \chpl{name} and assigns the value to the variable
+\chpl{s}, and assigns the storage location in the object
+\chpl{anActor} associated with the field \chpl{age} the value
+\chpl{27}.
+\end{example}
 
-\subsection{Class Instances}
-\label{Class_Instances}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Class Assignment}
+\subsection{Class Assignment}
 \label{Class_Assignment}
 
-This is a stub.  This portion of the document does not exist.
+Classes are assigned by reference.  After an assignment from one
+variable of class type to another, the variables reference the same
+storage location.
 
 \subsection{Class Constructors}
 \label{Class_Constructors}
