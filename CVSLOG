@@ -85012,3 +85012,15 @@ Log message:
 Modified files:
 	chapel/spec/: Iterators.tex 
 
+---------------------------------------------------------------------------
+
+11/08/06 17:21:05 -- bradc
+
+Log message:
+	Added a CONTRIBUTORS file for the release.
+
+Modified files:
+	chapel/util/: gen_release 
+Added files:
+	./: CONTRIBUTORS 
+
