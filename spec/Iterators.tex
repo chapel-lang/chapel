@@ -1,19 +1,28 @@
 \sekshun{Iterators}
 \label{Iterators}
 
-This is a stub.  This portion of the document does not exist.
+An iterator is a function that conceptually returns a sequence of
+values rather than simply a single value.  Classes can be viewed as
+iterators if they implement a structural iterator interface.
 
 \subsection{Iterator Functions}
 \label{Iterator_Functions}
 
-This is a stub.  This portion of the document does not exist.
+The syntax of a function declaration is identical to that of a
+function declaration except that the keyword \chpl{def} is replaced
+with the keyword \chpl{iterator}.  The body of the iterator may
+include yield statements alongside return statements.  When a yield is
+encountered, the value is returned, but the iterator is not finished
+evaluating.  It will continue from the point after the yield and can
+yield or return more values.  When a return is encountered, the value
+is returned and the iterator finishes.  An iterator also completes
+after the last statement in the iterator function is executed.
 
 \subsection{The Yield Statement}
 \label{The_Yield_Statement}
 
-The yield statement must appear in a function.  A function that
-contains a yield statement is called an iterator.  The syntax of the
-yield statement is given by
+Yield statement can only appear in iterators.  The syntax of the yield
+statement is given by
 \begin{syntax}
 yield-statement:
   `yield' expression ;
@@ -22,44 +31,74 @@ yield-statement:
 \subsection{Iterator Calls}
 \label{Iterator_Calls}
 
-This is a stub.  This portion of the document does not exist.
+Iterator functions can be called within for or forall loops, in which
+case they are executed in an interleaved manner with the body of the
+loop, or can be called in any expression context, in which case they
+evaluate to a sequence of values.
 
 \subsubsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
 
-This is a stub.  This portion of the document does not exist.
+When an iterator is accessed via a for or forall loop, the iterator is
+evaluated alongside the loop body in an interleaved manner.  For each
+iteration, the iterator yields a value and the body is executed.
 
 \subsubsection{Iterators as Sequences}
 \label{Iterators_as_Sequences}
 
-This is a stub.  This portion of the document does not exist.
+If an iterator function is accessed outside of the context of a for or
+forall loop iterator expression, then the iterator is iterated over in
+total and the expression evaluates to a sequence that contains the
+values returned by the iterator on each iteration.
+\begin{example}
+Given an iterator
+\begin{chapel}
+iterator squares(n: int): int {
+  for i in 1..n do
+    yield i * i;
+}
+\end{chapel}
+the expression \chpl{squares(5)} evaluates to the sequence \chpl{(/1, 4, 9, 16, 25/)}.
+\end{example}
 
-\subsection{Making a Class an Iterator}
-\label{Making_a_Class_an_Iterator}
+\subsection{The Structural Iterator Interface}
+\label{Iterator_Interface}
 
-This is a stub.  This portion of the document does not exist.
+There is a structural interface that allows a class or record to be
+treated as if it were an iterator.  The iterator interface is
+important for user-defined distributions.
 
-\subsubsection{The {\em rank} Parameter}
-\label{The_em_rank_Parameter}
+\begin{implementation}
+This section describes the current structural iterator interface.
+This does not yet support optimized iteration for rank greater than
+one.  As such, this iterator interface is incomplete.
+\end{implementation}
 
-This is a stub.  This portion of the document does not exist.
+The iterator interface defines iteration over a class or record by a
+cursor of some type, called the cursor type.  The values returned by
+the iterator are of a possibly different type, called the value type.
+A class or record \chpl{classType} supports the iterator interface if
+it defines the following functions for cursor type \chpl{cursorType}
+and value type \chpl{valueType}:
+\begin{chapel}
+def classType.getHeadCursor(): cursorType
+def classType.getNextCursor(cursor: cursorType): cursorType
+def classType.getValue(cursor: cursorType): valueType;
+def classType.isValidCursor?(cursor: cursorType): bool
+\end{chapel}
 
-\subsubsection{The {\em getHeadCursor} Method}
-\label{The_em_getHeadCursor_Method}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{The {\em getNextCursor} Method}
-\label{The_em_getNextCursor_Method}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{The {\em getValue} Method}
-\label{The_em_getValue_Method}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{The {\em isValidCursor?} Method}
-\label{The_em_isValidCursorQ_Method}
-
-This is a stub.  This portion of the document does not exist.
+Iteration over a class or record \chpl{C} of type \chpl{classType}
+defined by
+\begin{chapel}
+for i in C do
+  ; // body of loop
+\end{chapel}
+is equivalent to the following loop:
+\begin{chapel}
+var cursor = C.getHeadCursor();
+if C.isValidCursor?(cursor) then do {
+  var i = C.getValue(cursor);
+  ; // body of loop
+  cursor = C.getNextCursor(cursor);
+} while C.isValidCursor?(cursor);
+\end{chapel}
