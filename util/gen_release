@@ -29,6 +29,7 @@ $cvsignores = "CVS|RCS";
 # explicit files to include
 @files = (
        "BUILD_VERSION",
+       "CONTRIBUTORS",
        "COPYRIGHT", 
        "DIRS",
        "LICENSE",
