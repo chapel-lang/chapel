@@ -85072,3 +85072,13 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex 
 
+---------------------------------------------------------------------------
+
+11/09/06 15:31:43 -- deitz
+
+Log message:
+	Finished first pass of Notation section.
+
+Modified files:
+	chapel/spec/: Expressions.tex Notation.tex 
+
