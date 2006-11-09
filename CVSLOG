@@ -85062,3 +85062,13 @@ Modified files:
 Removed files:
 	chapel/test/compflags/bradc/help/: develhelp.good userhelp.good 
 
+---------------------------------------------------------------------------
+
+11/09/06 13:52:39 -- deitz
+
+Log message:
+	Started first pass over Classes section.
+
+Modified files:
+	chapel/spec/: Classes.tex 
+
