@@ -85119,3 +85119,18 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/10/06 14:56:13 -- bradc
+
+Log message:
+	Pulled some extraneous curly braces out of FFT to
+	make it more consistent with the style of the other
+	benchmarks.
+
+Modified files:
+	papers/hpcc06/: TODO fft-cat.tex fft-code.tex 
+	                fft-walkthrough.tex overview.tex results.tex 
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
+
