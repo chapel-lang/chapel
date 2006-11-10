@@ -85108,3 +85108,14 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: fft.chpl 
 	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
 
+---------------------------------------------------------------------------
+
+11/09/06 17:06:56 -- marybeth
+
+Log message:
+	Started a table in the Statements section.  Checking it in for early
+	comments.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
