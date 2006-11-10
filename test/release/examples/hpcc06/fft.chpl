@@ -113,34 +113,30 @@ def dfft(A: [?ADom], W) {
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
 
-      forall j in [k..k+span) {
+      forall j in [k..k+span) do
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
-      }
 
       wk1 = W(2*k1+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
       wk2 = wk2 * 1.0i;
 
-      forall j in [k+m..k+m+span) {
+      forall j in [k+m..k+m+span) do
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
-      }
     }
     span *= radix;
   }
 
-  if ((span << 2) == numElements) {
-    forall j in [0..span) {
+  if ((span << 2) == numElements) then
+    forall j in [0..span) do
       butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
-    }
-  } else {
+  else
     forall j in [0..span) {
       const a = A(j),
             b = A(j+span);
       A(j)      = a + b;
       A(j+span) = a - b;
     }
-  }
 }
 
 
