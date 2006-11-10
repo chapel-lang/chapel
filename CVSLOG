@@ -85092,3 +85092,19 @@ Log message:
 Modified files:
 	chapel/spec/: Notation.tex 
 
+---------------------------------------------------------------------------
+
+11/09/06 16:36:16 -- bradc
+
+Log message:
+	Took pass through overview and updated FFT codes
+	to use the distributed domain describing the
+	problem size rather than anonymous domains that
+	might have resulted on execution on a single
+	locale by default.
+
+Modified files:
+	papers/hpcc06/: fft-code.tex fft-walkthrough.tex overview.tex 
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
+
