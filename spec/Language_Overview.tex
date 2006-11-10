@@ -323,6 +323,51 @@ definition or anywhere else that a type is allowed.
 \subsubsection{Statements and Expressions}
 \label{Statements_and_Expressions}
 
+\begin{tabular}{|l|p{2in}|l|}
+\hline
+{\bf Statement} & {\bf Description} & {\bf Example} \\
+\hline
+Statement Block & A statement or list of statements that form their own scope &
+\begin{chapel}
+var tau, s, c: real;
+const a = 2.0;
+const b = 5.5;
+
+// Block statement 
+{
+tau = -a/b;
+s = 1/sqrt(1 + tau*tau);
+c = s*tau;
+}
+\end{chapel} \\
+\hline
+Expression Statement & Evaluates expression for side effects &
+\begin{chapel}
+def testForZero(x: real) {
+  if (x == 0.0) then halt();
+}
+
+var denom = 1.0;
+
+// Expression statement: 
+testForZero(denom);
+
+\end{chapel} \\
+\hline
+Assignment Statement & Assigns the value of an expression to another
+expression &
+\begin{chapel}
+var i: int;
+
+// Assignment statements
+i = 0;
+i = i + 1;
+
+// Assignment operator
+i += 1;
+\end{chapel} \\
+\hline
+\end{tabular}
 \subsubsection{Structured Data Types}
 \label{Structured_Data_Types}
 
