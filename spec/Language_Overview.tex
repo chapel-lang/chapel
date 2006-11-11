@@ -191,6 +191,7 @@ module's public global symbols.  In the following example, the
 standard Chapel module \chpl{Types} is used.  This module contains
 the \chpl{numBits} function that returns the size of a Chapel numeric
 type in bits. 
+%% test:  modulesexample.chpl
 \begin{chapel}
 use Types;
 
@@ -331,7 +332,7 @@ Examples of Chapel statements are given in the following table.
 {\bf Statement} & {\bf Example} \\
 \hline
 Block Statement &
-\begin{chapel}
+\begin{chapel} % test:  block.chpl
 var tau, s, c: real;
 const a = 2.0;
 const b = 5.5;
@@ -345,7 +346,7 @@ writeln("Givens rotation = ", s, " ", c);
 \end{chapel} \\
 \hline
 Expression Statement & 
-\begin{chapel}
+\begin{chapel} % test:  expstmt.chpl
 var denom = 1.0;
 var x: real;
 
@@ -360,7 +361,7 @@ def testForZero(x: real) {
 \end{chapel} \\
 \hline
 Assignment Statement & 
-\begin{chapel}
+\begin{chapel} % test: assign.chpl
 var i: int;
 
 i = 0;
@@ -370,7 +371,7 @@ writeln(i);
 \end{chapel} \\
 \hline
 Conditional Statement &
-\begin{chapel}
+\begin{chapel} % test:  cond.chpl
 const D = [1..5];
 var x, y: [D] real;
 var alpha = 2.0;
@@ -395,7 +396,7 @@ def scale(x, y, alpha: real) {
 \end{chapel} \\
 \hline
 Select Statement &
-\begin{chapel}
+\begin{chapel} % test:  select.chpl
 const D = [1..5];
 var A: [D] real;
 
@@ -424,7 +425,7 @@ def getvalue(pos:string,y) {
 {\bf Statement} & {\bf Example} \\
 \hline
 While and Do While Loops &
-\begin{chapel}
+\begin{chapel} % test: while.chpl
 var t = 11;
 
 writeln("Scope of do while loop:");
@@ -442,7 +443,7 @@ while (t <= 10) {
 \end{chapel} \\
 \hline
 For Loop &
-\begin{chapel}
+\begin{chapel} % test: for.chpl
 const D = [1..5];
 var A: [D] real;
 
@@ -459,7 +460,7 @@ def norm1(x) {
 \end{chapel} \\
 \hline
 Use Statement &
-\begin{chapel}
+\begin{chapel} % test:  use.chpl
 use Time;
 var programTimer:Timer;
 
@@ -470,7 +471,7 @@ writeln(programTimer.accumulated);
 \end{chapel} \\
 \hline
 Type Select Statement &
-\begin{chapel}
+\begin{chapel} % test:  typeselect.chpl
 var x = 32, y = 15.5;
 var z: int(8);
 var coord = (0.0,0.0);
