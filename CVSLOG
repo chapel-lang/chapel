@@ -85192,3 +85192,13 @@ Log message:
 Modified files:
 	chapel/spec/: chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/11/06 13:07:25 -- marybeth
+
+Log message:
+	Deleted unnecessary casts.
+
+Modified files:
+	chapel/test/spec/marybeth/: for.chpl select.chpl 
+
