@@ -323,51 +323,187 @@ definition or anywhere else that a type is allowed.
 \subsubsection{Statements and Expressions}
 \label{Statements_and_Expressions}
 
-\begin{tabular}{|l|p{2in}|l|}
+Examples of Chapel statements are given in the following table.
+
+\begin{center}
+\begin{tabular}{|l|l|}
 \hline
-{\bf Statement} & {\bf Description} & {\bf Example} \\
+{\bf Statement} & {\bf Example} \\
 \hline
-Statement Block & A statement or list of statements that form their own scope &
+Block Statement &
 \begin{chapel}
 var tau, s, c: real;
 const a = 2.0;
 const b = 5.5;
 
-// Block statement 
 {
 tau = -a/b;
 s = 1/sqrt(1 + tau*tau);
 c = s*tau;
 }
+writeln("Givens rotation = ", s, " ", c);
 \end{chapel} \\
 \hline
-Expression Statement & Evaluates expression for side effects &
+Expression Statement & 
 \begin{chapel}
-def testForZero(x: real) {
-  if (x == 0.0) then halt();
-}
-
 var denom = 1.0;
+var x: real;
 
-// Expression statement: 
 testForZero(denom);
+testForZero(x);
+testForZero(0.0);
 
+def testForZero(x: real) {
+  if (x == 0.0) then halt("Value is zero.");
+  else writeln("Non-zero value.  Continuing.");   
+}
 \end{chapel} \\
 \hline
-Assignment Statement & Assigns the value of an expression to another
-expression &
+Assignment Statement & 
 \begin{chapel}
 var i: int;
 
-// Assignment statements
 i = 0;
 i = i + 1;
-
-// Assignment operator
 i += 1;
+writeln(i);
+\end{chapel} \\
+\hline
+Conditional Statement &
+\begin{chapel}
+const D = [1..5];
+var x, y: [D] real;
+var alpha = 2.0;
+
+[i in D] y(i) = 3.0*i;
+scale(x, y, alpha);
+writeln(x);
+
+def scale(x, y, alpha: real) {
+  if (x.numElements != y.numElements) {
+    writeln("Error:  Input vectors are not the same length.");
+    return;
+  }
+  if (alpha == 0.0) {
+    x = 0.0;
+  } else if (alpha == 1.0) {
+    x = y;
+  } else {
+    x = alpha*y;
+  }
+}
+\end{chapel} \\
+\hline
+Select Statement &
+\begin{chapel}
+const D = [1..5];
+var A: [D] real;
+
+[i in D] A(i) = i:real;
+
+writeln(getvalue("first",A));
+writeln(getvalue("last",A));
+writeln(getvalue("middle",A));
+
+def getvalue(pos:string,y) {
+  var x = 0.0;
+  select pos {
+    when "first" do x = y(1);
+    when "last" do x = y(y.numElements);
+    when "middle" do x = y((y.numElements/2):int + y.numElements%2);
+    otherwise writeln("Unrecognized element position");
+  }
+  return x;
+}
 \end{chapel} \\
 \hline
 \end{tabular}
+
+\begin{tabular}{|l|l|}
+\hline
+{\bf Statement} & {\bf Example} \\
+\hline
+While and Do While Loops &
+\begin{chapel}
+var t = 11;
+
+writeln("Scope of do while loop:");
+do {
+  t += 1;
+  writeln(t);
+} while (t <= 10);
+
+t = 11;
+writeln("Scope of while loop:");
+while (t <= 10) {
+  t += 1;
+  writeln(t);
+}
+\end{chapel} \\
+\hline
+For Loop &
+\begin{chapel}
+const D = [1..5];
+var A: [D] real;
+
+[i in D] A(i) = -i*i:real;
+writeln(norm1(A));
+
+def norm1(x) {
+  var norm = 0.0;
+  for i in x.domain {
+    norm += abs(x(i));
+  }
+  return norm;
+}
+\end{chapel} \\
+\hline
+Use Statement &
+\begin{chapel}
+use Time;
+var programTimer:Timer;
+
+programTimer.start();
+writeln("Write one line.");
+programTimer.stop();
+writeln(programTimer.accumulated);
+\end{chapel} \\
+\hline
+Type Select Statement &
+\begin{chapel}
+var x = 32, y = 15.5;
+var z: int(8);
+var coord = (0.0,0.0);
+var yes: bool;
+
+writetype(x);
+writetype(y);
+writetype(z);
+writetype(coord);
+writetype(yes);
+writetype("no");
+
+def writetype(x) {
+  type select x {
+    when int do writeln("Integer type");
+    when uint do writeln("Unsigned integer type");
+    when real do writeln("Real type");
+    when complex do writeln("Complex type");
+    when string do writeln("String type");
+    when bool do writeln("Boolean type");
+    otherwise writeln("Non-primitive type");
+  }
+}
+\end{chapel} \\
+\hline
+Empty Statement &
+\begin{chapel}
+;
+\end{chapel} \\
+\hline
+\end{tabular}
+\end{center}
+
 \subsubsection{Structured Data Types}
 \label{Structured_Data_Types}
 
