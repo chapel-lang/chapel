@@ -85168,3 +85168,14 @@ Added files:
 	                            modulesexample.good select.good 
 	                            typeselect.good use.good while.good 
 
+---------------------------------------------------------------------------
+
+11/10/06 18:33:19 -- marybeth
+
+Log message:
+	Added comments to each example code, indicating the name of the test
+	file.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
