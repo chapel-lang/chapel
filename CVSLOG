@@ -85134,3 +85134,16 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: fft.chpl 
 	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
 
+---------------------------------------------------------------------------
+
+11/10/06 17:31:56 -- bradc
+
+Log message:
+	Another small cleanup to FFT -- using *= rather than
+	x = x * ...
+
+Modified files:
+	papers/hpcc06/: fft-cat.tex fft-code.tex overview.tex 
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
+
