@@ -85179,3 +85179,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/10/06 22:34:37 -- marybeth
+
+Log message:
+	Added string to list of keywords in chapel_listing.tex.
+	
+	If there is a reason that string should not be a keyword,
+	you can change it back.
+
+Modified files:
+	chapel/spec/: chapel_listing.tex 
+
