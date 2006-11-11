@@ -85147,3 +85147,24 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: fft.chpl 
 	chapel/test/studies/hpcc/FFT/: fft-hpcc06.chpl 
 
+---------------------------------------------------------------------------
+
+11/10/06 18:23:02 -- marybeth
+
+Log message:
+	Added table of statement examples.  Each example is a Chapel code that
+	can be compiled and run.  I made tests of each example and put them
+	in test/spec/marybeth.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+Added files:
+	chapel/test/spec/marybeth/: assign.chpl block.chpl cond.chpl 
+	                            expstmt.chpl for.chpl 
+	                            modulesexample.chpl select.chpl 
+	                            typeselect.chpl use.chpl while.chpl 
+	                            assign.good block.good cond.good 
+	                            expstmt.good for.good 
+	                            modulesexample.good select.good 
+	                            typeselect.good use.good while.good 
+
