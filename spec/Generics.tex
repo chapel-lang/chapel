@@ -165,30 +165,177 @@ the function is instantiated for each particular instantiation.
 \subsection{Generic Types}
 \label{Generic_Types}
 
-This is a stub.  This portion of the document does not exist.
+A class or record is generic if any of the following conditions hold:
+\begin{itemize}
+\item
+The class contains a specified or unspecified type alias.
+\item
+The class contains a field that is a parameter.
+\item
+The class contains a field that has no type and no initialization
+expression.
+\item
+The class contains a field where the type of the field is generic.
+\end{itemize}
 
 \subsubsection{Type Aliases in Generic Types}
 \label{Type_Aliases_in_Generic_Types}
 
+Type aliases defined in a class or a record can be unspecified type
+aliases; type aliases that are not bound to a type.  If a class or
+record contains an unspecified type alias, the aliased type must be
+specified whenever the type is used.
+
+A type alias defined in a class or record is accessed as if it were a
+field.  Moreover, it becomes an argument with intent \chpl{type} to
+the default constructor for that class or record.  This makes the
+default constructor generic.  When the default constructor is
+instantiated, the type is instantiated where the type bound to the
+type alias is set to be the type passed to the default constructor.
+
+\begin{example}
+The following code defines a class called \chpl{Node} that implements
+a linked list data structure.  It is generic over the type of the
+element contained in the linked list.
+\begin{chapel}
+class Node {
+  type elt_type;
+  var data: elt_type;
+  var next: Node(elt_type);
+}
+\end{chapel}
+The call \chpl{Node(real, 3.14)} creates a node in the linked list
+that contains the value \chpl{3.14}.  The \chpl{next} field is set to
+nil.  The type specifier \chpl{Node} is a generic type and cannot be
+used to deefine a variable.  The type specifier \chpl{Node(real)}
+denotes the type of the \chpl{Node} class instantiated over
+\chpl{real}.  Note that the type of the \chpl{next} field is specified
+as \chpl{Node(elt_type)}; the type of \chpl{next} is the same type as
+the type of the object that it is a field of.
+\end{example}
+
 \subsubsection{Parameters in Generic Types}
 \label{Parameters_in_Generic_Types}
 
-\subsubsection{Generic Default Constructors}
-\label{Generic_Default_Constructors}
+Parameters defined in a class or record do not require an
+initialization expression.  If they do not have an initialization
+expression, the parameter must be specified whenever the type is used.
 
-This is a stub.  This portion of the document does not exist.
+A parameter defined in a class or record is accessed as if it were a
+field.  This access returns a parameter.  Parameters defined in
+classes or records become arguments with intent \chpl{param} to the
+default constructor for that class or record.  This makes the default
+constructor generic.  When the default constructor is instantiated,
+the type is instantiated where the parameter is bound to the parameter
+passed to the default constructor.
+
+\begin{example}
+The following code defines a class called \chpl{IntegerTuple} that is
+generic over an integer parameter which defines the number of
+components in the class.
+\begin{chapel}
+class IntegerTuple {
+  param size: int;
+  var data: size*int;
+}
+\end{chapel}
+The call \chpl{IntegerTuple(3)} creates an instance of the
+\chpl{IntegerTuple} class that is instantiated over parameter
+\chpl{3}.  The field \chpl{data} becomes a 3-tuple of integers.  The
+type of this class instance is \chpl{IntegerTuple(3)}.  The type
+specified by \chpl{IntegerTuple} is a generic type.
+\end{example}
+
+\subsubsection{Fields without Types}
+\label{Fields_without_Types}
+
+If a field in a class or record has no specified type or
+initialization expression, the class or record is generic over the
+type of that field.  The field must be specified when the class or
+record is constructed or specified.  The field becomes an argument to
+the default constructor that has no specified type and no default
+value.  This makes the default constructor generic.  When the default
+constructor is instantiated, the type is instantiated where the type
+of the field becomes the type of the actual argument passed to the
+default constructor.
+
+\begin{example}
+The following code defines another class called \chpl{Node} that
+implements a linked list data structure.  It is generic over the type
+of the element contained in the linked list.  This code does not
+specify the element type directly in the class as a type alias but
+rather leaves omits the type from the \chpl{data} field.
+\begin{chapel}
+class Node {
+  var data;
+  var next: Node(data) = nil;
+}
+\end{chapel}
+A node with integer element type can be defined in the call to the
+constructor.  The call \chpl{Node(1)} defines a node with the value
+\chpl{1}.  The code
+\begin{chapel}
+var list = Node(1);
+list.next = Node(2);
+\end{chapel}
+defines a two-element list with nodes containing the values \chpl{1}
+and \chpl{2}.
+\end{example}
+
+\subsubsection{Fields of Generic Types}
+\label{Fields_of_Generic_Types}
+
+If a field in a class or record is specified to have a generic type,
+then the class or record is generic over the type of this field and
+the type of the field is constrained to be an instantiation of the
+field's specified generic type.
 
 \subsubsection{Generic Methods}
 \label{Generic_Methods}
 
-This is a stub.  This portion of the document does not exist.
+All methods bound to generic classes or records are generic over the
+implicit \chpl{this} argument and any other argument that is generic.
 
 \subsubsection{The {\em elt\_type} Type}
 \label{The_em_elt_type_Type}
 
-This is a stub.  This portion of the document does not exist.
+The common idiom of parameterizing a collection-oriented data type by
+a single element type has special syntactic support given by
+\begin{syntax}
+of-type:
+  type `of' type
+\end{syntax}
+This syntax is a short-hand for passing the second type by name
+\chpl{elt_type} as the only argument to the first type.  Given the
+definition of \chpl{Node} in the example
+in~\rsec{Type_Aliases_in_Generic_Types}, one can specify the type
+\chpl{Node(real)} or \chpl{Node(elt_type=real)} by writing \chpl{Node
+of real}.
 
 \subsection{Where Expressions}
 \label{Where_Expressions}
 
-This is a stub.  This portion of the document does not exist.
+The instantiation of a generic function can be constrained by {\em
+where clauses}.  A where clause is specified in the definition of a
+function~(\rsec{Function_Definitions}).  When a function is
+instantiated, the expression in the where clause must be a parameter
+expression and must evaluate to either \chpl{true} or \chpl{false}.
+If it evaluates to \chpl{false}, the instantiation is rejected and the
+function is not a possible candidate for function resolution.
+Otherwise, the function is instantiated.
+\begin{example}
+Given two overloaded function definitions
+\begin{chapel}
+def foo(x) where x.type == int { $\ldots$ }
+def foo(x) where x.type == real { $\ldots$ }
+\end{chapel}
+the call foo(3) resolves to the first definition because when the
+second function is instantiated the where clause evaluates to false.
+\end{example}
+
+\subsection{Example: A Generic Stack}
+\label{Example_Generic_Stack}
+
+\begin{chapel}
+\include(../test/release/examples/genericStack.chpl)
+\end{chapel}

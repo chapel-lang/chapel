@@ -327,6 +327,7 @@ A type alias is a symbol that aliases any type as specified in the
 \sntx{type-part}.  A use of a type alias has the same meaning as using
 the type specified by \sntx{type-part} directly.
 
-The \sntx{type-part} is optional in the definition of a class, record,
-or union.  Its absence makes the class, record, or union
-generic~(\rsec{Generics}).
+The \sntx{type-part} is optional in the definition of a class or
+record.  Such a type alias is called an unspecified type
+alias. Classes and records that contain type aliases, specified or
+unspecified, are generic~(\rsec{Type_Aliases_in_Generic_Types}).
