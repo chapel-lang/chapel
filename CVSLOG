@@ -85202,3 +85202,13 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: for.chpl select.chpl 
 
+---------------------------------------------------------------------------
+
+11/13/06 11:14:41 -- deitz
+
+Log message:
+	Finished first pass over Generic Functions.
+
+Modified files:
+	chapel/spec/: Generics.tex 
+
