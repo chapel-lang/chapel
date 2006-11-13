@@ -1,57 +1,177 @@
 \sekshun{Generics}
 \label{Generics}
 
-This is a stub.  This portion of the document does not exist.
+Chapel supports generic functions and types that are parameterizable
+over both types and parameters.  The generic functions and types look
+similar to non-generic functions and types already discussed.
 
 \subsection{Generic Functions}
 \label{Generic_Functions}
 
-This is a stub.  This portion of the document does not exist.
+A function is generic if any of the following conditions hold:
+\begin{itemize}
+\item
+Some formal argument is specified with an intent of \chpl{type} or
+\chpl{param}.
+\item
+Some formal argument has no specified type and no default value.
+\item
+Some formal argument is specified with a queried type.
+\item
+The type of some formal argument is a generic type, e.g., \chpl{seq}.
+\item
+The type of some formal argument is an array type where either the
+element type is queried or omitted or the domain is queried or
+omitted.
+\end{itemize}
+These conditions are discussed in the next sections.
 
-\subsubsection{Formal Arguments of Generic Type}
-\label{Formal_Arguments_of_Generic_Type}
+\subsubsection{Formal Type Arguments}
+\label{Formal_Type_Arguments}
 
-This is a stub.  This portion of the document does not exist.
+If a formal argument is specified with intent \chpl{type}, then a type
+must be passed to the function at the call site.  A copy of the
+function is instantiated for each unique type that is passed to this
+function at a call site.  The formal argument has the semantics of a
+type alias.
+\begin{example}
+The following code defines a function that takes two types at the call
+site and returns a 2-tuple of sequences where the element types of the
+two sequences are defined by the two type arguments:
+\begin{chapel}
+def buildTupleOfSeqs(type t, type tt)
+  return (seq(t), seq(tt));
+\end{chapel}
+This function is instantiated with ``normal'' function call syntax
+where the arguments are types:
+\begin{chapel}
+var tupleOfSeqs = buildTupleOfSeqs(int, string);
+tupleOfSeqs(1) #= 1;
+tupleOfSeqs(2) #= "hello";
+\end{chapel}
+\end{example}
+
+\subsubsection{Formal Parameter Arguments}
+\label{Formal_Parameter_Arguments}
+
+If a formal argument is specified with intent \chpl{param}, then a
+parameter must be passed to the function at the call site.  A copy of
+the function is instantiated for each unique parameter that is passed
+to this function at a call site.  The formal argument is a parameter.
+\begin{example}
+The following code defines a function that takes an integer parameter
+\chpl{p} at the call site as well as a regular actual argument of
+integer type \chpl{x}.  The function returns a homogeneous tuple of
+size \chpl{p} where each component in the tuple has the value of
+\chpl{x}.
+\begin{chapel}
+def fillTuple(param p: int, x: int) {
+  var result: p*int;
+  for param i in 1..p do
+    result(i) = x;
+  return result;
+}
+\end{chapel}
+The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
+component contains the value \chpl{3}.
+\end{example}
 
 \subsubsection{Formal Arguments without Types}
 \label{Formal_Arguments_without_Types}
 
-This is a stub.  This portion of the document does not exist.
+If the type of a formal argument is omitted, the type of the formal
+argument is taken to be the type of the actual argument passed to the
+function at the call site.  A copy of the function is instantiated for
+each unique actual type.
+\begin{example}
+The example from the previous section can be extended to be generic on
+a parameter as well as the actual argument that is passed to it by
+omitting the type of the formal argument \chpl{x}.  The following code
+defines a function that returns a homogeneous tuple of size \chpl{p}
+where each component in the tuple is initialized to \chpl{x}:
+\begin{chapel}
+def fillTuple(param p: int, x) {
+  var result: p*x.type;
+  for param i in 1..p do
+    result(i) = x;
+  return result;
+}
+\end{chapel}
+In this function, the type of the tuple is taken to be the type of the
+actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
+of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
+\chpl{(real, real, real)}.
+\end{example}
 
 \subsubsection{Formal Arguments with Queried Types}
 \label{Formal_Arguments_with_Queried_Types}
 
-This is a stub.  This portion of the document does not exist.
+If the type of a formal argument is specified as a queried type, the
+type of the formal argument is taken to be the type of the actual
+argument passed to the function at the call site.  A copy of the
+function is instantiated for each unique actual type.  The queried
+type has the semantics of a type alias.
+\begin{example}
+The example from the previous section can be rewritten to use a
+queried type for clarity:
+\begin{chapel}
+def fillTuple(param p: int, x: ?t) {
+  var result: p*t;
+  for param i in 1..p do
+    result(i) = x;
+  return result;
+}
+\end{chapel}
+\end{example}
 
-\subsubsection{Generic Array Argument Types}
-\label{Generic_Array_Argument_Types}
+\subsubsection{Formal Arguments of Generic Type}
+\label{Formal_Arguments_of_Generic_Type}
 
-This is a stub.  This portion of the document does not exist.
+If the type of a formal argument is a generic type, the type of the
+formal argument is taken to be the type of the actual argument passed
+to the function at the call site with the constraint that the type of
+the actual argument is an instantiation of the generic type.  A copy
+of the function is instantiated for each unique actual type.
+\begin{example}
+The following code defines a function that takes an actual argument
+that is a sequence and outputs the elements in a sequence without any
+space between the elements.  The function is generic on the element
+type of the sequence.
+\begin{chapel}
+def output(s: seq) {
+  for e in s do
+    write(e);
+}
+\end{chapel}
+\end{example}
 
-\subsubsection{Generic Domain and Sequence Types}
-\label{Generic_Domain_and_Sequence_Types}
+\subsubsection{Formal Arguments of Generic Array Types}
+\label{Formal_Arguments_of_Generic_Array_Types}
 
-This is a stub.  This portion of the document does not exist.
+If the type of a formal argument is an array where either the domain
+or the element type is queried or omitted, the type of the formal
+argument is taken to be the type of the actual argument passed to the
+function at the call site.  If the domain is omitted, the domain of
+the formal argument is taken to be the domain of the actual argument.
 
-\subsection{Instantiating Generic Functions}
-\label{Instantiating_Generic_Functions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Function Resolution and Generic Functions}
-\label{Function_Resolution_and_Generic_Functions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Function Visibility in Generic Functions}
+\subsection{Function Visibility in Generic Functions}
 \label{Function_Visibility_in_Generic_Functions}
 
-This is a stub.  This portion of the document does not exist.
+Function visibility in generic functions is altered depending on the
+instantiation.  When resolving function calls made within visible
+functions, the visible functions are taken from any call site at which
+the function is instantiated for each particular instantiation.
 
 \subsection{Generic Types}
 \label{Generic_Types}
 
 This is a stub.  This portion of the document does not exist.
+
+\subsubsection{Type Aliases in Generic Types}
+\label{Type_Aliases_in_Generic_Types}
+
+\subsubsection{Parameters in Generic Types}
+\label{Parameters_in_Generic_Types}
 
 \subsubsection{Generic Default Constructors}
 \label{Generic_Default_Constructors}
@@ -63,37 +183,12 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Type Aliases and Generic Types}
-\label{Type_Aliases_and_Generic_Types}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsubsection{The {\em elt\_type} Type}
 \label{The_em_elt_type_Type}
 
 This is a stub.  This portion of the document does not exist.
 
-\subsection{Parameters and Generics}
-\label{Parameters_and_Generics}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Instantiating Parameterized Generics}
-\label{Instantiating_Parameterized_Generics}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsection{Where Expressions}
 \label{Where_Expressions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Parameter Expressions}
-\label{Parameter_Expressions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Type Expressions}
-\label{Type_Expressions}
 
 This is a stub.  This portion of the document does not exist.
