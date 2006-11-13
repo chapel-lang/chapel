@@ -85212,3 +85212,13 @@ Log message:
 Modified files:
 	chapel/spec/: Generics.tex 
 
+---------------------------------------------------------------------------
+
+11/13/06 14:09:18 -- deitz
+
+Log message:
+	Finished first pass of Generics section.
+
+Modified files:
+	chapel/spec/: Generics.tex Types.tex 
+
