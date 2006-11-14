@@ -85245,3 +85245,15 @@ Added files:
 	                            query.good condexp.chpl condexp.good 
 	                            casts.chpl casts.good 
 
+---------------------------------------------------------------------------
+
+11/14/06 07:29:22 -- marybeth
+
+Log message:
+	Creating two futures - one with the select statement and one with casts.
+
+Added files:
+	chapel/test/trivial/marybeth/: casts1.chpl casts1.future 
+	                               casts1.good select1.chpl 
+	                               select1.future select1.good 
+
