@@ -85222,3 +85222,14 @@ Log message:
 Modified files:
 	chapel/spec/: Generics.tex Types.tex 
 
+---------------------------------------------------------------------------
+
+11/13/06 17:53:10 -- marybeth
+
+Log message:
+	Update to Language_Overview section.  I added more examples, changed
+	the type table and added more text.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
