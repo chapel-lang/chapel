@@ -1,5 +1,0 @@
-deitz
-
-Dynamic dispatch test with a complex argument type. The trick here is to
-resolve the formal arguments before doing a final signature match.
- 
