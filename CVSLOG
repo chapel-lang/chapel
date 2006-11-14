@@ -85338,3 +85338,19 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: use.chpl use.good let.good 
 
+---------------------------------------------------------------------------
+
+11/14/06 14:33:02 -- waynew
+
+Log message:
+	Test for dynamic dispatch brought up by the indefinite domain implementation.
+	This checks that we can handle complex formal argument types with our
+	signature check for dynamic dispatch. We need to resolve formals before
+	the final signature check for dynamic dispatch addition.
+	
+	A fix is about to be checked in by Steve.  Temporary .future here.
+
+Added files:
+	chapel/test/classes/waynew/: dyndis2.chpl dyndis2.good 
+	                             dyndis2.future 
+
