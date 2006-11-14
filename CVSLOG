@@ -85325,3 +85325,16 @@ Modified files:
 Removed files:
 	chapel/test/trivial/marybeth/: casts1.future 
 
+---------------------------------------------------------------------------
+
+11/14/06 14:28:46 -- marybeth
+
+Log message:
+	Correcting two test failures.  I updated let.good to match the current
+	version of let.chpl.  I changed the output of use.chpl so that it's not a
+	varying value.  I also changed use.chpl to call elapsed() instead of
+	referencing accumulated directly.
+
+Modified files:
+	chapel/test/spec/marybeth/: use.chpl use.good let.good 
+
