@@ -85279,3 +85279,14 @@ Log message:
 Modified files:
 	chapel/compiler/include/: alist.h stmt.h 
 
+---------------------------------------------------------------------------
+
+11/14/06 11:11:23 -- deitz
+
+Log message:
+	Added index terms for Generics and Iterators.  Fixed generic stack
+	example in spec (included directly).
+
+Modified files:
+	chapel/spec/: Functions.tex Generics.tex Iterators.tex 
+
