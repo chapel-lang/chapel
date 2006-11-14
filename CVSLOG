@@ -85233,3 +85233,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/13/06 17:55:49 -- marybeth
+
+Log message:
+	Added test examples for Expressions.
+
+Added files:
+	chapel/test/spec/marybeth/: let.chpl let.good query.chpl 
+	                            query.good condexp.chpl condexp.good 
+	                            casts.chpl casts.good 
+
