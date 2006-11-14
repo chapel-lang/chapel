@@ -85382,3 +85382,13 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/spec/: Locality_and_Distribution.tex 
 
+---------------------------------------------------------------------------
+
+11/14/06 15:37:13 -- deitz
+
+Log message:
+	Finished first pass over Locality and Distribution section.
+
+Modified files:
+	chapel/spec/: Locality_and_Distribution.tex 
+
