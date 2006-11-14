@@ -1,32 +1,81 @@
 \sekshun{Locality and Distribution}
 \label{Locality_and_Distribution}
 
-This is a stub.  This portion of the document does not exist.
+\begin{implementation}
+Programs can currently only run on a single locale.  The abstractions
+described here are not yet implemented.
+\end{implementation}
+
+Chapel provides high-level abstractions that allow programmers to
+exploit locality by defining the affinity of data and computation.
+This is accomplished by associating both data objects and computations
+with abstract {\em locales}. To provide a higher-level mechanism,
+Chapel allows a mapping from domains to locales to be specified. This
+mapping is called a {\em distribution} and it guides that placement of
+variables associated with arrays and the placement of subcomputations
+defined over the domain.
+
+\index{local}
+\index{remote}
+Throughout this section, the term {\em local} refers to data that is
+associated with the locale that a computation is running on and {\em
+remote} refers to data that is not. We assume that there is some
+overhead associated with accessing data that may be remote compared to
+data known to be local.
 
 \subsection{Locales}
 \label{Locales}
+\index{locales}
 
-This is a stub.  This portion of the document does not exist.
+A locale abstracts a processor or node in a parallel computer system,
+or the basic component in the computer system where local memory can
+be accessed uniformly.
 
 \subsubsection{The Locale Type}
 \label{The_Locale_Type}
+\index{locale@\chpl{locale}}
 
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Parallel Execution Model}
-\label{Parallel_Execution_Model}
-
-This is a stub.  This portion of the document does not exist.
+The identifier \chpl{locale} is a primitive type that abstracts a
+locale as described above.  Both data and computations can be
+associated with a value of locale type. The only operators defined
+over locales are the equality and inequality comparison operators.
 
 \subsubsection{Predefined Locales Array}
 \label{Predefined_Locales_Array}
+\index{Global@\chpl{Global}}
+\index{Locales@\chpl{Locales}}
+\index{numLocales@\chpl{numLocales}}
+\index{execution environment}
 
-This is a stub.  This portion of the document does not exist.
+A predefined configuration variable defines the {\em execution
+environment} for a program.  This environment is defined by the
+following definitions:
+\begin{chapel}
+config const numLocales: int;
+const Locales: [1..numLocales] locale;
+const Global: locale;
+\end{chapel}
+The environment consists of constants which are fixed when the program
+begins execution.  The variable \chpl{Global} holds a special value
+of \chpl{locale} type that can be distinct from the values stored
+in \chpl{Locales}. This value is used to denote an object or
+computation that has no defined affinity.
+
+When a program starts, a single thread is executing.  It is running on
+the locale given by \chpl{Locales(1)}.
 
 \subsubsection{Querying the Locale of a Variable}
 \label{Querying_the_Locale_of_a_Variable}
 
-This is a stub.  This portion of the document does not exist.
+Every variable \chpl{v} is associated with some locale which can be
+queried using the following syntax:
+\begin{syntax}
+locale-access:
+  expression . `locale'
+\end{syntax}
+When the \sntx{expression} is a class type, the locale is where the
+object is located rather than where the \sntx{expression} may be
+located.
 
 \subsection{Specifying Locales for Computation}
 \label{Specifying_Locales_for_Computation}

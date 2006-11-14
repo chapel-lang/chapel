@@ -1359,6 +1359,22 @@ resolveFns(FnSymbol* fn) {
 
 
 static bool
+possible_signature_match(FnSymbol* fn, FnSymbol* gn) {
+  if (fn->name != gn->name)
+    return false;
+  if (fn->formals->length() != gn->formals->length())
+    return false;
+  for (int i = 3; i <= fn->formals->length(); i++) {
+    ArgSymbol* fa = fn->getFormal(i);
+    ArgSymbol* ga = gn->getFormal(i);
+    if (strcmp(fa->name, ga->name))
+      return false;
+  }
+  return true;
+}
+
+
+static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name)
     return false;
@@ -1379,7 +1395,7 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 static void
 add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
-    if (signature_match(pfn, cfn)) {
+    if (possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
         ASTMap subs;
         forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {
@@ -1389,15 +1405,19 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
             } else if (arg->type->isGeneric) {
+              if (!pfn->getFormal(i))
               subs.put(arg, pfn->getFormal(i)->type);
             }
           }
           FnSymbol* icfn = cfn->instantiate_generic(&subs);
-          resolveFns(icfn);
-          Vec<FnSymbol*>* fns = ddf.get(pfn);
-          if (!fns) fns = new Vec<FnSymbol*>();
-          fns->add(icfn);
-          ddf.put(pfn, fns);
+          resolveFormals(icfn);
+          if (signature_match(pfn, icfn)) {
+            resolveFns(icfn);
+            Vec<FnSymbol*>* fns = ddf.get(pfn);
+            if (!fns) fns = new Vec<FnSymbol*>();
+            fns->add(icfn);
+            ddf.put(pfn, fns);
+          }
         }
       } else {
         ASTMap subs;
@@ -1411,11 +1431,14 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
         }
         if (subs.n)
           cfn = cfn->instantiate_generic(&subs);
-        resolveFns(cfn);
-        Vec<FnSymbol*>* fns = ddf.get(pfn);
-        if (!fns) fns = new Vec<FnSymbol*>();
-        fns->add(cfn);
-        ddf.put(pfn, fns);
+        resolveFormals(cfn);
+        if (signature_match(pfn, cfn)) {
+          resolveFns(cfn);
+          Vec<FnSymbol*>* fns = ddf.get(pfn);
+          if (!fns) fns = new Vec<FnSymbol*>();
+          fns->add(cfn);
+          ddf.put(pfn, fns);
+        }
       }
     }
   }
