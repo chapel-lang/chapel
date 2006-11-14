@@ -85303,3 +85303,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/marybeth/: select1.future 
 
+---------------------------------------------------------------------------
+
+11/14/06 12:32:51 -- marybeth
+
+Log message:
+	Checking in more text to the Domains and Arrays section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
