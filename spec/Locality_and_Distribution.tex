@@ -66,6 +66,7 @@ the locale given by \chpl{Locales(1)}.
 
 \subsubsection{Querying the Locale of a Variable}
 \label{Querying_the_Locale_of_a_Variable}
+\index{locale@\chpl{locale}}
 
 Every variable \chpl{v} is associated with some locale which can be
 queried using the following syntax:
@@ -80,10 +81,14 @@ located.
 \subsection{Specifying Locales for Computation}
 \label{Specifying_Locales_for_Computation}
 
-This is a stub.  This portion of the document does not exist.
+When execution is proceeding on some locale, a computation can be
+associated with a different locale in two ways: via distributions as
+discussed in~\rsec{Distributions} or with an \sntx{on-statement} as
+discussed below.
 
 \subsubsection{On}
 \label{On}
+\index{on@\chpl{on}}
 
 The on statement controls on which locale a computation or data should
 be placed.  The syntax of the on statement is given by
@@ -92,63 +97,147 @@ on-statement:
   `on' expression `do' statement
   `on' expression block-level-statement
 \end{syntax}
+If the \sntx{expression} is a value of \chpl{locale} type,
+the \sntx{statement} or \sntx{block-level-statement} is executed on
+the locale specified directly by the expression.  Otherwise, the
+expression must be a variable and the locale is taken to be the locale
+where the variable is located.  Execution continues after
+the \chpl{on-statement} after execution of the \sntx{statement}
+or \sntx{block-level-statement} completes.
 
-\subsubsection{On and Forall Loops}
-\label{On_and_Forall_Loops}
+\index{Global@\chpl{Global}}
+If the locale that the \sntx{expression} refers to is equal
+to \chpl{Global}, then the locale is unspecified and is determined by
+the runtime and/or compiler.
 
-This is a stub.  This portion of the document does not exist.
+\begin{example}
+A common idiom is to use \chpl{on} in conjunction with \chpl{forall}
+to access an array decomposed over multiple locales.  The code
+\begin{chapel}
+forall i in D do on A(i) {
+  // some computation
+}
+\end{chapel}
+executes each iteration of the forall loop on the locale where the
+element of \chpl{A(i)} is located.
+\end{example}
+
+By default, when new variables and data objects are created, they are
+created in the locale where the computation is running.  This locale
+can be changed by using the \chpl{on} keyword.  Variables can be
+defined within an \sntx{on-statement} to define them on a particular
+locale.
 
 \subsubsection{On and Iterators}
 \label{On_and_Iterators}
+\index{iterators!on@\chpl{on}}
 
-This is a stub.  This portion of the document does not exist.
+When a loop iterates over a sequence specified by an iterator,
+on-statements inside the iterator control where the corresponding loop
+body is executed.
+
+\begin{example}
+An iterator over a distributed tree might include an iterator over the
+nodes as defined in the following code:
+\begin{chapel}
+class Tree {
+  var left, right: Tree;
+  iterator nodes {
+    on this yield this;
+    if left then
+      forall t in left.nodes do
+        yield t;
+    if right then
+      forall t in right.nodes do
+        yield t;
+  }
+}
+\end{chapel}
+Given this code and a binary tree of type \chpl{Tree} stored in
+variable \chpl{tree}, then we can use the nodes iterator to iterate
+over the tree with the following code:
+\begin{chapel}
+forall t in tree.nodes {
+  // body executed on t as specified in nodes
+}
+\end{chapel}
+Here, each instance of the body of the \chpl{forall} loop is executed
+on the locale where the corresponding object \chpl{t} is located.
+This is specified in the \chpl{nodes} iterator where the \chpl{on}
+keyword is used.  In the case of zipper or tensor product iteration,
+the location of execution is taken from the first iterator.  This can
+be overridden by explictly using \chpl{on} in the body of the loop or
+by reordering the product of iteration.
+\end{example}
 
 \subsection{Distributions}
 \label{Distributions}
+\index{distributions}
 
-This is a stub.  This portion of the document does not exist.
+A mapping from domain index values to locales is called a {\em
+distribution}.
 
 \subsubsection{Distributed Domains}
 \label{Distributed_Domains}
 
-This is a stub.  This portion of the document does not exist.
+\index{domains!distributed}
+A domain for which a distribution is specified is referred to as a
+{\em distributed domain}.  A domain supports a method, \chpl{locale},
+that maps index values in the domain to locales that correspond to the
+domain's distribution.
+
+Iteration over a distributed domain implicitly executes the control
+computation in the domain of the associated locale.  Similarly, when
+iterating over the elements of an array defined over a distributed
+domain, the controlled computations are determined by the distribution
+of the domain.  If there are conflicting distributions in product
+iterations, the locale of the computation is taken to be the first
+component in the product.
+
+\begin{example}
+If \chpl{D} is a distributed domain, then in the code
+\begin{chapel}
+forall d in D {
+  // body
+}
+\end{chapel}
+the body of the loop is executed in the locale where the
+index \chpl{d} maps to by the distribution of \chpl{D}.
+\end{example}
 
 \subsubsection{Distributed Arrays}
 \label{Distributed_Arrays}
+\index{arrays!distributed}
 
-This is a stub.  This portion of the document does not exist.
+Arrays defined over a distributed domain will have the element
+variables stored on the locale determined by the distribution.  Thus,
+if \chpl{d} is an index of distributed domain \chpl{D} and \chpl{A} is
+an array defined over that domain, then \chpl{A(d).locale} is the
+locale to which \chpl{d} maps to according to \chpl{D}.
 
 \subsubsection{Undistributed Domains and Arrays}
 \label{Undistributed_Domains_and_Arrays}
 
-This is a stub.  This portion of the document does not exist.
+If a domain or an array does not have a distributed part, the domain
+or array is not distributed and exists only on the locale on which it
+is defined.
 
 \subsection{Standard Distributions}
 \label{Standard_Distributions}
 
-This is a stub.  This portion of the document does not exist.
+Standard distributions include the following:
+\begin{itemize}
+\item The block distribution \chpl{Block}
+\item The cyclic distribution \chpl{Cyclic}
+\item The block-cyclic distribution \chpl{BlockCyclic}
+\item The cut distribution \chpl{Cut}
+\end{itemize}
 
-\subsubsection{Block Distribution}
-\label{Block_Distribution}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Cyclic Distribution}
-\label{Cyclic_Distribution}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{BlockCyclic Distribution}
-\label{BlockCyclic_Distribution}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Cut Distribution}
-\label{Cut_Distribution}
-
-This is a stub.  This portion of the document does not exist.
+A design goal is that all standard distributions are defined with the
+same mechanisms that user-defined
+distributions~(\rsec{User_Defined_Distributions}) are defined with.
 
 \subsection{User-Defined Distributions}
-\label{User-Defined_Distributions}
+\label{User_Defined_Distributions}
 
-This is a stub.  This portion of the document does not exist.
+This section is forthcoming.
