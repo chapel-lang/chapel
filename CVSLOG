@@ -85269,3 +85269,13 @@ Modified files:
 	              Lexical_Structure.tex Modules.tex Sequences.tex 
 	              Statements.tex Tuples.tex Types.tex Variables.tex 
 
+---------------------------------------------------------------------------
+
+11/14/06 10:20:40 -- deitz
+
+Log message:
+	Removed a few warnings encountered with the new g++ compiler.
+
+Modified files:
+	chapel/compiler/include/: alist.h stmt.h 
+
