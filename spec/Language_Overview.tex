@@ -276,19 +276,77 @@ lists the set of primitive types.  For each type, the default size and
 all possible sizes are given.
 
 \begin{center}
-\begin{tabular}{|l|l|llll|}
+\begin{tabular}{|l|l|l|}
 \hline
-{\bf Type} & {\bf Default Size} & {\bf Supported Sizes} & & & \\
+{\bf Type} & {\bf Default Size} & {\bf Supported Sizes}  \\
 \hline
-{\tt int} & 32 bits & {\tt int(8)} & {\tt int(16)} & {\tt int(32)} & {\tt int(64)} \\
-{\tt uint} & 32 bits & {\tt uint(8)} & {\tt uint(16)} & {\tt uint(32)} & {\tt uint(64)} \\
+\begin{chapel}
+int
+\end{chapel}
+& 32 bits & 
+\begin{chapel}
+int(8)
+int(16) 
+int(32) 
+int(64) 
+\end{chapel} \\
 \hline
-{\tt real} & 64 bits & {\tt real(32)} & {\tt real(64)} & {\tt real(128)}  & \\
-{\tt imag} & 64 bits & {\tt imag(32)} & {\tt imag(64)} & {\tt imag(128)} & \\
-{\tt complex} & 128 bits & {\tt complex(64)} &  {\tt complex(128)} & {\tt complex(256)} & \\
+\begin{chapel}
+uint
+\end{chapel}
+& 32 bits & 
+\begin{chapel}
+uint(8)
+uint(16) 
+uint(32) 
+uint(64) 
+\end{chapel} \\
 \hline
-{\tt bool} & 1 bit & {\tt bool} & & &  \\
-{\tt string} & unbounded & {\tt string} & & &\\
+\begin{chapel}
+real
+\end{chapel}
+& 64 bits & 
+\begin{chapel}
+real(32)
+real(64)
+real(128)
+\end{chapel} \\
+\hline
+\begin{chapel}
+imag
+\end{chapel} 
+& 64 bits & 
+\begin{chapel}
+imag(32) 
+imag(64)
+imag(128)
+\end{chapel} \\
+\hline
+\begin{chapel}
+complex
+\end{chapel}
+& 128 bits & 
+\begin{chapel}
+complex(64)
+complex(128)
+complex(256)
+\end{chapel} \\
+\hline
+\begin{chapel}
+bool
+\end{chapel} 
+& 1 bit & 
+\begin{chapel}
+bool
+\end{chapel}  \\
+\hline
+\begin{chapel}
+string
+\end{chapel}
+& unbounded & 
+\begin{chapel}
+string 
+\end{chapel} \\
 \hline
 \end{tabular}
 \end{center}
@@ -400,7 +458,7 @@ Select Statement &
 const D = [1..5];
 var A: [D] real;
 
-[i in D] A(i) = i:real;
+[i in D] A(i) = i;
 
 writeln(getvalue("first",A));
 writeln(getvalue("last",A));
@@ -447,7 +505,7 @@ For Loop &
 const D = [1..5];
 var A: [D] real;
 
-[i in D] A(i) = -i*i:real;
+[i in D] A(i) = -i*i;
 writeln(norm1(A));
 
 def norm1(x) {
@@ -505,6 +563,93 @@ Empty Statement &
 \end{tabular}
 \end{center}
 
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf Expression} & {\bf Example} \\
+\hline
+Query Expression &
+\begin{chapel} % query.chpl
+writeln(sumOfThree(1,2,3));
+writeln(sumOfThree(4.0,5.0,3.0));
+
+def sumOfThree(x: ?t, y:t, z:t):t {
+   var sum: t;
+
+   sum = x + y + z;
+   return sum;
+}
+\end{chapel} \\
+\hline
+Casts &
+\begin{chapel} % casts.chpl
+var x, y: complex;
+x = 2.56 + 9.0i;
+y = (3.12, 8.7): complex;
+var z = (4.2, 6.1);
+
+writeln(x);
+writeln(y);
+writeln(z);
+
+var m = 2: int(64);
+var n = 2;
+var i = 1;
+var j = 1;
+
+while (n > 0) do {
+  n *= 2;
+  i += 1;
+}
+while (m > 0) do {
+  m *= 2;
+  j += 1;
+}
+
+writeln("For 32-bit integers, 2 ** (",i,") overflows.");
+writeln("For 64-bit integers, 2 ** (",j,") overflows.");
+\end{chapel} \\
+\hline
+Let Expression &
+\begin{chapel} % let.chpl
+quadsol(3.0,8.0,5.0);
+quadsol(3.0,4.0,5.0);
+
+def quadsol(a:real, b:real, c:real) {
+  writeln("The solution of ",a,"x^2 + ",b,"x + ",c," = 0 is:");
+  if (b*b > 4.0*a*c) {
+    var x:  (real, real);
+
+    x = let temp1 = sqrt(b*b - 4.0*a*c), temp2 = 2.0*a in
+        ((-b + temp1)/temp2, (-b - temp1)/temp2);
+
+    writeln(x);
+  } else {
+    var x: (complex, complex);
+
+    x = let temp1 = sqrt(4.0*a*c - b*b)/(2.0*a), temp2 = -b/(2.0*a) in
+        ((temp2,temp1):complex,(temp2,-temp1):complex);
+
+    writeln(x);
+  }
+}
+\end{chapel} \\
+\hline
+Conditional Expression &
+\begin{chapel} % condexp.chpl
+writehalf(8);
+writehalf(21);
+writehalf(1000);
+
+def writehalf(i: int) {
+  var half = if (i % 2) then i/2 +1 else i/2;
+  writeln("Half of ",i," is ",half);
+}
+\end{chapel} \\
+\hline
+\end{tabular}
+\end{center}
+
 \subsubsection{Structured Data Types}
 \label{Structured_Data_Types}
 
@@ -518,6 +663,34 @@ Empty Statement &
 \subsubsection{Arrays and Domains}
 \label{Arrays_and_Domains}
 
+In Chapel, arrays are reference types that are declared using domains.
+\begin{chapel}
+const VectorD: domain(1) = [1..m];
+var A, B, C: [VectorD] real;
+
+A = B + alpha * C;
+\end{chapel}
+
+The first line declares a constant named \chpl{VectorD} that
+is defined to be a \chpl{domain}---a first-class representation of an
+index space, potentially distributed across the memories of multiple
+locales.  In this instance, the index space is declared to be
+1-dimensional, describing indices $\{ 1, 2, \ldots, m \}$.
+The next line uses the \chpl{VectorD} domain to declare three
+arrays \chpl{A}, \chpl{B}, and \chpl{C} of type \chpl{real}.  The
+domain's index set defines the size and shape of these arrays. 
+The final line uses whole-array syntax to specify the elementwise 
+multiplications, additions, and assignments.  
+
+Whole-array operations like this one are implicitly parallel, if the \chpl{VectorD}
+domain were distributed across a set of processors.  For example, 
+a block distribution of \chpl{VectorD} would be specified as follows.    
+\begin{chapel}
+const VectorD: domain(1) distributed(Block) = [1..m];
+\end{chapel}
+Each processor would perform the operations for the array elements that it owns, 
+as defined by \chpl{VectorD}'s distribution since that was the domain
+used to define all three arrays.
 
 \subsection{Parallel Features}
 \label{Parallel_Features}
