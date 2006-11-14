@@ -16,6 +16,7 @@ supported between all types.
 
 \subsection{Implicit Conversions}
 \label{Implicit_Conversions}
+\index{conversions!implicit}
 
 Implicit conversions are allowed between numeric
 types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
@@ -32,6 +33,7 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
 \subsubsection{Implicit Numeric Conversions}
 \label{Implicit_Numeric_Conversions}
+\index{conversions!numeric}
 
 Let $i$, $j$, and $k$ range over the constants $8$, $16$, $32$, and
 $64$ when parameterizing \chpl{int} and \chpl{uint} and over the
@@ -55,6 +57,7 @@ types to \chpl{string} where there is a loss of precision.
 
 \subsubsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
+\index{conversions!enumeration}
 
 An expression that is an enumerated type can be implicitly converted
 to any integral type as long as all of the constants defined by the
@@ -64,6 +67,7 @@ the enumerated constant.
 
 \subsubsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
+\index{conversions!class}
 
 An expression of class type \chpl{C} can be implicitly converted to
 another class type \chpl{D} provided that \chpl{C} is derived
@@ -71,6 +75,7 @@ from \chpl{D}.
 
 \subsubsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
+\index{conversions!record}
 
 An expression of record type \chpl{C} can be implicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived
@@ -78,6 +83,7 @@ from \chpl{D}.
 
 \subsubsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
+\index{conversions!parameter}
 
 The following two implicit conversions of parameters are supported:
 \begin{itemize}
@@ -90,6 +96,7 @@ to \chpl{uint(64)} if the value of the parameter is nonnegative.
 
 \subsubsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
+\index{conversions!bool}
 
 In the condition of an if-statement, while-loop, and do-while-loop,
 the following implicit conversions are supported:
@@ -100,23 +107,27 @@ the following implicit conversions are supported:
 
 \subsection{Explicit Conversions}
 \label{Explicit_Conversions}
+\index{conversions!explicit}
 
 The explicit conversions are a superset of the implicit conversions.
 
 \subsubsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
+\index{conversions!numeric}
 
 Explicit conversions are allowed from any numeric type to any other
 numeric type, bool, or string, and vice versa.
 
 \subsubsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
+\index{conversions!enumeration}
 
 Explicit conversions are allowed from any enumerated types to any
 numeric type, bool, or string, and vice versa.
 
 \subsubsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
+\index{conversions!class}
 
 An expression of class type \chpl{C} can be explicitly converted to
 another class type \chpl{D} provided that \chpl{C} is derived
@@ -126,6 +137,7 @@ must be a \chpl{C}.
 
 \subsubsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
+\index{conversions!record}
 
 An expression of record type \chpl{C} can be explicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived

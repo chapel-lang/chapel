@@ -1,5 +1,6 @@
 \sekshun{Tuples}
 \label{Tuples}
+\index{tuples}
 
 A tuple is an ordered set of components that allows for the
 specification of a light-weight record with anonymous fields.
@@ -33,6 +34,7 @@ defines a variable \chpl{x} that is a 2-tuple containing the values
 
 \subsection{Tuple Type Definitions}
 \label{Tuple_Type_Definitions}
+\index{tuples!types}
 
 A tuple type is a comma-separated list of types.  The number of types
 in the list defines the size of the tuple, which is part of the
@@ -53,6 +55,8 @@ Given a tuple expression \chpl{(1, 2)}, the type of the tuple value is
 
 \subsection{Tuple Assignment}
 \label{Tuple_Assignment}
+\index{assignment!tuples}
+\index{tuples!assignment}
 
 In tuple assignment, the compoonents of the tuple on the left-hand
 side of the assignment operator are each assigned the components of
@@ -62,6 +66,7 @@ side is fully evaluated before being assigned to the left-hand side.
 
 \subsection{Tuple Destructuring}
 \label{Tuple_Destructuring}
+\index{tuples!destructuring}
 
 When a tuple expression appears on the left-hand side of an assignment
 statement, the expression on the right-hand side is said to be {\em
@@ -79,6 +84,7 @@ the following single assignment statement:
 
 \subsubsection{Variable Declarations in a Tuple}
 \label{Variable_Declarations_in_a_Tuple}
+\index{tuples!variable declarations}
 
 Variables can be defined in a tuple to facilitate capturing the values
 from a function that returns a tuple.  The extension to the syntax of
@@ -102,6 +108,7 @@ Variable declarations are not supported with a tuple currently.
 
 \subsubsection{Ignoring Values with Underscore}
 \label{Ignoring_Values_with_Underscore}
+\index{_@\chpl{_}}
 
 If an underscore appears as a component in a tuple expression in a
 destructuring context, the expression on the right-hand side is
@@ -115,6 +122,7 @@ that are never read.
 
 \subsection{Homogeneous Tuples}
 \label{Homogeneous_Tuples}
+\index{tuples!homogeneous}
 
 A homogeneous tuple is a special-case of a general tuple where the
 types of the components are identical.  Homogeneous tuples have less
@@ -122,6 +130,8 @@ restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
 
 \subsubsection{Declaring Homogeneous Tuples}
 \label{Declaring_Homogeneous_Tuples}
+
+\index{* (tuples)@\chpl{*} tuples}
 
 A homogeneous tuple type may be specified with the following syntax if
 it appears as a top-level type in a variable declaration or type alias
@@ -145,6 +155,7 @@ The following types are equivalent:
 
 \subsection{Tuple Indexing}
 \label{Tuple_Indexing}
+\index{tuples!indexing}
 
 A tuple may be indexed into by an integer.  Indexing a tuple is given
 by the following syntax:
@@ -161,6 +172,8 @@ indexing expression can be known at compile-time.
 \subsection{Formal Arguments of Tuple Type}
 \label{Formal_Arguments_of_Tuple_Type}
 
+\index{formal arguments!tuples}
+
 \begin{implementation}
 Formal arguments of tuple type are treated as if they were records.
 Conversions are not applied to the components.
@@ -168,6 +181,8 @@ Conversions are not applied to the components.
 
 \subsubsection{Formal Argument Declarations in a Tuple}
 \label{Formal_Argument_Declarations_in_a_Tuple}
+
+\index{formal arguments!tuples}
 
 \begin{implementation}
 Formal arguments cannot be grouped together in a tuple.

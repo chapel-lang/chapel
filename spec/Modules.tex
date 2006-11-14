@@ -1,6 +1,8 @@
 \sekshun{Modules}
 \label{Modules}
 
+\index{modules}
+
 Chapel supports modules to manage name spaces.  Every symbol,
 including variables, functions, and types, are associated with some
 module.
@@ -15,6 +17,8 @@ described in~\rsec{Implicit_Modules}.
 
 \subsection{Module Definitions}
 \label{Module_Definitions}
+
+\index{module@\chpl{module}}
 
 A module is declared with the following syntax:
 \begin{syntax}
@@ -44,6 +48,7 @@ discussed in~\rsec{Configuration_Variables}.
 \subsubsection{The {\em main} Function}
 \label{The_main_Function}
 
+\index{main@\chpl{main}}
 The main function must be called \chpl{main} and must have zero
 arguments.  There can be only one main function in all of the modules
 that make up a program.  Every main function starts by using the
@@ -56,7 +61,9 @@ in~\rsec{Programs_with_a_Single_Module}.
 
 \subsubsection{Command-Line Arguments}
 \label{Command_Line_Arguments}
+\index{command-line arguments}
 
+\index{argv@\chpl{argv}}
 A predefined variable is used to capture arguments to the execution of
 a program.  It has this declaration:
 \begin{chapel}
@@ -82,6 +89,8 @@ used via a \sntx{use-statement}.
 \subsubsection{Programs with a Single Module}
 \label{Programs_with_a_Single_Module}
 
+\index{exploratory programming}
+
 To aid in exploratory programming, if a program is defined in a single
 module that uses only standard modules, the module need not define a
 main function.  A default main function is created in this case.  This
@@ -98,6 +107,7 @@ taken to be the file as described in~\rsec{Implicit_Modules}.
 
 \subsection{Using Modules}
 \label{Using_Modules}
+\index{modules!using}
 
 Modules can be used by code outside of that module.  This allows
 access to the symbols in the modules without the need for explicit
@@ -123,6 +133,7 @@ also be used instead of using a module.
 
 \subsection{Nested Modules}
 \label{Nested_Modules}
+\index{modules!nested}
 
 A nested module is a module that is defined inside another module, the
 outer module.  Nested modules automatically have access to all of the
@@ -141,6 +152,7 @@ named \chpl{libmsl}.
 
 \subsection{Implicit Modules}
 \label{Implicit_Modules}
+\index{modules!and files}
 
 Multiple modules can be defined in the same file and do not need to
 bear any relation to the file in terms of their names.  As a

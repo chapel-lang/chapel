@@ -5,6 +5,7 @@ This section describes the lexical components of Chapel programs.
 
 \subsection{Comments}
 \label{Comments}
+\index{comments}
 
 Two forms of comments are supported.  All text following the
 consecutive characters \chpl{//} and before the end of the line is in
@@ -18,12 +19,14 @@ the string literal.
 
 \subsection{White Space}
 \label{White_Space}
+\index{white space}
 
 White-space characters are spaces, tabs, and new-lines.  Aside from
 delimiting comments and tokens, they are ignored by the compiler.
 
 \subsection{Case Sensitivity}
 \label{Case_Sensitivity}
+\index{case sensitivity}
 
 Chapel is a case sensitive language so identifiers that are identical
 except of the case of the characters are still different.
@@ -36,11 +39,12 @@ punctuation.
 
 \subsubsection{Identifiers}
 \label{Identifiers}
+\index{identifiers}
 
 An identifier in Chapel is a sequence of characters that must start
 with a letter, lower-case or upper-case, or an underscore, and can
 include lower-case letters, upper-case letters, digits, the
-underscore, and the question mark.
+underscore, and the question mark.\index{?@\chpl{?}}
 \begin{example}
 The following are legal identifiers:
 \begin{chapel}
@@ -50,6 +54,8 @@ The following are legal identifiers:
 
 \subsubsection{Keywords}
 \label{Keywords}
+\index{keywords}
+\index{reserved words}
 
 The following keywords are reserved:
 \begin{chapel}
@@ -120,6 +126,7 @@ The following braces are part of the Chapel language:
 
 \subsection{User-Defined Compiler Errors}
 \label{User-Defined_Compiler_Errors}
+\index{compiler errors!user-defined}
 
 The special compiler error statement given by
 \begin{syntax}

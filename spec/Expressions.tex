@@ -50,6 +50,7 @@ variable-expression:
 
 \subsection{Call Expressions}
 \label{Call_Expressions}
+\index{function calls}
 
 The syntax to call a function is given by:
 \begin{syntax}
@@ -75,6 +76,7 @@ argument described in~\rsec{Named_Arguments}.
 
 \subsubsection{Indexing Expressions}
 \label{Indexing_Expressions}
+\index{indexing}
 
 Indexing into arrays, sequences, tuples, and domains shares the same
 syntax of a call expression.  Indexing, at its core, is nothing more
@@ -82,6 +84,7 @@ than a call to the indexing function defined on these types.
 
 \subsubsection{Member Access Expressions}
 \label{Member_Access_Expressions}
+\index{member access}
 
 Member access expressions are call expressions to members of classes,
 records, or unions.  The syntax for a member access is given by:
@@ -94,6 +97,7 @@ class, record, or union.
 
 \subsection{The Query Expression}
 \label{The_Query_Expression}
+\index{?@\chpl{?}}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -128,6 +132,7 @@ places in the future.
 
 \subsection{Casts}
 \label{Casts}
+\index{casts}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -141,20 +146,20 @@ conversions~(\rsec{Explicit_Conversions}).
 The following casts have special meanings and do not correspond to an
 explicit conversion:
 \begin{itemize}
-\item
+\item \index{tuples!cast to sequences}
   A cast to the keyword \chpl{seq} converts a tuple to a sequence as
   described in~\rsec{Conversions_Between_Sequences_and_Tuples}.
-\item
+\item \index{sequences!cast to tuples}
   A cast to a parameter expression of integral type converts a
   sequence to a tuple as described
   in~\rsec{Conversions_Between_Sequences_and_Tuples}.
-\item
+\item \index{complex!casts from tuples}
   A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
   complex where the first component becomes the real part and the
   second component becomes the imaginary part.  The size of the
   complex is determined from the size of the components based on
   implicit conversions.
-\item
+\item \index{strings!format string casts}
   A cast from any primitive type to a string literal that is a C-style
   format string creates a formatted string based on that format.
 \end{itemize}
@@ -200,6 +205,8 @@ all \sntx{call-expression}s are lvalues.
 
 \subsection{Operator Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
+\index{operators!precedence}
+\index{operators!associativity}
 
 The following table summarizes the precedence of operators and their
 associativity.  Operators listed earlier have higher precedence than
@@ -263,6 +270,7 @@ The operators are defined in subsequent sections.
 
 \subsection{Arithmetic Operators}
 \label{Arithmetic_Operators}
+\index{operators!arithmetic}
 
 This section describes the predefined arithmetic operators.  These
 operators can be redefined over different types using operator
@@ -274,6 +282,7 @@ first converting them to 32-bit integers.
 
 \subsubsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
+\index{+ (unary)@\chpl{+} (unary)}
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
@@ -295,6 +304,7 @@ For each of these definitions, the result is the value of the operand.
 
 \subsubsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
+\index{- (unary)@\chpl{-} (unary)}
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
@@ -324,6 +334,7 @@ to \chpl{int(64)} using an implicit conversion.
 
 \subsubsection{Addition Operators}
 \label{Addition_Operators}
+\index{+@\chpl{+}}
 
 The addition operators are predefined as follows:
 \begin{chapel}
@@ -380,6 +391,7 @@ type.
 
 \subsubsection{Subtraction Operators}
 \label{Subtraction_Operators}
+\index{-@\chpl{-}}
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
@@ -437,6 +449,7 @@ versa, also produces a value of complex type.
 
 \subsubsection{Multiplication Operators}
 \label{Multiplication_Operators}
+\index{*@\chpl{*}}
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
@@ -494,6 +507,7 @@ value of complex type.
 
 \subsubsection{Division Operators}
 \label{Division_Operators}
+\index{/@\chpl{/}}
 
 The division operators are predefined as follows:
 \begin{chapel}
@@ -551,6 +565,7 @@ type.
 
 \subsubsection{Modulus Operators}
 \label{Modulus_Operators}
+\index{\%@\chpl{\%}}
 
 The modulus operators are predefined as follows:
 \begin{chapel}
@@ -573,6 +588,7 @@ extended to handle real, imaginary, and complex types in the future.
 
 \subsubsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
+\index{**@\chpl{**}}
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
@@ -599,6 +615,7 @@ will be extended to handle imaginary and complex types in the future.
 
 \subsection{Bitwise Operators}
 \label{Bitwise_Operators}
+\index{operators!bitwise}
 
 This section describes the predefined bitwise operators.  These
 operators can be redefined over different types using operator
@@ -606,6 +623,7 @@ overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
+\index{\~@\chpl{\~}}
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
@@ -620,6 +638,7 @@ the operand.
 
 \subsubsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
+\index{&@\chpl{&}}
 
 The bitwise and operators are predefined as follows:
 \begin{chapel}
@@ -640,6 +659,7 @@ vice versa.
 
 \subsubsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
+\index{|@\chpl{|}}
 
 The bitwise or operators are predefined as follows:
 \begin{chapel}
@@ -660,6 +680,7 @@ versa.
 
 \subsubsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
+\index{^@\chpl{^}}
 
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
@@ -680,6 +701,8 @@ vice versa.
 
 \subsection{Shift Operators}
 \label{Shift_Operators}
+\index{<<@\chpl{<<}}
+\index{>>@\chpl{>>}}
 
 This section describes the predefined shift operators.  These
 operators can be redefined over different types using operator
@@ -710,6 +733,7 @@ bits used to represent \chpl{a}.
 
 \subsection{Logical Operators}
 \label{Logical_Operators}
+\index{operators!logical}
 
 This section describes the predefined logical operators.  These
 operators can be redefined over different types using operator
@@ -717,6 +741,7 @@ overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
+\index{\!@\chpl{!}}
 
 The logical negation operator is predefined as follows:
 \begin{chapel}
@@ -726,6 +751,7 @@ The result is the logical negation of the operand.
 
 \subsubsection{The Logical And Operator}
 \label{Logical_And_Operators}
+\index{&&@\chpl{&&}}
 
 The logical and operator is predefined as follows:
 \begin{chapel}
@@ -736,6 +762,7 @@ true; otherwise the result is false.
 
 \subsubsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
+\index{||@\chpl{||}}
 
 The logical or operator is predefined as follows:
 \begin{chapel}
@@ -746,6 +773,7 @@ true; otherwise the result is false.
 
 \subsection{Relational Operators}
 \label{Relational_Operators}
+\index{operators!relational}
 
 This section describes the predefined relational operators.  These
 operators can be redefined over different types using operator
@@ -754,6 +782,7 @@ overloading~(\rsec{Function_Overloading}.
 \subsubsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
 
+\index{<@\chpl{<}}
 The ``less than'' comparison operators are predefined as follows:
 \begin{chapel}
 def <(a: int(32), b: int(32)): bool
@@ -770,6 +799,7 @@ def <(a: imag(128), b: imag(128)): bool
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
 
+\index{>@\chpl{>}}
 The ``greater than'' comparison operators are predefined as follows:
 \begin{chapel}
 def >(a: int(32), b: int(32)): bool
@@ -786,6 +816,7 @@ def >(a: imag(128), b: imag(128)): bool
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
 
+\index{<=@\chpl{<=}}
 The ``less than or equal to'' comparison operators are predefined as
 follows:
 \begin{chapel}
@@ -803,6 +834,7 @@ def <=(a: imag(128), b: imag(128)): bool
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
 
+\index{>=@\chpl{>=}}
 The ``greater than or equal to'' comparison operators are predefined
 as follows:
 \begin{chapel}
@@ -822,6 +854,8 @@ equal to \chpl{b}; otherwise the result is false.
 
 \subsubsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
+\index{==@\chpl{==}}
+\index{!=@\chpl{!=}}
 
 The equality comparison operators are predefined over bool and the
 numeric types as follows:
@@ -878,6 +912,7 @@ overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
+\index{+@\chpl{+}}
 
 The string concatenation operator is predefined as follows:
 \begin{chapel}
@@ -898,24 +933,28 @@ would be \chpl{"result: 3"}.
 
 \subsubsection{The Sequence Concatenation Operator}
 \label{The_Sequence_Concatenation_Operator}
+\index{\#@\chpl{\#}}
 
 The operator \chpl{#} is predefined on sequences and their element
 types.  It is described in~\rsec{Sequence_Concatenation}.
 
 \subsubsection{The Arithmetic Domain By Operator}
 \label{The_Arithmetic_Domain_By_Operator}
+\index{by@\chpl{by}}
 
 The operator \chpl{by} is predefined on arithmetic domains.  It is
 described in~\rsec{Strided_Arithmetic_Domains_and_Arrays}.
 
 \subsubsection{The Arithmetic Sequence By Operator}
 \label{The_Sequence_By_Operator}
+\index{by@\chpl{by}}
 
 The operator \chpl{by} is predefined on arithmetic sequences.  It is
 described in~\rsec{Strided_Arithmetic_Sequences}.
 
 \subsection{Let Expressions}
 \label{Let_Expressions}
+\index{let@\chpl{let}}
 
 A let expression allows variables to be declared at the expression
 level and used within that expression.  The syntax of a let expression
@@ -939,6 +978,10 @@ of that value.
 
 \subsection{Conditional Expressions}
 \label{Conditional_Expressions}
+\index{conditional!expression}
+\index{if@\chpl{if}}
+\index{then@\chpl{then}}
+\index{else@\chpl{else}}
 
 A conditional expression is given by the following syntax:
 \begin{syntax}

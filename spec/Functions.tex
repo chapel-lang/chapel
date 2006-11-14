@@ -10,6 +10,7 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 \label{Function_Definitions}
 \index{functions!syntax}
 
+\index{def@\chpl{def}}
 Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
@@ -127,6 +128,7 @@ variables during a function call.
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
 \index{named arguments}
+\index{formal arguments!naming}
 
 A formal argument can be named at the call site to explicitly map an
 actual argument to a formal argument.
@@ -151,6 +153,7 @@ callsite for compiler-checked documentation.
 \subsubsection{Default Values}
 \label{Default_Values}
 \index{default values}
+\index{formal arguments!defaults}
 
 Default values can be specified for a formal argument by appending the
 assignment operator and a default expression the declaration of the
@@ -235,8 +238,7 @@ Domains cannot be passed to a function via the \chpl{inout} intent.
 
 \subsection{Variable Functions}
 \label{Variable_Functions}
-\index{variable functions}
-\index{functions!setters}
+\index{functions!as lvalues}
 
 A variable function is a function that can be assigned a value.  Note
 that a variable function does not return a reference.  That is, the
@@ -283,6 +285,7 @@ This code outputs the number \chpl{3}.
 \subsubsection{Explicit Setter Functions}
 \label{Explicit_Setter_Functions}
 \index{functions!setters}
+\index{functions!as lvalues}
 
 Variable functions can be created by overloading a normal function
 with an explicit setter function.  Alternatively, an explicit setter
@@ -384,7 +387,7 @@ in~\rsec{Determining_More_Specific_Functions}.
 
 \subsubsection{Identifying Visible Functions}
 \label{Identifying_Visible_Functions}
-\index{functions!visibility}
+\index{functions!visibile}
 
 A function is a visible function to a function call if the name of the
 function is the same as the name of the function call and the function
@@ -397,6 +400,7 @@ the location of their definition.
 
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
+\index{functions!candidates}
 
 A function is a candidate function if there is a {\em valid mapping}
 from the function call to the function and each actual argument is
@@ -436,6 +440,7 @@ type $T_F$ if any of the following conditions hold:
 
 \subsubsection{Determining More Specific Functions}
 \label{Determining_More_Specific_Functions}
+\index{functions!most specific}
 
 Given two functions $F_1$ and $F_2$, $F_1$ is determined to be more
 specific than $F_2$ by the following steps:

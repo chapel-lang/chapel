@@ -5,6 +5,8 @@ A sequence is an ordered set of elements of the same type.
 
 \subsection{Sequence Literals}
 \label{Sequence_Literals}
+\index{sequences!literals}
+\index{(/@\chpl{(/}}
 
 Literal sequences are delimited by the braces \chpl{(/} and \chpl{/)}.
 The expressions enclosed in these braces are elements of the sequence.
@@ -18,7 +20,9 @@ The following code defines a sequence of integers:
 
 \subsection{Sequence Type Definitions}
 \label{Sequence_Type_Definitions}
+\index{sequences!types}
 
+\index{seq@\chpl{seq}}
 A sequence type can be specified with an explicit element type using
 the following syntax:
 \begin{syntax}
@@ -34,6 +38,7 @@ type \chpl{s.elt_type} refers to type the type of its element.
 
 \subsection{Sequence Rank}
 \label{Sequence_Rank}
+\index{sequences!rank}
 
 The rank of a sequence is determined as follows:
 \begin{itemize}
@@ -54,11 +59,13 @@ is two.
 
 \subsection{Sequence Assignment}
 \label{Sequence_Assignment}
+\index{sequences!assignment}
 
 Sequence assignment is by value.
 
 \subsection{Iteration over Sequences}
 \label{Iteration_over_Sequences}
+\index{sequences!iteration}
 
 Sequences can be iterated over within the context of a for or forall
 loop.  The type of the index is the element type of the sequence.
@@ -81,6 +88,7 @@ three
 \subsection{Sequence Concatenation}
 \label{Sequence_Concatenation}
 
+\index{\#\chpl{\#}}
 The operator \chpl{#} is used to concatenate two sequences and to
 append or prepend an element to a sequence.  In each case, the
 operands are unchanged and a new sequence is returned.  When applied
@@ -108,6 +116,7 @@ They can be indexed into by integers or tuples of integers.
 \subsubsection{Sequence Indexing by Integers}
 \label{Sequence_Indexing_by_Integers}
 
+\index{sequences!indexing}
 If \chpl{s} is a sequence and \chpl{i} is an integer, then the
 expression \chpl{s(i)} is evaluated to return an element in the
 sequence.  A runtime error occurs if \chpl{i} is zero or the absolute
@@ -120,6 +129,7 @@ then \chpl{s(i)} is the value $e_{n-i+1}$.
 \subsubsection{Sequence Indexing by Tuples}
 \label{Sequence_Indexing_by_Tuples}
 
+\index{sequences!indexing}
 If \chpl{s} is a sequence and \chpl{t} is a tuple of integers of size
 $k$, then the expression \chpl{s(t)} indexes into the
 sequence \chpl{s} $k$ times using the integers in the tuple.  In this
@@ -137,6 +147,8 @@ collected into a tuple and the sequence is then indexed by the tuple.
 \subsection{Sequence Promotion of Scalar Functions}
 \label{Sequence_Promotion_of_Scalar_Functions}
 
+\index{scalar promotion}
+\index{sequences!promotion}
 Sequence promotion of a scalar function is defined over the sequence
 and its {\em leaf element type}.  If the sequence has rank one, then
 the leaf element type is the element type of the sequence.  If the
@@ -155,6 +167,7 @@ types other than sequences may result in the promotion.
 \subsubsection{Zipper Promotion}
 \label{Zipper_Promotion}
 
+\index{scalar promotion!zipper iteration}
 Consider a function \chpl{f} with formal
 arguments \chpl{s1}, \chpl{s2},~... that are sequence promoted and
 formal arguments \chpl{a1}, \chpl{a2},~... that are not promoted.  The
@@ -188,6 +201,7 @@ then the output is ``1 4 2 5 3 6 ''.
 
 \subsubsection{Tensor Product Promotion}
 \label{Tensor_Product_Promotion}
+\index{scalar promotion!tensor product iteration}
 
 If the function \chpl{f} were called by using square brackets instead
 of parentheses, the equivalent rewrite would be
@@ -236,6 +250,8 @@ produces the output ``false false true false false.''
 
 \subsection{Sequences in Logical Contexts}
 \label{Sequences_in_Logical_Contexts}
+\index{sequences!and conditional statements}
+\index{sequences!and while statements}
 
 When a sequence expression is used as a top-level expression in the
 condition of a while statement, a do-while statement or an if
@@ -255,6 +271,7 @@ currently implemented.
 
 \subsubsection{Sequences in Select Statements}
 \label{Sequences_in_Select_Statements}
+\index{sequences!and select statements}
 
 When a sequence expression is used as a top-level expression in the
 condition of a select statement, there are two interpretations.  If
@@ -274,6 +291,7 @@ expression.
 
 \subsection{Filtering Predicates}
 \label{Filtering_Predicates}
+\index{sequences!and conditional expressions}
 
 An if expression that is immediately enclosed by a forall expression
 does not require an else part.  The result of the forall expression is
@@ -295,7 +313,7 @@ the \chpl{spread}, \chpl{transpose}, and \chpl{reshape} functions.
 
 \subsubsection{The {\em length} Method}
 \label{The_em_length_Method}
-\index{length@\chpl{length} method!on sequences}
+\index{length@\chpl{length}!on sequences}
 
 \begin{chapel}
 def seq.length
@@ -306,7 +324,7 @@ elements in a sequence.
 
 \subsubsection{The {\em reverse} Method}
 \label{The_em_reverse_Method}
-\index{reverse@\chpl{reverse} method}
+\index{reverse@\chpl{reverse}}
 
 \begin{chapel}
 def seq.reverse(dim: int = 1)
@@ -327,12 +345,11 @@ The \chpl{dim} argument is not implemented.
 
 \subsubsection{The {\em spread} Function}
 \label{The_em_spread_Function}
-\index{spread@\chpl{spread} function}
+\index{spread@\chpl{spread}}
 
 \begin{chapel}
 def spread(s: seq, length: int, dim: int = 1)
 \end{chapel}
-\index{spread}
 
 The spread function takes a sequence of rank $k$ and returns a new
 sequence of rank $k+1$.  When \chpl{dim} is equal to 1, the result is
@@ -349,7 +366,7 @@ The spread function is not implemented.
 
 \subsubsection{The {\em transpose} Function}
 \label{The_em_transpose_Function}
-\index{transpose@\chpl{transpose} function}
+\index{transpose@\chpl{transpose}}
 
 \begin{chapel}
 def transpose(s: seq, dims = (2,1))
@@ -386,7 +403,7 @@ The transpose function is not implemented.
 
 \subsubsection{The {\em reshape} Function}
 \label{The_em_reshape_Function}
-\index{reshape@\chpl{reshape} function}
+\index{reshape@\chpl{reshape}}
 
 \begin{chapel}
 reshape(s: seq, shape, fill)
@@ -411,7 +428,8 @@ The reshape function is not implemented.
 
 \subsection{Arithmetic Sequences}
 \label{Arithmetic_Sequences}
-
+\index{sequences!arithmetic}
+\index{arithmetic sequences}
 Arithmetic sequences contain an ordered set of values of integral type
 that can be specified with a low bound $l$, a high bound $h$, and a
 stride $s$.  If the stride is negative, the values contained by the
@@ -421,6 +439,7 @@ positive, the values contained by the arithmetic sequence are $l, l+s,
 l+2s, l+3s, ...$ such that all of the values in the sequence are
 less than $h$.
 
+\index{arithmetic sequences!literals}
 An arithmetic sequence is specified by the syntax
 \begin{syntax}
 arithmetic-sequence-literal:
@@ -431,6 +450,7 @@ expression is taken to be the upper bound.  The stride of the
 arithmetic sequence is 1 and can be modified with the \chpl{by}
 operator.
 
+\index{arithmetic sequences!integral element type}
 The element type of the arithmetic sequence type is determined by the
 type of the low and high bound.  It is
 either \chpl{int}, \chpl{uint}, \chpl{int(64)}, or \chpl{uint64}.  The
@@ -444,6 +464,7 @@ is a sequence but not an arithmetic sequence.
 
 \subsubsection{Strided Arithmetic Sequences}
 \label{Strided_Arithmetic_Sequences}
+\index{arithmetic sequences!strided}
 
 The \chpl{by} operator can be applied to any arithmetic sequence to
 create a strided arithmetic sequence.  It is predefined over an
@@ -453,6 +474,7 @@ accomplished by multiplying the strides.
 
 \subsubsection{Indefinite Sequences}
 \label{Indefinite_Sequences}
+\index{arithmetic sequences!indefinite}
 
 An indefinite arithmetic sequence is specified by the syntax
 \begin{syntax}
@@ -485,6 +507,8 @@ Indexing by indefinite arithmetic sequences is not yet supported.
 
 \subsection{Conversions Between Sequences and Tuples}
 \label{Conversions_Between_Sequences_and_Tuples}
+\index{sequences!casts from tuples}
+\index{tuples!casts from sequences}
 
 A value of homogenous tuple type can be converted to a sequence by
 applying a cast to the keyword \chpl{seq}.  The elements in the tuple

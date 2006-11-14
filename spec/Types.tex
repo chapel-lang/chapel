@@ -28,6 +28,7 @@ in~\rsec{Domains_and_Arrays}.
 
 \subsection{Primitive Types}
 \label{Primitive_Types}
+\index{types!primitive}
 
 The primitive types include the following
 types: \chpl{bool}, \chpl{int}, \chpl{uint}, \chpl{real},
@@ -37,6 +38,7 @@ the \chpl{locale} type which is defined in~\rsec{The_Locale_Type}.
 
 \subsubsection{The Bool Type}
 \label{The_Bool_Type}
+\index{bool@\chpl{bool}}
 
 Chapel defines a logical data type designated by the symbol
 \chpl{bool} with the two predefined values \chpl{true} and
@@ -54,6 +56,8 @@ otherwise, it is converted to \chpl{true}.
 
 \subsubsection{Signed and Unsigned Integral Types}
 \label{Signed_and_Unsigned_Integral_Types}
+\index{uint@\chpl{uint}}
+\index{int@\chpl{int}}
 
 The integral types can be parameterized by the number of bits used to
 represent them.  The default signed integral type, \chpl{int}, and the
@@ -85,6 +89,7 @@ according to the rules defined in~\rsec{Implicit_Conversions}.
 
 \subsubsection{Real Types}
 \label{Real_Types}
+\index{real@\chpl{real}}
 
 Like the integral types, the real types can be parameterized by the
 number of bits used to represent them.  The default real
@@ -96,6 +101,7 @@ Arithmetic over real values follows the IEEE 754 standard.
 
 \subsubsection{Complex Types}
 \label{Complex_Types}
+\index{complex@\chpl{complex}}
 
 Like the integral and real types, the complex types can be
 parameterized by the number of bits used to represent them.  A complex
@@ -117,6 +123,7 @@ respectively.
 
 \subsubsection{Imaginary Types}
 \label{Imaginary_Types}
+\index{imaginary@\chpl{imaginary}}
 
 The imaginary types can be parameterized by the number of bits used to
 represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
@@ -132,6 +139,7 @@ complex values with a zero imaginary part.
 
 \subsubsection{The String Type}
 \label{The_String_Type}
+\index{string@\chpl{string}}
 
 Strings are a primitive type designated by the symbol \chpl{string}.
 Their length is unbounded.
@@ -139,6 +147,7 @@ Their length is unbounded.
 \subsubsection{Primitive Type Literals}
 \label{Primitive_Type_Literals}
 
+\index{literals!primitive type}
 Bool literals are designated by the following syntax:
 \begin{syntax}
 bool-literal: one of
@@ -243,6 +252,7 @@ more exotic characters.
 
 \subsection{Enumerated Types}
 \label{Enumerated_Types}
+\index{enumerated types}
 
 Enumerated types are declared with the following syntax:
 \begin{syntax}
@@ -310,6 +320,7 @@ Domains and arrays are defined in~\rsec{Domains_and_Arrays}.
 
 \subsection{Type Aliases}
 \label{Type_Aliases}
+\index{type aliases}
 
 Type aliases are declared with the following syntax:
 \begin{syntax}
