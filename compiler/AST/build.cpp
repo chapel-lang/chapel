@@ -424,9 +424,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   if (otherwise) {
     if (!condStmt)
       USR_FATAL(selectCond, "Select has no when clauses");
-    else {
-      condStmt->elseStmt = otherwise->thenStmt;
-    }
+    condStmt->elseStmt = otherwise->thenStmt;
   }
   return top;
 }

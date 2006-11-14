@@ -1,4 +1,0 @@
-deitz
-
-There seems to be a problem with the select statement when using
-a real type.  It's not choosing the right clause to execute.
