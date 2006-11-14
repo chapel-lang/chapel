@@ -55,11 +55,11 @@ class BlockStmt : public Expr {
   LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
-  BlockStmt::BlockStmt(AList* init_body = new AList(), 
+  BlockStmt(AList* init_body = new AList(), 
                        BlockTag init_blockTag = BLOCK_NORMAL);
-  BlockStmt::BlockStmt(Expr* init_body,
+  BlockStmt(Expr* init_body,
                        BlockTag init_blockTag = BLOCK_NORMAL);
-  BlockStmt::~BlockStmt();
+  virtual ~BlockStmt();
   virtual void verify();
   COPY_DEF(BlockStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);

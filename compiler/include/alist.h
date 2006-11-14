@@ -18,7 +18,7 @@ class AList {
   AList(Expr*);
 
   // copy routines
-  virtual AList* copy(ASTMap* map = NULL, bool internal = false);
+  AList* copy(ASTMap* map = NULL, bool internal = false);
 
   // checks for length
   bool isEmpty(void);
