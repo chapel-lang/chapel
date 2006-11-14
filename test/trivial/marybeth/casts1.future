@@ -1,0 +1,6 @@
+deitz
+
+Simple example where casting to an int(64) works when the expression is not
+enclosed with parentheses, but does not work with parentheses.
+
+To me, the two casts should be equivalent and both work.
