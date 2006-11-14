@@ -85257,3 +85257,15 @@ Added files:
 	                               casts1.good select1.chpl 
 	                               select1.future select1.good 
 
+---------------------------------------------------------------------------
+
+11/14/06 08:43:24 -- deitz
+
+Log message:
+	Added index terms for the sections I wrote except for Iterators and Generics.
+
+Modified files:
+	chapel/spec/: Conversions.tex Expressions.tex Functions.tex 
+	              Lexical_Structure.tex Modules.tex Sequences.tex 
+	              Statements.tex Tuples.tex Types.tex Variables.tex 
+
