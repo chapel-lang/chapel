@@ -1,5 +1,6 @@
 \sekshun{Iterators}
 \label{Iterators}
+\index{iterators}
 
 An iterator is a function that conceptually returns a sequence of
 values rather than simply a single value.  Classes can be viewed as
@@ -7,6 +8,7 @@ iterators if they implement a structural iterator interface.
 
 \subsection{Iterator Functions}
 \label{Iterator_Functions}
+\index{iterator@\chpl{iterator}}
 
 The syntax of a function declaration is identical to that of a
 function declaration except that the keyword \chpl{def} is replaced
@@ -20,6 +22,7 @@ after the last statement in the iterator function is executed.
 
 \subsection{The Yield Statement}
 \label{The_Yield_Statement}
+\index{yield@\chpl{yield}}
 
 Yield statement can only appear in iterators.  The syntax of the yield
 statement is given by
@@ -45,6 +48,7 @@ iteration, the iterator yields a value and the body is executed.
 
 \subsubsection{Iterators as Sequences}
 \label{Iterators_as_Sequences}
+\index{iterators!and sequences}
 
 If an iterator function is accessed outside of the context of a for or
 forall loop iterator expression, then the iterator is iterated over in
@@ -63,6 +67,7 @@ the expression \chpl{squares(5)} evaluates to the sequence \chpl{(/1, 4, 9, 16, 
 
 \subsection{The Structural Iterator Interface}
 \label{Iterator_Interface}
+\index{iterators!structural interface}
 
 There is a structural interface that allows a class or record to be
 treated as if it were an iterator.  The iterator interface is

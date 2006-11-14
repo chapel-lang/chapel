@@ -7,6 +7,8 @@ similar to non-generic functions and types already discussed.
 
 \subsection{Generic Functions}
 \label{Generic_Functions}
+\index{functions!generic}
+\index{generics!functions}
 
 A function is generic if any of the following conditions hold:
 \begin{itemize}
@@ -28,6 +30,7 @@ These conditions are discussed in the next sections.
 
 \subsubsection{Formal Type Arguments}
 \label{Formal_Type_Arguments}
+\index{intents!type@\chpl{type}}
 
 If a formal argument is specified with intent \chpl{type}, then a type
 must be passed to the function at the call site.  A copy of the
@@ -53,6 +56,7 @@ tupleOfSeqs(2) #= "hello";
 
 \subsubsection{Formal Parameter Arguments}
 \label{Formal_Parameter_Arguments}
+\index{intents!param@\chpl{param}}
 
 If a formal argument is specified with intent \chpl{param}, then a
 parameter must be passed to the function at the call site.  A copy of
@@ -78,6 +82,7 @@ component contains the value \chpl{3}.
 
 \subsubsection{Formal Arguments without Types}
 \label{Formal_Arguments_without_Types}
+\index{formal arguments!without types}
 
 If the type of a formal argument is omitted, the type of the formal
 argument is taken to be the type of the actual argument passed to the
@@ -105,6 +110,7 @@ of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 
 \subsubsection{Formal Arguments with Queried Types}
 \label{Formal_Arguments_with_Queried_Types}
+\index{formal arguments!queried types}
 
 If the type of a formal argument is specified as a queried type, the
 type of the formal argument is taken to be the type of the actual
@@ -126,6 +132,7 @@ def fillTuple(param p: int, x: ?t) {
 
 \subsubsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
+\index{formal arguments!generic types}
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
@@ -147,6 +154,7 @@ def output(s: seq) {
 
 \subsubsection{Formal Arguments of Generic Array Types}
 \label{Formal_Arguments_of_Generic_Array_Types}
+\index{formal arguments!array types}
 
 If the type of a formal argument is an array where either the domain
 or the element type is queried or omitted, the type of the formal
@@ -156,6 +164,7 @@ the formal argument is taken to be the domain of the actual argument.
 
 \subsection{Function Visibility in Generic Functions}
 \label{Function_Visibility_in_Generic_Functions}
+\index{generics!function visibility}
 
 Function visibility in generic functions is altered depending on the
 instantiation.  When resolving function calls made within visible
@@ -164,6 +173,9 @@ the function is instantiated for each particular instantiation.
 
 \subsection{Generic Types}
 \label{Generic_Types}
+\index{generics!types}
+\index{classes!generic}
+\index{records!generic}
 
 A class or record is generic if any of the following conditions hold:
 \begin{itemize}
@@ -180,6 +192,7 @@ The class contains a field where the type of the field is generic.
 
 \subsubsection{Type Aliases in Generic Types}
 \label{Type_Aliases_in_Generic_Types}
+\index{type aliases!in classes or records}
 
 Type aliases defined in a class or a record can be unspecified type
 aliases; type aliases that are not bound to a type.  If a class or
@@ -216,6 +229,7 @@ the type of the object that it is a field of.
 
 \subsubsection{Parameters in Generic Types}
 \label{Parameters_in_Generic_Types}
+\index{parameters!in classes or records}
 
 Parameters defined in a class or record do not require an
 initialization expression.  If they do not have an initialization
@@ -248,6 +262,7 @@ specified by \chpl{IntegerTuple} is a generic type.
 
 \subsubsection{Fields without Types}
 \label{Fields_without_Types}
+\index{fields!without types}
 
 If a field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
@@ -284,6 +299,7 @@ and \chpl{2}.
 
 \subsubsection{Fields of Generic Types}
 \label{Fields_of_Generic_Types}
+\index{fields!generic types}
 
 If a field in a class or record is specified to have a generic type,
 then the class or record is generic over the type of this field and
@@ -292,12 +308,14 @@ field's specified generic type.
 
 \subsubsection{Generic Methods}
 \label{Generic_Methods}
+\index{generics!methods}
 
 All methods bound to generic classes or records are generic over the
 implicit \chpl{this} argument and any other argument that is generic.
 
 \subsubsection{The {\em elt\_type} Type}
 \label{The_em_elt_type_Type}
+\index{elt\_type@\chpl{elt_type}}
 
 The common idiom of parameterizing a collection-oriented data type by
 a single element type has special syntactic support given by
@@ -314,6 +332,7 @@ of real}.
 
 \subsection{Where Expressions}
 \label{Where_Expressions}
+\index{where@\chpl{where}}
 
 The instantiation of a generic function can be constrained by {\em
 where clauses}.  A where clause is specified in the definition of a
@@ -337,5 +356,28 @@ second function is instantiated the where clause evaluates to false.
 \label{Example_Generic_Stack}
 
 \begin{chapel}
-\include(../test/release/examples/genericStack.chpl)
+class MyNode {
+  type itemType;              // type of item
+  var item: itemType;         // item in node
+  var next: MyNode(itemType); // reference to next node (same type)
+}
+
+record Stack {
+  type itemType;             // type of items
+  var top: MyNode(itemType); // top node on stack linked list
+
+  def push(item: itemType) {
+    top = MyNode(itemType, item, top);
+  }
+
+  def pop() {
+    if isEmpty? then
+      halt("attempt to pop an item off an empty stack");
+    var oldTop = top;
+    top = top.next;
+    return oldTop.item;
+  }
+
+  def isEmpty? return top == nil;
+}
 \end{chapel}
