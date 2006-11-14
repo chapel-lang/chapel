@@ -392,9 +392,8 @@ Examples of Chapel statements are given in the following table.
 Block Statement &
 \begin{chapel} % test:  block.chpl
 var tau, s, c: real;
-const a = 2.0;
+const a = 2.0, b = 5.5;
 const b = 5.5;
-
 {
 tau = -a/b;
 s = 1/sqrt(1 + tau*tau);
@@ -664,23 +663,33 @@ def writehalf(i: int) {
 \label{Arrays_and_Domains}
 
 In Chapel, arrays are reference types that are declared using domains.
+A domain is a first-class representation of an index space, potentially 
+defined to be distributed across multiple locales.   All arrays
+declared with a particular domain are indexed and distributed according 
+to that domain's specifications.  
+
+The following example shows three arrays that are declared to be
+vectors of length \chpl{m} and then used to compute and store a 
+scaled addition.
 \begin{chapel}
 const VectorD: domain(1) = [1..m];
 var A, B, C: [VectorD] real;
 
 A = B + alpha * C;
 \end{chapel}
-
 The first line declares a constant named \chpl{VectorD} that
-is defined to be a \chpl{domain}---a first-class representation of an
-index space, potentially distributed across the memories of multiple
-locales.  In this instance, the index space is declared to be
+is defined to be a \chpl{domain} that is  
 1-dimensional, describing indices $\{ 1, 2, \ldots, m \}$.
 The next line uses the \chpl{VectorD} domain to declare three
 arrays \chpl{A}, \chpl{B}, and \chpl{C} of type \chpl{real}.  The
 domain's index set defines the size and shape of these arrays. 
+
 The final line uses whole-array syntax to specify the elementwise 
-multiplications, additions, and assignments.  
+multiplications, additions, and assignments.  In this case since
+all three arrays are declared with the same domain, the compiler
+knows that the arrays are the right shape and size to successfully
+compute the array addition and can generate the appropriate elementwise
+additions.
 
 Whole-array operations like this one are implicitly parallel, if the \chpl{VectorD}
 domain were distributed across a set of processors.  For example, 
@@ -692,6 +701,21 @@ Each processor would perform the operations for the array elements that it owns,
 as defined by \chpl{VectorD}'s distribution since that was the domain
 used to define all three arrays.
 
+Arrays may be multi-dimensional if declared with multi-dimensional domains,
+and they may be of any type.  
+%% Need to qualify previous statement.
+Since arrays are reference types, they are passed by reference to functions
+where they may be modified and remain modified upon return.  However, assigning
+from one array to another merely copies the values from one to the other.  The
+two arrays each continue to reference individual arrays. 
+%% Is previous statement correct?
+
+The above example uses arithmetic domains and arrays.  Domains may
+also be sparse, indefinite, enumerated or opaque.  Subdomains may be
+defined to specify a subset of the domain's indices, as in the case of
+inner, non-boundary points of a grid.  See~\rsec{Domains_and_Arrays} for
+a complete description of domains and arrays.
+ 
 \subsection{Parallel Features}
 \label{Parallel_Features}
 
