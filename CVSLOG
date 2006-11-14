@@ -85354,3 +85354,31 @@ Added files:
 	chapel/test/classes/waynew/: dyndis2.chpl dyndis2.good 
 	                             dyndis2.future 
 
+---------------------------------------------------------------------------
+
+11/14/06 14:57:13 -- deitz
+
+Log message:
+	This checkin fixes a bug associated with a test case that Wayne is
+	checking in shortly or has already checked in.  This checkin
+	represents work done by both Wayne and I.
+	
+	Fixed a bug in which dynamic dispatch failed to work on a method in a
+	subclass if the method defined a formal argument that had a
+	complicated type expression (e.g. seq(int)) because the signature
+	match function was being applied too early.  This fix moves the
+	application of the signature match check after instantiation of the
+	subclass method so that the formal arguments can be resolved.  This
+	leads to the possibility of more over-instantiation since we may
+	instantiate a subclass method even if the function does not match
+	fully.  A new method possible_signature_match is defined to try to
+	reduce the amount of over-instantiation and make sure that valid
+	substitutions can be found for the instantiation.
+	
+	This bug fix is required for work on growing and shrinking indefinite
+	domains.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/spec/: Locality_and_Distribution.tex 
+
