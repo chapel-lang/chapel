@@ -5,4 +5,6 @@ var programTimer:Timer;
 programTimer.start();
 writeln("Write one line.");
 programTimer.stop();
-writeln(programTimer.accumulated);
+var totalTime = programTimer.elapsed();
+
+if (totalTime > 0) then writeln("Non-zero time for writing one line.");
