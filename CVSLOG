@@ -85313,3 +85313,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/14/06 13:12:11 -- deitz
+
+Log message:
+	Updated .good and removed .future on working test.
+
+Modified files:
+	chapel/test/trivial/marybeth/: casts1.good 
+Removed files:
+	chapel/test/trivial/marybeth/: casts1.future 
+
