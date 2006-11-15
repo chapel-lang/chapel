@@ -85506,3 +85506,13 @@ Added files:
 	chapel/test/parallel/single/waynew/: sarray.chpl sarray.future 
 	                                     sarray.good 
 
+---------------------------------------------------------------------------
+
+11/15/06 13:43:13 -- waynew
+
+Log message:
+	Typo in the description, "callee" -> "calling".
+
+Modified files:
+	chapel/test/parallel/single/waynew/: sarray.future 
+
