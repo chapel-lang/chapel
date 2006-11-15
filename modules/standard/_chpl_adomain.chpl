@@ -2,11 +2,21 @@
 // Arrays and domains
 //
 
+var _abase_error = " not implemented for this array";
+
 // this is the class that all array classes are derived from
 pragma "abase"
 class _abase {
   def reallocate(d: _domain) {
-    halt("reallocation not implemented for this array");
+    halt("reallocation", _abase_error);
+  }
+
+  def purge( ind: int) {
+    halt("purge", _abase_error);
+  }
+
+  def _resize( length: int, old_map: _ddata(int)) {
+    halt("_resize", _abase_error);
   }
 }
 
@@ -372,8 +382,9 @@ class _adomain {
       commpilerError("high currently implemented only for rank-1 domains");
   }
 
-  def _build_array(type elt_type)
+  def _build_array(type elt_type) {
     return _aarray(elt_type, rank, dim_type, dom=this);
+  }
 
   def _build_sparse_domain()
     return _sdomain(rank, dim_type, adomain=this);

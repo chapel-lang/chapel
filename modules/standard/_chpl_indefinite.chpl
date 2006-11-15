@@ -37,6 +37,7 @@ param _EMPTY   = -1;
 param _DELETED = -2;
 
 
+
 record _ind_data_t {
   type itype;
   var  data: itype;
@@ -46,14 +47,13 @@ record _ind_data_t {
 
 class _idomain {
   type ind_type;
+  var _arrs: seq(_abase);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
   var table: _ddata(int);
   var inds: _ddata(_ind_data_t(ind_type));
   var free_inds: _stack(int);
   var deleted_seen: int;
-  var is_compact: bool;
-
 
   // compiler-internal routines
 
@@ -64,7 +64,6 @@ class _idomain {
     inds.init();
     free_inds = _stack(int);
     deleted_seen = _EMPTY;
-    is_compact = false;
   }
 
   def getHeadCursor() {
@@ -89,22 +88,33 @@ class _idomain {
   def _half() {
     if (size > _MIN_SIZE) {
       var new_len = _ps(size-1);
-      table = _ddata(int, new_len);
-      table.init(_EMPTY);
+
+      var new_table = _ddata(int, new_len);
+      new_table.init(_EMPTY);
 
       var new_inds = _ddata(_ind_data_t(ind_type), new_len/2);
       new_inds.init();
+      var old_map: _ddata(int);
+      old_map = _ddata( int, num_inds);
+      old_map.init();
       var inds_count = 0;
       var inds_pos = 0;
       while inds_count<num_inds {
         var ind = inds(inds_pos);
         if (ind.valid) {
+          old_map(inds_count) = table( _map(ind.data));
           new_inds(inds_count) = ind;
-          table(_map(ind.data)) = inds_count;
+          new_table( _map(ind.data, new_table, new_inds)) = inds_count;
           inds_count += 1;
         }
         inds_pos += 1;
       }
+
+      for ia in _arrs {
+        ia._resize( new_len/2, old_map);
+      }
+
+      table = new_table;
       inds = new_inds;
       size -= 1;
       free_inds.empty();
@@ -115,40 +125,50 @@ class _idomain {
     if (size < _MAX_SIZE) {
       var new_len = _ps(size+1);
 
-      table = _ddata(int, new_len);
-      table.init(_EMPTY);
-
-      var new_inds = _ddata(_ind_data_t(ind_type), new_len/2);
+      var new_table = _ddata( int, new_len);
+      new_table.init( _EMPTY);
+      var new_inds = _ddata( _ind_data_t(ind_type), new_len/2);
       new_inds.init();
-      var inds_count = 0;
-      for inds_pos in 0..inds.size-1 {
+      var old_map: _ddata(int);
+      old_map = _ddata( int, inds.size);
+      old_map.init();
+      for inds_pos in 0..inds.size-1 {  
         var ind = inds(inds_pos);
-        if (ind.valid) {
-          new_inds(inds_count) = ind;
-          table(_map(ind.data)) = inds_count;
-          inds_count += 1;
+        if (ind.valid) {                 // should be dense
+          old_map(inds_pos) = table( _map(ind.data));
+          new_inds(inds_pos) = ind;
+          new_table( _map( ind.data, new_table, new_inds)) = inds_pos;
+        } else {
+          halt( "doubling without being full");
         }
       }
 
+      for ia in _arrs {
+        ia._resize( new_len/2, old_map);
+      }
+
+      table = new_table;
       inds = new_inds;
       size += 1;
       free_inds.empty();
     } else {
-      halt( "cannot double idomain");
+      halt( "cannot double indefinite domain");
     }
   }
 
-  def _map(ind : ind_type) : int {
+  def _map(ind: ind_type, 
+           itable: _ddata(int) = table, 
+           iinds: _ddata(_ind_data_t(ind_type)) = inds): int {
     var probe = 0;
     deleted_seen = _EMPTY;
     while true {
-      var i = ((_indefinite_hash(ind) + probe**2) % table.size):int(32);
-      var table_i = table(i);
+      var i = ((_indefinite_hash(ind) + probe**2) % itable.size):int(32);
+      var table_i = itable(i);
       if table_i==_EMPTY then
         return i;
       else if table_i==_DELETED then
         deleted_seen = i;                      
-      else if inds(table_i).data==ind then
+      else if iinds(table_i).data==ind then
         return i;
       probe = probe + 1;
     }
@@ -165,29 +185,9 @@ class _idomain {
   }
 
   def _build_array(type elt_type) {
-    return _iarray(elt_type, ind_type, dom=this); 
-  }
-
-  def _compact() {
-    if (free_inds.length > 0) {
-      var inds_count = 0;
-      var inds_pos = 0;
-      while inds_count<num_inds {
-        var ind = inds(inds_pos);
-        if (ind.valid) {
-          inds(inds_count) = ind;
-          var i = _map(ind.data);
-          if deleted_seen>0 then
-            table(deleted_seen) = inds_count;
-          else 
-            table(i) = inds_count;
-          inds_count += 1;
-        }
-        inds_pos += 1;
-      }
-    }
-    free_inds.empty();
-    is_compact = true;
+    var ia = _iarray(elt_type, ind_type, dom=this); 
+    _arrs #= ia;
+    return ia;
   }
 
   // public routines
@@ -199,7 +199,7 @@ class _idomain {
       if (deleted_seen > 0) then
         hash = deleted_seen;
 
-      if (free_inds.length > 0) {      // reduce, reuse, recycle
+      if (free_inds.length > 0) {      // recycle
         ind_pos = free_inds.pop();            
       } else {
         if (num_inds == inds.size) {
@@ -218,17 +218,21 @@ class _idomain {
   def remove( ind: ind_type) {
     var ind_pos = _map(ind);
     var table_i = table(ind_pos);
-    if (table_i!=_EMPTY && table_i!=_DELETED) {
-      is_compact = false;
+    // if (table_i!=_EMPTY && table_i!=_DELETED) {
+    if (table_i >= 0) {
       inds(table_i).valid = false;
       num_inds -= 1;
       free_inds.push( table_i);
       table(ind_pos) = _DELETED;
+
+      for ia in _arrs do
+        ia.purge( table_i);
     }
 
     if (size > _MIN_SIZE) then
-      if (num_inds < _ps(size-1)/2) then  // downsize?
+      if (num_inds < _ps(size-1)/2) {  // downsize?
         _half();
+      }
   }
 
 
@@ -241,6 +245,44 @@ class _idomain {
     return num_inds;
   }
 }
+
+
+def =(a: _idomain, b: _idomain) {
+  var indices = seq( int);
+  var inds_count = 0;
+  var inds_pos = 0;
+  var total_inds = a.num_inds;
+  while inds_count<total_inds {
+    var ind = a.inds( inds_pos);
+    if (ind.valid) {
+      indices #= ind.data;
+      inds_count += 1;
+    }
+    inds_pos += 1;
+  }
+
+  for ind in indices {
+    if (!b.member?(ind)) {
+      a.remove( ind);
+    }
+  }
+
+  inds_count = 0;
+  inds_pos = 0;
+  total_inds = b.num_inds;
+  while inds_count<total_inds {
+    var ind = b.inds( inds_pos);
+    if (ind.valid) {
+      if (!a.member?(ind.data)) {
+        a.add( ind.data);
+      }
+      inds_count += 1;
+    }
+    inds_pos += 1;
+  }
+  return a;  // WAW: YAH, "a" instead of "b" because we want to match keys, not do a deep copy (e.g., _arrs)
+}
+
 
 def fwrite( f : file, d : _idomain) {
   fwrite( f, "[");
@@ -256,6 +298,22 @@ def fwrite( f : file, d : _idomain) {
     inds_pos += 1;
   }
   fwrite(f, "]");
+
+  /*
+  fwrite( f, ">");
+  inds_count = 0;
+  inds_pos = 0;
+  while inds_count<d.num_inds {
+    var ind = d.inds( inds_pos);
+    if (ind.valid) {
+      fwrite( f, inds_pos);
+      inds_count += 1;
+      if (inds_count<d.num_inds) then fwrite(f, ", ");
+    }
+    inds_pos += 1;
+  }
+  fwrite(f, "<");
+  */
 }
 
 
@@ -268,6 +326,20 @@ class _iarray: _abase {
   def initialize() {
     data = _ddata( elt_type, _ps(0)/2);
     data.init();
+  }
+
+  def purge( ind: int) {
+    var d: elt_type;
+    data( ind) = d;
+  }
+
+  def _resize( length: int, old_map: _ddata(int)) {
+    var new_data: _ddata(elt_type) = _ddata( elt_type, length);
+    new_data.init();
+    for i in 0..old_map.size-1 {
+      new_data(i) = data(old_map(i));
+    }
+    data = new_data;
   }
 
   def this(ind : ind_type) var : elt_type
@@ -285,23 +357,48 @@ class _iarray: _abase {
   def isValidCursor?(c)
     return c < dom.num_inds;
 
+  // WAW: hack due to domain-array interface. The array is not reallocated
+  // here. Values of indices not in the new domain are reset. The 
+  // domain assignment will perform the reallocation of each array that
+  // maps to it.
   def reallocate(d: _domain) {
-    var id = d._value;
-    // if !(id.is_compact) then id._compact();
-    var new_data = _ddata( elt_type, id.inds.size);
-    new_data.init();
-    for i in 0..id.inds.size-1 {
-      var ind = id.inds(i);
-      if ind.valid {
-        new_data(i) = data(dom._get_index(ind.data));
+    if (d.rank == 0) {
+      var td = d._value;
+      var inds_count = 0;
+      var inds_pos = 0;
+      while (inds_pos < dom.num_inds) && (inds_count < dom.inds.size) {
+	var ind = dom.inds(inds_count);
+	if ind.valid {
+	  var i = td._map( ind.data);
+	  if (i < 0) then {
+	    purge( dom.table(dom._map( ind.data)));
+	  }
+	  inds_pos += 1;
+	}
+	inds_count += 1;
       }
     }
-    data = new_data;
-    dom = id;
   }
 
   def numElements {
     return dom.numIndices;
+  }
+
+  def assign( b: _iarray) {
+    var a_dom = this.dom;
+    if a_dom.num_inds != b.dom.num_inds then
+      halt( "array assignment with domains of different lengths") ;
+    var b_inds = b.dom.inds;
+    for i in 0..b_inds.size-1 {
+      if (b_inds(i).valid) {
+        var t = a_dom.table(a_dom._map( b_inds(i).data));
+        if t>=0 {
+          this.data(t) = b.data(t);
+        } else {
+          halt( "array assignment with different domain values");
+        }
+      }
+    }
   }
 }
 
