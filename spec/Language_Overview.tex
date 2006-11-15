@@ -385,10 +385,13 @@ definition or anywhere else that a type is allowed.
 Examples of Chapel statements are given in the following table.
 
 \begin{center}
-\begin{tabular}{|l|l|}
+\begin{longtable}{|l|l|}
 \hline
 {\bf Statement} & {\bf Example} \\
 \hline
+\endhead
+\hline
+\endfoot
 Block Statement &
 \begin{chapel} % test:  block.chpl
 var tau, s, c: real;
@@ -475,12 +478,6 @@ def getvalue(pos:string,y) {
 }
 \end{chapel} \\
 \hline
-\end{tabular}
-
-\begin{tabular}{|l|l|}
-\hline
-{\bf Statement} & {\bf Example} \\
-\hline
 While and Do While Loops &
 \begin{chapel} % test: while.chpl
 var t = 11;
@@ -559,14 +556,17 @@ Empty Statement &
 ;
 \end{chapel} \\
 \hline
-\end{tabular}
+\end{longtable}
 \end{center}
 
 \begin{center}
-\begin{tabular}{|l|l|}
+\begin{longtable}{|l|l|}
 \hline
 {\bf Expression} & {\bf Example} \\
 \hline
+\endhead
+\hline
+\endfoot
 Query Expression &
 \begin{chapel} % query.chpl
 writeln(sumOfThree(1,2,3));
@@ -646,7 +646,7 @@ def writehalf(i: int) {
 }
 \end{chapel} \\
 \hline
-\end{tabular}
+\end{longtable}
 \end{center}
 
 \subsubsection{Structured Data Types}
