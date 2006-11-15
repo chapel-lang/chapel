@@ -85527,3 +85527,16 @@ Modified files:
 	chapel/spec/: Domains_and_Arrays.tex chapel_listing.tex 
 	              syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/15/06 15:02:29 -- deitz
+
+Log message:
+	Changed stub remark for internal release.
+
+Modified files:
+	chapel/spec/: Classes.tex Domains_and_Arrays.tex 
+	              Input_and_Output.tex Records.tex 
+	              Reductions_and_Scans.tex Standard_Modules.tex 
+	              Unions.tex 
+
