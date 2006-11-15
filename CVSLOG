@@ -85423,3 +85423,19 @@ Log message:
 Modified files:
 	chapel/test/classes/waynew/: dyndis2.good 
 
+---------------------------------------------------------------------------
+
+11/14/06 18:17:31 -- marybeth
+
+Log message:
+	Using longtable package to produce tables that span multiple pages.
+	This package will repeat the table headers at the top of continued
+	table on each page.
+	
+	I updated the tables in the language overview to use this the longtable
+	environment offered in the longtable package.  The statement and expression
+	examples tables now break between pages automatically.
+
+Modified files:
+	chapel/spec/: spec.tex Language_Overview.tex 
+
