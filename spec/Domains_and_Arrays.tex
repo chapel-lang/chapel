@@ -1,78 +1,264 @@
 \sekshun{Domains and Arrays}
 \label{Domains_and_Arrays}
 
-This is a stub.  This portion of the document does not exist.
+A {\em domain} is a description of a collection of names for data.
+These names are referred to as the {\em indices} of the domain.  All
+indices for a particular domain are values with some common type.
+Valid types for indices are primitive types and class references or
+unions, tuples or records whose fields are valid types for indices.
+This excludes sequences, domains, and arrays.  Like sequences, domains
+have a rank and a total order on their elements.  An {\em array} is
+generically a function that maps from a {\em domain} to a collection
+of variables.  Chapel supports a variety of kinds of domains and
+arrays defined over those domains as well as a mechanism to allow
+application specific implementations of arrays.
+
+Arrays abstract mappings from sets of values to variables.  This key
+use of data structures coupled with the generic syntactic support for
+array usage increases software reusability.  By separating the sets of
+values into their own abstraction, domains, distributions can be
+associated with sets rather than variables.  This enables the
+orthogonality of data distributions.  Distributions are discussed
+in~\rsec{Locality_and_Distribution}.
 
 \subsection{Domains}
 \label{Domains}
 
-This is a stub.  This portion of the document does not exist.
+Domains are first-class ordered sets of indices.  There are five kinds
+of domains:
+\begin{itemize}
+\item
+Arithmetic domains are rectilinear sets of Cartesian indices that can
+have an arbitrary rank.
+\item
+Sparse domains are subsets of indices in arithmetic domains.
+\item
+Indefinite domains are sets of indices where the type of the index is
+some type that is not an array, domain, or sequence.  Indefinite
+domains define dictionaries or associative arrays implemented via hash
+tables.
+\item
+Opaque domains are sets of anonymous indices.  Opaque domains define
+graphs and unspecified sets.
+\item
+Enumerated domains are sets of constants defined by some enumerated
+type.
+\end{itemize}
 
 \subsubsection{Domain Types}
 \label{Domain_Types}
 
-This is a stub.  This portion of the document does not exist.
+Domain types vary based on the kind of the domain.  The type of an
+arithmetic domain is parameterized by the rank of the domain and the
+integral type of the indices.  The type of a sparse domain is
+parameterized by the type of the arithmetic domain that defines the
+superset of its indices.  The type of an indefinite domain is
+parameterized by the type of the index.  The type of an opaque domain
+is unique.  The type of an enumerated domain is parameterized by the
+enumerated type.
+
+\begin{example}
+In the code
+\begin{chapel}
+var D: domain(2) = [1..n, 1..n];
+\end{chapel}
+\chpl{D} is defined as a two-dimensional arithmetic domain and is
+initialized to contain the set of indices $(i,j)$ for all $i$ and $j$
+such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
+\end{example}
 
 \subsubsection{Domain Assignment}
 \label{Domain_Assignment}
 
-This is a stub.  This portion of the document does not exist.
+Domain assignment is by value.  If arrays are declared over a domain,
+domain assignment impacts these arrays as discussed
+in~\rsec{Association_of_Arrays_to_Domains}, but the arrays remain
+associated with the same domain regardless of the assignment.
 
 \subsubsection{Formal Arguments of Domain Type}
 \label{Formal_Arguments_of_Domain_Type}
 
-This is a stub.  This portion of the document does not exist.
+Domains are passed to functions by reference.  Formal arguments that
+receive domains are aliases of the actual arguments.  It is a
+compile-time error to pass a domain to a formal argument that has a
+non-blank intent.
 
 \subsubsection{Iteration over Domains}
 \label{Iteration_over_Domains}
+
+All domains support iteration via forall and for loops over the
+indices in the set that the domain defines.
+
+\subsubsection{Domain Promotion of Scalar Functions}
+\label{Domain_Promotion_of_Scalar_Functions}
 
 This is a stub.  This portion of the document does not exist.
 
 \subsection{Arrays}
 \label{Arrays}
 
-This is a stub.  This portion of the document does not exist.
+Arrays associate variables or elements with the sets of indices in a
+domain.  Arrays must be declared over domains and have a specified
+element type.
 
 \subsubsection{Array Types}
 \label{Array_Types}
 
-This is a stub.  This portion of the document does not exist.
+The type of an array is parameterized by the type of the domain that
+it is declared over and the element type of the array.  Array types
+are given by the following syntax:
+\begin{syntax}
+array-type:
+  [ domain-expression ] type
+
+domain-expression:
+  expression
+\end{syntax}
+The \sntx{domain-expression} must specify a domain that the array can
+be declared over.  This can be a domain literal.  If it is a domain
+literal, the square brackets around the domain literal can be omitted.
+
+\begin{example}
+In the code
+\begin{chapel}
+var A: [D] real;
+\end{chapel}
+\chpl{A} is declared to be an array over domain \chpl{D} with
+elements of type \chpl{real}.
+\end{example}
+
+\begin{implementation}
+Arrays of arrays are not currently supported.
+\end{implementation}
 
 \subsubsection{Array Indexing}
 \label{Array_Indexing}
+
+Arrays can be indexed by indices in the domain they are declared over.
+The indexing results in an access of the element that is mapped by
+this index.
+
+\begin{example}
+If \chpl{A} is an array with element type \chpl{real} declared over a
+one-dimensional arithmetic domain \chpl{[1..n]}, then the first
+element in \chpl{A} can be accessed via the expression \chpl{A(1)} and
+set to zero via the assignment \chpl{A(1) = 0.0}.
+\end{example}
+
+Arithmetic arrays also support indexing over the components of their
+indices for multidimensional arithmetic domains (where the indices are
+tuples).
+
+\begin{example}
+If \chpl{A} is an array with element type \chpl{real} declared over a
+one-dimensional arithmetic domain \chpl{[1..n, 1..n]}, then the first
+element in \chpl{A} can be accessed via the expression \chpl{A((1,1))}
+or \chpl{A(1,1)} and set to zero via the assignment \chpl{A((1,1)) =
+0.0} or \chpl{A(1,1) = 0.0}.
+\end{example}
+
+Indexing into an array with a domain is call array slicing and is
+discussed in the next section.
+
+\subsection{Array Slicing}
+\label{Array_Slicing}
 
 This is a stub.  This portion of the document does not exist.
 
 \subsubsection{Array Assignment}
 \label{Array_Assignment}
 
-The semantics of array assignment is that each array element is
-assigned in parallel. If there are duplicate values in the sequence,
-then the order of the element-wise assignments is arbitrary.
-
-\begin{example}
+Array assignment is by value.  Arrays can be assigned arrays,
+sequences, or domains.  If \chpl{A} is an lvalue of array type
+and \chpl{B} is an expression of either array, sequence, or domain
+type, then the assignment
 \begin{chapel}
-X(S) = y;
+A = B;
 \end{chapel}
-In this example \chpl{X} is an array and \chpl{S} a sequence of index
-values. The execution of all $X(S_i)=y$ may occur concurrently. 
-\end{example}
+is equivalent to
+\begin{chapel}
+forall (i,e) in (A.domain,B) do
+  A(i) = e;
+\end{chapel}
+If the zipper iteration is illegal, then the assignment is illegal.
+Notice that the assignment is implemented with the semantics of
+a \chpl{forall} loop.
 
+Arrays can also be assigned single values of their element type.  In
+this case, each element in the array is assigned this value.
+If \chpl{e} is an expression of the element type of the array or a
+type that can be implicitly converted to the element type of the
+array, then the assignment
+\begin{chapel}
+A = e;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+forall i in A.domain do
+  A(i) = e;
+\end{chapel}
 
 \subsubsection{Formal Arguments of Array Type}
 \label{Formal_Arguments_of_Array_Type}
 
-This is a stub.  This portion of the document does not exist.
+Arrays are passed to functions by reference.  Formal arguments that
+receive arrays are aliases of the actual arguments.  The ordinary rule
+that disallows assignment to formal arguments of blank intent does not
+apply to arrays.
 
 \subsubsection{Iteration over Arrays}
 \label{Iteration_over_Arrays}
+
+All arrays support iteration via forall and for loops over the
+elements mapped to by the indices in the array's domain.
+
+\subsubsection{Array Promotion of Scalar Functions}
+\label{Array_Promotion_of_Scalar_Functions}
 
 This is a stub.  This portion of the document does not exist.
 
 \subsubsection{Array Initialization}
 \label{Array_Initialization}
 
-This is a stub.  This portion of the document does not exist.
+By default, the elements in an array are initialized to the default
+values associated with the element type of the array.  There is an
+expectation that this default initialization can be overridden for
+performance reasons by explicitly marking the array type or variable.
+
+The initialization expression in the declaration of an array can be
+based on the indices in the domain using special array declaration
+syntax that replaces both the type and initialization specifications
+of the declaration:
+\begin{syntax}
+special-array-declaration:
+  identifier-list indexed-array-type-part initialization-part
+
+indexed-array-type-part:
+  : array-type-forall-expression type
+
+array-type-forall-expression:
+  [ identifier `in' domain-expression ]
+
+initialization-part:
+  = expression
+\end{syntax}
+In this code, the \sntx{array-type-forall-expression} is syntactic
+sugar for surrounding the \sntx{initialization-part} with this basic
+forall-expression.
+
+Given a domain expression \chpl{D}, an element type \chpl{t}, an
+expression \chpl{e} that is of type \chpl{t} or that can be implicitly
+converted to type \chpl{t}, then the declaration of array \chpl{A}
+given by
+\begin{chapel}
+var A: [i in D] t = e;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+var A: [D] t = [i in D] e;
+\end{chapel}
+The scope of the forall expression is as in the rewritten part so the
+expression \chpl{e} can include references to index \chpl{i}.
 
 \subsection{Index Types}
 \label{Index_Types}
@@ -134,18 +320,18 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsection{Sparse Arithmetic Domains and Arrays}
-\label{Sparse_Arithmetic_Domains_and_Arrays}
+\subsection{Sparse Domains and Arrays}
+\label{Sparse_Domains_and_Arrays}
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Adding Indices to Sparse Arithmetic Domains}
-\label{Adding_Indices_to_Sparse_Arithmetic_Domains}
+\subsubsection{Adding Indices to Sparse Domains}
+\label{Adding_Indices_to_Sparse_Domains}
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Removing Indices from Sparse Arithmetic Domains}
-\label{Removing_Indices_from_Sparse_Arithmetic_Domains}
+\subsubsection{Removing Indices from Sparse Domains}
+\label{Removing_Indices_from_Sparse_Domains}
 
 This is a stub.  This portion of the document does not exist.
 
@@ -229,26 +415,6 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsection{Product Domains and Arrays}
-\label{Product_Domains_and_Arrays}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Product Domain Definition}
-\label{Product_Domain_Definition}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Methods on Product Domains and Arrays}
-\label{Methods_on_Product_Domains_and_Arrays}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Arrays of Arrays}
-\label{Arrays_of_Arrays}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsection{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
 
@@ -281,20 +447,5 @@ This is a stub.  This portion of the document does not exist.
 
 \subsubsection{Association of Subdomains to Domains}
 \label{Association_of_Subdomains_to_Domains}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Anonymous Domains}
-\label{Anonymous_Domains}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Array Promotion of Scalar Functions}
-\label{Array_Promotion_of_Scalar_Functions}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Array Slicing}
-\label{Array_Slicing}
 
 This is a stub.  This portion of the document does not exist.

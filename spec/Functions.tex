@@ -568,5 +568,11 @@ of different types by eliding the type.
 
 A tuple of variables arguments can be passed to a function that takes
 variable arguments by destructuring the tuple in a tuple destructuring
-expressions defined in~\rsec{Tuple_Destructuring_Expressions}.  This
-allows for the forwarding of variable arguments as variable arguments.
+expression.  The syntax of this expression is given by
+\begin{syntax}
+tuple-destructuring-expression:
+  ( ... expression )
+\end{syntax}
+In this expression, the tuple defined by \sntx{expression} is expanded
+in place to represent its components.  This allows for the forwarding
+of variable arguments as variable arguments.
