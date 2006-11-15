@@ -85439,3 +85439,13 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/15/06 11:30:24 -- deitz
+
+Log message:
+	Checkpoint on Domains and Arrays section.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex Functions.tex 
+
