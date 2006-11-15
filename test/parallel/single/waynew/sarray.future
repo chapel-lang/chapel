@@ -6,5 +6,5 @@ variable type itself.  A fix would be to mark internal functions with
 pragmas such that calls within them do not coerce their sync var arguments 
 because:
  - the called function has been marked
- - or the callee function has been marked
+ - or the calling function has been marked
 
