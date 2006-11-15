@@ -85516,3 +85516,14 @@ Log message:
 Modified files:
 	chapel/test/parallel/single/waynew/: sarray.future 
 
+---------------------------------------------------------------------------
+
+11/15/06 14:51:30 -- deitz
+
+Log message:
+	More work on Arrays and Domains section, almost through arithmetic arrays part.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex chapel_listing.tex 
+	              syntax_listing.tex 
+
