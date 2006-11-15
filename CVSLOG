@@ -85486,3 +85486,23 @@ Added files:
 	                                        indef9a.chpl 
 	                                        indef9a.good 
 
+---------------------------------------------------------------------------
+
+11/15/06 13:40:11 -- waynew
+
+Log message:
+	Test to capture why an array of sync/single vars does not current work.
+	
+	From sarray.future:
+	The error here is that internal routines are coercing the synchronizing
+	variable to its base type when they should be using the synchronizing
+	variable type itself.  A fix would be to mark internal functions with
+	pragmas such that calls within them do not coerce their sync var arguments
+	because:
+	 - the called function has been marked
+	 - or the callee function has been marked
+
+Added files:
+	chapel/test/parallel/single/waynew/: sarray.chpl sarray.future 
+	                                     sarray.good 
+
