@@ -85449,3 +85449,14 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex Functions.tex 
 
+---------------------------------------------------------------------------
+
+11/15/06 11:44:12 -- deitz
+
+Log message:
+	Add iterator future for test to pre-order iterate over a tree.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: tree.future tree.good 
+	                                        tree.chpl 
+
