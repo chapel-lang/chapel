@@ -190,8 +190,8 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Overriding Base Class Functions}
-\label{Overriding_Base_Class_Functions}
+\subsubsection{Overriding Base Class Methods}
+\label{Overriding_Base_Class_Methods}
 
 This is a stub.  This portion of the document does not exist.
 
@@ -200,21 +200,26 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsection{Iteration over Classes}
-\label{Iteration_over_Classes}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{The Iteration Interface}
-\label{The_Iteration_Interface}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsection{Class Promotion over Classes}
+\subsection{Class Promotion of Scalar Functions}
 \label{Scalar Promotion}
 
-\subsection{Nested Type Definitions in Classes}
-\label{Nested_Type_Definitions_in_Classes}
+\begin{implementation}
+In the current implementation, a class can be defined to promote
+scalar functions by defining an iterator in the class
+named \chpl{this} and specifying a return type.  The return type
+indicates the type that the class promotes.  The body of
+the \chpl{this} iterator is ignored.  The class must also implement
+the iterator interface as described in~\rsec{Iterator_Interface}.
+\end{implementation}
+
+This is a stub.  This portion of the document does not exist.
+
+\subsection{Nested Classes}
+\label{Nested_Classes}
+
+\begin{implementation}
+Nested classes are not yet supported.
+\end{implementation}
 
 This is a stub.  This portion of the document does not exist.
 
