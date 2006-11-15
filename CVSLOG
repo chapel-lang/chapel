@@ -85413,3 +85413,13 @@ Log message:
 Modified files:
 	chapel/spec/: Acknowledgments.tex Classes.tex 
 
+---------------------------------------------------------------------------
+
+11/14/06 17:02:33 -- waynew
+
+Log message:
+	Correction to hand generated .good file.
+
+Modified files:
+	chapel/test/classes/waynew/: dyndis2.good 
+
