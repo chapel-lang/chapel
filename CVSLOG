@@ -85402,3 +85402,14 @@ Log message:
 Removed files:
 	chapel/test/classes/waynew/: dyndis2.future 
 
+---------------------------------------------------------------------------
+
+11/14/06 16:06:35 -- deitz
+
+Log message:
+	Finished first pass over Acknowledgments section.  Made a few small
+	changes to Classes section.
+
+Modified files:
+	chapel/spec/: Acknowledgments.tex Classes.tex 
+
