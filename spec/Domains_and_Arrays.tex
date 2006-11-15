@@ -67,6 +67,46 @@ initialized to contain the set of indices $(i,j)$ for all $i$ and $j$
 such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
 \end{example}
 
+\subsubsection{Index Types}
+\label{Index_Types}
+
+Each domain has a corresponding {\em index} type which is the type of
+the domain's indices qualified by its status as an index.  Variables
+of this type can be declared using the following syntax:
+\begin{syntax}
+index-type:
+  `index' ( domain-expression )
+\end{syntax}
+If the type of the indices of the domain is \chpl{int}, then the index
+type can be converted into this type.
+
+A value with a type that is the same as the type of the indices in a
+domain but is not the index type can be converted into the index type
+using a special ``method'' called \chpl{index}.
+
+\begin{example}
+In the code
+\begin{chapel}
+var j = D.index(i);
+\end{chapel}
+the type of the variable \chpl{j} is the index type of
+domain \chpl{D}.  The variable \chpl{i}, which must have the same type
+as the underlying type of the indices of \chpl{D}, is verified to be
+in domain \chpl{D} before it is assigned to \chpl{j}.
+\end{example}
+
+Values of index type are known to be valid and may have specialized
+representations to facilitate accessing arrays defined for that
+domain. It may therefore be less expensive to access arrays using
+values of appropriate index type rather than values of the more
+general type the domain is defined over.
+
+\begin{implementation}
+In the current implementation, the index type is not distinguished
+from the underlying type of the indices.  The index method is not yet
+implemented.
+\end{implementation}
+
 \subsubsection{Domain Assignment}
 \label{Domain_Assignment}
 
@@ -87,12 +127,28 @@ non-blank intent.
 \label{Iteration_over_Domains}
 
 All domains support iteration via forall and for loops over the
-indices in the set that the domain defines.
+indices in the set that the domain defines.  The type of the indices
+returned by iterating over a domain is the index type of the domain.
 
 \subsubsection{Domain Promotion of Scalar Functions}
 \label{Domain_Promotion_of_Scalar_Functions}
+\index{domains!promotion}
 
-This is a stub.  This portion of the document does not exist.
+Domain promotion of a scalar function is defined over the domain type
+and the type of the indices of the domain (not the index type).
+Domain promotion has the same semantics as sequence promotion where
+the scalar type is the indices of the domain and the promotion type is
+the domain type.
+
+\begin{example}
+Given an array \chpl{A} with element type \chpl{int} declared over a
+one-dimensional domain \chpl{D} with integral type \chpl{int}, then
+the array can be assigned the values given by the indices in the
+domain by writing
+\begin{chapel}
+A = D;
+\end{chapel}
+\end{example}
 
 \subsection{Arrays}
 \label{Arrays}
@@ -145,25 +201,40 @@ element in \chpl{A} can be accessed via the expression \chpl{A(1)} and
 set to zero via the assignment \chpl{A(1) = 0.0}.
 \end{example}
 
-Arithmetic arrays also support indexing over the components of their
-indices for multidimensional arithmetic domains (where the indices are
-tuples).
-
-\begin{example}
-If \chpl{A} is an array with element type \chpl{real} declared over a
-one-dimensional arithmetic domain \chpl{[1..n, 1..n]}, then the first
-element in \chpl{A} can be accessed via the expression \chpl{A((1,1))}
-or \chpl{A(1,1)} and set to zero via the assignment \chpl{A((1,1)) =
-0.0} or \chpl{A(1,1) = 0.0}.
-\end{example}
-
 Indexing into an array with a domain is call array slicing and is
 discussed in the next section.
 
-\subsection{Array Slicing}
+Arithmetic arrays also support indexing over the components of their
+indices for multidimensional arithmetic domains (where the indices are
+tuples), as described in~\rsec{Arithmetic_Array_Indexing}.
+
+\subsubsection{Array Slicing}
 \label{Array_Slicing}
 
-This is a stub.  This portion of the document does not exist.
+An array can be indexed by a domain that has the same type as the
+domain which the array was declared over.  Indexing in this manner has
+the effect of array slicing.  The result is a new array declared over
+the indexing domain where the elements in the array alias the elements
+in the array being indexed.
+
+\begin{example}
+Given the definitions
+\begin{chapel}
+var OuterD: domain(2) = [0..n+1, 0..n+1];
+var InnerD: domain(2) = [1..n, 1..n];
+var A, B: [OuterD] real;
+\end{chapel}
+the assignment given by
+\begin{chapel}
+A(InnerD) = B(InnerD);
+\end{chapel}
+assigns the elements in the interior of \chpl{B} to the elements in
+the interior of \chpl{A}.
+\end{example}
+
+Arithmetic arrays also support slicing by indexing into them with
+arithmetic sequences or tuples of arithmetic sequences as described
+in~\rsec{Arithmetic_Array_Slicing}.
 
 \subsubsection{Array Assignment}
 \label{Array_Assignment}
@@ -215,7 +286,32 @@ elements mapped to by the indices in the array's domain.
 \subsubsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 
-This is a stub.  This portion of the document does not exist.
+Array promotion of a scalar function is defined over the array type
+and the element type of the array.  Array promotion has the same
+semantics as sequence promotion where the scalar type is the element
+type of the array and the promotion type is the array type.  The only
+difference between sequence promotion and array promotion is that if a
+function returns a value, the promoted function returns an array of
+those values rather than a sequence of those values.  The array is
+defined over the same domain as the array that was passed to the
+function.  In the event of zipper promotion over multiple arrays or
+both arrays and sequences, the promoted function returns a value based
+on the first argument to the function that enables promotion.
+
+\begin{implementation}
+In the current implementation, promotion always returns sequences.
+\end{implementation}
+
+\begin{example}
+Whole array operations is a special case of array promotion of scalar
+functions.  In the code
+\begin{chapel}
+A = B + C;
+\end{chapel}
+if \chpl{A}, \chpl{B}, and \chpl{C} are arrays, this code assigns each
+element in \chpl{A} the element-wise sum of the elements in \chpl{B}
+and \chpl{C}.
+\end{example}
 
 \subsubsection{Array Initialization}
 \label{Array_Initialization}
@@ -260,63 +356,100 @@ var A: [D] t = [i in D] e;
 The scope of the forall expression is as in the rewritten part so the
 expression \chpl{e} can include references to index \chpl{i}.
 
-\subsection{Index Types}
-\label{Index_Types}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Index Methods on Domains}
-\label{Index_Methods_on_Domains}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsection{Arithmetic Domains and Arrays}
 \label{Arithmetic_Domains_and_Arrays}
 
-This is a stub.  This portion of the document does not exist.
+An arithmetic domain is a rectilinear set of Cartesian indices.
+Arithmetic domains are specified as a tuple of arithmetic sequences
+enclosed in square brackets.
 
-\subsubsection{Arithmetic Domains and Arithmetic Sequences}
-\label{Arithmetic_Domains_and_Arithmetic_Sequences}
+\subsubsection{Arithmetic Domain Literals}
+\label{Arithmetic_Domain_Literals}
 
-This is a stub.  This portion of the document does not exist.
+An arithmetic domain literal is specified by the following syntax:
+\begin{syntax}
+arithmetic-domain-literal:
+  [ arithmetic-sequence-expression-list ]
 
-\subsubsection{Multidimensional Arithmetic Domains and Arrays}
-\label{Multidimensional_Arithmetic_Domains_and_Arrays}
+arithmetic-sequence-expression-list:
+  arithmetic-sequence-expression
+  arithmetic-sequence-expression , arithmetic-sequence-expression-list
 
-This is a stub.  This portion of the document does not exist.
+arithmetic-sequence-expression:
+  expression
+\end{syntax}
 
-\subsubsection{Strided Arithmetic Domains and Arrays}
-\label{Strided_Arithmetic_Domains_and_Arrays}
+\begin{example}
+The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
+domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
+\end{example}
 
-This is a stub.  This portion of the document does not exist.
+\subsubsection{Arithmetic Domain Types}
+\label{Arithmetic_Domain_Types}
 
-\subsubsection{Arithmetic Domain and Array Types}
-\label{Arithmetic_Domain_and_Array_Types}
+The type of an arithmetic domain is determined from the rank of the
+arithmetic domain (the number of arithmetic sequences that define it)
+and by an underlying integeral type called the {\em dimensional index
+type} which must be identical to each of the integral element types of
+the arithmetic sequences that define the arithmetic domain.  By
+default, the dimensional index type of an arithmetic domain
+is \chpl{int}.
 
-This is a stub.  This portion of the document does not exist.
+The arithmetic domain type is specified by the syntax of a function
+call to the keyword \chpl{domain} that takes at least an argument
+called \chpl{rank} that is a parameter of type \chpl{int} and
+optionally an integral type named \chpl{dim_type}.
 
-\subsubsection{Arithmetic Domain Index Types}
-\label{Arithmetic_Domain_Index_Types}
+\begin{example}
+The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
+type \chpl{domain(2,int)}.
+\end{example}
 
-This is a stub.  This portion of the document does not exist.
+\subsubsection{Arithmetic Domain Indexing}
+\label{Arithmetic_Domain_Indexing}
+
+Arithmetic domains support indexing by a value of type \chpl{int} that
+is at least one and no more than the rank of the array.  Indexing into
+an arithmetic domain returns the arithmetic sequence associated with
+that dimension.
+
+\begin{example}
+In the code
+\begin{chapel}
+for i in D(1) do
+  for j in D(2) do
+    writeln(A(i,j));
+\end{chapel}
+domain \chpl{D} is iterated over by two nested loops.  The first
+dimension of \chpl{D} is iterated over in the outer loop.  The second
+dimension is iterated over in the inner loop.
+\end{example}
 
 \subsubsection{Arithmetic Array Indexing}
 \label{Arithmetic_Array_Indexing}
 
-This is a stub.  This portion of the document does not exist.
+In addition to being indexed by indices defined by their arithmetic
+domains, arithmetic arrays can be indexed directly by values of the
+dimensional index type where the number of values is equal to the rank
+of the array.  This has the semantics of first moving the values into
+a tuple and then indexing into the array.
 
-\subsubsection{Arithmetic Domain Indexing}
-\label{Arithmetic_Domain_Indexing}
+\begin{example}
+Given the definition
+\begin{chapel}
+  var ij = (i,j);
+\end{chapel}
+the indexing expressions \chpl{A(ij)} and \chpl{A(i,j)} are
+equivalent.
+\end{example}
+
+\subsubsection{Arithmetic Array Slicing}
+\label{Arithmetic_Array_Slicing}
 
 This is a stub.  This portion of the document does not exist.
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Methods on Arithmetic Domains and Arrays}
-\label{Methods_on_Arithmetic_Domains_and_Arrays}
 
 This is a stub.  This portion of the document does not exist.
 
@@ -360,11 +493,6 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Methods on Indefinite Domains and Arrays}
-\label{Methods_on_Indefinite_Domains_and_Arrays}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsection{Opaque Domains and Arrays}
 \label{Opaque_Domains_and_Arrays}
 
@@ -390,11 +518,6 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Methods on Opaque Domains and Arrays}
-\label{Methods_on_Opaque_Domains_and_Arrays}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsection{Enumerated Domains and Arrays}
 \label{Enumerated_Domains_and_Arrays}
 
@@ -407,11 +530,6 @@ This is a stub.  This portion of the document does not exist.
 
 \subsubsection{Enumerated Domain Index Types}
 \label{Enumerated_Domain_Index_Types}
-
-This is a stub.  This portion of the document does not exist.
-
-\subsubsection{Methods on Enumerated Domains and Arrays}
-\label{Methods_on_Enumerated_Domains_and_Arrays}
 
 This is a stub.  This portion of the document does not exist.
 
@@ -440,12 +558,23 @@ This is a stub.  This portion of the document does not exist.
 
 This is a stub.  This portion of the document does not exist.
 
-\subsubsection{Index Methods on Subdomains}
-\label{Index_Methods_on_Subdomains}
-
-This is a stub.  This portion of the document does not exist.
-
 \subsubsection{Association of Subdomains to Domains}
 \label{Association_of_Subdomains_to_Domains}
 
 This is a stub.  This portion of the document does not exist.
+
+\subsection{Predefined Functions and Methods on Domains and Arrays}
+
+{\bf Functions and Methods on Domains}
+
+\begin{chapel}
+def Domain.numIndices: dim_type
+\end{chapel}
+Returns the number of indices in the domain.
+
+{\bf Functions and Methods on Arrays}
+
+\begin{chapel}
+def Array.numElements: this.domain.dim_type
+\end{chapel}
+Returns the number of elements in the array.
