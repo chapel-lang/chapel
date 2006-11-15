@@ -85460,3 +85460,29 @@ Added files:
 	chapel/test/functions/deitz/iterators/: tree.future tree.good 
 	                                        tree.chpl 
 
+---------------------------------------------------------------------------
+
+11/15/06 11:56:50 -- waynew
+
+Log message:
+	1. Implementation for
+	   - indefinite domain array assignment
+	   - indefinite domain assignment
+	   - remapping of indef. dom arrays when the domain is doubled or halved
+	     which can occur with domain index additions/deletions or domain
+	     assignment. This was enabled by the dyn. dispatch fix Steve checked
+	     in yesterday.
+	
+	2. Some tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+Added files:
+	chapel/test/domains/indefinite/waynew/: indef8-fail2.chpl 
+	                                        indef8-fail2.good 
+	                                        indef8.chpl indef8.good 
+	                                        indef9.chpl indef9.good 
+	                                        indef9a.chpl 
+	                                        indef9a.good 
+
