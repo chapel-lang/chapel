@@ -85677,3 +85677,13 @@ Modified files:
 	chapel/compiler/AST/: view.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:48:31 -- deitz
+
+Log message:
+	Added working sequence test.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq10.chpl test_seq10.good 
+
