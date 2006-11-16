@@ -85699,3 +85699,19 @@ Modified files:
 	chapel/test/studies/hpcc/FFT/: fft-hpcc06-mta.chpl 
 	                               fft-hpcc06.chpl 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:55:00 -- deitz
+
+Log message:
+	Added a new .future that tests our implementation of iterators to make
+	sure we don't create sequences in a loop (we currently do) and to make
+	sure that we don't actually execute the iterator to determine its type
+	(we currently do).
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_side_effect.chpl 
+	                                        test_iterator_side_effect.future 
+	                                        test_iterator_side_effect.good 
+
