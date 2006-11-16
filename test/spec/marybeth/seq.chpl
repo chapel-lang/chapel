@@ -25,24 +25,18 @@ def main() {
 }
 
 def insertionSort(x) {
-  const n = x.numElements;
-  var order: seq of int = (/ 1 /);
-  var val = x(1);
-  var ind, pos: int;
- 
-  [i in 2..n] {
-    order #= i;
-  }
+  var order: seq of int;
 
-  for i in 2..n {
-    val = x(i);
-    pos = order(i);
-    ind = i-1;
+  for i in x.domain {
+    var val = x(i);
+    order #= i;
+    var ind = i-1;
+    if (ind > 0) then
     while ((ind > 0) && (x(order(ind)) > val)) {
       order(ind+1) = order(ind);
       ind -= 1;
     }
-    order(ind+1) = pos;
+    order(ind+1) = i;
   }
   return order;
 }
