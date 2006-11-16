@@ -85593,3 +85593,13 @@ Modified files:
 	chapel/spec/: Types.tex Variables.tex 
 	              Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+11/16/06 12:57:57 -- marybeth
+
+Log message:
+	Updated sequence example so that insertion sort doesn't use a temporary array.
+
+Modified files:
+	chapel/test/spec/marybeth/: seq.chpl 
+
