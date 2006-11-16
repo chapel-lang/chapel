@@ -85603,3 +85603,17 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: seq.chpl 
 
+---------------------------------------------------------------------------
+
+11/16/06 14:54:09 -- waynew
+
+Log message:
+	Added a simple binary tree example using cobegin to construct and walk it
+	in parallel.
+
+Modified files:
+	chapel/test/release/examples/: README 
+Added files:
+	chapel/test/release/examples/: tree_construct.chpl 
+	                               tree_construct.good 
+
