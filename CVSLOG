@@ -85580,3 +85580,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/16/06 09:10:13 -- waynew
+
+Log message:
+	- Checkpoint for parallel/sync section.
+	- Minor fix for int(16) range in type section.
+	- Added synchronization-type for variable declaration.
+
+Modified files:
+	chapel/spec/: Types.tex Variables.tex 
+	              Parallelism_and_Synchronization.tex 
+
