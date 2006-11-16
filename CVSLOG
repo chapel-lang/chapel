@@ -85617,3 +85617,34 @@ Added files:
 	chapel/test/release/examples/: tree_construct.chpl 
 	                               tree_construct.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:43:09 -- bradc
+
+Log message:
+	Two variations on the stream benchmark that I created
+	while trying to get timings that didn't have memory
+	leaks.  stream-nopromote uses:
+	
+	        [i in ProbSpace] A(i) = B(i) + alpha * C(i);
+	
+	and works and runs in a few seconds.  stream-slice.chpl
+	uses:
+	
+	        A(ProbSpace) = B(ProbSpace) + alpha * C(ProbSpace);
+	
+	and gets the wrong answer for some reason... I haven't
+	been able to figure it out yet, so am putting it in as
+	a future for now.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-nopromote.chpl 
+	                                         stream-nopromote.compopts 
+	                                         stream-nopromote.execopts 
+	                                         stream-nopromote.good 
+	                                         stream-slice.chpl 
+	                                         stream-slice.compopts 
+	                                         stream-slice.execopts 
+	                                         stream-slice.future 
+	                                         stream-slice.good 
+
