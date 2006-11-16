@@ -85687,3 +85687,15 @@ Log message:
 Added files:
 	chapel/test/types/seq/deitz/: test_seq10.chpl test_seq10.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:50:46 -- bradc
+
+Log message:
+	Final versions of FFT that were in our paper.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: fft-mta.chpl fft.chpl 
+	chapel/test/studies/hpcc/FFT/: fft-hpcc06-mta.chpl 
+	                               fft-hpcc06.chpl 
+
