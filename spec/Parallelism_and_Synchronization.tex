@@ -105,7 +105,7 @@ iterator. This allows an iterator to both define a sequence of values
 and to impose a partial order on that sequence. If the iterator
 expression is a sequence value, there is no effect. This has the same
 semantics as with the ordered expression which is explained
-in \rsec{Ordered_Expression}.  The syntax is:
+in \rsec{Ordered_Expressions}.  The syntax is:
 \begin{syntax}
 ordered-forall-statement:
    ordered `forall' index-expression `in' iterator-expression `do' statement
@@ -151,8 +151,8 @@ the cobegin statement is more exact. A correct evaluation of the
 cobegin statement has the semantics that each statement is evaluated
 by a separate computation. It may not be safe to use less computations
 than the number of statements. The compiler or runtime would have to
-determine that semantics are the same to evaluate more than one
-statement serial before using less computations.
+determine that the semantics are the same to evaluate more than one
+statement serially before using less computations.
 
 As with the forall loop, control transfers are not permitted
 either into or out of the cobegin's block statement. Similarly,
@@ -219,10 +219,10 @@ degree of parallelism.  The syntax is:
 serial-statement:
   `serial' expression block-level-statement
 \end{syntax}
-where the expression is a bool type.  Independent of that value, the
-block-level statement is evaluated. If the expression is true, any
-dynamically encountered forall loop or cobegin statements is executed
-sequentially within the current computation.
+where the expression evaluates to a bool type.  Independent of that
+value, the block-level statement is evaluated. If the expression is
+true, any dynamically encountered forall loop or cobegin statements is
+executed sequentially within the current computation.
 
 % WAW: what happens if we then encounter a begin?  Runtime halt?
 
@@ -246,7 +246,8 @@ class Tree {
 \end{chapel}
 In this example, a recursive tree iterator, \chpl{walk}, uses the
 tree's height to dynamically determine when additional computations
-should be used to traverse the tree.
+should be used to traverse the tree. When the tree's height is less
+than 11, it is traversed by one computation.
 \end{example}
 
 % DC: This iterator could be used in conjunction with an \chpl{ordered
@@ -265,32 +266,40 @@ should be used to traverse the tree.
 %    }
 % }
 
-% WAW: this example does not def the iterator in class as that did
-% not work when tested. Which to use in this example?
 
+\subsection{Synchronization Variables}
+\label{Synchronization_Variables}
 
+{\em Synchronization variables} are used to coordinate computations
+that share data.  The reference and assignment to these variables
+implicitly controls the execution order of the computation. 
+There are two kinds of synchronization variables,
+\chpl{single} and \chpl{sync} variables. Single variables are
+assigned once during its lifetime. Sync variables may be assigned
+multiple times during its lifetime.
 
-\subsection{Implicit Synchronization on Variables}
-\label{Implicit_Synchronization_on_Variables}
+The normal reference and assignment of a synchronization variable is
+well suited for producer-consumer data sharing. Additional functions
+on synchronization variable is provided such that other traditional
+synchronization primitives such as semaphores or mutexes can be
+contructed.
 
-{\em Synchronizing variables} can be used to coordinate computations.
-There are two kinds of synchronizing variables, \chpl{single}
-and \chpl{sync} variables, whose semantics include execution order and
-memory consistency requirements.
 
 \subsubsection{Single Variables}
 \label{Single_Variables}
 
-Single (assignment) variable can only be assigned once during their
-dynamic lifetime.  A reference to a single assignment variable before
-it is assigned to causes the computation's execution to be suspended
+A single (assignment) variable can only be assigned once during its
+lifetime.  A reference to a single variable before
+it is assigned causes the computation's execution to be suspended
 until the variable is assigned. Otherwise, the reference proceeds as
 with normal variables and the computation continues.  After a single
 assigment variable is assigned, all computations with pending
 references are resumed in an unspecified order. The syntax of a single
-assignment variable is:
-\begin{chapel}
-\end{chapel}
+variable type is:
+\begin{syntax}
+ synchronization-type:
+   'single'
+\end{syntax}
 
 \begin{example}
 \begin{chapel}
@@ -313,8 +322,9 @@ class Tree {
 
 \end{chapel}
 In this example the single variable \chpl{x} is assigned by an
-asynchronous computation. The computation returning the sum blocks
-on the reading of \chpl{x} until it has been assigned.
+asynchronous computation created with the begin statement. The
+computation returning the sum blocks on the reading of \chpl{x} until
+it has been assigned.
 
 % DC: While a \chpl{cobegin} might be a more suitable formulation, this
 % fragment creates an asynchronous computation to compute the sum of the
@@ -365,23 +375,19 @@ to assign to x and y before it references x and y in order to assign to z.
 \subsubsection{Sync Variables}
 \label{Sync_Variables}
 
-A sync variable generalizes the single assignment variable to
-permit multiple assignments over its lifetime. Sync variables
-are declared with the type attribute \chpl{sync}. The synchronized
-variable syntax is
-\begin{chapel}
-\end{chapel}
-A sync variable is logically either {\em full} or {\em empty}. When it
-is empty, computations that attempt to read that variable are
-suspended until it becomes full by the next assignment to it which
-atomically changes the state to full. When the variable is full, a
-variable reference consumes the value and atomically transitions the
-state back to empty. If there are more than one computation waiting on
-a sync variable, one is non-deterministically selected to reference the
-variable resume execution.  The other computations continue to wait for
-the next assignment. Otherwise, the state transistions to empty.
+A sync variable generalizes the single assignment variable to permit
+multiple assignments over its lifetime. A sync variable is logically
+either {\em full} or {\em empty}. When it is empty, computations that
+attempt to read that variable are suspended until it becomes full by
+the next assignment to it which atomically changes the state to
+full. When the variable is full, a variable reference consumes the
+value and atomically transitions the state back to empty. If there are
+more than one computation waiting on a sync variable, one is
+non-deterministically selected to reference the variable resume
+execution.  The other computations continue to wait for the next
+assignment. Otherwise, the state transistions to empty.
 
-If a computation attempts to assign to a synchronized variable that is
+If a computation attempts to assign to a synchronizaton variable that is
 full, the computation is suspended and the assignment is delayed. When
 the sync variable becomes empty, the computation is resumed and the
 assignment proceeds, transistioning the state back to full. If there
@@ -389,15 +395,16 @@ are multiple computations attempting such an assignment, one is
 non-deterministically selected to proceed and the other assignments
 continue to wait until the sync variable is emptied again.
 
-Sync variables allow a sequence of values to be communicated
-between computations using a single shared variable. They also can be
-used as building blocks for more traditional synchronization
-primitives such as semaphores and monitors.
+The synchronization sync variable syntax is
+\begin{syntax}
+synchronization-type:
+  'sync'
+\end{syntax}
 
 \subsubsection{Functions on Synchronization Variables}
 \label{Functions_on_Synchronization_Variables}
 
-Synchronizing variables support a various special methods that
+Synchronization variables support additional methods that
 can be used to bypass their semantics to provide new ones. For
 sync variable \chpl{s}, the following functions are defined:
 \begin{chapel}
@@ -409,24 +416,25 @@ readXF(s)     // no wait, leave full, and return s's value
 readXX(s)     // no wait, leave F/E unchanged, and return s's value
 \end{chapel}
 
-For single variable \chpl{s} only \chpl{readFF} is defined.
+For single variables \chpl{s} only \chpl{readFF} is defined.
 
 
 \subsubsection{Synchronizing Variables of Record Type}
 \label{Synchronization_Variables_of_Record_Type}
 
-A record variable can be a single or sync variable. The semantics of single 
-and sync variables are applied only to the record variable and not
-its individual fields. A record may have sychronizing variable fields,
-but whole record references or assignments trigger the synchronizing
-variable semantics. 
+A record variable can be a single or sync variable. The semantics of
+single and sync variables are applied only to the record variable and
+not its individual fields. Whole record references or assignments
+trigger the synchronization variable semantics.  A record may have
+sychronization variable fields to get those semantics on field
+accesses.
 
 \subsubsection{Synchronizing Variables of Class Type}
 \label{Synchronization_Variables_of_Class_Type}
 
 A class variable can be a single or sync variable. The semantics of
 single and sync variables are applied only to class reference and
-assignment, not its individual fields. A class may have sychronizing
+assignment, not its individual fields. A class may have sychronization
 variable fields.
 
 
@@ -437,29 +445,30 @@ The memory consistency model provided by Chapel will be defined in the future.
 \subsection{Atomic Transactions}
 \label{Atomic_Transactions}
 
-The atomic statement creates an atomic transaction around a 
-block statement.  The syntax for the atomic statement is given
-by:
-\begin{chapel}
+The atomic statement creates an atomic transaction around a block
+statement. The block is executed with transaction semantics in that
+the block executes entirely, the block appears to have completed in a
+single order and serially with respect to other atomic block, and no
+variable assignments is visible until the block is done,
+
+The syntax for the atomic statement is given by:
+\begin{syntax}
 atomic-statement:
   `atomic' block-level-statement
-\end{chapel}
-
-An {\em atomic transaction} is a region of the program that appears to
-execute atomically. 
+\end{syntax}
 
 Here is an example of an atomic transaction:
 \begin{example}
 \begin{chapel}
 var found = false;
 atomic {
-  if(head == obj) {
+  if head == obj {
     found = true;
     head = obj.next;
   } else  {
     var last = head;
-    while(last != null) {
-    if (last.next == obj) {
+    while last != null {
+    if last.next == obj {
       found = true;
       last.next = object.next;
       break;
@@ -468,7 +477,7 @@ atomic {
   }
 }
 \end{chapel}
-Inside the atomic statement is a simple sequential implementation of
+Inside the atomic statement is a sequential implementation of
 removing a particular object denoted by \chpl{obj} from a singly
 linked list.  This is an operation that is well-defined, assuming only
 one computation is attempting it at a time. The atomic statement
@@ -491,6 +500,7 @@ atomic found = head.remove(obj);
 \subsubsection{Atomicity Model}
 \label{Atomicity_Model}
 
-Chapel provides strong atomicity. With strong atomicity, references
-outside of explicit atomic sections behave as if they were
-individual implicit atomic references.
+Chapel provides strong atomicity. With strong atomicity, computations
+outside an atomic block cannot see assignments made by a 
+computation in a atomic block before the block is completed.
+
