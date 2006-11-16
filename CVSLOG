@@ -85562,3 +85562,21 @@ Added files:
 	                            seq2.good iterator.chpl 
 	                            iterator.good 
 
+---------------------------------------------------------------------------
+
+11/15/06 22:43:13 -- marybeth
+
+Log message:
+	Updates to language overview:
+	
+	- Divided up some sections.
+	- Added text and examples to sequence and iterator sections.
+	- Cleaned up beginning.  This text is now just a placeholder.  It needs
+	  improvement.
+	- I addressed some of Steve's comments.
+	- I deleted part of the statement and expression examples.  They are no
+	long entire programs.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
