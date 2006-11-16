@@ -397,7 +397,7 @@ iterator_method( FnSymbol *fn) {
   fn->isMethod = true;                // method of iterator class
   fn->global = true;                  // other modules need access
   fn->retType = dtUnknown;            // let resolve figures these out
-  fn->retExprType = NULL;
+  //  fn->retExprType = NULL;
 }
 
 
@@ -428,7 +428,7 @@ iterator_transform( FnSymbol *fn) {
   normalize( ic_def);
   iterator_constructor_fixup( ic);
   ic->isIterator = true;
-  
+
   FnSymbol *headcf = new FnSymbol( "getHeadCursor");
   iterator_method( headcf);
   m->stmts->insertAtHead(new DefExpr(headcf));
@@ -437,6 +437,7 @@ iterator_transform( FnSymbol *fn) {
 
   FnSymbol *valuef = new FnSymbol( "getValue");
   iterator_method( valuef);
+  valuef->retExprType = nextcf->retExprType->remove();
   m->stmts->insertAtHead(new DefExpr(valuef));
   iterator_formals( valuef, ic, cursor);
   iterator_build_vtable( valuef, cursor, &vals_returned);
@@ -453,7 +454,7 @@ iterator_transform( FnSymbol *fn) {
   // iterator -> wrapper function
   fn->fnClass = FN_FUNCTION;
   fn->retType = dtUnknown;
-  fn->retExprType = NULL;
+  fn->retExprType->remove();
   AList actuals;
   for_alist( DefExpr, formal,  fn->formals) {
     ArgSymbol *a = dynamic_cast<ArgSymbol*>(formal->sym);
@@ -468,7 +469,7 @@ static void
 enable_scalar_promotion( FnSymbol *fn) {
   Expr* seqType = fn->retExprType;
   if (!seqType)
-    USR_FATAL(fn, "Cannot infer iterator return type yet");
+    return;
   Type *seqElementType = seqType->typeInfo();
   
   if (!strcmp("_promoter", fn->name)) {

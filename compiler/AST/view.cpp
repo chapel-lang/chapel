@@ -64,17 +64,15 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf("%s", sym->var->name);
       if (number)
         printf("[%d]", sym->var->id);
-      if (sym->var->type && sym->var->type->symbol) {
-        printf(":%s", sym->var->type->symbol->name);
-        if (number)
-          printf("[%d]", sym->var->type->symbol->id);
-      }
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->var)) {
         printf(":%s", fn->retType->symbol->name);
         if (number)
           printf("[%d]", fn->retType->symbol->id);
+      } else if (sym->var->type && sym->var->type->symbol) {
+        printf(":%s", sym->var->type->symbol->name);
+        if (number)
+          printf("[%d]", sym->var->type->symbol->id);
       }
-
       printf("'");
     }
   }
@@ -93,15 +91,14 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf("%s", sym->name);
     if (number)
       printf("[%d]", sym->id);
-    if (sym->type && sym->type->symbol) {
-      printf(":%s", sym->type->symbol->name);
-      if (number)
-        printf("[%d]", sym->type->symbol->id);
-    }
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
       printf(":%s", fn->retType->symbol->name);
       if (number)
         printf("[%d]", fn->retType->symbol->id);
+    } else if (sym->type && sym->type->symbol) {
+      printf(":%s", sym->type->symbol->name);
+      if (number)
+        printf("[%d]", sym->type->symbol->id);
     }
     printf("'");
   }

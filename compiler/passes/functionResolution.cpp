@@ -772,8 +772,12 @@ resolve_type_expr(Expr* expr) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
-        if (call->parentSymbol && call->typeInfo() == dtUnknown)
-          resolveFns(call->isResolved());
+        FnSymbol* fn = call->isResolved();
+        if (fn && call->parentSymbol) {
+          resolveFormals(fn);
+          if (call->typeInfo() == dtUnknown)
+            resolveFns(fn);
+        }
         callStack.pop();
       }
     }
