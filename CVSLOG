@@ -85550,3 +85550,15 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: cond.chpl 
 
+---------------------------------------------------------------------------
+
+11/15/06 22:39:56 -- marybeth
+
+Log message:
+	Adding tests for sequence and iterator examples included in spec.
+
+Added files:
+	chapel/test/spec/marybeth/: seq.chpl seq.good seq2.chpl 
+	                            seq2.good iterator.chpl 
+	                            iterator.good 
+
