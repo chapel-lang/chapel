@@ -85648,3 +85648,13 @@ Added files:
 	                                         stream-slice.future 
 	                                         stream-slice.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:46:29 -- marybeth
+
+Log message:
+	Another update to the sequence example.
+
+Modified files:
+	chapel/test/spec/marybeth/: seq.chpl 
+
