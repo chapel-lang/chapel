@@ -127,7 +127,7 @@ def dfft(A: [?ADom], W) {
     span *= radix;
   }
 
-  if ((span << 2) == numElements) then
+  if ((span*radix) == numElements) then
     forall j in [0..span) do
       butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
   else

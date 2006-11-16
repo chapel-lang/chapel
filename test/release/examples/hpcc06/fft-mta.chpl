@@ -54,7 +54,7 @@ def dfft(Z, Twiddles) {
 
   var span = radix;
 
-  for i in [radix..n) by 2 {
+  for i in [4..n) by 2 {
     if (i <= n/2) then
       cftmd1(span, Z, Twiddles);
     else
