@@ -85658,3 +85658,22 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: seq.chpl 
 
+---------------------------------------------------------------------------
+
+11/16/06 15:46:46 -- deitz
+
+Log message:
+	Improved iterator transform to handle iterators that do not specify a
+	return type.
+	
+	Minor modification to function resolution so that when trying to
+	figure out only the return type of a function, it does not resolve a
+	function if the function's return type is known.
+	
+	Fixed view to only show the return type of functions, not the unused
+	type field as well.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
