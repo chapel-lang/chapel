@@ -25,49 +25,6 @@ programming features. While Chapel borrows concepts from many preceding language
 its parallel concepts are most closely based on ideas from High-Performance Fortran 
 (HPF), ZPL, and the Cray MTA's extensions to Fortran/C. 
 
-The key features of the Chapel language for productive parallel programming are as 
-follows: 
-\begin{itemize}
-\item {\bf Locale type} - an opaque type used for organizing and referring to 
-units of machine locality.
-\item {\bf Domains} - first-class index sets that can potentially be distributed 
-between multiple locales.  Domains are Chapel's primary vehicle for global-view 
-data parallelism.
-\item {\bf Arrays} - generalized support for distributed data aggregates, including 
-dynamic multidimensional rectilinear arrays, potentially strided and/or sparse 
-in each dimension; associative arrays; set- and graph-based arrays.
-\item {\bf User-defined distributions} - a capability for users to specify the 
-low-level distributed implementation of domains and arrays orthogonally 
-to the computations that operate on these concepts.
-\item {\bf \chpl{forall} loops and iterators} - concepts for specifying parallel 
-iteration in a manner that separates algorithm and implementation.
-\item {\bf Index types} - types representing domain indices to support code 
-clarity and bounds-checking optimizations.    
-\item {\bf User-defined reductions and scans} - a framework for expressing parallel 
-prefix operations over data aggregates cleanly and efficiently.
-\item {\bf \chpl{cobegin} and \chpl{begin} statements} - statement types for 
-supporting task-parallel computations.
-\item {\bf Sync and single-assignment variables} - variable types that support 
-synchronization between parallel tasks.
-\item {\bf Atomic sections} - compound statements that support atomic execution 
-from the perspective of other threads.
-\item {\bf \chpl{On} clauses} - specifications that support explicit placement of 
-data values and computation on the machine's locales.
-\item {\bf Value and reference classes} - object-oriented software containers 
-that support encapsulation of state and the separation of interfaces from 
-implementations.
-\item {\bf Function and operator overloading, multiple dispatch, pass-by-argument name, 
-default argument values} - concepts that support modern and productive function call 
-capabilities.
-\item {\bf Type variables and latent types} - capabilities for writing algorithms 
-independently of types to support code reuse, exploratory programming, and 
-generic functions and data structures.
-\item {\bf Modules} - software containers for namespace management and programming 
-in-the-large.
-\item {\bf Other features for productive programming} - tuples, type-safe unions, 
-sequences, etc.
-\end{itemize}
-
 \subsection{Motivating Principles}
 \label{Motivating_Principles}
 
@@ -91,7 +48,7 @@ require programmers to express algorithms on a task-by-task basis so that
 the tasks can execute in parallel.  Global-view programming models
 allow programmers to express a parallel algorithm as a whole, similar to
 a serial algorithm.  The compiler and runtime libraries identify and assign
-tasks to run in parallel across processors.  Chapel provides a global-view 
+tasks to run in parallel across processors.  Chapel provides such a global-view 
 programming model.
 
 The global-view programming model is is able:
@@ -108,15 +65,6 @@ support a global address space, DGAS and PGAS memory segments, a high performanc
 network, lightweight synchronization, and latency-tolerant processors.  This 
 synergy results in improved performance as compared to implementations on less-
 productive architectures.
-
-We believe that the dominance of the fragmented programming model is the primary
-inhibitor of parallel programmability today, and therefore recommend that new
-productivity-oriented languages focus on supporting a global view of parallel
-programming.  
-
-
-
-
 
 \subsubsection{Locality Aware Programming}
 \label{Locality_Aware_Programming}
@@ -271,14 +219,15 @@ variable-kind, type definition or initializer.
 
 Chapel has support for boolean, integer and floating point primitive types,
 including the support for unsigned integers and complex types.  There is
-also support for strings as primitive types.  The following table
-lists the set of primitive types.  For each type, the default size and
-all possible sizes are given.
+also support for strings as primitive types.  The numeric primitive types
+have multiple sizes, which can be specified by appending the size to the
+type as shown in the following table.  When a size is not specified, then
+the type has the default size.
 
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
-{\bf Type} & {\bf Default Size} & {\bf Supported Sizes}  \\
+{\bf Type} & {\bf Default Size} & {\bf Type Names}  \\
 \hline
 \begin{chapel}
 int
@@ -394,22 +343,18 @@ Examples of Chapel statements are given in the following table.
 \endfoot
 Block Statement &
 \begin{chapel} % test:  block.chpl
-var tau, s, c: real;
-const a = 2.0, b = 5.5;
-const b = 5.5;
+// Block statement for computing Givens rotation
 {
 tau = -a/b;
 s = 1/sqrt(1 + tau*tau);
 c = s*tau;
 }
-writeln("Givens rotation = ", s, " ", c);
 \end{chapel} \\
 \hline
 Expression Statement & 
 \begin{chapel} % test:  expstmt.chpl
-var denom = 1.0;
-var x: real;
 
+// Expression statements
 testForZero(denom);
 testForZero(x);
 testForZero(0.0);
@@ -422,50 +367,31 @@ def testForZero(x: real) {
 \hline
 Assignment Statement & 
 \begin{chapel} % test: assign.chpl
-var i: int;
 
-i = 0;
+var i = 0;
 i = i + 1;
 i += 1;
-writeln(i);
 \end{chapel} \\
 \hline
 Conditional Statement &
 \begin{chapel} % test:  cond.chpl
-const D = [1..5];
-var x, y: [D] real;
-var alpha = 2.0;
-
-[i in D] y(i) = 3.0*i;
-scale(x, y, alpha);
-writeln(x);
-
 def scale(x, y, alpha: real) {
-  if (x.numElements != y.numElements) {
-    writeln("Error:  Input vectors are not the same length.");
-    return;
-  }
-  if (alpha == 0.0) {
-    x = 0.0;
-  } else if (alpha == 1.0) {
-    x = y;
-  } else {
-    x = alpha*y;
+  if (x.numElements != y.numElements) then
+    writeln("Error:  Inputs are not the same length.");
+  else {
+    if (alpha == 0.0) {
+      x = 0.0;
+    } else if (alpha == 1.0) {
+      x = y;
+    } else {
+      x = alpha*y;
+    }
   }
 }
 \end{chapel} \\
 \hline
 Select Statement &
 \begin{chapel} % test:  select.chpl
-const D = [1..5];
-var A: [D] real;
-
-[i in D] A(i) = i;
-
-writeln(getvalue("first",A));
-writeln(getvalue("last",A));
-writeln(getvalue("middle",A));
-
 def getvalue(pos:string,y) {
   var x = 0.0;
   select pos {
@@ -480,16 +406,11 @@ def getvalue(pos:string,y) {
 \hline
 While and Do While Loops &
 \begin{chapel} % test: while.chpl
-var t = 11;
-
-writeln("Scope of do while loop:");
 do {
   t += 1;
   writeln(t);
 } while (t <= 10);
 
-t = 11;
-writeln("Scope of while loop:");
 while (t <= 10) {
   t += 1;
   writeln(t);
@@ -498,12 +419,6 @@ while (t <= 10) {
 \hline
 For Loop &
 \begin{chapel} % test: for.chpl
-const D = [1..5];
-var A: [D] real;
-
-[i in D] A(i) = -i*i;
-writeln(norm1(A));
-
 def norm1(x) {
   var norm = 0.0;
   for i in x.domain {
@@ -521,23 +436,11 @@ var programTimer:Timer;
 programTimer.start();
 writeln("Write one line.");
 programTimer.stop();
-writeln(programTimer.accumulated);
+var totalTime = programTimer.elapsed();
 \end{chapel} \\
 \hline
 Type Select Statement &
 \begin{chapel} % test:  typeselect.chpl
-var x = 32, y = 15.5;
-var z: int(8);
-var coord = (0.0,0.0);
-var yes: bool;
-
-writetype(x);
-writetype(y);
-writetype(z);
-writetype(coord);
-writetype(yes);
-writetype("no");
-
 def writetype(x) {
   type select x {
     when int do writeln("Integer type");
@@ -559,6 +462,9 @@ Empty Statement &
 \end{longtable}
 \end{center}
 
+The syntax for all expressions is given in~\rsec{Expressions}.  Examples
+of less common expressions are given in the following table.
+
 \begin{center}
 \begin{longtable}{|l|l|}
 \hline
@@ -569,9 +475,6 @@ Empty Statement &
 \endfoot
 Query Expression &
 \begin{chapel} % query.chpl
-writeln(sumOfThree(1,2,3));
-writeln(sumOfThree(4.0,5.0,3.0));
-
 def sumOfThree(x: ?t, y:t, z:t):t {
    var sum: t;
 
@@ -585,11 +488,6 @@ Casts &
 var x, y: complex;
 x = 2.56 + 9.0i;
 y = (3.12, 8.7): complex;
-var z = (4.2, 6.1);
-
-writeln(x);
-writeln(y);
-writeln(z);
 
 var m = 2: int(64);
 var n = 2;
@@ -611,9 +509,6 @@ writeln("For 64-bit integers, 2 ** (",j,") overflows.");
 \hline
 Let Expression &
 \begin{chapel} % let.chpl
-quadsol(3.0,8.0,5.0);
-quadsol(3.0,4.0,5.0);
-
 def quadsol(a:real, b:real, c:real) {
   writeln("The solution of ",a,"x^2 + ",b,"x + ",c," = 0 is:");
   if (b*b > 4.0*a*c) {
@@ -636,10 +531,6 @@ def quadsol(a:real, b:real, c:real) {
 \hline
 Conditional Expression &
 \begin{chapel} % condexp.chpl
-writehalf(8);
-writehalf(21);
-writehalf(1000);
-
 def writehalf(i: int) {
   var half = if (i % 2) then i/2 +1 else i/2;
   writeln("Half of ",i," is ",half);
@@ -652,12 +543,113 @@ def writehalf(i: int) {
 \subsubsection{Structured Data Types}
 \label{Structured_Data_Types}
 
-\subsubsection{Functions and Methods}
-\label{Functions_and_Methods}
+\subsubsection{Functions}
+\label{Intro_Functions}
 
-\subsubsection{Sequences and Iterators}
-\label{Sequences_and_Iterators}
+\subsubsection{Methods}
+\label{Intro_Methods}
 
+\subsubsection{Sequences}
+\label{Intro_Sequences}
+
+Sequences are ordered sets of elements, each of which has the same type.
+Sequences are constructs that, among other uses, may be used in iterating in \chpl{for}
+and \chpl{for all} loops and in defining domains.  
+
+Consider the following example of a routine which sorts a list \chpl{x}
+of elements and returns the sequence of indices which maps the original
+list to the sorted list.
+\begin{example}
+\begin{chapel}
+def insertionSort(x) {
+  const n = x.numElements;
+  var order: seq of int = (/ 1 /);
+  var tempx = x;
+  var val = x(1);
+  var ind, pos: int;
+
+  [i in 2..n] {
+    order = order # i;
+  }
+
+  for i in 2..n {
+    val = tempx(i);
+    pos = order(i);
+    ind = i-1;
+    while ((ind > 0) && (tempx(ind) > val)) {
+      tempx(ind+1) = tempx(ind);
+      order(ind+1) = order(ind);
+      ind -= 1;
+    }
+    tempx(ind+1) = val;
+    order(ind+1) = pos;
+  }
+  return order;
+}
+\end{chapel}
+\end{example}
+The variable \chpl{order} is declared to be a sequence of integers
+and it is initialized to be \chpl{(/ 1 /)}.  In general, literal
+sequences are delimited by \chpl{(/} and \chpl{/)}, and the elements of
+the sequence are separated by commas.  In the first loop, \chpl{[i in 2..n]},
+the sequence \chpl{order} is constructed an element at a time by concatenating
+\chpl{i} at each iteration.  After the first iteration of the loop, 
+\chpl{order = (/ 1, 2 /)}.  At the end of the loop, \chpl{order} is a sequence
+of integers from \chpl{1} to \chpl{n}.
+
+During the insertion sort, each time the list is changed so is \chpl{order},
+keeping track of the moves of the elements of the list.  Once the sort is
+complete, the function returns the sequence of indices that would permute
+the original unsorted list into the sorted list.
+
+In the following code, \chpl{x} is some list of elements that can be
+ordered.  A call to the insertion sort routine returns a sequence which
+is then used in a \chpl{for} loop. 
+\begin{chapel}
+var order: seq of int = insertionSort(x);
+for i in order do write(x(i)," ");
+writeln(); 
+\end{chapel}
+The output of the above code are the elements of \chpl{x} in sorted order.
+
+Arithmetic sequences are a special case of general sequences.  Arithmetic
+sequences contain integral values that can be specified with lower and upper
+bounds and with a stride.  The following example is a strided arithmetic sequence.
+\begin{chapel}
+var fours = 0..36 by 4;
+[i in fours] writeln(i);
+\end{chapel}
+The output of this code are the multiples of \chpl{4} from \chpl{0} to
+\chpl{36}.
+
+All sequence operations apply to arithmetic sequences.  For more information
+about these operations and other details about sequences, see~\rsec{Sequences}.
+
+\subsubsection{Iterators}
+\label{Intro_Iterators}
+
+Iterators are functions that conceptually return a sequence of values.
+In the following example, the iterator produces the first \chpl{n} even
+numbers.  
+\begin{chapel}
+iterator evens(n): int {
+  for i in 1..n do yield 2*i;
+}
+\end{chapel}
+When an iterator is called within a \chpl{for} or \chpl{for all} loop,
+then the iterator is evaluated at each iteration of the loop body.
+For example, the following code writes the \chpl{i}th even number at 
+each iteration \chpl{i}.
+\begin{chapel}
+for i in evens(5) do writeln(i);
+\end{chapel}
+When the iterator is called outside of a loop, then the iterator returns
+the entire sequence of values computed.  For example, if the \chpl{evens} iterator
+is called on its own, it returns the sequence of \chpl{n} even numbers.
+\begin{chapel}
+var y = evens(5);
+\end{chapel}
+In this case, \chpl{y = (/2, 4, 6, 8, 10/)}.
 
 \subsubsection{Arrays and Domains}
 \label{Arrays_and_Domains}
