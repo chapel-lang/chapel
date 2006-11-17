@@ -24,16 +24,16 @@ def main() {
   writeln();
 }
 
-def insertionSort(x) {
+def insertionSort(x: [?D]) {
   var order: seq of int;
 
-  for i in x.domain {
+  for i in D {
     var val = x(i);
     var ind = i-1;
-    if (ind > 0) then
-      while ((ind > 0) && (x(order(ind)) > val)) {
-        ind -= 1;
-      }
+    while (ind > 0) {
+      if x(order(ind)) <= val then break;
+      ind -= 1;
+    }
     order = order(1..ind) # i # order(ind+1..i-1);
   }
   return order;
