@@ -85753,3 +85753,14 @@ Log message:
 Added files:
 	chapel/test/spec/marybeth/: seq3.chpl seq3.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:28:52 -- marybeth
+
+Log message:
+	Adding a failing test with concatenation of partial sequences that
+	indexed with variable arithmetic sequences.
+
+Added files:
+	chapel/test/spec/marybeth/: seq4.chpl seq4.future seq4.good 
+
