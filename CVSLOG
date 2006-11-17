@@ -85775,3 +85775,17 @@ Log message:
 Modified files:
 	chapel/doc/: README.building README.compiling 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:47:50 -- bradc
+
+Log message:
+	Made a new doc/release directory to contain documents
+	that should be in the doc/ directory of the release
+	and moved the two READMEs into it.
+
+Added files:
+	chapel/doc/release/: README.building README.compiling 
+Removed files:
+	chapel/doc/: README.building README.compiling 
+
