@@ -85831,3 +85831,23 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/16/06 17:58:07 -- bradc
+
+Log message:
+	Added a README.files to the top-level directory which defines the
+	overall directory structure and top-level files.
+	
+	Added a README to the doc/release directory to describe what the
+	docs in the release are.  Added our HPCC report.
+	
+	Modified the gen_release script to grab these things.
+
+Modified files:
+	./: README 
+	chapel/util/: gen_release 
+Added files:
+	./: README.files 
+	chapel/doc/release/: README hpcc06.pdf 
+
