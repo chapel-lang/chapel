@@ -85820,3 +85820,14 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: prod-cons.chpl prod-cons.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 17:15:17 -- bradc
+
+Log message:
+	Changed gen_release to make doc/release directory
+	into doc/ directory for the release.
+
+Modified files:
+	chapel/util/: gen_release 
+
