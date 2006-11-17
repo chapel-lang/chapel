@@ -2,7 +2,7 @@
 Chapel Compiler Release Directory Structure and Files
 =====================================================
 
-The following list gives an overview of $CHPLHOME's structure.
+The following list gives an overview of $CHPL_HOME's structure.
 Several subdirectories contain files named README to further describe
 the files and directories that they contain.
 

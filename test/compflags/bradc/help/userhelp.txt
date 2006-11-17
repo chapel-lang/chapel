@@ -33,7 +33,7 @@ Linker Control:
 Miscellaneous Flags:
 --------------------
       --instantiate-max   256       int      Limit number of instantiations
-      --chplhome          .         path     Over-ride $CHPLHOME
+      --chplhome          .         path     Over-ride $CHPL_HOME
       --devel             false     ->true   Compile as developer
 
 Compiler Information:

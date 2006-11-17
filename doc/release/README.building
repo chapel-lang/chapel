@@ -3,7 +3,7 @@ Building the Chapel Compiler and Runtime Support Libraries
 ==========================================================
 
 To build the Chapel compiler, set up your environment as described in
-the top-level README file, cd to $CHPLHOME, and type:
+the top-level README file, cd to $CHPL_HOME, and type:
 
      gmake
 
@@ -16,10 +16,10 @@ If everything works as intended, you ought to see:
 
 2) the compiler binary getting linked and ending up at:
 
-        $CHPLHOME/bin/$CHPL_PLATFORM/chpl
+        $CHPL_HOME/bin/$CHPL_PLATFORM/chpl
 
 3) the runtime support libraries being compiled, archived, and stored
-   in $CHPLHOME/lib/$CHPL_PLATFORM/
+   in $CHPL_HOME/lib/$CHPL_PLATFORM/
 
 Otherwise, if you get an error or failure during the make process,
 please let us know about it (as well as any workaround that you might
@@ -78,7 +78,7 @@ Platform-specific Settings
 --------------------------
 
 The architecture of Chapel's Makefiles is designed to set any
-architecture-specific settings in $CHPLHOME/Makefile.$CHPL_PLATFORM.
+architecture-specific settings in $CHPL_HOME/Makefile.$CHPL_PLATFORM.
 We have been factoring architectural-specific assumptions out of the
 Makefiles as we run into them, so it is likely that additional changes
 will be required as Chapel starts getting used on a wider variety of

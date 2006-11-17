@@ -1,8 +1,8 @@
 # IMPORTANT NOTE: in the first line below, replace REPLACE_ME_FIRST
 # with the location of your installation
 
-export CHPLHOME=REPLACE_ME_FIRST/chapel   
+export CHPL_HOME=REPLACE_ME_FIRST/chapel   
 
-export CHPL_PLATFORM=`$CHPLHOME/util/platform`
+export CHPL_PLATFORM=`$CHPL_HOME/util/platform`
 
-export PATH=$PATH:$CHPLHOME/bin/$CHPL_PLATFORM
+export PATH=$PATH:$CHPL_HOME/bin/$CHPL_PLATFORM

@@ -16,16 +16,16 @@ Setting up your environment
 To get started, there are three environment settings that you should
 make in order to use this release effectively:
 
-1) Set the CHPLHOME environment variable to point to the location of
+1) Set the CHPL_HOME environment variable to point to the location of
    the chapel/ directory in which this README is contained.  For
    example:
 
-        setenv CHPLHOME ~/chapel
+        setenv CHPL_HOME ~/chapel
 
 2) Set the CHPL_PLATFORM environment variable to the string returned
-   by the $CHPLHOME/util/platform script.  For example:
+   by the $CHPL_HOME/util/platform script.  For example:
 
-        setenv CHPL_PLATFORM `$CHPLHOME/util/platform`
+        setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
 
    Note: Chapel's currently supported platforms include 32- and 64-bit
    Linux, Cygwin, SunOS, and Mac OS X.  Other UNIX-based environments
@@ -33,12 +33,12 @@ make in order to use this release effectively:
    Makefile structure.  For help getting such details sorted out, read
    doc/README.building or contact us at: chapel_info@cray.com
 
-3) Set your path to include the directory $CHPLHOME/bin/$CHPL_PLATFORM
+3) Set your path to include the directory $CHPL_HOME/bin/$CHPL_PLATFORM
    which will be created when you build the compiler.  For example:
 
-        set path = ($path $CHPLHOME/bin/$CHPL_PLATFORM)
+        set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
 
-The directory $CHPLHOME/etc/dotFiles contains sample lines for
+The directory $CHPL_HOME/etc/dotFiles contains sample lines for
 inclusion in a shell's resource file to set these values.  They
 require modification in order to specify the location of your
 installation.
@@ -53,7 +53,7 @@ Quick Start
 
 2) Change directories to the Chapel installation:
 
-     cd $CHPLHOME
+     cd $CHPL_HOME
 
 3) Build the compiler using:
 

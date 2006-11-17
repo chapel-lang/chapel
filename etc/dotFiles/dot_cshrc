@@ -1,8 +1,8 @@
 # IMPORTANT NOTE: in the first line below, replace REPLACE_ME_FIRST
 # with the location of your installation
 
-setenv CHPLHOME REPLACE_ME_FIRST/chapel   
+setenv CHPL_HOME REPLACE_ME_FIRST/chapel   
 
-setenv CHPL_PLATFORM `$CHPLHOME/util/platform`
+setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
 
-set path = ($CHPLHOME/bin/$CHPL_PLATFORM $path)
+set path = ($CHPL_HOME/bin/$CHPL_PLATFORM $path)

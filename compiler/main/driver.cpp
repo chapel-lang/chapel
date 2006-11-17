@@ -74,7 +74,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Miscellaneous Flags", NULL, NULL, NULL, NULL},
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
- {"chplhome", ' ', "Over-ride $CHPLHOME", "P", chplhome, "CHPLHOME", NULL},
+ {"chplhome", ' ', "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', "Compile as developer", "F", &developer, "CHPL_DEVELOPER", NULL},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},

@@ -19,8 +19,8 @@
 # distribution of more work.
 #
 # Requirements:
-#  - paratest.server.pl is run in $CHPLHOME/test.
-#  - Chapel compiler bin as $CHPLHOME/bin/"platform"/chpl.
+#  - paratest.server.pl is run in $CHPL_HOME/test.
+#  - Chapel compiler bin as $CHPL_HOME/bin/"platform"/chpl.
 #  - Scripts start_test and paratest.client.pl in the same directory
 #      as paratest.server.pl. It will create a temporary directory
 #      (.synch) to synchronize the distribution of work to the client
