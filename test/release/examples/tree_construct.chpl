@@ -1,27 +1,27 @@
-// Construct a binary tree and assign a unique id to each node.
+// Construct a binary tree in parallel and assign a unique id to each node.
 // Compute the sum of the id's. Assume height >= 1.
 
-param TREE_HEIGHT = 4;
+param treeHeight = 4;
 
 class node {
   var id: int;
   var left, right: node;
 }
 
-def build_tree( height: uint, id: int): node {
-  var new_node = node();
-  new_node.id = id;
+def buildTree(height: uint, id: int): node {
+  var newNode = node();
+  newNode.id = id;
   if height > 1 {
     cobegin {
-      new_node.left = build_tree( height-1, id+1);
-      new_node.right = build_tree( height-1, id+(1<<(height-1)));
+      newNode.left = buildTree(height-1, id+1);
+      newNode.right = buildTree(height-1, id+(1<<(height-1)));
     }
   }
-  return new_node;
+  return newNode;
 }
 
 
-def sum( n: node): int {
+def sum(n: node): int {
   if n.left != nil {
     var sum_left, sum_right: int;
     cobegin {
@@ -35,5 +35,5 @@ def sum( n: node): int {
 }
 
 
-var root = build_tree( TREE_HEIGHT, 1);
-writeln( "sum=", sum(root));
+var root = buildTree(treeHeight, 1);
+writeln("sum=", sum(root));

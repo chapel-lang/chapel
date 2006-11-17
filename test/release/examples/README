@@ -13,6 +13,7 @@ This directory contains several Chapel example codes:
        fft.chpl             : our global 1D FFT entry
        fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
        tree_construct.chpl  : construct and walk a tree in parallel
+       prod-cons.chpl       : producer-consumer using a sync variable
 
 
 --------------------------------
