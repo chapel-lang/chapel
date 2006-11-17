@@ -85715,3 +85715,15 @@ Added files:
 	                                        test_iterator_side_effect.future 
 	                                        test_iterator_side_effect.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:07:45 -- bradc
+
+Log message:
+	Put a "quick start" approach to the release in the top-level
+	README as requested by Steve.  Steve, if you could review
+	this and see if it meets your goals, that would be great.
+
+Modified files:
+	./: README 
+
