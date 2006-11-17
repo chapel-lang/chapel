@@ -85882,3 +85882,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: README 
 
+---------------------------------------------------------------------------
+
+11/17/06 10:17:19 -- bradc
+
+Log message:
+	Simplified hello, world example as requested.
+
+Modified files:
+	chapel/test/release/examples/: hello.chpl 
+
