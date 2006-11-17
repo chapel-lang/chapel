@@ -187,6 +187,10 @@ build_for_expr(BaseAST* indices,
 
   VarSymbol* seq = new VarSymbol("_seq");
   seq->isCompilerTemp = true;
+
+  VarSymbol* dummy = new VarSymbol("_type_dummy");
+  dummy->isCompilerTemp = true;
+
   LabelSymbol* break_out = new LabelSymbol("type_break");
 
   ASTMap map;
@@ -194,17 +198,18 @@ build_for_expr(BaseAST* indices,
   Expr* typeexpr = expr->copy(&map);
 
   stmts->insertAtTail(new DefExpr(seq));
+  stmts->insertAtTail(new DefExpr(dummy));
 
   BlockStmt* body = 
-    new BlockStmt(
-        new CallExpr(PRIMITIVE_MOVE,
-                     seq, new CallExpr("_construct_seq", typeexpr)));
+    new BlockStmt(new CallExpr(PRIMITIVE_MOVE, dummy, typeexpr));
   body->insertAtTail(new GotoStmt(goto_normal, break_out));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
                                                     iterator->copy(),
                                                     body, 1)));
   stmts->insertAtTail(new DefExpr(break_out));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, seq,
+                        new CallExpr("_construct_seq", dummy)));
 
   Expr* append_stmt =
       new CallExpr(
