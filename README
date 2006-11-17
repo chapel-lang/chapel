@@ -44,14 +44,42 @@ require modification in order to specify the location of your
 installation.
 
 
+
+-----------
+Quick Start
+-----------
+
+1) Set up your environment as described above.
+
+2) Change directories to the Chapel installation:
+
+     cd $CHPLHOME
+
+3) Build the compiler using:
+
+     gmake
+
+4) Compile an example program using:
+
+     chpl -o hello examples/hello.chpl
+
+5) Execute the resulting executable, overriding the default message:
+
+     ./hello --message="Hello, Chapel users!"
+
+
 ------------
 What's next?
 ------------
 
-For the next steps on building and using the Chapel compiler, please
-refer to the following README files:
+For more detailed information about...      refer to...
 
-  doc/README.building  -- how to build the compiler
-  doc/README.compiling -- how to use the compiler
-  doc/README.executing -- how to execute compiler-generated codes
-  doc/README.bugs      -- how to report bugs
+  ...the files and directory structure        ...README.files
+  ...building the compiler                    ...doc/README.building
+  ...using the compiler                       ...doc/README.compiling
+  ...executing Chapel programs                ...doc/README.executing
+  ...submimtting bugs                         ...doc/README.bugs
+  ...example Chapel programs                  ...examples/README
+  ...a tutorial using the HPCC benchmarks     ...doc/TODO
+  ...the Chapel language specification        ...doc/TODO
+  ...the motivations behind Chapel            ...doc/TODO
