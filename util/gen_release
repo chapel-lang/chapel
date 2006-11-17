@@ -35,8 +35,6 @@ $cvsignores = "CVS|RCS";
        "LICENSE",
        "Makefile",
        "README",
-       "doc/README.building",
-       "doc/README.compiling",
        "util/platform"
 );
 
@@ -47,6 +45,7 @@ $cvsignores = "CVS|RCS";
 
 # include these dirs and their entire contents
 @complete_dirs = (
+    "doc",
     "etc/dotFiles",
     "examples",
     "make",
@@ -67,6 +66,11 @@ print "Creating the examples directory...\n";
 system("cd chapel && rm -r examples");
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/test && cp start_test sub_test start_clean sub_clean ../examples/");
+
+print "Creating the docs directory...\n";
+system("cd chapel && mv doc doctmp");
+system("cd chapel && mv doctmp/release doc");
+system("cd chapel && rm -r doctmp");
 
 foreach $file (@files) {
     # print "$file\n";
