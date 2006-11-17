@@ -12,6 +12,8 @@ Variables and Types
   * Configuration parameters
   * Values of non-bool type are allowed where only values of bool type
     should be allowed.
+  * Casts are not promoted.
+  * Conditional expressions of parameters are not folded.
 
 Modules
 =======
@@ -28,6 +30,7 @@ Functions
   * Functions as variables and/or arguments to functions
   * Formal arguments of tuple type must match actual arguments
     exactly.
+  * Promotion over lvalue functions does not work.
 
 Classes, Records, and Unions
 ============================
@@ -49,6 +52,7 @@ Tuples, Sequences, and Iterators
   * The transpose, spread, and reshape functions
   * Indexing by indefinite arithmetic sequences
   * Zipper iteration bounds matching
+  * Iterators cannot be methods.
 
 Arrays and Domains
 ==================
