@@ -85764,3 +85764,14 @@ Log message:
 Added files:
 	chapel/test/spec/marybeth/: seq4.chpl seq4.future seq4.good 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:45:06 -- bradc
+
+Log message:
+	Updated READMEs on building and compiling the
+	compiler.
+
+Modified files:
+	chapel/doc/: README.building README.compiling 
+
