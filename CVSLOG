@@ -85988,3 +85988,20 @@ Added files:
 	                              test_forallexpr2.future 
 	                              test_forallexpr2.good 
 
+---------------------------------------------------------------------------
+
+11/17/06 14:17:37 -- bradc
+
+Log message:
+	Moved sub_* test scripts into Bin subdirectory, just to
+	keep the release test directory structure cleaner.
+
+Modified files:
+	chapel/test/: start_clean start_test 
+	chapel/test/release/examples/: README 
+	chapel/util/: gen_release 
+Added files:
+	chapel/test/Bin/: sub_clean sub_test 
+Removed files:
+	chapel/test/: sub_clean sub_test 
+
