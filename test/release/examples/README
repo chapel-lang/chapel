@@ -5,6 +5,7 @@ Chapel Examples Directory and Testing System
 This directory contains several Chapel example codes:
 
      hello.chpl             : "Hello, world!" program using a config variable
+     beer.chpl              : computes lyrics to "99 bottles of beer"
      genericStack.chpl      : a stack class written using generic-programming
      prod-cons.chpl         : producer-consumer using a sync variable
      tree_construct.chpl    : construct and walk a tree in parallel
