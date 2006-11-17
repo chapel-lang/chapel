@@ -35,6 +35,7 @@ $cvsignores = "CVS|RCS";
        "LICENSE",
        "Makefile",
        "README",
+       "README.files",
        "util/platform"
 );
 
@@ -90,7 +91,7 @@ foreach $dir (@code_dirs) {
         $file =~ s/(\S+\/)+//g;
         # print "$file\n";
         # print "$fullpath\n";
-        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README|DIRS|FILES/) {
+        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README/) {
             # print "$fullpath\n";
             push @tarfiles, $fullpath;
         }

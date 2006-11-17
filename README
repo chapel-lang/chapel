@@ -30,8 +30,8 @@ make in order to use this release effectively:
    Note: Chapel's currently supported platforms include 32- and 64-bit
    Linux, Cygwin, SunOS, and Mac OS X.  Other UNIX-based environments
    ought to work conceptually, but may not be supported by our current
-   Makefile structure.  For help getting such details sorted out,
-   please contact us at: chapel_info@cray.com
+   Makefile structure.  For help getting such details sorted out, read
+   doc/README.building or contact us at: chapel_info@cray.com
 
 3) Set your path to include the directory $CHPLHOME/bin/$CHPL_PLATFORM
    which will be created when you build the compiler.  For example:
