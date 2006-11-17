@@ -85851,3 +85851,13 @@ Added files:
 	./: README.files 
 	chapel/doc/release/: README hpcc06.pdf 
 
+---------------------------------------------------------------------------
+
+11/16/06 18:03:36 -- bradc
+
+Log message:
+	copied timedexec script for tests to release
+
+Modified files:
+	chapel/util/: gen_release 
+
