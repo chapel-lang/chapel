@@ -85935,3 +85935,14 @@ Modified files:
 Removed files:
 	chapel/test/spec/marybeth/: seq4.future 
 
+---------------------------------------------------------------------------
+
+11/17/06 13:47:09 -- deitz
+
+Log message:
+	Fixed up and cleaned up insertion sort example slightly.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+	chapel/test/spec/marybeth/: seq4.chpl 
+
