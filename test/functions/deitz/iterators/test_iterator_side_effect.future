@@ -1,6 +1,0 @@
-iterators
-
-this side-effecting iterator shows a few problems with our implementation:
-
-1. we seem to create a sequence still
-2. we seem to run the iterator a few times to determine types.  we shouldn't.
