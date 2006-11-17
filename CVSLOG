@@ -85920,3 +85920,18 @@ Added files:
 	                                        test_iterator_side_effect3.future 
 	                                        test_iterator_side_effect3.good 
 
+---------------------------------------------------------------------------
+
+11/17/06 13:37:56 -- deitz
+
+Log message:
+	Fixed a bug in which a forall expression that iterated over an empty
+	iterator returned an uninitialized sequence.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+Removed files:
+	chapel/test/spec/marybeth/: seq4.future 
+
