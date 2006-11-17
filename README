@@ -80,6 +80,5 @@ For more detailed information about...      refer to...
   ...executing Chapel programs                ...doc/README.executing
   ...submimtting bugs                         ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
-  ...a tutorial using the HPCC benchmarks     ...doc/TODO
-  ...the Chapel language specification        ...doc/TODO
-  ...the motivations behind Chapel            ...doc/TODO
+  ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
+  ...the Chapel language specification        ...doc/spec.pdf

@@ -4,12 +4,24 @@ Chapel doc README
 
 This directory contains the following documentation:
 
-README.building  : information about building the Chapel compiler
-README.compiling : how to use the Chapel compiler to compile code
+  README.building  : information about building the Chapel compiler
+  README.compiling : how to use the Chapel compiler to compile code
 
-hpcc06.pdf : our report for the 2006 HPC Challenge competition
-             (http://www.hpcchallenge.org), which also serves as a
-             tutorial to Chapel via three of the HPCC benchmarks:
-             STREAM Triad, Random Access, and FFT
+  hpcc06.pdf : our report for the 2006 HPC Challenge competition
+               (http://www.hpcchallenge.org), which also serves as a
+               tutorial to Chapel via three of the HPCC benchmarks:
+               STREAM Triad, Random Access, and FFT
 
-spec.pdf : the Chapel language specification
+  spec.pdf : the current draft of the Chapel language specification
+
+
+For more information about Chapel, please refer to the pre-print of
+"Parallel Programmability and the Chapel Language" (to appear in the
+upcoming special issue of IJHPCA on High Productivity Programming
+Languages and Models), available at:
+
+  http://www.highproductivity.org/HPPLM/final-chamberlain.pdf
+
+Or the other papers and materials available at our website:
+
+  http://chapel.cs.washington.edu
