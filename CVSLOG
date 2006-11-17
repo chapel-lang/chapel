@@ -85861,3 +85861,14 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/17/06 09:42:40 -- bradc
+
+Log message:
+	Mary Beth pointed out that I had forgotten to
+	check in my hello world example.
+
+Added files:
+	chapel/test/release/examples/: hello.chpl hello.good 
+
