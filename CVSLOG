@@ -85946,3 +85946,21 @@ Modified files:
 	chapel/spec/: Language_Overview.tex 
 	chapel/test/spec/marybeth/: seq4.chpl 
 
+---------------------------------------------------------------------------
+
+11/17/06 14:07:36 -- deitz
+
+Log message:
+	Changed Spec version to 0.6.0 and labeled it a draft for the internal
+	release.  For the external release, we should be able to bump this to
+	0.6.1 and not label it as a draft.
+	
+	Added a copy of spec.pdf to doc/release and updated the README in this
+	directory.
+
+Modified files:
+	chapel/doc/release/: README 
+	chapel/spec/: spec.tex 
+Added files:
+	chapel/doc/release/: spec.pdf 
+
