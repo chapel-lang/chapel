@@ -85789,3 +85789,20 @@ Added files:
 Removed files:
 	chapel/doc/: README.building README.compiling 
 
+---------------------------------------------------------------------------
+
+11/16/06 17:04:55 -- marybeth
+
+Log message:
+	Updates to language overview:
+	
+	- Updated example in sequences section.  Added new simple example to
+	  show more of sequence syntax.
+	- I updated the Arrays and Domains section.  I added a simple example
+	  to introduce the section.  More is to be done here.  A good motivating
+	  example will be added next week.
+	- I reorganized the sections slightly.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
