@@ -86074,3 +86074,15 @@ Modified files:
 Added files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+11/17/06 15:44:36 -- bradc
+
+Log message:
+	Added 99 bottles of beer example to the release.
+
+Modified files:
+	chapel/test/release/examples/: README 
+Added files:
+	chapel/test/release/examples/: .cvsignore beer.chpl beer.good 
+
