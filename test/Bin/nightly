@@ -21,6 +21,8 @@ while (@ARGV) {
     } elsif ($flag eq "-notest") {
         $runtests = 0;
         $debug = 1;
+    } elsif ($flag eq "-examples") {
+        $examples = 1;
     } else {
         $printusage = 1;
         last;
@@ -38,6 +40,7 @@ if ($printusage == 1) {
     print "\t-debug     : check out sources and run for individual user (default)\n";
     print "\t-cron      : use for nightly cron runs only\n";
     print "\t-notest    : don't run the tests (check the build only)\n";
+    print "\t-examples  : run the release/examples tests only\n";
     print "\t-valgrind  : run tests in valgrind mode\n";
     print "\t-interpret : run tests in interpreted mode\n";
     exit 1;
@@ -230,6 +233,9 @@ if ($valgrind == 1) {
 }
 if ($valgrind == 0) {
     $testflags = "$testflags -futures";
+}
+if ($examples == 1) {
+    $testflags = "$testflags -startdir release/examples";
 }
 
 if ($runtests == 1) {
