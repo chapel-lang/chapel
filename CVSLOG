@@ -86016,3 +86016,28 @@ Modified files:
 	./: README 
 	chapel/doc/release/: README 
 
+---------------------------------------------------------------------------
+
+11/17/06 15:04:16 -- bradc
+
+Log message:
+	Makefile changes:
+	
+	* Stopped copying the built compiler back into the
+	  compiler/ directory.
+	
+	* Built runtime libraries into lib/$(CHPL_PLATFORM)/
+	  rather than runtime/src/$(CHPL_PLATFORM)/
+	
+	* Made top-level clobber rule blow away bin and
+	  lib subdirectories.
+
+Modified files:
+	./: Makefile 
+	chapel/compiler/: Makefile 
+	chapel/doc/release/: README.building 
+	chapel/make/: Makefile.base 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/src/: Makefile 
+	chapel/test/Bin/: nightly 
+
