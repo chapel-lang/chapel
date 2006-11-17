@@ -85905,3 +85905,18 @@ Removed files:
 	chapel/test/functions/iterators/bradc/: 
 	                                        iteratorInferReturn.future 
 
+---------------------------------------------------------------------------
+
+11/17/06 11:20:31 -- deitz
+
+Log message:
+	Added a working iterator test and an iterator future with the to_seq function.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_side_effect2.chpl 
+	                                        test_iterator_side_effect2.good 
+	                                        test_iterator_side_effect3.chpl 
+	                                        test_iterator_side_effect3.future 
+	                                        test_iterator_side_effect3.good 
+
