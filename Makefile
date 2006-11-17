@@ -27,6 +27,8 @@ clean: FORCE
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
+	rm -rf bin
+	rm -rf lib
 
 depend: FORCE
 	cd compiler && $(MAKE) depend

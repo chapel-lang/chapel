@@ -40,7 +40,8 @@ include util/Makefile.include
 
 CVS_SRCS = 
 
-CHPL = chpl$(EXE_SUFFIX)
+CHPL_BIN_DIR = ../bin/$(PLATFORM)
+CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
 CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
@@ -68,16 +69,13 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 # target-based rules
 #
 
-$(CHPL): ../bin/$(PLATFORM)/$(CHPL)
-	cp -f $< $@
-
-../bin/$(PLATFORM)/$(CHPL): ../bin/$(PLATFORM) $(PLATFORM_DIR_DIR) $(CHPL_OBJS)
+$(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags $(ALL_SRCS) */*.h
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
-../bin/$(PLATFORM):
+$(CHPL_BIN_DIR):
 	mkdir -p $@
 
 

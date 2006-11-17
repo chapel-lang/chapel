@@ -5,6 +5,7 @@ $interpret = 0;
 $printusage = 1;
 $debug = 1;
 $runtests = 1;
+$examples = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;

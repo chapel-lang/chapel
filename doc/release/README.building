@@ -19,7 +19,7 @@ If everything works as intended, you ought to see:
         $CHPLHOME/bin/$CHPL_PLATFORM/chpl
 
 3) the runtime support libraries being compiled, archived, and stored
-   in $CHPLHOME/runtime/src/$CHPL_PLATFORM/
+   in $CHPLHOME/lib/$CHPL_PLATFORM/
 
 Otherwise, if you get an error or failure during the make process,
 please let us know about it (as well as any workaround that you might

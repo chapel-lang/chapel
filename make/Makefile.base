@@ -25,14 +25,14 @@ default: all
 
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,
-# depending on how CHPLDEVTMP is set; PLATFORM_DIR_DIR always
-# creates a directory
+# depending on how CHPLDEVTMP is set
 #
 PLATFORM_DIR = ./$(PLATFORM)/.timestamp
-PLATFORM_DIR_DIR = ./$(PLATFORM)/.timestamp.dir
 
 ifndef CHPLDEVTMP
-$(PLATFORM_DIR): $(PLATFORM_DIR_DIR)
+$(PLATFORM_DIR):
+	@echo making $(PLATFORM) subdirectory
+	@-mkdir $(PLATFORM) > /dev/null 2>&1
 	@-touch $(PLATFORM_DIR)
 else
 $(PLATFORM_DIR):
@@ -42,12 +42,6 @@ $(PLATFORM_DIR):
 	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM) .
 	@-touch $(PLATFORM_DIR)
 endif
-
-$(PLATFORM_DIR_DIR):
-	@echo making $(PLATFORM) subdirectory
-	@-mkdir $(PLATFORM) > /dev/null 2>&1
-	@-touch $(PLATFORM_DIR_DIR)
-	@-touch $(PLATFORM_DIR)
 
 
 #
