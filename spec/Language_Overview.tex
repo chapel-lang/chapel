@@ -540,14 +540,20 @@ def writehalf(i: int) {
 \end{longtable}
 \end{center}
 
-\subsubsection{Structured Data Types}
-\label{Structured_Data_Types}
+\subsubsection{Classes}
+\label{Intro_Classes}
+
+This section is forthcoming.
+
+\subsubsection{Records and Unions}
+\label{Intro_Records_and_Unions}
+
+This section is forthcoming.
 
 \subsubsection{Functions}
 \label{Intro_Functions}
 
-\subsubsection{Methods}
-\label{Intro_Methods}
+This section is forthcoming.
 
 \subsubsection{Sequences}
 \label{Intro_Sequences}
@@ -556,54 +562,53 @@ Sequences are ordered sets of elements, each of which has the same type.
 Sequences are constructs that, among other uses, may be used in iterating in \chpl{for}
 and \chpl{for all} loops and in defining domains.  
 
+A simple example of a sequence of integers is given below.
+\begin{chapel}
+var list: seq of int = (/ 1 /);
+
+[i in 2..n] list #= i;
+\end{chapel}
+The variable \chpl{list} is declared to be a sequence of integers and it is 
+initialized to be \chpl{(/ 1 /)}. In general, literal sequences are delimited by 
+\chpl{(/} and \chpl{/)}, and the elements of the sequence are separated by commas.
+In the loop, \chpl{[i in 2..n]}, the sequence \chpl{list} is constructed an element 
+at a time by concatenating \chpl{i} at each iteration. After the first iteration 
+of the loop, \chpl{list = (/ 1, 2 /)}. At the end of the loop,
+\chpl{list} is a sequence of integers from \chpl{1} to \chpl{n}.
+
 Consider the following example of a routine which sorts a list \chpl{x}
 of elements and returns the sequence of indices which maps the original
 list to the sorted list.
 \begin{example}
 \begin{chapel}
 def insertionSort(x) {
-  const n = x.numElements;
-  var order: seq of int = (/ 1 /);
-  var tempx = x;
-  var val = x(1);
-  var ind, pos: int;
+  var order: seq of int;
 
-  [i in 2..n] {
-    order = order # i;
-  }
-
-  for i in 2..n {
-    val = tempx(i);
-    pos = order(i);
-    ind = i-1;
-    while ((ind > 0) && (tempx(ind) > val)) {
-      tempx(ind+1) = tempx(ind);
-      order(ind+1) = order(ind);
-      ind -= 1;
-    }
-    tempx(ind+1) = val;
-    order(ind+1) = pos;
+  for i in x.domain {
+    var val = x(i);
+    var ind = i-1;
+    if (ind > 0) then
+      while ((ind > 0) && (x(order(ind)) > val)) {
+        ind -= 1;
+      }
+    if (ind == i-1) then
+      order #= i;
+    else
+      order = order(1..ind) # i # order(ind+1..i-1);
   }
   return order;
 }
 \end{chapel}
 \end{example}
-The variable \chpl{order} is declared to be a sequence of integers
-and it is initialized to be \chpl{(/ 1 /)}.  In general, literal
-sequences are delimited by \chpl{(/} and \chpl{/)}, and the elements of
-the sequence are separated by commas.  In the first loop, \chpl{[i in 2..n]},
-the sequence \chpl{order} is constructed an element at a time by concatenating
-\chpl{i} at each iteration.  After the first iteration of the loop, 
-\chpl{order = (/ 1, 2 /)}.  At the end of the loop, \chpl{order} is a sequence
-of integers from \chpl{1} to \chpl{n}.
-
-During the insertion sort, each time the list is changed so is \chpl{order},
-keeping track of the moves of the elements of the list.  Once the sort is
+At each iteration of the insertion sort, \chpl{i} is inserted into the
+order list, according to where the \chpl{i}th element belongs in
+the already sorted list of \chpl{i-1} elements.  The concatenation operator 
+\chpl{#} is used to grow the sequence by one each iteration.  Once the sort is
 complete, the function returns the sequence of indices that would permute
 the original unsorted list into the sorted list.
 
 In the following code, \chpl{x} is some list of elements that can be
-ordered.  A call to the insertion sort routine returns a sequence which
+ordered.  The function call, \chpl{insertionSort(x)}, returns a sequence which
 is then used in a \chpl{for} loop. 
 \begin{chapel}
 var order: seq of int = insertionSort(x);
@@ -660,21 +665,34 @@ defined to be distributed across multiple locales.   All arrays
 declared with a particular domain are indexed and distributed according 
 to that domain's specifications.  
 
+Arithmetic domains are formed from arithmetic sequences.  In the following
+example, the domain \chpl{D} is initialized to \chpl{1..n} and then it is
+used to declare one dimensional arrays, and to iterate over those arrays.
+\begin{chapel}
+const D = [1..n];
+var x, y: [D] real;
+
+for i in D {
+  x(i) = i;
+  y(i) = i*i;
+}
+\end{chapel}
+
 The following example shows three arrays that are declared to be
 vectors of length \chpl{m} and then used to compute and store a 
 scaled addition.
 \begin{chapel}
-const VectorD: domain(1) = [1..m];
-var A, B, C: [VectorD] real;
+const D2: domain(2) = [1..n, 1..n];
+var A, B, C: [D2] real;
+const alpha: real;
 
 A = B + alpha * C;
 \end{chapel}
-The first line declares a constant named \chpl{VectorD} that
-is defined to be a \chpl{domain} that is  
-1-dimensional, describing indices $\{ 1, 2, \ldots, m \}$.
-The next line uses the \chpl{VectorD} domain to declare three
-arrays \chpl{A}, \chpl{B}, and \chpl{C} of type \chpl{real}.  The
-domain's index set defines the size and shape of these arrays. 
+In this example, the domain \chpl{D2} is declared using  
+\chpl{domain(2)} to indicate that it is a two-dimensional domain.
+This domain is initialized to be an \chpl{n} $\times$ \chpl{n}
+square.  The two-dimensional real arrays \chpl{A, B, C} are declared using
+\chpl{D2}.
 
 The final line uses whole-array syntax to specify the elementwise 
 multiplications, additions, and assignments.  In this case since
@@ -683,26 +701,23 @@ knows that the arrays are the right shape and size to successfully
 compute the array addition and can generate the appropriate elementwise
 additions.
 
-Whole-array operations like this one are implicitly parallel, if the \chpl{VectorD}
+Whole-array operations like this one are implicitly parallel, if the \chpl{D2}
 domain were distributed across a set of processors.  For example, 
-a block distribution of \chpl{VectorD} would be specified as follows.    
+a block distribution of \chpl{D2} would be specified as follows.    
 \begin{chapel}
-const VectorD: domain(1) distributed(Block) = [1..m];
+const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
+var A, B, C: [DistD2] real;
 \end{chapel}
-Each processor would perform the operations for the array elements that it owns, 
-as defined by \chpl{VectorD}'s distribution since that was the domain
+To compute \chpl{A = B + alpha * C}, each processor would perform the 
+operations for the array elements that it owns, 
+as defined by \chpl{DistD2}'s distribution since that was the domain
 used to define all three arrays.
 
-Arrays may be multi-dimensional if declared with multi-dimensional domains,
-and they may be of any type.  
-%% Need to qualify previous statement.
 Since arrays are reference types, they are passed by reference to functions
-where they may be modified and remain modified upon return.  However, assigning
-from one array to another merely copies the values from one to the other.  The
-two arrays each continue to reference individual arrays. 
-%% Is previous statement correct?
+where they may be modified and remain modified upon return.  However, assignment
+of arrays is by value.
 
-The above example uses arithmetic domains and arrays.  Domains may
+Arithmetic domains are just one kind of domain.  Domains may
 also be sparse, indefinite, enumerated or opaque.  Subdomains may be
 defined to specify a subset of the domain's indices, as in the case of
 inner, non-boundary points of a grid.  See~\rsec{Domains_and_Arrays} for
@@ -711,23 +726,36 @@ a complete description of domains and arrays.
 \subsection{Parallel Features}
 \label{Parallel_Features}
 
+This section is forthcoming.
+
 
 \subsubsection{Data Parallel Constructs}
 \label{Data_Parallel_Constructs}
+
+This section is forthcoming.
 
 
 \subsubsection{Task Parallel Constructs}
 \label{Task_Parallel_Constructs}
 
+This section is forthcoming.
+
 
 \subsubsection{Exploiting Data Locality}
 \label{Exploiting_Data_Locality}
+
+This section is forthcoming.
 
 
 \subsubsection{Synchronizing and Serializing Tasks}
 \label{Synchronizing_and_Serializing_Tasks}
 
+This section is forthcoming.
+
 
 \subsection{Data Distributions}
 \label{Data_Distributions}
+
+This section is forthcoming.
+
 
