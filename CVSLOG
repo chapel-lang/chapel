@@ -86005,3 +86005,14 @@ Added files:
 Removed files:
 	chapel/test/: sub_clean sub_test 
 
+---------------------------------------------------------------------------
+
+11/17/06 14:39:26 -- bradc
+
+Log message:
+	README updates.
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README 
+
