@@ -11,3 +11,5 @@ hpcc06.pdf : our report for the 2006 HPC Challenge competition
              (http://www.hpcchallenge.org), which also serves as a
              tutorial to Chapel via three of the HPCC benchmarks:
              STREAM Triad, Random Access, and FFT
+
+spec.pdf : the Chapel language specification
