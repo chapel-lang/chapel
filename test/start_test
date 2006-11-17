@@ -157,7 +157,7 @@
 #
 #   - if the subdirectory contains an executable sub_test script,
 #     that script will be used to run the tests in that directory
-#     rather than the default sub_test script (located in this
+#     rather than the default sub_test script (located in the Bin
 #     directory).  A sub_test script may take whatever actions it
 #     wants, and is simply expected to generate any errors using
 #     the "[Error ...]" format so that it will show up in the
@@ -581,18 +581,18 @@ foreach dir ($dirs)
 	endif
        	echo " " |& tee -a $logfile
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
-	if ((! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
+	if ((! -e ./NOTEST && ($numtests != 0 || -x ./Bin/sub_test) && \
             (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS))) \
             || $onetest != "") then
-		if (-x ./sub_test) then
-		    set sub_test = ./sub_test
+		if (-x ./Bin/sub_test) then
+		    set sub_test = ./Bin/sub_test
 		else
-		    set sub_test = $testdir/sub_test
+		    set sub_test = $testdir/Bin/sub_test
 		endif
-                if (-x ./sub_clean) then
-                    set sub_clean = ./sub_clean
+                if (-x ./Bin/sub_clean) then
+                    set sub_clean = ./Bin/sub_clean
                 else
-                    set sub_clean = $testdir/sub_clean
+                    set sub_clean = $testdir/Bin/sub_clean
                 endif
 		setenv COMPOPTS "$compopts"
 		setenv EXECOPTS "$execopts"

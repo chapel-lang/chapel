@@ -15,6 +15,7 @@ This directory contains several Chapel example codes:
        ra-randstream.chpl   : the random stream generator for our RA entry
        fft.chpl             : our global 1D FFT entry
        fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
+     Bin/                   : helper scripts used by the test system
 
 
 --------------------------------

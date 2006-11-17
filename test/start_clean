@@ -123,15 +123,15 @@ foreach dir ($dirs)
 		continue
 	endif
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
-	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
-		if (-x ./sub_clean) then
-		    set sub_test = ./sub_clean
+	if (! -e ./NOTEST && ($numtests != 0 || -x ./Bin/sub_clean)) then
+		if (-x ./Bin/sub_clean) then
+		    set sub_clean = ./Bin/sub_clean
 		else
-		    set sub_test = $testdir/sub_clean
+		    set sub_clean = $testdir/Bin/sub_clean
 		endif
 		echo ""
-		echo "[Starting $sub_test `date`]"
-		$sub_test "$testdir" |& tee -a $logfile
+		echo "[Starting $sub_clean `date`]"
+		$sub_clean "$testdir" |& tee -a $logfile
 		echo " "
 	else
 		echo \["No tests in directory " $dir\] |& \
