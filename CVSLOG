@@ -85806,3 +85806,17 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/16/06 17:10:19 -- waynew
+
+Log message:
+	Added a producer-consumer example using a sync(hronization) variable.
+	
+	Minor style changes to match the others.
+
+Modified files:
+	chapel/test/release/examples/: README tree_construct.chpl 
+Added files:
+	chapel/test/release/examples/: prod-cons.chpl prod-cons.good 
+
