@@ -9,9 +9,14 @@ you should be able to see the Chapel compiler's help message using:
      chpl --help
 
 This displays the compiler's command-line flags sorted by categories,
-in four columns: (1) the flag, (2) the type of argument it takes, 
-(3) the current or default value of the flag, (4) a brief description
-of the flag.
+in four columns: (1) the flag, (2) the current or default value of the
+flag, (3) the kind of argument it takes, (4) a brief description of
+the flag.
+
+
+-----------------
+Most Useful Flags
+-----------------
 
 We note some of the most useful flags here:
 
@@ -44,3 +49,18 @@ We note some of the most useful flags here:
                          number of lexical tokens per line, as well as
                          the number of code, comment, and blank lines
 
+
+----------
+Flag Types
+----------
+
+The flag types as indicated by the help message are as follows:
+
+  ->true  = takes no arguments and sets the flag to true
+  ->false = takes no arguments and sets the flag to false
+  toggle  = takes no arguments and toggles the flag's value
+  path    = takes a path or filename argument
+  int     = takes an integer argument
+  incr    = increments an integer value
+  string  = takes a string argument
+  double  = takes a floating-point value
