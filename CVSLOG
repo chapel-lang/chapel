@@ -85872,3 +85872,13 @@ Log message:
 Added files:
 	chapel/test/release/examples/: hello.chpl hello.good 
 
+---------------------------------------------------------------------------
+
+11/17/06 09:44:49 -- bradc
+
+Log message:
+	Oops -- forgot to add hello.chpl to the README.
+
+Modified files:
+	chapel/test/release/examples/: README 
+
