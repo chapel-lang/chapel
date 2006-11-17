@@ -1,3 +1,1 @@
-config var message = "Hello, world!";
-
-writeln(message);
+writeln("Hello, world!");
