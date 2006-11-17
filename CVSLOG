@@ -86061,3 +86061,16 @@ Modified files:
 	chapel/test/compflags/bradc/help/: develhelp.txt userhelp.txt 
 	chapel/util/: gen_release lookForTabs 
 
+---------------------------------------------------------------------------
+
+11/17/06 15:43:12 -- deitz
+
+Log message:
+	Added a file STATUS that has a list of unimplemented features and
+	bugs.  I have not added the bugs yet.
+
+Modified files:
+	./: README.files 
+Added files:
+	./: STATUS 
+
