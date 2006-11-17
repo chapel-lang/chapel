@@ -85739,3 +85739,17 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:23:17 -- marybeth
+
+Log message:
+	Adding another version of the sequence example, as suggested by Brad.
+	It currently isn't as clean as it should be.  I'll check in another test
+	to capture what isn't working properly.
+	
+	This test does work properly.
+
+Added files:
+	chapel/test/spec/marybeth/: seq3.chpl seq3.good 
+
