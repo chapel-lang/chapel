@@ -85727,3 +85727,15 @@ Log message:
 Modified files:
 	./: README 
 
+---------------------------------------------------------------------------
+
+11/16/06 16:08:16 -- waynew
+
+Log message:
+	Bug fix to prevent inserting _to_seq in the following call:
+	 - _copy
+	 - _init
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
