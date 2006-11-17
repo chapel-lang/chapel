@@ -85976,3 +85976,15 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+11/17/06 14:17:30 -- deitz
+
+Log message:
+	Added a .future that shows a problem with a side effect in a forall expression.
+
+Added files:
+	chapel/test/functions/deitz/: test_forallexpr2.chpl 
+	                              test_forallexpr2.future 
+	                              test_forallexpr2.good 
+
