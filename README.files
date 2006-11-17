@@ -13,6 +13,7 @@ the files and directories that they contain.
   CONTRIBUTORS      : a list of contributors to the Chapel project
   COPYRIGHT         : copyright information
   LICENSE           : Chapel's license
+  STATUS            : a list of unimplemented features and bugs
   Makefile          : top-level Makefile for building the compiler and runtime
   bin/
     $CHPL_PLATFORM/ : location of compiler, chpl, after it has been built

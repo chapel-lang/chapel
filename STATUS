@@ -1,0 +1,83 @@
+This file contains an up-to-date list of unimplemented features and
+bugs in the compiler.  This list is not meant to be complete as the
+language is still being defined.  In particular, missing functions
+from the standard modules are not enumerated.
+
+Variables and Types
+===================
+
+  * Variable declarations in a tuple
+  * Non-ASCII strings
+  * Functions to change strings to other primitive types
+  * Configuration parameters
+  * Values of non-bool type are allowed where only values of bool type
+    should be allowed.
+
+Modules
+=======
+
+  * The argv sequence
+  * Accessing variables via explicit names, e.g., mod.x
+  * Using modules not explicitly passed to the compiler
+
+Functions
+=========
+
+  * Formal arguments in a tuple
+  * Intents
+  * Functions as variables and/or arguments to functions
+  * Formal arguments of tuple type must match actual arguments
+    exactly.
+
+Classes, Records, and Unions
+============================
+
+  * Nested classes and records
+  * Chained constructor calls for derived classes
+  * Shadowing base class fields
+  * Inheriting from multiple classes
+  * Garbage collection
+  * Anonymous record literals
+  * Type select on unions
+  * Assignment between classes and records
+
+Tuples, Sequences, and Iterators
+================================
+
+  * Ignoring values via underscores
+  * Implicit reductions in conditional, while, and select statements
+  * The transpose, spread, and reshape functions
+  * Indexing by indefinite arithmetic sequences
+  * Zipper iteration bounds matching
+
+Arrays and Domains
+==================
+
+  * Sparse arrays and domains
+  * Opaque arrays and domains
+  * Enumerated arrays and domains
+  * Arrays of arrays
+  * Index type bounds checking
+  * Subdomains
+  * Array promotion returns sequences.
+
+Generics
+========
+
+
+
+Parallelism and Synchronization
+===============================
+
+  * Atomic statements
+  * Serial statements
+  * User-defined reductions and scans
+  * Forall loops and ordered forall loops are serialized.
+  * Reductions and scans are serialized.
+  * Array and sequence operations and assignment are serialized.
+
+Locality and Distributions
+==========================
+
+  * Locales
+  * Distributions
