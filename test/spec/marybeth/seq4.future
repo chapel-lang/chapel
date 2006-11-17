@@ -1,0 +1,9 @@
+deitz
+
+I believe that the concatenation step:
+
+ order = order(1..ind) # i # order(ind+1..i-1);
+
+should work, even when ind == 0 or ind == i-1.  If I special
+case when ind == i-1 so that order #= i, then the concatenation
+step works for all other cases.
