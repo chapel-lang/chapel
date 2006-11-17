@@ -85964,3 +85964,15 @@ Modified files:
 Added files:
 	chapel/doc/release/: spec.pdf 
 
+---------------------------------------------------------------------------
+
+11/17/06 14:09:33 -- bradc
+
+Log message:
+	Added an -examples flag to the nightly test script
+	that causes it to run the tests on the release/examples
+	directory only.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
