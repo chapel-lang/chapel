@@ -85892,3 +85892,16 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: hello.chpl 
 
+---------------------------------------------------------------------------
+
+11/17/06 11:11:35 -- deitz
+
+Log message:
+	Removed two working .futures.
+
+Removed files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_side_effect.future 
+	chapel/test/functions/iterators/bradc/: 
+	                                        iteratorInferReturn.future 
+
