@@ -86086,3 +86086,13 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: .cvsignore beer.chpl beer.good 
 
+---------------------------------------------------------------------------
+
+11/17/06 15:53:36 -- deitz
+
+Log message:
+	Added a few more bugs to the STATUS file.
+
+Modified files:
+	./: STATUS 
+
