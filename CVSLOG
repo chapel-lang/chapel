@@ -86041,3 +86041,23 @@ Modified files:
 	chapel/runtime/src/: Makefile 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+11/17/06 15:16:49 -- bradc
+
+Log message:
+	Renamed the environment variable CHPLHOME to CHPL_HOME.
+	Make sure to update any dot-files you use to set up your
+	Chapel environment!!
+
+Modified files:
+	./: README README.files 
+	chapel/compiler/main/: driver.cpp 
+	chapel/doc/release/: README.building 
+	chapel/etc/dotFiles/: dot_bashrc dot_cshrc 
+	chapel/test/: paratest.server.pl start_test 
+	chapel/test/Bin/: nightly.cron nightly.debug.cron 
+	                  nightly.novgr.cron 
+	chapel/test/compflags/bradc/help/: develhelp.txt userhelp.txt 
+	chapel/util/: gen_release lookForTabs 
+
