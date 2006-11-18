@@ -14,9 +14,10 @@ Chapel team about intended use of this release.
 Quick Start
 -----------
 
-1) Change directories to the Chapel installation:
+1) Make sure that your shell is in the directory containing this
+   README file.  For example:
 
-        cd $CHPL_HOME
+        cd ~/chapel
 
 2) Build the compiler and runtime libraries using:
 
