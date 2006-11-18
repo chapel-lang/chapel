@@ -18,31 +18,46 @@ This directory contains several Chapel example codes:
        fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
      Bin/                   : helper scripts used by the test system
 
+Most of these codes can be compiled in a standalone manner, for
+example:
+
+     chpl -o hello hello.chpl
+
+The hpcc06 tests are an exception -- they use multiple modules defined
+in multiple source files.  They can be compiled by changing into the
+hpcc06 directory and using the following commands:
+
+     chpl -o stream probSize.chpl stream.chpl
+     chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
+     chpl -o fft probSize.chpl fft.chpl
+     chpl -o fft-mta probSize.chpl fft-mta.chpl
+
 
 --------------------------------
 Files related to the test system
 --------------------------------
 
-In addition to the codes themselves, it contains files used by our
-regression testing infrastructure to automatically compile, run, and
-test sample codes.  For a test foo.chpl, the following files may be
-used:
+In addition to the code files themselves, this directory contains
+files used by our regression testing infrastructure to automatically
+compile, run, and test sample codes.  For a test foo.chpl, the
+following files may also exist:
 
      foo.compopts   : command-line options to be used when compiling the test
      foo.execopts   : command-line options to be used when executing the test
      foo.good       : the expected output for the test
-     foo.notest     : indicates that foo.chpl should not be tested
+     foo.notest     : indicates that foo.chpl should not be tested 
+                      (e.g., because it is a helper module)
 
 
 ---------------------
 Using the test system
 ---------------------
 
-To launch the test system, cd into this directory and use:
+To launch the test system, cd into the examples directory and use:
 
      start_test
 
-which will cause all of the tests in this directory to be compiled and
+This will cause all of the tests in this directory to be compiled and
 executed, printing out a summary at the end and creating log files of
 the test run in a Logs/ subdirectory.  Some other useful ways to run
 the test system are:
@@ -50,9 +65,9 @@ the test system are:
      start_test -startdir <dir>
      start_test -onetest <foo.chpl>
 
-which run the test system starting from a single directory, or on a
-single test, respectively.  For a list of other test system options,
-use:
+These commands run the test system starting from a single directory,
+or on a single test, respectively.  For a list of other test system
+options, use:
 
      start_test -help
 

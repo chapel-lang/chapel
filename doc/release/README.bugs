@@ -1,3 +1,7 @@
+=========================
+Reporting Bugs for Chapel
+=========================
+
 The Chapel compiler is tested against a suite of over 1400 tests on a
 nightly basis.  However, these tests do not offer very high coverage
 over the entire set of possible Chapel programs.  If you encounter a

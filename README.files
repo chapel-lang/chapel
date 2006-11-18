@@ -9,14 +9,14 @@ the files and directories that they contain.
 ./
   README            : top-level README with quick-start information
   README.files      : this file
-  BUILD_VERSION     : the build version since the last minor version update
+  BUILD_VERSION     : the build version of the Chapel compiler
   CONTRIBUTORS      : a list of contributors to the Chapel project
   COPYRIGHT         : copyright information
   LICENSE           : Chapel's license
   STATUS            : a list of unimplemented features and bugs
   Makefile          : top-level Makefile for building the compiler and runtime
   bin/
-    $CHPL_PLATFORM/ : location of compiler, chpl, after it has been built
+    $CHPL_PLATFORM/ : location of the compiler (chpl) after it has been built
   compiler/         : compiler sources
   doc/              : documentation
   examples/         : example Chapel codes
