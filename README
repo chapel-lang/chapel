@@ -45,6 +45,7 @@ Quick Start
         ./hello
 
 
+
 ------------
 What's next?
 ------------
@@ -52,11 +53,11 @@ What's next?
 For more detailed information about...      refer to...
 
   ...the files and directory structure        ...README.files
+  ...reporting bugs                           ...doc/README.bugs
   ...building the compiler                    ...doc/README.building
   ...setting up your environment              ...doc/README.chplenv
   ...using the compiler                       ...doc/README.compiling
   ...executing Chapel programs                ...doc/README.executing
-  ...submitting bugs                          ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
   ...the Chapel language specification        ...doc/spec.pdf
