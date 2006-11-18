@@ -86140,3 +86140,13 @@ Log message:
 Added files:
 	chapel/doc/release/: README.bugs 
 
+---------------------------------------------------------------------------
+
+11/17/06 16:55:01 -- deitz
+
+Log message:
+	Removed DIRS.
+
+Modified files:
+	chapel/util/: gen_release 
+
