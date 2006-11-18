@@ -86221,3 +86221,18 @@ Modified files:
 	./: README 
 	chapel/doc/release/: README.chplenv 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:16:18 -- bradc
+
+Log message:
+	Moved Steve's memory-related README to be called
+	MEMORY to prevent it from being included in the
+	release.  This can be re-architected later, but
+	this was the fastest way to solve this problem.
+
+Added files:
+	chapel/compiler/: MEMORY 
+Removed files:
+	chapel/compiler/: README 
+
