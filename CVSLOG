@@ -86176,3 +86176,25 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:04:12 -- bradc
+
+Log message:
+	Added "--" to list of help options for compiler-generated
+	executable.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/execflags/shannon/: help.good 
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.good 
+	                                             configVarDefaultValue.good 
+	                                             configVarHelp.good 
+	                                             configVarModStrings1.good 
+	                                             configVarModStrings2.good 
+	                                             configVarSetOver.good 
+	                                             configVarSetTwoTypes.good 
+	                                             configVarTwoModules.good 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.good 
+
