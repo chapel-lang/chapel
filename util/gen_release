@@ -36,6 +36,7 @@ $cvsignores = "CVS|RCS";
        "Makefile",
        "README",
        "README.files",
+       "STATUS",
        "util/setchplenv.csh",
        "util/setchplenv.bash",
        "util/platform"
