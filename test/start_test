@@ -275,6 +275,9 @@ unsetenv CHPL_DEVELOPER
 #umask 002
 
 #
+if (! -e ./Logs) then
+   mkdir ./Logs
+endif
 set logtmp = ./Logs/$user.tmp.log
 set datestr = `date +"%y%m%d.%H%M%S"`
 echo \[Starting Chapel regression tests - $datestr\] |& tee $logtmp
