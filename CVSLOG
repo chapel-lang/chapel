@@ -86109,3 +86109,13 @@ Modified files:
 Added files:
 	chapel/util/: setchplenv.bash setchplenv.csh 
 
+---------------------------------------------------------------------------
+
+11/17/06 16:12:05 -- deitz
+
+Log message:
+	Added STATUS file to gen_release.
+
+Modified files:
+	chapel/util/: gen_release 
+
