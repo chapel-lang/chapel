@@ -86096,3 +86096,16 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+11/17/06 16:07:05 -- waynew
+
+Log message:
+	Added scripts to set CHPL environment variables. Updated gen_release to
+	include these files.
+
+Modified files:
+	chapel/util/: gen_release 
+Added files:
+	chapel/util/: setchplenv.bash setchplenv.csh 
+
