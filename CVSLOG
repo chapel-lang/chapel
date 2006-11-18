@@ -86150,3 +86150,19 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:01:50 -- bradc
+
+Log message:
+	Next draft of main READMEs -- added an "executing Chapel
+	programs" README; updated the quickstart to use Wayne's
+	scripts, moved information about setting up the Chapel
+	environment into a README.chplenv.
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README 
+Added files:
+	chapel/doc/release/: README.chplenv README.executing 
+
