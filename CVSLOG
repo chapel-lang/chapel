@@ -86210,3 +86210,14 @@ Modified files:
 	./: README.files 
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:11:12 -- bradc
+
+Log message:
+	Slight mods to READMEs.
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README.chplenv 
+
