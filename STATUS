@@ -80,6 +80,11 @@ Parallelism and Synchronization
   * Reductions and scans are serialized.
   * Array and sequence operations and assignment are serialized.
 
+  * bugs
+    * arrays of synchronization variables
+    * begin blocks that use class variables
+    * begin blocks that reference function arguments
+
 Locality and Distributions
 ==========================
 
