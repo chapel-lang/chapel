@@ -86119,3 +86119,14 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/17/06 16:21:42 -- waynew
+
+Log message:
+	Small tweak to exclude .cvsignore files for directories whose
+	entire contents are included.
+
+Modified files:
+	chapel/util/: gen_release 
+
