@@ -86249,3 +86249,14 @@ Modified files:
 	chapel/doc/release/: README README.bugs 
 	chapel/test/release/examples/: README 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:28:28 -- bradc
+
+Log message:
+	Oops, had CHPL_HOME reference in quick start before
+	the environment was set up.
+
+Modified files:
+	./: README 
+
