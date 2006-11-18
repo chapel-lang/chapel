@@ -86130,3 +86130,13 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+11/17/06 16:31:28 -- deitz
+
+Log message:
+	Added README.bugs.
+
+Added files:
+	chapel/doc/release/: README.bugs 
+
