@@ -24,7 +24,7 @@ system("cd $tmpdir && cvs -q -d $cvsroot checkout nightly > /dev/null");
 
 
 #$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
-$cvsignores = "CVS|RCS";
+$cvsignores = "CVS|RCS|.cvsignore";
 
 # explicit files to include
 @files = (
