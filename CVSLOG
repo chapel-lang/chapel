@@ -86260,3 +86260,13 @@ Log message:
 Modified files:
 	./: README 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:31:03 -- waynew
+
+Log message:
+	Quickly added some known bugs with begin and sync vars off the top of my head.
+
+Modified files:
+	./: STATUS 
+
