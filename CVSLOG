@@ -86236,3 +86236,16 @@ Added files:
 Removed files:
 	chapel/compiler/: README 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:25:13 -- bradc
+
+Log message:
+	Dotting a few i's and crossing a few t's.  Ready
+	for a final test before mailing the guinea pigs.
+
+Modified files:
+	./: README.files 
+	chapel/doc/release/: README README.bugs 
+	chapel/test/release/examples/: README 
+
