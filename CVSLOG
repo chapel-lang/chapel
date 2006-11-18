@@ -86166,3 +86166,13 @@ Modified files:
 Added files:
 	chapel/doc/release/: README.chplenv README.executing 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:02:28 -- waynew
+
+Log message:
+	Check if the Logs directory exists.  If not, create one.
+
+Modified files:
+	chapel/test/: start_test 
+
