@@ -49,7 +49,6 @@ $cvsignores = "CVS|RCS|.cvsignore";
 # include these dirs and their entire contents
 @complete_dirs = (
     "doc",
-    "etc/dotFiles",
     "examples",
     "make",
     "modules",

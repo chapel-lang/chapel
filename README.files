@@ -19,8 +19,6 @@ the files and directories that they contain.
     $CHPL_PLATFORM/ : location of compiler, chpl, after it has been built
   compiler/         : compiler sources
   doc/              : documentation
-  etc/              : miscellaneous helper files
-    dotFiles/       : sample environment settings for shell dot-files
   examples/         : example Chapel codes
     hpcc06/         : source code for 2006 HPC Challenge competition
   lib/
