@@ -86198,3 +86198,15 @@ Modified files:
 	                                             varNameEnumQM.good 
 	                                             varNameQMark.good 
 
+---------------------------------------------------------------------------
+
+11/17/06 17:10:38 -- bradc
+
+Log message:
+	Removed etc/dotFiles from release given Wayne's
+	nice util/setchplenv.* scripts.
+
+Modified files:
+	./: README.files 
+	chapel/util/: gen_release 
+
