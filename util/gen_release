@@ -31,7 +31,6 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "BUILD_VERSION",
        "CONTRIBUTORS",
        "COPYRIGHT", 
-       "DIRS",
        "LICENSE",
        "Makefile",
        "README",
