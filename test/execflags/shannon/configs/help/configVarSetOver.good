@@ -5,7 +5,7 @@ FLAGS:
 
 CONFIG VAR FLAGS:
 =================
-  -s<configVar>=<value> -- set the value of a config var
+  -s, --<cfgVar>=<val>  -- set the value of a config var
   -f<filename>          -- read in a file of config var assignments
 
 MEMORY FLAGS:

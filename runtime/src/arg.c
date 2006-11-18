@@ -44,7 +44,7 @@ void printHelpTable(void) {
   static flagType flagList[] = {
     {"-h, --help", "print this message", 'g'},
 
-    {"-s<configVar>=<value>", "set the value of a config var", 'c'},    
+    {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
     {"-f<filename>", "read in a file of config var assignments", 'c'},
 
     {"--memmax=<n>", "simulate 'n' bytes of memory available", 'm'}, 
