@@ -10,40 +10,38 @@ Chapel team about intended use of this release.
 
 
 
-
-
 -----------
 Quick Start
 -----------
 
 1) Change directories to the Chapel installation:
 
-     cd $CHPL_HOME
+        cd $CHPL_HOME
 
 2) Build the compiler and runtime libraries using:
 
-     gmake
+        gmake
 
-3) Set up your environment for using Chapel.  If you use a
-   csh-compatible shell (e.g., csh, tcsh), use:
+3) Set up your environment to use Chapel.  If you use a csh-compatible
+   shell (e.g., csh, tcsh), use:
 
-     source util/setchplenv.csh
+        source util/setchplenv.csh
 
    If you use a sh-compatible user (e.g., sh, bash), use:
 
-     . util/setchplenv.bash
+        . util/setchplenv.bash
 
-   If you use another shell, refer to doc/README.chplenv for
+   If you use a different shell, refer to doc/README.chplenv for
    information on what needs to be set up in your environment to use
    Chapel satisfactorily.
 
 4) Compile an example program using:
 
-     chpl -o hello examples/hello.chpl
+        chpl -o hello examples/hello.chpl
 
 5) Execute the resulting executable:
 
-     ./hello
+        ./hello
 
 
 ------------
