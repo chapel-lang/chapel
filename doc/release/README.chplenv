@@ -1,0 +1,50 @@
+======================================
+Setting up your environment for Chapel
+======================================
+
+To get started, there are three environment settings that you should
+make in order to use this release effectively:
+
+1) Set the CHPL_HOME environment variable to point to the location of
+   the chapel/ directory that was created when you unpacked the
+   release.  For example:
+
+        setenv CHPL_HOME ~/chapel
+
+2) Set the CHPL_PLATFORM environment variable to the string returned
+   by the $CHPL_HOME/util/platform script.  For example:
+
+        setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
+
+   This script returns a string uniquely representing the platform in
+   question, which is used to read platform-specific settings from
+   Makefiles and to create platform-specific subdirectories for
+   storing binaries during the build process.  Currently supported
+   platforms and their strings are:
+
+        linux   : 32-bit Linux platforms
+        linux64 : 64-bit Linux platforms
+        sunos   : SunOS platforms
+        cygwin  : Cygwin Windows platforms
+        unknown : other platforms
+
+   The Chapel Makefiles and sources are meant to work for any
+   UNIX-compatible environment that supports a GNU-compatible make
+   utility.  The list above represents those platforms that we have
+   access to and test on.  We are interested in help with making our
+   code architecture work on other platforms, and would be happy to
+   help make this happen -- contact us at: chapel_info@cray.com with
+   questions or comments.
+
+3) Set your path to include the directory $CHPL_HOME/bin/$CHPL_PLATFORM
+   which is created when you build the compiler.  For example:
+
+        set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
+
+
+The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
+lines that make these settings for various shells when executed from
+the $CHPL_HOME directory.  For long-time Chapel users, these lines can
+be inserted into a shell's dotfile simply by replacing the checks
+against the current working directory with a hard-coded location for
+$CHPL_HOME.

@@ -1,0 +1,83 @@
+=========================
+Executing Chapel Programs
+=========================
+
+Once you have compiled a Chapel program using the chpl compiler, you
+can execute it from the command-line like any other program.  Using
+the -h or --help flags will print out help for the executable.  For
+example:
+
+     ./a.out --help
+
+This flag lists all of the standard flags that can be used with a
+Chapel program, as well as a list of the configuration variables
+defined in the program and their types.  If the configuration variable
+is set on the command line, its value is also shown.
+
+
+
+-------------------------------
+Setting Configuration Variables
+-------------------------------
+
+Configuration constants and variables defined in a Chapel program can
+have their default values overridden on the command line using the -s
+or -- flags.  Either flag takes the name of the configuration
+variable, an "=" character, and the value to assign to it, which must
+be a legal Chapel literal for the type of variable.  In our current
+implementation, no extra spaces may appear between these elements.
+
+
+As an example, compile the beer.chpl example which prints the lyrics
+to "99 bottles of beer":
+
+     chpl -o beer $CHPLHOME/examples/beer.chpl
+
+This program defines a configuration constant indicating the number of
+bottles of beer that should start on the wall, set to 99 by default.
+To override the default and only start with a 6-pack on the wall, you
+could use:
+
+     ./beer --numBottles=6
+or:
+     ./beer -snumBottles=6
+
+
+
+-------------------------
+Flags for Tracking Memory
+-------------------------
+
+Chapel supports a number of flags related to dynamic memory allocation
+for the compiler-generated executable, currently used by the
+development team to use when tracking memory usage.
+
+NOTE: The current Chapel compiler generates programs that are
+extremely wasteful of memory and rarely reclaim it, simply because we
+haven't put any focus into this area to date.
+
+The flags are as follows:
+
+  --memmax=<n>         : runs the program pretending that only 'n' 
+                         bytes of heap memory are available.  When the
+                         amount of outstanding dynamic memory exceeds
+                         'n', the program terminates with an error
+                         message.
+
+  --memstat            : when the program exits, this flag causes it 
+                         to print the amount of memory used by the
+                         program and the high-water mark.
+
+  --memtrack            : causes all memory events to be tracked using 
+                          a hash table at runtime in order to find
+                          memory errors such as freeing a pointer that
+                          is not currently allocated.  The table can
+                          be printed out during execution using a call
+                          to the 0-argument routine
+                          _chpl_memtest_printMemTable()
+
+  --memtrace=<filename> : print a trace of all memory events to the
+                          specified filename
+
+  --memthreshold=<n>    : for use with the --memtrace flag; only print
+                          events for objects larger than 'n' bytes

@@ -9,39 +9,6 @@ also keep in mind any informal discussions you've had with the
 Chapel team about intended use of this release.
 
 
----------------------------
-Setting up your environment
----------------------------
-
-To get started, there are three environment settings that you should
-make in order to use this release effectively:
-
-1) Set the CHPL_HOME environment variable to point to the location of
-   the chapel/ directory in which this README is contained.  For
-   example:
-
-        setenv CHPL_HOME ~/chapel
-
-2) Set the CHPL_PLATFORM environment variable to the string returned
-   by the $CHPL_HOME/util/platform script.  For example:
-
-        setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
-
-   Note: Chapel's currently supported platforms include 32- and 64-bit
-   Linux, Cygwin, SunOS, and Mac OS X.  Other UNIX-based environments
-   ought to work conceptually, but may not be supported by our current
-   Makefile structure.  For help getting such details sorted out, read
-   doc/README.building or contact us at: chapel_info@cray.com
-
-3) Set your path to include the directory $CHPL_HOME/bin/$CHPL_PLATFORM
-   which will be created when you build the compiler.  For example:
-
-        set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
-
-The directory $CHPL_HOME/etc/dotFiles contains sample lines for
-inclusion in a shell's resource file to set these values.  They
-require modification in order to specify the location of your
-installation.
 
 
 
@@ -49,23 +16,34 @@ installation.
 Quick Start
 -----------
 
-1) Set up your environment as described above.
-
-2) Change directories to the Chapel installation:
+1) Change directories to the Chapel installation:
 
      cd $CHPL_HOME
 
-3) Build the compiler using:
+2) Build the compiler and runtime libraries using:
 
      gmake
+
+3) Set up your environment for using Chapel.  If you use a
+   csh-compatible shell (e.g., csh, tcsh), use:
+
+     source util/setchplenv.csh
+
+   If you use a sh-compatible user (e.g., sh, bash), use:
+
+     . util/setchplenv.bash
+
+   If you use another shell, refer to doc/README.chplenv for
+   information on what needs to be set up in your environment to use
+   Chapel satisfactorily.
 
 4) Compile an example program using:
 
      chpl -o hello examples/hello.chpl
 
-5) Execute the resulting executable, overriding the default message:
+5) Execute the resulting executable:
 
-     ./hello --message="Hello, Chapel users!"
+     ./hello
 
 
 ------------
@@ -76,9 +54,10 @@ For more detailed information about...      refer to...
 
   ...the files and directory structure        ...README.files
   ...building the compiler                    ...doc/README.building
+  ...setting up your environment              ...doc/README.chplenv
   ...using the compiler                       ...doc/README.compiling
   ...executing Chapel programs                ...doc/README.executing
-  ...submimtting bugs                         ...doc/README.bugs
+  ...submitting bugs                          ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
   ...the Chapel language specification        ...doc/spec.pdf

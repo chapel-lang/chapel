@@ -5,7 +5,9 @@ Chapel doc README
 This directory contains the following documentation:
 
   README.building  : information about building the Chapel compiler
+  README.chplenv   : setting up your shell environment to use Chapel
   README.compiling : how to use the Chapel compiler to compile code
+  README.executing : execution options for Chapel programs
 
   hpcc06.pdf : our report for the 2006 HPC Challenge competition
                (http://www.hpcchallenge.org), which also serves as a
