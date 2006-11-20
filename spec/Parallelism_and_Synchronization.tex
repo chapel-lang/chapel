@@ -1,22 +1,24 @@
 \sekshun{Parallelism and Synchronization}
 \label{Parallelism_and_Synchronization}
 
-Chapel is an explicitly parallel programming language. Parallelism is
-introduced into a program by the user with three constructs,
-\chpl{forall}, \chpl{cobegin}, and \chpl{begin}.  Synchronization is
-provided with \emph{synchronizing variables} and atomic statements. To
-avoid any unintended implications, we use the terms \emph{computation}
-and \emph{sub-computation} to refer to distinct, concurrently
-executing portions of the program.
+Chapel is an explicitly parallel programming language.  Parallelism is
+introduced into a program by the user with the following three
+constructs: \chpl{forall}, \chpl{cobegin}, and \chpl{begin}.  In
+addition, some operations on arrays, domains, and sequences are
+executed in parallel.  Synchronization is provided
+with \emph{synchronization variables} and atomic statements.  To avoid
+any unintended implications, the terms \emph{computation}
+and \emph{sub-computation} will be used to refer to distinct,
+concurrently executing portions of the program.
 
-
-\subsection{Forall}
+\subsection{The Forall Loop}
 \label{Forall}
+\index{forall@\chpl{forall}}
+\index{forall loops}
 
-The first form of explicitly creating parallelism is with the forall
-loop. The forall loop is a variant of for loop that allows concurrent
-execution of the loop body. The for loop is described
-in \rsec{The_For_Loop}. The forall loop syntax is:
+The forall loop is a variant of the for loop that allows for the
+concurrent execution of the loop body. The for loop is described
+in~\rsec{The_For_Loop}. The syntax for the forall loop is given by
 \begin{syntax}
 forall-statement:
    `forall' index-expression `in' iterator-expression `do' statement
@@ -24,38 +26,39 @@ forall-statement:
 \end{syntax}
 
 The forall loop evaluates the loop body once for each element in the
-sequence returned by the iterator expression. Each instance of the
-forall loop's statement may be executed concurrently with each
-other. The compiler and runtime will decide how many computations are
-used and which loop instances are executed by each
-computation. Similarly, the iterator expression may be executed
-concurrently with the loop statement. The keyword \chpl{ordered} which is
-later described in \rsec{Ordered_Forall} can be used to constrain the
-parallelism to give a partial order on the sequence returned by an
-iterator.
+sequence returned by the \sntx{iterator-expression}.  Each instance of
+the forall loop's statement may be executed concurrently with each
+other, but this is not guaranteed.  The compiler and runtime determine
+the actual concurrency based on the specification of the iterator of
+the loop.  The keyword \chpl{ordered}, described
+in~\rsec{Ordered_Forall}, can be used to constrain the parallelism to
+give a partial order on the sequence returned by an iterator.
 
 Control continues with the statement following the forall loop only
-after all statement instances have been completely evaluated.  Control
-transfers such as goto, break, continue, and return are not permitted
-either into or out of the body of a forall loop.  However, yield
-statements are permitted.
+after each iteration has been completely evaluated.  Control transfers
+out of a loop body via \chpl{break}, \chpl{continue},
+and \chpl{return} are not permitted.  Control can be transferred out
+of the loop via a \chpl{yield} statement.
 
 \begin{example}
+In the code
 \begin{chapel}
 forall i in 1..N do
   a(i) = b(i);
 \end{chapel}
-In this example the user has stated that the element-wise assignments
-can execute concurrently. The compiler and runtime will decide how
-many computations are used to assign all \chpl{N} elements. This loop
-may be performed with a single computation executing all N
-assignments, N computations with one assignment each, or somewhere
-in between such as $N/2$ computations with 2 assignments each.
+the user has stated that the element-wise assignments can execute
+concurrently.  This loop may be performed serially, with maximum
+concurrency where each loop body is executed in a separate
+computation, or somewhere in between.
 \end{example}
 
+\begin{implementation}
+The forall loop is currently executed serially.
+\end{implementation}
 
 \subsubsection{Alternative Forall Loop Syntax}
 \label{Alternative_Forall_Loop_Syntax}
+\index{forall loops!alternative syntax}
 
 The forall loop may be alternatively specified with a more concise
 syntax given by:
@@ -63,7 +66,7 @@ syntax given by:
 alternative-forall-statement:
   [index-expression `in' iterator-expression] statement
 \end{syntax}
-The semantics of this alternative forall loop syntax are unchanged.
+The semantics are unchanged.
 
 \begin{example}
 The previous \chpl{forall} example can be alternatively written as:
@@ -72,31 +75,11 @@ The previous \chpl{forall} example can be alternatively written as:
 \end{chapel}
 \end{example}
 
-
-\subsubsection{Forall Expressions} %% SJD: Added this section
-\label{Forall_Expressions}
-
-Similar to the alternative forall loop syntax, a forall expression can
-be used to enable concurrent evaluation of sub-expressions. The
-sub-expressions are evaluated once for each element in the iterator
-expression. As with the forall loop, the compiler and runtime will
-decide how many computations are used. The syntax is:
-\begin{syntax}
-forall-expression:
-   [index-expression `in' iterator-expression] expression
-\end{syntax}
-
-\begin{example}
-\begin{chapel}
-[i in S] f(i);
-\end{chapel}
-The function \chpl{f} is evaluated once for each $S_i$ and each evaluation
-may be executed concurrently.
-\end{example}
-
-
-\subsubsection{Ordered Forall}
+\subsubsection{The Ordered Forall Loop}
 \label{Ordered_Forall}
+\index{forall loops!ordered}
+\index{ordered@\chpl{ordered}}
+
 By default a forall loop allows complete concurrent evaluation of the
 iterator expression and among the loop instances. The
 keyword \chpl{ordered} can be used to constrain the general
@@ -113,6 +96,7 @@ ordered-forall-statement:
 \end{syntax}
 
 \begin{example}
+In the code
 \begin{chapel}
 ordered forall i in walk(root) do
   work(i);
@@ -124,16 +108,50 @@ iterator walk(n: node) {
   }
 }
 \end{chapel}
-In this example the user has contrained the parallelism such that the
+there is a contraint on the parallel execution such that the
 function \chpl{work} is evaluated on a node before any of its
-immediate children nodes.  However, the user has still enabled concurrent
-evaluation of \chpl{work} on siblings nodes and among non-immediate
-family nodes.
+immediate children nodes.  The sibling nodes can be executed
+concurrently.
 \end{example}
 
+\begin{implementation}
+The ordered forall loop is currently executed serially.
+\end{implementation}
 
-\subsection{Cobegin}
+\subsection{The Forall Expression}
+\label{Forall_Expressions}
+\index{forall expressions}
+
+With syntax similar to the alternative forall loop statement, a forall
+expression can be used to enable concurrent evaluation of
+sub-expressions.  The sub-expressions are evaluated once for each
+element in the iterator expression.  The syntax of a forall expression
+is given by
+\begin{syntax}
+forall-expression:
+   [index-expression `in' iterator-expression] expression
+\end{syntax}
+
+The semantics of the forall expression are that a sequence of the
+expression is evaluated.  However, for efficiency, a sequence may not
+be generated if the semantics are the same.
+
+\begin{example}
+\begin{chapel}
+[i in S] f(i);
+\end{chapel}
+The function \chpl{f} is evaluated for each index in \chpl{S} and the
+result of this expression is a sequence containing the evaluated
+expressions.
+\end{example}
+
+\begin{implementation}
+Forall expressions are evaluated serially.
+\end{implementation}
+
+\subsection{The Cobegin Statement}
 \label{Cobegin}
+\index{cobegin@\chpl{cobegin}}
 
 The cobegin statement is used to create parallelism among statements
 within a block statement. The \chpl{cobegin} statement syntax is
@@ -142,30 +160,21 @@ cobegin-statement:
   `cobegin' block-statement
 \end{syntax}
 Each statement within the block statement is executed concurrently and
-is considered a separate computation. Control continues after all of
+is considered a separate computation.  Control continues after all of
 the statements within the block statement have been evaluated.
-
-With the forall loop semantics the degree of parallelism is
-unspecified and is up to the compiler and runtime. The semantics of
-the cobegin statement is more exact. A correct evaluation of the
-cobegin statement has the semantics that each statement is evaluated
-by a separate computation. It may not be safe to use less computations
-than the number of statements. The compiler or runtime would have to
-determine that the semantics are the same to evaluate more than one
-statement serially before using less computations.
 
 As with the forall loop, control transfers are not permitted
 either into or out of the cobegin's block statement. Similarly,
 yield statements are allowed.
 
-Variables declared in the cobegin statment are {\em single variables}
-which are later described in \rsec{Single_Variables}.
+Variables declared in the cobegin statment are {\em single variables},
+described in~\rsec{Single_Variables}.
 
-
-\subsection{Begin}
+\subsection{The Begin Statement}
 \label{Begin}
+\index{begin@\chpl{begin}}
 
-The begin statement spawns a computation to execute the statement.
+The begin statement spawns a computation to execute a statement.
 Control continues simultaneously with the statement following the
 begin statement. The begin statement is an unstructured way to create
 a new computation that is executed only for its side-effects. The
@@ -173,45 +182,47 @@ syntax for the begin statement is given by
 \begin{syntax}
 begin-statement:
   `begin' statement
-  `begin' block-statement
 \end{syntax}
 
-The statement cannot be a control transfer statement--goto, break, 
-continue, yield, or return statement. Those statements may not be
-within the block statement either.
+The following statements cannot be contained in begin-statements:
+break-statements, continue-statements, yield-statements, and
+return-statements.
 
-
-\subsection{Constraining Parallelism}
-\label{Constraining_Parallelism}
-\subsubsection{Ordered Expressions}
+\subsection{The Ordered Expression}
 \label{Ordered_Expressions}
+\index{ordered@\chpl{ordered}}
 
-The \chpl{ordered} keyword can be used as an unary operator to
-suppress parallel execution among instances of an expression that can
-involve side-effects to memory. The \chpl{ordered} keyword does not
-inhibit parallelism within the sub-expression. The syntax is:
+\begin{implementation}
+The ordered expression is not yet implemented.
+\end{implementation}
+
+The \chpl{ordered} keyword can be used as a unary operator to suppress
+parallel execution among instances of an expression that can involve
+side-effects to memory.  The \chpl{ordered} keyword does not inhibit
+parallelism within the sub-expression.  The syntax is:
 \begin{syntax}
 ordered-expression:
    `ordered' expression
 \end{syntax}
 
 \begin{example}
+In the code
 \begin{chapel}
 ordered [i in S] f(i) 
 \end{chapel}
-In this example \chpl{f} is a function and \chpl{S} is a
+\chpl{f} is a function and \chpl{S} is a
 sequence. Each instance of \chpl{f(i)} is executed once for each value
 in \chpl{S} and in sequence order. The \chpl{ordered} constraint does
 not propagate to inhibit parallelism within \chpl{f}.
 \end{example}
 
-% \footnote{It might be tempting to generate a warning when the
-% keyword is ignored but those warnings may be spurious in a generic
-% context where we are reusing an abstract function definition.}
-
-
-\subsubsection{Serial}
+\subsection{The Serial Statement}
 \label{Serial}
+\index{serial@\chpl{serial}}
+
+\begin{implementation}
+The serial statement is not yet implemented.
+\end{implementation}
 
 The \chpl{serial} statement can be used to dynamically control the
 degree of parallelism.  The syntax is:
@@ -221,87 +232,71 @@ serial-statement:
 \end{syntax}
 where the expression evaluates to a bool type.  Independent of that
 value, the block-level statement is evaluated. If the expression is
-true, any dynamically encountered forall loop or cobegin statements is
-executed sequentially within the current computation.
-
-% WAW: what happens if we then encounter a begin?  Runtime halt?
+true, any dynamically encountered forall loop or cobegin statement is
+executed serially within the current computation.  Any dynamically
+encountered begin-statement is executed in the current computation
+too; no computation is spawned.  Control continues to the statement
+following the begin-statement after the begin-statement finishes.
 
 \begin{example}
-\begin{chapel}      
-class Tree {
-  var is_leaf : bool;
-  var left    : Tree;
-  var right   : Tree;
+In the code
+\begin{chapel}
+ordered forall i in walk(root) do
+  work(i);
 
- iterator walk( height) {
-  if (is_leaf) then
-    yield this;
-  else
-    serial height <= 10 cobegin {
-      yield left.walk(height-1);
-      yield right.walk(height-1);
-    }
- }
+iterator walk(n: node) {
+  yield n;
+  serial n.depth > 4 forall c in 0..n.numOfChildren {
+      yield n.child[c];
+  }
 }
 \end{chapel}
-In this example, a recursive tree iterator, \chpl{walk}, uses the
-tree's height to dynamically determine when additional computations
-should be used to traverse the tree. When the tree's height is less
-than 11, it is traversed by one computation.
+the serial statement inhibits concurrent execution on the tree for
+nodes that are deeper than four levels in the tree.
 \end{example}
 
-% DC: This iterator could be used in conjunction with an \chpl{ordered
-% forall} to aggregate work to avoid parallelism overhead.\footnote{My
-% expectation is that we clone functions that may be executed in a
-% serial context so we can avoid the overhead of testing and suppressing
-% parallelism.}
-
-% iterator Tree.walk() {
-%  if (is_leaf) then
-%    yield this;
-%  else
-%    serial (height <= 10) cobegin {
-%      yield left.walk();
-%      yield right.walk();
-%    }
-% }
-
+There is an expectation that functions that may be executed in a
+serial context are cloned to avoid the overhead of testing and
+suppressing parallelism.
 
 \subsection{Synchronization Variables}
 \label{Synchronization_Variables}
+\index{synchronization variables}
 
 {\em Synchronization variables} are used to coordinate computations
-that share data.  The reference and assignment to these variables
-implicitly controls the execution order of the computation. 
-There are two kinds of synchronization variables,
-\chpl{single} and \chpl{sync} variables. Single variables are
-assigned once during its lifetime. Sync variables may be assigned
-multiple times during its lifetime.
+that share data.  The use of and assignment to these variables
+implicitly controls the execution order of the computation.  There are
+two kinds of synchronization variables, {\em single} and {\em sync}
+variables.  A single variable can only be assigned once during its
+lifetime.  A sync variable can be assigned multiple times during its
+lifetime.
 
-The normal reference and assignment of a synchronization variable is
-well suited for producer-consumer data sharing. Additional functions
-on synchronization variable is provided such that other traditional
-synchronization primitives such as semaphores or mutexes can be
+The normal use of and assignment to a synchronization variable is well
+suited for producer-consumer data sharing.  Additional functions on
+synchronization variable are provided such that other traditional
+synchronization primitives, such as semaphores and mutexes, can be
 contructed.
-
 
 \subsubsection{Single Variables}
 \label{Single_Variables}
+\index{synchronization variables!single@\chpl{single}}
+\index{single@\chpl{single}}
 
 A single (assignment) variable can only be assigned once during its
-lifetime.  A reference to a single variable before
-it is assigned causes the computation's execution to be suspended
-until the variable is assigned. Otherwise, the reference proceeds as
-with normal variables and the computation continues.  After a single
-assigment variable is assigned, all computations with pending
-references are resumed in an unspecified order. The syntax of a single
-variable type is:
+lifetime.  A use of a single variable before it is assigned causes the
+computation's execution to be suspended until the variable is
+assigned. Otherwise, the use proceeds as with normal variables and the
+computation continues.  After a single assigment variable is assigned,
+all computations with pending uses resume in an unspecified order.  A
+single variable is specified with a single type given by the following
+syntax:
 \begin{syntax}
- synchronization-type:
-   'single'
+ single-type:
+   `single' type
 \end{syntax}
 
 \begin{example}
+In the code
 \begin{chapel}
 class Tree {
   var is_leaf : bool;
@@ -319,41 +314,39 @@ class Tree {
     return x+y;
   }
 }
-
 \end{chapel}
-In this example the single variable \chpl{x} is assigned by an
-asynchronous computation created with the begin statement. The
-computation returning the sum blocks on the reading of \chpl{x} until
-it has been assigned.
+the single variable \chpl{x} is assigned by an asynchronous
+computation created with the begin statement. The computation
+returning the sum waits on the reading of \chpl{x} until it has been
+assigned.
 
-% DC: While a \chpl{cobegin} might be a more suitable formulation, this
-% fragment creates an asynchronous computation to compute the sum of the
-% left sub-tree while the main computation continues with the right
-% sub-tree. The final reference to variable x will be delayed until the
-% assignment to x completes and that value will be used as a summand.
-
+While a \chpl{cobegin} might be a more suitable formulation, this
+fragment creates an asynchronous computation to compute the sum of the
+left sub-tree while the main computation continues with the right
+sub-tree. The final reference to variable x will be delayed until the
+assignment to x completes and that value will be used as a summand.
 \end{example}
 
 When a single variable has an initializer, the evaluation of
 that initializer is implicitly performed as an asynchronous computation. 
 \begin{example}
+The code
 \begin{chapel}
-def sum() {
-  if (is_leaf) then 
-     return value;
-  var x: single int = left.sum;
-  var y = right.sum();
-  return x+y;
-}
+var x: single int = left.sum;
 \end{chapel}
-This is equivalent to the previous example where the declaration and
-assignment are separate statements.
+is equivalent to
+\begin{chapel}
+var x: single int;
+x = left.sum;
+\end{chapel}
 \end{example}
 
-Any variable declaration within a cobegin statement is implicitly treated as
-a single variable for references in other statements of the
-\chpl{cobegin}.  
+\index{synchronization variables!implicit in cobegin@implicit in \chpl{cobegin}}
+Any variable declaration within a cobegin statement is implicitly
+treated as a single variable for references in other statements of the
+cobegin statement.
 \begin{example}
+In the code
 \begin{chapel}
 def sum() {
   if (is_leaf) then 
@@ -367,42 +360,53 @@ def sum() {
   return z;
 }
 \end{chapel}
-The computation with assignment to z waits for the other computations 
-to assign to x and y before it references x and y in order to assign to z.
+the computation with assignment to \chpl{z} waits for the other
+computations to assign to \chpl{x} and \chpl{y} before it
+references \chpl{x} and \chpl{y} in order to assign to \chpl{z}.  The
+variables \chpl{x} and \chpl{y} are impliclty single.
 \end{example}
-
 
 \subsubsection{Sync Variables}
 \label{Sync_Variables}
+\index{synchronization variables!sync@\chpl{sync}}
+\index{sync@\chpl{sync}}
 
 A sync variable generalizes the single assignment variable to permit
-multiple assignments over its lifetime. A sync variable is logically
+multiple assignments to the variable. A sync variable is logically
 either {\em full} or {\em empty}. When it is empty, computations that
-attempt to read that variable are suspended until it becomes full by
-the next assignment to it which atomically changes the state to
-full. When the variable is full, a variable reference consumes the
-value and atomically transitions the state back to empty. If there are
+attempt to read that variable are suspended until the variable becomes
+full by the next assignment to it, which atomically changes the state
+to full. When the variable is full, a read of that variable consumes
+the value and atomically transitions the state to empty. If there is
 more than one computation waiting on a sync variable, one is
-non-deterministically selected to reference the variable resume
+non-deterministically selected to use the variable and resume
 execution.  The other computations continue to wait for the next
-assignment. Otherwise, the state transistions to empty.
+assignment.
 
-If a computation attempts to assign to a synchronizaton variable that is
-full, the computation is suspended and the assignment is delayed. When
-the sync variable becomes empty, the computation is resumed and the
+If a computation attempts to assign to a sync variable that is full,
+the computation is suspended and the assignment is delayed. When the
+sync variable becomes empty, the computation is resumed and the
 assignment proceeds, transistioning the state back to full. If there
 are multiple computations attempting such an assignment, one is
 non-deterministically selected to proceed and the other assignments
 continue to wait until the sync variable is emptied again.
 
-The synchronization sync variable syntax is
+A sync variable is specified with a sync type given by the following
+syntax:
 \begin{syntax}
-synchronization-type:
+sync-type:
   'sync'
 \end{syntax}
 
 \subsubsection{Functions on Synchronization Variables}
 \label{Functions_on_Synchronization_Variables}
+\index{synchronization variables!built-in functions on}
+\index{writeFE@\chpl{writeFE}}
+\index{writeXF@\chpl{writeXF}}
+\index{writeXE@\chpl{writeXE}}
+\index{readFF@\chpl{readFF}}
+\index{readXF@\chpl{readXF}}
+\index{readXX@\chpl{readXX}}
 
 Synchronization variables support additional methods that
 can be used to bypass their semantics to provide new ones. For
@@ -418,47 +422,53 @@ readXX(s)     // no wait, leave F/E unchanged, and return s's value
 
 For single variables \chpl{s} only \chpl{readFF} is defined.
 
-
-\subsubsection{Synchronizing Variables of Record Type}
+\subsubsection{Synchronization Variables of Record and Class Types}
 \label{Synchronization_Variables_of_Record_Type}
+\index{synchronization variables!of record type}
+\index{synchronization variables!of class type}
 
-A record variable can be a single or sync variable. The semantics of
-single and sync variables are applied only to the record variable and
-not its individual fields. Whole record references or assignments
-trigger the synchronization variable semantics.  A record may have
-sychronization variable fields to get those semantics on field
-accesses.
+A variable of record or class type can be a single or sync
+variable. The semantics of single and sync variables are applied only
+to the variable and not to accesses of individual fields.  A record or
+class type may have sychronization variable fields to get
+synchronization semantics on individual field accesses.
 
-\subsubsection{Synchronizing Variables of Class Type}
-\label{Synchronization_Variables_of_Class_Type}
-
-A class variable can be a single or sync variable. The semantics of
-single and sync variables are applied only to class reference and
-assignment, not its individual fields. A class may have sychronization
-variable fields.
-
-
-\subsection{Memory Consistency}
+\subsection{Memory Consistency Model}
 \label{Memory_Consistency}
-The memory consistency model provided by Chapel will be defined in the future.
+\index{memory consistency model}
+
+This section is forthcoming.
 
 \subsection{Atomic Transactions}
 \label{Atomic_Transactions}
+\index{atomic transactions}
+\index{atomic@\chpl{atomic}}
 
-The atomic statement creates an atomic transaction around a block
-statement. The block is executed with transaction semantics in that
-the block executes entirely, the block appears to have completed in a
-single order and serially with respect to other atomic block, and no
-variable assignments is visible until the block is done,
+\begin{implementation}
+Atomic statements are not yet implemented.
+\end{implementation}
+
+The atomic statement creates an atomic transaction of a statement. The
+statement is executed with transaction semantics in that the statement
+executes entirely, the statement appears to have completed in a single
+order and serially with respect to other computations, and no variable
+assignment is visible until the statement is completely executed.
+
+This definition of an atomic statement is sometimes called {\em strong
+atomicity} because the semantics are atomic to the entire program.
+{\em Weak atomicity} is defined so that an atomic statement is atomic
+only with respect to other atomic statements.  If the performance
+implications of strong atomicity are not tolerable, the semantics of
+atomic transactions may be revisited, and could become weaker.
 
 The syntax for the atomic statement is given by:
 \begin{syntax}
 atomic-statement:
-  `atomic' block-level-statement
+  `atomic' statement
 \end{syntax}
 
-Here is an example of an atomic transaction:
 \begin{example}
+The following code illustrates one possible use of atomic statements:
 \begin{chapel}
 var found = false;
 atomic {
@@ -481,26 +491,20 @@ Inside the atomic statement is a sequential implementation of
 removing a particular object denoted by \chpl{obj} from a singly
 linked list.  This is an operation that is well-defined, assuming only
 one computation is attempting it at a time. The atomic statement
-insures that, for example, the value of \chpl{head} does not change
+ensures that, for example, the value of \chpl{head} does not change
 after it is first in the first comparison and subsequently read to
 initialize \chpl{last}. The variables eventually owned by this
 computation are \chpl{found}, \chpl{head}, \chpl{obj}, and the various
 \chpl{next} fields on examined objects.
 \end{example}
 
-The effect of an atomic statement extends into called functions. Thus
-if we have some method associated with a list that removes an object,
-that method may not be parallel safe but could be invoked inside an
+The effect of an atomic statement is dynamic.
+
+\begin{example}
+If there is a method associated with a list that removes an object,
+that method may not be parallel safe, but could be invoked inside an
 atomic statement for safety:
 \begin{chapel}
-var found;
 atomic found = head.remove(obj);
 \end{chapel}
-
-\subsubsection{Atomicity Model}
-\label{Atomicity_Model}
-
-Chapel provides strong atomicity. With strong atomicity, computations
-outside an atomic block cannot see assignments made by a 
-computation in a atomic block before the block is completed.
-
+\end{example}
