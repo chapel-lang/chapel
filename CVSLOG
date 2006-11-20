@@ -86419,3 +86419,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_file.chpl 
 
+---------------------------------------------------------------------------
+
+11/20/06 15:32:54 -- bradc
+
+Log message:
+	Found an old reference to CHPL_SYSTEM_DIR and
+	changed it to CHPL_HOME.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
