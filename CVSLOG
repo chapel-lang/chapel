@@ -86332,3 +86332,13 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Records.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 10:56:21 -- deitz
+
+Log message:
+	Finished even shakier first pass over Unions section.
+
+Modified files:
+	chapel/spec/: Unions.tex 
+
