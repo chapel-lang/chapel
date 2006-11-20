@@ -86378,3 +86378,15 @@ Log message:
 Modified files:
 	chapel/spec/: Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 13:13:15 -- bradc
+
+Log message:
+	Oops, slight mistake -- John called his source files
+	.cc files rather than .cpp in his ifa release.
+
+Modified files:
+	chapel/compiler/adt/: vec.cpp 
+	chapel/compiler/main/: arg.cpp 
+
