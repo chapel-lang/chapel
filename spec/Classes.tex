@@ -1,7 +1,7 @@
 \sekshun{Classes}
 \label{Classes}
 
-Classes are an abstraction of a data structures.where the storage
+Classes are an abstraction of a data structure where the storage
 location is allocated independent of the scope of the variable of
 class type.  Each call to the constructor creates a new data object
 and returns a reference to the object.  Storage is reclaimed
@@ -41,7 +41,14 @@ field, a function, called a method, or a type.
 If a class contains a type alias or a parameter, the class is generic.
 Generic classes are described in~\rsec{Generics}.
 
-\subsubsection{Class Fields}
+\subsection{Class Assignment}
+\label{Class_Assignment}
+
+Classes are assigned by reference.  After an assignment from one
+variable of class type to another, the variables reference the same
+storage location.
+
+\subsection{Class Fields}
 \label{Class_Fields}
 
 Variables and constants declared within class declarations define
@@ -80,43 +87,17 @@ reads the field \chpl{name} and assigns the value to the variable
 \chpl{27}.
 \end{example}
 
-\subsection{Class Assignment}
-\label{Class_Assignment}
-
-Classes are assigned by reference.  After an assignment from one
-variable of class type to another, the variables reference the same
-storage location.
-
-\subsection{Class Constructors}
-\label{Class_Constructors}
-
-This section is forthcoming.
-
-\subsubsection{The Default Constructor}
-\label{The_Default_Constructor}
-
-This section is forthcoming.
-
-\subsubsection{User-Defined Constructors}
-\label{User-Defined_Constructors}
-
-This section is forthcoming.
-
-\subsubsection{Ambiguities in Constructor Calls}
-\label{Ambiguities_in_Constructor_Calls}
-
-This section is forthcoming.
-
 \subsection{Class Methods}
 \label{Class_Methods}
 
-This section is forthcoming.
+A method is a function that is bound to a class.  A method is called
+by passing an instance of the class to the method via a special
+syntax that is similar to a field access.
 
 \subsubsection{Class Method Declarations}
 \label{Class_Method_Declarations}
 
-Methods are functions that are bound to a class.  They are declared
-with the following syntax:
+Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
   `def' type-binding function-name argument-list[OPT] var-clause[OPT]
@@ -125,94 +106,242 @@ method-declaration-statement:
 type-binding:
   identifier .
 \end{syntax}
-
 If a method is declared within the lexical scope of a class, record,
 or union, the type binding can be omitted and is taken to be the
 innermost class, record, or union that the method is defined in.
 
-\subsubsection{The {\em this} Reference}
-\label{The_em_this_Reference}
-
-This section is forthcoming.
-
 \subsubsection{Class Method Calls}
 \label{Class_Method_Calls}
 
-This section is forthcoming.
+A method is called by using the member access syntax as described
+in~\rsec{Member_Access_Expressions} where the accessed expression is
+the name of the method.
+
+\begin{example}
+A method to output information about an instance of the \chpl{Actor}
+class can be defined as follows:
+\begin{chapel}
+def Actor.print() {
+  writeln("Actor ", name, " is ", age, " years old");
+}
+\end{chapel}
+This method can be called on an instance of the \chpl{Actor}
+class, \chpl{anActor}, by writing \chpl{anActor.print()}.
+\end{example}
+
+\subsubsection{The {\em this} Reference}
+\label{The_em_this_Reference}
+
+The instance of a class is passed to a method using special syntax.
+It does not appear in the argument list to the method.  The
+reference \chpl{this} is an alias to the instance of the class on
+which the method is called.
+
+\begin{example}
+Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
+defined as
+\begin{chapel}
+class C {
+  def foo() {
+    bar(this);
+  }
+}
+def bar(c: C) { }
+\end{chapel}
+Then given an instance of \chpl{C} called \chpl{c}, the method
+call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
+is \chpl{c}.
+\end{example}
 
 \subsubsection{Class Methods without Parentheses}
 \label{Class_Methods_without_Parentheses}
 
-This section is forthcoming.
+Methods do not require parentheses if they have empty argument lists.
+Methods declared without parentheses around empty argument lists must
+be called without parentheses.
+
+\begin{example}
+Given the definitions
+\begin{chapel}
+class C {
+  def foo { }
+  def bar() { }
+}
+\end{chapel}
+and an instance of \chpl{C} called \chpl{c}, then the
+method \chpl{foo} can be called by writing \chpl{c.foo} and the
+method \chpl{bar} can be called by writing \chpl{c.bar()}.  It is an
+error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
+\end{example}
 
 \subsubsection{The {\em this} Method}
 \label{The_em_this_Method}
 
-This section is forthcoming.
+A method declared with the name \chpl{this} allows a class to be
+``indexed'' similarly to how a tuple, sequence, or array is indexed.
+Indexing into a class has the semantics of calling a method on the
+class named \chpl{this}.  There is no other way to call a method
+called \chpl{this}.  The \chpl{this} method must be declared with
+parentheses even if the argument list is empty.
+
+\begin{example}
+In the following code, the \chpl{this} method is used to create a
+class that acts like a simple array that contains three integers
+indexed by one, two, and three.
+\begin{chapel}
+class ThreeArray {
+  var x1, x2, x3: int;
+  def this(i: int) var {
+    select i {
+      when 1 do return x1;
+      when 2 do return x2;
+      when 3 do return x3;
+    }
+    halt("ThreeArray index out of bounds: ", i);
+  }
+}
+\end{chapel}
+\end{example}
+
+\subsection{Class Constructors}
+\label{Class_Constructors}
+
+A class constructor is defined by declaring a method with the same
+name as the class.  The constructor is used to create instances of the
+class.  When the constructor is called, memory is allocated to store a
+class instance.
+
+\subsubsection{The Default Constructor}
+\label{The_Default_Constructor}
+
+A default constructor is automatically created for every class in the
+Chapel program.  This constructor is defined such that it has one
+argument for every field in the class.  Each of the arguments has a
+default value.
+
+The default constructor is very useful but its generality in terms of
+having one argument for each field all of which have default values
+makes it slightly difficult for the user to create their own
+constructor.  It is expected that in many simple cases, the default
+constructor will be all that is necessary.
+
+\begin{example}
+Given the class
+\begin{chapel}
+class C {
+  def x: int;
+  def y: real = 3.14;
+  def z: string = "Hello, World!";
+}
+\end{chapel}
+then instances of the class can be created by calling the default
+constructor as follows:
+\begin{itemize}
+\item The call \chpl{C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
+\item The call \chpl{C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
+\item The call \chpl{C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
+\item The call \chpl{C(0,0.0,"")} is equivalent to \chpl{C(0,0.0,"")}.
+\end{itemize}
+\end{example}
 
 \subsection{Getters and Setters}
 \label{Getters_and_Setters}
 
-This section is forthcoming.
+All field accesses are resolved via getter and setter methods that are
+defined in the class with the same name as the field.  A setter is
+defined as an explicit setter
+function~(\rsec{Explicit_Setter_Functions}).  Default getters and
+setters are defined that simply access or set the field if the user
+does not define their own.
 
-\subsubsection{Default Getters and Setters}
-\label{Default_Getters_and_Setters}
-
-This section is forthcoming.
-
-\subsubsection{User-Defined Getters and Setters}
-\label{User-Defined_Getters_and_Setters}
-
-This section is forthcoming.
+\begin{example}
+In the code
+\begin{chapel}
+class C {
+  var x: int;
+  def =x(value: int) {
+    if value < 0 then
+      halt("x assigned negative value");
+    x = value;
+  }
+}
+\end{chapel}
+a setter is defined for field \chpl{x} that ensures that \chpl{x} is
+never assigned a negative value.
+\end{example}
 
 \subsection{Inheritance}
 \label{Inheritance}
 
-This section is forthcoming.
-
-\subsubsection{Derived Class Definition}
-\label{Derived_Class_Definition}
-
-This section is forthcoming.
+A ``derived'' class can inherit from one or more other classes by
+specifying those classes, the base classes, following the name of the
+derived class in the declaration of the derived class.  When
+inheriting from multiple base classes, only one of the base classes
+may contain fields.  The other classes can only define methods.  Note
+that a class can still be derived from a class that contains fields
+which is itself derived from a class that contains fields.
 
 \subsubsection{Accessing Base Class Fields}
 \label{Accessing_Base_Class_Fields}
 
-This section is forthcoming.
+A derived class contains data associated with the fields in its base
+classes.  The fields can be accessed in the same way that they are
+accessed in their base class unless the getter or setter methods is
+overridden in the derived class, as discussed
+in~\rsec{Overriding_Base_Class_Methods}.
 
 \subsubsection{Derived Class Constructors}
 \label{Derived_Class_Constructors}
 
-This section is forthcoming.
+Derived class constructors automatically call the default constructor
+of the base class.  There is an expectation that a more standard way
+of chaining constructor calls will be supported.
 
 \subsubsection{Shadowing Base Class Fields}
 \label{Shadowing_Base_Class_Fields}
 
-This section is forthcoming.
+A field in the derived class can be declared with the same name as a
+field in the base class.  Such a field shadows the field in the base
+class in that it is always referenced when it is accessed in the
+context of the derived class.  There is an expectation that there will
+be a way to reference the field in the base class but this is not
+defined at this time.
 
 \subsubsection{Overriding Base Class Methods}
 \label{Overriding_Base_Class_Methods}
 
-This section is forthcoming.
+If a method in a derived class is declared with the identical
+signature as a method in a base class, then it is said to override the
+base class's method.  Such a method is a candidate for dynamic
+dispatch in the event that a variable that has the base class type
+references a variable that has the derived class type.
+
+The identical signature requires that the names, types, and order of
+the formal arguments be identical.
 
 \subsubsection{Inheriting from Multiple Classes}
 \label{Inheriting_from_Multiple_Classes}
 
-This section is forthcoming.
+\begin{implementation}
+Multiple inheritance is not yet supported.
+\end{implementation}
+
+A class can be derived from multiple base classes provided that only
+one of the base classes contains fields either directly or from base
+classes that it is derived from.  The methods defined by the other
+base classes can be overridden.
 
 \subsection{Class Promotion of Scalar Functions}
 \label{Scalar Promotion}
 
-\begin{implementation}
-In the current implementation, a class can be defined to promote
-scalar functions by defining an iterator in the class
-named \chpl{this} and specifying a return type.  The return type
-indicates the type that the class promotes.  The body of
-the \chpl{this} iterator is ignored.  The class must also implement
+A class can be defined to promote scalar functions by defining an
+iterator in the class named \chpl{this} and specifying a return type.
+The return type indicates the type that the class promotes.  The body
+of the \chpl{this} iterator is ignored.  The class must also implement
 the iterator interface as described in~\rsec{Iterator_Interface}.
-\end{implementation}
 
-This section is forthcoming.
+There is an expectation that class promotion will be implemented in a
+different way in the future.
 
 \subsection{Nested Classes}
 \label{Nested_Classes}
@@ -221,9 +350,16 @@ This section is forthcoming.
 Nested classes are not yet supported.
 \end{implementation}
 
-This section is forthcoming.
+A class defined within another class is a nested class.
 
 \subsection{Automatic Memory Management}
 \label{Automatic_Memory_Management}
 
-This section is forthcoming.
+\begin{implementation}
+Memory allocated to store class objects is not yet reclaimed.
+\end{implementation}
+
+Memory associated with class instances is reclaimed automatically when
+there is no way for the current program to reference this memory.  The
+programmer does not need to free the memory associated with class
+instances.
