@@ -86322,3 +86322,13 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 10:46:21 -- deitz
+
+Log message:
+	Finished first pass of Records section.
+
+Modified files:
+	chapel/spec/: Classes.tex Records.tex 
+
