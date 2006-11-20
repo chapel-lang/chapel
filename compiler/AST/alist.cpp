@@ -7,14 +7,6 @@
 #include "symscope.h"
 
 
-AList::AList() :
-  head(NULL),
-  tail(NULL),
-  parent(NULL)
-{
-}
-
-
 AList::AList(Expr* elem) :
   head(NULL),
   tail(NULL),

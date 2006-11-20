@@ -14,8 +14,7 @@ class AList {
   BaseAST* parent;
 
   // constructors
-  AList();
-  AList(Expr*);
+  AList(Expr* elem = NULL);
 
   // copy routines
   AList* copy(ASTMap* map = NULL, bool internal = false);

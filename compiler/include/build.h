@@ -19,8 +19,7 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body);
 BlockStmt* build_for_block(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
-                           BlockStmt* body,
-                           int only_once = 0);
+                           BlockStmt* body);
 BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* iterator,
                           Expr* expr,

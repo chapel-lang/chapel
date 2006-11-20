@@ -190,26 +190,20 @@ build_for_expr(BaseAST* indices,
 
   VarSymbol* dummy = new VarSymbol("_type_dummy");
   dummy->isCompilerTemp = true;
-
-  LabelSymbol* break_out = new LabelSymbol("type_break");
+  dummy->isTypeVariable = true;
 
   ASTMap map;
   BaseAST* typeindices = indices->copy(&map);
   Expr* typeexpr = expr->copy(&map);
 
-  stmts->insertAtTail(new DefExpr(seq));
   stmts->insertAtTail(new DefExpr(dummy));
 
-  BlockStmt* body = 
-    new BlockStmt(new CallExpr(PRIMITIVE_MOVE, dummy, typeexpr));
-  body->insertAtTail(new GotoStmt(goto_normal, break_out));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
                                                     iterator->copy(),
-                                                    body, 1)));
-  stmts->insertAtTail(new DefExpr(break_out));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, seq,
-                        new CallExpr("_construct_seq", dummy)));
+                                                    new BlockStmt(new CallExpr(PRIMITIVE_MOVE, dummy, typeexpr))), BLOCK_TYPE));
+
+  stmts->insertAtTail(new DefExpr(seq, new CallExpr("_construct_seq", dummy)));
 
   Expr* append_stmt =
       new CallExpr(
@@ -258,9 +252,7 @@ static void exprsToIndices(Vec<DefExpr*>* defs,
 BlockStmt* build_for_block(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
-                           BlockStmt* body,
-                           int only_once) { // execute only once used
-                                            // in build_for_expr
+                           BlockStmt* body) {
   static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;
@@ -289,10 +281,8 @@ BlockStmt* build_for_block(BlockTag tag,
   stmts->insertAtTail(new DefExpr(index, index_init));
   stmts->insertAtTail(body);
 
-  if (!only_once) {
-    stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor)));
-    stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-  }
+  stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor)));
+  stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
 
   stmts->insertAtTail(new DefExpr(body->post_loop));
   uid++;

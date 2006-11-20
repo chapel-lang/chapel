@@ -33,6 +33,7 @@ class ReturnStmt : public Expr {
 
 enum BlockTag {
   BLOCK_NORMAL = 0,
+  BLOCK_TYPE,
   BLOCK_SCOPELESS,
   BLOCK_WHILE_DO,
   BLOCK_DO_WHILE,
@@ -55,9 +56,9 @@ class BlockStmt : public Expr {
   LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
-  BlockStmt(AList* init_body = new AList(), 
+  BlockStmt(AList* init_body,
                        BlockTag init_blockTag = BLOCK_NORMAL);
-  BlockStmt(Expr* init_body,
+  BlockStmt(Expr* init_body = NULL,
                        BlockTag init_blockTag = BLOCK_NORMAL);
   virtual ~BlockStmt();
   virtual void verify();

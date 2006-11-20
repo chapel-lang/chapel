@@ -1584,6 +1584,15 @@ resolve() {
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      if (block->blockTag == BLOCK_TYPE) {
+        block->remove();
+      }
+    }
+  }
+  asts.clear();
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
     if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
       if (a->defaultExpr)
         a->defaultExpr->remove();
