@@ -1,9 +1,8 @@
 /*****************************************************************************
 
-This code is based on arg.cpp developed by John Plevyak and released
-as part of his iterative flow analysis package available at
-SourceForge (http://sourceforge.net/projects/ifa/).  The original code
-is:
+This code is based on arg.cc developed by John Plevyak and released as
+part of his iterative flow analysis package available at SourceForge
+(http://sourceforge.net/projects/ifa/).  The original code is:
 
 Copyright (c) 1992-2006 John Plevyak.
 
