@@ -86342,3 +86342,13 @@ Log message:
 Modified files:
 	chapel/spec/: Unions.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 11:08:24 -- deitz
+
+Log message:
+	Added index entries for classes, records, and unions.
+
+Modified files:
+	chapel/spec/: Classes.tex Records.tex Unions.tex 
+
