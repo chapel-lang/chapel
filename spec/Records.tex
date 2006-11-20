@@ -1,5 +1,6 @@
 \sekshun{Records}
 \label{Records}
+\index{records}
 
 A record is a data structure that is like a class but that has value
 semantics.  The key differences between records and classes are
@@ -8,6 +9,7 @@ described in this section.
 \subsection{Record Declarations}
 \label{Record_Declarations}
 
+\index{record@\chpl{record}}
 A record is defined with the following syntax:
 \begin{syntax}
 record-declaration-statement:
@@ -32,6 +34,7 @@ the \chpl{record} keyword replaces the \chpl{class} keyword.
 
 \subsection{Class and Record Differences}
 \label{Class_and_Record_Differences}
+\index{records!differences with classes}
 
 The main differences between records and classes are that records are
 value classes, do not need to be reclaimed since the data is recovered
@@ -48,6 +51,7 @@ record.
 
 \subsubsection{Record Inheritance}
 \label{Record_Inheritance}
+\index{records!inheritance}
 
 When a record is derived from a base record, it contains the data in
 the base record.  The difference between record inheritance and class
@@ -56,6 +60,7 @@ a variable is the exact type of that variable.
 
 \subsubsection{Record Assignment}
 \label{Record_Assignment}
+\index{records!assignment}
 
 In record assignment, the fields of the record on the left-hand side
 of the assignment are assigned the values in the fields of the record
@@ -64,6 +69,8 @@ assigned a derived record, just the fields that exist in the base
 record are assigned.
 
 \subsection{Default Comparison Operators on Records}
+\index{records!equality}
+\index{records!inequality}
 
 Default functions to overload \chpl{==} and \chpl{!=} are defined for
 records if there is none defined for the record in the Chapel program.

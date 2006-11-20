@@ -1,5 +1,6 @@
 \sekshun{Unions}
 \label{Unions}
+\index{unions}
 
 Unions have the semantics of records, however, only one field in the
 union can contain data at any particular point in the program's
@@ -10,6 +11,7 @@ in an unset state so that no field contains data.
 \subsection{Union Declarations}
 \label{Union_Declarations}
 
+\index{union@\chpl{union}}
 A union is defined with the following syntax:
 \begin{syntax}
 union-declaration-statement:
@@ -27,6 +29,7 @@ union-statement:
 
 \subsubsection{Union Fields}
 \label{Union_Fields}
+\index{unions!fields}
 
 Union fields are accessed in the same way that record fields are
 accessed.  It is a runtime error to access a field that is not
@@ -36,6 +39,7 @@ Union fields should not be specified with initialization expressions.
 
 \subsection{Union Assignment}
 \label{Union_Assignment}
+\index{unions!assignment}
 
 Union assignment is by value.  The field set by the union on the
 right-hand side of the assignment is assigned to the union on the
@@ -43,6 +47,7 @@ left-hand side of the assignment and this same field is marked as set.
 
 \subsection{The Type Select Statement and Unions}
 \label{The_Type_Select_Statement_and_Unions}
+\index{unions!type select@\chpl{type select}}
 
 The type-select statement can be applied to unions to access the
 fields in a safe way by determining the type of the union.
