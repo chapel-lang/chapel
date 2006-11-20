@@ -86390,3 +86390,22 @@ Modified files:
 	chapel/compiler/adt/: vec.cpp 
 	chapel/compiler/main/: arg.cpp 
 
+---------------------------------------------------------------------------
+
+11/20/06 14:39:48 -- bradc
+
+Log message:
+	Scripts to do a test of the release: generates a release,
+	unpacks it, executes the commands suggested in the top-level
+	README, and runs the tests in the examples directory.
+	Sends out mail indicating success or failure.
+	
+	Developers can use "testRelease -debug" to try this themselves,
+	in which case the result is sent directly to them.  The -cron
+	flag is meant for use by cron jobs and will mail the
+	chapel_cronmail alias.  I set up a nightly run for linux
+	machines.
+
+Added files:
+	chapel/util/: testRelease testReleaseHelp 
+
