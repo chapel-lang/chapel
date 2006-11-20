@@ -13,10 +13,10 @@ automatically as described in~\rsec{Automatic_Memory_Management}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `class' identifier inherit-type-list[OPT] {
+  `class' identifier class-inherit-type-list[OPT] {
     class-statement-list }
 
-inherit-expression-list:
+class-inherit-expression-list:
   class-type
   class-type , inherit-expression-list
 
