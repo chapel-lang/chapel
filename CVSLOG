@@ -86280,3 +86280,22 @@ Log message:
 Modified files:
 	./: README 
 
+---------------------------------------------------------------------------
+
+11/20/06 10:09:48 -- deitz
+
+Log message:
+	Added a new block-tag BLOCK_TYPE to indicate that the code in this
+	block statement is only used to determine type information.  Such
+	blocks are removed after function resolution.
+	
+	Used BLOCK_TYPE to rework the forall expression code so that
+	side-effecting forall expression codes work correctly.
+	
+	Simplified some code.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp build.cpp 
+	chapel/compiler/include/: alist.h build.h stmt.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
