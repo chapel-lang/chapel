@@ -2,4 +2,4 @@
 
 limit vmemoryuse 128M
 
-source ../../../sub_test
+source ../../../Bin/sub_test
