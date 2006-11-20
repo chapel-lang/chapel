@@ -86312,3 +86312,13 @@ Log message:
 Modified files:
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+11/20/06 10:33:20 -- deitz
+
+Log message:
+	Finished first pass over Classes section.
+
+Modified files:
+	chapel/spec/: Classes.tex 
+
