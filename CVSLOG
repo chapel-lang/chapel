@@ -86409,3 +86409,13 @@ Log message:
 Added files:
 	chapel/util/: testRelease testReleaseHelp 
 
+---------------------------------------------------------------------------
+
+11/20/06 15:06:06 -- deitz
+
+Log message:
+	Removed a couple of functions in _chpl_file that were defined over _nilType.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+
