@@ -86430,3 +86430,17 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+11/20/06 15:33:28 -- bradc
+
+Log message:
+	Made a few mistakes when moving sub_test into
+	test/Bin, which may be the cause for the new
+	mallocOutOfMemory problems on chap0x.  About
+	to test.
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/memory/shannon/outofmemory/: sub_test 
+
