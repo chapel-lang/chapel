@@ -35,17 +35,9 @@ pragma "inline" def _string_fscanf(fp: _file)
 pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
   return __primitive("readLit", fp, val, ignoreWhiteSpace);
 
-
-
-
 pragma "rename _chpl_fflush"
 def fflush(f: file) {
   fflush(f.fp);
-}
-
-pragma "rename _chpl_fflush_nil"
-def fflush(f: _nilType) {
-  halt("***Error: called fflush on nil***");
 }
 
 pragma "rename _chpl_assert_no_args"
@@ -372,24 +364,6 @@ def fwrite(f: file, val: string) {
     _fprintfError();
   } 
 
-  if (need_release) { _fwrite_unlock( f); }
-}
-
-
-pragma "rename _chpl_fwrite_nil" 
-def fwrite(f: file, x : _nilType) : void {
-  var need_release: bool = _fwrite_lock( f);
-
-  if (f.isOpen) {
-    var returnVal: int = fprintf(f.fp, "%s", "nil");
-    if (returnVal < 0) {
-      _fprintfError();
-    } else if (returnVal == 0) {
-      halt("*** Error: No value was written***");
-    }
-  } else {
-    _fopenError(f, isRead = false);
-  }
   if (need_release) { _fwrite_unlock( f); }
 }
 
