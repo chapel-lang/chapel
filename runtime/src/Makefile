@@ -30,7 +30,7 @@ CVS_SRCS = $(CHPL_RT_SRCS) main.c
 
 default: all
 
-all: $(TARGETS)
+all: $(CHPL_RT_DIR) $(TARGETS)
 	@if [ `grep "chplrt.h" $(CVS_SRCS) | wc -l` -ne `ls $(CVS_SRCS) | wc -l` ]; then echo "PROBLEM:  There's a runtime source file that does not include 'chplrt.h'."; exit 1; fi
 
 clean:
@@ -53,12 +53,12 @@ depend: $(PLATFORM_DIR)
         done	
 	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
-$(CHPL_RT_LIB): $(CHPL_RT_DIR) $(CHPL_RT_OBJS)
+$(CHPL_RT_LIB): $(CHPL_RT_OBJS)
 	$(AR) -rc $@ $(CHPL_RT_OBJS)
 	@echo "Updating TAGS..."
 	@etags -o ../TAGS $(CHPL_RT_SRCS) ../include/*.h
 
-$(CHPL_RT_DIR)/main.o: $(PLATFORM)/main.o $(CHPL_RT_DIR)
+$(CHPL_RT_DIR)/main.o: $(PLATFORM)/main.o
 	cp $< $@
 
 $(CHPL_RT_DIR):
