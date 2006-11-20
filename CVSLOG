@@ -86352,3 +86352,17 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Records.tex Unions.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 13:08:36 -- bradc
+
+Log message:
+	Updated copyright messages in source files to reflect
+	the way John and I discussed they should look.
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/compiler/adt/: vec.cpp 
+	chapel/compiler/include/: arg.h beautify.h list.h map.h vec.h 
+	chapel/compiler/main/: arg.cpp 
+
