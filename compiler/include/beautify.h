@@ -1,6 +1,6 @@
 /*****************************************************************************
 
-This code is based on beautify.cpp from the alpha version of the ZPL
+This code is based on beautify.h from the alpha version of the ZPL
 compiler, 06/08/2004.  Changes were made to utilize the Chapel
 compiler's file and string utilities and to make use of its vector
 class rather than ZPL's generic_stack class.
