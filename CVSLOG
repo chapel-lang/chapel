@@ -86299,3 +86299,16 @@ Modified files:
 	chapel/compiler/include/: alist.h build.h stmt.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+11/20/06 10:33:16 -- bradc
+
+Log message:
+	Was finding that the runtime was rebuilding
+	itself with every make.  This change makes
+	the lib/ directory more explicitly to try
+	and avoid this problem.  It seems to work.
+
+Modified files:
+	chapel/runtime/src/: Makefile 
+
