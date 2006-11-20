@@ -1,39 +1,51 @@
 \sekshun{Unions}
 \label{Unions}
 
-This section is forthcoming.
+Unions have the semantics of records, however, only one field in the
+union can contain data at any particular point in the program's
+execution.  Unions are safe so that an access to a field that does not
+contain data is a runtime error.  When a union is constructed, it is
+in an unset state so that no field contains data.
 
 \subsection{Union Declarations}
 \label{Union_Declarations}
 
-This section is forthcoming.
+A union is defined with the following syntax:
+\begin{syntax}
+union-declaration-statement:
+  `union' identifier { union-statement-list }
+
+union-statement-list:
+  union-statement
+  union-statement union-statement-list
+
+union-statement:
+  type-declaration-statement
+  function-declaration-statement
+  variable-declaration-statement
+\end{syntax}
 
 \subsubsection{Union Fields}
 \label{Union_Fields}
 
-This section is forthcoming.
+Union fields are accessed in the same way that record fields are
+accessed.  It is a runtime error to access a field that is not
+currently set.
 
-\subsubsection{Union Field Accesses}
-\label{Union_Field_Accesses}
-
-This section is forthcoming.
+Union fields should not be specified with initialization expressions.
 
 \subsection{Union Assignment}
 \label{Union_Assignment}
 
-This section is forthcoming.
-
-\subsection{Union Inheritance}
-\label{Union_Inheritance}
-
-This section is forthcoming.
+Union assignment is by value.  The field set by the union on the
+right-hand side of the assignment is assigned to the union on the
+left-hand side of the assignment and this same field is marked as set.
 
 \subsection{The Type Select Statement and Unions}
 \label{The_Type_Select_Statement_and_Unions}
 
-This section is forthcoming.
-
-\subsection{Record and Union Differences}
-\label{Record_and_Union_Differences}
-
-This section is forthcoming.
+The type-select statement can be applied to unions to access the
+fields in a safe way by determining the type of the union.
+\begin{implementation}
+The type-select statement is not yet implemented on unions.
+\end{implementation}
