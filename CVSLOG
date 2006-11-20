@@ -86366,3 +86366,15 @@ Modified files:
 	chapel/compiler/include/: arg.h beautify.h list.h map.h vec.h 
 	chapel/compiler/main/: arg.cpp 
 
+---------------------------------------------------------------------------
+
+11/20/06 13:13:09 -- deitz
+
+Log message:
+	Took a pass over the parallelism and synchronization section, adding
+	index terms, implementation notes, and making some modest and some
+	immodest changes.
+
+Modified files:
+	chapel/spec/: Parallelism_and_Synchronization.tex 
+
