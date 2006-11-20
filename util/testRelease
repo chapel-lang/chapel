@@ -1,0 +1,183 @@
+#!/usr/bin/perl
+
+$printusage = 1;
+$debug = 1;
+
+while (@ARGV) {
+    $flag = shift @ARGV;
+    if ($flag eq "-debug") {
+	$debug = 1;
+        $printusage = 0;
+    } elsif ($flag eq "-cron") {
+	$debug = 0;
+        $printusage = 0;
+    } else {
+        $printusage = 1;
+        last;
+    }
+}
+
+if ($printusage == 1) {
+    print "testRelease [-debug|-cron]\n";
+    print "\t-debug     : test the release for individual user\n";
+    print "\t-cron      : use for nightly cron runs only (mails team)\n";
+    exit 1;
+}
+
+
+#
+# get uniquifiers
+#
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+$debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
+if ($debugmail eq "") {
+    $debugmail = "$user\@cray.com";
+}
+$platform = `uname -s`;
+chomp($platform);
+$platform = lc($platform);
+if ($platform eq "linux") {
+    $machine = `uname -m`;
+    chomp($machine);
+    if ($machine eq "x86_64") {
+        $platform = "linux64";
+    }
+} elsif ($platform eq "cygwin_nt-5.1") {
+    $platform = "cygwin";
+}
+
+
+#
+# directory locations
+#
+$chplhome = $ENV{'CHPL_HOME'};
+$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+$tmpdir = "$basetmpdir/chapel-testRelease.$user.$pid.deleteme";
+
+
+
+
+#
+# set mail options
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $mailer = "Mail";
+}
+
+$somethingfailed = 0;
+
+
+#
+# make temp directory
+#
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+
+
+#
+# make release
+#
+mysystem("$chplhome/util/gen_release", "creating release", 1, 1);
+
+
+#
+# copy release to temp directory, unpack, and run tests
+#
+mysystem("cp $chplhome/chapel.tar.gz $tmpdir", "copying release", 1, 1);
+mysystem("cd $tmpdir && gunzip chapel.tar.gz", "unzipping release", 1, 1);
+mysystem("cd $tmpdir && tar xf chapel.tar", "untarring release", 1, 1);
+mysystem("cp $chplhome/util/testReleaseHelp $tmpdir/chapel", "copying testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel && testReleaseHelp", "running testReleaseHelp script", 1, 1);
+
+
+#
+# send mail
+#
+if ($teststatus == 0) {
+    $failures = `grep Error $tmpdir/chapel/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
+    if ($failures == "0") {
+        $shortstatus = "passed";
+    } else {
+        $shortstatus = "tests failed";
+    }
+} else {
+    $shortstatus = "something failed";
+}
+if ($debug == 1) {
+    $mailsubject = "Chapel Release Test Debug ($platform): $shortstatus";
+} else {
+    $mailsubject = "Chapel Release Test Nightly ($platform): $shortstatus";
+}
+    
+if ($debug == 1) {
+    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+} else {
+    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+}
+    
+open(MAIL, $mailcommand);
+
+print MAIL `cat $tmpdir/chapel/examples/Logs/testReleaseHelp.log.summary`;
+    
+close(MAIL);
+    
+    
+#
+# clean up
+#
+if ($somethingfailed == 0) {
+    print "Cleaning up\n";
+    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
+}
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+	if ($mailmsg != 0) {
+            if ($debug == 1) {
+                $mailsubject = "Chapel: Debug Results ($platform): Failure notice";
+                $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+            } else {
+                $mailsubject = "Chapel: Nightly Results ($platform): Failure notice";
+                $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+            }
+
+            print "Trying to mail message... using $mailcommand\n";
+	    open(MAIL, $mailcommand);
+	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "(workspace left at $tmpdir)\n";
+	    print MAIL "===============================================================\n";
+	    close(MAIL);
+	}
+
+	if ($fatal != 0) {
+	    exit 1;
+	}
+    }
+    $status;
+}
