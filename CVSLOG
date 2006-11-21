@@ -86496,3 +86496,26 @@ Added files:
 	chapel/test/trivial/deitz/: test_on_syntax.chpl 
 	                            test_on_syntax.good 
 
+---------------------------------------------------------------------------
+
+11/21/06 10:50:35 -- deitz
+
+Log message:
+	Disabled !, &&, and || on int(32), int(64), uint(32), and uint(64).
+	These operators are now only predefined on operands of bool type.
+	
+	Fixed usage errors in halt and assert where ! was applied to a value
+	of int type; I changed it to compare the integer to zero.
+	
+	Fixed default fread over classes.
+	
+	Fixed a few test cases.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl 
+	chapel/test/trivial/bradc/: conditional.chpl 
+	chapel/test/trivial/shannon/: bitwise_ops.chpl compSampler.chpl 
+	                              logical_and.chpl logical_not.chpl 
+
