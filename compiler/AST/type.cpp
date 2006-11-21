@@ -648,7 +648,7 @@ BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol
   CallExpr* fileArgFP = new CallExpr(".", fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
-  CallExpr* notRead = new CallExpr("!", matchingCharWasRead);
+  CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
   Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("_get_errno"));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);

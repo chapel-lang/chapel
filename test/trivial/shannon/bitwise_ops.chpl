@@ -29,17 +29,17 @@ writeln();
 
 writeln("test: o || p");
 writeln("expected answer = 1");
-answer = o || p;
+answer = o != 0 || p != 0;
 writeln("actual answer = ", answer);
 writeln();
 
 writeln("test: o || o");
 writeln("expected answer = 0");
-answer = o || o;
+answer = o != 0 || o != 0;
 writeln("actual answer = ", answer);
 writeln();
 
 writeln("test: p || p");
 writeln("expected answer = 1");
-answer = p || p;
+answer = p != 0 || p != 0;
 writeln("actual answer = ", answer);

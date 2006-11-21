@@ -21,7 +21,6 @@ pragma "inline" def =(a: int(?w), b: int(w)) return b;
 pragma "inline" def +(a: int(32)) return __primitive("u+", a);
 pragma "inline" def -(a: int(32)) return __primitive("u-", a);
 pragma "inline" def ~(a: int(32)) return __primitive("u~", a);
-pragma "inline" def !(a: int(32)) return __primitive("!", a);
 pragma "inline" def +(a: int(32), b: int(32)) return __primitive("+", a, b);
 pragma "inline" def -(a: int(32), b: int(32)) return __primitive("-", a, b);
 pragma "inline" def *(a: int(32), b: int(32)) return __primitive("*", a, b);
@@ -37,13 +36,10 @@ pragma "inline" def <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
 pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
 pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
 pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
-pragma "inline" def &&(a: int(32), b: int(32)) return __primitive("&&", a, b);
-pragma "inline" def ||(a: int(32), b: int(32)) return __primitive("||", a, b);
 
 pragma "inline" def +(a: int(64)) return __primitive("u+", a);
 pragma "inline" def -(a: int(64)) return __primitive("u-", a);
 pragma "inline" def ~(a: int(64)) return __primitive("u~", a);
-pragma "inline" def !(a: int(64)) return __primitive("!", a);
 pragma "inline" def +(a: int(64), b: int(64)) return __primitive("+", a, b);
 pragma "inline" def -(a: int(64), b: int(64)) return __primitive("-", a, b);
 pragma "inline" def *(a: int(64), b: int(64)) return __primitive("*", a, b);
@@ -59,8 +55,6 @@ pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
 pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
 pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
 pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
-pragma "inline" def &&(a: int(64), b: int(64)) return __primitive("&&", a, b);
-pragma "inline" def ||(a: int(64), b: int(64)) return __primitive("||", a, b);
 
 pragma "inline" def bits(type t) where t == int(8)  return 8;
 pragma "inline" def bits(type t) where t == int(16) return 16;
@@ -87,9 +81,6 @@ pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
 pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
 pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
 pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
-pragma "inline" def !(a: uint(32)) return __primitive("!", a);
-pragma "inline" def &&(a: uint(32), b: uint(32)) return __primitive("&&", a, b);
-pragma "inline" def ||(a: uint(32), b: uint(32)) return __primitive("||", a, b);
 
 pragma "inline" def +(a: uint(64)) return __primitive("u+", a);
 pragma "inline" def +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
@@ -108,9 +99,6 @@ pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
 pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
 pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
 pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
-pragma "inline" def !(a: uint(64)) return __primitive("!", a);
-pragma "inline" def &&(a: uint(64), b: uint(64)) return __primitive("&&", a, b);
-pragma "inline" def ||(a: uint(64), b: uint(64)) return __primitive("||", a, b);
 
 
 pragma "inline" def <<(a: int(32), b: _anyint) return __primitive("<<", a, b);

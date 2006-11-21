@@ -44,7 +44,7 @@ pragma "rename _chpl_assert_no_args"
 def assert(test: bool) {
   if (!test) {
     _writeAssertFailed();
-    if (!chpl_input_lineno) {
+    if (chpl_input_lineno == 0) {
       fwriteln(stderr);
     }
     exit(0);
@@ -55,7 +55,7 @@ pragma "rename _chpl_assert"
 def assert(test: bool, args ...?numArgs) {
   if (!test) {
     _writeAssertFailed();
-    if (!chpl_input_lineno) {
+    if (chpl_input_lineno == 0) {
       fwrite(stderr, ": ");
     }
     for param i in 1..numArgs {
@@ -69,7 +69,7 @@ def assert(test: bool, args ...?numArgs) {
 def _writeAssertFailed() {
   fflush(stdout);
   fwrite(stderr, "Assertion failed");
-  if (chpl_input_lineno) {
+  if (chpl_input_lineno != 0) {
     fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
   }     
 }
@@ -77,7 +77,7 @@ def _writeAssertFailed() {
 pragma "rename _chpl_halt_no_args"
 def halt() {
   _writeHaltReached();
-  if(!chpl_input_lineno) {
+  if(chpl_input_lineno == 0) {
     fwriteln(stderr);
   }
   exit(0);
@@ -86,7 +86,7 @@ def halt() {
 pragma "rename _chpl_halt"
 def halt(args ...?numArgs) {
   _writeHaltReached();
-  if (!chpl_input_lineno) {
+  if (chpl_input_lineno == 0) {
     fwrite(stderr, ": ");
   }
   for param i in 1..numArgs {
@@ -99,7 +99,7 @@ def halt(args ...?numArgs) {
 def _writeHaltReached() {
   fflush(stdout);
   fwrite(stderr, "Halt reached");
-  if (chpl_input_lineno) {
+  if (chpl_input_lineno != 0) {
     fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
   }
 }

@@ -61,14 +61,14 @@ if (h) {
 }
 writeln();
 
-if (!a) {
+if (a == 0) {
   writeln("took true path for !a");
 } else {
   writeln("took false path for !a");
 }
 writeln();
 
-if (!b) {
+if (b == 0) {
   writeln("took true path for !b");
   writeln("no really, I did!");
 } else {
@@ -77,13 +77,13 @@ if (!b) {
 }
 writeln();
 
-if (!c) then
+if (c == 0) then
   writeln("took true path for !c");
 else
   writeln("took false path for !c");
 writeln();
 
-if (!d) then
+if (d == 0) then
   writeln("took true path for !d");
 else {
   writeln("took false path for !d");
@@ -91,23 +91,23 @@ else {
 }
 writeln();
 
-if (!e) {
+if (e == 0) {
   writeln("took true path for !e");
   writeln("no really, I did!");
 } else
   writeln("took false path for !e");
 writeln();
 
-if (!f) then
+if (f == 0) then
   writeln("took true path for !f");
 writeln();
 
-if (!g) {
+if (g == 0) {
   writeln("took true path for !g");
 }
 writeln();
 
-if (!h) {
+if (h == 0) {
   writeln("took true path for !h");
   writeln("no really, I did!");
 }
