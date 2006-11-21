@@ -86519,3 +86519,48 @@ Modified files:
 	chapel/test/trivial/shannon/: bitwise_ops.chpl compSampler.chpl 
 	                              logical_and.chpl logical_not.chpl 
 
+---------------------------------------------------------------------------
+
+11/21/06 11:35:33 -- deitz
+
+Log message:
+	Reworked the implementation of && and || to use short-circuit
+	evaluation, so the second operand is not evaluated if the first
+	operand determines the result.  Since these can be overloaded, the
+	semantics are defined as follows:
+	
+	  expr1 && expr2  ==>  if expr1.false? then false else expr2.true?
+	  expr1 || expr2  ==>  if expr1.true? then true else expr2.true?
+	
+	The methods false? and true? are predefined over bool type (so && and
+	|| are predefined over bool type).  The definitions are as follows:
+	
+	  def bool.true? return this;
+	  def bool.false? return !this;
+	
+	To overload && and ||, the user should overload the methods false? and
+	true? on the type(s) that the overloading is desired on.
+	
+	Since conditional expressions are not yet folded, && and || are no
+	longer folded.
+	
+	Updated array reallocate function to use & instead of && in an
+	expression that needs to be folded.
+	
+	Added a test.
+	
+	Updated the spec on logical or and logical and.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	chapel/compiler/include/: build.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	chapel/spec/: Expressions.tex 
+	chapel/test/types/type_variables/deitz/part5/: where-2.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_shortcircuit_land_lor.chpl 
+	                            test_shortcircuit_land_lor.good 
+
