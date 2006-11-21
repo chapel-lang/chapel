@@ -1158,8 +1158,6 @@ static bool fold_call_expr(CallExpr* call) {
           FOLD_CALL(">=", P_prim_greaterorequal);
           FOLD_CALL("==", P_prim_equal);
           FOLD_CALL("!=", P_prim_notequal);
-          FOLD_CALL("&&", P_prim_land);
-          FOLD_CALL("||", P_prim_lor);
           FOLD_CALL("<<", P_prim_lsh);
           FOLD_CALL(">>", P_prim_rsh);
           FOLD_CALL("**", P_prim_pow);
@@ -1565,7 +1563,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           }
           Expr* expr = fn->where->body->only();
           if (call->argList->length() == 2)
-            expr->replace(new CallExpr("&&", expr->copy(),
+            expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
                               new CallExpr(".", parent->sym, new_StringSymbol("elt_type")))));
           if (def) {

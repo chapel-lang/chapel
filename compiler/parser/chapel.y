@@ -527,11 +527,11 @@ assign_stmt:
     }
 | lvalue TASSIGNLAND expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("&&", $1, $3);
+      $$ = buildLogicalAndAssignment($1, $3);
     }
 | lvalue TASSIGNLOR expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("||", $1, $3);
+      $$ = buildLogicalOrAssignment($1, $3);
     }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
@@ -764,12 +764,8 @@ fname:
   { $$ = "%"; } 
 | TEXP
   { $$ = "**"; } 
-| TAND
-  { $$ = "&&"; } 
 | TNOT
   { $$ = "!"; }
-| TOR
-  { $$ = "||"; } 
 | TSEQCAT
   { $$ = "#"; } 
 | TBY
@@ -1363,9 +1359,9 @@ top_level_expr:
 | expr TBXOR expr
     { $$ = new CallExpr("^", $1, $3); }
 | expr TAND expr
-    { $$ = new CallExpr("&&", $1, $3); }
+    { $$ = buildLogicalAnd($1, $3); }
 | expr TOR expr
-    { $$ = new CallExpr("||", $1, $3); }
+    { $$ = buildLogicalOr($1, $3); }
 | expr TEXP expr
     { $$ = new CallExpr("**", $1, $3); }
 | expr TSEQCAT expr

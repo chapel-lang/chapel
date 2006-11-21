@@ -914,12 +914,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_XOR:
       help_codegen_op(outfile, "^", get(1), get(2));
       break;
-    case PRIMITIVE_LAND:
-      help_codegen_op(outfile, "&&", get(1), get(2));
-      break;
-    case PRIMITIVE_LOR:
-      help_codegen_op(outfile, "||", get(1), get(2));
-      break;
     case PRIMITIVE_POW:
       fprintf(outfile, "pow");
       help_codegen_op(outfile, ", ", get(1), get(2));

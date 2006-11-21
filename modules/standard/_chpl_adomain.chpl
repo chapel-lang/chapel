@@ -563,7 +563,7 @@ class _aarray: _abase {
   // when parameter folding is done in function resolution
   // then rank of indefinite domain can be changed back to 1
   def reallocate(d: _domain) {
-    if (d.rank == rank && d._dim_index_type == dim_type) {
+    if ((d.rank == rank) & (d._dim_index_type == dim_type)) {
       var new = _aarray(elt_type, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);

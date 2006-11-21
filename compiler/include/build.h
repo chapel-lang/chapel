@@ -6,6 +6,9 @@
 #include "stmt.h"
 #include "symbol.h"
 
+Expr* buildLogicalAnd(Expr* left, Expr* right);
+Expr* buildLogicalOr(Expr* left, Expr* right);
+
 BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
 DefExpr* buildLabelStmt(char* name);
@@ -26,6 +29,8 @@ BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* cond = NULL);
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
 BlockStmt* build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs);
+BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
+BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs);

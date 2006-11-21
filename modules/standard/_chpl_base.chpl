@@ -13,8 +13,8 @@ pragma "inline" def >=(a: bool, b: bool) return __primitive(">=", a, b);
 pragma "inline" def <(a: bool, b: bool) return __primitive("<", a, b);
 pragma "inline" def >(a: bool, b: bool) return __primitive(">", a, b);
 pragma "inline" def !(a: bool) return __primitive("!", a);
-pragma "inline" def &&(a: bool, b: bool) return __primitive("&&", a, b);
-pragma "inline" def ||(a: bool, b: bool) return __primitive("||", a, b);
+pragma "inline" def bool.true? return this;
+pragma "inline" def bool.false? return !this;
 
 // Primitive functions and operators on ints
 pragma "inline" def =(a: int(?w), b: int(w)) return b;

@@ -753,23 +753,54 @@ The result is the logical negation of the operand.
 \label{Logical_And_Operators}
 \index{&&@\chpl{&&}}
 
-The logical and operator is predefined as follows:
+The logical and operator is predefined over bool type.  It returns
+true if both operands evaluate to true; otherwise it returns false.
+If the first operand evaluates to false, the second operand is not
+evaluated and the result is false.
+
+The logical and operator over expressions \chpl{a} and \chpl{b} given
+by
 \begin{chapel}
-def &&(a: bool, b: bool): bool
+a && b
 \end{chapel}
-The result of \chpl{a && b} is true if both \chpl{a} and \chpl{b} are
-true; otherwise the result is false.
+is evaluated as the expression
+\begin{chapel}
+if a.false? then false else b.true?
+\end{chapel}
+
+The methods \chpl{false?} and \chpl{true?} are predefined over bool
+type as follows:
+\begin{chapel}
+def bool.true? return this;
+def bool.false? return !this;
+\end{chapel}
+Overloading the logical and operator over other types is accomplished
+by overloading the \chpl{false?} and \chpl{true?} methods over other
+types.
 
 \subsubsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
 \index{||@\chpl{||}}
 
-The logical or operator is predefined as follows:
+The logical or operator is predefined over bool type.  It returns
+true if either operand evaluate to true; otherwise it returns false.
+If the first operand evaluates to true, the second operand is not
+evaluated and the result is true.
+
+The logical or operator over expressions \chpl{a} and \chpl{b} given
+by
 \begin{chapel}
-def ||(a: bool, b: bool): bool
+a && b
 \end{chapel}
-The result of \chpl{a || b} is true if either \chpl{a} or \chpl{b} is
-true; otherwise the result is false.
+is evaluated as the expression
+\begin{chapel}
+if a.true? then true else b.true?
+\end{chapel}
+
+The methods \chpl{false?} and \chpl{true?} are predefined over bool
+type as described in~\rsec{Logical_And_Operators}.  Overloading the
+logical or operator over other types is accomplished by overloading
+the \chpl{false?} and \chpl{true?} methods over other types.
 
 \subsection{Relational Operators}
 \label{Relational_Operators}

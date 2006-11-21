@@ -926,9 +926,7 @@ checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
       call->isNamed(">") ||
       call->isNamed("<") ||
       call->isNamed(">=") ||
-      call->isNamed("<=") ||
-      call->isNamed("&&") ||
-      call->isNamed("||")) {
+      call->isNamed("<=")) {
     if ((is_int_type(atypes->v[0]) && atypes->v[1] == dtUInt[INT_SIZE_64]) ||
         (is_int_type(atypes->v[1]) && atypes->v[0] == dtUInt[INT_SIZE_64])) {
       VarSymbol* var;

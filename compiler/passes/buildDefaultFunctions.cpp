@@ -257,15 +257,12 @@ static void build_record_equality_function(ClassType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
-  Expr* cond = NULL;
   for_fields(tmp, ct) {
     Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
     Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-    cond = (cond)
-      ? new CallExpr("&&", cond, new CallExpr("==", left, right))
-      : new CallExpr("==", left, right);
+    fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new ReturnStmt(new SymExpr(gFalse))));
   }
-  fn->body = new BlockStmt(new ReturnStmt(cond));
+  fn->insertAtTail(new ReturnStmt(new SymExpr(gTrue)));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
@@ -279,22 +276,17 @@ static void build_record_inequality_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
-
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
-  Expr* cond = NULL;
   for_fields(tmp, ct) {
     Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
     Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-    cond = (cond)
-      ? new CallExpr("||", cond, new CallExpr("!=", left, right))
-      : new CallExpr("!=", left, right);
+    fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new ReturnStmt(new SymExpr(gTrue))));
   }
-  BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
-  fn->body = retStmt;
+  fn->insertAtTail(new ReturnStmt(new SymExpr(gFalse)));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);

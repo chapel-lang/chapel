@@ -204,8 +204,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_AND, "&", returnInfoFirst);
   prim_def(PRIMITIVE_OR, "|", returnInfoFirst);
   prim_def(PRIMITIVE_XOR, "^", returnInfoFirst);
-  prim_def(PRIMITIVE_LAND, "&&", returnInfoBool);
-  prim_def(PRIMITIVE_LOR, "||", returnInfoBool);
   prim_def(PRIMITIVE_POW, "**", returnInfoNumericUp);
 
   prim_def(PRIMITIVE_MIN, "_min", returnInfoFirst);

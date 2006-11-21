@@ -8,6 +8,16 @@
 #include "type.h"
 
 
+Expr* buildLogicalAnd(Expr* left, Expr* right) {
+  return new CallExpr(new DefExpr(build_if_expr(new CallExpr(".", left, new_StringSymbol("false?")), new SymExpr(gFalse), new CallExpr(".", right, new_StringSymbol("true?")))));
+}
+
+
+Expr* buildLogicalOr(Expr* left, Expr* right) {
+  return new CallExpr(new DefExpr(build_if_expr(new CallExpr(".", left, new_StringSymbol("true?")), new SymExpr(gTrue), new CallExpr(".", right, new_StringSymbol("true?")))));
+}
+
+
 BlockStmt* build_chpl_stmt(AList* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_SCOPELESS;
@@ -381,6 +391,28 @@ build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs) {
 }
 
 
+BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = build_chpl_stmt();
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, buildLogicalAnd(new SymExpr(tmp), rhs))));
+  return stmt;
+}
+
+
+BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = build_chpl_stmt();
+  VarSymbol* tmp = new VarSymbol("_ltmp");
+  tmp->isCompilerTemp = true;
+  stmt->insertAtTail(new DefExpr(tmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr(PRIMITIVE_CAST, tmp, buildLogicalOr(new SymExpr(tmp), rhs))));
+  return stmt;
+}
+
+
 CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
@@ -404,7 +436,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
         else
-          expr = new CallExpr("||", expr, new CallExpr("==", selectCond->copy(), whenCond));
+          expr = new CallExpr("|", expr, new CallExpr("==", selectCond->copy(), whenCond));
       }
       if (!condStmt) {
         condStmt = new CondStmt(expr, when->thenStmt);
