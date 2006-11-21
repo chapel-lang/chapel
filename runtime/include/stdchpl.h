@@ -19,6 +19,5 @@
 #include "chplthreads.h"
 #include "chpltypes.h"
 #include "error.h"
-#include "exit.h"
 
 #endif

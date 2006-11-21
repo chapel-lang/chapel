@@ -429,6 +429,7 @@ static void codegen_header(void) {
   chpl_main->addPragma("rename _chpl_main");
 
   cnames.put("abs", 1);
+  cnames.put("exit", 1);
   cnames.put("_init", 1);
   cnames.put("stdin", 1);
   cnames.put("close", 1);
