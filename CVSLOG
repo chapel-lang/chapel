@@ -86459,3 +86459,25 @@ Modified files:
 	chapel/spec/: Domains_and_Arrays.tex Expressions.tex 
 	              Input_and_Output.tex Records.tex Sequences.tex 
 
+---------------------------------------------------------------------------
+
+11/20/06 16:41:44 -- deitz
+
+Log message:
+	Made the application of unary minus on a value of type uint(64) into a
+	compiler error.  Undefined unary minus on uint(32).
+	
+	Reworked abs on values of uint(32) and uint(64) to return the value
+	since it is always greater than zero.
+	
+	Added two tests of unary minus on unsigneds.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_math.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_negate_uint32.chpl 
+	                            test_negate_uint32.good 
+	                            test_negate_uint64.chpl 
+	                            test_negate_uint64.good 
+
