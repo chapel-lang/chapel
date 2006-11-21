@@ -4,8 +4,8 @@
 
 pragma "inline" def abs(x : int) return if x < 0 then -x else x;
 pragma "inline" def abs(x : int(64)) return if x < 0 then -x else x;
-pragma "inline" def abs(x : uint) return if x < 0 then -x else x;
-pragma "inline" def abs(x : uint(64)) return if x < 0 then -x else x;
+pragma "inline" def abs(x : uint) return x;
+pragma "inline" def abs(x : uint(64)) return x;
 
 pragma "inline" def acos(x : real) return __primitive("acos", x);
 pragma "inline" def acosh(x : real) return __primitive("acosh", x);

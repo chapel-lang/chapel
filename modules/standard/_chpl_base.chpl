@@ -71,7 +71,6 @@ pragma "inline" def bits(type t) where t == int(64) return 64;
 // Primitive functions and operators on uints
 pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
 pragma "inline" def +(a: uint(32)) return __primitive("u+", a);
-pragma "inline" def -(a: uint(32)) return __primitive("u-", a);
 pragma "inline" def +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
 pragma "inline" def -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
 pragma "inline" def *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
@@ -93,7 +92,6 @@ pragma "inline" def &&(a: uint(32), b: uint(32)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: uint(32), b: uint(32)) return __primitive("||", a, b);
 
 pragma "inline" def +(a: uint(64)) return __primitive("u+", a);
-pragma "inline" def -(a: uint(64)) return __primitive("u-", a);
 pragma "inline" def +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
 pragma "inline" def -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
 pragma "inline" def *(a: uint(64), b: uint(64)) return __primitive("*", a, b);

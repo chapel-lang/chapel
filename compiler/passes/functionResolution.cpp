@@ -896,6 +896,19 @@ char* fn2string(FnSymbol* fn) {
 
 
 static void
+checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
+  if (call->primitive || call->argList->length() != 1)
+    return;
+  if (call->isNamed("-")) {
+    if (atypes->v[0] == dtUInt[INT_SIZE_64]) {
+      USR_FATAL(call, "illegal use of '-' on operand of type %s",
+                atypes->v[0]->symbol->name);
+    }
+  }
+}
+
+
+static void
 checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
   if (call->primitive || call->argList->length() != 2)
     return;
@@ -979,6 +992,7 @@ resolveCall(CallExpr* call) {
     Vec<char*> anames;
     computeActuals(call, &atypes, &aparams, &anames);
 
+    checkUnaryOp(call, &atypes, &aparams);
     checkBinaryOp(call, &atypes, &aparams);
 
 
