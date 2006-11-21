@@ -122,6 +122,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TMODULE
 %token TNIL
 %token TOF
+%token TON
 %token TORDERED
 %token TOTHERWISE
 %token TOUT
@@ -199,7 +200,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
-%type <pblockstmt> type_select_stmt
+%type <pblockstmt> type_select_stmt on_stmt
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
@@ -318,6 +319,7 @@ stmt:
 | assign_stmt
 | block_stmt
 | decl_stmt
+| on_stmt
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -335,6 +337,7 @@ parsed_block_single_stmt:
 | while_do_stmt
 | return_stmt
 | yield_stmt
+| on_stmt
 ;
 
 
@@ -564,6 +567,18 @@ block_stmt:
     }
 ;
 
+
+on_stmt:
+  TON expr TDO stmt
+    {
+      $4->insertAtHead($2);
+      $$ = build_chpl_stmt($4);
+    }
+| TON expr parsed_block_stmt
+    {
+      $3->insertAtHead($2);
+      $$ = build_chpl_stmt($3);
+    }
 
 /** DECLARATION STATEMENTS ***************************************************/
 
