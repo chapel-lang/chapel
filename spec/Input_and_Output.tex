@@ -1,4 +1,53 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-This section is forthcoming.
+\subsection{Files}
+
+\subsubsection{The file type}
+
+\subsubsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
+
+\subsection{Text Input and Output}
+
+\subsubsection{The {\em fwrite} function}
+
+\subsubsection{The {\em fread} function}
+
+\subsubsection{The {\em write}, {\em writeln}, and {\em read} functions}
+
+\subsubsection{Default {\em fread} and {\em fwrite} functions}
+
+Default {\em fwrite} functions are created for all types for which a
+user {\em fwrite} function is not defined.  They have the following
+semantics:
+\begin{itemize}
+\item
+{\bf sequences} Outputs the elements of the sequence in order
+delimited by the sequence delimiters \chpl{(/} and \chpl{/)} and
+separated by commas.
+\item
+{\bf arrays} Outputs the elements of the array in row-major order
+where rows are separated by line-feeds and blank lines are used to
+separate other dimensions.
+\item
+{\bf classes} Outputs the values within the fields of the class
+prefixed by the name of the field and the character \chpl{=}.  Each
+field is separated by a comma.  The output is delimited by \chpl{\{}
+and \chpl{\}}.
+\item
+{\bf records} Outputs the values within the fields of the class
+prefixed by the name of the field and the character \chpl{=}.  Each
+field is separated by a comma.  The output is delimited by \chpl{(}
+and \chpl{)}.
+\end{itemize}
+
+Default {\em fread} functions are created for all types for which a
+user {\em fread} function is not defined.  The semantics of the
+default {\em fread} functions are forthcoming.
+
+\subsection{Binary Input and Output}
+
+\subsubsection{The {\em fbwrite} function}
+
+\subsubsection{The {\em fbread} function}
+

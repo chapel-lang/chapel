@@ -741,7 +741,7 @@ overloading~(\rsec{Function_Overloading}.
 
 \subsubsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
-\index{\!@\chpl{!}}
+\index{!@\chpl{!}}
 
 The logical negation operator is predefined as follows:
 \begin{chapel}
@@ -876,7 +876,7 @@ def ==(a: complex(256), b: complex(256)): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
 the same value; otherwise the result is false.  The result of \chpl{a
-!= b} is equivalent to \chpl{!(a == b)}.
+\!= b} is equivalent to \chpl{\!(a == b)}.
 
 The equality comparison operators are predefined over classes as
 follows:
@@ -886,7 +886,7 @@ def !=(a: object, b: object): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
-of \chpl{a != b} is equivalent to \chpl{!(a == b)}.
+of \chpl{a \!= b} is equivalent to \chpl{\!(a == b)}.
 
 Default equality comparison operators are generated for records if the
 user does not define them.  These operators are described
@@ -900,8 +900,8 @@ def !=(a: string, b: string): bool
 \end{chapel}
 The result of \chpl{a == b} is true if the sequence of characters
 in \chpl{a} matches exactly the sequence of characters in \chpl{b};
-otherwise the result is false.  The result of \chpl{a != b} is
-equivalent to \chpl{!(a == b)}.
+otherwise the result is false.  The result of \chpl{a \!= b} is
+equivalent to \chpl{\!(a == b)}.
 
 \subsection{Miscellaneous Operators}
 \label{Miscellaneous_Operators}
