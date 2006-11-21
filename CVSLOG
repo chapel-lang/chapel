@@ -86444,3 +86444,18 @@ Modified files:
 	chapel/test/: start_test 
 	chapel/test/memory/shannon/outofmemory/: sub_test 
 
+---------------------------------------------------------------------------
+
+11/20/06 16:15:33 -- deitz
+
+Log message:
+	Started Input and Output section.
+	
+	Fixed a few bugs with handling ! in \chpl commands.
+	
+	Fixed a couple labels.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex Expressions.tex 
+	              Input_and_Output.tex Records.tex Sequences.tex 
+
