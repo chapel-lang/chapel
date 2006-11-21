@@ -86481,3 +86481,18 @@ Added files:
 	                            test_negate_uint64.chpl 
 	                            test_negate_uint64.good 
 
+---------------------------------------------------------------------------
+
+11/20/06 16:43:43 -- deitz
+
+Log message:
+	Added front-end support for on-statements.  Since there is only one
+	locale, the statement has no effect.  The expression of the
+	on-statement is evaluated for side effects.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_on_syntax.chpl 
+	                            test_on_syntax.good 
+
