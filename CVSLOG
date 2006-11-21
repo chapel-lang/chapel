@@ -86564,3 +86564,22 @@ Added files:
 	chapel/test/trivial/deitz/: test_shortcircuit_land_lor.chpl 
 	                            test_shortcircuit_land_lor.good 
 
+---------------------------------------------------------------------------
+
+11/21/06 12:53:49 -- deitz
+
+Log message:
+	Reworked two "no codegen" "rename" defined functions in the modules.
+	
+	Simplified ridiculous implementation of exit.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Removed files:
+	chapel/runtime/include/: exit.h 
+	chapel/runtime/src/: exit.c 
+
