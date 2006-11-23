@@ -86583,3 +86583,13 @@ Removed files:
 	chapel/runtime/include/: exit.h 
 	chapel/runtime/src/: exit.c 
 
+---------------------------------------------------------------------------
+
+11/22/06 17:22:10 -- marybeth
+
+Log message:
+	Adding another iterator test which is used as an example in the spec.
+
+Added files:
+	chapel/test/spec/marybeth/: iterator2.chpl iterator2.good 
+
