@@ -555,12 +555,12 @@ This section is forthcoming.
 
 This section is forthcoming.
 
-\subsubsection{Sequences}
-\label{Intro_Sequences}
+\subsubsection{Sequences and Iterators}
+\label{Sequences_and_Iterators}
 
 Sequences are ordered sets of elements, each of which has the same type.
-Sequences are constructs that, among other uses, may be used in iterating in \chpl{for}
-and \chpl{for all} loops and in defining domains.  
+Sequences may be used in iterating in \chpl{for} and \chpl{forall} loops and 
+in defining domains.  Sequences are also necessary constructs for defining iterators.    
 
 A simple example of a sequence of integers is given below.
 \begin{chapel}
@@ -627,17 +627,26 @@ The output of this code are the multiples of \chpl{4} from \chpl{0} to
 All sequence operations apply to arithmetic sequences.  For more information
 about these operations and other details about sequences, see~\rsec{Sequences}.
 
-\subsubsection{Iterators}
-\label{Intro_Iterators}
-
-Iterators are functions that conceptually return a sequence of values.
-In the following example, the iterator produces the first \chpl{n} even
-numbers.  
+When a sequence can be generated one element at a time, it can be used
+in the definition of an iterator.  In the above sorting example, the 
+sequence was modified as a whole during each iteration.  The routine
+\chpl{insertionSort} therefore cannot be used as an iterator.  An example
+of a sequence that can be used as an iterator is the sequence of even
+numbers.  The following Chapel code shows an iterator that generates 
+the first \chpl{n} even numbers.  
 \begin{chapel}
 iterator evens(n): int {
   for i in 1..n do yield 2*i;
 }
 \end{chapel}
+When the iterator is not called from inside of a loop, the iterator returns
+the entire sequence of values computed.  For example, if the \chpl{evens} iterator
+is called on its own, it returns the sequence of \chpl{n} even numbers.
+\begin{chapel}
+var y = evens(5);
+\end{chapel}
+In this case, \chpl{y = (/2, 4, 6, 8, 10/)}.
+
 When an iterator is called within a \chpl{for} or \chpl{for all} loop,
 then the iterator is evaluated at each iteration of the loop body.
 For example, the following code writes the \chpl{i}th even number at 
@@ -645,13 +654,25 @@ each iteration \chpl{i}.
 \begin{chapel}
 for i in evens(5) do writeln(i);
 \end{chapel}
-When the iterator is called outside of a loop, then the iterator returns
-the entire sequence of values computed.  For example, if the \chpl{evens} iterator
-is called on its own, it returns the sequence of \chpl{n} even numbers.
+
+The following code gives an example of an iterator that can be
+used to define two-dimensional blocks of \chpl{m} columns.
 \begin{chapel}
-var y = evens(5);
+iterator blockByCol(m,n): seq of seq of int {
+  for i in 1..n by 2 yield [1..n, i..i+1];
+}
 \end{chapel}
-In this case, \chpl{y = (/2, 4, 6, 8, 10/)}.
+Using this iterator in a \chpl{for} loop allows a matrix to be
+accessed \chpl{m} columns at a time.  For example, the following
+code prints \chpl{2} columns at a time of the \chpl{4} $\times$ \chpl{4} 
+matrix \chpl{A}.
+\begin{chapel}
+for block in blockByCol(2,4) {
+  writeln("This block:");
+  writeln(A(block));
+}
+\end{chapel}
+
 
 \subsubsection{Arrays and Domains}
 \label{Arrays_and_Domains}
