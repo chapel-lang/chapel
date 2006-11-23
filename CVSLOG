@@ -86593,3 +86593,14 @@ Log message:
 Added files:
 	chapel/test/spec/marybeth/: iterator2.chpl iterator2.good 
 
+---------------------------------------------------------------------------
+
+11/22/06 17:23:09 -- marybeth
+
+Log message:
+	Update to language overview.  I merged the sequences and iterators sections
+	and added another iterator example.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
