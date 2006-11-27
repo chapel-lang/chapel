@@ -86736,3 +86736,14 @@ Modified files:
 	chapel/compiler/util/: .cvsignore 
 	chapel/runtime/src/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+11/27/06 14:35:28 -- marybeth
+
+Log message:
+	Changed iterator2 test, removing return type on iterator, so that
+	test works with more recent versions of the compiler.
+
+Modified files:
+	chapel/test/spec/marybeth/: iterator2.chpl 
+
