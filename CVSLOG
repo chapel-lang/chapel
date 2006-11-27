@@ -86604,3 +86604,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/27/06 10:15:41 -- bradc
+
+Log message:
+	Added a test showing that if one thread exits, others
+	will exit as well.
+
+Added files:
+	chapel/test/parallel/cobegin/bradc/: .cvsignore exitone.chpl 
+	                                     exitone.good 
+
