@@ -86717,3 +86717,22 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex spec.tex 
 
+---------------------------------------------------------------------------
+
+11/27/06 14:32:09 -- bradc
+
+Log message:
+	Added cygwin soft-links to the .cvsignore files
+	to allow cross-compiling without leaving a mess.
+
+Modified files:
+	chapel/compiler/adt/: .cvsignore 
+	chapel/compiler/AST/: .cvsignore 
+	chapel/compiler/backend/: .cvsignore 
+	chapel/compiler/ifa/: .cvsignore 
+	chapel/compiler/main/: .cvsignore 
+	chapel/compiler/parser/: .cvsignore 
+	chapel/compiler/passes/: .cvsignore 
+	chapel/compiler/util/: .cvsignore 
+	chapel/runtime/src/: .cvsignore 
+
