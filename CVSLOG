@@ -86705,3 +86705,15 @@ Modified files:
 	                                               test_typevar_record6.chpl 
 	chapel/test/types/type_variables/deitz/part7/: test_stack.chpl 
 
+---------------------------------------------------------------------------
+
+11/27/06 14:11:54 -- deitz
+
+Log message:
+	Removed internal release draft notice from spec and bumped to 0.6.1.
+	
+	Rearranged Standard Modules section to how I want it.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex spec.tex 
+
