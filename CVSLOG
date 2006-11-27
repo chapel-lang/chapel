@@ -86747,3 +86747,13 @@ Log message:
 Modified files:
 	chapel/test/spec/marybeth/: iterator2.chpl 
 
+---------------------------------------------------------------------------
+
+11/27/06 15:10:33 -- deitz
+
+Log message:
+	Finished first pass of Input and Output.
+
+Modified files:
+	chapel/spec/: Input_and_Output.tex 
+
