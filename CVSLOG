@@ -86616,3 +86616,92 @@ Added files:
 	chapel/test/parallel/cobegin/bradc/: .cvsignore exitone.chpl 
 	                                     exitone.good 
 
+---------------------------------------------------------------------------
+
+11/27/06 13:49:34 -- deitz
+
+Log message:
+	Changed implementation of fwrite and fread:
+	
+	The user can now define a method called write bound to any type.  This
+	method must take an argument of file type.  Default write methods are
+	created if the user does not define one.
+	
+	There is a method write also bound to file that can take any number of
+	arguments.  The user should always write things like
+	
+	  f.write(x)
+	
+	where f is a file and x is a value that they want to write.
+	
+	There is also a method writeln bound to file that can take any number
+	of arguments.
+	
+	Calls to the functions writeln and write, which can take any
+	arguments, call the methods writeln and write bound to stdout.
+	
+	The read method is different.  The read method must always be bound to
+	the file type.  It's argument is inout and can be of the type that
+	should be read.  Multiple arguments can be passed to the read method
+	and this is handled, currently, by the compiler.
+	
+	The advantage to having write methods bound to the file and bound to
+	the type being written is two-fold: 1. the locking can be handled in
+	the method bound to the file (thus it is good for the user to always
+	call this one) and 2. we dynamically dispatch based on the class being
+	written (I updated three test cases to this effect).
+	
+	Updated many tests.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp type.cpp 
+	chapel/compiler/include/: build.h type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_file.chpl _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl 
+	                          _chpl_machine.chpl _chpl_seq.chpl 
+	                          _chpl_sparse.chpl 
+	chapel/test/arrays/deitz/: matrix.chpl 
+	chapel/test/classes/bradc/: writeclass1a.chpl writerecord1a.chpl 
+	chapel/test/classes/deitz/: test_record_user_write.chpl 
+	chapel/test/classes/deitz/dispatch/: test_dd5.good 
+	chapel/test/classes/deitz/inherit/: test_inherit4.good 
+	chapel/test/demo/review_060130/: history_accumulator.chpl 
+	chapel/test/trivial/deitz/demo/: sample1.chpl sample1a.chpl 
+	                                 sample1b.chpl 
+	chapel/test/types/file/: freadBoolean.chpl freadClass.chpl 
+	                         freadComplex.chpl freadEnum.chpl 
+	                         freadIntFailed.chpl freadIntFloat.chpl 
+	                         freadIntUnopenedFile.chpl 
+	                         freadNoFloat.chpl freadNoInt.chpl 
+	                         freadNotABoolean.chpl freadString.chpl 
+	                         freadToClassDataMember.chpl 
+	                         fwriteIntFailed.chpl fwriteIntFile.chpl 
+	                         fwriteIntStdout.chpl 
+	                         fwriteIntUnopenedFile.chpl 
+	                         fwriteMultipleInts.chpl 
+	                         fwriteSelectStmt.chpl 
+	                         fwritelnBooleanFile.chpl 
+	                         fwritelnClassFile.chpl 
+	                         fwritelnComplexFile.chpl 
+	                         fwritelnEnumFile.chpl 
+	                         fwritelnFloatFile.chpl 
+	                         fwritelnIntFile.chpl 
+	                         fwritelnIntFloatString.chpl 
+	                         fwritelnStringFile.chpl 
+	                         invalidMode.chpl 
+	chapel/test/types/file/bradc/: badfile.chpl badfile2.chpl 
+	                               badfile3.chpl 
+	chapel/test/types/seq/deitz/: test_seq_class4.good 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation16.chpl 
+	chapel/test/types/type_variables/deitz/part2/: 
+	                                               test_typevar_record3.chpl 
+	                                               test_typevar_record4.chpl 
+	                                               test_typevar_record5.chpl 
+	                                               test_typevar_record6.chpl 
+	chapel/test/types/type_variables/deitz/part7/: test_stack.chpl 
+
