@@ -1,3 +1,0 @@
-list.cpp	: list container (lib)
-map.cpp		: map container (lib)
-vec.cpp		: vector container (lib)
