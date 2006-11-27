@@ -1,4 +1,4 @@
-iterator blockByCol(m,n): seq of seq of int {
+iterator blockByCol(m,n) {
   for i in 1..n by 2 yield [1..n, i..i+1];
 }  
 
