@@ -1,34 +1,141 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-\subsection{Files}
+Chapel provides a built-in \chpl{file} type to handle input and output
+to files using functions and methods called \chpl{read}, \chpl{write},
+and \chpl{writeln}.
 
-\subsubsection{The file type}
+\subsection{The {\em file} type}
 
-\subsubsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
-
-\subsection{Text Input and Output}
-
-\subsubsection{The {\em fwrite} function}
-
-\subsubsection{The {\em fread} function}
-
-\subsubsection{The {\em write}, {\em writeln}, and {\em read} functions}
-
-\subsubsection{Default {\em fread} and {\em fwrite} functions}
-
-Default {\em fwrite} functions are created for all types for which a
-user {\em fwrite} function is not defined.  They have the following
-semantics:
+The file type contains the following fields:
 \begin{itemize}
+\item
+The \chpl{filename} field is a \chpl{string} that contains the name of
+the file.
+\item
+The \chpl{path} field is a \chpl{string} that contains the path of the
+file.
+\item
+The \chpl{mode} field is a \chpl{string} that indicates whether the
+file is being read or written.
+\item
+The \chpl{style} field can be set to \chpl{text} or \chpl{binary} to
+specify that reading from or writing to the file should be done with
+text or binary formats.
+\end{itemize}
+These fields can be modified any time that the file is closed.
+
+The \chpl{mode} field supports the following strings:
+\begin{itemize}
+\item
+\chpl{"r"} The file can be read.
+\item
+\chpl{"w"} The file can be written.
+\end{itemize}
+
+\begin{implementation}
+The \chpl{style} field is not yet implemented.  All input and output
+is done in text mode.  All files must be text files.
+
+There is an expectation that there will be more styles to control the
+default reading and writing methods.
+\end{implementation}
+
+The file type supports the following methods:
+\begin{itemize}
+\item
+The \chpl{open} method opens the file for reading and/or writing.
+\item
+The \chpl{close} method closes the file for reading and/or writing.
+\item
+The \chpl{isOpen} method returns true if the file is open for reading
+and/or writing, and otherwise returns false.
+\item
+The \chpl{flush()} method flushes the file, finishing outstanding
+reading and writing.
+\end{itemize}
+
+Additionally, the file type supports the
+methods \chpl{read}, \chpl{write}, and \chpl{writeln} for input and
+output as discussed in~\rsec{filewrite} and~\rsec{fileread}.
+
+\subsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
+
+The files \chpl{stdout}, \chpl{stdin}, and \chpl{stderr} are
+predefined and map to standard output, standard input, and standard
+error as implemented in a platform dependent fashion.
+
+\subsection{The {\em write}, {\em writeln}, and {\em read} functions}
+
+The built-in function \chpl{write} can take an arbitrary number of
+arguments and writes each of the arguments out in turn
+to \chpl{stdout}.  The built-in function \chpl{writeln} has the same
+semantics as \chpl{write} but outputs an {\em end-of-line} character
+after writing out the arguments.  The built-in function \chpl{read}
+can take an arbitrary number of arguments and reads each of the
+arguments in turn from \chpl{stdin}.
+
+These functions are wrappers for the methods on files described next.
+
+\begin{example}
+The \chpl{writeln} wrapper function allows for a simple implementation
+of the {\em Hello-World} program:
+\begin{chapel}
+writeln("Hello, World!");
+\end{chapel}
+\end{example}
+
+\subsection{The {\em write} and {\em writeln} method on files}
+\label{filewrite}
+
+The \chpl{file} type supports methods \chpl{write} and \chpl{writeln}
+for output.  These methods are defined to take an arbitrary number of
+arguments.  Each argument is written in turn by calling
+the \chpl{write} method bound to that type.  Default \chpl{write}
+methods are bound to any type that the user does not explicitly create
+one for.
+
+A lock is used to ensure that output is serialized across multiple
+computations.
+
+\subsection{The {\em read} method on files}
+\label{fileread}
+
+The \chpl{file} type supports a method \chpl{read} that takes an
+arbitrary number of arguments.  Each argument is read in turn by
+calling a method also bound to the \chpl{file} type that takes a
+single argument of that type.
+
+\subsection{User-Defined {\em read} and {\em write} methods}
+
+To define the output for a given type, the user must define a method
+called \chpl{write} on that type that takes a single argument of file
+type.  If such a method does not exist, a default method is created.
+
+\subsection{Default {\em read} and {\em write} methods}
+
+Default \chpl{write} methods are created for all types for which a user
+\chpl{write} method is not defined.  They have the following semantics:
+\begin{itemize}
+\item
+{\bf arrays} Outputs the elements of the array in row-major order
+where rows are separated by line-feeds and blank lines are used to
+separate other dimensions.
+\item
+{\bf domains} Outputs the dimensions of the domain enclosed
+by \chpl{[} and \chpl{]}.
 \item
 {\bf sequences} Outputs the elements of the sequence in order
 delimited by the sequence delimiters \chpl{(/} and \chpl{/)} and
 separated by commas.
 \item
-{\bf arrays} Outputs the elements of the array in row-major order
-where rows are separated by line-feeds and blank lines are used to
-separate other dimensions.
+{\bf arithmetic sequences} Outputs the lower bound of the sequence
+followed by \chpl{..} followed by the upper bound of the sequence.  If
+the stride of the sequence is not one, the output is additionally
+followed by the word \chpl{by} followed by the stride of the sequence.
+\item
+{\bf tuples} Outputs the components of the tuple in order delimited
+by \chpl{(} and \chpl{)}, and separated by commas.
 \item
 {\bf classes} Outputs the values within the fields of the class
 prefixed by the name of the field and the character \chpl{=}.  Each
@@ -41,13 +148,6 @@ field is separated by a comma.  The output is delimited by \chpl{(}
 and \chpl{)}.
 \end{itemize}
 
-Default {\em fread} functions are created for all types for which a
-user {\em fread} function is not defined.  The semantics of the
-default {\em fread} functions are forthcoming.
-
-\subsection{Binary Input and Output}
-
-\subsubsection{The {\em fbwrite} function}
-
-\subsubsection{The {\em fbread} function}
-
+Default \chpl{read} methods are created for all types for which a user
+\chpl{read} method is not defined.  The default \chpl{read} methods are
+defined to read in the output of the default \chpl{write} method.
