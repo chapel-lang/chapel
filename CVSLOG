@@ -86757,3 +86757,21 @@ Log message:
 Modified files:
 	chapel/spec/: Input_and_Output.tex 
 
+---------------------------------------------------------------------------
+
+11/27/06 15:41:26 -- bradc
+
+Log message:
+	Removing FILES files from the release, as they
+	haven't been maintained and have been thwarting
+	the cygwin build for some time.  If we decide
+	we want to reinstate this concept, we might
+	use README.files, as we do in the top-level
+	directory of the release.
+
+Removed files:
+	chapel/compiler/adt/: FILES 
+	chapel/compiler/backend/: FILES 
+	chapel/compiler/main/: FILES 
+	chapel/compiler/util/: FILES 
+
