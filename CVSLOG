@@ -86775,3 +86775,13 @@ Removed files:
 	chapel/compiler/main/: FILES 
 	chapel/compiler/util/: FILES 
 
+---------------------------------------------------------------------------
+
+11/27/06 15:45:10 -- deitz
+
+Log message:
+	Finished first pass on Reductions and Scans.
+
+Modified files:
+	chapel/spec/: Reductions_and_Scans.tex 
+
