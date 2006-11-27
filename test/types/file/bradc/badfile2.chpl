@@ -1,1 +1,1 @@
-fwriteln(thisVariableDoesntExist);
+thisVariableDoesntExist.writeln();

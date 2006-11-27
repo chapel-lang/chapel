@@ -192,6 +192,15 @@ void cleanAst() {
   gTypes.clear();
   Vec<BaseAST*> asts;
   forv_Vec(BaseAST, ast, gAsts) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
+      for(int i = 0; i < ts->type->methods.n; i++) {
+        FnSymbol* method = ts->type->methods.v[i];
+        if (method && !isLive(method))
+          ts->type->methods.v[i] = NULL;
+      }
+    }
+  }
+  forv_Vec(BaseAST, ast, gAsts) {
     if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
       if (isLive(sym)) {
         if (sym->astType == SYMBOL_TYPE)

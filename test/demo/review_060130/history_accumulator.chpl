@@ -20,8 +20,8 @@ def +(x : history_real, y : real) {
   return x.f + y;
 }
 
-def fwrite(f : file, x : history_real) {
-  fwrite(f, x.f, " (");
-  for i in 1..x.size do
-    fwrite(f, x.h(i), if i < x.size then ", " else ")");
+def history_real.write(ff : file) {
+  ff.write(f, " (");
+  for i in 1..size do
+    ff.write(h(i), if i < size then ", " else ")");
 }

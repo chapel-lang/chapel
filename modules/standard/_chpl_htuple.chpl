@@ -83,11 +83,11 @@ def !=( a: _tuple, b: _tuple): bool {
   return false;
 }
 
-def fwrite(f : file, x : _tuple) {
-  fwrite(f, "(", x(1));
-  for param i in 2..x.size do
-    fwrite(f, ", ", x(i));
-  fwrite(f, ")");
+def _tuple.write(f : file) {
+  f.write("(", this(1));
+  for param i in 2..size do
+    f.write(", ", this(i));
+  f.write(")");
 }
 
 def _seq_to_tuple(s: seq, param i: int) {

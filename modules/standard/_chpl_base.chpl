@@ -187,9 +187,7 @@ pragma "inline" def exit(status : int) {
   __primitive("exit", status);
 }
 
-pragma "inline" def fflush(fp: _file) {
-  return __primitive("fflush", fp);
-}
+pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
 
 def init_elts(x, s, type t) {
   for i in 1..s {
@@ -435,6 +433,44 @@ def readFF( sv:_singlevar) {
   __primitive( "sync_unlock", sv);
   return ret;
 }
+
+
+//
+// Functions on _file primitive type, the C file pointer type
+//
+
+pragma "no codegen" var chpl_input_filename: string;
+pragma "no codegen" var chpl_input_lineno: int;
+
+pragma "inline" def _get_errno() return __primitive("get_errno");
+pragma "inline" def _get_eof() return __primitive("get_eof");
+pragma "inline" def _get_stdin() return __primitive("get_stdin");
+pragma "inline" def _get_stdout() return __primitive("get_stdout");
+pragma "inline" def _get_stderr() return __primitive("get_stderr");
+pragma "inline" def _get_nullfile() return __primitive("get_nullfile");
+
+pragma "inline" def _copy(x: _file) return x;
+pragma "inline" def =(a: _file, b: _file) return b;
+pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
+pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
+
+pragma "inline" def _fopen(filename: string, mode: string)
+  return __primitive("fopen", filename, mode);
+
+pragma "inline" def _fclose(fp: _file)
+  return __primitive("fclose", fp);
+
+pragma "inline" def fprintf(fp: _file, fmt: string, val)
+  return __primitive("fprintf", fp, fmt, val);
+
+pragma "inline" def fscanf(fp: _file, fmt: string, inout val)
+  return __primitive("fscanf", fp, fmt, val);
+
+pragma "inline" def _string_fscanf(fp: _file)
+  return __primitive("string_fscanf", fp);
+
+pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
+  return __primitive("readLit", fp, val, ignoreWhiteSpace);
 
 
 //

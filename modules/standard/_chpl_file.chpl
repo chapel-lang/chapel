@@ -1,128 +1,28 @@
+// class file
 //
-// Functions on _file primitive type, the C file pointer type
-//
+//  chapel-level implementations of read, write, writeln
+//  chapel-level implementations of assert, halt
 
-pragma "no codegen" var chpl_input_filename: string;
-pragma "no codegen" var chpl_input_lineno: int;
-
-pragma "inline" def _get_errno() return __primitive("get_errno");
-pragma "inline" def _get_eof() return __primitive("get_eof");
-pragma "inline" def _get_stdin() return __primitive("get_stdin");
-pragma "inline" def _get_stdout() return __primitive("get_stdout");
-pragma "inline" def _get_stderr() return __primitive("get_stderr");
-pragma "inline" def _get_nullfile() return __primitive("get_nullfile");
-
-pragma "inline" def _copy(x: _file) return x;
-pragma "inline" def =(a: _file, b: _file) return b;
-pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
-pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
-
-pragma "inline" def _fopen(filename: string, mode: string)
-  return __primitive("fopen", filename, mode);
-
-pragma "inline" def _fclose(fp: _file)
-  return __primitive("fclose", fp);
-
-pragma "inline" def fprintf(fp: _file, fmt: string, val)
-  return __primitive("fprintf", fp, fmt, val);
-
-pragma "inline" def fscanf(fp: _file, fmt: string, inout val)
-  return __primitive("fscanf", fp, fmt, val);
-
-pragma "inline" def _string_fscanf(fp: _file)
-  return __primitive("string_fscanf", fp);
-
-pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
-  return __primitive("readLit", fp, val, ignoreWhiteSpace);
-
-pragma "rename _chpl_fflush"
-def fflush(f: file) {
-  fflush(f.fp);
-}
-
-pragma "rename _chpl_assert_no_args"
-def assert(test: bool) {
-  if (!test) {
-    _writeAssertFailed();
-    if (chpl_input_lineno == 0) {
-      fwriteln(stderr);
-    }
-    exit(0);
-  }
-}
-
-pragma "rename _chpl_assert"
-def assert(test: bool, args ...?numArgs) {
-  if (!test) {
-    _writeAssertFailed();
-    if (chpl_input_lineno == 0) {
-      fwrite(stderr, ": ");
-    }
-    for param i in 1..numArgs {
-      fwrite(stderr, args(i));
-    }
-    fwriteln(stderr);
-    exit(0);
-  }
-}
-
-def _writeAssertFailed() {
-  fflush(stdout);
-  fwrite(stderr, "Assertion failed");
-  if (chpl_input_lineno != 0) {
-    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
-  }     
-}
-
-pragma "rename _chpl_halt_no_args"
-def halt() {
-  _writeHaltReached();
-  if(chpl_input_lineno == 0) {
-    fwriteln(stderr);
-  }
-  exit(0);
-}
-
-pragma "rename _chpl_halt"
-def halt(args ...?numArgs) {
-  _writeHaltReached();
-  if (chpl_input_lineno == 0) {
-    fwrite(stderr, ": ");
-  }
-  for param i in 1..numArgs {
-    fwrite(stderr, args(i));
-  }
-  fwriteln(stderr);
-  exit(0);
-}
-
-def _writeHaltReached() {
-  fflush(stdout);
-  fwrite(stderr, "Halt reached");
-  if (chpl_input_lineno != 0) {
-    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
-  }
-}
+const stdin  = file("stdin", "r", "/dev", _get_stdin());
+const stdout = file("stdout", "w", "/dev", _get_stdout());
+const stderr = file("stderr", "w", "/dev", _get_stderr());
 
 class file {
   var filename : string = "";
   var mode : string = "r";
   var path : string = ".";
-  var fp : _file;
-  var writeLock : sync uint(64);    // for serializing fwrite output
+  var _fp : _file;
+  var _lock : sync uint(64);    // for serializing output
 
   def open {
-    if (this == stdin || this == stdout || this == stderr) {
+    if this == stdin || this == stdout || this == stderr then
       halt("***Error: It is not necessary to open \"", filename, "\"***");
-    }
 
     var fullFilename = path + "/" + filename;
-    fp = _fopen(fullFilename, mode);            
+    _fp = _fopen(fullFilename, mode);            
 
-    if (fp == _get_nullfile()) {
-      halt("***Error: Unable to open \"", fullFilename, "\": ", 
-           _get_errno(), "***");
-    }
+    if _fp == _get_nullfile() then
+      halt("***Error: Unable to open \"", fullFilename, "\": ", _get_errno(), "***");
   }
 
   def _checkFileStateChangeLegality(state) {
@@ -161,7 +61,7 @@ class file {
 
   def isOpen: bool {
     var openStatus: bool = false;
-    if (fp != _get_nullfile()) {
+    if (_fp != _get_nullfile()) {
       openStatus = true;
     }
     return openStatus;
@@ -171,25 +71,74 @@ class file {
     if (this == stdin || this == stdout || this == stderr) {
       halt("***Error: You may not close \"", filename, "\"***");
     }
-    if (fp == _get_nullfile()) {
+    if (_fp == _get_nullfile()) {
       var fullFilename = path + "/" + filename;
       halt("***Error: Trying to close \"", fullFilename, 
            "\" which isn't open***");
     }
-    var returnVal: int = _fclose(fp);
+    var returnVal: int = _fclose(_fp);
     if (returnVal < 0) {
       var fullFilename = path + "/" + filename;
       halt("***Error: The close of \"", fullFilename, "\" failed: ", 
            _get_errno(), "***");
     }
-    fp = _get_nullfile();
+    _fp = _get_nullfile();
   }
 }
 
-const stdin  = file("stdin", "r", "/dev", _get_stdin());
-const stdout = file("stdout", "w", "/dev", _get_stdout());
-const stderr = file("stderr", "w", "/dev", _get_stderr());
+def file.flush() {
+  _fflush(_fp);
+}
 
+def assert(test: bool) {
+  if (!test) {
+    stdout.flush();
+    stderr.write("Assertion failed");
+    if chpl_input_lineno != 0 then
+      stderr.writeln(": ", chpl_input_filename, ":", chpl_input_lineno);
+    else
+      stderr.writeln();
+    exit(0);
+  }
+}
+
+def assert(test: bool, args ...?numArgs) {
+  if (!test) {
+    stdout.flush();
+    stderr.write("Assertion failed");
+    if chpl_input_lineno != 0 then
+      stderr.writeln(": ", chpl_input_filename, ":", chpl_input_lineno);
+    else
+      stderr.write(": ");
+    for param i in 1..numArgs do
+      stderr.write(args(i));
+    stderr.writeln();
+    exit(0);
+  }
+}
+
+def halt() {
+  stdout.flush();
+  stderr.write("Halt reached");
+  if chpl_input_lineno != 0 then
+    stderr.writeln(": ", chpl_input_filename, ":", chpl_input_lineno);
+  else
+    stderr.writeln();
+  exit(0);
+}
+
+def halt(args ...?numArgs) {
+  stdout.flush();
+  stderr.write("Halt reached");
+  if chpl_input_lineno != 0 then
+    stderr.writeln(": ", chpl_input_filename, ":", chpl_input_lineno);
+  else
+    stderr.write(": ");
+  for param i in 1..numArgs do
+    stderr.write(args(i));
+  stderr.writeln();
+  exit(0);
+}
 
 def _fopenError(f: file, isRead: bool) {
   var fullFilename:string = f.path + "/" + f.filename;
@@ -219,11 +168,9 @@ def _fscanfError() {
   halt("***Error: Read failed: ", _get_errno(), "***");
 }
 
-
-pragma "rename _chpl_fread_int" 
-def fread(f: file = stdin, inout val: int) {
-  if (f.isOpen) {
-    var returnVal: int = fscanf(f.fp, "%d", val);
+def file.read(inout val: int) {
+  if (isOpen) {
+    var returnVal: int = fscanf(_fp, "%d", val);
     if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
@@ -233,31 +180,13 @@ def fread(f: file = stdin, inout val: int) {
       halt("***Error: No int was read***");
     }
   } else {
-    _fopenError(f, isRead = true);
+    _fopenError(this, isRead = true);
   }
 }
 
-
-def _fwrite_lock( f: file) {
-  var me: uint(64) = __primitive( "thread_id");
-  if (isFull( f.writeLock)) {
-    if (readXX( f.writeLock) == me) {
-      return false;
-    }
-  }
-  f.writeLock = me;
-  return true;
-}
-
-def _fwrite_unlock( f: file) {
-  writeFE( f.writeLock, 0);  // writeXE works also as it should be full before
-}
-
-
-pragma "rename _chpl_fread_uint" 
-def fread(f: file = stdin, inout val: uint) {
-  if (f.isOpen) {
-    var returnVal: int = fscanf(f.fp, "%llu", val);
+def file.read(inout val: uint) {
+  if (isOpen) {
+    var returnVal: int = fscanf(_fp, "%llu", val);
     if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
@@ -267,15 +196,13 @@ def fread(f: file = stdin, inout val: uint) {
       halt("***Error: No int was read***");
     }
   } else {
-    _fopenError(f, isRead = true);
+    _fopenError(this, isRead = true);
   }
 }
 
-
-pragma "rename _chpl_fread_real"
-def fread(f: file = stdin, inout val: real) {
-  if (f.isOpen) {
-    var returnVal: int = fscanf(f.fp, "%lg", val);
+def file.read(inout val: real) {
+  if (isOpen) {
+    var returnVal: int = fscanf(_fp, "%lg", val);
     if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
@@ -285,31 +212,29 @@ def fread(f: file = stdin, inout val: real) {
       halt("***Error: No real was read***");
     }
   } else {
-    _fopenError(f, isRead = true);
+    _fopenError(this, isRead = true);
   }
 }
 
-
-pragma "rename _chpl_fread_complex"
-def fread(f: file = stdin, inout val: complex) {
+def file.read(inout val: complex) {
   var realPart: real;
   var imagPart: real;
   var imagI: string;
   var matchingCharWasRead: int;
   var isNeg: bool;
 
-  fread(f, realPart);
-  matchingCharWasRead = _readLitChar(f.fp, "+", true);
+  read(realPart);
+  matchingCharWasRead = _readLitChar(_fp, "+", true);
   if (matchingCharWasRead != 1) {
-    matchingCharWasRead = _readLitChar(f.fp, "-", true);
+    matchingCharWasRead = _readLitChar(_fp, "-", true);
     if (matchingCharWasRead != 1) {
       halt("***Error: Incorrect format for complex numbers***");
     }
     isNeg = true;
   }
 
-  fread(f, imagPart);
-  matchingCharWasRead = _readLitChar(f.fp, "i", false);
+  read(imagPart);
+  matchingCharWasRead = _readLitChar(_fp, "i", false);
   if (matchingCharWasRead != 1) {
     halt("***Error: Incorrect format for complex numbers***");
   }
@@ -322,21 +247,17 @@ def fread(f: file = stdin, inout val: complex) {
   }
 }
 
-
-pragma "rename _chpl_fread_string"
-def fread(f: file = stdin, inout val: string) {
-  if (f.isOpen) {
-    val = _string_fscanf(f.fp);
+def file.read(inout val: string) {
+  if (isOpen) {
+    val = _string_fscanf(_fp);
   } else {
-    _fopenError(f, isRead = true);
+    _fopenError(this, isRead = true);
   }
 }
 
-
-pragma "rename _chpl_fread_bool" 
-def fread(f: file = stdin, inout val: bool) {
-  if (f.isOpen) {
-    var valString : string = _string_fscanf(f.fp);
+def file.read(inout val: bool) {
+  if (isOpen) {
+    var valString : string = _string_fscanf(_fp);
     if (valString == "true") {
       val = true;
     } else if (valString == "false") {
@@ -345,59 +266,65 @@ def fread(f: file = stdin, inout val: bool) {
       halt("***Error: Not of bool type***");
     }
   } else {
-    _fopenError(f, isRead = true);
+    _fopenError(this, isRead = true);
   }
 }
 
-pragma "rename _chpl_fwrite_string"
-def fwrite(f: file, val: string) {
-  var need_release: bool = _fwrite_lock( f);
+def string.write(f: file) {
+  var need_release: bool = _lockFile(f);
 
-  if (!f.isOpen) {
+  if !f.isOpen then
     _fopenError(f, isRead = false);
-  }
-  if (f.mode != "w") {
+  if f.mode != "w" then
     _fmodeError(f, isRead = false);
-  }
-  var returnVal = fprintf(f.fp, "%s", val);
-  if (returnVal < 0) {
+  var returnVal = fprintf(f._fp, "%s", this);
+  if returnVal < 0 then
     _fprintfError();
-  } 
 
-  if (need_release) { _fwrite_unlock( f); }
+  if need_release then _unlockFile(f);
 }
 
-
-def fwrite(f: file, args ...?numArgs) {
-  var need_release: bool = _fwrite_lock( f);
-  for param i in 1..numArgs {
-    fwrite(f, args(i));
-  }
-  if (need_release) { _fwrite_unlock( f); }
+def file.write(args ...?n) {
+  var need_release: bool = _lockFile(this);
+  for param i in 1..n do
+    args(i).write(this);
+  if need_release then _unlockFile(this);
 }
 
-def fwriteln(f: file, args ...?numArgs) {
-  var need_release: bool = _fwrite_lock( f);
-  fwrite(f, (...args));
-  fwriteln(f);
-  if (need_release) { _fwrite_unlock( f); }
+def file.writeln(args ...?n) {
+  var need_release: bool = _lockFile(this);
+  write((...args));
+  writeln();
+  if need_release then _unlockFile(this);
 }
 
-def fwriteln(f: file) {
-  var need_release: bool = _fwrite_lock( f);
-  fwrite(f, "\n");
-  if (need_release) { _fwrite_unlock( f); }
+def file.writeln() {
+  var need_release: bool = _lockFile(this);
+  write("\n");
+  if need_release then _unlockFile(this);
 }
 
-
-def write(args ...?numArgs) {
-  fwrite(stdout, (...args));
+def write(args ...?n) {
+  stdout.write((...args));
 }
 
-def writeln(args ...?numArgs) {
-  fwriteln(stdout, (...args));
+def writeln(args ...?n) {
+  stdout.writeln((...args));
 }
 
 def writeln() {
-  fwriteln(stdout);
+  stdout.writeln();
+}
+
+def _lockFile(f: file) {
+  var me: uint(64) = __primitive("thread_id");
+  if isFull(f._lock) then
+    if readXX(f._lock) == me then
+      return false;
+  f._lock = me;
+  return true;
+}
+
+def _unlockFile(f: file) {
+  writeFE(f._lock, 0); // this can also be 'writeXE' since _lock is full
 }

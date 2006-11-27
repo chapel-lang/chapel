@@ -11,10 +11,10 @@ writeln("a is initialized to: ", a);
 writeln("b is initialized to: ", b);
 
 myFile.open;
-fwriteln(myFile, a);
+myFile.writeln(a);
 myFile.close;
 
 myFile.mode = "r";
 myFile.open;
-fread(myFile, b);
+myFile.read(b);
 writeln("b after reading in a's values from a file: ", b);

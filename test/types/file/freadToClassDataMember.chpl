@@ -11,12 +11,12 @@ var myInt: int = 9;
 var myFile: file = file(filename = "_test_freadToClassDataMember.txt", mode = "w");
 
 myFile.open;
-fwriteln(myFile, myInt);
+myFile.writeln(myInt);
 myFile.close;
 
 myFile.mode = "r";
 myFile.open;
-fread(myFile, a.x);
+myFile.read(a.x);
 myFile.close;
 
 writeln("a.x should be equal to 9");

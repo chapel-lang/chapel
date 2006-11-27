@@ -1,3 +1,3 @@
 var x = 2;
 
-fwrite(thisVariableDoesntExist, x);
+thisVariableDoesntExist.write(x);

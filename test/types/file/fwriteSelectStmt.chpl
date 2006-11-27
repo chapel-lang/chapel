@@ -6,13 +6,13 @@ writeDessert(stdout, favorite);
 def writeDessert(f: file, val: dessert) {
   select (val) {
     when (cake) do 
-      fwrite(f, "cake");
+      f.write("cake");
     when (cookie) do
-      fwrite(f, "cookie");
+      f.write("cookie");
     when (pie) do
-      fwrite(f, "pie");
+      f.write("pie");
     when (pudding) do
-      fwrite(f, "pudding");
+      f.write("pudding");
     otherwise
       halt("Not valid!");
   }

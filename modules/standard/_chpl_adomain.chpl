@@ -117,8 +117,8 @@ def _init(a: _array) {
   return b;
 }
 
-def fwrite(f : file, a: _array) {
-  fwrite(f, a._value);
+def _array.write(f: file) {
+  f.write(_value);
 }
 
 pragma "domain"
@@ -225,8 +225,8 @@ def =(a: _domain, b: _domain) {
   return a;
 }
 
-def fwrite(f : file, a: _domain) {
-  fwrite(f, a._value);
+def _domain.write(f : file) {
+  f.write(_value);
 }
 
 def by(a: _domain, b) {
@@ -603,29 +603,29 @@ class _aarray: _abase {
   }
 }
 
-def fwrite(f : file, x : _adomain) {
-  fwrite(f, "[", x(1));
-  for i in 2..x.rank do
-    fwrite(f, ", ", x(i));
-  fwrite(f, "]");
+def _adomain.write(f : file) {
+  f.write("[", this(1));
+  for i in 2..rank do
+    f.write(", ", this(i));
+  f.write("]");
 }
 
-def fwrite(f : file, x : _aarray) {
-  var i : x.rank*x.dim_type;
-  for dim in 1..x.rank do
-    i(dim) = x.dom(dim)._low;
+def _aarray.write(f : file) {
+  var i : rank*dim_type;
+  for dim in 1..rank do
+    i(dim) = dom(dim)._low;
   label next while true {
-    fwrite(f, x(i));
-    if i(x.rank) <= (x.dom(x.rank)._high - x.dom(x.rank)._stride:x.dim_type) {
-      fwrite(f, " ");
-      i(x.rank) += x.dom(x.rank)._stride:x.dim_type;
+    f.write(this(i));
+    if i(rank) <= (dom(rank)._high - dom(rank)._stride:dim_type) {
+      f.write(" ");
+      i(rank) += dom(rank)._stride:dim_type;
     } else {
-      for dim in 1..x.rank-1 by -1 {
-        if i(dim) <= (x.dom(dim)._high - x.dom(dim)._stride:x.dim_type) {
-          i(dim) += x.dom(dim)._stride:x.dim_type;
-          for dim2 in dim+1..x.rank {
-            fwrite(f, "\n");
-            i(dim2) = x.dom(dim2)._low;
+      for dim in 1..rank-1 by -1 {
+        if i(dim) <= (dom(dim)._high - dom(dim)._stride:dim_type) {
+          i(dim) += dom(dim)._stride:dim_type;
+          for dim2 in dim+1..rank {
+            f.writeln();
+            i(dim2) = dom(dim2)._low;
           }
           continue next;
         }
@@ -763,10 +763,10 @@ def _in(s1: _aseq, s2: _aseq) {
   return true;
 }
 
-def fwrite(f : file, s : _aseq) {
-  fwrite(f, s._low, "..", s._high);
-  if (s._stride != 1) then
-    fwrite(f, " by ", s._stride);
+def _aseq.write(f : file) {
+  f.write(_low, "..", _high);
+  if (_stride != 1) then
+    f.write(" by ", _stride);
 }
 
 pragma "inline" def string.substring(s: _aseq)
@@ -830,11 +830,11 @@ def by(s : _iaseq, i : int) {
   return _iaseq(s.elt_type, s._upper, s._bound, s._stride * i);
 }
 
-def fwrite(f : file, s : _iaseq) {
-  if s._upper then
-    fwrite(f, "..", s._bound);
+def _iaseq.write(f : file) {
+  if _upper then
+    f.write("..", _bound);
   else
-    fwrite(f, s._bound, "..");
-  if (s._stride != 1) then
-    fwrite(f, " by ", s._stride);
+    f.write(_bound, "..");
+  if (_stride != 1) then
+    f.write(" by ", _stride);
 }

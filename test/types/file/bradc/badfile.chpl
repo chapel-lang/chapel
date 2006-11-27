@@ -1,1 +1,1 @@
-fwrite(thisVariableDoesntExist);
+thisVariableDoesntExist.write();

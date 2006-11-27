@@ -170,7 +170,7 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-BlockStmt* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg) {
   INT_FATAL(this, "unexpected call to Type::buildDefaultWriteFunctionBody");
   return NULL;
 }
@@ -181,7 +181,7 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-BlockStmt* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* Type::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   INT_FATAL(this, "unexpected call to Type::buildDefaultWriteFunctionBody");
   return NULL;
 }
@@ -359,11 +359,11 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-BlockStmt* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg) {
   CondStmt* body = NULL;
   for_alist(DefExpr, constant, constants) {
-    body = new CondStmt(new CallExpr("==", arg, constant->sym),
-                        new CallExpr("fwrite", fileArg, new_StringSymbol(constant->sym->name)),
+    body = new CondStmt(new CallExpr("==", new SymExpr("this"), constant->sym),
+                        new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(constant->sym->name)),
                         body);
   }
   return new BlockStmt(body);
@@ -375,14 +375,14 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-BlockStmt* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   BlockStmt* body = new BlockStmt();
   Symbol* valString = new VarSymbol("valString");
   body->insertAtTail(new DefExpr(valString, new_StringSymbol("")));
-  body->insertAtTail(new CallExpr("fread", fileArg, valString));
+  body->insertAtTail(new CallExpr(buildDot(new SymExpr("this"), "read"), valString));
   Expr* elseStmt = new CallExpr("halt", 
                                 new_StringSymbol("***Error: Not of "), 
-                                new_StringSymbol(arg->type->symbol->name), 
+                                new_StringSymbol(symbol->name), 
                                 new_StringSymbol(" type***"));
   for_alist_backward(DefExpr, constant, this->constants) {
     Expr* cond = new CallExpr("==", valString, new_StringSymbol(constant->sym->name));
@@ -581,31 +581,31 @@ bool ClassType::hasDefaultWriteFunction(void) {
 }
 
 
-BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg) {
   BlockStmt* body = new BlockStmt();
   if (classTag == CLASS_CLASS) {
     BlockStmt* fwriteNil = new BlockStmt();
-    fwriteNil->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("nil")));
+    fwriteNil->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("nil")));
     fwriteNil->insertAtTail(new ReturnStmt());
-    body->insertAtTail(new CondStmt(new CallExpr("==", arg, gNil),
+    body->insertAtTail(new CondStmt(new CallExpr("==", new SymExpr("this"), gNil),
                                     fwriteNil));
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("{")));
+    body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("{")));
   } else {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("(")));
+    body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("(")));
   }
 
   if (classTag == CLASS_UNION) {
     CondStmt* cond = NULL;
     for_fields(tmp, this) {
       BlockStmt* writeFieldBlock = new BlockStmt();
-      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name)));
-      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(" = ")));
-      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, 
-                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
-      cond = new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg, new_IntSymbol(tmp->id)), writeFieldBlock, cond);
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
+                                                 buildDot(new SymExpr("this"), tmp->name)));
+      cond = new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, new SymExpr("this"), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
     body->insertAtTail(cond);
   } else {
@@ -614,20 +614,20 @@ BlockStmt* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbo
       if (tmp->isTypeVariable)
         continue;
       if (!first) {
-        body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(", ")));
+        body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
       }
-      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(tmp->name)));
-      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(" = ")));
-      body->insertAtTail(new CallExpr("fwrite", fileArg, 
-                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+      body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
+      body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
+      body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
+                                      buildDot(new SymExpr("this"), tmp->name)));
       first = false;
     }
   }
 
   if (classTag == CLASS_CLASS) {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol("}")));
+    body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("}")));
   } else {
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringSymbol(")")));
+    body->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(")")));
   }
 
   return body;
@@ -639,13 +639,13 @@ bool ClassType::hasDefaultReadFunction(void) {
 }
 
 
-BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   BlockStmt* body = new BlockStmt();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
-  CallExpr* fileArgFP = new CallExpr(".", fileArg, new_StringSymbol("fp"));
+  Expr* fileArgFP = buildDot(new SymExpr("this"), "_fp");
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
@@ -663,7 +663,7 @@ BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol
     }  
     Symbol* fieldName = new VarSymbol("fieldName");
     body->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
-    CallExpr* readFieldName = new CallExpr("fread", fileArg, fieldName);
+    CallExpr* readFieldName = new CallExpr(buildDot(new SymExpr("this"), "read"), fieldName);
     body->insertAtTail(readFieldName);
     Symbol* name = new_StringSymbol(tmp->name);
     Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
@@ -673,7 +673,7 @@ BlockStmt* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol
     body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
     body->insertAtTail(readErrorCond->copy());
     CallExpr* argName = new CallExpr(".", arg, name);
-    CallExpr* readValue = new CallExpr("fread", fileArg, argName);
+    CallExpr* readValue = new CallExpr(buildDot(new SymExpr("this"), "read"), argName);
     body->insertAtTail(readValue);
     first = false;
   }

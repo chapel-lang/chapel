@@ -4,6 +4,6 @@ var thisIsFalse: bool = true;
 var f: file = file(filename = "freadBoolean.txt", mode = "r");
 f.open;
 
-fread(f, thisIsTrue, thisIsFalse);
+f.read(thisIsTrue, thisIsFalse);
 writeln(thisIsTrue);
 writeln(thisIsFalse);

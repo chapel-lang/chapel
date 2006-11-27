@@ -6,6 +6,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
+Expr* buildDot(BaseAST* base, char* member);
+
 Expr* buildLogicalAnd(Expr* left, Expr* right);
 Expr* buildLogicalOr(Expr* left, Expr* right);
 

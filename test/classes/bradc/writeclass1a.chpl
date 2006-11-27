@@ -3,8 +3,8 @@ class myclass {
   var y: real;
 }
 
-def fwrite(f:file, c:myclass) {
-  fwrite(f, c.x, " ", c.y);
+def myclass.write(f:file) {
+  f.write(x, " ", y);
 }
 
 var a: myclass = myclass();

@@ -15,6 +15,6 @@ class _sarray: _abase {
   var dom : _sdomain(rank, dim_type);
 }
 
-def fwrite(f : file, x : _sarray) {
+def _sarray.write(f : file) {
   halt("Sparse arrays are not implemented");
 }

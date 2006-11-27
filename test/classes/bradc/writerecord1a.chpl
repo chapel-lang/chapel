@@ -2,13 +2,9 @@ record myrecord {
   var x: int;
   var y: real;
 
-  def fwrite(): void { 
-    fwrite(f, x, " ", y);
+  def write(f: file) { 
+    f.write(x, " ", y);
   }
-}
-
-def fwrite(f: file, a: myrecord) {
-  fwrite(f, a.x, " ", a.y);
 }
 
 var a: myrecord;

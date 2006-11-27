@@ -284,36 +284,20 @@ def =(a: _idomain, b: _idomain) {
 }
 
 
-def fwrite( f : file, d : _idomain) {
-  fwrite( f, "[");
+def _idomain.write(f : file) {
+  f.write("[");
   var inds_count = 0;
   var inds_pos = 0;
-  while inds_count<d.num_inds {
-    var ind = d.inds( inds_pos);
+  while inds_count<num_inds {
+    var ind = inds( inds_pos);
     if (ind.valid) {
-      fwrite( f, ind.data);
+      f.write(ind.data);
       inds_count += 1;
-      if (inds_count<d.num_inds) then fwrite(f, ", ");
+      if (inds_count<num_inds) then f.write(", ");
     }
     inds_pos += 1;
   }
-  fwrite(f, "]");
-
-  /*
-  fwrite( f, ">");
-  inds_count = 0;
-  inds_pos = 0;
-  while inds_count<d.num_inds {
-    var ind = d.inds( inds_pos);
-    if (ind.valid) {
-      fwrite( f, inds_pos);
-      inds_count += 1;
-      if (inds_count<d.num_inds) then fwrite(f, ", ");
-    }
-    inds_pos += 1;
-  }
-  fwrite(f, "<");
-  */
+  f.write("]");
 }
 
 
@@ -402,15 +386,15 @@ class _iarray: _abase {
   }
 }
 
-def fwrite(f : file, ia : _iarray) {
+def _iarray.write(f : file) {
   var inds_count = 0;
   var inds_pos = 0;
-  while inds_count<ia.dom.num_inds {
-    var ind = ia.dom.inds(inds_pos);
+  while inds_count<dom.num_inds {
+    var ind = dom.inds(inds_pos);
     if (ind.valid) {
-      fwrite( f, ia.data(inds_pos));
+      f.write(data(inds_pos));
       inds_count += 1;
-      if (inds_count < ia.dom.num_inds) then fwrite( f, " ");
+      if (inds_count < dom.num_inds) then f.write(" ");
     }
     inds_pos += 1;
   }

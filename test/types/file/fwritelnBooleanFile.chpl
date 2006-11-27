@@ -5,4 +5,4 @@ var aSpace = " ";
 var f: file = file(filename = "_test_fwritelnBooleanFile.txt", mode = "w");
 
 f.open;
-fwriteln(f, myTrueBoolean, aSpace, myFalseBoolean);
+f.writeln(myTrueBoolean, aSpace, myFalseBoolean);

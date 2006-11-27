@@ -402,7 +402,7 @@ static void build_constructor(ClassType* ct) {
   }
 
   forv_Vec(FnSymbol, method, ct->methods) {
-    if (!strcmp(method->name, "initialize")) {
+    if (method && !strcmp(method->name, "initialize")) {
       if (method->formals->length() == 2) {
         fn->insertAtTail(new CallExpr("initialize"));
         break;

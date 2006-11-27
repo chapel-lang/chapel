@@ -5,5 +5,5 @@ var item2: cleaningSupplies;
 var f: file = file(filename = "freadEnum.txt", mode = "r");
 f.open;
 
-fread(f, item1, item2);
+f.read(item1, item2);
 writeln(item1, " ", item2);

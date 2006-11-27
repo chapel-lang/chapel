@@ -11,8 +11,8 @@ record mytuple {
   }
 }
 
-def fwrite(f : file, val : mytuple) {
-  fwrite(f, "(", val.f1, ", ", val.f2, ")");
+def mytuple.write(f : file) {
+  f.write("(", f1, ", ", f2, ")");
 }
 
 var t : mytuple(int, real);

@@ -25,17 +25,17 @@ record foo {
   }
 }
 
-def fwrite(fp: file, f : foo) {
-  fwrite(fp, "(/");
-  var tmp = f.first;
+def foo.write(fp: file) {
+  fp.write("(/");
+  var tmp = first;
   while tmp != nil {
-    fwrite(fp, tmp.element);
+    fp.write(tmp.element);
     tmp = tmp.next;
     if (tmp != nil) {
-      fwrite(fp, ", ");
+      fp.write(", ");
     }
   }
-  fwrite(fp, "/)");
+  fp.write("/)");
 }
 
 var f : foo(int);

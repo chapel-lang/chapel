@@ -643,17 +643,6 @@ static void call_constructor_for_class(CallExpr* call) {
 }
 
 
-static void
-decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
-  for_actuals(actual, call) {
-    actual->remove();
-    call->getStmtExpr()->insertBefore
-      (new CallExpr(new_name, first_actual->copy(), actual));
-  }
-  call->getStmtExpr()->remove();
-}
-
-
 static void decompose_special_calls(CallExpr* call) {
   if (call->isResolved())
     return;
@@ -664,12 +653,29 @@ static void decompose_special_calls(CallExpr* call) {
     if (symArg && symArg->var == gMethodToken)
       return;
   }
-  if (call->isNamed("fread")) {
-    Expr* file = dynamic_cast<Expr*>(call->argList->get(1));
-    file->remove();
-    decompose_multi_actuals(call, "fread", file);
+  if (call->isNamed(".")) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (var->immediate &&
+            var->immediate->const_kind == CONST_KIND_STRING &&
+            !strcmp(var->immediate->v_string, "read")) {
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
+            while (parent->argList->length() > 1) {
+              Expr* arg = parent->get(1)->remove();
+              parent->getStmtExpr()->insertBefore(new CallExpr(call->copy(), arg));
+            }
+          }
+        }
+      }
+    }
   } else if (call->isNamed("read")) {
-    decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
+    for_actuals(actual, call) {
+      actual->remove();
+      call->getStmtExpr()->insertBefore(
+        new CallExpr(
+          new CallExpr(".", chpl_stdin, new_StringSymbol("read")), actual));
+    }
+    call->getStmtExpr()->remove();
   }
 }
 

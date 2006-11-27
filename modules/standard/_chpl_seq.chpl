@@ -170,17 +170,17 @@ def reverse(s : seq, dim : int = 1) {
   return s._reverse();
 }
 
-def fwrite(f : file, s : seq) {
-  fwrite(f, "(/");
-  var tmp = s._first;
+def seq.write(f : file) {
+  f.write("(/");
+  var tmp = _first;
   while tmp != nil {
-    fwrite(f, tmp._element);
+    f.write(tmp._element);
     tmp = tmp._next;
     if tmp != nil {
-      fwrite(f, ", ");
+      f.write(", ");
     }
   }
-  fwrite(f, "/)");
+  f.write("/)");
 }
 
 def _reduce(r, s) { // reduce sequence s by reduction r

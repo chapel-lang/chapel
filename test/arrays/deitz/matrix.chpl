@@ -7,8 +7,8 @@ record Matrix {
   def this(i: int, j: int) var return A(i,j);
 }
 
-def fwrite(f: file, M: Matrix) {
-  fwrite(f, M.A);
+def Matrix.write(f: file) {
+  f.write(A);
 }
 
 def Matrix.transpose() {

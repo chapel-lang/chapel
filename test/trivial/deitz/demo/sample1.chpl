@@ -9,8 +9,8 @@ class trio {
     return x1 + x2 + x3;
 }
 
-def fwrite(f : file, t : trio) {
-  fwrite(f, "(", t.x1, " & ", t.x2, " & ", t.x3, ")");
+def trio.write(f : file) {
+  f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
 var t1 : trio(int) = trio(int, 1, 2, 3);

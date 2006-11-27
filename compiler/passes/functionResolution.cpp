@@ -556,7 +556,7 @@ visibility_distance(SymScope* scope, FnSymbol* fn,
     }
   }
 
-  if (scope->astParent) {
+  if (scope->getModuleUses()) {
     forv_Vec(ModuleSymbol, module, *scope->getModuleUses()) {
       int dd = visibility_distance(module->modScope, fn, d, alreadyVisited);
       if (dd > 0)
@@ -1413,7 +1413,7 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 static void
 add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
-    if (possible_signature_match(pfn, cfn)) {
+    if (cfn && possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
         ASTMap subs;
         forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {

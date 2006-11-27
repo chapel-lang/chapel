@@ -5,4 +5,4 @@ var myString = " ";
 var f: file = file(filename = "_test_fwritelnIntFloatStringFile.txt", mode = "w");
 
 f.open;
-fwriteln(f, myInt, myString, myFloat);
+f.writeln(myInt, myString, myFloat);

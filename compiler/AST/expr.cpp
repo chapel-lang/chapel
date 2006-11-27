@@ -295,7 +295,7 @@ SymExpr::verify() {
   if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
   if (var->defPoint && !var->defPoint->parentSymbol)
-    if (!dynamic_cast<ModuleSymbol*>(var))
+    if (var->astType != SYMBOL_MODULE)
       INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
 

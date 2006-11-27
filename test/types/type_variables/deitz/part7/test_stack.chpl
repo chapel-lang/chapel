@@ -22,10 +22,10 @@ def stack.pop() : elt_type {
   return v;
 }
 
-def fwrite(f : file, s : stack) {
-  var tmp = s.top;
+def stack.write(f : file) {
+  var tmp = top;
   while tmp != nil {
-    fwrite(f, tmp.value, " ");
+    f.write(tmp.value, " ");
     tmp = tmp.next;
   }
 }

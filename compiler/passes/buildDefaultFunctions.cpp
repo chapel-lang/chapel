@@ -448,39 +448,47 @@ void buildDefaultIOFunctions(Type* type) {
   if (fnostdincs)
     return;
   if (type->hasDefaultWriteFunction()) {
-    if (!function_exists("fwrite", 2, "file", type->symbol->name)) {
-      FnSymbol* fn = new FnSymbol("fwrite");
-      fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
+    if (!function_exists("write", 3, dtMethodToken->symbol->name, type->symbol->name, "file")) {
+      FnSymbol* fn = new FnSymbol("write");
+      fn->cname = stringcat("_auto_", type->symbol->name, "_write");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+      fn->_this = new ArgSymbol(INTENT_BLANK, "this", type);
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
+      fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+      fn->insertFormalAtTail(fn->_this);
       fn->insertFormalAtTail(fileArg);
-      fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      fn->body = type->buildDefaultWriteFunctionBody(fileArg, arg);
+      fn->body = type->buildDefaultWriteFunctionBody(fileArg);
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->insertBefore(def);
+      fn->isMethod = true;
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
       fns.add(fn);
+      type->methods.add(fn);
     }
   }
 
   if (type->hasDefaultReadFunction()) {
-    if (!function_exists("fread", 2, "file", type->symbol->name)) {
-      FnSymbol* fn = new FnSymbol("fread");
-      fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
+    if (!function_exists("read", 3, dtMethodToken->symbol->name, "file", type->symbol->name)) {
+      FnSymbol* fn = new FnSymbol("read");
+      fn->cname = stringcat("_auto_", type->symbol->name, "_read");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
-      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
-      ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
-      fn->insertFormalAtTail(fileArg);
+      ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", type);
+      fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
+      fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+      fn->insertFormalAtTail(fn->_this);
       fn->insertFormalAtTail(arg);
       fn->retType = dtVoid;
-      fn->body = type->buildDefaultReadFunctionBody(fileArg, arg);
+      fn->body = type->buildDefaultReadFunctionBody(arg);
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->insertBefore(def);
+      type->methods.add(fn);
+      fn->isMethod = true;
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
+      fns.add(fn);
+      type->methods.add(fn);
     }
   }
 }

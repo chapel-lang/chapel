@@ -8,6 +8,11 @@
 #include "type.h"
 
 
+Expr* buildDot(BaseAST* base, char* member) {
+  return new CallExpr(".", base, new_StringSymbol(member));
+}
+
+
 Expr* buildLogicalAnd(Expr* left, Expr* right) {
   return new CallExpr(new DefExpr(build_if_expr(new CallExpr(".", left, new_StringSymbol("false?")), new SymExpr(gFalse), new CallExpr(".", right, new_StringSymbol("true?")))));
 }

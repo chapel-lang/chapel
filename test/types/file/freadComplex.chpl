@@ -6,6 +6,6 @@ var numTestCases: int = 8;
 f.open;
 
 while (i <= numTestCases) {
-  fread(f, complexNumber);         
+  f.read(complexNumber);         
   writeln(complexNumber);
 }	
