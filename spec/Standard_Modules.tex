@@ -10,11 +10,49 @@ the following:
 \item Random
 \item Time
 \end{itemize}
+There is an expectation that each of these modules will be extended
+and that more standard modules will be defined.
 
 \subsection{BitOps}
 \label{BitOps}
 
-This section is forthcoming.
+The module \chpl{BitOps} defines routines that manipulate the bits of
+values of integral types.
+
+\vspace{1pc}
+
+\begin{protohead}
+def bitPop(i: integral): int
+\end{protohead}
+\begin{protobody}
+Returns the number of bits set to one in the integral
+argument \chpl{i}.
+\end{protobody}
+
+\begin{protohead}
+def bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
+\end{protohead}
+\begin{protobody}
+Returns the bitwise matrix multiplication of \chpl{i} and \chpl{j}
+where the values of \chpl{uint(64)} type are treated as $8 \times 8$
+bit matrices and the combinator function is bitwise or.
+\end{protobody}
+
+\begin{protohead}
+def bitRotLeft(i: integral, shift: integral): i.type
+\end{protohead}
+\begin{protobody}
+Returns the value of the integral argument \chpl{i} after rotating the
+bits to the left \chpl{shift} number of times.
+\end{protobody}
+
+\begin{protohead}
+def bitRotRight(i: integral, shift: integral): i.type
+\end{protohead}
+\begin{protobody}
+Returns the value of the integral argument \chpl{i} after rotating the
+bits to the right \chpl{shift} number of times.
+\end{protobody}
 
 \subsection{Math}
 \label{Math}
@@ -32,56 +70,68 @@ This section is forthcoming.
 The module \chpl{Time} defines routines that query the system time and
 a record \chpl{Timer} that is useful for timing portions of code.
 
-{\bf Units of time}
+\vspace{1pc}
 
-\begin{chapel}
+\begin{protohead}
+record Timer
+\end{protohead}
+\begin{protobody}
+A timer is used to time portions of code.  Its semantics are similar
+to a stopwatch.
+\end{protobody}
+
+\begin{protohead}
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 The enumeration TimeUnits defines units of time.  These units can be
 supplied to routines in this module to specify the desired time units.
+\end{protobody}
 
-{\bf Functions for querying the system time and date}
-
-\begin{chapel}
-def getCurrentTime(unit: TimeUnits = seconds): real
-\end{chapel}
-Returns the elapsed time since midnight in the units specified.
-
-\begin{chapel}
+\begin{protohead}
 def getCurrentDate(): (int, int, int)
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 Returns the year, month, and day of the month as integers.  The year
 is the year since 0.  The month is in the range 1 to 12.  The day is
 in the range 1 to 31.
+\end{protobody}
 
-{\bf The \chpl{Timer} record and its methods}
+\begin{protohead}
+def getCurrentTime(unit: TimeUnits = seconds): real
+\end{protohead}
+\begin{protobody}
+Returns the elapsed time since midnight in the units specified.
+\end{protobody}
 
-\begin{chapel}
-record Timer
-\end{chapel}
-A timer is used to time portions of code.  Its semantics are similar
-to a stopwatch.
-
-\begin{chapel}
+\begin{protohead}
 def Timer.clear()
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 Clears the elapsed time stored in the Timer.
+\end{protobody}
 
-\begin{chapel}
+\begin{protohead}
 def Timer.start()
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 Start the timer.  It is an error to start a timer that is already
 running.
+\end{protobody}
 
-\begin{chapel}
+\begin{protohead}
 def Timer.stop()
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 Stops the timer.  It is an error to stop a timer that is not running.
+\end{protobody}
 
-\begin{chapel}
+\begin{protohead}
 def Timer.elapsed(unit: TimeUnits = seconds): real
-\end{chapel}
+\end{protohead}
+\begin{protobody}
 Returns the cumulative elapsed time, in the units specified, between
 calls to \chpl{start} and \chpl{stop}.  If the timer is running, the
 elapsed time since the last call to \chpl{start} is added to the
 return value.
+\end{protobody}
