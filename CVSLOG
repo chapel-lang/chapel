@@ -87056,3 +87056,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 15:36:21 -- deitz
+
+Log message:
+	Added reference to string.substring(i: int) method.
+
+Modified files:
+	chapel/spec/: Types.tex 
+
