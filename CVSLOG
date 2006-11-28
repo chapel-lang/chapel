@@ -86847,3 +86847,32 @@ Added files:
 Removed files:
 	chapel/runtime/etc/: Makefile.macros 
 
+---------------------------------------------------------------------------
+
+11/27/06 18:22:16 -- bradc
+
+Log message:
+	Updated the RA test in the examples directory to
+	remove explicit iterator return types.
+	
+	Added an ra-latest.chpl to the studies/hpcc
+	directory with the same modification, intending
+	hpcc06 to remain a snapshot of what we submitted
+	to the competition.
+	
+	Added a README to the hpcc06 directory, as well as
+	a Makefile that builds these examples since they
+	are a bit more complicated than the rest of the
+	examples.
+
+Modified files:
+	chapel/test/release/examples/: README 
+	chapel/test/release/examples/hpcc06/: ra-randstream.chpl 
+	chapel/test/studies/hpcc/RA/: ra-hpcc06.compopts 
+	                              ra-randstream.chpl 
+Added files:
+	chapel/test/release/examples/hpcc06/: Makefile README 
+	chapel/test/studies/hpcc/RA/: ra-latest.chpl ra-latest.compopts 
+	                              ra-latest.execopts ra-latest.good 
+	                              ra-randstream-hpcc06.chpl 
+
