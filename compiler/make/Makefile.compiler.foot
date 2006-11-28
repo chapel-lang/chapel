@@ -8,7 +8,6 @@ echocompilerdir:
 	@echo $(STARS) $(COMPILER_SUBDIR)/ $(STARS)
 
 %.makedir:
-	@$(PLATFORM_PREMAKE)
 	@cd $* && $(MAKE)
 
 %.cleandir:
@@ -21,7 +20,6 @@ echocompilerdir:
 	@cd $* && $(MAKE) clobber
 
 %.dependdir:
-	@$(PLATFORM_PREMAKE)
 	@cd $* && $(MAKE) depend
 
 
@@ -36,10 +34,10 @@ echocompilerdir:
 #
 
 %.depend: %.cpp $(PLATFORM_DIR)
-	@$(MAKEDEPEND) -MT '$(PLATFORM)/$*.o' $(CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
+	@$(MAKEDEPEND) -MT '$(PLATFORM)/$*.o' $(COMP_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
 
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
 FORCE:
 

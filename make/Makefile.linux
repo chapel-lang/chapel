@@ -1,6 +1,4 @@
 # Makefile.linux: contains linux-specific variables
 #
 
-LIBS += -lrt -ldl
-
 -include $(CHAPEL_ROOT)/make/Makefile.gnu

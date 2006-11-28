@@ -1,14 +1,5 @@
 
-all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
-
-clean: $(CLEANSUBDIRS) echocompilerdir
-	rm -f $(CLEAN_TARGS)
-
-cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
-	rm -f $(CVS_DEPENDS)
-
-clobber: $(CLOBBERSUBDIRS) echocompilerdir
-	rm -rf ./$(CLOBBER_TARGS)
+include $(COMPILER_ROOT)/make/Makefile.compiler.commonrules
 
 depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...

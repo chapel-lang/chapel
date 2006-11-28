@@ -62,7 +62,7 @@ TARGETS = $(CHPL)
 # main rules
 #
 
-include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 
 
 #

@@ -1,9 +1,9 @@
 PLATFORM = `$(CHAPEL_ROOT)/util/platform`
 CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(PLATFORM)
-#include $(CHAPEL_RTDIR)/etc/Makefile.macros
+include $(CHAPEL_ROOT)/make/Makefile.base
 
 all:
-	gcc $(CFLAGS) -o $(TMPBINNAME) -I$(CHAPEL_RT_INC_DIR)/$(PLATFORM) -I$(CHAPEL_RT_INC_DIR) -L$(CHAPEL_RT_LIB_DIR) $(CHAPEL_RT_LIB_DIR)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
+	$(CC) $(GEN_CFLAGS) -o $(TMPBINNAME) -I$(CHAPEL_RT_INC_DIR)/$(PLATFORM) -I$(CHAPEL_RT_INC_DIR) -L$(CHAPEL_RT_LIB_DIR) $(CHAPEL_RT_LIB_DIR)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)

@@ -1,0 +1,11 @@
+
+all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
+
+clean: $(CLEANSUBDIRS) echocompilerdir
+	rm -f $(CLEAN_TARGS)
+
+cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
+	rm -f $(CVS_DEPENDS)
+
+clobber: $(CLOBBERSUBDIRS) echocompilerdir
+	rm -rf ./$(CLOBBER_TARGS)

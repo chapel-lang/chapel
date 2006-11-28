@@ -1,6 +1,6 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = backend
-CFLAGS += -I$(COMPILER_ROOT)/ifa
+COMP_CFLAGS += -I$(COMPILER_ROOT)/ifa
 
 #
 # standard header

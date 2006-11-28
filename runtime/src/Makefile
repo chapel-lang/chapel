@@ -1,12 +1,8 @@
 CHAPEL_ROOT = ../..
+DEBUG = 1
 include $(CHAPEL_ROOT)/make/Makefile.base
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.macros
 
-CC = gcc
-CFLAGS += -I../include/$(PLATFORM) -I../include
-
-CFLAGS += -Wall -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
-CFLAGS += $(ONLYCFLAGS)
+RUNTIME_CFLAGS += -I../include/$(PLATFORM) -I../include
 
 CHPL_RT_SRCS = \
 	arg.c \
@@ -48,7 +44,7 @@ depend: $(PLATFORM_DIR)
 	@echo > $(CVS_DEPENDS).tmp
 	@for file in $(CVS_SRCS); do \
 	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
-	  $(CC) -MM -MG $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
+	  $(CMAKEDEPEND) $(RUNTIME_CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
         done	
 	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
@@ -65,7 +61,7 @@ $(CHPL_RT_DIR):
 
 
 $(PLATFORM)/%.o: %.c $(PLATFORM_DIR)
-	$(CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
 
 -include $(CVS_DEPENDS)

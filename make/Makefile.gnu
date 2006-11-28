@@ -8,18 +8,11 @@
 CXX = g++
 CC = gcc
 MAKEDEPEND = $(CXX) -MM -MG
+CMAKEDEPEND = $(CC) -MM -MG
 
 
 #
-# versions
-#
-
-GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
-GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
-
-
-#
-# Flags
+# General Flags
 #
 
 ifdef CHPL_GCOV
@@ -40,18 +33,19 @@ CFLAGS += -pg
 LDFLAGS += -pg
 endif
 
-CFLAGS += -Wall
-
-
-
-# add error stuff
-# in general, can't set -Werror for C++ because of the use of offsetof
-# which requires -Wno-invalid-offsetof to get around... :(
-
-ONLYCFLAGS += -Werror
-
-ifeq ($(GNU_GCC_MAJOR_VERSION),3)
-ifeq ($(GNU_GCC_MINOR_VERSION),4)
-ONLYCXXFLAGS += -Werror
+ifdef CHPL_DEVELOPER
+CFLAGS += -Wall -Werror
 endif
+
+
+#
+# Flags for compiler, runtime, and generated code
+#
+
+COMP_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
+GEN_CFLAGS = 
+
+ifdef CHPL_DEVELOPER
+RUNTIME_CFLAGS += -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 endif
