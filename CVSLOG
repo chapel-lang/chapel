@@ -86876,3 +86876,14 @@ Added files:
 	                              ra-latest.execopts ra-latest.good 
 	                              ra-randstream-hpcc06.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 10:17:05 -- bradc
+
+Log message:
+	Oops -- forgot to duplicate the notest file when I
+	duplicated the randstream file last night.
+
+Added files:
+	chapel/test/studies/hpcc/RA/: ra-randstream-hpcc06.notest 
+
