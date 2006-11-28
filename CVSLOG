@@ -86931,3 +86931,13 @@ Modified files:
 	chapel/test/npb/ft/: ft-serial.chpl 
 	chapel/test/trivial/deitz/: test_bpop.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 13:28:53 -- deitz
+
+Log message:
+	Added second bitPop test.
+
+Added files:
+	chapel/test/trivial/deitz/: test_bpop2.chpl test_bpop2.good 
+
