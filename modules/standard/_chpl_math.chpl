@@ -2,10 +2,8 @@
 // Primitive math funs
 //
 
-pragma "inline" def abs(x : int) return if x < 0 then -x else x;
-pragma "inline" def abs(x : int(64)) return if x < 0 then -x else x;
-pragma "inline" def abs(x : uint) return x;
-pragma "inline" def abs(x : uint(64)) return x;
+pragma "inline" def abs(i : int(?w)) return if i < 0 then -i else i;
+pragma "inline" def abs(i : uint(?w)) return i;
 
 pragma "inline" def acos(x : real) return __primitive("acos", x);
 pragma "inline" def acosh(x : real) return __primitive("acosh", x);
@@ -41,26 +39,20 @@ pragma "inline" def tanh(x : real) return __primitive("tanh", x);
 pragma "inline" def tgamma(x : real) return __primitive("tgamma", x);
 pragma "inline" def trunc(x : real) return __primitive("trunc", x);
 
-
-def log2(in x: int(?w)) {
+def log2(in i: int(?w)) {
   var retval = -1;
-  while (x >= 1) {
-    x /= 2;
+  while (i >= 1) {
+    i /= 2;
     retval += 1;
   }
-
   return retval;
 }
 
-
-def log2(in x: uint(?w)) {
+def log2(in i: uint(?w)) {
   var retval = -1;
-  while (x >= 1) {
-    x /= 2;
+  while (i >= 1) {
+    i /= 2;
     retval += 1;
   }
-
   return retval;
 }
-
-
