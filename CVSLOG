@@ -86797,3 +86797,53 @@ Log message:
 Modified files:
 	chapel/spec/: Lexical_Structure.tex 
 
+---------------------------------------------------------------------------
+
+11/27/06 17:25:50 -- bradc
+
+Log message:
+	Took a housecleaning pass over the Makefile
+	structure in order to make things more
+	sane going forward and to simplify the
+	release's build steps:
+	
+	- made a bunch of the -Wall -Werror flags that we throw
+	  only get turn on when CHPL_DEVELOPER is true to avoid
+	  having these break the build of a user with a different
+	  version of gcc/g++.
+	
+	- made runtime/etc/Makefile.include include the general
+	  Makefile.$(CHPL_PLATFORM) file in order to support the
+	  ability to specify platform-specific Makefiles
+	
+	- split CFLAGS into those for the compiler, runtime, and
+	  generated code (COMP_CFLAGS, RUNTIME_CFLAGS, GEN_CFLAGS)
+	  to avoid confusion about which are which.
+	
+	- took hard-coded flags and compilers out of the runtime
+	  Makefiles
+	
+	- removed dead Makefile variables and libraries
+	
+	- reworked depend rule for compiler directory to avoid
+	  building a useless directory
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/backend/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: Makefile 
+	chapel/compiler/util/: Makefile 
+	chapel/make/: Makefile.cygwin Makefile.gnu Makefile.linux 
+	              Makefile.linux64 Makefile.linux64_32 
+	              Makefile.sunos 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/compiler/make/: Makefile.compiler.commonrules 
+	                       Makefile.compiler.rules 
+Removed files:
+	chapel/runtime/etc/: Makefile.macros 
+
