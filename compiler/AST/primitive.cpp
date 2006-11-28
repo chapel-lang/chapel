@@ -340,4 +340,6 @@ initPrimitive() {
   prim_def("_now_month", returnInfoInt32);
   prim_def("_now_day", returnInfoInt32);
   prim_def("_now_time", returnInfoFloat);
+
+  prim_def("_bytesPerLocale", returnInfoUInt64);
 }

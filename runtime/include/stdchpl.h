@@ -16,6 +16,7 @@
 #include "chplmem.h"
 #include "chplmem_tests.h"
 #include "chplrt.h"
+#include "chplsys.h"
 #include "chplthreads.h"
 #include "chpltypes.h"
 #include "error.h"

@@ -9,6 +9,7 @@ CHPL_RT_SRCS = \
 	chplio.c \
 	chplmem.c \
 	chplmem_tests.c \
+	chplsys.c \
 	chplthreads.c \
 	chpltypes.c \
 	config.c \
