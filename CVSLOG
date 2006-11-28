@@ -86887,3 +86887,15 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/: ra-randstream-hpcc06.notest 
 
+---------------------------------------------------------------------------
+
+11/28/06 11:02:53 -- bradc
+
+Log message:
+	Added test that prints the min..max range of all scalar
+	numeric types, because I'm always trying to remember what
+	these values are.
+
+Added files:
+	chapel/test/types/scalar/bradc/: minmax.chpl minmax.good 
+
