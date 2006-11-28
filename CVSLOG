@@ -86912,3 +86912,22 @@ Added files:
 	                                  uintToComplex.future 
 	                                  uintToComplex.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 13:28:00 -- deitz
+
+Log message:
+	Added generic types 'integral' and 'numeric' to allow for the
+	specification of generic arguments that are restricted to being any
+	int or uint, or any numeric type.
+	
+	Renamed bpop to bitPop and made it generic over integral.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: BitOps.chpl _chpl_base.chpl 
+	chapel/test/npb/ft/: ft-serial.chpl 
+	chapel/test/trivial/deitz/: test_bpop.chpl 
+
