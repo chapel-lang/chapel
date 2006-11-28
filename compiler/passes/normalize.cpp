@@ -148,7 +148,8 @@ void normalize(BaseAST* base) {
   }
 
   dtAny->isGeneric = true;
-  dtAnyInt->isGeneric = true;
+  dtIntegral->isGeneric = true;
+  dtNumeric->isGeneric = true;
   asts.clear();
   collect_asts_postorder(&asts, base);
   int changed = 1;

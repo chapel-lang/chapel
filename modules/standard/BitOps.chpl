@@ -1,32 +1,43 @@
 //
 // bit manipulation functions
 //
-// note we need an init function so u1, u3, and u7 can be computed
-// once and not every time bpop is called
-//
-def bpop(i : int) {
-  var u1 = 0, u3 = 0, u7 = 0, tmp = 0;
 
-  u1 = 1;
-  do {
-    tmp = u1;
-    u1 = 1 + (u1 << 3);
-  } while u1 != tmp;
-  u3 = 3;
-  do {
-    tmp = u3;
-    u3 = 3 + (u3 << 3);
-  } while u3 != tmp;
-  u7 = 7;
-  do {
-    tmp = u7;
-    u7 = 7 + (u7 << 9);
-  } while u7 != tmp;
-  tmp = i - ((i >> 1) & u3) - ((i >> 2) & u1);
-  return (((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511;
+// reimplementation note: one bitPop routine when numBits is a parameter
+def bitPop(i: integral) where (i.type == int(64)) | (i.type == uint(64)) {
+  const u1 = 10540996613548315209:uint(64);
+  const u3 = 13176245766935394011:uint(64);
+  const u7 = 9349719599003471367:uint(64);
+  var ii = i: uint(64);
+  var tmp = ii - ((ii >> 1) & u3) - ((ii >> 2) & u1);
+  return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
+def bitPop(i: integral) where (i.type == int(32)) | (i.type == uint(32)) {
+  const u1 = 10540996613548315209:uint(32);
+  const u3 = 13176245766935394011:uint(32);
+  const u7 = 9349719599003471367:uint(32);
+  var ii = i: uint(32);
+  var tmp = ii - ((ii >> 1) & u3) - ((ii >> 2) & u1);
+  return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
+}
 
+def bitPop(i: integral) where (i.type == int(16)) | (i.type == uint(16)) {
+  const u1 = 10540996613548315209:uint(16);
+  const u3 = 13176245766935394011:uint(16);
+  const u7 = 9349719599003471367:uint(16);
+  var ii = i: uint(16);
+  var tmp = ii - ((ii >> 1) & u3) - ((ii >> 2) & u1);
+  return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
+}
+
+def bitPop(i: integral) where (i.type == int(8)) | (i.type == uint(8)) {
+  const u1 = 10540996613548315209:uint(8);
+  const u3 = 13176245766935394011:uint(8);
+  const u7 = 9349719599003471367:uint(8);
+  var ii = i: uint(8);
+  var tmp = ii - ((ii >> 1) & u3) - ((ii >> 2) & u1);
+  return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
+}
 
 param bitsPerBitMatDim = 8;
 const bitMatDimDom = [1..bitsPerBitMatDim];

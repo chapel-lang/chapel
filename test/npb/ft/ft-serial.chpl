@@ -109,7 +109,7 @@ var u : [0..nz-1] complex;
 
 def fft_init() {
   var t : real, ti : real;
-  var m = bpop(nz-1);
+  var m = bitPop(nz-1);
   var ku = 2;
   var ln = 1;
   u(0) = m+0i;
@@ -154,7 +154,7 @@ def cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   for j in DXYZ(2) {
     for kk in DXYZ(3) by ny {
       [(i1,_,i3) in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
-      cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
+      cfftz(dir, bitPop(n-1), n, ny, ny1, x, y);
       [(i1,_,i3) in [0..n-1,j..j,kk..kk+ny-1]] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
@@ -164,7 +164,7 @@ def cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for kk in DXYZ(3) by ny {
       [(_,i2,i3) in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
-      cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
+      cfftz(dir, bitPop(n-1), n, ny, ny1, x, y);
       [(_,i2,i3) in [i..i,0..n-1,kk..kk+ny-1]] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
@@ -174,7 +174,7 @@ def cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for jj in DXYZ(2) by ny {
       [(_,i2,i3) in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
-      cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
+      cfftz(dir, bitPop(n-1), n, ny, ny1, x, y);
       [(_,i2,i3) in [i..i,jj..jj+ny-1,0..n-1]] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }

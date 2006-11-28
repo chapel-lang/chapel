@@ -122,7 +122,9 @@ static bool
 canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtAny)
     return true;
-  if (formalType == dtAnyInt && (is_int_type(actualType) || is_uint_type(actualType)))
+  if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
+    return true;
+  if (formalType == dtNumeric && (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) || is_real_type(actualType) || is_complex_type(actualType)))
     return true;
   if (actualType == formalType)
     return true;

@@ -101,14 +101,14 @@ pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
 pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
 
 
-pragma "inline" def <<(a: int(32), b: _anyint) return __primitive("<<", a, b);
-pragma "inline" def >>(a: int(32), b: _anyint) return __primitive(">>", a, b);
-pragma "inline" def <<(a: int(64), b: _anyint) return __primitive("<<", a, b);
-pragma "inline" def >>(a: int(64), b: _anyint) return __primitive(">>", a, b);
-pragma "inline" def <<(a: uint(32), b: _anyint) return __primitive("<<", a, b);
-pragma "inline" def >>(a: uint(32), b: _anyint) return __primitive(">>", a, b);
-pragma "inline" def <<(a: uint(64), b: _anyint) return __primitive("<<", a, b);
-pragma "inline" def >>(a: uint(64), b: _anyint) return __primitive(">>", a, b);
+pragma "inline" def <<(a: int(32), b: integral) return __primitive("<<", a, b);
+pragma "inline" def >>(a: int(32), b: integral) return __primitive(">>", a, b);
+pragma "inline" def <<(a: int(64), b: integral) return __primitive("<<", a, b);
+pragma "inline" def >>(a: int(64), b: integral) return __primitive(">>", a, b);
+pragma "inline" def <<(a: uint(32), b: integral) return __primitive("<<", a, b);
+pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
+pragma "inline" def <<(a: uint(64), b: integral) return __primitive("<<", a, b);
+pragma "inline" def >>(a: uint(64), b: integral) return __primitive(">>", a, b);
 
 pragma "inline" def bits(type t) where t == uint(8)  return 8;
 pragma "inline" def bits(type t) where t == uint(16) return 16;
