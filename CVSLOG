@@ -87046,3 +87046,13 @@ Added files:
 	                                                  countMemory.solitary.wc.cray.com.good 
 	                                                  countMemory.stemp6.wc.cray.com.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 14:49:22 -- deitz
+
+Log message:
+	Minor cleanup to log2 and abs to make them similar and inline with the spec.
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+
