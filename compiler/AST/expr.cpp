@@ -1279,7 +1279,7 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen( outfile);
           fprintf( outfile, "))");
         } else {
-          INT_FATAL( "illegal cast to complex");
+          INT_FATAL(this, "illegal cast to complex");
         }
         break;
       }
