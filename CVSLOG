@@ -86952,3 +86952,17 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/28/06 14:33:56 -- bradc
+
+Log message:
+	Updated testing system so that if a .good file
+	with a machine name embedded into it exists,
+	that is used rather than the .platform.good
+	or generic .good files.
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+
