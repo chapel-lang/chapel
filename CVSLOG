@@ -86977,3 +86977,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+11/28/06 14:37:56 -- deitz
+
+Log message:
+	Finished first pass of Math module.  I believe we want to rethink the
+	functions we provide in Chapel to make them thread-safe and
+	consistently named.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
+
