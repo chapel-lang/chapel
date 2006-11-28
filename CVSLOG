@@ -86899,3 +86899,16 @@ Log message:
 Added files:
 	chapel/test/types/scalar/bradc/: minmax.chpl minmax.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 12:34:20 -- bradc
+
+Log message:
+	A future showing that casting uint values to complexes
+	doesn't work.
+
+Added files:
+	chapel/test/types/complex/bradc/: uintToComplex.chpl 
+	                                  uintToComplex.future 
+	                                  uintToComplex.good 
+
