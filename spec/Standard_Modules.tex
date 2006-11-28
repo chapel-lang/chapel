@@ -57,7 +57,267 @@ bits to the right \chpl{shift} number of times.
 \subsection{Math}
 \label{Math}
 
-This section is forthcoming.
+The module \chpl{Math} defines routines for mathematical computations.
+This module is used by default; there is no need to explictly used
+this module.  The Math module defines routines that are derived from
+and implemented via the standard C routines defined in \chpl{math.h}.
+
+\vspace{1pc}
+
+\begin{protohead}
+def abs(i: int(?w)): int(w)
+def abs(i: uint(?w)): uint(w)
+def abs(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the absolute value of the argument.
+\end{protobody}
+
+\begin{protohead}
+def acos(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the arc cosine of the argument.  It is an error if \chpl{x} is
+less than $-1$ or greater than $1$.
+\end{protobody}
+
+\begin{protohead}
+def acosh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the inverse hyperbolic cosine of the argument.  It is an error
+if \chpl{x} is less than $1$.
+\end{protobody}
+
+\begin{protohead}
+def asin(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the arc sine of the argument.  It is an error if \chpl{x} is
+less than $-1$ or greater than $1$.
+\end{protobody}
+
+\begin{protohead}
+def asinh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the inverse hyperbolic sine of the argument.
+\end{protobody}
+
+\begin{protohead}
+def atan(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the arc tangent of the argument.
+\end{protobody}
+
+\begin{protohead}
+def atan2(y: real, x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the arc tangent of the two arguments.  This is equivalent to
+the arc tangent of \chpl{y / x} except that the signs of \chpl{y}
+and \chpl{x} are used to determine the quadrant of the result.
+\end{protobody}
+
+\begin{protohead}
+def atanh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the inverse hyperbolic tangent of the argument.  It is an error
+if \chpl{x} is less than $-1$ or greater than $1$.
+\end{protobody}
+
+\begin{protohead}
+def cbrt(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the cube root of the argument.
+\end{protobody}
+
+\begin{protohead}
+def ceil(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the value of the argument rounded up to the nearest integer.
+\end{protobody}
+
+\begin{protohead}
+def cos(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the cosine of the argument.
+\end{protobody}
+
+\begin{protohead}
+def cosh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the hyperbolic cosine of the argument.
+\end{protobody}
+
+\begin{protohead}
+def erf(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the error function of the argument defined as
+$$\frac{2}{\sqrt{\pi}}\int^x_0e^{-t^2}dt$$
+for the argument $x$.
+\end{protobody}
+
+\begin{protohead}
+def erfc(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the complementary error function of the argument.  This is
+equivalent to \chpl{1.0 - erf(x)}.
+\end{protobody}
+
+\begin{protohead}
+def exp(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the value of $e$ raised to the power of the argument.
+\end{protobody}
+
+\begin{protohead}
+def exp2(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the value of $2$ raised to the power of the argument.
+\end{protobody}
+
+\begin{protohead}
+def expm1(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns one less than the value of $e$ raised to the power of the argument.
+\end{protobody}
+
+\begin{protohead}
+def floor(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the value of the argument rounded down to the nearest integer.
+\end{protobody}
+
+\begin{protohead}
+def lgamma(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the natural logarithm of the absolute value of the gamma
+function of the argument.
+\end{protobody}
+
+\begin{protohead}
+def log(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the natural logarithm of the argument.  It is an error if the
+argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+def log10(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the base 10 logarithm of the argument.  It is an error if the
+argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+def log1p(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the natural logarithm of \chpl{x+1}.
+\end{protobody}
+
+\begin{protohead}
+def log2(i: int(?w)): int(w)
+def log2(i: uint(?w)): uint(w)
+def log2(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the base 2 logarithm of the argument.  It is an error if the
+argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+def nearbyint(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the rounded integral value of the argument determined by the
+current rouding direction.
+\end{protobody}
+
+\begin{protohead}
+def rint(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the rounded integral value of the argument determined by the
+current rouding direction.
+\end{protobody}
+
+\begin{protohead}
+def round(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the rounded integral value of the argument.  Cases halfway
+between two integral values are rounded towards zero.
+\end{protobody}
+
+\begin{protohead}
+def sin(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the sine of the argument.
+\end{protobody}
+
+\begin{protohead}
+def sinh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the hyperbolic sine of the argument.
+\end{protobody}
+
+\begin{protohead}
+def sqrt(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the square root of the argument.  It is an error if the
+argument is less than zero.
+\end{protobody}
+
+\begin{protohead}
+def tan(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the tangent of the argument.
+\end{protobody}
+
+\begin{protohead}
+def tanh(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the hyperbolic tangent of the argument.
+\end{protobody}
+
+\begin{protohead}
+def tgamma(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the gamma function of the argument defined as
+$$\int_0^\infty t^{x-1} e^{-t} dt$$
+for the argument $x$.
+\end{protobody}
+
+\begin{protohead}
+def trunc(x: real): real
+\end{protohead}
+\begin{protobody}
+Returns the nearest integral value to the argument that is not larger
+than the argument in absolute value.
+\end{protobody}
 
 \subsection{Random}
 \label{Random}
@@ -112,6 +372,16 @@ Clears the elapsed time stored in the Timer.
 \end{protobody}
 
 \begin{protohead}
+def Timer.elapsed(unit: TimeUnits = seconds): real
+\end{protohead}
+\begin{protobody}
+Returns the cumulative elapsed time, in the units specified, between
+calls to \chpl{start} and \chpl{stop}.  If the timer is running, the
+elapsed time since the last call to \chpl{start} is added to the
+return value.
+\end{protobody}
+
+\begin{protohead}
 def Timer.start()
 \end{protohead}
 \begin{protobody}
@@ -124,14 +394,4 @@ def Timer.stop()
 \end{protohead}
 \begin{protobody}
 Stops the timer.  It is an error to stop a timer that is not running.
-\end{protobody}
-
-\begin{protohead}
-def Timer.elapsed(unit: TimeUnits = seconds): real
-\end{protohead}
-\begin{protobody}
-Returns the cumulative elapsed time, in the units specified, between
-calls to \chpl{start} and \chpl{stop}.  If the timer is running, the
-elapsed time since the last call to \chpl{start} is added to the
-return value.
 \end{protobody}
