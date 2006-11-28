@@ -86989,3 +86989,60 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/28/06 14:43:14 -- bradc
+
+Log message:
+	Prior to this check-in, we had the memory per locale
+	hardcoded for my solitary machine.  This check-in
+	causes the physicalMemory() routine to actually
+	return the amount of physical memory on the locale.
+	This is done using a new primitive, implemented in
+	the runtime chplsys.c/h files, which uses sysconf()
+	on most platforms, except for cygwin where it isn't
+	defined in the same way as on other machines (the
+	workaround is implemented in runtime/include/chplsys.h,
+	along with a comment capturing why this workaround is
+	necessary).
+	
+	Changed the interface for physicalMemory() so that
+	the type used to return the value can be specified
+	by the user.  uint(64) is the default, but smaller
+	ints or floats can be desireable depending on the
+	locale's memory size and memory units requested.
+	
+	Added a test that queries the memory in a bunch of
+	different ways, and added .good files for all of the
+	machines that we do most of our testing on.  If you
+	find I've made a mistake or left a machine off, feel
+	encouraged to make the fix yourself (hopefully verifying
+	by some other means that the memory returned is correct
+	to avoid problems like I found on cygwin).
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: Memory.chpl 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/runtime/include/: chplsys.h 
+	chapel/runtime/src/: chplsys.c 
+	chapel/test/modules/standard/memory/countMemory/: .cvsignore 
+	                                                  README 
+	                                                  countMemory.bradc2-xp-lap.good 
+	                                                  countMemory.chap01.good 
+	                                                  countMemory.chap02.good 
+	                                                  countMemory.chap03.good 
+	                                                  countMemory.chap04.good 
+	                                                  countMemory.chap05.good 
+	                                                  countMemory.chap06.good 
+	                                                  countMemory.chap07.good 
+	                                                  countMemory.chap08.good 
+	                                                  countMemory.chevy.wc.cray.com.good 
+	                                                  countMemory.chpl 
+	                                                  countMemory.good 
+	                                                  countMemory.mono.wc.cray.com.good 
+	                                                  countMemory.solitary.wc.cray.com.good 
+	                                                  countMemory.stemp6.wc.cray.com.good 
+
