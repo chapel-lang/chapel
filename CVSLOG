@@ -86941,3 +86941,14 @@ Log message:
 Added files:
 	chapel/test/trivial/deitz/: test_bpop2.chpl test_bpop2.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 13:30:54 -- deitz
+
+Log message:
+	Finished first pass of BitOps section.  Reformatted code definitions
+	and explanations.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
+
