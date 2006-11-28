@@ -86966,3 +86966,14 @@ Modified files:
 	chapel/test/: start_test 
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+11/28/06 14:35:50 -- bradc
+
+Log message:
+	Added "this" to an INT_FATAL() to make its output
+	clearer.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
