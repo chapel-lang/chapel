@@ -144,6 +144,14 @@ complex values with a zero imaginary part.
 Strings are a primitive type designated by the symbol \chpl{string}.
 Their length is unbounded.
 
+Characters in a string can be accessed via the substring method on
+strings.  This method takes an integer $i$ and returns the $i$th
+character in the string.
+\begin{example}
+The first character of a string \chpl{s} can be selected by the method
+call \chpl{s.substring(1)}.
+\end{example}
+
 \subsubsection{Primitive Type Literals}
 \label{Primitive_Type_Literals}
 
