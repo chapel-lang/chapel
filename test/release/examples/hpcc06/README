@@ -1,0 +1,16 @@
+===============================
+Chapel 2006 HPC Challenge Codes
+===============================
+
+This directory contains our entries for the 2006 HPC Challenge
+competition, class 2 (http://www.hpcchallenge.org).  For a detailed
+explanation of these benchmarks, please refer to hpcc06.pdf in the
+doc/ directory.  
+
+As our compiler has improved, we have removed workarounds in these
+codes that were noted using "Compiler Status Notes" in the paper.  For
+example, when the paper was written, iterator return types could not
+be inferred.  Now that they can be, the explicitly declared types have
+been removed to match the style for the rest of the codes.
+
+This directory also contains a Makefile to help build the benchmarks.

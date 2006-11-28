@@ -10,22 +10,23 @@ This directory contains several Chapel example codes:
      prod-cons.chpl         : producer-consumer using a sync variable
      tree_construct.chpl    : construct and walk a tree in parallel
      hpcc06/                : our code for the 2006 HPC Challenge competition
-       probSize.chpl        : a common module for computing problem sizes
        stream.chpl          : our global STREAM Triad entry
        ra.chpl              : our global Random Access entry
        ra-randstream.chpl   : the random stream generator for our RA entry
        fft.chpl             : our global 1D FFT entry
+       probSize.chpl        : a common module for computing problem sizes
        fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
      Bin/                   : helper scripts used by the test system
 
-Most of these codes can be compiled in a standalone manner, for
+Most of these examples can be compiled in a standalone manner, for
 example:
 
      chpl -o hello hello.chpl
 
 The hpcc06 tests are an exception -- they use multiple modules defined
-in multiple source files.  They can be compiled by changing into the
-hpcc06 directory and using the following commands:
+in multiple source files.  They can be compiled using the Makefile in
+the the hpcc06 directory, or by changing into the hpcc06 directory and
+using the following commands:
 
      chpl -o stream probSize.chpl stream.chpl
      chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
