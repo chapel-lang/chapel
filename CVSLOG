@@ -86785,3 +86785,15 @@ Log message:
 Modified files:
 	chapel/spec/: Reductions_and_Scans.tex 
 
+---------------------------------------------------------------------------
+
+11/27/06 16:47:45 -- deitz
+
+Log message:
+	Fixed a bug (caught by Brad's 20-20) in which the comment delimiter
+	was italicized when it shouldn't have been in the explanation of
+	comments.
+
+Modified files:
+	chapel/spec/: Lexical_Structure.tex 
+
