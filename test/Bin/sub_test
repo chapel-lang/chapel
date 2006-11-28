@@ -149,6 +149,7 @@ else
 endif
 
 set platform = `$testdir/../util/platform`
+set machine = `uname -n`
 
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
@@ -156,9 +157,12 @@ foreach chplsrc ($testsrc)
     # set execfile now since used in both if branches
     set execfile = $chplsrc:r
     # allow a platform-specific .good file to be used, if it exists
-    set checkfile = $execfile.$platform.good
-    if ( ! -r $checkfile ) then 
-       set checkfile = $execfile.good
+    set checkfile = $execfile.$machine.good
+    if ( ! -r $checkfile ) then
+        set checkfile = $execfile.$platform.good
+        if ( ! -r $checkfile ) then 
+            set checkfile = $execfile.good
+        endif
     endif
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
