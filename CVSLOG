@@ -87406,3 +87406,13 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+11/29/06 15:40:54 -- deitz
+
+Log message:
+	Added mention of integral and numeric to the spec.
+
+Modified files:
+	chapel/spec/: Generics.tex 
+
