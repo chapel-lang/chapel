@@ -87130,3 +87130,15 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: README probSize.chpl 
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 16:53:27 -- bradc
+
+Log message:
+	Just realized that I'd forgotten to add this header
+	file which was required by my initial checkin to
+	implement physicalMemory() correctly for cygwin.
+
+Added files:
+	chapel/runtime/include/cygwin/: chplsys.h 
+
