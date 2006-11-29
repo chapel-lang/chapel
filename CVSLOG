@@ -87225,3 +87225,13 @@ Log message:
 Modified files:
 	chapel/runtime/include/cygwin/: chplsys.h 
 
+---------------------------------------------------------------------------
+
+11/29/06 09:49:16 -- deitz
+
+Log message:
+	Added abs(x: complex) to the spec.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex 
+
