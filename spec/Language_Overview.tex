@@ -129,35 +129,103 @@ The following output is shown:
 > hello, world
 \end{verbatim}
 
+\subsubsection{Simple Chapel Example}
+\label{Simple_Chapel_Example}
+The following example code defines a module named \chpl{Norm}.
+This module contains three function definitions for \chpl{norm}
+for computing various norms for vectors and matrices.  Depending
+on the argument parameters for a call to the \chpl{norm} function,
+the compiler will resolve to the appropriate function definition
+and compute the norm of \chpl{x}.
+
+This module and following examples of how it is used demonstrate
+how Chapel programs are organized into modules.  Further, it demonstrates
+the generic programming features of the language, as well as the syntax
+for variable and array declarations, for function definitions, for 
+conditional statements and for reductions.  Later sections of
+this language overview will refer back to this example.
+
+\begin{chapel}
+module Norm{
+  def norm(x: [], p) where x.rank == 1 {
+
+    if (p == 2) {
+      return sqrt(+ reduce (x*x));
+    } else if (p == 1) {
+      return + reduce abs(x);
+    } else if ((p == 'inf') || (p == 'INF') || (p == 'Inf')) {
+      return max reduce abs(x);
+    } else return -1;
+  }
+
+  def norm(x:[?D], p) where x.rank == 2 {
+
+    if (p == 1) {
+      var maxColSum = abs(x(1,1));
+      for j in D(2) {
+        maxColSum = max(maxColSum,+ reduce abs(x[D(1),j]));
+      }
+      return maxColSum;
+    } else if ((p == 'inf') || (p == 'INF') || (p == 'Inf')) {
+      var maxRowSum = abs(x(1,1));
+      for i in D(1) {
+        maxRowSum = max(maxRowSum,+ reduce abs(x[i,D(2)]));
+      }
+      return maxRowSum;
+    } else if ((p == 'frob') || (p == 'FROB') || (p == 'Frob')) {
+      return sqrt(+ reduce abs(x));
+    } else return -1;
+  }
+
+  def norm(x: []) {
+    if (x.rank == 1) then return norm(x,2);
+    else if (x.rank == 2) then return norm(x,'frob');
+    else return -1;
+  }
+}
+\end{chapel}
+
+Below, two examples of calling the \chpl{norm} function are given.
+\begin{chapel}
+use Norm;
+const Dom2D = [1..n,1..n];
+var A:[Dom2D] real;
+
+const Dom1D = [1..m];
+var x:[Dom1D] complex;
+
+$\vdots$
+
+var normA = norm(A,1);
+var normx = norm(x);
+\end{chapel}
+The variable \chpl{normA} will contain the result of the second
+\chpl{norm} function definition in the \chpl{Norm} module, for the
+case where \chpl{p == 1}.  The resulting value for \chpl{NormA} is
+of type \chpl{real}, computed from the complex values in \chpl{A}.
+The variable \chpl{normx} will contain
+the \chpl{real} result of the first \chpl{norm} function definition, for
+the case where \chpl{p == 2}.
+
 \subsubsection{Programs and Modules}
 \label{Programs_and_Modules}
 
 All Chapel code is organized using \emph{modules} which serve as code
 containers to help manage code complexity as programs grow in size.
 One module may ``\chpl{use}'' another, giving it access to that
-module's public global symbols.  In the following example, the
-standard Chapel module \chpl{Types} is used.  This module contains
-the \chpl{numBits} function that returns the size of a Chapel numeric
-type in bits. 
-%% test:  modulesexample.chpl
-\begin{chapel}
-use Types;
+module's public global symbols.  
 
-writeln("The default size of Chapel integers is ",numBits(int)," bits.");
-\end{chapel}
-The output of this example is:
-\begin{verbatim}
-The default size of Chapel integers is 32 bits.
-\end{verbatim}
+All Chapel programs must contain a single function
+\chpl{main()} that specifies the entry point for the program.  
+This entry point is executed by a single logical thread.
 
 For convenience in exploratory programming,
-explicit module declarations are not required.  If code is specified 
+explicit module and main function declarations are not required.  If code is specified 
 without a module declaration, the code's
 filename is used as the module name for the code that it contains.
-
-All Chapel programs must define a single subroutine named
-\fnname{main()} that specifies the entry point for the program.  
-This entry point is executed by a single logical thread.
+The main function may be omitted if there is only a single module in
+the program other than the standard modules, as discussed
+in~\rsec{Programs_with_a_Single_Module}.
 
 Chapel provides standard modules for bit level operations, computing
 random numbers and quering the system time.  See~\rsec{Standard_Modules}
