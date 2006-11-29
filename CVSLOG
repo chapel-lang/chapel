@@ -87182,3 +87182,14 @@ Added files:
 	chapel/test/trivial/marybeth/: typeselect.chpl typeselect.future 
 	                               typeselect.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 19:41:08 -- marybeth
+
+Log message:
+	Adding a test for the Norm module example to be included in the spec.
+
+Added files:
+	chapel/test/spec/marybeth/: Norm.chpl Norm.notest testnorm.chpl 
+	                            testnorm.good 
+
