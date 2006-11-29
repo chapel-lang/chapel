@@ -87112,3 +87112,21 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: README probSize.chpl 
 	chapel/test/studies/hpcc/common/: probSize.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 16:51:14 -- bradc
+
+Log message:
+	Based on Steve's suggestion and arguments that I
+	woudn't lose any of the current benefits, changed
+	physicalMemory() from a standalone function to
+	a method on the locale type and updated the tests
+	that utilize it.
+
+Modified files:
+	chapel/modules/standard/: Memory.chpl 
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chpl 
+	chapel/test/release/examples/hpcc06/: README probSize.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
