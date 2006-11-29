@@ -3,10 +3,11 @@ Chapel 2006 HPC Challenge Codes
 ===============================
 
 This directory contains Chapel versions of the HPC Challenge
-benchmarks (http://icl.cs.utk.edu/hpcc/).  These codes are based on
-our entries for the 2006 HPC Challenge Award Competition for class 2
-("most productivity").  For a detailed explanation of these
-benchmarks, please refer to hpcc06.pdf in the doc/ directory.
+benchmarks (http://icl.cs.utk.edu/hpcc/) and a Makefile to help build
+them.  These codes are based on our entries for the 2006 HPC Challenge
+Award Competition for class 2 ("most productivity").  For a detailed
+explanation of these benchmarks, please refer to hpcc06.pdf in the
+doc/ directory.
 
 The codes in this directory have evolved somewhat as our
 implementation has matured.  Some of these changes resolve workarounds
@@ -26,4 +27,6 @@ language or standard libraries.  The changes to date are:
     numIndices value to keep it an int as in the original
     implementation.
 
-This directory also contains a Makefile to help build the benchmarks.
+  * the physicalMemory() interface was changed from a standalone
+    function to a method on the locale type, so the calls to physical
+    memory were updated to reflect this change.

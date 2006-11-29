@@ -1,11 +1,11 @@
 use Memory;
 
 def output(type retType) {
-  const mem = physicalMemory(Locale(0), retType = retType),
-        bytes = physicalMemory(Locale(0), Bytes, retType),
-        kb = physicalMemory(Locale(0), KB, retType),
-        mb = physicalMemory(Locale(0), MB, retType),
-        gb = physicalMemory(Locale(0), GB, retType);
+  const mem = Locale(0).physicalMemory(retType = retType),
+        bytes = Locale(0).physicalMemory(Bytes, retType),
+        kb = Locale(0).physicalMemory(KB, retType),
+        mb = Locale(0).physicalMemory(MB, retType),
+        gb = Locale(0).physicalMemory(GB, retType);
 
   writeln("memory is: ", mem);
   writeln(" in bytes: ", bytes);
@@ -14,11 +14,11 @@ def output(type retType) {
   writeln("    in gb: ", gb);
 }
 
-const mem = physicalMemory(Locale(0)),
-      bytes = physicalMemory(Locale(0), Bytes),
-      kb = physicalMemory(Locale(0), KB),
-      mb = physicalMemory(Locale(0), MB),
-      gb = physicalMemory(Locale(0), GB);
+const mem = Locale(0).physicalMemory(),
+      bytes = Locale(0).physicalMemory(Bytes),
+      kb = Locale(0).physicalMemory(KB),
+      mb = Locale(0).physicalMemory(MB),
+      gb = Locale(0).physicalMemory(GB);
 
 writeln("memory is: ", mem);
 writeln(" in bytes: ", bytes);

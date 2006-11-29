@@ -1,7 +1,9 @@
 enum MemUnits {Bytes, KB, MB, GB};
 
-def physicalMemory(loc: locale, unit: MemUnits=Bytes, type retType=int(64)) {
-  on loc do const bytesInLocale: uint(64) = __primitive("_bytesPerLocale");
+def locale.physicalMemory(unit: MemUnits=Bytes, type retType=int(64)) {
+
+  on this do const bytesInLocale: uint(64) = __primitive("_bytesPerLocale");
+
   var retVal: retType;
   select (unit) {
     when Bytes do retVal = bytesInLocale:retType;
@@ -9,5 +11,6 @@ def physicalMemory(loc: locale, unit: MemUnits=Bytes, type retType=int(64)) {
     when MB do retVal = (bytesInLocale:retType / (1024**2)):retType;
     when GB do retVal = (bytesInLocale:retType / (1024**3)):retType;
   }
+
   return retVal;
 }
