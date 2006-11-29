@@ -87235,3 +87235,14 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 10:54:10 -- deitz
+
+Log message:
+	Finished first pass of Standard Modules except for Random (left to
+	Brad) and perhaps a few rearrangements here and there.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex 
+
