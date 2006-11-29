@@ -43,8 +43,8 @@
 //
 //    The size of the kind of pages that mmap uses, is found using
 //
-// 	  #include <unistd.h>
-// 	  long sz = sysconf(_SC_PAGESIZE);
+//        #include <unistd.h>
+//        long sz = sysconf(_SC_PAGESIZE);
 //
 //
 //   $ man sysconf
@@ -52,9 +52,9 @@
 //    These values also exist, but may not be standard.
 //
 //    - _SC_PHYS_PAGES
-// 	 The number of pages of physical memory.  Note that it is possi-
-// 	 ble   for   the   product  of  this  value  and  the  value  of
-// 	 _SC_PAGE_SIZE to overflow.
+//       The number of pages of physical memory.  Note that it is possi-
+//       ble   for   the   product  of  this  value  and  the  value  of
+//       _SC_PAGE_SIZE to overflow.
 //
 //
 // So, actually Ehren's application works on Linux just coincidentally,
