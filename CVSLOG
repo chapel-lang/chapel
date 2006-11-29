@@ -87246,3 +87246,17 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 12:07:12 -- deitz
+
+Log message:
+	Moved Language Overview to OLD file.
+	
+	Added new Language Overview section skeleton.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+Added files:
+	chapel/spec/: Language_Overview_OLD.tex 
+
