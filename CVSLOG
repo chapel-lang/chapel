@@ -87152,3 +87152,20 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+11/28/06 18:36:49 -- marybeth
+
+Log message:
+	Adding a working test of complex absolute value routine.
+	
+	Adding a future for casting a tuple to complex(64).  The compiler hits
+	an internal error.
+
+Added files:
+	chapel/test/types/complex/marybeth/: complex_abs.chpl 
+	                                     complex_abs.good 
+	                                     complex_tuple_64.chpl 
+	                                     complex_tuple_64.future 
+	                                     complex_tuple_64.good 
+
