@@ -87142,3 +87142,13 @@ Log message:
 Added files:
 	chapel/runtime/include/cygwin/: chplsys.h 
 
+---------------------------------------------------------------------------
+
+11/28/06 18:29:36 -- marybeth
+
+Log message:
+	Adding an abs routine for complex data types.
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+
