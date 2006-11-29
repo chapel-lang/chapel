@@ -87332,3 +87332,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 13:51:18 -- deitz
+
+Log message:
+	Minor cleanup of producer consumer example.  It is nice and simple.  I
+	changed the parameters to config variables since they don't need to be
+	parameters and they are nice to vary (sleepTime, numIterations).
+
+Modified files:
+	chapel/test/release/examples/: prod-cons.chpl 
+
