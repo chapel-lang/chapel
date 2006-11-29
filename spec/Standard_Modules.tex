@@ -1,9 +1,10 @@
-\sekshun{Standard Modules}
+\sekshun{Predefined Functions and Standard Modules}
 \label{Standard_Modules}
 
-This section describes the functions and types defined in the standard
-modules that can be used by any Chapel program.  These modules include
-the following:
+This section describes predefined functions that are available to any
+Chapel program as well as a set of standard modules that, when used,
+define a set of functions and types available to Chapel programs.  The
+standard modules include the following:
 \begin{itemize}
 \item BitOps
 \item Math
@@ -12,6 +13,143 @@ the following:
 \end{itemize}
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined.
+
+\subsection{Predefined Functions}
+\label{Predefined_Functions}
+
+
+
+\begin{protohead}
+def min(type t): t
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def max(type t): t
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def bits(type t): int
+\end{protohead}
+\begin{protobody}
+for numeric types
+\end{protobody}
+
+\begin{protohead}
+def min(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the minimum of the arguments when compared using the
+``less-than'' operator.  The return type is inferred from the types of
+the arguments as allowed by implicit coercions.
+\end{protobody}
+
+\begin{protohead}
+def max(x, y...?k)
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def sleep(t: int)
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\subsubsection{Predefined Functions on Complex Numbers}
+\label{String_Functions}
+
+\begin{protohead}
+def complex.re return __primitive( "complex_get_real", this);
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def complex.im return __primitive( "complex_get_imag", this);
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def complex.=re(f:real) { __primitive( "complex_set_real", this, f); }
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def complex.=im(f:real) { __primitive( "complex_set_imag", this, f); }
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+pragma "inline" def conjg(a: complex(?w))
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def assert(test: bool) {
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def assert(test: bool, args ...?numArgs) {
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def halt() {
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def halt(args ...?numArgs) {
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\begin{protohead}
+def exit(status: int)
+\end{protohead}
+\begin{protobody}
+\end{protobody}
+
+\subsubsection{Predefined Functions on Strings}
+\label{String_Functions}
+
+\begin{protohead}
+def ascii(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the ASCII code number of the first letter in the
+argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+def length(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the number of characters in the argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+def string.substring(x): string
+\end{protohead}
+\begin{protobody}
+Returns a value of string type that is a substring of the base
+expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
+result is the $i$th character.  If \chpl{x} is an arithmetic sequence,
+the result is the substring where the characters in the substring are
+given by the values in the arithmetic sequence.
+\end{protobody}
 
 \subsection{BitOps}
 \label{BitOps}
