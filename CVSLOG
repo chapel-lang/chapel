@@ -87364,3 +87364,29 @@ Log message:
 Modified files:
 	chapel/spec/: Lexical_Structure.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 14:39:04 -- bradc
+
+Log message:
+	Steve noticed that my Makefile changes of the other day
+	had killed our ability to specify --ccflags as well as
+	the default ccflags value of -g.  This change re-enables
+	that capability, and also allows platforms to set CFLAGS
+	for the generated code that cannot be overridden by the
+	user by splitting the GEN_CFLAGS variable into GEN_CFLAGS
+	and COMP_GEN_CFLAGS.  The latter is the variable that is
+	defined by the --ccflags option.
+	
+	Sorry for the regression.  If anyone has time to create
+	a test against --ccflags that will catch such regressions
+	in the future, that would be great.  Doing so in a
+	portable way would be slightly tricky, but maybe not
+	impossible by having prediff grep the output of a
+	--print-commands compilation for the flag in question
+	(potentially even a bogus flag to make sure the grep hits)?
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.include 
+
