@@ -87077,3 +87077,38 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/28/06 16:40:25 -- bradc
+
+Log message:
+	My last checkin caused regressions to the hpcc06 codes
+	due to its change of the physicalMemory() routine from
+	returning an int to returning a uint(64).  This checkin
+	fixes those regressions and also changes the default
+	return type to be a int(64), which should be sufficiently
+	large for the forseeable future and also simplifies the
+	math that we do.
+	
+	Nevertheless, switching to an int(64) did require changes
+	to the probSize.chpl module, causing me to adopt the
+	following attitude about the HPCC implementations in the
+	release: we'll make changes to them as we feel necessary
+	or appropriate, and track the changes in the README in
+	that directory so that users will know how they differ
+	from the codes in our paper.
+	
+	Having adopted this philosophy, I also made the memRatio
+	argument to the problem size computation into a config
+	var, as suggested in the paper.
+	
+	This checkin and my previous one leave one remaining
+	regression, which is that the testProblemSize.chpl
+	test is now machine-specific and requires me to create
+	.good files for each machine...
+
+Modified files:
+	chapel/modules/standard/: Memory.chpl 
+	chapel/test/release/examples/hpcc06/: README probSize.chpl 
+	chapel/test/studies/hpcc/common/: probSize.chpl 
+
