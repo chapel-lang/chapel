@@ -87390,3 +87390,19 @@ Modified files:
 	chapel/compiler/util/: files.cpp 
 	chapel/runtime/etc/: Makefile.include 
 
+---------------------------------------------------------------------------
+
+11/29/06 15:35:06 -- deitz
+
+Log message:
+	Refactored _chpl_base folding _chpl_complex into it.  It is now sorted
+	by operator.  Moved conjg to Math.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: Math.chpl _chpl_base.chpl 
+	                          _chpl_file.chpl _chpl_standard.chpl 
+	chapel/spec/: Standard_Modules.tex 
+Removed files:
+	chapel/modules/standard/: _chpl_complex.chpl 
+
