@@ -1,155 +1,22 @@
-\sekshun{Predefined Functions and Standard Modules}
+\sekshun{Standard Modules}
 \label{Standard_Modules}
 
 This section describes predefined functions that are available to any
 Chapel program as well as a set of standard modules that, when used,
 define a set of functions and types available to Chapel programs.  The
 standard modules include the following:
-\begin{itemize}
-\item BitOps
-\item Math
-\item Random
-\item Time
-\end{itemize}
+
+\begin{tabular}{lll}
+\hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
+ & \chpl{Math} & ({\it used by default}) Math routines \\
+ & \chpl{Random} & Random number generation routines \\
+ & \chpl{Standard} & ({\it used by default}) Basic routines \\
+ & \chpl{Time} & Types and routines related to time \\
+ & \chpl{Types} & ({\it used by default}) Routines related to primitive types \\
+\end{tabular}
+
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined.
-
-\subsection{Predefined Functions}
-\label{Predefined_Functions}
-
-
-
-\begin{protohead}
-def min(type t): t
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def max(type t): t
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def bits(type t): int
-\end{protohead}
-\begin{protobody}
-for numeric types
-\end{protobody}
-
-\begin{protohead}
-def min(x, y...?k)
-\end{protohead}
-\begin{protobody}
-Returns the minimum of the arguments when compared using the
-``less-than'' operator.  The return type is inferred from the types of
-the arguments as allowed by implicit coercions.
-\end{protobody}
-
-\begin{protohead}
-def max(x, y...?k)
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def sleep(t: int)
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\subsubsection{Predefined Functions on Complex Numbers}
-\label{String_Functions}
-
-\begin{protohead}
-def complex.re return __primitive( "complex_get_real", this);
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def complex.im return __primitive( "complex_get_imag", this);
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def complex.=re(f:real) { __primitive( "complex_set_real", this, f); }
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def complex.=im(f:real) { __primitive( "complex_set_imag", this, f); }
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-pragma "inline" def conjg(a: complex(?w))
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def assert(test: bool) {
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def assert(test: bool, args ...?numArgs) {
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def halt() {
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def halt(args ...?numArgs) {
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\begin{protohead}
-def exit(status: int)
-\end{protohead}
-\begin{protobody}
-\end{protobody}
-
-\subsubsection{Predefined Functions on Strings}
-\label{String_Functions}
-
-\begin{protohead}
-def ascii(s: string): int
-\end{protohead}
-\begin{protobody}
-Returns the ASCII code number of the first letter in the
-argument \chpl{s}.
-\end{protobody}
-
-\begin{protohead}
-def length(s: string): int
-\end{protohead}
-\begin{protobody}
-Returns the number of characters in the argument \chpl{s}.
-\end{protobody}
-
-\begin{protohead}
-def string.substring(x): string
-\end{protohead}
-\begin{protobody}
-Returns a value of string type that is a substring of the base
-expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
-result is the $i$th character.  If \chpl{x} is an arithmetic sequence,
-the result is the substring where the characters in the substring are
-given by the values in the arithmetic sequence.
-\end{protobody}
 
 \subsection{BitOps}
 \label{BitOps}
@@ -463,6 +330,132 @@ than the argument in absolute value.
 
 This section is forthcoming.
 
+\subsection{Standard}
+\label{Standard}
+
+\begin{protohead}
+def ascii(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the ASCII code number of the first letter in the
+argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+def assert(test: bool) {
+\end{protohead}
+\begin{protobody}
+Exits the program if \chpl{test} is false and prints to standard error
+the location in the Chapel code of the call to \chpl{assert}.
+If \chpl{test} is true, no action is taken.
+\end{protobody}
+
+\begin{protohead}
+def assert(test: bool, args ...?numArgs) {
+\end{protohead}
+\begin{protobody}
+Exits the program if \chpl{test} is false and prints to standard error
+the location in the Chapel code of the call to \chpl{assert} as well
+as the rest of the arguments to the call.  If \chpl{test} is true, no
+action is taken.
+\end{protobody}
+
+\begin{protohead}
+def complex.re: real
+\end{protohead}
+\begin{protobody}
+Returns the real component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+def complex.im: real
+\end{protohead}
+\begin{protobody}
+Returns the imaginary component of the complex number.
+\end{protobody}
+
+\begin{protohead}
+def complex.=re(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the real component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+def complex.=im(f: real)
+\end{protohead}
+\begin{protobody}
+Sets the imaginary component of the complex number to \chpl{f}.
+\end{protobody}
+
+\begin{protohead}
+def conjg(a: complex(?w)): complex(w)
+\end{protohead}
+\begin{protobody}
+Returns the conjugate of \chpl{a}.
+\end{protobody}
+
+\begin{protohead}
+def exit(status: int)
+\end{protohead}
+\begin{protobody}
+Exits the program with code \chpl{status}.
+\end{protobody}
+
+\begin{protohead}
+def halt() {
+\end{protohead}
+\begin{protobody}
+Exits the program and prints to standard error the location in the
+Chapel code of the call to \chpl{halt} as well as the rest of the
+arguments to the call.
+\end{protobody}
+
+\begin{protohead}
+def halt(args ...?numArgs) {
+\end{protohead}
+\begin{protobody}
+Exits the program and prints to standard error the location in the
+Chapel code of the call to \chpl{halt} as well as the rest of the
+arguments to the call.
+\end{protobody}
+
+\begin{protohead}
+def length(s: string): int
+\end{protohead}
+\begin{protobody}
+Returns the number of characters in the argument \chpl{s}.
+\end{protobody}
+
+\begin{protohead}
+def max(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the maximum of the arguments when compared using the
+``greater-than'' operator.  The return type is inferred from the types
+of the arguments as allowed by implicit coercions.
+\end{protobody}
+
+\begin{protohead}
+def min(x, y...?k)
+\end{protohead}
+\begin{protobody}
+Returns the minimum of the arguments when compared using the
+``less-than'' operator.  The return type is inferred from the types of
+the arguments as allowed by implicit coercions.
+\end{protobody}
+
+\begin{protohead}
+def string.substring(x): string
+\end{protohead}
+\begin{protobody}
+Returns a value of string type that is a substring of the base
+expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
+result is the $i$th character.  If \chpl{x} is an arithmetic sequence,
+the result is the substring where the characters in the substring are
+given by the values in the arithmetic sequence.
+\end{protobody}
+
 \subsection{Time}
 \label{Time}
 
@@ -534,3 +527,37 @@ def Timer.stop()
 \begin{protobody}
 Stops the timer.  It is an error to stop a timer that is not running.
 \end{protobody}
+
+\begin{protohead}
+def sleep(t: int)
+\end{protohead}
+\begin{protobody}
+Delays the computation for \chpl{t} seconds.
+\end{protobody}
+
+\subsection{Types}
+
+\begin{protohead}
+def numBits(type t): int
+\end{protohead}
+\begin{protobody}
+Returns the number of bits used to store the values of type \chpl{t}.
+This is implemented for all numeric types and \chpl{bool}.
+\end{protobody}
+
+\begin{protohead}
+def max(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the maximum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
+\begin{protohead}
+def min(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the minimum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
