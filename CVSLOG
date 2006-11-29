@@ -87193,3 +87193,14 @@ Added files:
 	chapel/test/spec/marybeth/: Norm.chpl Norm.notest testnorm.chpl 
 	                            testnorm.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 19:43:37 -- marybeth
+
+Log message:
+	Adding testnorm.compopts.  (Missed checking it in with previous commit
+	of testnorm.)
+
+Added files:
+	chapel/test/spec/marybeth/: testnorm.compopts 
+
