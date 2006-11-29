@@ -87204,3 +87204,14 @@ Log message:
 Added files:
 	chapel/test/spec/marybeth/: testnorm.compopts 
 
+---------------------------------------------------------------------------
+
+11/28/06 20:49:41 -- marybeth
+
+Log message:
+	Added an example near the beginning of the language overview section.
+	More explanation of the example will be coming.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
