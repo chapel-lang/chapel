@@ -87260,3 +87260,42 @@ Modified files:
 Added files:
 	chapel/spec/: Language_Overview_OLD.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 12:08:25 -- deitz
+
+Log message:
+	Added modules Standard and Math (previously _chpl_math).
+	
+	Removed bits function (replaced already with numBits).
+	
+	Moved sleep function to Time.
+	
+	Moved assert, exit, and halt to Standard.
+	
+	Moved min and max on types to Types.  These should not be implemented
+	with primitives, in my opinion.  Just hard code them with the values.
+	
+	Updated some tests.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: BitOps.chpl Time.chpl Types.chpl 
+	                          _chpl_base.chpl _chpl_file.chpl 
+	                          _chpl_standard.chpl 
+	chapel/test/parallel/cobegin/bradc/: exitone.chpl 
+	chapel/test/parallel/single/waynew/: class0.chpl class1.chpl 
+	                                     simple1.chpl simple2.chpl 
+	                                     simple3.chpl simple4.chpl 
+	chapel/test/parallel/sync/waynew/: record1.chpl record2.chpl 
+	chapel/test/release/examples/: prod-cons.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl 
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-bradc.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream.chpl 
+	                                          stream2.chpl 
+Added files:
+	chapel/modules/standard/: Math.chpl Standard.chpl 
+Removed files:
+	chapel/modules/standard/: _chpl_math.chpl 
+
