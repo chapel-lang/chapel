@@ -87066,3 +87066,14 @@ Log message:
 Modified files:
 	chapel/spec/: Types.tex 
 
+---------------------------------------------------------------------------
+
+11/28/06 16:23:26 -- deitz
+
+Log message:
+	Added more functions I found in the modules that need to go into some
+	modules or into a list of functions.  This is a checkpoint until I sort.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
+
