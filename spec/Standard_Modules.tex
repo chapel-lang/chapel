@@ -149,6 +149,13 @@ Returns the value of the argument rounded up to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
+def conjg(a: complex(?w)): complex(w)
+\end{protohead}
+\begin{protobody}
+Returns the conjugate of \chpl{a}.
+\end{protobody}
+
+\begin{protohead}
 def cos(x: real): real
 \end{protohead}
 \begin{protobody}
@@ -386,13 +393,6 @@ def complex.=im(f: real)
 \end{protohead}
 \begin{protobody}
 Sets the imaginary component of the complex number to \chpl{f}.
-\end{protobody}
-
-\begin{protohead}
-def conjg(a: complex(?w)): complex(w)
-\end{protohead}
-\begin{protobody}
-Returns the conjugate of \chpl{a}.
 \end{protobody}
 
 \begin{protohead}

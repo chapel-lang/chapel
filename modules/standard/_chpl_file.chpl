@@ -221,8 +221,6 @@ def file.read(inout val: bool) {
 }
 
 def string.write(f: file) {
-  var need_release: bool = _lockFile(f);
-
   if !f.isOpen then
     _fopenError(f, isRead = false);
   if f.mode != "w" then
@@ -230,8 +228,6 @@ def string.write(f: file) {
   var returnVal = fprintf(f._fp, "%s", this);
   if returnVal < 0 then
     _fprintfError();
-
-  if need_release then _unlockFile(f);
 }
 
 def file.write(args ...?n) {

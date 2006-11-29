@@ -2,6 +2,8 @@ pragma "inline" def abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" def abs(i : uint(?w)) return i;
 pragma "inline" def abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
+pragma "inline" def conjg(a: complex(?w)) return (a.re, -a.im):complex;
+
 pragma "inline" def acos(x : real) return __primitive("acos", x);
 pragma "inline" def acosh(x : real) return __primitive("acosh", x);
 pragma "inline" def asin(x : real) return __primitive("asin", x);

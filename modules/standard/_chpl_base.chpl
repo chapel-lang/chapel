@@ -1,149 +1,276 @@
-// _chpl_base module
-
-// Primitive functions and operators on bool
+//
+// assignment on primitive types
+//
 pragma "inline" def =(a: bool, b: bool) return b;
-pragma "inline" def ~(a: bool) return __primitive("u~", a);
-pragma "inline" def &(a: bool, b: bool) return __primitive("&", a, b);
-pragma "inline" def |(a: bool, b: bool) return __primitive("|", a, b);
-pragma "inline" def ^(a: bool, b: bool) return __primitive("^", a, b);
+pragma "inline" def =(a: int(?w), b: int(w)) return b;
+pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
+pragma "inline" def =(a: real(?w), b: real(w)) return b;
+pragma "inline" def =(a: imag(?w), b: imag(w)) return b;
+pragma "inline" def =(a: complex(?w), b: complex(w)) return b;
+pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
+pragma "inline" def =(a, b) return b;
+
+//
+// equality comparison on primitive types
+//
 pragma "inline" def ==(a: bool, b: bool) return __primitive("==", a, b);
+pragma "inline" def ==(a: int(32), b: int(32)) return __primitive("==", a, b);
+pragma "inline" def ==(a: int(64), b: int(64)) return __primitive("==", a, b);
+pragma "inline" def ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
+pragma "inline" def ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
+pragma "inline" def ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
+pragma "inline" def ==(a: string, b: string) return __primitive("string_equal", a, b);
+pragma "inline" def ==(a: object, b: object) return __primitive("ptr_eq", a, b);
+
 pragma "inline" def !=(a: bool, b: bool) return __primitive("!=", a, b);
+pragma "inline" def !=(a: int(32), b: int(32)) return __primitive("!=", a, b);
+pragma "inline" def !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
+pragma "inline" def !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
+pragma "inline" def !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
+pragma "inline" def !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
+pragma "inline" def !=(a: string, b: string) return !(a == b);
+pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b);
+
+//
+// ordered comparison on primitive types
+//
 pragma "inline" def <=(a: bool, b: bool) return __primitive("<=", a, b);
+pragma "inline" def <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
+pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
+pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
+pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
+pragma "inline" def <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
+
 pragma "inline" def >=(a: bool, b: bool) return __primitive(">=", a, b);
+pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
+pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
+pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
+pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
+pragma "inline" def >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
+
 pragma "inline" def <(a: bool, b: bool) return __primitive("<", a, b);
+pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
+pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
+pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
+pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
+pragma "inline" def <(a: real(?w), b: real(w)) return __primitive("<", a, b);
+
 pragma "inline" def >(a: bool, b: bool) return __primitive(">", a, b);
+pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
+pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
+pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
+pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
+pragma "inline" def >(a: real(?w), b: real(w)) return __primitive(">", a, b);
+
+//
+// unary + and - on primitive types
+//
+pragma "inline" def +(a: int(32)) return __primitive("u+", a);
+pragma "inline" def +(a: int(64)) return __primitive("u+", a);
+pragma "inline" def +(a: uint(32)) return __primitive("u+", a);
+pragma "inline" def +(a: uint(64)) return __primitive("u+", a);
+pragma "inline" def +(a: real(?w)) return __primitive("u+", a);
+pragma "inline" def +(a: imag(?w)) return __primitive("u+", a):imag(w);
+pragma "inline" def +(a: complex(?w)) return a;
+
+pragma "inline" def -(a: int(32)) return __primitive("u-", a);
+pragma "inline" def -(a: int(64)) return __primitive("u-", a);
+pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
+pragma "inline" def -(a: imag(?w)) return __primitive("u-", a):imag(w);
+pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
+
+//
+// binary + and - on primitive types
+//
+pragma "inline" def +(a: int(32), b: int(32)) return __primitive("+", a, b);
+pragma "inline" def +(a: int(64), b: int(64)) return __primitive("+", a, b);
+pragma "inline" def +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
+pragma "inline" def +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
+pragma "inline" def +(a: real(?w), b: real(w)) return __primitive("+", a, b);
+pragma "inline" def +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
+pragma "inline" def +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
+pragma "inline" def +(a: string, b: string) return __primitive("string_concat", a, b);
+
+pragma "inline" def +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex;
+pragma "inline" def +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex;
+pragma "inline" def +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
+pragma "inline" def +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
+pragma "inline" def +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex;
+pragma "inline" def +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex;
+
+pragma "inline" def -(a: int(32), b: int(32)) return __primitive("-", a, b);
+pragma "inline" def -(a: int(64), b: int(64)) return __primitive("-", a, b);
+pragma "inline" def -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
+pragma "inline" def -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
+pragma "inline" def -(a: real(?w), b: real(w)) return __primitive("-", a, b);
+pragma "inline" def -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
+pragma "inline" def -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
+
+pragma "inline" def -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex;
+pragma "inline" def -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex;
+pragma "inline" def -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
+pragma "inline" def -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
+pragma "inline" def -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex;
+pragma "inline" def -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex;
+
+//
+// * and / on primitive types
+//
+pragma "inline" def *(a: int(32), b: int(32)) return __primitive("*", a, b);
+pragma "inline" def *(a: int(64), b: int(64)) return __primitive("*", a, b);
+pragma "inline" def *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
+pragma "inline" def *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
+pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
+pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", a, b));
+pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
+
+pragma "inline" def *(a: real(?w), b: imag(w)) return (a*_i2r(b)):imag(w);
+pragma "inline" def *(a: imag(?w), b: real(w)) return (_i2r(a)*b):imag(w);
+pragma "inline" def *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
+pragma "inline" def *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
+pragma "inline" def *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
+pragma "inline" def *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex;
+
+pragma "inline" def /(a: int(32), b: int(32)) return __primitive("/", a, b);
+pragma "inline" def /(a: int(64), b: int(64)) return __primitive("/", a, b);
+pragma "inline" def /(a: uint(32), b: uint(32)) return __primitive("/", a, b);
+pragma "inline" def /(a: uint(64), b: uint(64)) return __primitive("/", a, b);
+pragma "inline" def /(a: real(?w), b: real(w)) return __primitive("/", a, b);
+pragma "inline" def /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
+pragma "inline" def /(a: complex(?w), b: complex(w))
+  return let d = b.re*b.re+b.im*b.im in
+    ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
+
+pragma "inline" def /(a: real(?w), b: imag(w)) return (-a/_i2r(b)):imag(w);
+pragma "inline" def /(a: imag(?w), b: real(w)) return (_i2r(a)/b):imag(w);
+pragma "inline" def /(a: real(?w), b: complex(w*2))
+  return let d = b.re*b.re+b.im*b.im in
+    (a*b.re/d, -a*b.im/d):complex;
+pragma "inline" def /(a: complex(?w), b: real(w/2))
+  return (a.re/b, a.im/b):complex;
+pragma "inline" def /(a: imag(?w), b: complex(w*2))
+  return let d = b.re*b.re+b.im*b.im in
+    (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex;
+pragma "inline" def /(a: complex(?w), b: imag(w/2))
+  return let d = _i2r(b)*_i2r(b) in
+    (a.im/_i2r(b), -a.re/_i2r(b)):complex;
+
+//
+// % on primitive types
+//
+pragma "inline" def %(a: int(32), b: int(32)) return __primitive("%", a, b);
+pragma "inline" def %(a: int(64), b: int(64)) return __primitive("%", a, b);
+pragma "inline" def %(a: uint(32), b: uint(32)) return __primitive("%", a, b);
+pragma "inline" def %(a: uint(64), b: uint(64)) return __primitive("%", a, b);
+
+//
+// ** on primitive types
+//
+pragma "inline" def **(a: int(32), b: int(32)) return __primitive("**", a, b);
+pragma "inline" def **(a: int(64), b: int(64)) return __primitive("**", a, b);
+pragma "inline" def **(a: uint(32), b: uint(32)) return __primitive("**", a, b);
+pragma "inline" def **(a: uint(64), b: uint(64)) return __primitive("**", a, b);
+pragma "inline" def **(a: real(?w), b: real(w)) return __primitive("**", a, b);
+
+//
+// logical operations on primitive types
+//
 pragma "inline" def !(a: bool) return __primitive("!", a);
 pragma "inline" def bool.true? return this;
 pragma "inline" def bool.false? return !this;
 
-// Primitive functions and operators on ints
-pragma "inline" def =(a: int(?w), b: int(w)) return b;
-pragma "inline" def +(a: int(32)) return __primitive("u+", a);
-pragma "inline" def -(a: int(32)) return __primitive("u-", a);
+//
+// bitwise operations on primitive types
+//
+pragma "inline" def ~(a: bool) return __primitive("u~", a);
 pragma "inline" def ~(a: int(32)) return __primitive("u~", a);
-pragma "inline" def +(a: int(32), b: int(32)) return __primitive("+", a, b);
-pragma "inline" def -(a: int(32), b: int(32)) return __primitive("-", a, b);
-pragma "inline" def *(a: int(32), b: int(32)) return __primitive("*", a, b);
-pragma "inline" def /(a: int(32), b: int(32)) return __primitive("/", a, b);
-pragma "inline" def **(a: int(32), b: int(32)) return __primitive("**", a, b);
-pragma "inline" def %(a: int(32), b: int(32)) return __primitive("%", a, b);
-pragma "inline" def &(a: int(32), b: int(32)) return __primitive("&", a, b);
-pragma "inline" def |(a: int(32), b: int(32)) return __primitive("|", a, b);
-pragma "inline" def ^(a: int(32), b: int(32)) return __primitive("^", a, b);
-pragma "inline" def ==(a: int(32), b: int(32)) return __primitive("==", a, b);
-pragma "inline" def !=(a: int(32), b: int(32)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
-pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
-pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
-
-pragma "inline" def +(a: int(64)) return __primitive("u+", a);
-pragma "inline" def -(a: int(64)) return __primitive("u-", a);
 pragma "inline" def ~(a: int(64)) return __primitive("u~", a);
-pragma "inline" def +(a: int(64), b: int(64)) return __primitive("+", a, b);
-pragma "inline" def -(a: int(64), b: int(64)) return __primitive("-", a, b);
-pragma "inline" def *(a: int(64), b: int(64)) return __primitive("*", a, b);
-pragma "inline" def /(a: int(64), b: int(64)) return __primitive("/", a, b);
-pragma "inline" def **(a: int(64), b: int(64)) return __primitive("**", a, b);
-pragma "inline" def %(a: int(64), b: int(64)) return __primitive("%", a, b);
-pragma "inline" def &(a: int(64), b: int(64)) return __primitive("&", a, b);
-pragma "inline" def |(a: int(64), b: int(64)) return __primitive("|", a, b);
-pragma "inline" def ^(a: int(64), b: int(64)) return __primitive("^", a, b);
-pragma "inline" def ==(a: int(64), b: int(64)) return __primitive("==", a, b);
-pragma "inline" def !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
-pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
-pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
-
-// Primitive functions and operators on uints
-pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
-pragma "inline" def +(a: uint(32)) return __primitive("u+", a);
-pragma "inline" def +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
-pragma "inline" def -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
-pragma "inline" def *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
-pragma "inline" def /(a: uint(32), b: uint(32)) return __primitive("/", a, b);
-pragma "inline" def **(a: uint(32), b: uint(32)) return __primitive("**", a, b);
-pragma "inline" def %(a: uint(32), b: uint(32)) return __primitive("%", a, b);
 pragma "inline" def ~(a: uint(32)) return __primitive("u~", a);
-pragma "inline" def &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
-pragma "inline" def |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
-pragma "inline" def ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
-pragma "inline" def ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
-pragma "inline" def !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
-pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
-pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
-
-pragma "inline" def +(a: uint(64)) return __primitive("u+", a);
-pragma "inline" def +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
-pragma "inline" def -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
-pragma "inline" def *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
-pragma "inline" def /(a: uint(64), b: uint(64)) return __primitive("/", a, b);
-pragma "inline" def **(a: uint(64), b: uint(64)) return __primitive("**", a, b);
-pragma "inline" def %(a: uint(64), b: uint(64)) return __primitive("%", a, b);
 pragma "inline" def ~(a: uint(64)) return __primitive("u~", a);
+
+pragma "inline" def &(a: bool, b: bool) return __primitive("&", a, b);
+pragma "inline" def &(a: int(32), b: int(32)) return __primitive("&", a, b);
+pragma "inline" def &(a: int(64), b: int(64)) return __primitive("&", a, b);
+pragma "inline" def &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
 pragma "inline" def &(a: uint(64), b: uint(64)) return __primitive("&", a, b);
+
+pragma "inline" def |(a: bool, b: bool) return __primitive("|", a, b);
+pragma "inline" def |(a: int(32), b: int(32)) return __primitive("|", a, b);
+pragma "inline" def |(a: int(64), b: int(64)) return __primitive("|", a, b);
+pragma "inline" def |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
 pragma "inline" def |(a: uint(64), b: uint(64)) return __primitive("|", a, b);
+
+pragma "inline" def ^(a: bool, b: bool) return __primitive("^", a, b);
+pragma "inline" def ^(a: int(32), b: int(32)) return __primitive("^", a, b);
+pragma "inline" def ^(a: int(64), b: int(64)) return __primitive("^", a, b);
+pragma "inline" def ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
 pragma "inline" def ^(a: uint(64), b: uint(64)) return __primitive("^", a, b);
-pragma "inline" def ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
-pragma "inline" def !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
-pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
-pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
-pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
-pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
 
-
+//
+// left and right shift on primitive types
+//
 pragma "inline" def <<(a: int(32), b: integral) return __primitive("<<", a, b);
-pragma "inline" def >>(a: int(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def <<(a: int(64), b: integral) return __primitive("<<", a, b);
-pragma "inline" def >>(a: int(64), b: integral) return __primitive(">>", a, b);
 pragma "inline" def <<(a: uint(32), b: integral) return __primitive("<<", a, b);
-pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def <<(a: uint(64), b: integral) return __primitive("<<", a, b);
+
+pragma "inline" def >>(a: int(32), b: integral) return __primitive(">>", a, b);
+pragma "inline" def >>(a: int(64), b: integral) return __primitive(">>", a, b);
+pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def >>(a: uint(64), b: integral) return __primitive(">>", a, b);
 
-// Primitive functions and operators on string
-pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
-pragma "inline" def ==(a: string, b: string) return __primitive("string_equal", a, b);
-pragma "inline" def !=(a: string, b: string) return !(a == b);
-pragma "inline" def +(a: string, b: string) return __primitive("string_concat", a, b);
-pragma "inline" def length(a: string) return __primitive("string_length", a);
-pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
-
-pragma "inline" def _string_contains(a: string, b: string)
-  return __primitive("string_contains", a, b);
-
-pragma "inline" def _tostring(x : bool, format : string)
-  return __primitive("to_string", format, x);
-
-pragma "inline" def _tostring(x : int, format : string)
-  return __primitive("to_string", format, x);
-
-pragma "inline" def ascii(a: string) return __primitive("ascii", a);
-
 //
-// Primitive funs for objects
+// _init on primitive types and classes
 //
-pragma "inline" def ==(a: object, b: object) return __primitive("ptr_eq", a, b);
-pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b);
-pragma "inline" def =(a, b) return b;
-pragma "inline" def _copy(a) return a;
-
-
-
-//
-// _init
-//
-pragma "inline" def _init(x : bool) return false;
-pragma "inline" def _init(x : int(?w)) return 0:int(w);
-pragma "inline" def _init(x : uint(?w)) return 0:uint(w);
-pragma "inline" def _init(x : string) return "";
+pragma "inline" def _init(x: bool) return false;
+pragma "inline" def _init(x: int(?w)) return 0:int(w);
+pragma "inline" def _init(x: uint(?w)) return 0:uint(w);
+pragma "inline" def _init(x: real(?w)) return 0.0:real(w);
+pragma "inline" def _init(x: imag(?w)) return 0.0:imag(w);
+pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
+pragma "inline" def _init(x: string) return "";
 pragma "inline" def _init(x) return nil:x;
 
+//
+// _copy on primitive types and classes
+//
+pragma "inline" def _copy(a) return a;
 
-// identity functions (for reduction operations)
+//
+// _tostring conversions on primitive types
+//
+pragma "inline" def _tostring(x: bool, format: string) return __primitive("to_string", format, x);
+pragma "inline" def _tostring(x: int, format: string) return __primitive("to_string", format, x);
+pragma "inline" def _tostring(x: real, format: string) return __primitive("to_string", format, x);
+pragma "inline" def _tostring(x: imag, format: string) return __primitive("to_string", format, x);
+pragma "inline" def _tostring(x: complex, format: string) return __primitive("to_string", format, x);
+
+//
+// complex component methods re and im
+//
+//  bug?  in setters, parameterize real argument over complex bit width
+//
+def complex.re return __primitive( "complex_get_real", this);
+def complex.im return __primitive( "complex_get_imag", this);
+def complex.=re(f:real) { __primitive( "complex_set_real", this, f); }
+def complex.=im(f:real) { __primitive( "complex_set_imag", this, f); }
+
+//
+// helper functions
+//
+pragma "inline" def _i2r(a: imag(?w)) return a:real(w);
+
+//
+// primitive string functions and methods
+//
+pragma "inline" def ascii(a: string) return __primitive("ascii", a);
+pragma "inline" def length(a: string) return __primitive("string_length", a);
+pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
+pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
+
+//
+// identity functions (for reductions)
+//
 pragma "inline" def _prod_id( type t) return __primitive( "_prod_id", t);
 pragma "inline" def _land_id( type t) return __primitive( "_land_id", t);
 pragma "inline" def _lor_id( type t) return __primitive( "_lor_id", t);
@@ -152,19 +279,18 @@ pragma "inline" def _band_id( type t) return __primitive( "_band_id", t);
 pragma "inline" def _bor_id( type t) return __primitive( "_bor_id", t);
 pragma "inline" def _bxor_id( type t) return __primitive( "_bxor_id", t);
 
-
-// predefined functions
+//
+// min and max
+//
 pragma "inline" def min(x, y) return if x < y then x else y;
 pragma "inline" def max(x, y) return if x > y then x else y;
-
 pragma "inline" def min(x, y, z...?k) return min(min(x, y), (...z));
 pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 
 //
 // More primitive funs
 //
-
-pragma "inline" def exit(status : int) {
+pragma "inline" def exit(status: int) {
   __primitive("exit", status);
 }
 
@@ -172,7 +298,7 @@ pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
 
 def init_elts(x, s, type t) {
   for i in 1..s {
-    var y : t;
+    var y: t;
     x(i-1) = y;
   }
 }
@@ -181,7 +307,7 @@ def init_elts(x, s, type t) {
 pragma "data class"
 class _ddata {
   type elt_type;
-  var size : int;
+  var size: int;
   pragma "inline" def init() {
     __primitive("array_init", this, elt_type, size);
     init_elts(this, size, elt_type);
@@ -190,13 +316,13 @@ class _ddata {
     __primitive("array_init", this, elt_type, size);
     [i in 0..size-1] this(i) = d;
   }
-  pragma "inline" def this(i : int) {
+  pragma "inline" def this(i: int) {
     return __primitive("array_get", this, i);
   }
-  pragma "inline" def =this(i : int, val : elt_type) {
+  pragma "inline" def =this(i: int, val: elt_type) {
     __primitive("array_set", this, i, val);
   }
-  pragma "data set error" pragma "inline" def =this(i : int, val) {
+  pragma "data set error" pragma "inline" def =this(i: int, val) {
     compilerError("type mismatch");
   }
 }

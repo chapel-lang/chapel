@@ -22,7 +22,6 @@ static void parseStandardModules(void) {
 
   if (!fnostdincs) {
     fileModule = parseStandardModule("_chpl_file.chpl");
-    parseStandardModule("_chpl_complex.chpl");
     tupleModule = parseStandardModule("_chpl_htuple.chpl");
     domainModule = parseStandardModule("_chpl_adomain.chpl");
     parseStandardModule("_chpl_indefinite.chpl");
