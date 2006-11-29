@@ -87314,3 +87314,21 @@ Added files:
 	chapel/test/release/examples/: genericStack2.chpl 
 	                               genericStack2.good 
 
+---------------------------------------------------------------------------
+
+11/29/06 13:47:00 -- deitz
+
+Log message:
+	Copied the Generic Stack codes into the spec.  I left them in the
+	Language_Overview.tex file so MB can decide if she wants to or how she
+	wants to work with multiple files.
+	
+	Added a numberedchapel environment that can be used for these program
+	codes with numbering on the left.
+	
+	I left the comments in the code though we may want to remove these
+	given that there will be alot of walkthrough text.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex chapel_listing.tex 
+
