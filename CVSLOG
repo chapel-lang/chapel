@@ -87344,3 +87344,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: prod-cons.chpl 
 
+---------------------------------------------------------------------------
+
+11/29/06 13:53:15 -- deitz
+
+Log message:
+	Stuck producer consumer example in overview section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
