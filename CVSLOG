@@ -87215,3 +87215,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 09:48:02 -- bradc
+
+Log message:
+	Removed tabs from comments to make nightly check happy.
+
+Modified files:
+	chapel/runtime/include/cygwin/: chplsys.h 
+
