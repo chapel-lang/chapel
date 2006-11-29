@@ -87299,3 +87299,18 @@ Added files:
 Removed files:
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+11/29/06 13:30:50 -- deitz
+
+Log message:
+	Added a second generic stack example that uses an array implementation
+	rather than a linked list implementation.  The array is doubled as
+	necessary.
+
+Modified files:
+	chapel/test/release/examples/: README genericStack.chpl 
+Added files:
+	chapel/test/release/examples/: genericStack2.chpl 
+	                               genericStack2.good 
+
