@@ -1,31 +1,29 @@
 /*
  *  Generic Stack Example
  *
- *  This example implements a generic stack data structure via a
- *  linked list and then instantiates the generic stack over strings
- *  and tuples of integers as examples of how to use the class.  This
- *  generic stack implementation is not thread-safe.
+ *  This example implements a generic stack data structure via an array
+ *  and then instantiates the generic stack over strings and tuples of
+ *  integers as examples of how to use the class.  This generic stack
+ *  implementation is not thread-safe.
  *
  */
 
-// A class that is used by the generic stack to implement nodes for a
-// linked-list implementation.
-class MyNode {
-  type itemType;              // type of item
-  var item: itemType;         // item in node
-  var next: MyNode(itemType); // reference to next node (same type)
-}
-
 // A stack class that is generic over the type of data that it
-// contains.  The implementation uses a linked list implemented with
-// the node class above.
+// contains.  The implementation uses an array to store the elements
+// in the stack.
 record Stack {
-  type itemType;             // type of items
-  var top: MyNode(itemType); // top node on stack linked list
+  type itemType;            // type of items
+  var numItems: int = 0;    // number of items in the stack
+  var data: [1..2] itemType; // array of items
 
   // push method: add an item to the top of the stack
+  // note: the array is doubled if it is full
   def push(item: itemType) {
-    top = MyNode(itemType, item, top);
+    var height = data.numElements;
+    if numItems == height then
+      data.domain = [1..height*2];
+    data(numItems+1) = item;
+    numItems += 1;
   }
 
   // pop method: remove an item from the top of the stack
@@ -33,13 +31,12 @@ record Stack {
   def pop() {
     if isEmpty? then
       halt("attempt to pop an item off an empty stack");
-    var oldTop = top;
-    top = top.next;
-    return oldTop.item;
+    numItems -= 1;
+    return data(numItems+1);
   }
 
   // isEmpty? method: true if the stack is empty; otherwise false
-  def isEmpty? return top == nil;
+  def isEmpty? return numItems == 0;
 }
 
 // Test: Push three strings onto a stack and then pop them off.
