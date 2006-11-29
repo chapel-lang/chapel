@@ -87354,3 +87354,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+11/29/06 14:15:05 -- deitz
+
+Log message:
+	Took a second pass over the user-defined compiler errors section (6.5).
+
+Modified files:
+	chapel/spec/: Lexical_Structure.tex 
+
