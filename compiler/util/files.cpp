@@ -302,7 +302,7 @@ codegen_makefile(fileinfo* mainfile) {
   // default -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
-  fprintf(makefile.fptr, "GEN_CFLAGS = %s\n", ccflags);
+  fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s\n", ccflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);
