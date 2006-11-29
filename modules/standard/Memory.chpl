@@ -1,6 +1,6 @@
 enum MemUnits {Bytes, KB, MB, GB};
 
-def physicalMemory(loc: locale, unit: MemUnits=Bytes, type retType=uint(64)) {
+def physicalMemory(loc: locale, unit: MemUnits=Bytes, type retType=int(64)) {
   on loc do const bytesInLocale: uint(64) = __primitive("_bytesPerLocale");
   var retVal: retType;
   select (unit) {

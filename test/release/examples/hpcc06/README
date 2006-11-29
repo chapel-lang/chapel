@@ -2,15 +2,28 @@
 Chapel 2006 HPC Challenge Codes
 ===============================
 
-This directory contains our entries for the 2006 HPC Challenge
-competition, class 2 (http://www.hpcchallenge.org).  For a detailed
-explanation of these benchmarks, please refer to hpcc06.pdf in the
-doc/ directory.  
+This directory contains Chapel versions of the HPC Challenge
+benchmarks (http://icl.cs.utk.edu/hpcc/).  These codes are based on
+our entries for the 2006 HPC Challenge Award Competition for class 2
+("most productivity").  For a detailed explanation of these
+benchmarks, please refer to hpcc06.pdf in the doc/ directory.
 
-As our compiler has improved, we have removed workarounds in these
-codes that were noted using "Compiler Status Notes" in the paper.  For
-example, when the paper was written, iterator return types could not
-be inferred.  Now that they can be, the explicitly declared types have
-been removed to match the style for the rest of the codes.
+The codes in this directory have evolved somewhat as our
+implementation has matured.  Some of these changes resolve workarounds
+in our original implementations that were called out in "Compiler
+Status Notes".  Other changes may reflect evolution in the Chapel
+language or standard libraries.  The changes to date are:
+
+  * the compiler can now infer the return type of an iterator, so the
+    explicit return types in the iterators of ra-randstream.chpl have
+    been removed to match the style of the rest of the code.
+
+  * the memRatio argument to computeProblemSize in probSize.chpl was
+    changed into a configuration constant, as alluded to in the paper.
+
+  * the physicalMemory() interface was updated to return an int(64) by
+    default rather than an int, requiring a cast in computing the
+    numIndices value to keep it an int as in the original
+    implementation.
 
 This directory also contains a Makefile to help build the benchmarks.
