@@ -1,3 +1,5 @@
+use Time;
+
 var s: single int;
 
 begin {

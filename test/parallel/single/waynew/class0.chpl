@@ -1,3 +1,4 @@
+use Time;
 // Test single field in a class
 
 class D {

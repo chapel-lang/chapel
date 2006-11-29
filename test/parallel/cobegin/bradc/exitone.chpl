@@ -1,3 +1,4 @@
+use Time;
 def sleepAndExit() {
   sleep(5);
   writeln("Done sleeping...about to exit");

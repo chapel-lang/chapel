@@ -56,12 +56,6 @@ pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
 pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
 pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
 
-pragma "inline" def bits(type t) where t == int(8)  return 8;
-pragma "inline" def bits(type t) where t == int(16) return 16;
-pragma "inline" def bits(type t) where t == int(32) return 32;
-pragma "inline" def bits(type t) where t == int(64) return 64;
-
-
 // Primitive functions and operators on uints
 pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
 pragma "inline" def +(a: uint(32)) return __primitive("u+", a);
@@ -109,12 +103,6 @@ pragma "inline" def <<(a: uint(32), b: integral) return __primitive("<<", a, b);
 pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def <<(a: uint(64), b: integral) return __primitive("<<", a, b);
 pragma "inline" def >>(a: uint(64), b: integral) return __primitive(">>", a, b);
-
-pragma "inline" def bits(type t) where t == uint(8)  return 8;
-pragma "inline" def bits(type t) where t == uint(16) return 16;
-pragma "inline" def bits(type t) where t == uint(32) return 32;
-pragma "inline" def bits(type t) where t == uint(64) return 64;
-
 
 // Primitive functions and operators on string
 pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
@@ -166,9 +154,6 @@ pragma "inline" def _bxor_id( type t) return __primitive( "_bxor_id", t);
 
 
 // predefined functions
-pragma "inline" def min(type t) return __primitive( "_min", t);
-pragma "inline" def max(type t) return __primitive( "_max", t);
-
 pragma "inline" def min(x, y) return if x < y then x else y;
 pragma "inline" def max(x, y) return if x > y then x else y;
 
@@ -178,10 +163,6 @@ pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 //
 // More primitive funs
 //
-
-pragma "inline" def sleep(t: int) {
-  __primitive("sleep", t);
-}
 
 pragma "inline" def exit(status : int) {
   __primitive("exit", status);
@@ -488,11 +469,3 @@ pragma "no codegen" def _chpl_memtest_mallocOutOfMemory();
 pragma "no codegen" def _chpl_memtest_reallocOutOfMemory();
 
 pragma "no codegen" def startTrackingMem();
-
-
-pragma "inline" def bits(type t) where t == real(32)  return 32;
-pragma "inline" def bits(type t) where t == real(64)  return 64;
-pragma "inline" def bits(type t) where t == real(128) return 128;
-pragma "inline" def bits(type t) where t == complex(64)  return 64;
-pragma "inline" def bits(type t) where t == complex(128) return 128;
-pragma "inline" def bits(type t) where t == complex(256) return 256;

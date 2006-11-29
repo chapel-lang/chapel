@@ -27,14 +27,15 @@ static void parseStandardModules(void) {
     domainModule = parseStandardModule("_chpl_adomain.chpl");
     parseStandardModule("_chpl_indefinite.chpl");
     parseStandardModule("_chpl_sparse.chpl");
-    parseStandardModule("_chpl_math.chpl");
     seqModule = parseStandardModule("_chpl_seq.chpl");
     parseStandardModule("_chpl_ds.chpl");
     parseStandardModule("_chpl_machine.chpl");
     standardModule = parseStandardModule("_chpl_standard.chpl");
     parseStandardModule("Time.chpl");
     parseStandardModule("Random.chpl");
+    parseStandardModule("Standard.chpl");
     parseStandardModule("Types.chpl");
+    parseStandardModule("Math.chpl");
     parseStandardModule("BitOps.chpl");
     parseStandardModule("Memory.chpl");
     parseStandardModule("Schedules.chpl");

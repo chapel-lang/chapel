@@ -76,3 +76,7 @@ def _convert_microseconds(unit: TimeUnits, us: real) {
   }
   halt("internal error in module Time");
 }
+
+pragma "inline" def sleep(t: uint) {
+  __primitive("sleep", t);
+}

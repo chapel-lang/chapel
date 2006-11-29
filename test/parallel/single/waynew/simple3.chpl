@@ -1,3 +1,5 @@
+use Time;
+
 // Test multiple threads waiting at the same time.
 
 var go: single int;

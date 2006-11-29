@@ -1,3 +1,5 @@
+use Time;
+
 // Test single read on initialization.
 
 var s: single int;

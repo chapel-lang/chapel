@@ -1,6 +1,3 @@
-//
-// Primitive math funs
-//
 pragma "inline" def abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" def abs(i : uint(?w)) return i;
 pragma "inline" def abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);

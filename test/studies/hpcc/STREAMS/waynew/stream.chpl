@@ -28,7 +28,7 @@ HPCC_LocalVectorSize( params: HPCC_Params,
   // (for a 4-byte integer, 2**31-1 is the maximum integer, so the maximum 
   // power of 2 is 30) */
 
-  var maxIntBits2 = bits(int) - 2;
+  var maxIntBits2 = numBits(int) - 2;
 
   // flg2 = floor(log2(params->HPLMaxProcMem / size / vecCnt))
   var flg2 = 1;
@@ -125,7 +125,7 @@ def checkSTREAMresults( doIO: bool): bool {
 
 
 def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
-  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, bits(real)/8, false); 
+  VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, numBits(real)/8, false); 
 
   Vector = [1..VectorSize];   // realloc a, b, and c
 
@@ -134,7 +134,7 @@ def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   // --- SETUP --- determine precision and check timing ---
   if doIO {
     writeln( HLINE);
-    var BytesPerWord = bits(real)/8;
+    var BytesPerWord = numBits(real)/8;
     writeln( "This system uses ", BytesPerWord, " bytes per DOUBLE PRECISION word.");
 
     writeln( HLINE);

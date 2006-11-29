@@ -13,9 +13,9 @@ config const memInMBs = 3;
 const memInBytes = memInMBs*MB;
 
 type elemType = real(64);
-const elemSizeInBytes = bits(elemType)/bitsPerByte;
+const elemSizeInBytes = numBits(elemType)/bitsPerByte;
 
-const maxIntBits2 = bits(int) - 2;
+const maxIntBits2 = numBits(int) - 2;
 const maxPossibleElems = (memInBytes/elemSizeInBytes)/numVectors;
 const flg2 = log2(maxPossibleElems);
 config const usePow2VectorSize = false;

@@ -1,5 +1,7 @@
 // Test single field in a class with multiple readers.
 
+use Time;
+
 class D {
   var s: single real;
 }

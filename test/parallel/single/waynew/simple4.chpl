@@ -1,3 +1,5 @@
+use Time;
+
 // Test multiple threads waiting at the same time.  Similar to simple3.chpl,
 // but use cobegin instead.
 

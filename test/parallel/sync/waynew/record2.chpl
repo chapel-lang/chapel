@@ -1,3 +1,5 @@
+use Time;
+
 // Multi-threaded test with a record that has a sync var field.
 
 // Similar to record1.chpl, but instead fast writer, slow reader.

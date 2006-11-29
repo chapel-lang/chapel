@@ -1,6 +1,8 @@
 // Producer-consumer example. Producer thread slowly writes to sync variable
 // s.  Child thread reads from s and outputs what was read.
 
+use Time;
+
 param iterations = 5;
 param sleepTime  = 2;
 var s: sync int;
