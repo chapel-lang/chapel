@@ -134,7 +134,9 @@ compiler-error-statement:
   `compilerError' ( string-literal ) ;
 \end{syntax}
 invokes a compiler error if the function that the statement is located
-within may be called by the program following the rules of parameter
-folding.
+within may be called when the program is executed and the statement is
+not eliminated by parameter folding.
 
-The string literal is the message in the compiler error.
+The compiler error is defined to be the string literal and it points
+to the spot in the Chapel program where the function containing
+the \sntx{compiler-error-statement} is called from.
