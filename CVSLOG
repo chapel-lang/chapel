@@ -87169,3 +87169,16 @@ Added files:
 	                                     complex_tuple_64.future 
 	                                     complex_tuple_64.good 
 
+---------------------------------------------------------------------------
+
+11/28/06 18:49:56 -- marybeth
+
+Log message:
+	Creating a future for a test with a function which has statements only within a
+	type select statement.  When compiling this test, the compiler complains that
+	there is illegal use of a function that doesn't return a value.
+
+Added files:
+	chapel/test/trivial/marybeth/: typeselect.chpl typeselect.future 
+	                               typeselect.good 
+
