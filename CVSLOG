@@ -87416,3 +87416,14 @@ Log message:
 Modified files:
 	chapel/spec/: Generics.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 13:26:37 -- marybeth
+
+Log message:
+	Corrected an error with the definition of the "sleep" function in
+	the Time module.  It should take a uint as input rather than an int.
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex 
+
