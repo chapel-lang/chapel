@@ -277,6 +277,17 @@ receive arrays are aliases of the actual arguments.  The ordinary rule
 that disallows assignment to formal arguments of blank intent does not
 apply to arrays.
 
+When a formal argument has array type, the element type of the array
+can be omitted and/or the domain of the array can be queried or
+omitted.  In such cases, the argument is generic and is discussed
+in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
+
+If a non-queried domain is specified in the array type of a formal
+argument, the domain must match the domain of the actual argument.
+This is verified at runtime.  There is an exception if the domain is
+an arithmetic domain; it is described
+in~\rsec{Formal_Arguments_of_Arithmetic_Array_Type}.
+
 \subsubsection{Iteration over Arrays}
 \label{Iteration_over_Arrays}
 
@@ -408,7 +419,18 @@ type \chpl{domain(2,int)}.
 \subsubsection{Strided Arithmetic Domains}
 \label{Strided_Arithmetic_Domains_and_Arrays}
 
-This section is forthcoming.
+If the arithmetic sequences that define an arithmetic domain are
+strided, then the arithmetic domain is said to be strided.
+
+The \chpl{by} operator can be applied to any arithmetic domain to
+create a strided arithmetic domain.  It is predefined over an
+arithmetic domain and an integer or a tuple of integers.  In the
+integer case, the arithmetic sequences in each dimension are strided
+by the integer.  In the tuple of integers case, the size of the tuple
+must match the rank of the domain; the integers stride each dimension
+of the domain.  If the arithmetic sequences are already strided, the
+strides applied by the \chpl{by} operator are multiplied to the
+strides of the arithmetic sequneces.
 
 \subsubsection{Arithmetic Domain Indexing}
 \label{Arithmetic_Domain_Indexing}
@@ -451,12 +473,42 @@ equivalent.
 \subsubsection{Arithmetic Array Slicing}
 \label{Arithmetic_Array_Slicing}
 
-This section is forthcoming.
+In addition to slicing an arithmetic array by an arithmetic domain,
+arithmetic arrays also support slicing by arithmetic sequences
+directly.  If each dimension is indexed by an arithmetic sequence,
+this is equivalent to slicing the domain by an arithmetic domain
+defined by those arithmetic sequences.
+
+\begin{implementation}
+It is currently required that each dimension be indexed by an
+arithmetic sequence.  There is an expectation that indexing some
+dimensions directly by values of integral type will result in an array
+slice of a different rank.
+\end{implementation}
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
 
-This section is forthcoming.
+Formal arguments of arithmetic array type allow an arithmetic domain
+to be specified that does not match the arithmetic domain of the
+actual arithmetic array that is passed to the formal argument.  In
+this case, the shape (size in each dimension and rank) of the domain
+of the actual array must match the shape of the domain of the formal
+array.  The indices are translated in the formal array, which is a
+reference to the actual array.
+
+\begin{example}
+In the code
+\begin{chapel}
+def foo(X: [1..5] int) { ... }
+var A: [1..10 by 2] int;
+foo(A);
+\end{chapel}
+the array \chpl{A} is strided and its elements can be indexed by the
+odd integers between one and nine.  In the function \chpl{foo}, the
+array \chpl{X} references array \chpl{A} and the same elements can be
+indexed by the integers between one and five.
+\end{example}
 
 \subsection{Sparse Domains and Arrays}
 \label{Sparse_Domains_and_Arrays}
