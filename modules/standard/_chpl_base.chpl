@@ -34,28 +34,24 @@ pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b)
 //
 // ordered comparison on primitive types
 //
-pragma "inline" def <=(a: bool, b: bool) return __primitive("<=", a, b);
 pragma "inline" def <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
 
-pragma "inline" def >=(a: bool, b: bool) return __primitive(">=", a, b);
 pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
 
-pragma "inline" def <(a: bool, b: bool) return __primitive("<", a, b);
 pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
 pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
 pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
 pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
 pragma "inline" def <(a: real(?w), b: real(w)) return __primitive("<", a, b);
 
-pragma "inline" def >(a: bool, b: bool) return __primitive(">", a, b);
 pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
 pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
 pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);

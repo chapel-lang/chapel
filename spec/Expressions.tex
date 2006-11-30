@@ -569,12 +569,12 @@ type.
 
 The modulus operators are predefined as follows:
 \begin{chapel}
-def /(a: int(32), b: int(32)): int(32)
-def /(a: int(64), b: int(64)): int(64)
-def /(a: uint(32), b: uint(32)): uint(32)
-def /(a: uint(64), b: uint(64)): uint(64)
-def /(a: uint(64), b: int(64))
-def /(a: int(64), b: uint(64))
+def %(a: int(32), b: int(32)): int(32)
+def %(a: int(64), b: int(64)): int(64)
+def %(a: uint(32), b: uint(32)): uint(32)
+def %(a: uint(64), b: uint(64)): uint(64)
+def %(a: uint(64), b: int(64))
+def %(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
