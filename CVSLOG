@@ -87440,3 +87440,18 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/spec/: Expressions.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 15:07:49 -- deitz
+
+Log message:
+	Renamed PRIMITIVE_CHPL_free to PRIMITIVE_CHPL_FREE to make it like all
+	the other primitives.  Note that this primitive is not yet ever used.
+	
+	Simplified array assignment functions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
