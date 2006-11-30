@@ -87455,3 +87455,13 @@ Modified files:
 	chapel/compiler/include/: primitive.h 
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+11/30/06 15:40:12 -- deitz
+
+Log message:
+	Finished first pass of section through arithmetic domains and arrays.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex 
+
