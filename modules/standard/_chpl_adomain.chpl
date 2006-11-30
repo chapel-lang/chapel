@@ -91,12 +91,7 @@ def =(a: _array, b: _domain) {
   return a;
 }
 
-def =(a: _array, b: seq) {
-  a._value.assign(b);
-  return a;
-}
-
-def =(a: _array, b: _aseq) {
+def =(a: _array, b) {
   a._value.assign(b);
   return a;
 }
@@ -577,22 +572,7 @@ class _aarray: _abase {
     }
   }
 
-  def assign(y : _aarray) {
-    for (i,e) in (dom,y) do
-      this(i) = e;
-  }
-
-  def assign(y : _adomain) {
-    for (i,e) in (dom,y) do
-      this(i) = e;
-  }
-
-  def assign(y : seq) {
-    for (i,e) in (dom,y) do
-      this(i) = e;
-  }
-
-  def assign(y: _aseq) {
+  def assign(y) {
     for (i,e) in (dom,y) do
       this(i) = e;
   }

@@ -1235,7 +1235,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     }
-    case PRIMITIVE_CHPL_free: {
+    case PRIMITIVE_CHPL_FREE: {
       fprintf( outfile, "_chpl_free( ");
       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
       if (s && ((VarSymbol*)s->var)->on_heap) {

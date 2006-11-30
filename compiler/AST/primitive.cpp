@@ -247,7 +247,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_CONDVAR_DESTROY, "condvar_destroy", returnInfoVoid);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc);
-  prim_def(PRIMITIVE_CHPL_free, "chpl_free", returnInfoVoid);
+  prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
   prim_def(PRIMITIVE_TOSTRING, "to_string", returnInfoString);
