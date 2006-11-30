@@ -87427,3 +87427,16 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 13:45:37 -- deitz
+
+Log message:
+	Removed <=, >=, <, >, over bool.
+	
+	Fixed small bug in spec (% as /).
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/spec/: Expressions.tex 
+
