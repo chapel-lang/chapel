@@ -87635,3 +87635,17 @@ Modified files:
 	                                                  countMemory.chap04.good 
 	                                                  countMemory.chap05.good 
 
+---------------------------------------------------------------------------
+
+12/01/06 14:56:26 -- deitz
+
+Log message:
+	Added --print-dispatch developer option to print out the dynamic
+	dispatch functions table.  Previously I had code in the compiler that
+	could be uncommented.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
