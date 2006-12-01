@@ -58,6 +58,8 @@ void printHelpTable(void) {
 
   int i = 0;
   int longestFlag = 0;
+  char lastHeaderType = '\0';
+
   while (flagList[i].flag) {
     int thisFlag = strlen(flagList[i].flag);
     if (longestFlag < thisFlag) {
@@ -67,7 +69,6 @@ void printHelpTable(void) {
   }
 
   i = 0;
-  char lastHeaderType = '\0';
   while (flagList[i].flag) {
     printHeaders(flagList[i].headerType, &lastHeaderType);
     fprintf(stdout, "  %-*s -- %s\n", longestFlag, flagList[i].flag, 
@@ -81,16 +82,18 @@ void printHelpTable(void) {
 static _int64 getIntArg(char* valueString, char* memFlag) {
   char extraChars;
   _int64 value = 0;  /* initialization is silly hack for freebsd */
+  int numScans;
+  char* message;
 
   if (!valueString || strcmp(valueString, "") == 0) {
-    char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+    message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
                                   "its int input");
     printError(message);
   }
-  int numScans = sscanf(valueString, _default_format_read_int64"%c", 
-                        &value, &extraChars);
+  numScans = sscanf(valueString, _default_format_read_int64"%c", 
+                    &value, &extraChars);
   if (numScans != 1) {
-    char* message = _glom_strings(2, valueString, " is not of int type");
+    message = _glom_strings(2, valueString, " is not of int type");
     printError(message);
   }
   return value; 
@@ -98,8 +101,9 @@ static _int64 getIntArg(char* valueString, char* memFlag) {
 
 
 static char* getStringArg(char* valueString, char* memFlag) {
+  char* message;
   if (!valueString || strcmp(valueString, "") == 0) {
-    char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+    message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
                                   "its string input");
     printError(message);
   }
@@ -118,6 +122,8 @@ static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
 typedef enum _MemFlagType {MemMax, MemStat, MemTrack, MemThreshold, MemTrace, MOther} MemFlagType;
 
 static int parseMemFlag(char* memFlag) {
+  char* equalsSign;
+  char* valueString;
   MemFlagType flag = MOther;
   if (strncmp(memFlag, "memmax", 6) == 0) {
     flag = MemMax;
@@ -135,8 +141,8 @@ static int parseMemFlag(char* memFlag) {
     return 0;
   }
 
-  char* equalsSign = strchr(memFlag, '=');
-  char* valueString = NULL;
+  equalsSign = strchr(memFlag, '=');
+  valueString = NULL;
 
   if (equalsSign) {
     *equalsSign = '\0';
@@ -209,6 +215,7 @@ void parseArgs(int argc, char* argv[]) {
       case '-':
         {
           char* flag = currentArg + 2;
+          int isSingleArg = 1;
           if (strcmp(flag, "help") == 0) {
             printHelpMessage();
             break;
@@ -221,7 +228,6 @@ void parseArgs(int argc, char* argv[]) {
                                           "\" is not a valid argument");
             printError(message);
           }
-          int isSingleArg = 1;
           addToConfigList(currentArg + 2, isSingleArg);
           break;
         }
@@ -235,12 +241,12 @@ void parseArgs(int argc, char* argv[]) {
 
       case 's':
         {
+          int isSingleArg = 1;
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
                                           "valid argument");
             printError(message);
           }
-          int isSingleArg = 1;
           addToConfigList(currentArg + 2, isSingleArg);
           break;
         }

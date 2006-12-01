@@ -169,13 +169,7 @@ void printFinalMemStat(void) {
 
 
 void printMemTable(_int64 threshold) {
-  if (!memtrack) {
-    char* message = "The printMemTable function only works with the "
-      "--memtrack flag";
-    printError(message);
-  }
   memTableEntry* memEntry = NULL;
-  fprintf(stdout, "\n");
 
   int numberWidth   = 9;
   int addressWidth  = 12;
@@ -188,6 +182,14 @@ void printMemTable(_int64 threshold) {
   char* address     = "Address:";
   char* description = "Description:";
   char* line40      = "========================================";   
+
+  if (!memtrack) {
+    char* message = "The printMemTable function only works with the "
+      "--memtrack flag";
+    printError(message);
+  }
+
+  fprintf(stdout, "\n");
 
   fprintf(stdout, "%s%s\n", line40, line40);
 
@@ -328,6 +330,7 @@ static void updateMemory(memTableEntry* memEntry, void* oldAddress,
 
 static void removeMemory(void* memAlloc) {
   memTableEntry* memEntry = lookupMemory(memAlloc);
+  memTableEntry* thisBucketEntry;
 
   if (memEntry) {
     /* Remove the entry from the first-to-last list. */
@@ -346,7 +349,7 @@ static void removeMemory(void* memAlloc) {
     }
 
     /* Remove the entry from the bucket list. */
-    memTableEntry* thisBucketEntry = removeBucketEntry(memAlloc);
+    thisBucketEntry = removeBucketEntry(memAlloc);
     free(thisBucketEntry->description);
     free(thisBucketEntry);
   } else {
@@ -440,11 +443,12 @@ void _chpl_free(void* memAlloc) {
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     char* description) {
   size_t newChunk = number * size;
+  memTableEntry* memEntry;
+  void* moreMemAlloc;
   if (!newChunk) {
     _chpl_free(memAlloc);
     return NULL;
   }
-  memTableEntry* memEntry;
   if (memtrack) {
     memEntry = lookupMemory(memAlloc);
     if (!memEntry && (memAlloc != NULL) && !(isGlomStringsMem(memAlloc))) {
@@ -453,7 +457,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       printError(message);
     }
   }
-  void* moreMemAlloc = realloc(memAlloc, newChunk);
+  moreMemAlloc = realloc(memAlloc, newChunk);
   confirm(moreMemAlloc, description);
 
   if (memtrack) { 

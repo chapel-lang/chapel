@@ -23,8 +23,9 @@ _string string_fscanf(FILE* fp) {
     scanfError();
   }
   if (strlen(localVal) == (_default_string_length - 1)) {
+    char* message;
     sprintf(dsl, "%d", _default_string_length);
-    char* message = _glom_strings(2, "The maximum string length is ", dsl);
+    message = _glom_strings(2, "The maximum string length is ", dsl);
     printError(message);
   }
   return string_copy(localVal);

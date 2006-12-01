@@ -85,22 +85,25 @@ static void parseModVarName(char* modVarName, char** moduleName,
 static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   char* equalsSign = strchr(setConfigBuffer, '=');
   int stringLength = strlen(setConfigBuffer);
+  char firstChar;
+  char* value;
+  char lastChar;
+  char* moduleName;
+  char* varName;
 
   if (!equalsSign || !(equalsSign + 1)) {
     return 0;
   }
 
-  char firstChar = equalsSign[1];
+  firstChar = equalsSign[1];
   if ((firstChar != '"') && (firstChar != '\'')) {
     return 0;
   }
 
-  char* value = equalsSign + 2;
+  value = equalsSign + 2;
   *equalsSign = '\0';
-  char lastChar = setConfigBuffer[stringLength - 1];
+  lastChar = setConfigBuffer[stringLength - 1];
 
-  char* moduleName;
-  char* varName;
   parseModVarName(setConfigBuffer, &moduleName, &varName);
   
   if ((firstChar != lastChar) || (strlen(value) == 0)) {
@@ -109,17 +112,17 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
       switch (nextChar) {
       case EOF:
         {
-          setConfigBuffer[stringLength] = '\0';
           char* message = _glom_strings(2, "Found end of file while reading "
                                         "string: ", equalsSign + 1);
+          setConfigBuffer[stringLength] = '\0';
           printError(message);
           break;
         }
       case '\n':
         {
-          setConfigBuffer[stringLength] = '\0';
           char* message = _glom_strings(2, "Found newline while reading "
                                         "string: ", equalsSign + 1);
+          setConfigBuffer[stringLength] = '\0';
           printError(message);
           break;
         }
@@ -127,8 +130,9 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
         {
           if (stringLength >= _default_string_length - 1) {
             char dsl[1024];
+            char* message;
             sprintf(dsl, "%d", _default_string_length);
-            char* message = _glom_strings(2, "String exceeds the maximum "
+            message = _glom_strings(2, "String exceeds the maximum "
                                           "string length of ", dsl);
             printError(message);
           }
@@ -151,9 +155,10 @@ static void parseSingleArg(char* currentArg) {
   char* equalsSign = strchr(currentArg, '=');     
 
   if (equalsSign) {
+    char* value;
     *equalsSign = '\0';
-    char* value = equalsSign + 1;
-    
+    value = equalsSign + 1;
+
     if (value) {
       char* moduleName;
       char* varName;
@@ -249,6 +254,7 @@ void printConfigVarTable(void) {
   char* moduleName = NULL;
   int foundUserConfigs = 0;
   int foundMultipleModules = 0;
+  int thisName;
 
   for (configVar = firstInTable;
        configVar != NULL;
@@ -263,7 +269,7 @@ void printConfigVarTable(void) {
           foundMultipleModules = 1;
         }
       }
-      int thisName = strlen(configVar->varName);
+      thisName = strlen(configVar->varName);
       if (longestName < thisName)  {
         longestName = thisName;
       }
@@ -311,8 +317,8 @@ static configVarType* lookupConfigVar(char* varName, char* moduleName) {
   configVarType* configVar = NULL;
   configVarType* foundConfigVar = NULL; 
   unsigned hashValue;
-  hashValue = hash(varName);
   int numTimesFound = 0;
+  hashValue = hash(varName);
 
   /* This loops walks through the list of configuration variables 
      hashed to this location in the table. */
@@ -340,11 +346,12 @@ static configVarType* lookupConfigVar(char* varName, char* moduleName) {
 
 
 void initSetValue(char* varName, char* value, char* moduleName) {
+  configVarType* configVar;
   if  (*varName == '\0') {
     char* message = "No variable name given";
     printError(message);
   }
-  configVarType* configVar = lookupConfigVar(varName, moduleName);
+  configVar = lookupConfigVar(varName, moduleName);
   if (configVar == NULL) {
     if (strcmp(moduleName, "") != 0) {
       char* message = _glom_strings(4, "There is no \"", varName, "\" config "
@@ -367,13 +374,13 @@ void initSetValue(char* varName, char* value, char* moduleName) {
 
 
 char* lookupSetValue(char* varName, char* moduleName) {
+  configVarType* configVar;
   if (strcmp(moduleName, "") == 0) {
     char* message = "Attempted to lookup value with the module name an "
       "empty string";
     printInternalError(message);
   }
 
-  configVarType* configVar;
   configVar = lookupConfigVar(varName, moduleName);
   if (configVar) {
     return configVar->setValue;

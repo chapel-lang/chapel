@@ -33,6 +33,9 @@ int isGlomStringsMem(void* ptr) {
 
 char* _glom_strings(int numstrings, ...) {
   int i;
+  va_list ap;
+  unsigned int totlen = 0;
+  char* newstring;
 
   if (numstrings > maxNumStrings) {
     maxNumStrings = numstrings;
@@ -40,20 +43,18 @@ char* _glom_strings(int numstrings, ...) {
                                        "stringlist buffer in _glom_strings");
   }
 
-  va_list ap;
   va_start(ap, numstrings);
   for (i=0; i<numstrings; i++) {
     stringlist[i] = va_arg(ap, char*);
   }
   va_end(ap);
 
-  unsigned int totlen = 0;
   for (i=0; i<numstrings; i++) {
     totlen += strlen(stringlist[i]);
   }
 
-  char* newstring = (char*)_chpl_malloc((totlen + 1), sizeof(char), 
-                                        "_glom_strings result");
+  newstring = (char*)_chpl_malloc((totlen + 1), sizeof(char), 
+                                  "_glom_strings result");
   newstring[0] = '\0';
   for (i=0; i<numstrings; i++) {
     strcat(newstring, stringlist[i]);
@@ -187,13 +188,14 @@ char* _chpl_tostring_complex64( _complex64 x, char* format) {
   }
   if (format == _default_format_write_complex64) {
     char* re = _chpl_tostring_real32(x.re, "%g");
+    char* im;
     _real32 imval = x.im;
     char* op = " + ";
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_real32(imval, "%g");
+    im = _chpl_tostring_real32(imval, "%g");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";
@@ -216,11 +218,12 @@ char* _chpl_tostring_complex128( _complex128 x, char* format) {
     char* re = _chpl_tostring_real64(x.re, "%g");
     _real64 imval = x.im;
     char* op = " + ";
+    char* im;
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_real64(imval, "%g");
+    im = _chpl_tostring_real64(imval, "%g");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";
@@ -241,13 +244,14 @@ char* _chpl_tostring_complex256( _complex256 x, char* format) {
   }
   if (format == _default_format_write_complex256) {
     char* re = _chpl_tostring_real128(x.re, "%Lg");
+    char* im;
     _real128 imval = x.im;
     char* op = " + ";
     if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
-    char* im = _chpl_tostring_real128(imval, "%Lg");
+    im = _chpl_tostring_real128(imval, "%Lg");
     // Not sure how to test for negative zero to handle this earlier
     if (strcmp(im, "-0.0") == 0) {
       op = " - ";

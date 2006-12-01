@@ -21,21 +21,25 @@ void _chpl_memtest_resetMemStat(void) {
 
 
 void _chpl_memtest_allocAndFree(void) {
+  _int64* i;
+  _bool* b;
+  _real64* f;
+  _complex64* c;
+
   resetMemStat();
 
-  _int64* i = (_int64*) _chpl_malloc(1, sizeof(_int64), 
-                                             "_int64");
+  i = (_int64*) _chpl_malloc(1, sizeof(_int64), "_int64");
   fprintf(stdout, "malloc'd an int\n");
   printMemStat();
-  _bool* b = (_bool*) _chpl_malloc(1, sizeof(_bool), "_bool");
+  b = (_bool*) _chpl_malloc(1, sizeof(_bool), "_bool");
   fprintf(stdout, "malloc'd abool\n");
   printMemStat();
 
-  _real64* f = (_real64*) _chpl_calloc(1, sizeof(_real64), "_real64");
+  f = (_real64*) _chpl_calloc(1, sizeof(_real64), "_real64");
   *f = 99.9;
   fprintf(stdout, "calloc'd a real\n");
   printMemStat();
-  _complex64* c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64");
+  c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64");
   c->re = 1.2;
   c->im = 2.3;
   fprintf(stdout, "calloc'd a complex\n");
@@ -58,10 +62,8 @@ void _chpl_memtest_allocAndFree(void) {
 
 
 void _chpl_memtest_freedMalloc(void) {
-  _int64* freedInt = (_int64*) _chpl_malloc(1, sizeof(_int64), 
-                                                  "_int64");
-  _real64* unfreedFloat = (_real64*) _chpl_malloc(1, sizeof(_real64), 
-                                                   "_real64");
+  _int64* freedInt = (_int64*) _chpl_malloc(1, sizeof(_int64), "_int64");
+  _real64* unfreedFloat = (_real64*) _chpl_malloc(1, sizeof(_real64), "_real64");
   *unfreedFloat = 99.9;
   
   printMemTable(0);
@@ -85,8 +87,7 @@ void _chpl_memtest_reallocWithoutMalloc(void) {
 
 
 void _chpl_memtest_reallocZeroSize(void) {
-  _int64* makeMeZero = (_int64*) _chpl_malloc(1, sizeof(_int64), 
-                                                      "_int64");
+  _int64* makeMeZero = (_int64*) _chpl_malloc(1, sizeof(_int64), "_int64");
   printMemTable(0);
   _chpl_realloc(makeMeZero, 0, sizeof(_int64*), "_int64");
   fprintf(stdout, "After a call to realloc with size equal to 0:\n");
