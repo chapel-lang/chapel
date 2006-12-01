@@ -87477,3 +87477,24 @@ Modified files:
 	chapel/spec/: Domains_and_Arrays.tex chapel_listing.tex 
 	              syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 16:59:28 -- deitz
+
+Log message:
+	Changed spec version number to 0.701 under the following assumptions:
+	
+	We should increment by 0.1 when each of the following major events
+	happen:
+	
+	  1. All of the sentences in the Spec are English and make sense.
+	
+	  2. The Locality and Distributions section is completed and accurate
+	     to the first major version of the Chapel release (1.0).
+	
+	  3. Every other section is completed and accurate to the first major
+	     version of the Chapel release (1.0).
+
+Modified files:
+	chapel/spec/: spec.tex 
+
