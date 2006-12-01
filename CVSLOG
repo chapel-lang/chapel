@@ -87498,3 +87498,14 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 17:52:51 -- marybeth
+
+Log message:
+	Checking in the getting started section and some text for the producer-consumer
+	walk-through.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
