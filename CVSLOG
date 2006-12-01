@@ -87509,3 +87509,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/01/06 09:25:25 -- deitz
+
+Log message:
+	Removed .future for working test.
+
+Removed files:
+	chapel/test/functions/deitz/: test_forallexpr2.future 
+
