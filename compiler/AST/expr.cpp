@@ -1470,6 +1470,14 @@ get_string(Expr *e, char **s) {
   return false;
 }
 
+char*
+get_string(Expr* e) {
+  char* s;
+  if (!get_string(e, &s))
+    INT_FATAL(e, "string literal expression expected");
+  return s;
+}
+
 VarSymbol * 
 get_constant(Expr *e) {
   if (e) {

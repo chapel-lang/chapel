@@ -577,6 +577,7 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_type) :
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
+  gTypes.add(this);
 }
 
 

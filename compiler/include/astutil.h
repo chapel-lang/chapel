@@ -46,12 +46,6 @@ void clear_type_info(BaseAST* baseAST);
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, ASTMap* map);
 
-// removes NamedExpr from AST
-void remove_named_exprs();
-
-void remove_static_actuals();
-void remove_static_formals();
-
 // replaces Fixup
 void remove_help(BaseAST* ast);
 void parent_insert_help(BaseAST* parent, Expr* ast);

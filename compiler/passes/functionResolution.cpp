@@ -46,6 +46,8 @@ static bool canDispatch(Type* actualType,
                         FnSymbol* fn = NULL,
                         bool* require_scalar_promotion = NULL);
 
+static void pruneResolvedTree();
+
 static void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
@@ -1579,44 +1581,46 @@ resolve() {
     delete ddf.get(key);
   }
 
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
-      if (!resolvedFns.set_in(a))
-        a->defPoint->remove();
-    } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(a->type)) {
+  pruneResolvedTree();
+}
+
+
+//
+// pruneResolvedTree -- prunes and cleans the AST after all of the
+// function calls and types have been resolved
+//
+static void
+pruneResolvedTree() {
+  // Remove unused functions.
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint && fn->defPoint->parentSymbol)
+      if (!resolvedFns.set_in(fn))
+        fn->defPoint->remove();
+  }
+
+  // Remove unused types.
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (type->defPoint && type->defPoint->parentSymbol)
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
         if (!resolvedFns.set_in(ct->defaultConstructor))
           ct->symbol->defPoint->remove();
-      }
-    }
   }
-  remove_named_exprs();
-  remove_static_actuals();
-  remove_static_formals();
-  asts.clear();
-  collect_asts(&asts);
+
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-      if (block->blockTag == BLOCK_TYPE) {
-        block->remove();
-      }
-    }
-  }
-  asts.clear();
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
-      if (a->defaultExpr)
-        a->defaultExpr->remove();
-      if (a->defPoint->exprType)
-        a->defPoint->exprType->remove();
-    }
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive(PRIMITIVE_TYPEOF))
+      if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
+        // Replace PRIMITIVE_TYPEOF with argument.
         call->replace(call->get(1)->remove());
-      if (call->isNamed("_init")) {
+      } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+                 call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        // Replace string literals with field symbols in member primitives.
+        Type* baseType = call->get(1)->typeInfo();
+        char* memberName = get_string(call->get(2));
+        call->get(2)->replace(new SymExpr(baseType->getField(memberName)));
+      } else if (call->isNamed("_init")) {
+        // Special handling of array constructors via array pragma.
         if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
           if (FnSymbol* fn = construct->isResolved()) {
             if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
@@ -1628,17 +1632,34 @@ resolve() {
             }
           }
         }
+      } else {
+        // Remove method and setter token actuals.
+        for_actuals(actual, call) {
+          if (actual->typeInfo() == dtMethodToken ||
+              actual->typeInfo() == dtSetterToken)
+            actual->remove();
+        }
       }
-      if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
-        if (!sym)
-          INT_FATAL(call, "bad member primitive");
-        VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-        if (!var || !var->immediate)
-          INT_FATAL(call, "bad member primitive");
-        char* name = var->immediate->v_string;
-        call->get(2)->replace(new SymExpr(call->get(1)->typeInfo()->getField(name)));
+    } else if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {
+      // Remove names of named actuals.
+      Expr* actual = named->actual;
+      actual->remove();
+      named->replace(actual);
+    } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      // Remove type blocks--code that exists only to determine types.
+      if (block->blockTag == BLOCK_TYPE)
+        block->remove();
+    } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      for_formals(formal, fn) {
+        // Remove formal default values.
+        if (formal->defaultExpr)
+          formal->defaultExpr->remove();
+        // Remove formal type expressions.
+        if (formal->defPoint->exprType)
+          formal->defPoint->exprType->remove();
+        // Remove method and setter token formals.
+        if (formal->type == dtMethodToken || formal->type == dtSetterToken)
+          formal->defPoint->remove();
       }
     }
   }

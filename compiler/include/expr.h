@@ -156,6 +156,7 @@ class NamedExpr : public Expr {
 
 bool get_int(Expr *e, long *i); // false is failure
 bool get_string(Expr *e, char **s); // false is failure
+char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
 
 #endif

@@ -206,50 +206,6 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
 }
 
 
-void remove_named_exprs() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {
-      Expr* actual = named->actual;
-      actual->remove();
-      named->replace(actual);
-    }
-  }
-}
-
-
-void remove_static_actuals() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isResolved()) {
-        for_actuals(actual, call) {
-          if (actual->typeInfo() == dtMethodToken ||
-              actual->typeInfo() == dtSetterToken)
-            actual->remove();
-        }
-      }
-    }
-  }
-}
-
-
-void remove_static_formals() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      for_formals(formal, fn) {
-        if (formal->type == dtMethodToken || formal->type == dtSetterToken)
-          formal->defPoint->remove();
-      }
-    }
-  }
-}
-
-
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
   Symbol* parentSymbol = NULL;
