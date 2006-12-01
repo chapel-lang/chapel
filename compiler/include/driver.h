@@ -26,6 +26,7 @@ extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
 
 extern char fPrintStatistics[256];
+extern bool fPrintDispatch;
 
 extern int debugParserLevel;
 extern bool no_codegen;

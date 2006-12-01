@@ -41,6 +41,7 @@ bool no_inline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fPrintStatistics[256] = "";
+bool fPrintDispatch = false;
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
@@ -87,6 +88,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', "Debug Output", NULL, NULL, NULL, NULL},
  {"html", 't', "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"print-statistics", ' ', "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
+ {"print-dispatch", ' ', "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"parser-debug", 'D', "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"log", 'd', "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},

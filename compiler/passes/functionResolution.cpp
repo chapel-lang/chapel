@@ -1524,15 +1524,17 @@ resolve() {
     build_ddf();
   } while (num_types != gTypes.n);
 
-//   printf("ddf:\n");
-//   for (int i = 0; i < ddf.n; i++) {
-//     if (ddf.v[i].key) {
-//       printf("  %s\n", fn2string(ddf.v[i].key));
-//       for (int j = 0; j < ddf.v[i].value->n; j++) {
-//         printf("    %s\n", fn2string(ddf.v[i].value->v[j]));
-//       }
-//     }
-//   }
+  if (fPrintDispatch) {
+    printf("dynamic dispatch functions:\n");
+    for (int i = 0; i < ddf.n; i++) {
+      if (ddf.v[i].key) {
+        printf("  %s\n", fn2string(ddf.v[i].key));
+        for (int j = 0; j < ddf.v[i].value->n; j++) {
+          printf("    %s\n", fn2string(ddf.v[i].value->v[j]));
+        }
+      }
+    }
+  }
 
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
