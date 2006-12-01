@@ -1693,6 +1693,12 @@ fixTypeNames(ClassType* ct) {
     ct->symbol->name = astr(ct->symbol->name+2);
     ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
+  if (ct->symbol->hasPragma("array") || ct->symbol->hasPragma("domain")) {
+    char* name = ct->getField(1)->type->symbol->name;
+    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
+    ct->symbol->name = name;
+    ct->symbol->defPoint->parentScope->define(ct->symbol);
+  }
 }
 
 
