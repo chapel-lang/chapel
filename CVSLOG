@@ -87519,3 +87519,20 @@ Log message:
 Removed files:
 	chapel/test/functions/deitz/: test_forallexpr2.future 
 
+---------------------------------------------------------------------------
+
+12/01/06 10:13:40 -- deitz
+
+Log message:
+	Moved variable declarations in runtime codes that were not at the top
+	of a scope to the top of a scope, making them C instead of C++.
+	
+	This gets them to compile on sunos with an old gcc.
+	
+	The runtime build breaks looking for etags.
+
+Modified files:
+	chapel/runtime/include/: arg.h 
+	chapel/runtime/src/: arg.c chplio.c chplmem.c chplmem_tests.c 
+	                     chpltypes.c config.c 
+
