@@ -47,5 +47,5 @@ RUNTIME_CFLAGS = $(CFLAGS)
 GEN_CFLAGS = 
 
 ifdef CHPL_DEVELOPER
-RUNTIME_CFLAGS += -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
+RUNTIME_CFLAGS += -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wdeclaration-after-statement -Wnested-externs
 endif
