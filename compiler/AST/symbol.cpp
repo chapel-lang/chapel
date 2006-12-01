@@ -1374,7 +1374,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
   fprintf(outfile, "(");
-  if (!formals) {
+  if (formals->length() == 0) {
     fprintf(outfile, "void");
   } else {
     bool first = true;

@@ -48,4 +48,5 @@ GEN_CFLAGS =
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
+GEN_CFLAGS += -Wall -Werror -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 endif

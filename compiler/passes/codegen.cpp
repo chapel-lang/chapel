@@ -551,6 +551,24 @@ static void codegen_header(void) {
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
     varSymbol->codegenDef(outfile);
   }
+
+  /** codegen headers for functions generated at codegen time **/
+  fprintf(outfile, "void CreateConfigVarTable(void);\n");
+  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+    if (dynamic_cast<EnumType*>(typeSymbol->type)) {
+      fprintf(outfile, "int _convert_string_to_enum");
+      typeSymbol->codegen(outfile);
+      fprintf(outfile, "(char* inputString, ");
+      typeSymbol->codegen(outfile);
+      fprintf(outfile, "* val);\n");
+      fprintf(outfile, "int setInCommandLine");
+      typeSymbol->codegen(outfile);
+      fprintf(outfile, "(char* varName, ");
+      typeSymbol->codegen(outfile);
+      fprintf(outfile, "* value, char* moduleName);\n");
+    }
+  }
+
   closeCFile(&header);
 }
 
