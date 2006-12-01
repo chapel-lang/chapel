@@ -87603,3 +87603,23 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+12/01/06 14:18:57 -- deitz
+
+Log message:
+	Fixed a bug in which prototypes in the generated code without argument
+	lists were not declared with 'void' as the argument list.
+	
+	Fixed a bug in which the few functions we put in the generated code
+	that are created during code generation (relating to enumerated types
+	and config variables) did not have prototypes.
+	
+	Applied all of the runtime warning flags to the generated list of
+	compilation flags if the developer flag is set.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/make/: Makefile.gnu 
+
