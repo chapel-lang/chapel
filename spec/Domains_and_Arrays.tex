@@ -513,125 +513,226 @@ indexed by the integers between one and five.
 \subsection{Sparse Domains and Arrays}
 \label{Sparse_Domains_and_Arrays}
 
-This section is forthcoming.
+\begin{implementation}
+Sparse domains are not yet implemented.
+\end{implementation}
 
-\subsubsection{Adding Indices to Sparse Domains}
-\label{Adding_Indices_to_Sparse_Domains}
+A sparse domain type is given by the syntax
+\begin{syntax}
+sparse-domain-type:
+  `sparse' `domain' ( domain-expression )
 
-This section is forthcoming.
+domain-expression:
+  expression
+\end{syntax}
+A sparse domain is a domain that contains a subset of the indices in
+the domain specified by the \sntx{domain-expression}, sometimes called
+the {\em base domain}.
 
-\subsubsection{Removing Indices from Sparse Domains}
-\label{Removing_Indices_from_Sparse_Domains}
+Arrays declared over sparse domains can be indexed by all of the
+indices in the base domain.  If the index is not part of the sparse
+domain, the element returned is called the {\em unrepresented
+element}.  It is an error to assign a value to the unrepresented
+element by indexing into the array and assigning it a value.  The
+unrepresented element can be set to any value but by default contains
+the default value associated with the element type of the array.
 
-This section is forthcoming.
+\subsubsection{Changing the Indices in Sparse Domains}
+
+Indices can be added or removed to sparse domains.  Sparse domains
+support a method \chpl{add} that takes an index and adds this index to
+the sparse domain.  All arrays declared over this sparse domain can
+now be assigned values corresponding to this index.
+
+Sparse domains support a method \chpl{remove} that takes an index and
+removes this index from the sparse domain.  The values in the arrays
+indexed by the removed index are lost.
+
+The operators \chpl{+=} and \chpl{-=} have special semantics for
+sparse domains; they are interpreted as calls to the \chpl{add}
+and \chpl{remove} methods respectively.  The statement
+\begin{chapel}
+D += i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.add(i);
+\end{chapel}
+Similarly, the statement
+\begin{chapel}
+D -= i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.remove(i);
+\end{chapel}
 
 \subsection{Indefinite Domains and Arrays}
 \label{Indefinite_Domains_and_Arrays}
 
-This section is forthcoming.
+An indefinite domain type can be defined over any scalar type and is
+given by the following syntax:
+\begin{syntax}
+sparse-domain-type:
+  `domain' ( scalar-type )
 
-\subsubsection{Indefinite Domain and Array Types}
-\label{Indefinite_Domain_and_Array_Types}
+scalar-type:
+  type
+\end{syntax}
+A scalar type is any primitive type, tuple of scalar types, or class,
+record, or union where all of the fields have scalar types.
+Enumerated types are scalar types but domains declared over enumerated
+types are described in~\rsec{Enumerated_Domains_and_Arrays}.  Arrays
+declared over indefinite domains are dictionaries mapping from values
+to variables.
 
-This section is forthcoming.
+\subsubsection{Changing the Indices in Indefinite Domains}
 
-\subsubsection{Indefinite Domain Index Types}
-\label{Indefinite_Domain_Index_Types}
+Like with sparse domains, indices can be added or removed to
+indefinite domains.  Indefinite domains support a method \chpl{add}
+that takes an index and adds this index to the indefinite domain.  All
+arrays declared over this indefinite domain can now be assigned values
+corresponding to this index.
 
-This section is forthcoming.
+Indefinite domains support a method \chpl{remove} that takes an index
+and removes this index from the indefinite domain.  The values in the
+arrays indexed by the removed index are lost.
 
-\subsubsection{Adding Indices to Indefinite Domains}
-\label{Adding_Indices_to_Indefinite_Domains}
+The operators \chpl{+=} and \chpl{-=} have special semantics for
+indefinite domains; they are interpreted as calls to the \chpl{add}
+and \chpl{remove} methods respectively.  The statement
+\begin{chapel}
+D += i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.add(i);
+\end{chapel}
+Similarly, the statement
+\begin{chapel}
+D -= i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.remove(i);
+\end{chapel}
 
-This section is forthcoming.
+\subsubsection{Testing Membership in Indefinite Domains}
 
-\subsubsection{Removing Indices from Indefinite Domains}
-\label{Removing_Indices_from_Indefinite_Domains}
-
-This section is forthcoming.
+An indefinite domain supports a \chpl{member?} method that can test
+whether a particular value is part of the index set. It
+returns \chpl{true} if the index is in the indefinite domain and
+otherwise returns false.
 
 \subsection{Opaque Domains and Arrays}
 \label{Opaque_Domains_and_Arrays}
 
-This section is forthcoming.
+\begin{implementation}
+Opaque domains are not yet implemented.
+\end{implementation}
 
-\subsubsection{Opaque Domain and Array Types}
-\label{Opaque_Domain_and_Array_Types}
+An opaque domain is a form of indefinite domain where there is no
+algebra on the types of the indices.  The indices are, in essence,
+opaque.  The opaque domain type is given by the following syntax:
+\begin{syntax}
+opaque-domain:
+  `opaque' `domain'
+\end{syntax}
 
-This section is forthcoming.
+New index values for opaque domains are explicitly requested via a
+method called \chpl{new}.  Indices can be removed by a method
+called \chpl{remove}.
 
-\subsubsection{Opaque Domain Index Types}
-\label{Opaque_Domain_Index_Types}
-
-This section is forthcoming.
-
-\subsubsection{Adding Indices to Opaque Domains}
-\label{Adding_Indices_to_Opaque_Domains}
-
-This section is forthcoming.
-
-\subsubsection{Removing Indices from Opaque Domains}
-\label{Removing_Indices_from_Opaque_Domains}
-
-This section is forthcoming.
+Opaque domains permit more efficient implementations than indefinite
+domains under the assumption that creation of new domain index values
+is rare.
 
 \subsection{Enumerated Domains and Arrays}
 \label{Enumerated_Domains_and_Arrays}
 
-This section is forthcoming.
+\begin{implementation}
+Enumerated domains are not yet implemented.
+\end{implementation}
 
-\subsubsection{Enumerated Domain and Array Types}
-\label{Enumerated_Domain_and_Array_Types}
+Enumerated domains are a special case of indefinite domains where the
+indices are the constants defined by an enumerated type.  Enumerated
+domains do not support the \chpl{add} or \chpl{remove} methods.  All
+of the constants defined by the enumerated type are indices into the
+enumerated domain.
 
-This section is forthcoming.
-
-\subsubsection{Enumerated Domain Index Types}
-\label{Enumerated_Domain_Index_Types}
-
-This section is forthcoming.
+An enumerated domain is specified as an indefinite domain would be
+except the type is an enumerated type rather than some other scalar
+type.
 
 \subsection{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
 
-This section is forthcoming.
+When an array is declared, it is linked during execution to the domain
+over which it was declared.  This linkage is constant and cannot be
+changed.
 
-\subsubsection{Preservative Reallocation of Arrays}
-\label{Preservative_Reallocation_of_Arrays}
+When indices are added or removed from a domain, the change impacts
+the arrays declared over this particular domain.  In the case of
+adding an index, an element is added to the array and initialized to
+the default value associated with the element type.  In the case of
+removing an index, the element in the array is removed.
 
-This section is forthcoming.
+When a domain is reassigned a new value, the array is also impacted.
+Values that could be indexed by both the old domain and the new domain
+are preserved in the array.  Values that could only be indexed by the
+old domain are lost.  Values that can only be indexed by the new
+domain have elements added to the new array and initialized to the
+default value associated with their type.
 
-\subsubsection{Destructive Reallocation of Arrays}
-\label{Destructive_Reallocation_of_Arrays}
-
-This section is forthcoming.
+For performance reasons, there is an expectation that a method will be
+added to domains to allow non-preserving assignment, {\em i.e.}, all
+values in the arrays associated with the assigned domain will be lost.
 
 \subsection{Subdomains}
 \label{Subdomains}
 
-This section is forthcoming.
+\begin{implementation}
+Subdomains are not yet implemented.
+\end{implementation}
 
-\subsubsection{Subdomain Definition}
-\label{Subdomain_Definition}
+A subdomain is a domain whose indices are indices of a {\em base
+  domain}.  A subdomain is specified by the following syntax:
+\begin{syntax}
+subdomain-type:
+  `domain' ( domain-expression )
+\end{syntax}
+The ordering of the indices in the subdomain is consistent with the
+ordering of the indices in the base domain.
 
-This section is forthcoming.
+Subdomains are verified during execution even as domains are
+reassigned.  The indices in a subdomain are known to be indices in a
+domain, allowing for fast bounds-checking.
 
-\subsubsection{Association of Subdomains to Domains}
-\label{Association_of_Subdomains_to_Domains}
+In the case of arithmetic domains, the subdomain literal may be
+composed of indefinite arithmetic sequences.  In such cases, the
+omitted bounds of the indefinite arithmetic sequences are taken from
+the bounds of the base domain.
 
-This section is forthcoming.
+\subsection{Predefined Functions and Methods on Domains}
 
-\subsection{Predefined Functions and Methods on Domains and Arrays}
+There is an expectation that this list of predefined functions and
+methods will grow.
 
-{\bf Functions and Methods on Domains}
-
-\begin{chapel}
-def Domain.numIndices: dim_type
-\end{chapel}
+\begin{protohead}
+def $Domain$.numIndices: dim_type
+\end{protohead}
+\begin{protobody}
 Returns the number of indices in the domain.
+\end{protobody}
 
-{\bf Functions and Methods on Arrays}
+\subsection{Predefined Functions and Methods on Arrays}
 
-\begin{chapel}
-def Array.numElements: this.domain.dim_type
-\end{chapel}
+There is an expectation that this list of predefined functions and
+methods will grow.
+
+\begin{protohead}
+def $Array$.numElements: this.domain.dim_type
+\end{protohead}
+\begin{protobody}
 Returns the number of elements in the array.
+\end{protobody}
