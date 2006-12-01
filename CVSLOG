@@ -87592,3 +87592,14 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+12/01/06 12:00:20 -- deitz
+
+Log message:
+	Undid last change as these options are not handled on gcc on the chap
+	servers.
+
+Modified files:
+	chapel/make/: Makefile.gnu 
+
