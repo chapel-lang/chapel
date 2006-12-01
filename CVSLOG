@@ -87465,3 +87465,15 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex 
 
+---------------------------------------------------------------------------
+
+11/30/06 16:48:18 -- deitz
+
+Log message:
+	Finished first pass over Domains and Arrays section.  Added keywords
+	sparse and opaque.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex chapel_listing.tex 
+	              syntax_listing.tex 
+
