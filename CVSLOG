@@ -87536,3 +87536,26 @@ Modified files:
 	chapel/runtime/src/: arg.c chplio.c chplmem.c chplmem_tests.c 
 	                     chpltypes.c config.c 
 
+---------------------------------------------------------------------------
+
+12/01/06 11:43:49 -- deitz
+
+Log message:
+	Refactored the code that prunes the AST after function resolution
+	(removes dead types and functions, removes method and setter tokens,
+	...) and added comments to this piece of code.
+	
+	Improved function resolution time by almost 8% due primarily to less
+	AST collection traversals.
+	
+	Added utility function get_string that takes an Expr* and returns a
+	char* if the Expr* is a string literal.  It fails if the Expr* is not
+	a string literal.  This complements the non-fatal get_string that
+	returns a bool if the Expr* is not a string literal and returns the
+	char* in a second argument passed by a pointer.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp symbol.cpp 
+	chapel/compiler/include/: astutil.h expr.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
