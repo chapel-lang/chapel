@@ -5,11 +5,46 @@
 
 \subsection{Getting Started}
 
-\subsection{Walk-Through: Jacobi}
+Consider the classic first program.  The program file,
+\chpl{helloworld.chpl} contains:
+\begin{chapel}
+def main() {
+  writeln("hello, world");
+}
+\end{chapel}
 
-\subsection{Walk-Through: Norm}
+The syntax of this simple program somewhat resembles C.  There are a
+few items to note.
+The program contains one module, \chpl{helloworld}, which is implicitly
+named from the name of the file.  The keyword \chpl{def} indicates that the
+definition of a function follows.
 
-\subsection{Walk-Through: Producer-Consumer}
+To compile and run this program, execute the following
+commands at the system prompt:
+\begin{verbatim} 
+> chpl helloworld.chpl
+> ./a.out
+\end{verbatim}
+The following output is shown:
+\begin{verbatim}
+> hello, world
+\end{verbatim}
+
+\subsection{Example: Jacobi}
+
+\subsection{Example: Norm}
+
+\subsection{Example: Producer-Consumer}
+The following example demonstrates a simple producer and consumer operation.
+The program contains a \chpl{sync} variable and a \chpl{begin} statement 
+in order to implement two concurrent threads that execute in step with each other.
+The consumer thread writes the value of the \chpl{sync} variable \chpl{s} at 
+each iteration.  It reads the value of \chpl{s} when it is ready to be read
+and leaves it in a state to be written.  The producer thread sleeps for
+the indicated amount of time and then assigns \chpl{s} to be the iteration
+number.  It writes the iteration number to \chpl{s} when it is ready to be written
+and leaves it in a state to be read.  Execution control switches between the
+two threads as the state of \chpl{s} changes when it is read and written to.
 
 \begin{numberedchapel}
 use Time;
@@ -31,7 +66,29 @@ for p in 1..numIterations {
 }
 \end{numberedchapel}
 
-\subsection{Walk-Through: Generic Stacks}
+This program uses the \chpl{sleep} function in line 15, which is provided in the
+standard Chapel module, \chpl{Time}.  The first line of the code \chpl{use Time} 
+indicates that the \chpl{Time} module is to be used when resolving function calls in 
+this program.  
+
+The two variables, \chpl{numIterations} and \chpl{sleepTime}, control
+the number of iterations for the loops in the producer and consumer threads
+and the amount of time in seconds for the producer thread to sleep each iteration,
+respectively.  Lines three and four give the declarations of these variables.
+The variable \chpl{numIterations} is declared to be an integer and is initialized
+to the default value 5.  The variable \chpl{sleepTime} is declared to be an 
+unsigned integer and is initialized to the default value 2.  
+Both of these variables are 32 bits, the default size of \chpl{int} and \chpl{uint} types.
+The \chpl{config} keyword indicates that these are configuration variable 
+declarations.  Configuration variables can be set at run-time, through command 
+command line switches.  For example, to change the number of iterations to 10
+and to change the number of seconds to sleep to 5, the following execution command 
+may be used:
+\begin{verbatim}
+> a.out --numIterations=10 --sleepTime=5
+\end{verbatim}
+
+\subsection{Example: Generic Stacks}
 
 \subsubsection{Generic Stack with Linked List Implementation}
 
