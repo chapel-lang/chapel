@@ -87739,3 +87739,15 @@ Added files:
 	                               jacobi-routine.good jacobi.chpl 
 	                               jacobi.good 
 
+---------------------------------------------------------------------------
+
+12/01/06 17:54:59 -- bradc
+
+Log message:
+	First pass at cleaning up norm example for release/spec.
+
+Modified files:
+	chapel/test/release/examples/: README 
+Added files:
+	chapel/test/release/examples/: norm.chpl norm.good 
+
