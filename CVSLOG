@@ -87682,3 +87682,13 @@ Modified files:
 Removed files:
 	chapel/test/distributions/bradc/foundations/: blockdist2.future 
 
+---------------------------------------------------------------------------
+
+12/01/06 16:32:04 -- marybeth
+
+Log message:
+	Completed the producer-consumer walk-through section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
