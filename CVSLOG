@@ -87692,3 +87692,50 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/01/06 17:39:10 -- bradc
+
+Log message:
+	Adding two jacobi codes to the release for consideration.
+	
+	  jacobi.chpl:  is a pretty straightforward implementation
+	  jacobi-routine.chpl: abstracts jacobi into a routine
+	
+	Based on the following, I suspect we'd want to remove
+	jacobi-routine.chpl from the release and use jacobi.chpl for the
+	walkthrough.
+	
+	Both codes contain workarounds:
+	
+	In both:
+	
+	1) Array slicing assignments:
+	
+	        A(ProblemSpace) = Temp(ProblemSpace);
+	   and
+	        Temp(ADomain) = A;
+	
+	   didn't seem to work.  Is this something we could generate a
+	   compiler error for -- it takes some effort to track down.
+	
+	In routine version:
+	
+	2) Can't seem to query both domain and type in one argument:
+	
+	        def foo(A: [?AD] ?t)
+	
+	3) Couldn't find a way to query the high bound of a dimension
+	   of an adomain.  Used _high for time being.
+	
+	4) Can't declare variables in tuple-destructuring style:
+	
+	        var (x,y) = foo();
+
+Modified files:
+	chapel/test/release/examples/: README 
+Added files:
+	chapel/test/release/examples/: jacobi-routine.chpl 
+	                               jacobi-routine.good jacobi.chpl 
+	                               jacobi.good 
+
