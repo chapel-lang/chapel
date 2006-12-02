@@ -87751,3 +87751,13 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: norm.chpl norm.good 
 
+---------------------------------------------------------------------------
+
+12/01/06 17:59:28 -- bradc
+
+Log message:
+	Second pass of norm code.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
