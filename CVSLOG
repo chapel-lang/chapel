@@ -87649,3 +87649,21 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/01/06 16:08:32 -- waynew
+
+Log message:
+	Added enumeration of bugs derived from the list of current future tests. Did
+	not include futures labeled as error message or semantic.  Some bugs are
+	listed under multiple sections.
+	
+	There are a couple futures that I could not come up with a concise
+	description of.  These are:
+	 - studies/hpcc/STREAMS/bradc/stream-slice
+	 - distributions/bradc/foundations/blockdist2
+
+Modified files:
+	./: STATUS 
+	chapel/test/parallel/sync/deitz/: test_sync2.future 
+
