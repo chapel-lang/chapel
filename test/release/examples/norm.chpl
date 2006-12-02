@@ -45,58 +45,46 @@ module Norm{
 module TestNorm {
   use Norm;
 
+  def testNorm(arr) {
+    var testType = if (arr.rank == 1) then "vector" else "matrix";
+    writeln("Test of ", testType, " norms.  Array = ");
+    writeln(arr);
+    writeln("1-norm = ", norm(arr, norm1));
+    if (arr.rank == 1) then
+      writeln("2-norm = " , norm(arr, norm2));
+    writeln("infinity norm = ", norm(arr, normInf));
+    if (arr.rank == 2) then
+      writeln("frobenius norm = ", norm(arr, normFrob));
+    writeln("default norm = ", norm(arr));
+    writeln();
+  }
+
   def main() {
     const D1 = [1..5];
     var a:[D1] real;
     a = 2.0;
-    writeln("Test of vector norms.  x = ");
-    writeln(a);
-    writeln("1-norm = ", norm(a, norm1));
-    writeln("2-norm = " , norm(a, norm2));
-    writeln("infinity norm = ", norm(a, normInf));
-    writeln("default norm = ", norm(a));
-    writeln();
+    testNorm(a);
 
     const D2 = [1..2,1..2];
     var b:[D2] real;
     b = 2.0;
-    writeln("Test of matrix norms.  A = ");
-    writeln(b);
-    writeln("1-norm = ", norm(b, norm1));
-    writeln("infinity norm = ", norm(b, normInf));
-    writeln("frobenius norm = ", norm(b, normFrob));
-    writeln("default norm = ", norm(b));
-    writeln();
+    testNorm(b);
 
     const D3 = [1..3,1..2];
     var c:[D3] real;
     c = 2.0;
-    writeln("Test of matrix norms.  A = ");
-    writeln(c);
-    writeln("1-norm = " , norm(c, norm1));
-    writeln("infinity norm = ", norm(c, normInf));
-    writeln("frobenius norm = ", norm(c, normFrob));
-    writeln("default norm = ", norm(c));
-    writeln();
+    testNorm(c);
 
     var d:[D2] int;
     d = 1;
-    writeln("Test of matrix norms.  A = ");
-    writeln(d);
-    writeln("1-norm = ", norm(d, norm1));
-    writeln("infinity norm = ", norm(d, normInf));
-    writeln("frobenius norm = ", norm(d, normFrob));
-    writeln("default norm = ", norm(d));
-    writeln();
+    testNorm(d);
 
     var e:[D2] complex;
     e = 1.0 + 1.0i;
-    writeln("Test of matrix norms.  A = ");
-    writeln(e);
-    writeln("1-norm = ", norm(e, norm1));
-    writeln("infinity norm = ", norm(e, normInf));
-    writeln("frobenius norm = ", norm(e, normFrob));
-    writeln("default norm = ", norm(e));
-    writeln();
+    testNorm(e);
+
+    var f: [1..2, 1..3, 1..4] real = 0.0;
+    //    norm(f, norm1);
+    //    norm(f);
   }
 }
