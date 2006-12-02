@@ -87667,3 +87667,18 @@ Modified files:
 	./: STATUS 
 	chapel/test/parallel/sync/deitz/: test_sync2.future 
 
+---------------------------------------------------------------------------
+
+12/01/06 16:19:30 -- bradc
+
+Log message:
+	Original reason for filing this future was resolved,
+	and another error was preventing it from passing.
+	Fixed test and output, test now works.
+
+Modified files:
+	chapel/test/distributions/bradc/foundations/: blockdist2.chpl 
+	                                              blockdist2.good 
+Removed files:
+	chapel/test/distributions/bradc/foundations/: blockdist2.future 
+
