@@ -87761,3 +87761,16 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl 
 
+---------------------------------------------------------------------------
+
+12/01/06 18:09:19 -- bradc
+
+Log message:
+	Final edits to norm example.  This is a really
+	good example, and I'm happy with this code.
+	No workarounds, I believe.  Comments from others
+	welcome.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl norm.good 
+
