@@ -2739,8 +2739,8 @@ See also `chpl-font-lock-extra-types'.")
 	  (cons
 	   ,(eval-when-compile
 	      (regexp-opt
-	       '("bool" "complex" "domain" "float" "index" "int" "string" 
-                 "subdomain" "uint" "void")))
+	       '("bool" "complex" "domain" "imag" "index" "int" "real" 
+                 "string" "subdomain" "uint" "void")))
 	   chpl-font-lock-extra-types)
 	  "\\|"))
        (chpl-type-names-depth
