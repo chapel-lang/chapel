@@ -1,11 +1,10 @@
 This file contains an up-to-date list of unimplemented features and
-bugs in the compiler.  This list is not meant to be complete as the
+known bugs in the compiler.  This list is not meant to be complete as the
 language is still being defined.  In particular, missing functions
 from the standard modules are not enumerated.
 
 Variables and Types
 ===================
-
   * Variable declarations in a tuple
   * Non-ASCII strings
   * Functions to change strings to other primitive types
@@ -15,26 +14,46 @@ Variables and Types
   * Casts are not promoted.
   * Conditional expressions of parameters are not folded.
 
+  * bugs
+    - Casting (real(32), real(32)) to complex(128).
+    - Casting uint(64) to complex.
+    - Class constructor with type argument.
+    - Accessing type field in class.
+    - Casting and multiplying interpreted as homogeneous tuple cast.
+    - Const assignment error detection fails.
+    - Real literal initizalizer for real(32) type.
+    - Allow use before def of globals.
+    - Parameter folding on bools and uint<->int.
+    - Parameter folding/const across modules.
+    - Iterators with parameter args.
+    - Type definition across modules.
+
 Modules
 =======
-
   * The argv sequence
   * Accessing variables via explicit names, e.g., mod.x
   * Using modules not explicitly passed to the compiler
 
+  * bugs
+    - Type definition across modules.
+    - Param/const variables across modules.
+
 Functions
 =========
-
   * Formal arguments in a tuple
   * Intents
   * Functions as variables and/or arguments to functions
-  * Formal arguments of tuple type must match actual arguments
-    exactly.
+  * Formal arguments of tuple type must match actual arguments exactly.
   * Promotion over lvalue functions does not work.
+
+  * bugs
+    - Function call expression return with generic functions or variable argument functions.
+    - Formal argument initializer type should determine type constraints?
+    - Actuals are not copied within the callee.
+    - Function visibility/scoping with functions having the same name.
 
 Classes, Records, and Unions
 ============================
-
   * Nested classes and records
   * Chained constructor calls for derived classes
   * Shadowing base class fields
@@ -44,19 +63,37 @@ Classes, Records, and Unions
   * Type select on unions
   * Assignment between classes and records
 
+  * bugs
+    - Class constructor with type argument.
+    - Class array field with type via typedef.
+    - Class iterators
+    - External access to a type field defined in the class.
+    - Class const field initialized with conditional with const expression.
+    - Generic class using the type as default value of generics.
+    - Initialization of generic subclass with generic parent
+
 Tuples, Sequences, and Iterators
 ================================
-
   * Ignoring values via underscores
   * Implicit reductions in conditional, while, and select statements
   * The transpose, spread, and reshape functions
   * Indexing by indefinite arithmetic sequences
   * Zipper iteration bounds matching
-  * Iterators cannot be methods.
+
+  * bugs
+    - Casting a tuple (real, real) to complex.
+    - Iterators cannot be methods.
+    - Iterator with tuple return type such as rank*int.
+    - Iterator with side effects; effect happens more than # of iterations.
+    - Iterators with parameter args.
+    - Iterators with param locals.
+    - Iterators with intents.
+    - Recursive iterators.
+    - Equality comparison of integer and sequence of integer (other types?).
+    - Sequence element assignment via sequence value fails (setter of setter).
 
 Arrays and Domains
 ==================
-
   * Sparse arrays and domains
   * Opaque arrays and domains
   * Enumerated arrays and domains
@@ -65,14 +102,22 @@ Arrays and Domains
   * Subdomains
   * Array promotion returns sequences.
 
+  * bugs
+    - Using a domain that has a param as part of its definition. Param rank:int=1; var rankD:domain(1)=[1..rank]; var mylo:[rankD] int;.
+    - Tuple domains (e.g., var td: domain((int, int))).
+    - Uint domain with uint stride does not work.
+    - Anonymous domain in iterator.
+    - Element-wise negation of arrays with complex type.
+    - Array of sync/single variables.
+    
 Generics
 ========
-
+  * bugs
+    - Function w/out return type and has type select with returns.
 
 
 Parallelism and Synchronization
 ===============================
-
   * Atomic statements
   * Serial statements
   * User-defined reductions and scans
@@ -81,12 +126,26 @@ Parallelism and Synchronization
   * Array and sequence operations and assignment are serialized.
 
   * bugs
-    * arrays of synchronization variables
-    * begin blocks that use class variables
-    * begin blocks that reference function arguments
+    - Arrays of synchronization variables.
+    - Begin blocks that use class variables.
+    - Begin blocks that use sync/single variables that are locals.
+    - Begin blocks that reference function arguments.
 
 Locality and Distributions
 ==========================
-
   * Locales
   * Distributions
+
+
+Standard Library
+================
+  * bugs
+    - log2(n):int != log2(n:int)
+ 
+
+compiler
+========
+* bugs
+  - error messages
+  - print unknown compiler argument
+  - help message printing config vars and their values
