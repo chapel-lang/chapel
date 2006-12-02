@@ -53,13 +53,3 @@ for loc in localeD {
   }
   writeln("]");
 }
-
-
-def min(type t): int {
-  return -999;
-}
-
-
-def max(type t): int {
-  return 999;
-}

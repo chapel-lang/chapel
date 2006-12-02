@@ -1,6 +1,0 @@
-deitz/bradc
-
-the problem
-is that we don't yet support array initializers that rely
-on an index from the array's domain declaration.
-
