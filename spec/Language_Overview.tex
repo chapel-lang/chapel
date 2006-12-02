@@ -35,16 +35,20 @@ The following output is shown:
 \subsection{Example: Norm}
 
 \subsection{Example: Producer-Consumer}
-The following example demonstrates a simple producer and consumer operation.
+The following example demonstrates a simple producer and consumer program.
 The program contains a \chpl{sync} variable and a \chpl{begin} statement 
 in order to implement two concurrent threads that execute in step with each other.
-The consumer thread writes the value of the \chpl{sync} variable \chpl{s} at 
-each iteration.  It reads the value of \chpl{s} when it is ready to be read
-and leaves it in a state to be written.  The producer thread sleeps for
+The new thread that is forked by the \chpl{begin} statement will be referred to as
+the {\em consumer thread}.  The continuing thread will be referred to as the
+{\em producer thread}.  The consumer thread writes the value of the \chpl{sync} 
+variable \chpl{s} at each iteration.  It reads the value of \chpl{s} when it is 
+ready to be read and leaves it in a state that allows it to be written.  
+The producer thread sleeps for
 the indicated amount of time and then assigns \chpl{s} to be the iteration
 number.  It writes the iteration number to \chpl{s} when it is ready to be written
 and leaves it in a state to be read.  Execution control switches between the
 two threads as the state of \chpl{s} changes when it is read and written to.
+The Chapel code for this example is given below.
 
 \begin{numberedchapel}
 use Time;
@@ -66,27 +70,95 @@ for p in 1..numIterations {
 }
 \end{numberedchapel}
 
-This program uses the \chpl{sleep} function in line 15, which is provided in the
-standard Chapel module, \chpl{Time}.  The first line of the code \chpl{use Time} 
-indicates that the \chpl{Time} module is to be used when resolving function calls in 
-this program.  
+The program uses the \chpl{sleep} function in line 15, which is provided in the
+standard Chapel module, \chpl{Time}.  So, the first line, \chpl{use Time}, 
+is needed to include the \chpl{Time} module when resolving 
+function calls in this program.  
 
 The two variables, \chpl{numIterations} and \chpl{sleepTime}, control
-the number of iterations for the loops in the producer and consumer threads
+the number of iterations for the loops in the two threads
 and the amount of time in seconds for the producer thread to sleep each iteration,
 respectively.  Lines three and four give the declarations of these variables.
 The variable \chpl{numIterations} is declared to be an integer and is initialized
 to the default value 5.  The variable \chpl{sleepTime} is declared to be an 
 unsigned integer and is initialized to the default value 2.  
 Both of these variables are 32 bits, the default size of \chpl{int} and \chpl{uint} types.
-The \chpl{config} keyword indicates that these are configuration variable 
-declarations.  Configuration variables can be set at run-time, through command 
-command line switches.  For example, to change the number of iterations to 10
+The \chpl{config} keyword in front of these two variable declarations 
+indicates that these are configuration variables.  Configuration variables 
+can be set at run-time to override default values, through command 
+line switches.  For example, to change the number of iterations to 10
 and to change the number of seconds to sleep to 5, the following execution command 
 may be used:
 \begin{verbatim}
 > a.out --numIterations=10 --sleepTime=5
 \end{verbatim}
+
+In line six, the variable \chpl{s} is declared to be a \chpl{sync} variable 
+of type \chpl{int}.  Sync variables have extra state associated with them to 
+indicate whether they are logically {\em full} or {\em empty}.  Since \chpl{s}
+is not initialized, its state is empty at the beginning of the program's execution.
+A sync variable
+is intended to be accessed by multiple concurrent threads, each of which may
+change the contents and state of the variable.  A sync variable
+can be read when its state is full.  Attempts to read an empty sync variable from one
+thread will suspend until another thread changes its state to full.  Once the thread
+is able to read a sync variable, its state is atomically set to empty.  
+Conversely, a sync variable can be written only when its state is empty.  Attempts
+to write to a full sync variable will suspend until its state is empty.  Once the variable
+is written to, the state is atomically set to full.  Sync variables are useful
+to coordinate operations between threads.  In this program, \chpl{s} is used
+to alternate execution between the producer and consumer threads.
+
+The remainder of the code defines the consumer and producer threads.
+The \chpl{begin} statement in line 8 forks a new
+thread for the consumer operations.  This consumer thread executes the \chpl{for}
+loop in lines 9 and 10.  This loop is indexed by \chpl{c}, which iterates over
+the arithmetic sequence \chpl{1..numIterations}.  The variable \chpl{c} is a new
+variable defined for the scope of the loop.  Its type is inferred to be integer from
+the integer arithmetic sequence that follows.  During each iteration of the \chpl{for}
+loop, the \chpl{writeln} function is called which outputs the string
+literal \chpl{"consumer got "} and the value of the sync variable \chpl{s}, 
+followed by a line break.  In order to print the value stored in \chpl{s}, the
+sync variable is read only when its state is full.  Once \chpl{s} is successfully
+read, its state will be set to empty.  The next iteration follows, and the 
+thread will suspend execution until the state of \chpl{s} is made full again.
+Since the consumer thread only reads \chpl{s}, it will be the producer thread
+that changes the states of \chpl{s} to full.
+
+The producer thread executes the \chpl{for} loop in lines 14 through 17.  This
+loop is indexed by \chpl{p} which iterates over the same arithmetic sequence
+as the consumer thread.  Like \chpl{c}, \chpl{p} is inferred to be an integer.
+During each iteration of this \chpl{for} loop, the \chpl{sleep} function is
+called with the argument\chpl{sleepTime}.  This \chpl{sleep} function is provided
+in the \chpl{Time} standard module, and it cause the producer thread to
+\chpl{sleepTime} seconds.  After returning from the \chpl{sleep} function, 
+the producer thread assigns \chpl{s} to be the iteration number \chpl{p}.  
+Because \chpl{s} is a sync variable, this assigment is executed only when the state of 
+\chpl{s} is empty.  Once \chpl{s} is written, its state is changed to full and the
+next iteration of the producer loop follows.  Since the producer thread only
+writes \chpl{s}, it will be the consumer thread that changes the state of
+\chpl{s} to empty allowing the next iteration to write its iteration number
+to \chpl{s}.
+
+When this program executes, a thread is forked for the consumer thread.
+However, the consumer thread cannot read \chpl{s} before it has been written
+to.  So, execution begins with the producer thread which assigns the value
+\chpl{1} to \chpl{s} after calling the sleep function.  Once \chpl{s} has the
+value \chpl{1}, the consumer thread can read it and print it.  Execution
+switches back and forth between the producer and consumer threads for
+\chpl{numIterations}.  
+
+Running the program with the default 
+values for \chpl{numIterations} or \chpl{sleepTime} results in: 
+\begin{verbatim}
+consumer got 1
+consumer got 2
+consumer got 3
+consumer got 4
+consumer got 5
+\end{verbatim}
+Each line is printed after a delay of \chpl{sleepTime} seconds.
+
 
 \subsection{Example: Generic Stacks}
 
