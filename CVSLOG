@@ -87774,3 +87774,15 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl norm.good 
 
+---------------------------------------------------------------------------
+
+12/01/06 18:12:47 -- bradc
+
+Log message:
+	Just noticed that I never changed this
+	to color "real" and "imag" rather than
+	"float"...
+
+Modified files:
+	chapel/etc/emacs/21.4/: font-lock.el 
+
