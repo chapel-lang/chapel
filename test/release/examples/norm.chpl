@@ -13,25 +13,14 @@ module Norm{
 
   def norm(x:[?D], p: normType) where x.rank == 2 {
     select (p) {
-      when norm1 {
-        var maxColSum = abs(x(1,1));
-        for j in D(2) {
-          maxColSum = max(maxColSum,+ reduce abs(x[D(1),j]));
-        }
-        return maxColSum;
-      }
+      when norm1 do
+        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j]));
 
-      when norm2 {
+      when norm2 do
         halt("Haven't implemented 2-norm for 2D arrays yet");
-      }
 
-      when normInf {
-        var maxRowSum = abs(x(1,1));
-        for i in D(1) {
-          maxRowSum = max(maxRowSum,+ reduce abs(x[i,D(2)]));
-        }
-        return maxRowSum;
-      }
+      when normInf do
+        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)]));
 
       when normFrob do return sqrt(+ reduce abs(x));
 
@@ -40,17 +29,16 @@ module Norm{
   }
 
   def norm(x:[?D], p: normType) where x.rank > 2 {
-    compilerError("Norms not implemented for arrays greater than 2D");
+    compilerError("Norms not implemented for array ranks > 2D");
   }
 
   def norm(x: []) {
     select (x.rank) {
       when 1 do return norm(x, norm2);
       when 2 do return norm(x, normFrob);
-      otherwise compilerError("Norms not implemented for arrays greater than 2D");
+      otherwise compilerError("Norms not implemented for array ranks > 2D");
     }
   }
-
 }
 
 
