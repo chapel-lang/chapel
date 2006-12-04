@@ -87854,3 +87854,16 @@ Modified files:
 Added files:
 	chapel/test/types/seq/deitz/: test_aseq5.chpl test_aseq5.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 11:46:35 -- deitz
+
+Log message:
+	Added a flag "--warn-promotion" to print a warning for each call that
+	requires scalar promotion.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
