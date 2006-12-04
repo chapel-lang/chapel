@@ -32,9 +32,27 @@ class _array {
   def this(d: _domain)
     return _value.slice(d._value);
 
-  def =this(d: _domain, val: elt_type) {
-    for i in d do
-      this(i) = val;
+  def this(i: _aseq(dom._dim_index_type) ...rank) {
+    var d = [(...i)];
+    return _value.slice(d._value);
+  }
+
+  def this(d: _domain, val) {
+    _value.slice(d._value) = val;
+  }
+
+  def this(d: _domain, val: elt_type) {
+    _value.slice(d._value) = val;
+  }
+
+  def this(i: _aseq(dom._dim_index_type) ...rank, val) where rank > 0 {
+    var d = [(...i)];
+    _value.slice(d._value) = val;
+  }
+
+  def this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) where rank > 0 {
+    var d = [(...i)];
+    _value.slice(d._value) = val;
   }
 
   def this(i: dom._index_type)
@@ -43,19 +61,12 @@ class _array {
   def this(i: dom._dim_index_type ...rank) where rank > 1
     return _value(i);
 
-  def this(i: _aseq(dom._dim_index_type) ...rank)
-    return _value((...i));
-
   def =this(i: dom._index_type, val: elt_type) {
     _value(i) = val;
   }
 
   def =this(i: dom._dim_index_type ...rank, val: elt_type) where rank > 1 {
     _value(i) = val;
-  }
-
-  def =this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) {
-    _value((...i)) = val;
   }
 
   def getHeadCursor()
@@ -533,7 +544,7 @@ class _aarray: _abase {
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
-  def slice(d: _adomain) {
+  def checkSlice(d: _adomain) {
     if rank != d.rank then
       halt("array rank change not supported");
     for param i in 1..rank {
@@ -542,6 +553,10 @@ class _aarray: _abase {
       if d(i)._stride % dom(i)._stride != 0 then
         halt("stride of array slice is not multiple of stride in dimension ", i);
     }
+  }
+
+  def slice(d: _adomain) {
+    checkSlice(d);
     var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
@@ -552,6 +567,20 @@ class _aarray: _abase {
       alias.orig(i) = orig(i);
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
+  }
+
+  def =slice(d: _adomain, val) {
+    checkSlice(d);
+    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
+    alias.data = data;
+    alias.size = size;
+    for param i in 1..rank {
+      alias.off(i) = off(i);
+      alias.blk(i) = blk(i);
+      alias.str(i) = str(i);
+      alias.orig(i) = orig(i);
+    }
+    alias.assign(val);
   }
 
   // when condition compares d.type to dom.type
