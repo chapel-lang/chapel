@@ -42,6 +42,7 @@ bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
+bool fWarnPromotion = false;
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
@@ -103,6 +104,7 @@ static ArgumentDescription arg_desc[] = {
  {"nostdincs", ' ', "Don't use standard modules", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"warn-promotion", ' ', "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
 
  {0}
 };

@@ -675,124 +675,6 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
-static FnSymbol*
-resolve_call(CallExpr* call,
-             char *name,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names) {
-  Vec<FnSymbol*> visibleFns;                    // visible functions
-
-  Vec<FnSymbol*> candidateFns;
-  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
-
-  if (!call->isResolved())
-    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
-  else
-    visibleFns.add(call->isResolved());
-
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (call->methodTag && !visibleFn->noParens)
-      continue;
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 actual_types, actual_params, actual_names);
-  }
-
-  FnSymbol* best = NULL;
-  Vec<ArgSymbol*>* actual_formals = 0;
-  best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                               actual_types, actual_params,
-                               &actual_formals);
-
-  // use visibility and then look for best again
-  if (!best && candidateFns.n > 1) {
-    disambiguate_by_scope(call->parentScope, &candidateFns);
-    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 actual_types, actual_params,
-                                 &actual_formals);
-  }
-
-  if (!best && candidateFns.n > 0) {
-    for (int i = 0; i < candidateFns.n; i++) {
-      if (candidateFns.v[i]) {
-        resolve_call_error_candidates.add(candidateFns.v[i]);
-      }
-    }
-    resolve_call_error = CALL_AMBIGUOUS;
-    best = NULL;
-  } else if (call->partialTag && (!best || !best->noParens)) {
-    resolve_call_error = CALL_PARTIAL;
-    best = NULL;
-  } else if (!best) {
-    for (int i = 0; i < visibleFns.n; i++) {
-      if (visibleFns.v[i]) {
-        resolve_call_error_candidates.add(visibleFns.v[i]);
-      }
-    }
-    resolve_call_error = CALL_UNKNOWN;
-    best = NULL;
-  } else {
-    best = build_default_wrapper(best, actual_formals);
-    best = build_order_wrapper(best, actual_formals);
-    best = build_promotion_wrapper(best, actual_types, actual_params, call->square);
-    best = build_coercion_wrapper(best, actual_types, actual_params);
-  }
-
-  for (int i = 0; i < candidateActualFormals.n; i++)
-    delete candidateActualFormals.v[i];
-
-  return best;
-}
-
-static void
-computeActuals(CallExpr* call,
-               Vec<Type*>* atypes,
-               Vec<Symbol*>* aparams,
-               Vec<char*>* anames) {
-  for_actuals(actual, call) {
-    atypes->add(actual->typeInfo());
-    SymExpr* symExpr;
-    if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
-      anames->add(named->name);
-      symExpr = dynamic_cast<SymExpr*>(named->actual);
-    } else {
-      anames->add(NULL);
-      symExpr = dynamic_cast<SymExpr*>(actual);
-    }
-    if (symExpr)
-      aparams->add(symExpr->var);
-    else
-      aparams->add(NULL);
-  }
-}
-
-static Type*
-resolve_type_expr(Expr* expr) {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, expr);
-
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->parentSymbol) {
-        callStack.add(call);
-        resolveCall(call);
-        FnSymbol* fn = call->isResolved();
-        if (fn && call->parentSymbol) {
-          resolveFormals(fn);
-          if (call->typeInfo() == dtUnknown)
-            resolveFns(fn);
-        }
-        callStack.pop();
-      }
-    }
-  }
-  Type* t = expr->typeInfo();
-  if (t == dtUnknown)
-    INT_FATAL(expr, "Unable to resolve type expression");
-  return t;
-}
-
-
 char* call2string(CallExpr* call,
                   char* name,
                   Vec<Type*>& atypes,
@@ -896,6 +778,132 @@ char* fn2string(FnSymbol* fn) {
   if (!fn->noParens)
     str = stringcat(str, ")");
   return str;
+}
+
+
+static FnSymbol*
+resolve_call(CallExpr* call,
+             char *name,
+             Vec<Type*>* actual_types,
+             Vec<Symbol*>* actual_params,
+             Vec<char*>* actual_names) {
+  Vec<FnSymbol*> visibleFns;                    // visible functions
+
+  Vec<FnSymbol*> candidateFns;
+  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+
+  if (!call->isResolved())
+    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
+  else
+    visibleFns.add(call->isResolved());
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (call->methodTag && !visibleFn->noParens)
+      continue;
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
+                 actual_types, actual_params, actual_names);
+  }
+
+  FnSymbol* best = NULL;
+  Vec<ArgSymbol*>* actual_formals = 0;
+  best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                               actual_types, actual_params,
+                               &actual_formals);
+
+  // use visibility and then look for best again
+  if (!best && candidateFns.n > 1) {
+    disambiguate_by_scope(call->parentScope, &candidateFns);
+    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                 actual_types, actual_params,
+                                 &actual_formals);
+  }
+
+  if (!best && candidateFns.n > 0) {
+    for (int i = 0; i < candidateFns.n; i++) {
+      if (candidateFns.v[i]) {
+        resolve_call_error_candidates.add(candidateFns.v[i]);
+      }
+    }
+    resolve_call_error = CALL_AMBIGUOUS;
+    best = NULL;
+  } else if (call->partialTag && (!best || !best->noParens)) {
+    resolve_call_error = CALL_PARTIAL;
+    best = NULL;
+  } else if (!best) {
+    for (int i = 0; i < visibleFns.n; i++) {
+      if (visibleFns.v[i]) {
+        resolve_call_error_candidates.add(visibleFns.v[i]);
+      }
+    }
+    resolve_call_error = CALL_UNKNOWN;
+    best = NULL;
+  } else {
+    best = build_default_wrapper(best, actual_formals);
+    best = build_order_wrapper(best, actual_formals);
+
+    FnSymbol* promoted = build_promotion_wrapper(best, actual_types, actual_params, call->square);
+    if (promoted != best) {
+      if (fWarnPromotion) {
+        char* str = call2string(call, name, *actual_types, *actual_params, *actual_names);
+        USR_WARN(call, "promotion on %s", str);
+      }
+      best = promoted;
+    }
+    best = build_coercion_wrapper(best, actual_types, actual_params);
+  }
+
+  for (int i = 0; i < candidateActualFormals.n; i++)
+    delete candidateActualFormals.v[i];
+
+  return best;
+}
+
+static void
+computeActuals(CallExpr* call,
+               Vec<Type*>* atypes,
+               Vec<Symbol*>* aparams,
+               Vec<char*>* anames) {
+  for_actuals(actual, call) {
+    atypes->add(actual->typeInfo());
+    SymExpr* symExpr;
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
+      anames->add(named->name);
+      symExpr = dynamic_cast<SymExpr*>(named->actual);
+    } else {
+      anames->add(NULL);
+      symExpr = dynamic_cast<SymExpr*>(actual);
+    }
+    if (symExpr)
+      aparams->add(symExpr->var);
+    else
+      aparams->add(NULL);
+  }
+}
+
+static Type*
+resolve_type_expr(Expr* expr) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, expr);
+
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->parentSymbol) {
+        callStack.add(call);
+        resolveCall(call);
+        FnSymbol* fn = call->isResolved();
+        if (fn && call->parentSymbol) {
+          resolveFormals(fn);
+          if (call->typeInfo() == dtUnknown)
+            resolveFns(fn);
+        }
+        callStack.pop();
+      }
+    }
+  }
+  Type* t = expr->typeInfo();
+  if (t == dtUnknown)
+    INT_FATAL(expr, "Unable to resolve type expression");
+  return t;
 }
 
 
