@@ -87934,3 +87934,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: jacobi-routine.chpl jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+12/04/06 14:05:46 -- marybeth
+
+Log message:
+	Updated the producer-consumer example walkthrough with my own changes and
+	Steve's.  I added the jacobi and norm examples.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
