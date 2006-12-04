@@ -71,8 +71,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
-	@echo "Updating TAGS..."
-	@etags $(ALL_SRCS) */*.h
+	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags $(ALL_SRCS) */*.h) || echo "etags not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
 $(CHPL_BIN_DIR):

@@ -51,8 +51,7 @@ depend: $(PLATFORM_DIR)
 
 $(CHPL_RT_LIB): $(CHPL_RT_OBJS)
 	$(AR) -rc $@ $(CHPL_RT_OBJS)
-	@echo "Updating TAGS..."
-	@etags -o ../TAGS $(CHPL_RT_SRCS) ../include/*.h
+	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o ../TAGS $(CHPL_RT_SRCS) ../include/*.h) || echo "etags not available"
 
 $(CHPL_RT_DIR)/main.o: $(PLATFORM)/main.o
 	cp $< $@
