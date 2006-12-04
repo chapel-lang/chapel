@@ -87830,3 +87830,13 @@ Added files:
 	                           test_assign_slice2.chpl 
 	                           test_assign_slice2.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 10:59:19 -- deitz
+
+Log message:
+	Removed a .future that is now working.
+
+Removed files:
+	chapel/test/arrays/bradc/: sliceassign.future 
+
