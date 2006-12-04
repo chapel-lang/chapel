@@ -87867,3 +87867,19 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/04/06 12:09:54 -- bradc
+
+Log message:
+	Updated jacobis w.r.t. Steve's recent bug fixes/feature
+	improvements.  Filed a future against slicing with square
+	brackets to complement my earlier one.
+
+Modified files:
+	chapel/test/release/examples/: jacobi-routine.chpl jacobi.chpl 
+Added files:
+	chapel/test/arrays/bradc/: sliceassignsquare.chpl 
+	                           sliceassignsquare.future 
+	                           sliceassignsquare.good 
+
