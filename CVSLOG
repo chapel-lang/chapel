@@ -87918,3 +87918,19 @@ Added files:
 Removed files:
 	chapel/test/arrays/bradc/: sliceassignsquare.future 
 
+---------------------------------------------------------------------------
+
+12/04/06 12:33:24 -- bradc
+
+Log message:
+	Updated jacobi tests.  I think jacobi.chpl
+	is now in a good format for publishing (modulo
+	comments from others).  jacobi-routine.chpl
+	could still be made better once we can query
+	the array argument's domain and type (in
+	particular, the jacobi can be made generic
+	across array types).x
+
+Modified files:
+	chapel/test/release/examples/: jacobi-routine.chpl jacobi.chpl 
+
