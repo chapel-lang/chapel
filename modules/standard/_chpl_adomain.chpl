@@ -37,20 +37,20 @@ class _array {
     return _value.slice(d._value);
   }
 
-  def this(d: _domain, val) {
+  def =this(d: _domain, val) {
     _value.slice(d._value) = val;
   }
 
-  def this(d: _domain, val: elt_type) {
+  def =this(d: _domain, val: elt_type) {
     _value.slice(d._value) = val;
   }
 
-  def this(i: _aseq(dom._dim_index_type) ...rank, val) where rank > 0 {
+  def =this(i: _aseq(dom._dim_index_type) ...rank, val) where rank > 0 {
     var d = [(...i)];
     _value.slice(d._value) = val;
   }
 
-  def this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) where rank > 0 {
+  def =this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) where rank > 0 {
     var d = [(...i)];
     _value.slice(d._value) = val;
   }
