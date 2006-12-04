@@ -8,7 +8,7 @@ def main() {
 
   var A, Temp: [BigDomain] real = 0.0;
 
-  [j in 1..n] A(n+1, j) = 1.0;
+  A[n+1, 1..n] = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");
@@ -22,8 +22,8 @@ def main() {
     forall (i,j) in ProblemSpace do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
 
-    delta = max reduce [ij in ProblemSpace] abs(Temp(ij) - A(ij));
-    A(ProblemSpace) = Temp(ProblemSpace);
+    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
+    A[ProblemSpace] = Temp[ProblemSpace];
 
     iteration += 1;
 

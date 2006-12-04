@@ -22,7 +22,7 @@ def jacobi(A: [?ADomain] real) {
   var Temp: [BigDomain] real;
   const highRow = ADomain(1).high;
 
-  [j in ADomain(2)] Temp(highRow+1, j) = 1.0;
+  Temp[highRow+1, ADomain(2)] = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");
@@ -33,7 +33,7 @@ def jacobi(A: [?ADomain] real) {
       delta: real;
 
   do {
-    Temp(ADomain) = A;
+    Temp[ADomain] = A;
 
     forall (i,j) in ADomain do
       A(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
