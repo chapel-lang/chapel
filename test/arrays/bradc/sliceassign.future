@@ -1,0 +1,4 @@
+array slicing
+
+Assigning an array using a slice seems to result in the
+wrong answer.

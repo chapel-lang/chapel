@@ -1,0 +1,4 @@
+query variables
+
+It appears that when querying both an array's domain and its
+element type, a syntax error is triggered.
