@@ -2,9 +2,9 @@
 
 var n: int = 6;
 var Full: domain(2) = [1..n,1..n];
-var Inner: subdomain(Full) = [2..n-1,2..n-1];
+var Inner: domain(2) = [2..n-1,2..n-1]; // should be a subdomain of Full
 var A: [Full] real, B: [Full] real;
-var threshold: real = 0.1;
+var threshold: real = 0.00001;
 
 def main() {
   initialize();

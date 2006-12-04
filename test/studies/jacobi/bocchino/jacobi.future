@@ -1,0 +1,4 @@
+subdomains
+
+This version uses a subdomain -- jacobi.workaround.chpl was
+created to make a currently-working version that does not.
