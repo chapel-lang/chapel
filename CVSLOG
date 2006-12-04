@@ -87786,3 +87786,26 @@ Log message:
 Modified files:
 	chapel/etc/emacs/21.4/: font-lock.el 
 
+---------------------------------------------------------------------------
+
+12/04/06 10:47:31 -- bradc
+
+Log message:
+	Two futures that came up while putting together
+	jacobi examples:
+	
+	  1) querying both the domain and element type of
+	     an array argument results in a syntax error.
+	
+	  2) slicing the LHS of an array assignment causes
+	     the assignment to take place incorrectly (a
+	     single value seems to get smeared across the
+	     whole subarray).
+
+Added files:
+	chapel/test/arrays/bradc/: sliceassign.chpl sliceassign.future 
+	                           sliceassign.good 
+	chapel/test/functions/bradc/: querydomelem.chpl 
+	                              querydomelem.future 
+	                              querydomelem.good 
+
