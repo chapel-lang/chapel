@@ -23,7 +23,7 @@ def main() {
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
 
     delta = max reduce [ij in ProblemSpace] abs(Temp(ij) - A(ij));
-    [ij in ProblemSpace] A(ij) = Temp(ij);
+    A(ProblemSpace) = Temp(ProblemSpace);
 
     iteration += 1;
 

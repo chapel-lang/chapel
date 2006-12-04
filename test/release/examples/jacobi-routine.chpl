@@ -20,7 +20,7 @@ def main() {
 def jacobi(A: [?ADomain] real) {
   const BigDomain = ADomain.expand(1);
   var Temp: [BigDomain] real;
-  const highRow = ADomain(1)._high;
+  const highRow = ADomain(1).high;
 
   [j in ADomain(2)] Temp(highRow+1, j) = 1.0;
 
@@ -33,12 +33,12 @@ def jacobi(A: [?ADomain] real) {
       delta: real;
 
   do {
-    [ij in ADomain] Temp(ij) = A(ij);
+    Temp(ADomain) = A;
 
     forall (i,j) in ADomain do
       A(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
 
-    delta = max reduce abs(Temp(ADomain) - A);
+    delta = max reduce abs(Temp[ADomain] - A);
 
     iteration += 1;
 
