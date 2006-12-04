@@ -87968,3 +87968,30 @@ Modified files:
 	chapel/compiler/: Makefile 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+12/04/06 15:58:59 -- bradc
+
+Log message:
+	In putting together a jacobi example last week, I was going
+	to start by reviewing all the jacobi studies and getting
+	them working, removing NOTESTS, updating futures, etc.  In
+	the end, decided that was taking too long, so only got
+	through Rob's directory and part of mine, but wanted to
+	check in what I had done.
+	
+	Here, Rob's original version used a subdomain, which isn't
+	currently implemented.  I also created a "workaround" version
+	that replaces the subdomain with a domain(2) declaration, but
+	is otherwise unchanged.
+
+Modified files:
+	chapel/test/studies/jacobi/bocchino/: jacobi.chpl 
+Added files:
+	chapel/test/studies/jacobi/bocchino/: .cvsignore jacobi.future 
+	                                      jacobi.good 
+	                                      jacobi.workaround.chpl 
+	                                      jacobi.workaround.good 
+Removed files:
+	chapel/test/studies/jacobi/bocchino/: NOTEST 
+
