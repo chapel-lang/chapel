@@ -87840,3 +87840,17 @@ Log message:
 Removed files:
 	chapel/test/arrays/bradc/: sliceassign.future 
 
+---------------------------------------------------------------------------
+
+12/04/06 11:13:05 -- deitz
+
+Log message:
+	Added low, high and stride methods to arithmetic sequences, added a
+	test, added documentation to the spec.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/spec/: Sequences.tex 
+Added files:
+	chapel/test/types/seq/deitz/: test_aseq5.chpl test_aseq5.good 
+
