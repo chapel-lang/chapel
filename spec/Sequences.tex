@@ -307,10 +307,6 @@ starting with the first:
 \subsection{Methods and Functions on Sequences}
 \label{Methods_and_Functions_on_Sequences}
 
-Predefined methods and functions on sequences include
-the \chpl{length} and \chpl{reverse} methods and
-the \chpl{spread}, \chpl{transpose}, and \chpl{reshape} functions.
-
 \subsubsection{The {\em length} Method}
 \label{The_em_length_Method}
 \index{length@\chpl{length}!on sequences}
@@ -471,6 +467,22 @@ create a strided arithmetic sequence.  It is predefined over an
 arithmetic sequence and an integer to yield a new arithmetic sequence
 that is strided by the integer.  Striding of strided sequences is
 accomplished by multiplying the strides.
+
+\subsubsection{Querying the Bounds and Stride of an Arithmetic Sequence}
+\index{low@\chpl{low}}
+\index{high@\chpl{high}}
+\index{stride@\chpl{stride}}
+
+\begin{protohead}
+def $arithmetic\mbox{ }sequence$.low: elt_type
+def $arithmetic\mbox{ }sequence$.high: elt_type
+def $arithmetic\mbox{ }sequence$.stride: int
+\end{protohead}
+\begin{protobody}
+These routines respectively return the low bound, the high bound, and
+the stride of the arithmetic sequence.  The type of the returned low
+and high bound is the element type of the arithmetic sequence.
+\end{protobody}
 
 \subsubsection{Indefinite Sequences}
 \label{Indefinite_Sequences}

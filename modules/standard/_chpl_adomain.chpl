@@ -712,6 +712,10 @@ record _aseq {
   var _high : elt_type;
   var _stride : int = 1;
 
+  def low: elt_type return _low;
+  def high: elt_type return _high;
+  def stride: elt_type return _stride;
+
   def initialize() {
     if _low > _high {
       _low = 1:elt_type;
