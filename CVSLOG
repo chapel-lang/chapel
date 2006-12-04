@@ -87883,3 +87883,15 @@ Added files:
 	                           sliceassignsquare.future 
 	                           sliceassignsquare.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 12:13:06 -- deitz
+
+Log message:
+	Added test to show that generics are favored over promotions in
+	function resolution.
+
+Added files:
+	chapel/test/functions/deitz/: test_promotion_generic.chpl 
+	                              test_promotion_generic.good 
+
