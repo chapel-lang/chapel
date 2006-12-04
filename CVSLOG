@@ -87895,3 +87895,26 @@ Added files:
 	chapel/test/functions/deitz/: test_promotion_generic.chpl 
 	                              test_promotion_generic.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 12:26:14 -- deitz
+
+Log message:
+	Fixed a small bug in the setter versions of the "array indexing by a
+	domain or arithmetic sequence" functions in which the = was left off
+	of the function definition.  It was only working in the test cases
+	because scalar promotion over the normal setter function was working
+	correctly for these cases.
+	
+	Added a test.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_assign_slice3.chpl 
+	                           test_assign_slice3.good 
+Removed files:
+	chapel/test/arrays/bradc/: sliceassignsquare.future 
+
