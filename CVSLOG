@@ -87809,3 +87809,24 @@ Added files:
 	                              querydomelem.future 
 	                              querydomelem.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 10:58:13 -- deitz
+
+Log message:
+	Fixed a bug in which an array slice on the left-hand side of an
+	assignment could not be assigned a non-scalar, i.e., an array, another
+	array slice, or a sequence.
+	
+	Added tests of things like
+	  A(D) = B(D);
+	  A(2..4) = B(2..4);
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_assign_slice.chpl 
+	                           test_assign_slice.good 
+	                           test_assign_slice2.chpl 
+	                           test_assign_slice2.good 
+
