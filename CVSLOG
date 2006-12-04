@@ -87955,3 +87955,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/04/06 15:52:39 -- bradc
+
+Log message:
+	Modified Makefiles to remove dependence on the existence
+	of etags.  If it exists, TAGS files are created, otherwise
+	they are not.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/runtime/src/: Makefile 
+
