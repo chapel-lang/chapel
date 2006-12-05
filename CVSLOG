@@ -88274,3 +88274,40 @@ Log message:
 Added files:
 	chapel/test/: cat_futures 
 
+---------------------------------------------------------------------------
+
+12/05/06 15:48:37 -- deitz
+
+Log message:
+	Note: regress: arrays/deitz/jacobi-no-inline.  Disabling inlining
+	stops working with this checkin; I'm looking into it.
+	
+	Initial work to turn casts into function calls to allow promotion over
+	casts.  In this change, I added a single cast function to handle all
+	casts with the same primitive.  The main difference is that the
+	primitive cast is wrapped by a function call.  The next step is to
+	specialize the function calls to only those types for which we allow
+	casts.
+	
+	The single cast function is specialize to sync and single types with
+	the synchronization primitive to avoid coercing the synchronization in
+	the cast.  A better idea is to special-case the cast function in the
+	compiler otherwise we would have to replicate all of the cast
+	functions on sync and single.
+	
+	Specialized the cast function to handle tuple to complex casts without
+	any compiler intervention.  Removed two .futures now that we cast all
+	2-tuples to any of the parameterized complex types.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_htuple.chpl 
+	chapel/test/: cat_futures 
+	chapel/test/trivial/deitz/: test_shortcircuit_land_lor.chpl 
+Removed files:
+	chapel/test/types/complex/bradc/: tuple2complex.future 
+	chapel/test/types/complex/marybeth/: complex_tuple_64.future 
+
