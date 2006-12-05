@@ -88175,3 +88175,13 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuple_var_decl1.chpl 
 	                                test_tuple_var_decl1.good 
 
+---------------------------------------------------------------------------
+
+12/05/06 12:12:14 -- deitz
+
+Log message:
+	Removed .future for working test.
+
+Removed files:
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-slice.future 
+
