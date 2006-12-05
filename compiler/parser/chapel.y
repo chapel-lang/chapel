@@ -215,7 +215,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmt> when_stmt
 %type <pblockstmt> when_stmt_ls
 
-%type <pexpr> opt_type opt_formal_type array_type opt_elt_type
+%type <pexpr> opt_type opt_formal_type array_type opt_elt_type top_level_type
 %type <pexpr> type anon_record_type tuple_type type_binding_expr
 %type <pexpr> composable_type variable_type parenop_type memberaccess_type
 %type <ptype> class_tag
@@ -871,7 +871,7 @@ enum_item:
 
 
 typedef_decl_stmt_inner:
-  pragma_ls identifier TASSIGN type
+  pragma_ls identifier TASSIGN top_level_type
     {
       UserType* newtype = new UserType($4);
       TypeSymbol* typeSym = new TypeSymbol($2, newtype);
@@ -880,7 +880,7 @@ typedef_decl_stmt_inner:
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = build_chpl_stmt(def_expr);
     }
-| pragma_ls identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
+| pragma_ls identifier TASSIGN top_level_type TCOMMA typedef_decl_stmt_inner
     {
       UserType* newtype = new UserType($4);
       TypeSymbol* typeSym = new TypeSymbol($2, newtype);
@@ -901,7 +901,7 @@ typedef_decl_stmt:
 opt_init_type:
   /* nothing */
     { $$ = NULL; }
-| TASSIGN type
+| TASSIGN top_level_type
     { $$ = $2; }
 ;
 
@@ -1085,14 +1085,19 @@ array_type:
 ;
 
 
+top_level_type:
+  type
+| composable_type TSTAR type %prec TSTAR  
+    { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
+;
+
+
 type:
   composable_type %prec TSTARTUPLE
 | anon_record_type
 | tuple_type
 | composable_type TOF type  
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-| composable_type TSTAR type %prec TSTAR  
-    { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
     { $$ = new CallExpr("_build_domain_type", $3); }
@@ -1120,7 +1125,7 @@ opt_init_expr:
 opt_type:
   /* nothing */
     { $$ = NULL; }
-| TCOLON type
+| TCOLON top_level_type
     { $$ = $2; }
 ;
 

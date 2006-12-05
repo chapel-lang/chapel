@@ -1,3 +1,4 @@
 param rank = 4;
-var x : (rank*int);
+type ht = rank*int;
+var x : (ht);
 writeln(x);
