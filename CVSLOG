@@ -88130,3 +88130,13 @@ Modified files:
 Removed files:
 	chapel/test/parallel/begin/waynew/: class2.future record2.future 
 
+---------------------------------------------------------------------------
+
+12/05/06 09:07:45 -- deitz
+
+Log message:
+	Added .future.
+
+Added files:
+	chapel/test/memory/deitz/: test_trivial_leak.future 
+
