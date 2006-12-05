@@ -206,7 +206,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
-%type <pstmt> var_decl_stmt_inner
+%type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
 %type <pblockstmt> parsed_block_single_stmt
 
@@ -931,10 +931,12 @@ var_decl_stmt:
 
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
-    { $$ = build_chpl_stmt($1); }
+    { $$ = $1; }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
-      $1->insertAtTail($3);
+      for_alist(Expr, expr, $3->body)
+        $1->insertAtTail(expr->remove());
+      $$ = $1;
     }
 ;
 
@@ -943,7 +945,34 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = new DefExpr(var, $3, $2);
+      $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
+    }
+| TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
+    {
+      VarSymbol* tmp = new VarSymbol("_tuple_tmp");
+      tmp->isCompilerTemp = true;
+      int count = 1;
+      for_alist(Expr, expr, $2->body) {
+        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+          def->init = new CallExpr(tmp, new_IntSymbol(count));
+          count++;
+        }
+      }
+      $2->insertAtHead(new DefExpr(tmp, $5, $4));
+      $$ = $2;
+    }
+;
+
+
+tuple_var_decl_stmt_inner_ls:
+  identifier
+    {
+      $$ = build_chpl_stmt(new DefExpr(new VarSymbol($1)));
+    }
+| tuple_var_decl_stmt_inner_ls TCOMMA identifier
+    {
+      $1->insertAtTail(new DefExpr(new VarSymbol($3)));
+      $$ = $1;
     }
 ;
 
