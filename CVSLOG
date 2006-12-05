@@ -88262,3 +88262,15 @@ Modified files:
 Added files:
 	chapel/util/: setchplenv.sh 
 
+---------------------------------------------------------------------------
+
+12/05/06 15:06:10 -- deitz
+
+Log message:
+	Added cat_futures script to test directory to print out all the
+	futures and the corresponding Chapel codes.  See also cat_tests and
+	cat_goods.
+
+Added files:
+	chapel/test/: cat_futures 
+
