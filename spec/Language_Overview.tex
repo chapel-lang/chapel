@@ -31,14 +31,19 @@ The following output is shown:
 \end{verbatim}
 
 \subsection{Example: Jacobi}
+The following example Chapel program solves a system of finite difference
+equations for the Laplace equation.  This program demonstrates the use
+of domains and arrays, as well as introducing the syntax for commonly used
+statements.
 
 \begin{numberedchapel}
-def jacobi(A: [?ADomain] real) {
-  const BigDomain = ADomain.expand(1);
-  var Temp: [BigDomain] real;
-  const highRow = ADomain(1).high;
+def main() {
+  const ProblemSpace = [1..n, 1..n],
+        BigDomain = [0..n+1, 0..n+1];
 
-  Temp[highRow+1, ADomain(2)] = 1.0;
+  var A, Temp: [BigDomain] real = 0.0;
+
+  A[n+1, 1..n] = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");
@@ -49,12 +54,11 @@ def jacobi(A: [?ADomain] real) {
       delta: real;
 
   do {
-    Temp[ADomain] = A;
+    forall (i,j) in ProblemSpace do
+      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
 
-    forall (i,j) in ADomain do
-      A(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
-
-    delta = max reduce abs(Temp[ADomain] - A);
+    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
+    A[ProblemSpace] = Temp[ProblemSpace];
 
     iteration += 1;
 
@@ -65,10 +69,25 @@ def jacobi(A: [?ADomain] real) {
     }
   } while (delta > epsilon);
 
-  return (delta, iteration);
+  writeln("Jacobi computation complete.");
+  writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
+  writeln("# of iterations: ", iteration);
 }
 \end{numberedchapel}
 
+Domains are sets of indices which may be distributed
+across multiple processors indicating how data and parallel work should
+be divided among the processors.  When domains are used in the declaration
+of arrays, the data in the arrays is distributed across processors according
+to the domain's distribution.  When domains are used as iterators in \chpl{for}
+\chpl{forall} statements, the iterations are distributed among processors
+according to the domain's distribution.
+
+There are two domains that are used in this program, \chpl{ProblemSpace}
+and \chpl{BigDomain}.  By defining \chpl{ProblemSpace} to be the interior
+points of the larger grid, \chpl{BigDomain}, the computation can be cleanly specified
+for just the interior points, eliminating the need to write special case computations 
+for the boundary points.
 \subsection{Example: Norm}
 
 \begin{numberedchapel}
