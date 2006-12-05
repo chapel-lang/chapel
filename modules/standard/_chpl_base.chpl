@@ -355,6 +355,11 @@ def _copy( sv:_syncvar) {
   return readFE(sv);
 }
 
+pragma "synchronization primitive"
+pragma "inline"
+def _cast(type t, x: _syncvar) var
+  return __primitive("cast", t, x);
+
 pragma "synchronization primitive" 
 def _init( sv:_syncvar) {
   return _syncvar( sv.value.type); 
@@ -502,6 +507,11 @@ def _copy( sv:_singlevar) {
   return readFF( sv);
 }
 
+pragma "synchronization primitive"
+pragma "inline"
+def _cast(type t, x: _singlevar) var
+  return __primitive("cast", t, x);
+
 pragma "synchronization primitive" 
 def _init( sv:_singlevar) {
   return _singlevar( sv.value.type); 
@@ -575,6 +585,12 @@ pragma "inline" def _string_fscanf(fp: _file)
 pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
   return __primitive("readLit", fp, val, ignoreWhiteSpace);
 
+
+//
+// casts
+//
+pragma "inline" def _cast(type t, x) var
+  return __primitive("cast", t, x);
 
 //
 // MOVE THESE, maybe to a memory module?

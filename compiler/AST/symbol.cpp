@@ -855,7 +855,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       if (ct && ct->classTag != CLASS_CLASS)
         cast = false;
       if (cast)
-        call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, temp));
       else
         call->insertAtTail(temp);
     }
@@ -1150,7 +1150,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
     }
     // YAH, make sure that we do not return a negative hash value for now
     call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-    ret = new ReturnStmt( new CallExpr(PRIMITIVE_CAST, dtInt[INT_SIZE_64]->symbol, call));
+    ret = new ReturnStmt( new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
   }
   fn->body->replace( new BlockStmt( ret));
   return fn;

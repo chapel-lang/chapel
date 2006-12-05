@@ -6,15 +6,18 @@ foreach $fname (@fnames) {
   chomp $fname;
   print "\nFILE: $fname\n\n";
   @fut = `cat $fname`;
+  $lineno = 1;
   foreach $line (@fut) {
-    print "  $line";
+    printf("$fname %5d: ", $lineno);
+    print "$line";
+    $lineno++;
   }
   printf("\n");
   $fname =~ s/\.future$/\.chpl/;
   @prog = `cat $fname`;
   $lineno = 1;
   foreach $line (@prog) {
-    printf("$fname %5d: ", $lineno);
+    printf("$fname   %5d: ", $lineno);
     print "$line";
     $lineno++;
   }

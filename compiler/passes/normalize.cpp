@@ -574,7 +574,7 @@ static void normalize_returns(FnSymbol* fn) {
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
       if (fn->retExprType)
-        ret_expr = new CallExpr(PRIMITIVE_CAST, fn->retExprType->copy(), ret_expr);
+        ret_expr = new CallExpr("_cast", fn->retExprType->copy(), ret_expr);
       ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
     if (ret->next != label->defPoint) {
@@ -814,7 +814,7 @@ static void fix_def_expr(DefExpr* def) {
       // expression to the type
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
         if (var->consClass == VAR_PARAM) {
-          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_CAST, def->exprType->remove(), def->init->remove())));
+          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_cast", def->exprType->remove(), def->init->remove())));
           return;
         }
       }
@@ -911,7 +911,7 @@ static bool fold_call_expr(CallExpr* call) {
         if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
           if (!ct->isGeneric) {
             if (ct->defaultValue)
-              call->replace(new CallExpr(PRIMITIVE_CAST, fn->retType->symbol, gNil));
+              call->replace(new CallExpr("_cast", fn->retType->symbol, gNil));
             else
               call->replace(construct->remove());
           }
@@ -923,7 +923,7 @@ static bool fold_call_expr(CallExpr* call) {
         ts = sym->var->type->symbol;
       if (ts && !ts->type->isGeneric) {
         if (ts->type->defaultValue)
-          call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->type->defaultValue));
+          call->replace(new CallExpr("_cast", ts, ts->type->defaultValue));
         else if (ts->type->defaultConstructor)
           call->replace(new CallExpr(ts->type->defaultConstructor));
         else
@@ -1113,7 +1113,7 @@ static bool fold_call_expr(CallExpr* call) {
     }
   }
 
-  if (call->isPrimitive(PRIMITIVE_CAST)) {
+  if (call->isNamed("_cast")) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (var->immediate) {
@@ -1511,7 +1511,7 @@ change_types_to_values(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-        if (call->isPrimitive(PRIMITIVE_CAST))
+        if (call->isNamed("_cast"))
           continue;
         if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC))
           continue;

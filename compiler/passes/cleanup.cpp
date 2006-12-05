@@ -67,15 +67,6 @@ specialize_casts(CallExpr* call) {
       call->get(1)->remove();
       call->replace(new CallExpr("_tuple_to_seq", arg1->remove()));
     }
-    if (!strcmp("complex", sym->var->name)) {
-      if (CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(2))) {
-        if (tuple->isNamed("_tuple")) {
-          Expr* arg1 = call->get(2);
-          call->get(1)->remove();
-          call->replace(new CallExpr("_tuple_to_complex", arg1->remove()));
-        }
-      }
-    }
   }
 }
 
@@ -220,7 +211,7 @@ void cleanup(Symbol* base) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive(PRIMITIVE_CAST))
+      if (call->isNamed("_cast"))
         specialize_casts(call);
       else if (call->isNamed("_tuple"))
         destructure_tuple(call);
@@ -443,8 +434,10 @@ static void change_cast_in_where(FnSymbol* fn) {
     collect_asts(&asts, fn->where);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-        if (call->isPrimitive(PRIMITIVE_CAST))
+        if (call->isNamed("_cast")) {
           call->primitive = primitives[PRIMITIVE_ISSUBTYPE];
+          call->baseExpr->remove();
+        }
       }
     }
   }

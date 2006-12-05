@@ -104,15 +104,24 @@ def _tuple_to_seq(t: _tuple) {
   return s;
 }
 
-pragma "inline" def _tuple_to_complex_help(re: real(?w), im: real(w)) {
-  var x: complex(2*w);
-  x.re = re;
-  x.im = im;
-  return x;
+pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(64)) & (x.size == 2) {
+  var c: complex(64);
+  c.re = x(1);
+  c.im = x(2);
+  return c;
 }
 
-def _tuple_to_complex(t: _tuple) where t.size == 2 {
-  var c = _tuple_to_complex_help(t(1), t(2));
+pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(128)) & (x.size == 2) {
+  var c: complex(128);
+  c.re = x(1);
+  c.im = x(2);
+  return c;
+}
+
+pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(256)) & (x.size == 2) {
+  var c: complex(256);
+  c.re = x(1);
+  c.im = x(2);
   return c;
 }
 

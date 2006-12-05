@@ -1,5 +1,6 @@
 def foo(i: int) {
-  if (i / 0 > 2) return true;
+  var zz = 0;
+  if (i / zz > 2) return true;
   return false;
 }
 

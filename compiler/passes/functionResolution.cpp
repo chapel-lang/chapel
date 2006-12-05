@@ -503,8 +503,9 @@ build_coercion_wrapper(FnSymbol* fn,
     j++;
     Type* actual_type = actual_types->v[j];
     Symbol* actual_param = actual_params->v[j];
-    if (canCoerce(actual_type, actual_param, formal->type) || isDispatchParent(actual_type, formal->type))
-      subs.put(formal, actual_type->symbol);
+    if (actual_type != formal->type)
+      if (canCoerce(actual_type, actual_param, formal->type) || isDispatchParent(actual_type, formal->type))
+        subs.put(formal, actual_type->symbol);
   }
   if (subs.n)
     fn = fn->coercion_wrapper(&subs);
@@ -978,6 +979,27 @@ userCall(CallExpr* call) {
 static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
+
+    //
+    // special case cast of class w/ type variables that is not generic
+    //   i.e. type variables are type definitions (have default types)
+    //
+    if (call->isNamed("_cast")) {
+      if (SymExpr* te = dynamic_cast<SymExpr*>(call->get(1))) {
+        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(te->var)) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
+            if (ct->classTag == CLASS_CLASS && ct->isGeneric) {
+              CallExpr* cc = new CallExpr(ct->defaultConstructor->name);
+              te->replace(cc);
+              resolveCall(cc);
+              cc->replace(new SymExpr(cc->typeInfo()->symbol));
+            }
+          }
+        }
+      }
+    }
+
+
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var)) {
         Expr* base = call->baseExpr;
@@ -1012,6 +1034,7 @@ resolveCall(CallExpr* call) {
     if (dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!(call->isNamed( "_to_seq") ||
             call->isNamed( "_copy") ||
+            call->isNamed( "_cast") ||
             call->isNamed( "_init") ||
             call->isNamed( "getNextCursor") ||
             call->isNamed( "getHeadCursor") ||
@@ -1196,28 +1219,6 @@ resolveCall(CallExpr* call) {
       INT_FATAL(call, "bad set member primitive");
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-
-      //
-      // special case cast of class w/ type variables that is not generic
-      //   i.e. types are type definitions (have default types)
-      //
-      if (CallExpr* cast = dynamic_cast<CallExpr*>(call->get(2))) {
-        if (cast->isPrimitive(PRIMITIVE_CAST)) {
-          if (SymExpr* te = dynamic_cast<SymExpr*>(cast->get(1))) {
-            if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(te->var)) {
-              if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
-                if (ct->classTag == CLASS_CLASS && ct->isGeneric) {
-                  CallExpr* cc = new CallExpr(ct->defaultConstructor->name);
-                  te->replace(cc);
-                  resolveCall(cc);
-                  cc->replace(new SymExpr(cc->typeInfo()->symbol));
-                }
-              }
-            }
-          }
-        }
-      }
-
       Type* t = call->get(2)->typeInfo();
       if (sym->var->type == dtUnknown)
         sym->var->type = t;

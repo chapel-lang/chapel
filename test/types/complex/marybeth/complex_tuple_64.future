@@ -1,8 +1,0 @@
-waynew
-
-I expected that x = (1.0,1.0):complex(64) would cast the tuple to a 64 bit
-complex data type.  However, the compiler hits an internal error when compiling
-this.
-
-If this cast shouldn't be allowed, then there should be a better error 
-message and clear documentation about how to cast tuples to complex numbers.

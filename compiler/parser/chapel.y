@@ -1342,9 +1342,7 @@ top_level_expr:
     { $$ = new CallExpr("_build_index_type", $3); }
 | reduction %prec TREDUCE
 | expr TCOLON type
-    {
-      $$ = new CallExpr(PRIMITIVE_CAST, $3, $1);
-    }
+    { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_aseq", $1, $3); }
 | expr TDOTDOT
