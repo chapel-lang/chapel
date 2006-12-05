@@ -5,12 +5,17 @@
 path_tail=`echo $PWD | sed 's/.*\///g'`
 if [ "$path_tail" != "chapel" ] 
    then
-      echo "Error: source util/setchplenv from within the chapel directory"
+      echo "Error: . util/setchplenv from within the chapel directory"
    else
+      echo -n "Setting CHPL_HOME "
       export CHPL_HOME=$PWD
-      export CHPL_PLATFORM=`$CHPL_HOME/util/platform`
-      export PATH=$PATH":"$CHPL_HOME"/bin/"$CHPL_PLATFORM
+      echo "to $CHPL_HOME"
+
+      echo -n "Setting CHPL_PLATFORM "
+      export CHPL_PLATFORM=`"$CHPL_HOME"/util/platform`
+      echo "to $CHPL_PLATFORM"
+
+      echo -n "Updating PATH to include "
+      export PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_PLATFORM
+      echo "$CHPL_HOME"/bin/$CHPL_PLATFORM
 fi
-
-
-
