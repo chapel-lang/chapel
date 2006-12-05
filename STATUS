@@ -127,7 +127,6 @@ Parallelism and Synchronization
 
   * bugs
     - Arrays of synchronization variables.
-    - Begin blocks that use record or class variables that are locals.
     - Begin blocks that use sync/single variables that are locals.
     - Begin blocks that reference function arguments.
 

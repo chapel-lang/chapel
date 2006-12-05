@@ -1119,7 +1119,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
         get(2)->codegen(outfile);
       } else {
-        INT_FATAL( get(1), "can only move_to_ref with on_heap variables");
+        INT_FATAL( get(1), "can only setheapvar with on_heap variables");
       }
       break;
     }
@@ -1212,23 +1212,30 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CHPL_ALLOC: {
-      bool is_class = false;
-      if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {
-        if (dynamic_cast<ClassType*>(t->type)) {
-          is_class = true;
+      bool is_struct = false;
+      CallExpr *parent_call = (CallExpr*) dynamic_cast<CallExpr*>(parentExpr);
+
+      if (parent_call && parent_call->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
+        is_struct = false;
+      } else {
+        // if Chapel class or record
+        if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {
+          if (dynamic_cast<ClassType*>(t->type)) {
+            is_struct = true;
+          }
         }
       }
       // pointer cast
       fprintf( outfile, "(");
       typeInfo()->symbol->codegen( outfile);
-      if (!is_class) {
+      if (!is_struct) {
         fprintf( outfile, "*");
       } 
       fprintf( outfile, ") ");
 
       // target: void* _chpl_alloc(size_t size, char* description);
       fprintf( outfile, "_chpl_alloc( sizeof( ");
-      if (is_class) fprintf( outfile, "_");          // need struct of class
+      if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
