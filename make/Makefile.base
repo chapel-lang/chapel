@@ -23,6 +23,7 @@ include $(CHAPEL_ROOT)/make/Makefile.platform
 
 default: all
 
+
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,
 # depending on how CHPLDEVTMP is set
@@ -59,7 +60,20 @@ ECHO = echo
 #
 EXE_SUFFIX = 
 
+$(CHAPEL_ROOT)/make/Makefile.%:
+	@echo "WARNING: The Chapel group hasn't compiled for platform $(PLATFORM) before."
+	@echo -n "Does this platform use the gnu toolsuite? (y/n) "
+	@read GNUTOOLS && if [ "$$GNUTOOLS" == "y" ]; then cp $(CHAPEL_ROOT)/make/Makefile.generic.gnu $@; else cp $(CHAPEL_ROOT)/make/Makefile.generic $@; fi;
+	@echo "*************************************************************************"
+	@echo "Creating $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)..."
+	@echo "-------------------------------------------------------------------------"
+	@echo "NOTE: You may need to customize this file in order to build successfully."
+	@echo "      Please send any questions and/or edits to chapel_info@cray.com"
+	@echo "      so that we can support your platform better in future releases."
+	@echo "*************************************************************************"
+
 #
 # include platform-specific settings
 #
-include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
+-include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
+

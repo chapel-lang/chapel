@@ -1,0 +1,20 @@
+# Makefile.generic: Makefile for generic platforms
+
+CC = cc
+CXX = cc
+
+CMAKEDEPEND = $(CC) -MM -MG
+MAKEDEPEND = $(CXX) -MM -MG
+
+ifdef DEBUG
+CFLAGS += -g
+endif
+
+ifdef OPTIMIZE
+CFLAGS += -O2
+endif
+
+
+COMP_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
+GEN_CFLAGS = 
