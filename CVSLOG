@@ -88245,3 +88245,20 @@ Log message:
 Modified files:
 	chapel/util/: setchplenv.bash setchplenv.csh 
 
+---------------------------------------------------------------------------
+
+12/05/06 14:31:30 -- bradc
+
+Log message:
+	Added a new script setchplenv.sh for a true bourne
+	shell, and switched .bash to be more bash-centric.
+	(the pure bourne-shell version is ugly enough that
+	I didn't want to impose it on bash users).
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README.chplenv 
+	chapel/util/: gen_release setchplenv.bash 
+Added files:
+	chapel/util/: setchplenv.sh 
+
