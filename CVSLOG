@@ -88153,3 +88153,25 @@ Added files:
 	                           test_array_leak.future 
 	                           test_array_leak.good 
 
+---------------------------------------------------------------------------
+
+12/05/06 11:41:58 -- deitz
+
+Log message:
+	Added support for declaring variables using tuple-like syntax as in
+	
+	  var (x, y) = foo();
+	
+	and
+	
+	  var (a, b, c) : 3*int;
+	
+	Removed spec note on non-implementation status of this feature.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/spec/: Tuples.tex 
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_var_decl1.chpl 
+	                                test_tuple_var_decl1.good 
+
