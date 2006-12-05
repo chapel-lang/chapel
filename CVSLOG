@@ -87995,3 +87995,28 @@ Added files:
 Removed files:
 	chapel/test/studies/jacobi/bocchino/: NOTEST 
 
+---------------------------------------------------------------------------
+
+12/04/06 16:03:31 -- deitz
+
+Log message:
+	Added a primitive _mem_used and corresponding function in Memory
+	called memoryUsed() that returns the current number of allocated bytes
+	of memory.  Using this function requires the --memstat flag.  If the
+	--memstat flag is used, it normally prints out the amount of memory in
+	use at the end of the program.  If the memoryUsed() function is
+	called, however, it does not.
+	
+	Added a .future that shows a leak in the usage of writeln (most likely
+	caused by strings).
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: Memory.chpl 
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: chplmem.c 
+Added files:
+	chapel/test/memory/deitz/: test_trivial_leak.chpl 
+	                           test_trivial_leak.compopts 
+	                           test_trivial_leak.good 
+
