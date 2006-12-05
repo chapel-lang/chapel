@@ -88071,3 +88071,17 @@ Added files:
 	                                    record1.good record2.chpl 
 	                                    record2.future record2.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 17:12:37 -- bradc
+
+Log message:
+	Proving my job security is effective by correcting the
+	amount of memory available on chap08, as pointed out by
+	Steve.  chap08 has ~4k less memory than chap01, 06, and
+	07 for some reason.
+
+Modified files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap08.good 
+
