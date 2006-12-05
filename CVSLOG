@@ -88208,3 +88208,25 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft-badtuple.future 
 
+---------------------------------------------------------------------------
+
+12/05/06 13:54:11 -- bradc
+
+Log message:
+	Mdae the testProbSize.chpl test compute a .good
+	file using the output of the countMemory test,
+	since the output is machine-dependent based on
+	the amount of memory, yet we don't want to have
+	to maintain two memory-related tests on a platform-
+	by-platform basis.
+	
+	I've tested this on 4 platforms and it seems to
+	be working.  Let me know if you find that it
+	doesn't for another machine.
+
+Added files:
+	chapel/test/studies/hpcc/common/: .cvsignore computeProbSize.pl 
+	                                  testProbSize.prediff 
+Removed files:
+	chapel/test/studies/hpcc/common/: testProbSize.good 
+
