@@ -88185,3 +88185,26 @@ Log message:
 Removed files:
 	chapel/test/studies/hpcc/STREAMS/bradc/: stream-slice.future 
 
+---------------------------------------------------------------------------
+
+12/05/06 13:11:19 -- deitz
+
+Log message:
+	Made homogeneous tuple type declarations sugar when they occur only in
+	the places listed in the spec.  This fixes some multiplication
+	ambiguities.  Updated the places where this sugar can be used in the
+	spec.  Homogeneous tuple types can be specified as top-level types in
+	variable declarations, type alias declarations, formal argument
+	declarations, and function return type declarations.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/spec/: Tuples.tex 
+	chapel/test/types/seq/deitz/: test_seq_htuple1.chpl 
+	                              test_seq_htuple2.chpl 
+	chapel/test/types/tuple/deitz/: test_htuple6.chpl 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-badtuple.future 
+
