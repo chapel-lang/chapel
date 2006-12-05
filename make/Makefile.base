@@ -31,12 +31,12 @@ PLATFORM_DIR = ./$(PLATFORM)/.timestamp
 
 ifndef CHPLDEVTMP
 $(PLATFORM_DIR):
-	@echo making $(PLATFORM) subdirectory
+	@echo making $(PLATFORM) subdirectory to store platform-specific files
 	@-mkdir $(PLATFORM) > /dev/null 2>&1
 	@-touch $(PLATFORM_DIR)
 else
 $(PLATFORM_DIR):
-	@echo linking $(PLATFORM) subdirectory
+	@echo linking $(PLATFORM) subdirectory to store platform-specific files
 	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM)
 	rm -f $(PLATFORM)
 	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM) .
