@@ -5,7 +5,7 @@
 path_tail=`echo $PWD | sed 's/.*\///g'`
 if [ "$path_tail" != "chapel" ] 
    then
-      echo "Error: . util/setchplenv from within the chapel directory"
+      echo "Error: source util/setchplenv from within the chapel directory"
    else
       echo -n "Setting CHPL_HOME "
       export CHPL_HOME=$PWD

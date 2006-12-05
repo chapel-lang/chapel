@@ -36,8 +36,9 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "README",
        "README.files",
        "STATUS",
-       "util/setchplenv.csh",
        "util/setchplenv.bash",
+       "util/setchplenv.csh",
+       "util/setchplenv.sh",
        "util/platform"
 );
 

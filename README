@@ -23,18 +23,22 @@ Quick Start
 
         gmake
 
-3) Set up your environment to use Chapel.  If you use a csh-compatible
-   shell (e.g., csh, tcsh), use:
+3) Set up your environment to use Chapel.
 
-        source util/setchplenv.csh
+   If you use...                                  then type...
 
-   If you use a sh-compatible user (e.g., sh, bash), use:
+     ...a csh-compatible shell (csh, tcsh)        source util/setchplenv.csh
+     ...a bash-compatible shell (bash)            source util/setchplenv.bash
+     ...the Bourne shell (sh)                     . util/setchplenv.sh
 
-        . util/setchplenv.bash
+   You should still be in the "chapel" directory in order for these
+   shell command scripts to work.
 
    If you use a different shell, refer to doc/README.chplenv for
    information on what needs to be set up in your environment to use
-   Chapel satisfactorily.
+   Chapel satisfactorily (and if you're able to create an equivalent
+   setchplenv script for your shell, please mail a copy of it to us at
+   chapel_info@cray.com for inclusion in our next release).
 
 4) Compile an example program using:
 

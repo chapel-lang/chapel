@@ -47,6 +47,6 @@ make in order to use this release effectively:
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
 lines that make these settings for various shells when executed from
 the $CHPL_HOME directory.  For long-time Chapel users, these lines can
-be inserted into a shell's dotfile simply by replacing the checks
-against the current working directory with a hard-coded location for
-$CHPL_HOME.
+be inserted into a shell's dotfile by hard-coding the definition of
+$CHPL_HOME and removing the check to see that the script is being
+sourced from the chapel/ directory.
