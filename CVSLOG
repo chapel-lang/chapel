@@ -88230,3 +88230,18 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/common/: testProbSize.good 
 
+---------------------------------------------------------------------------
+
+12/05/06 14:09:40 -- bradc
+
+Log message:
+	Made these scripts resilient to paths that contain
+	spaces for use on windows/cygwin.
+	
+	Also added print messages to indicate what the
+	scripts are doing for users who want to incorporate
+	the commands into their own dotfile structure.
+
+Modified files:
+	chapel/util/: setchplenv.bash setchplenv.csh 
+
