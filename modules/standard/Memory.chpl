@@ -14,3 +14,6 @@ def locale.physicalMemory(unit: MemUnits=Bytes, type retType=int(64)) {
 
   return retVal;
 }
+
+def memoryUsed()
+  return __primitive("_mem_used");

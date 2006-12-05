@@ -25,4 +25,6 @@ void* _chpl_calloc( size_t number, size_t size, char* description);
 void* _chpl_realloc( void* ptr, size_t number, size_t size, char* description);
 void  _chpl_free( void* ptr);
 
+_uint64 _mem_used(void);
+
 #endif

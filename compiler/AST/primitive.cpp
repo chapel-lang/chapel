@@ -342,4 +342,6 @@ initPrimitive() {
   prim_def("_now_time", returnInfoFloat);
 
   prim_def("_bytesPerLocale", returnInfoUInt64);
+
+  prim_def("_mem_used", returnInfoUInt64);
 }
