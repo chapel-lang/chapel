@@ -1,0 +1,3 @@
+memory leak
+
+This test shows a  memory leak with arrays not being deleted.
