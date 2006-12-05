@@ -88085,3 +88085,13 @@ Modified files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.chap08.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 17:18:12 -- marybeth
+
+Log message:
+	Update to Jacobi section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
