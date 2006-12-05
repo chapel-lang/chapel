@@ -88115,3 +88115,18 @@ Modified files:
 Added files:
 	chapel/make/: Makefile.generic Makefile.generic.gnu 
 
+---------------------------------------------------------------------------
+
+12/04/06 18:04:06 -- waynew
+
+Log message:
+	Fixed a bug where a begin block referenced a local variable that
+	was a class or record.  Removed a couple futures that tested this
+	and updated the list of bugs for release.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/AST/: expr.cpp 
+Removed files:
+	chapel/test/parallel/begin/waynew/: class2.future record2.future 
+
