@@ -19,9 +19,15 @@ Quick Start
 
         cd ~/chapel
 
+
 2) Build the compiler and runtime libraries using:
 
         gmake
+
+   or if your default make is GNU make compatible (as on cygwin), use:
+
+        make
+
 
 3) Set up your environment to use Chapel.
 
@@ -49,7 +55,6 @@ Quick Start
         ./hello
 
 
-
 ------------
 What's next?
 ------------
@@ -57,11 +62,12 @@ What's next?
 For more detailed information about...      refer to...
 
   ...the files and directory structure        ...README.files
-  ...reporting bugs                           ...doc/README.bugs
+  ...prerequisites for using this release     ...doc/README.prereqs
   ...building the compiler                    ...doc/README.building
   ...setting up your environment              ...doc/README.chplenv
   ...using the compiler                       ...doc/README.compiling
   ...executing Chapel programs                ...doc/README.executing
+  ...reporting bugs                           ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
   ...the Chapel language specification        ...doc/spec.pdf
