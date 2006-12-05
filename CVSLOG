@@ -88140,3 +88140,16 @@ Log message:
 Added files:
 	chapel/test/memory/deitz/: test_trivial_leak.future 
 
+---------------------------------------------------------------------------
+
+12/05/06 09:23:03 -- deitz
+
+Log message:
+	Added future that shows a memory leak with arrays.
+
+Added files:
+	chapel/test/memory/deitz/: test_array_leak.chpl 
+	                           test_array_leak.compopts 
+	                           test_array_leak.future 
+	                           test_array_leak.good 
+
