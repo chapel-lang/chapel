@@ -1,0 +1,7 @@
+waynew
+
+Test a begin block with a reference to a local record variable
+
+The generated code does not comple. There is a mismatch of references.
+There is disagreement on whether if should be a pointer or a pointer
+of a pointer.
