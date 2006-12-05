@@ -88095,3 +88095,23 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/04/06 17:55:15 -- bradc
+
+Log message:
+	Made our Makefiles resilient in the face of new platforms.
+	Previously, the build would simply break due to a missing
+	make/Makefile.$CHPL_PLATFORM file.  Now, the fact that
+	the platform is new is announced, the user is asked whether
+	the platform uses the gnu toolsuite or not, and a template
+	Makefile is created for them, along with a message warning
+	them that further edits might be needed, and that they
+	should send any qyestions or edits to us so that we can
+	support their platform better in future releases.
+
+Modified files:
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/make/: Makefile.generic Makefile.generic.gnu 
+
