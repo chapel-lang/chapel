@@ -112,17 +112,17 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
       switch (nextChar) {
       case EOF:
         {
+          setConfigBuffer[stringLength] = '\0';
           char* message = _glom_strings(2, "Found end of file while reading "
                                         "string: ", equalsSign + 1);
-          setConfigBuffer[stringLength] = '\0';
           printError(message);
           break;
         }
       case '\n':
         {
+          setConfigBuffer[stringLength] = '\0';
           char* message = _glom_strings(2, "Found newline while reading "
                                         "string: ", equalsSign + 1);
-          setConfigBuffer[stringLength] = '\0';
           printError(message);
           break;
         }
