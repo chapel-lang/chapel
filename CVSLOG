@@ -88311,3 +88311,23 @@ Removed files:
 	chapel/test/types/complex/bradc/: tuple2complex.future 
 	chapel/test/types/complex/marybeth/: complex_tuple_64.future 
 
+---------------------------------------------------------------------------
+
+12/05/06 15:51:17 -- bradc
+
+Log message:
+	Added a prerequisites file to try and list our
+	assumptions and prerequisites for using Chapel.
+	There are probably other things I'm missing
+	here.
+	
+	Also, put in an explicit note about using
+	make rather than gmake on Cygwin since gmake
+	is not available there (but make is
+	GNU-compatible).
+
+Modified files:
+	./: README 
+Added files:
+	chapel/doc/release/: README.prereqs 
+
