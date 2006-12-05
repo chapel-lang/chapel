@@ -88020,3 +88020,17 @@ Added files:
 	                           test_trivial_leak.compopts 
 	                           test_trivial_leak.good 
 
+---------------------------------------------------------------------------
+
+12/04/06 16:19:44 -- deitz
+
+Log message:
+	Fixed a small bug in the runtime code that I introduced with my C++ to
+	C changes.
+	
+	This fixes the regression
+	  execflags/shannon/configs/configVarFileStringsMismatch
+
+Modified files:
+	chapel/runtime/src/: config.c 
+
