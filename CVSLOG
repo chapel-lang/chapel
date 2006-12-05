@@ -88034,3 +88034,22 @@ Log message:
 Modified files:
 	chapel/runtime/src/: config.c 
 
+---------------------------------------------------------------------------
+
+12/04/06 16:34:52 -- bradc
+
+Log message:
+	Updated clobber rule to only remove bin/ and lib/
+	directories if no other platforms are using them.
+	This prevents a linux installation from removing
+	the binaries and libraries of a cygwin or linux64
+	installation, for example.
+	
+	Changed the message printed when making platform-
+	specific subdirectories to clarify some confusion
+	Kevin was having during the build of the release.
+
+Modified files:
+	./: Makefile 
+	chapel/make/: Makefile.base 
+
