@@ -88053,3 +88053,21 @@ Modified files:
 	./: Makefile 
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+12/04/06 17:11:47 -- waynew
+
+Log message:
+	Clarification of a bug with begin blocks + local class/record vars.
+	
+	Added tests with a begin block + class/record vars.
+
+Modified files:
+	./: STATUS 
+Added files:
+	chapel/test/parallel/begin/waynew/: class1.chpl class1.good 
+	                                    class2.chpl class2.future 
+	                                    class2.good record1.chpl 
+	                                    record1.good record2.chpl 
+	                                    record2.future record2.good 
+
