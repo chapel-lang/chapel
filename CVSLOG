@@ -88331,3 +88331,19 @@ Modified files:
 Added files:
 	chapel/doc/release/: README.prereqs 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:02:29 -- bradc
+
+Log message:
+	C-isms crept back into the runtime, so I fixed them and
+	enabled the -W flags that Steve enabled the other day
+	only if CHPL_DEVELOPER is set and gcc version 3.4.x is
+	used (this means that when we upgrade to a newer gcc,
+	these warnings will go away again, but I couldn't come
+	up with a less fragile approach easily).
+
+Modified files:
+	chapel/make/: Makefile.gnu 
+	chapel/runtime/src/: chplmem.c config.c 
+
