@@ -9,6 +9,8 @@ This directory contains the following documentation:
   README.chplenv   : setting up your shell environment to use Chapel
   README.compiling : how to use the Chapel compiler to compile code
   README.executing : execution options for Chapel programs
+  README.prereqs   : prerequisites for using Chapel
+  README.cygwin    : notes for Cygwin users
 
   hpcc06.pdf : our report for the 2006 HPC Challenge competition
                (http://www.hpcchallenge.org), which also serves as a

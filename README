@@ -71,3 +71,4 @@ For more detailed information about...      refer to...
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
   ...the Chapel language specification        ...doc/spec.pdf
+  ...notes for Cygwin users                   ...doc/README.cygwin

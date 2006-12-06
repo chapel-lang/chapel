@@ -16,35 +16,3 @@ The following are prerequisites and assumptions for using Chapel:
    compile our code using gcc/g++, and have used the following
    versions at various times on various platforms: egcs-2.91.66,
    3.3.4, 3.4.4
-
-
-
-
-
-------------
-Cygwin notes
-------------
-
-For best results on Cygwin, please unpack the release in a directory
-whose path contains no spaces.  Currently, our compiler-generated
-Makefiles break when the compiler and runtime have an absolute path
-containing spaces.  If any Cygwin experts have tips on addressing this
-issue in a portable way, please let us know at chapel_info@cray.com.
-
-
-In order to get the required tools listed above, Cygwin users will
-need to ensure that the following packages are installed in addition
-to the standard Cygwin packages:
-
-  Devel
-    + gcc
-    + make
-  Perl
-    + perl
-  Shells
-    + tcsh
-
-
-For more information on Cygwin, please refer to:
-
-     http://www.cygwin.com
