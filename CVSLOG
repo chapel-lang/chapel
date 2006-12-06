@@ -88524,3 +88524,13 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_uint2.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 11:46:58 -- waynew
+
+Log message:
+	Checked in a bad test. Corrected test caught by Brad.
+
+Modified files:
+	chapel/test/parallel/begin/waynew/: record2.chpl 
+
