@@ -38,6 +38,8 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
 
 void updateCall(CallExpr* call, ChainHashMap<Symbol*,PointerHashFns,Symbol*>& available) {
   if (call->primitive) {
+    if (!strcmp(call->primitive->name, "fscanf"))
+      return;
     for_actuals(actual, call) {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
         if (Symbol* copy = available.get(sym->var))

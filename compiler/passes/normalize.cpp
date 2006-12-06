@@ -23,8 +23,6 @@ static void enable_scalar_promotion(FnSymbol* fn);
 static void iterator_transform(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
-static void initialize_out_formals(FnSymbol* fn);
-static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
@@ -88,8 +86,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       normalize_returns(fn);
-      initialize_out_formals(fn);
-      insert_formal_temps(fn);
     }
   }
 
@@ -586,47 +582,6 @@ static void normalize_returns(FnSymbol* fn) {
   }
   if (!label_is_used)
     label->defPoint->remove();
-}
-
-
-static void initialize_out_formals(FnSymbol* fn) {
-  for_formals(arg, fn) {
-    if (arg->intent == INTENT_OUT) {
-      if (arg->defaultExpr)
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, arg->defaultExpr->copy()));
-      else
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, new CallExpr("_init", arg)));
-    }
-    if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT)
-      arg->intent = INTENT_REF;
-  }
-}
-
-
-static void insert_formal_temps(FnSymbol* fn) {
-  if (!formalTemps)
-    return;
-
-  if (!strcmp("=", fn->name))
-    return;
-
-  Vec<DefExpr*> tempDefs;
-  ASTMap subs;
-
-  for_formals_backward(formal, fn) {
-    if (formal->intent == INTENT_REF || formal->intent == INTENT_PARAM)
-      continue;
-    VarSymbol* temp = new VarSymbol(stringcat("_", formal->name));
-    DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
-    tempDefs.add(tempDef);
-    subs.put(formal, temp);
-  }
-
-  update_symbols(fn->body, &subs);
-
-  forv_Vec(DefExpr, tempDef, tempDefs) {
-    fn->insertAtHead(tempDef);
-  }
 }
 
 

@@ -27,7 +27,6 @@ int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
-bool formalTemps = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -96,7 +95,6 @@ static ArgumentDescription arg_desc[] = {
  {"log-dir", ' ', "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
 
  {"", ' ', "Developer Workarounds", NULL, NULL, NULL, NULL},
- {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
  {"", ' ', "Misc. Developer Flags", NULL, NULL, NULL, NULL},

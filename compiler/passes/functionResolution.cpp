@@ -1288,7 +1288,6 @@ insertFormalTemps(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->intent != INTENT_PARAM &&
         formal->intent != INTENT_TYPE &&
-        formal->intent != INTENT_REF &&
         formal->name != _this &&
         !formal->isTypeVariable &&
         formal->type != dtSetterToken &&
@@ -1305,15 +1304,28 @@ insertFormalTemps(FnSymbol* fn) {
   update_symbols(fn, &formals2vars);
   Vec<BaseAST*> formals;
   formals2vars.get_keys(formals);
-  forv_Vec(BaseAST, formal, formals) {
+  forv_Vec(BaseAST, ast, formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(ast);
     VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
 
     // hack for constant assignment checking
     // remove when constant checking is improved
     fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
-
-    fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
+    if (formal->intent == INTENT_OUT) {
+      if (formal->defaultExpr)
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
+      else
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", formal)));
+    } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
+    else
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
     fn->insertAtHead(new DefExpr(tmp));
+    if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
+      formal->intent = INTENT_REF;
+      ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
+      last->insertBefore(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
+    }
   }
 }
 

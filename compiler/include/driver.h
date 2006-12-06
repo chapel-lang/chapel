@@ -7,10 +7,6 @@
 
 extern FILE* html_index_file;
 
-// Begin temporary development flags
-extern bool formalTemps;
-// End temporary development flags
-
 extern int instantiation_limit;
 
 extern int fdump_html;

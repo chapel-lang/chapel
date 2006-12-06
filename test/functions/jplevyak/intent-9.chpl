@@ -4,6 +4,6 @@ def foo(out x) {
   x = 7;
 }
 
-var y;
+var y: int;
 foo(y);
 writeln("expect 7 ", y);
