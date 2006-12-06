@@ -88429,3 +88429,21 @@ Log message:
 Modified files:
 	chapel/doc/release/: README.cygwin 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:57:24 -- bradc
+
+Log message:
+	Added a Makefile to the examples directory that
+	can be used to build all of the examples, or one
+	at a time by name.  This uses gmake's generics
+	capabilities, so when new tests are added to the
+	directory, they should be added to the TARGETS
+	list in the Makefile (as well as the README as
+	before), but no additional work should be required.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore README 
+Added files:
+	chapel/test/release/examples/: Makefile 
+
