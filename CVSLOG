@@ -88375,3 +88375,29 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: .cvsignore README 
 	                                      fft-mta.chpl fft.chpl 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:22:20 -- bradc
+
+Log message:
+	Two changes that ought to fix the develhelp and userhelp
+	regressions:
+	
+	1) Removed the develhelp test (testing --help from a
+	   developer's perspective), on the basis that we don't
+	   care if developer's flags are poorly documented, and
+	   that they change more frequently, causing more work
+	   to keep this test updated.
+	
+	2) Added a sub_test script that unsets the CHPL_UNOPTIMIZED
+	   flag so that Steve's unoptimized regressions don't keep
+	   failing on this test.
+
+Added files:
+	chapel/test/compflags/bradc/help/: sub_test 
+Removed files:
+	chapel/test/compflags/bradc/help/: develhelp.chpl 
+	                                   develhelp.compopts 
+	                                   develhelp.prediff 
+	                                   develhelp.txt 
+
