@@ -32,11 +32,16 @@ The following output is shown:
 
 \subsection{Example: Jacobi}
 The following example Chapel program solves a system of finite difference
-equations for the Laplace equation.  This program demonstrates the use
+equations for the Laplace equation using the Jacobi method.  This program 
+demonstrates the use
 of domains and arrays, as well as introducing the syntax for commonly used
-statements.
+Chapel statements.
 
 \begin{numberedchapel}
+config var n = 5,
+           epsilon = 0.00001,
+           verbose = false;
+
 def main() {
   const ProblemSpace = [1..n, 1..n],
         BigDomain = [0..n+1, 0..n+1];
@@ -75,19 +80,91 @@ def main() {
 }
 \end{numberedchapel}
 
+The program consists of a \chpl{main} function and a three variable declarations
+global to \chpl{main}.  The three variables, \chpl{n}, \chpl{epsilon} and
+\chpl{verbose} are configuration variables, as indicated by the \chpl{config}
+keyword, and they are set to default initial values.  None of these variables
+contain a type in their declaration.  Instead the types of these variables are
+inferred from their initial values:  \chpl{n} is an integer, \chpl{epsilon} is
+a floating point type, and \chpl{verbose} is a boolean type.  Configuration 
+variables may be set 
+to other values at program execution through command line switches.  For example,
+to change the value of \chpl{verbose} so that more printing is enabled, 
+the following command would be used:
+\begin{verbatim}
+> ./a.out --verbose=true
+\end{verbatim}  
+
+There are two arrays in this example, \chpl{A} and \chpl{Temp},  
+which are used in each iteration of the \chpl{do while} loop in lines 21-35.  
+At the completion of this loop, \chpl{A} contains the resulting solution.
+The extra \chpl{Temp} array is needed since the Jacobi iteration in lines 22 and 23 
+requires that 
+all entries be computed before the array is updated with new entries.  
+The two arrays are declared using \chpl{BigDomain}.  
+When the \chpl{Temp} array is updated in the \chpl{forall} loop in lines 22 and 23, 
+and the \chpl{A} array is updated in line 26, \chpl{ProblemSpace} is used.  
+Both \chpl{BigDomain} and \chpl{ProblemSpace} are {\em domains}.  
+Domains are fundamental Chapel constructs which store information about how data
+is stored and iterated over.  Using domains results in clean code for which the 
+compiler can effectively identify parallelism and optimizations.  
+
 Domains are sets of indices which may be distributed
 across multiple processors indicating how data and parallel work should
-be divided among the processors.  When domains are used in the declaration
-of arrays, the data in the arrays is distributed across processors according
-to the domain's distribution.  When domains are used as iterators in \chpl{for}
-\chpl{forall} statements, the iterations are distributed among processors
-according to the domain's distribution.
+be divided among the processors.  An array is a mapping from the domain
+to a collection of variables.  An array is thus defined using a domain, distributing
+the entries of the array according to the domain's distribution.
+When a domain is used as the iterator in a \chpl{for} or 
+\chpl{forall} statement, the iterations are distributed among processors
+according to the domain's distribution.  There are five kinds of domains in
+the Chapel language:  {\em arithmetic}, {\em sparse}, {\em indefinite}, 
+{\em opaque} and {\em enumerated}.  More information about domains and
+arrays is given in~\rsec{Domains_and_Arrays}. 
 
-There are two domains that are used in this program, \chpl{ProblemSpace}
-and \chpl{BigDomain}.  By defining \chpl{ProblemSpace} to be the interior
-points of the larger grid, \chpl{BigDomain}, the computation can be cleanly specified
-for just the interior points, eliminating the need to write special case computations 
-for the boundary points.
+In this example, both domains are declared to be \chpl{const}, indicating
+that the values for the domains remain constant during the execution of
+the program.  
+\chpl{ProblemSpace} is an arithmetic domain, defined to be the set 
+of two-dimensional indices, with each dimension spanning from \chpl{1} to \chpl{n}.  
+\chpl{BigDomain} is also an arithmetic domain, defined to be a two-dimensional 
+set of indices, which each dimension spanning from \chpl{0} to \chpl{n+1}.  Thus, 
+\chpl{BigDomain} is essentially the \chpl{ProblemSpace} domain with additional 
+boundary rows and columns.  By defining \chpl{ProblemSpace} to be the interior
+points of the larger grid, \chpl{BigDomain}, the Jacobi computation can be cleanly 
+specified in one line, line 23, for just the interior points, 
+eliminating the need to write special case computations for the boundary points.
+
+The arrays, \chpl{A} and \chpl{Temp} are declared to be of type \chpl{real} and
+are initialized to zero.  Because they are defined using \chpl{BigDomain}, the
+arrays are of size \chpl{n+2} $\times$ \chpl{n+2}. In line 11, row \chpl{n+1}
+of \chpl{A} is set to \chpl{1.0}.  In line 26, \chpl{A} is assigned the values
+of \chpl{Temp} for the entries corresponding to the \chpl{ProblemSpace} domain.
+Note that the array declaration in line 9 and
+the array assignments in lines 11 and 26 show how to assign values to all or to
+some slice of entries in an array.
+
+In the \chpl{do while} loop, each iteration contains parallel computations:
+a \chpl{forall} loop and a \chpl{max reduce} reduction operation.  The \chpl{forall}
+loop uses the \chpl{ProblemSpace} domain as the iterator.  Each iteration
+is indexed by a tuple of indices \chpl{(i,j)}, which avoids the use of
+a nest of two loops, one loop for the index \chpl{i} and one loop for the
+index{j}.  The compiler determines how this loop is made parallel, according
+to the default distribution for the \chpl{ProblemSpace} domain.   Similarly,
+the compiler will execute the reduction in line 25 in parallel, according
+to the \chpl{ProblemSpace} domain distribution.  The resulting value of
+the reduction, which is the maximum absolute value of the difference between
+\chpl{Temp} and \chpl{A}, is stored in \chpl{delta}.  Once \chpl{delta} is
+less than or equal to the value in \chpl{epsilon}, the \chpl{do while} loop 
+exits.
+
+The program ends with output, indicating that the computation is complete
+and giving information about convergence.  Optionally, according to the
+value of \chpl{verbose}, more output may be given before and during the
+computation of the Jacobi iteration.  Calls to the function \chpl{writeln}
+produce the output.  Each \chpl{writeln} call
+produces a line of output, followed by a line return.  The string \chpl{"\n"}
+results in  an additional line return, as in line 34 of the program.
+
 \subsection{Example: Norm}
 
 \begin{numberedchapel}
