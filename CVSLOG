@@ -88547,3 +88547,45 @@ Modified files:
 	chapel/test/classes/deitz/: test_type_in_class3.future 
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+12/06/06 15:24:17 -- deitz
+
+Log message:
+	Implemented inout and out to no longer incorrectly rely on pass by
+	reference.  Arguments of in and inout are copied in.  Arguments of
+	inout and out are copied out.
+	
+	Fixed a bug in copy propagation in which it was assumed that none of
+	the primitives altered an argument.  The primitive fscanf does, though
+	this really ought to be wrapped in a primitive that just returns the
+	value scanned in.  Copy propagation is now disabled on all arguments
+	to the fscanf primitive.
+	
+	Removed 6 .future files.  Fixed one of the .chpl files to not use a
+	variable without a type or an initializer.  Fixed one of the .good
+	files to assume left-to-right evaluation order so that the same
+	variable passed to multiple inout arguments gets its value back from
+	the one on the right.
+	
+	Removed --formal-temps flag as this is now done.  Removed old code to
+	insert formal temps during normalization.
+	
+	Removed handling of out arguments during normalization.  This is now
+	handled with the formal temp insertion.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/test/functions/jplevyak/: intent-9.chpl 
+	chapel/test/trivial/preston/: aliasing.good 
+Removed files:
+	chapel/test/functions/bradc/: intents-arrays2.future 
+	                              intents-arrays2a.future 
+	                              intents-classes3.future 
+	                              intents-classes4.future 
+	chapel/test/functions/jplevyak/: intent-9.future 
+	chapel/test/trivial/preston/: aliasing.future 
+
