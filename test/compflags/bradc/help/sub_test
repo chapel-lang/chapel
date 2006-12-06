@@ -1,0 +1,5 @@
+#!/bin/csh -f
+
+unsetenv CHPL_UNOPTIMIZED
+
+source ../../../Bin/sub_test
