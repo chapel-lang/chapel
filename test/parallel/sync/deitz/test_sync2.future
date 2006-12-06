@@ -1,5 +1,0 @@
-waynew
-
-Two errors here. One is a bug with begins and class variables (which 
-includes sync/single vars). The second is that we don't handle
-arguments referenced by begins. 

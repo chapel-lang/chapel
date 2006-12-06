@@ -232,6 +232,8 @@ pragma "inline" def _init(x) return nil:x;
 //
 pragma "inline" def _copy(a) return a;
 
+pragma "inline" def _pass(a) return _copy(a);
+
 //
 // _tostring conversions on primitive types
 //
@@ -359,6 +361,11 @@ pragma "synchronization primitive"
 pragma "inline"
 def _cast(type t, x: _syncvar)
   return __primitive("cast", t, x);
+
+pragma "synchronization primitive" 
+def _pass( sv:_syncvar) {
+  return sv;
+}
 
 pragma "synchronization primitive" 
 def _init( sv:_syncvar) {
@@ -511,6 +518,11 @@ pragma "synchronization primitive"
 pragma "inline"
 def _cast(type t, x: _singlevar)
   return __primitive("cast", t, x);
+
+pragma "synchronization primitive" 
+def _pass( sv:_singlevar) {
+  return sv;
+}
 
 pragma "synchronization primitive" 
 def _init( sv:_singlevar) {

@@ -118,6 +118,10 @@ def _copy(a: _array) {
   return b;
 }
 
+def _pass(a: _array) {
+  return a;
+}
+
 def _init(a: _array) {
   var b : [a.dom] a.elt_type;
   return b;

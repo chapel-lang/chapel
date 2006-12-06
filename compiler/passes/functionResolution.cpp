@@ -7,6 +7,11 @@
 #include "symscope.h"
 #include "runtime.h"
 
+static char* _init;
+static char* _pass;
+static char* _copy;
+static char* _this;
+static char* _assign;
 
 static void setFieldTypes(FnSymbol* fn);
 
@@ -1036,6 +1041,7 @@ resolveCall(CallExpr* call) {
             call->isNamed( "_copy") ||
             call->isNamed( "_cast") ||
             call->isNamed( "_init") ||
+            call->isNamed( "_pass") ||
             call->isNamed( "getNextCursor") ||
             call->isNamed( "getHeadCursor") ||
             call->isNamed( "getValue") ||
@@ -1274,10 +1280,50 @@ resolveCall(CallExpr* call) {
 }
 
 static void
+insertFormalTemps(FnSymbol* fn) {
+  if (fn->name == _pass || fn->name == _init ||
+      fn->name == _assign || fn->name == _copy)
+    return;
+  ASTMap formals2vars;
+  for_formals(formal, fn) {
+    if (formal->intent != INTENT_PARAM &&
+        formal->intent != INTENT_TYPE &&
+        formal->intent != INTENT_REF &&
+        formal->name != _this &&
+        !formal->isTypeVariable &&
+        formal->type != dtSetterToken &&
+        formal->type != dtMethodToken) {
+      VarSymbol* tmp = new VarSymbol(stringcat("_formal_tmp_", formal->name));
+      if ((formal->intent == INTENT_BLANK ||
+           formal->intent == INTENT_CONST) &&
+          !formal->type->symbol->hasPragma("array"))
+        tmp->consClass = VAR_CONST;
+      tmp->isCompilerTemp = true;
+      formals2vars.put(formal, tmp);
+    }
+  }
+  update_symbols(fn, &formals2vars);
+  Vec<BaseAST*> formals;
+  formals2vars.get_keys(formals);
+  forv_Vec(BaseAST, formal, formals) {
+    VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
+
+    // hack for constant assignment checking
+    // remove when constant checking is improved
+    fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
+
+    fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
+    fn->insertAtHead(new DefExpr(tmp));
+  }
+}
+
+static void
 resolveFns(FnSymbol* fn) {
   if (resolvedFns.set_in(fn))
     return;
   resolvedFns.set_add(fn);
+
+  insertFormalTemps(fn);
 
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, fn->body);
@@ -1519,6 +1565,12 @@ build_ddf() {
 
 void
 resolve() {
+  _init = astr("_init");
+  _pass = astr("_pass");
+  _copy = astr("_copy");
+  _this = astr("this");
+  _assign = astr("=");
+
   resolveFns(chpl_main);
 
   int num_types;
