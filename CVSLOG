@@ -88401,3 +88401,18 @@ Removed files:
 	                                   develhelp.prediff 
 	                                   develhelp.txt 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:31:29 -- bradc
+
+Log message:
+	On reflection, put Cygwin-specific prerequisites
+	into their own file figuring that nobody would
+	find them in README.prereqs.
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README README.prereqs 
+Added files:
+	chapel/doc/release/: README.cygwin 
+
