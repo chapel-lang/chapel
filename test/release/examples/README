@@ -28,14 +28,22 @@ example:
      chpl -o hello hello.chpl
 
 The hpcc06 tests are an exception -- they use multiple modules defined
-in multiple source files.  They can be compiled using the Makefile in
-the the hpcc06 directory, or by changing into the hpcc06 directory and
-using the following commands:
+using multiple source files.  They can be compiled using the following
+commands:
 
      chpl -o stream probSize.chpl stream.chpl
      chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
      chpl -o fft probSize.chpl fft.chpl
      chpl -o fft-mta probSize.chpl fft-mta.chpl
+
+We provide Makefiles in each directory that can be used to build a
+single test in that directory by name:
+
+     make hello
+
+or to build all tests in that directory and its subdirectories:
+
+     make all
 
 
 --------------------------------
