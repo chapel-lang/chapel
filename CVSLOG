@@ -88457,3 +88457,34 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/06/06 10:22:01 -- deitz
+
+Log message:
+	Inserted temporary variables for all formal arguments.  The temporary
+	variables are initialized with the new special _pass function.  For
+	all types except arrays, this calls the _copy function which is used
+	in cases where a new variable is initialized to an expression where no
+	type is specified.  The _copy function is equivalent to assignment in
+	all cases.  For arrays, the _pass function simply returns the same
+	array reference, thus allowing arrays to be passed by reference.
+	
+	Since the types of formal arguments are known at the point the _pass
+	function is inserted, it is not strictly necessary.  However, it does
+	push some mechanism into the modules rather than tying policy to the
+	compiler, which makes the implementation more robust.
+	
+	Removed three .futures.
+	
+	Updated one .good as it was wrong and is now right.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	chapel/test/functions/deitz/: test_var_function_access2.good 
+Removed files:
+	chapel/test/functions/deitz/: test_formal_copy1.future 
+	chapel/test/parallel/sync/deitz/: test_sync1.future 
+	                                  test_sync2.future 
+
