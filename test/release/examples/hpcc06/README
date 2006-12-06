@@ -19,6 +19,10 @@ language or standard libraries.  The changes to date are:
     explicit return types in the iterators of ra-randstream.chpl have
     been removed to match the style of the rest of the code.
 
+  * the compiler now supports cast to complex types other than simply
+    "complex", so the casts in the FFT codes were changed to refer to
+    the named type ":elemType" rather than ":complex".
+
   * the memRatio argument to computeProblemSize in probSize.chpl was
     changed into a configuration constant, as alluded to in the paper.
 
@@ -28,5 +32,6 @@ language or standard libraries.  The changes to date are:
     implementation.
 
   * the physicalMemory() interface was changed from a standalone
-    function to a method on the locale type, so the calls to physical
-    memory were updated to reflect this change.
+    function taking a locale argument to a method on the locale type,
+    so the calls to physicalMemory() were updated to reflect this
+    change.

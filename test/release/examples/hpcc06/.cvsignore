@@ -1,1 +1,6 @@
 *.tmp
+stream
+ra
+fft
+fft-mta
+output

@@ -73,12 +73,12 @@ def computeTwiddles(Twiddles) {
 
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
-                          in (x, x):complex;
+                          in (x, x):elemType;
   forall i in [1..numTwdls/2) {
     const x = cos(delta*i),
           y = sin(delta*i);
-    Twiddles(i)            = (x, y):complex;
-    Twiddles(numTwdls - i) = (y, x):complex;
+    Twiddles(i)            = (x, y):elemType;
+    Twiddles(numTwdls - i) = (y, x):elemType;
   }
 }
 
@@ -111,14 +111,14 @@ def dfft(A: [?ADom], W) {
       var wk2 = W(k1),
           wk1 = W(2*k1),
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
-                 2 * wk2.im * wk1.re - wk1.im):complex;
+                 2 * wk2.im * wk1.re - wk1.im):elemType;
 
       forall j in [k..k+span) do
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
       wk1 = W(2*k1+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
-             2 * wk2.re * wk1.re - wk1.im):complex;
+             2 * wk2.re * wk1.re - wk1.im):elemType;
       wk2 *= 1.0i;
 
       forall j in [k+m..k+m+span) do

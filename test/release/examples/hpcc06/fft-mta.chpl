@@ -99,12 +99,12 @@ def computeTwiddles(Twiddles) {
 
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
-                          in (x, x):complex;
+                          in (x, x):elemType;
   forall i in [1..numTwdls/2) {
     const x = cos(delta*i),
           y = sin(delta*i);
-    Twiddles(i)            = (x, y):complex;
-    Twiddles(numTwdls - i) = (y, x):complex;
+    Twiddles(i)            = (x, y):elemType;
+    Twiddles(numTwdls - i) = (y, x):elemType;
   }
 }
 
@@ -184,23 +184,23 @@ def cft1st(A, W) {
   x2 = A(6) + A(7);
   const x3 = A(6) - A(7);
   A(4) = x0 + x2;
-  A(6) = (x2.im - x0.im, x0.re - x2.re):complex;
+  A(6) = (x2.im - x0.im, x0.re - x2.re):elemType;
   x0 = x1 + x3*1.0i;
-  A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):complex;
-  x0 = (x3.im + x1.re, x3.re - x1.im):complex;
-  A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
+  A(5) = wk1r * (x0.re - x0.im, x0.re + x0.im):elemType;
+  x0 = (x3.im + x1.re, x3.re - x1.im):elemType;
+  A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):elemType;
 
   forall (j,k1) in ([8..A.numElements) by 8, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
         wk3 = (wk1.re - 2* wk2.im * wk1.im,
-               2 * wk2.im * wk1.re - wk1.im):complex;
+               2 * wk2.im * wk1.re - wk1.im):elemType;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
     wk1 = W(2*k1+1);
     wk3 = (wk1.re - 2*wk2.re * wk1.im, 
-           2*wk2.re * wk1.re - wk1.im):complex;
+           2*wk2.re * wk1.re - wk1.im):elemType;
     wk2 = wk2*1.0i;
     butterfly(wk1, wk2, wk3, A[j+4..j+7]);
   }
@@ -215,7 +215,7 @@ def cftmd0(span, A, W) {
     butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
 
   forall j in [m..m+span) do
-    butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
+    butterfly((wk1r, wk1r):elemType, 1.0i, (-wk1r, wk1r):elemType,
               A[j..j+3*span by span]);
 }
 
@@ -296,8 +296,8 @@ def cftmd21(span, A, W) {
 
 
 def interpIm(a, b)
-  return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):complex;
+  return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):elemType;
 
 
 def interpRe(a, b) 
-  return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):complex;
+  return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):elemType;
