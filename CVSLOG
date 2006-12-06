@@ -88512,3 +88512,15 @@ Log message:
 Modified files:
 	chapel/doc/release/: spec.pdf 
 
+---------------------------------------------------------------------------
+
+12/06/06 10:48:59 -- deitz
+
+Log message:
+	Updated error message in .good which looks very good.  Removed .future.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_uint2.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_uint2.future 
+
