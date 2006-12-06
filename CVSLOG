@@ -88447,3 +88447,13 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: Makefile 
 
+---------------------------------------------------------------------------
+
+12/05/06 20:09:58 -- marybeth
+
+Log message:
+	Completed first draft of Jacobi section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
