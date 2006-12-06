@@ -357,7 +357,7 @@ def _copy( sv:_syncvar) {
 
 pragma "synchronization primitive"
 pragma "inline"
-def _cast(type t, x: _syncvar) var
+def _cast(type t, x: _syncvar)
   return __primitive("cast", t, x);
 
 pragma "synchronization primitive" 
@@ -509,7 +509,7 @@ def _copy( sv:_singlevar) {
 
 pragma "synchronization primitive"
 pragma "inline"
-def _cast(type t, x: _singlevar) var
+def _cast(type t, x: _singlevar)
   return __primitive("cast", t, x);
 
 pragma "synchronization primitive" 
@@ -589,7 +589,7 @@ pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
 //
 // casts
 //
-pragma "inline" def _cast(type t, x) var
+pragma "inline" def _cast(type t, x)
   return __primitive("cast", t, x);
 
 //
