@@ -1,11 +1,11 @@
 // Test a begin block with a reference to a local record variable
 
-class R {
+record R {
   var x: int;
 }
 
 def jam() {
-  var r = R();
+  var r: R;
   r.x = 7;
   writeln( r);
 
