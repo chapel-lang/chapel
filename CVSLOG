@@ -88488,3 +88488,17 @@ Removed files:
 	chapel/test/parallel/sync/deitz/: test_sync1.future 
 	                                  test_sync2.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 10:29:26 -- deitz
+
+Log message:
+	Removed .future.  Error message seems good to me.  It was a .future
+	because it used to mention a float in the assignment of an integer to
+	an unsigned integer.  It now mentions only integers.
+
+Modified files:
+	chapel/test/types/scalar/bradc/: assignUintNegative.good 
+Removed files:
+	chapel/test/types/scalar/bradc/: assignUintNegative.future 
+
