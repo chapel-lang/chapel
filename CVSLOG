@@ -88361,3 +88361,17 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/spec/: Expressions.tex 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:09:36 -- bradc
+
+Log message:
+	Updated the FFT examples in the release to use casts
+	to the named type "elemType" rather than "complex",
+	based on Steve's latest change.  Updated the README
+	to note this change.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: .cvsignore README 
+	                                      fft-mta.chpl fft.chpl 
+
