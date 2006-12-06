@@ -149,10 +149,10 @@ void startTrackingMem(void) {
 static int alreadyPrintingStat = 0;
 
 _uint64 _mem_used(void) {
+  _uint64 u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
     printError("memoryUsed() only works with the --memstat flag");
-  _uint64 u;
   u = (_uint64)totalMem;
   return u;
 }
