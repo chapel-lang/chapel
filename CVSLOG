@@ -88416,3 +88416,16 @@ Modified files:
 Added files:
 	chapel/doc/release/: README.cygwin 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:39:43 -- bradc
+
+Log message:
+	Based on Kevin's feedback, reproduced problem that unpacking
+	the release with WinZip converts LF -> CR+LF, breaking the
+	build.  Put a note to this effect (how to avoid, how to fix)
+	in the Cygwin README.
+
+Modified files:
+	chapel/doc/release/: README.cygwin 
+
