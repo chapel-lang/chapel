@@ -23,6 +23,22 @@ Cygwin notes
        + tcsh
 
 
+* If using WinZip to unpack the release, text files such as Makefiles
+  may have their linefeeds converted into carriage return/linefeed
+  combinations, breaking the build.  This can be fixed by using
+  Cygwin's gunzip and tar utilities to unpack the release in the
+  traditional way:
+
+     gunzip chapel.tar.gz
+     tar xvf chapel.tar
+
+  or by running the dos2unix utility to convert files uncompressed by
+  WinZip back into bare linefeed format:
+
+     (making sure you're in the "chapel" directory)
+     find . -name "*" -exec dos2unix {} \;
+
+
 * For more information on Cygwin, please refer to:
 
      http://www.cygwin.com
