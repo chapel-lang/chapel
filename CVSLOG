@@ -88534,3 +88534,16 @@ Log message:
 Modified files:
 	chapel/test/parallel/begin/waynew/: record2.chpl 
 
+---------------------------------------------------------------------------
+
+12/06/06 14:26:35 -- deitz
+
+Log message:
+	Editing pass through STATUS with Wayne
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-strideduintdomain.future 
+	chapel/test/classes/deitz/: test_type_in_class3.future 
+	./: STATUS 
+
