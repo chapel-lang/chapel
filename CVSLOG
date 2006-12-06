@@ -88347,3 +88347,17 @@ Modified files:
 	chapel/make/: Makefile.gnu 
 	chapel/runtime/src/: chplmem.c config.c 
 
+---------------------------------------------------------------------------
+
+12/05/06 16:06:25 -- deitz
+
+Log message:
+	Changed the cast function from a var function to a non-var function.
+	Casts are no longer lvalues.  Updated the spec.
+	
+	Why did I make them lvalues?  Should they be?  They are not in C.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/spec/: Expressions.tex 
+
