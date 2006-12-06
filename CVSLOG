@@ -88502,3 +88502,13 @@ Modified files:
 Removed files:
 	chapel/test/types/scalar/bradc/: assignUintNegative.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 10:35:02 -- deitz
+
+Log message:
+	Snapshot spec for second internal release.
+
+Modified files:
+	chapel/doc/release/: spec.pdf 
+
