@@ -1,1 +1,1 @@
-needs to be updated
+test_array_uint2.chpl:1: error: type mismatch in assignment from domain(1,uint) to domain(1,int)
