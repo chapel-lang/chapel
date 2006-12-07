@@ -88681,3 +88681,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl 
 
+---------------------------------------------------------------------------
+
+12/06/06 22:08:41 -- marybeth
+
+Log message:
+	Initial draft of Norm section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
