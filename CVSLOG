@@ -88670,3 +88670,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl 
 
+---------------------------------------------------------------------------
+
+12/06/06 21:48:53 -- marybeth
+
+Log message:
+	Removing the :[] specification on array formal arguments when
+	the domain is not needed.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
