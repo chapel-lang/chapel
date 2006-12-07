@@ -28,7 +28,7 @@ module Norm{
     }
   }
 
-  def norm(x:[?D], p: normType) where x.rank > 2 {
+  def norm(x:[], p: normType) where x.rank > 2 {
     compilerError("Norms not implemented for array ranks > 2D");
   }
 
