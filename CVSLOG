@@ -88659,3 +88659,14 @@ Added files:
 	chapel/test/parallel/sync/waynew/: if1.chpl if1.future if1.good 
 	                                   if2.chpl if2.future if2.good 
 
+---------------------------------------------------------------------------
+
+12/06/06 21:09:31 -- marybeth
+
+Log message:
+	Removed the query on the domain for the third version of the
+	norm function.  It's not needed, and confusing for it to be there.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
