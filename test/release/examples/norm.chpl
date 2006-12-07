@@ -1,7 +1,7 @@
 module Norm{
   enum normType {norm1, norm2, normInf, normFrob};
 
-  def norm(x: [], p: normType) where x.rank == 1 {
+  def norm(x, p: normType) where x.rank == 1 {
     select (p) {
       when norm1 do return + reduce abs(x);
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
@@ -28,11 +28,11 @@ module Norm{
     }
   }
 
-  def norm(x:[], p: normType) where x.rank > 2 {
+  def norm(x, p: normType) where x.rank > 2 {
     compilerError("Norms not implemented for array ranks > 2D");
   }
 
-  def norm(x: []) {
+  def norm(x) {
     select (x.rank) {
       when 1 do return norm(x, norm2);
       when 2 do return norm(x, normFrob);
