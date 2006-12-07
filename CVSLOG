@@ -88642,3 +88642,20 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl norm.good 
 
+---------------------------------------------------------------------------
+
+12/06/06 17:43:38 -- waynew
+
+Log message:
+	Test of begin with references to an array variable.
+	
+	Found a bug with synchronization variables in the expression of a
+	conditional statement.  Added .futures and updated STATUS.
+
+Modified files:
+	./: STATUS 
+Added files:
+	chapel/test/parallel/begin/waynew/: array1.chpl array1.good 
+	chapel/test/parallel/sync/waynew/: if1.chpl if1.future if1.good 
+	                                   if2.chpl if2.future if2.good 
+
