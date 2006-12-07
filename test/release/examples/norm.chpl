@@ -4,7 +4,7 @@ module Norm{
   def norm(x: [], p: normType) where x.rank == 1 {
     select (p) {
       when norm1 do return + reduce abs(x);
-      when norm2 do return sqrt(+ reduce (x*x));
+      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
       when normInf do return max reduce abs(x);
       when normFrob do halt("From-norm not defined for 1D arrays");
       otherwise halt("Unexpected norm type");
@@ -22,7 +22,7 @@ module Norm{
       when normInf do
         return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)]));
 
-      when normFrob do return sqrt(+ reduce abs(x));
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
 
       otherwise halt("Unexpected norm type");
     }
@@ -60,7 +60,7 @@ module TestNorm {
   }
 
   def main() {
-    const D1 = [1..5];
+    const D1 = [1..4];
     var a:[D1] real;
     a = 2.0;
     testNorm(a);
