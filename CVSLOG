@@ -88601,3 +88601,19 @@ Modified files:
 	chapel/test/reductions/bradc/manual/: 
 	                                      threeclasstypes-construct.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 16:52:49 -- deitz
+
+Log message:
+	Fixed a bug in handling out intents on generic arguments in which they
+	were initialized to nil.
+	
+	Fixed a .future Chapel code to not assign (1..n) to a domain; I made
+	it use [1..n] instead.  Also added a missing writeln.  Removed the
+	.future file as this test now works.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/functions/bradc/: intents-arrays.chpl 
+
