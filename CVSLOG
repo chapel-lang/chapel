@@ -88589,3 +88589,15 @@ Removed files:
 	chapel/test/functions/jplevyak/: intent-9.future 
 	chapel/test/trivial/preston/: aliasing.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 16:15:35 -- deitz
+
+Log message:
+	Finished edit pass of STATUS with Wayne.
+
+Modified files:
+	./: STATUS 
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct.future 
+
