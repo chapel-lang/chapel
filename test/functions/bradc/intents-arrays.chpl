@@ -1,5 +1,5 @@
 config var n: int = 6;
-var D: domain(1) = (1..n);
+var D: domain(1) = [1..n];
 
 def callin(in x) {
   writeln("in callin, x is: ", x);
@@ -11,6 +11,7 @@ def callin(in x) {
 
 
 def callout(out x) {
+  writeln("in callout, x is: ", x);
   forall i in D {
     x(i) = i;
   }

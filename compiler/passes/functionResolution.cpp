@@ -1311,8 +1311,9 @@ insertFormalTemps(FnSymbol* fn) {
     // hack for constant assignment checking
     // remove when constant checking is improved
     fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
+
     if (formal->intent == INTENT_OUT) {
-      if (formal->defaultExpr)
+      if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
       else
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", formal)));
