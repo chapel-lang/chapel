@@ -88711,3 +88711,19 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/07/06 15:26:38 -- bradc
+
+Log message:
+	Filled in initial definition of Random module.
+	
+	Also improved spacing for standard module
+	definitions -- horizontal spacing is now good.
+	Vertical spacing is improved, but could use
+	further work (which I'm going to try now.
+	Wanted to checkpoint before going futher).
+
+Modified files:
+	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
+
