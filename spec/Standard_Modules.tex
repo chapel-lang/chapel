@@ -335,7 +335,85 @@ than the argument in absolute value.
 \subsection{Random}
 \label{Random}
 
-This section is forthcoming.
+The module \chpl{Random} supports the generation of pseudo-random
+values and streams of values.  The current interface is minimal and
+should be expected to grow and evolve over time.
+
+\begin{protohead}
+class RandomStream
+\end{protohead}
+\begin{protobody}
+Implements a pseudo-random stream of values.  Our current
+implementation generates the values using a linear congruential
+generator.  In future versions of this module, the RandomStream class
+will offer a wider variety of algorithms for generating pseudo-random
+values.
+\end{protobody}
+
+\begin{protohead}
+const RandomStream.seed: int(64)
+\end{protohead}
+\begin{protobody}
+The seed value for the random stream.  If no seed is specified in the
+constructor, the millisecond value of the current time is used.  The
+seed value must be an odd integer.  If an even integer is supplied,
+the class constructor will increment it to obtain an odd integer.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.fillRandom(x:[?D] real)
+\end{protohead}
+\begin{protobody}
+Fill the argument array, \chpl{x}, with the next $|$\chpl{D}$|$ values
+of the pseudo-random stream.  Arrays of arbitrary rank can be passed
+to this routine, causing the 1D stream of values to be mapped to the
+array elements according to the array's default iteration order.  Once
+our implementation supports distributed arrays, this routine is
+intended to fill the array's values in parallel.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.fillRandom(x:[?D] complex)
+\end{protohead}
+\begin{protobody}
+Similar to the previous routine, but for use with arrays of complex
+values.  The elements are filled in the same order as above except
+that pairs of values from the stream are assigned to each element, the
+first to the real component, the second to the imaginary.  As this
+module matures, we will support \chpl{fillRandom} for arrays of other
+element types as well.
+\end{protobody}
+
+\begin{protohead}
+SeedGenerator
+\end{protohead}
+\begin{protobody}
+A symbol that can be used to generate seed values for the RandomStream
+class.
+\end{protobody}
+
+\begin{protohead}
+SeedGenerator.clockMS
+\end{protohead}
+\begin{protobody}
+Generates a seed value using the milliseconds value from the current
+time.  As this module matures, \chpl{SeedGenerator} will support
+additional mechanisms for generating seed values.
+\end{protobody}
+
+\begin{protohead}
+def fillRandom(x:[], initseed: int(64))
+\end{protohead}
+\begin{protobody}
+
+A routine provided for convenience to support filling an array
+\chpl{x} with pseudo-random values without explicitly constructing an
+instance of the \chpl{RandomStream} class, useful for filling a single
+array or multiple arrays which require no coherence between them.  The
+\chpl{initseed} parameter corresponds to the \chpl{seed} member of the
+\chpl{RandomStream} class and will default to the milliseconds value
+of the current time if no seed value is provided.
+\end{protobody}
 
 \subsection{Standard}
 \label{Standard}
