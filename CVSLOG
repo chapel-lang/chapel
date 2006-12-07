@@ -88627,3 +88627,18 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: intents-arrays.future 
 
+---------------------------------------------------------------------------
+
+12/06/06 17:21:10 -- marybeth
+
+Log message:
+	Corrected the Frobenius norm calculation.  Added abs to the 2-norm
+	vector calculation.
+	
+	Changed the test program so that D1 = [1..4].  It gives a better
+	comparison to D2.  (And, it was how I noticed the Frobenius norm was
+	defined incorrectly.)
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl norm.good 
+
