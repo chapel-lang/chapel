@@ -77,6 +77,7 @@ Tuples, Sequences, and Iterators
     - Iterators with parameter locals
     - Iterators with intents
     - Recursive iterators
+    - Anonymous domain in iterator
 
 Arrays and Domains
 ==================
@@ -98,6 +99,10 @@ Arrays and Domains
 Generics
 ========
 
+  * bugs
+    - Generic functions without return statements in paths that will be
+       eliminated via parameter folding
+    - Type aliases in generic class defined by instantiated types
 
 Parallelism and Synchronization
 ===============================
@@ -128,10 +133,3 @@ compiler
   * bugs
     - error messages are incomplete and/or inaccurate
     - help message printing config vars and their values
-
-questions
----------
-    - Class constructor with type argument
-    - Function call expression return with generic functions or variable argument functions
-    - Generic class using the type as default value of generics
-    - Anonymous domain in iterator
