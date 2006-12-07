@@ -44,6 +44,7 @@ Functions
   * bugs
     - More visible nested functions are not more specific
     - Return statements in type select statements
+Future (deitz) [Error matching program output for functions/deitz/test_default_type]
 
 Classes, Records, and Unions
 ============================
@@ -115,6 +116,7 @@ Parallelism and Synchronization
 
   * bugs
     - Arrays of synchronization variables
+    - Synchronization variables in the expression of a conditional statement
     - Begin blocks that use sync/single variables that are locals
 
 Locality and Distributions
