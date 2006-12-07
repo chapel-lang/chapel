@@ -88691,3 +88691,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/07/06 12:10:17 -- marybeth
+
+Log message:
+	Added : [] type specification for all array formal arguments in the norm example.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
