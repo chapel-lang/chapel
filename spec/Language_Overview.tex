@@ -435,54 +435,54 @@ by a module which tests \chpl{Norm}, demonstrating different calls to the \chpl{
 function.
 
 \begin{numberedchapel}
-module Norm{
-  enum normType {norm1, norm2, normInf, normFrob};
+module Norm{                                    (*\label{norm_start}*)
+  enum normType {norm1, norm2, normInf, normFrob}; (*\label{norm_enum}*)
 
-  def norm(x: [], p: normType) where x.rank == 1 {
-    select (p) {
-      when norm1 do return + reduce abs(x);
-      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
-      when normInf do return max reduce abs(x);
-      when normFrob do halt("From-norm not defined for 1D arrays");
-      otherwise halt("Unexpected norm type");
-    }
-  }
+  def norm(x: [], p: normType) where x.rank == 1 { (*\label{vec_start}*)
+    select (p) {                                   (*\label{vec_select_start}*)
+      when norm1 do return + reduce abs(x);        (*\label{vec_norm1}*)
+      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  (*\label{vec_norm2}*)
+      when normInf do return max reduce abs(x);  (*\label{vec_normInf}*)
+      when normFrob do halt("From-norm not defined for 1D arrays");(*\label{vec_normFrob}*)
+      otherwise halt("Unexpected norm type"); (*\label{vec_unexp}*)
+    } (*\label{vec_select_end}*)
+  } (*\label{vec_end}*)
 
-  def norm(x: [?D], p: normType) where x.rank == 2 {
-    select (p) {
-      when norm1 do
-        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j]));
+  def norm(x: [?D], p: normType) where x.rank == 2 { (*\label{mat_start}*)
+    select (p) {                                     (*\label{mat_select_start}*)
+      when norm1 do                                  (*\label{mat_norm1_1}*)
+        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j])); (*\label{mat_norm1_2}*)
 
-      when norm2 do
-        halt("Haven't implemented 2-norm for 2D arrays yet");
+      when norm2 do  (*\label{mat_norm2_1}*)
+        halt("Haven't implemented 2-norm for 2D arrays yet"); (*\label{mat_norm2_2}*)
 
-      when normInf do
-        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)]));
+      when normInf do  (*\label{mat_normInf_1}*)
+        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)])); (*\label{mat_normInf_2}*)
 
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x))); (*\label{mat_normFrob}*)
 
-      otherwise halt("Unexpected norm type");
-    }
-  }
+      otherwise halt("Unexpected norm type"); (*\label{mat_unexp}*)
+    } (*\label{mat_select_end}*)
+  } (*\label{mat_end}*)
 
-  def norm(x: [], p: normType) where x.rank > 2 {
-    compilerError("Norms not implemented for array ranks > 2D");
-  }
+  def norm(x: [], p: normType) where x.rank > 2 { (*\label{large_rank_start}*)
+    compilerError("Norms not implemented for array ranks > 2D"); (*\label{comp_err_1}*)
+  } (*\label{large_rank_end}*)
 
-  def norm(x: []) {
-    select (x.rank) {
-      when 1 do return norm(x, norm2);
-      when 2 do return norm(x, normFrob);
-      otherwise compilerError("Norms not implemented for array ranks > 2D");
-    }
-  }
-}
+  def norm(x: []) { (*\label{norm_default_start}*)
+    select (x.rank) { (*\label{default_select_start}*)
+      when 1 do return norm(x, norm2);  (*\label{default_vec}*)
+      when 2 do return norm(x, normFrob); (*\label{default_mat}*)
+      otherwise compilerError("Norms not implemented for array ranks > 2D"); (*\label{comp_err_2}*)
+    }   (*\label{default_select_end}*)
+  }  (*\label{norm_default_end}*)
+} (*\label{norm_end}*)
 
-module TestNorm {
-  use Norm;
+module TestNorm { (*\label{test_mod_start}*)
+  use Norm;  (*\label{use_norm}*)
 
-  def testNorm(arr: []) {
-    var testType = if (arr.rank == 1) then "vector" else "matrix";
+  def testNorm(arr: []) { (*\label{test_start}*)
+    var testType = if (arr.rank == 1) then "vector" else "matrix"; 
     writeln("Test of ", testType, " norms.  Array = ");
     writeln(arr);
     writeln("1-norm = ", norm(arr, norm1));
@@ -491,27 +491,28 @@ module TestNorm {
     writeln("infinity norm = ", norm(arr, normInf));
     if (arr.rank == 2) then
       writeln("frobenius norm = ", norm(arr, normFrob));
-    writeln("default norm = ", norm(arr));
+    writeln("default norm = ", norm(arr)); (*\label{default_call}*)
     writeln();
-  }
+  } (*\label{test_end}*)
 
-  def main() {
-    const D1 = [1..4];
-    var a:[D1] real;
-    a = 2.0;
-    testNorm(a);
+  def main() {  (*\label{test_main_start}*)
+    const D1 = [1..4];  (*\label{test_d1_def}*)
+    var a:[D1] real;    (*\label{test_a_def}*)
+    a = 2.0;            (*\label{test_a_init}*)
+    testNorm(a);        (*\label{testnorm_a_call}*)
 
-    const D2 = [1..2,1..2];
-    var b:[D2] real;
-    b = 2.0;
-    testNorm(b);
-  }
-}
+    const D2 = [1..2,1..2];  (*\label{test_d2_def}*)
+    var b:[D2] real;         (*\label{test_b_def}*)
+    b = 2.0;                 (*\label{test_b_init}*)
+    testNorm(b);             (*\label{testnorm_b_call}*)
+  }            (*\label{test_main_end}*)
+}              (*\label{test_mod_end}*)
 \end{numberedchapel}
 
 After the definition of the \chpl{Norm} module, a \chpl{TestNorm} module
-is defined in lines 44 - 72, giving an example of how the \chpl{norm} functions are used.
-On line 45, \chpl{use Norm}, indicates that the \chpl{Norm} module is to be
+is defined in lines~\ref{test_mod_start} - \ref{test_mod_end}, giving 
+an example of how the \chpl{norm} functions are used.
+On line~\ref{use_norm} , \chpl{use Norm}, indicates that the \chpl{Norm} module is to be
 used when resolving functions in the \chpl{TestNorm} module.  A \chpl{testNorm}
 function is defined, taking \chpl{arr} as an argument.  Based on \chpl{arr.rank},
 all of the valid norm options are tested, along with the generic \chpl{norm(arr)}
@@ -551,14 +552,15 @@ default norm = 4.0
 The \chpl{Norm} module begins with defining \chpl{normType} to be an
 enumerated type with constant values \chpl{norm1}, \chpl{norm2}, 
 \chpl{normInf}, \chpl{normFrob}.
-For three of the four \chpl{norm} function definitions (see lines 4, 14, 31), 
+For three of the four \chpl{norm} function definitions (see lines~\ref{vec_start},
+\ref{mat_start}, \ref{large_rank_start}), 
 one of the formal arguments is of \chpl{normType}, indicating which type of norm 
 is to be computed.  If \chpl{norm} is called without the \chpl{normType} argument,
-then the default norm for vectors is the 2-norm (see line 37) and the default
-norm for matrices is the Frobenius norm (see line 38).  
+then the default norm for vectors is the 2-norm (see line~\ref{default_vec}) and 
+the default norm for matrices is the Frobenius norm (see line~\ref{default_mat}).  
 
 The first \chpl{norm} function is defined for vectors.  This definition
-begins with line 4:
+begins with line~\ref{vec_start}:
 \begin{chapel}
   def norm(x: [], p: normType) where x.rank == 1 {
 \end{chapel}
@@ -574,7 +576,8 @@ non-array types are passed as arguments to \chpl{norm}.
 
 
 The body of the vector version of the \chpl{norm} function is a \chpl{select} statement on
-\chpl{p} in lines 5 -11.  For the first three cases of the select statement,
+\chpl{p} in lines~\ref{vec_select_start} - \ref{vec_select_end}.  
+For the first three cases of the select statement,
 when \chpl{p} is \chpl{norm1}, \chpl{norm2} or chpl{normInf},
 a reduction operator is used to compute the value that is returned. 
 The 1-norm of a vector is the sum of the absolute values of the entries of \chpl{x},
@@ -592,7 +595,7 @@ will halt when \chpl{p} is \chpl{normFrob}.  The \chpl{otherwise} clause will
 result in the program halting if any other value is passed in for \chpl{p}.
 
 The second \chpl{norm} function is defined for matrices.  This definition begins
-with line 14:
+with line~\ref{mat_start}:
 \begin{chapel}
   def norm(x: [?D], p: normType) where x.rank == 2 {
 \end{chapel}
@@ -604,7 +607,8 @@ needed to express the  norm computations.  So, the domain type is queried and se
 \chpl{D} with the expression \chpl{[?D]}.  
 
 The body of the matrix version of \chpl{norm}
-is a select statement on \chpl{p} in lines 15 - 28.  The \chpl{norm1} case, 
+is a select statement on \chpl{p} in lines~\ref{mat_select_start} - \ref{mat_select_end}.
+The \chpl{norm1} case, 
 the 1-norm of a matrix, is the maximum absolute column sum, which is computed 
 with the expression 
 \begin{chapel}
@@ -636,15 +640,17 @@ the select statement, the \chpl{otherwise} clause, halts with a message that
 the norm type is unexpected.
 
 The third version of the \chpl{norm} function with arguments \chpl{x}
-and \chpl{p}, given in lines 31 - 33, is for the case where \chpl{x.rank > 2}.
+and \chpl{p}, given in lines~\ref{large_rank_start} - \ref{large_rank_end} 
+is for the case where \chpl{x.rank > 2}.
 The module was designed to only compute norms of vectors and matrices.  
 Calling the \chpl{norm} function with three-dimensional or higher arrays 
 should give an error at compile time.  In this case, an appropriate compiler error 
 is given using the \chpl{compilerError} function.  For more information about 
 user-defined compiler errors, see~\rsec{User-Defined_Compiler_Errors}.
 
-The fourth and final version of the \chpl{norm} function is given in lines
-35 - 41.  This version has one formal argument, \chpl{x}, omitting the norm
+The fourth and final version of the \chpl{norm} function is given in 
+lines~\ref{norm_default_start} - \ref{norm_default_end}.
+This version has one formal argument, \chpl{x}, omitting the norm
 type.  It calls the other \chpl{norm} functions with default values for 
 \chpl{normType}.  For vectors, the default norm is defined to be the 2-norm.
 For matrices, the default norm is defined to be the Frobenius norm.  This 
@@ -666,31 +672,33 @@ producer and consumer computations as the state of the sync variable \chpl{s}
 changes when it is read and written to.  The Chapel code for this example is given below.
 
 \begin{numberedchapel}
-use Time;
+use Time;                           (*\label{use_time}*)
 
-config var numIterations: int = 5;
-config var sleepTime: uint = 2;
+config var numIterations: int = 5,  (*\label{prodcons_var_1}*)
+           sleepTime: uint = 2;     (*\label{prodcons_var_2}*)
 
-var s: sync int;
+var s: sync int;                    (*\label{prodcons_var_3}*)
 
-begin {  // fork consumer computation
-  for c in 1..numIterations do
-    writeln("consumer got ", s);
-}
+begin {  // fork consumer computation  (*\label{consumer_start}*)
+  for c in 1..numIterations do         (*\label{consumer_for_1}*)
+    writeln("consumer got ", s);       (*\label{consumer_for_2}*)
+}                                      (*\label{consumer_end}*)
 
 // producer computation
-for p in 1..numIterations {
-  sleep(sleepTime);
+for p in 1..numIterations {            (*\label{producer_start}*)
+  sleep(sleepTime);   (*\label{sleep_call}*)
   s = p;
-}
+}                                      (*\label{producer_end}*)
 \end{numberedchapel}
 
-The program uses the \chpl{sleep} function in line 15, which is provided in the
+The program uses the \chpl{sleep} function in line~\ref{sleep_call}, which is 
+provided in the
 standard Chapel module, \chpl{Time}.  So, the first line, \chpl{use Time}, 
 is needed to include the \chpl{Time} module when resolving 
 function calls in this program.  
 
-Lines three and four give the declarations and initial default values
+Lines~\ref{prodcons_var_1} - \ref{prodcons_var_2} give the declarations 
+and initial default values
 for the two variables, \chpl{numIterations} and \chpl{sleepTime}.
 Both of these variables are 32 bits, the default size of \chpl{int} and \chpl{uint} types.
 The \chpl{config} keyword in front of these two variable declarations 
@@ -703,7 +711,8 @@ may be used:
 > a.out --numIterations=10 --sleepTime=5
 \end{verbatim}
 
-In line six, the variable \chpl{s} is declared to be a \chpl{sync} variable 
+In line~\ref{prodcons_var_2}, the variable \chpl{s} is 
+declared to be a \chpl{sync} variable 
 of type \chpl{int}.  Sync variables have extra state associated with them to 
 indicate whether they are logically {\em full} or {\em empty}.  Since \chpl{s}
 is not initialized, its state is empty at the beginning of the program's execution.
@@ -720,8 +729,10 @@ to coordinate operations between computations.  In this program, \chpl{s} is use
 to synchronize the exchange of data between the producer and consumer computations.
 
 The remainder of the code defines the consumer and producer computations.
-The \chpl{begin} statement in line 8 creates a new computation to execute the \chpl{for}
-loop in lines 9 and 10.  This loop is indexed by \chpl{c}, which iterates over
+The \chpl{begin} statement in line~\ref{consumer_start} creates a 
+new computation to execute the \chpl{for}
+loop in lines~\ref{consumer_for_1} - \ref{consumer_for_2}.  This loop is 
+indexed by \chpl{c}, which iterates over
 the arithmetic sequence \chpl{1..numIterations}.  The variable \chpl{c} is a new
 variable defined for the scope of the loop.  Its type is inferred to be integer from
 the integer arithmetic sequence that follows.  During each iteration of the \chpl{for}
@@ -734,7 +745,8 @@ consumer computations will suspend execution until the state of \chpl{s} is
 made full again.  Since the consumer computation only reads \chpl{s}, it will be 
 the producer computation that changes the states of \chpl{s} to full.
 
-The producer computation executes the \chpl{for} loop in lines 14 through 17.  This
+The producer computation executes the \chpl{for} loop in lines~\ref{producer_start} -
+\ref{producer_end}.  This
 loop is indexed by \chpl{p} which iterates over the same arithmetic sequence
 as the consumer computation.  Like \chpl{c}, \chpl{p} is inferred to be an integer.
 During each iteration of this \chpl{for} loop, the \chpl{sleep} function is
