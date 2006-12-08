@@ -88766,3 +88766,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/07/06 17:41:06 -- bradc
+
+Log message:
+	Now that we have Makefiles in the release,
+	added a step to the test of the release
+	to make sure they work (i.e., can be invoked
+	without resulting in an error).
+
+Modified files:
+	chapel/util/: testReleaseHelp 
+
