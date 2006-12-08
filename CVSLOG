@@ -88815,3 +88815,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: prod-cons.chpl 
 
+---------------------------------------------------------------------------
+
+12/08/06 12:58:24 -- marybeth
+
+Log message:
+	Updated Norm and Prod-cons sections to add labels to code listings.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
