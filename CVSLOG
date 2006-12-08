@@ -88727,3 +88727,13 @@ Log message:
 Modified files:
 	chapel/spec/: Standard_Modules.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+12/07/06 16:34:00 -- bradc
+
+Log message:
+	First cut at motivating principles section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
