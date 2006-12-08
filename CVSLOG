@@ -88779,3 +88779,17 @@ Log message:
 Modified files:
 	chapel/util/: testReleaseHelp 
 
+---------------------------------------------------------------------------
+
+12/07/06 17:41:58 -- bradc
+
+Log message:
+	Updated the examples Makefile to recursively go into
+	the hpcc06 subdirectory for the all and clean commands.
+	Also made both clean commands use -f so that it doesn't
+	complain if the files aren't there.
+
+Modified files:
+	chapel/test/release/examples/: Makefile 
+	chapel/test/release/examples/hpcc06/: Makefile 
+
