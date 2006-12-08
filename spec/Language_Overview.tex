@@ -3,6 +3,125 @@
 
 \subsection{Motivating Principles}
 
+\paragraph{General Parallel Programming}
+
+Chapel's first motivating principle is to support general parallel
+programming through the use of high-level language abstractions that
+result in multithreaded execution.  Chapel does this by supporting a
+\emph{global-view programming model} that raises the level of
+abstraction for the expression of both data and control flow as
+compared to parallel programming models currently used in production.
+
+\emph{Global-view data structures} are arrays and other data
+aggregates whose sizes and indices are expressed globally in spite of
+the fact that their implementations may distribute them across the
+memories of multiple nodes or \emph{locales}.\footnote{A \emph{locale}
+  in Chapel is a unit of the target architecture that supports
+  computation and data storage.  Locales are defined for an
+  architecture such that a locale's threads will all have similar
+  access times to any specific memory address.  For commodity
+  clusters, each of their (single-core) processors, multicore
+  processors, or SMP nodes would be considered a locale.}  This
+contrasts with most parallel languages used in practice, which tend to
+require users to partition distributed data aggregates into
+per-processor chunks, either manually or using language abstractions.
+As a simple example, to create a 0-based vector with $n$ elements
+distributed between $p$ locales, a language like Chapel that supports
+global-view data structures allows the user to declare the array to
+contain $n$ elements and to refer to the array using the indices $0
+\ldots n-1$.  In contrast, most traditional approaches require the
+user to declare the array as $p$ chunks of $n/p$ elements each (and
+the details can be messy if $p$ does not divide $n$ evenly).
+Moreover, the chunks are typically accessed using local indices on
+each processor (\eg,~$0..n/p$), requiring the user to explicitly
+translate between logical indices and those used by the
+implementation.
+%  HPF and ZPL are two other recent parallel languages that support
+%global-view data structures, though in a more restricted form than
+%Chapel.
+
+A \emph{global view of control} means that a user's program commences
+execution with a single logical thread of control and then introduces
+additional parallelism through the use of certain language concepts.
+All parallelism in Chapel is implemented via multithreading, though
+these threads are created via high-level language concepts and managed
+by the compiler and runtime, rather than through explicit
+fork/join-style programming.  An impact of this approach is that
+Chapel can express parallelism that is more general than the Single
+Program, Multiple Data~(SPMD) model that today's most common parallel
+programming approaches use as the basis for their programming and
+execution models.
+%Examples include Co-Array Fortran,
+%Unified Parallel~C~(UPC), Titanium, HPF, ZPL, SHMEM, and typical uses
+%of MPI~\cite{CAF, UPCBook, Titanium, HPFBook, ZPL, SHMEM, MPIBook,
+%  MPI2Book}.  Our multithreaded execution model is perhaps most
+%similar to that which is supported by the Cilk language or the Cray
+%MTA's runtime libraries~\cite{CilkRef, MTAThreads}.  Moreover,
+Chapel's general support for parallelism does not preclude users
+from coding in an SPMD style if they wish.
+
+
+Supporting general parallel programming also means targeting a broad
+range of parallel architectures.  Chapel is designed to target a wide
+spectrum of HPC hardware including clusters of commodity processors
+and SMPs; vector, multithreading, and multicore processors; custom
+vendor architectures; distributed, shared, and shared address space
+memory architectures; and networks of any topology.  Our portability
+goal is to have any legal Chapel program run correctly on all of these
+architectures, and for Chapel programs that express parallelism in an
+architecturally-neutral way to perform reasonably on all of them.
+Naturally, Chapel programmers can tune their codes to more closely
+match a particular machine's characteristics, though doing so may
+cause the program to be a poorer match for other architectures.  
+
+\paragraph{Control of Locality}
+
+A second principle in Chapel is to allow the user to optionally and
+incrementally specify where data and computation should be placed on
+the physical machine.  We consider this control over program locality
+to be essential for achieving scalable performance on large machine
+sizes given current architectural trends.  Such control contrasts with
+shared-memory programming models which present the user with a flat
+memory model.  It also contrasts with SPMD-based programming models in
+which such details are explicitly specified by the programmer on a
+process-by-process basis via the multiple cooperating program
+instances.
+
+\paragraph{Object-Oriented Programming}
+
+A third principle in Chapel is support for object-oriented
+programming~(OOP), which has been instrumental in raising productivity
+in the mainstream programming community.  Chapel supports traditional
+reference-based classes as well as value classes.  The programmer is
+not required to use an object-oriented style in their code, so that
+traditional Fortran and C programmers need not adopt a new programming
+paradigm in order to use Chapel effectively.  Many of Chapel's
+standard library capabilities are implemented using objects, so such
+programmers may need to utilize a method-invocation style of syntax to
+use these capabilities.  However, using such libraries does not
+necessitate broader adoption of OOP methodologies.
+
+\paragraph{Generic Programming}
+
+Chapel's fourth principle is support for generic programming and
+polymorphism.  These features allow code to be written in a style that
+is generic across types, making it applicable to variables of multiple
+types, sizes, and precisions.  The goal of these features is to
+support exploratory programming as in popular interpreted and
+scripting languages, and to support code reuse by allowing algorithms
+to be expressed without explicitly replicating them for each possible
+type.  This flexibility at the source level is implemented by having
+the compiler create versions of the code for each required type
+signature rather than by relying on dynamic typing which would result
+in unacceptable runtime overheads for the HPC community.
+
+Chapel's first two principles are designed to provide support for
+general, performance-oriented parallel programming through high-level
+abstractions.  The second two principles are supported to help narrow
+the gulf that exists between parallel programming languages and
+mainstream programming and scripting languages.
+
+
 \subsection{Getting Started}
 
 The Chapel version of "hello, world" is given below.
