@@ -40,6 +40,15 @@ if ($tmpstatus != 0) then
     exit($tmpstatus)
 endif
 
+
+#
+# run make in examples directory
+#
+cd examples
+make
+cd ..
+
+
 #
 # run test system on examples directory
 #
