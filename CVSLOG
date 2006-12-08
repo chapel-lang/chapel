@@ -88804,3 +88804,14 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/08/06 12:36:16 -- marybeth
+
+Log message:
+	Changed config var declarations to be comma-separated list in
+	prod-cons example.
+
+Modified files:
+	chapel/test/release/examples/: prod-cons.chpl 
+
