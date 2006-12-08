@@ -1,25 +1,26 @@
+===================
 Chapel Contributors
 ===================
 
-Contributors to the Chapel implementation effort include:
-
-     Brad Chamberlain
-     Steve Deitz
-     Roxana Diaconescu
-     Shannon Hoffswell
-     Mack Joyner
-     John Plevyak
-     Wayne Wong
-
-
-Contributors to the specification of the Chapel language include:
+The following people have contributed to the design of the Chapel
+language and the implementation of this release:
 
      David Callahan
      Brad Chamberlain
      Steve Deitz
      Roxana Diaconescu
+     Shannon Hoffswell
      Mary Beth Hribar
      Mark James
+     Mack Joyner
      John Plevyak
      Wayne Wong
      Hans Zima
+
+
+Thanks to the following individuals for helping us with testing of
+this Chapel release:
+
+     John Lewis
+     Kevin Peterson
+     Greg Titus
