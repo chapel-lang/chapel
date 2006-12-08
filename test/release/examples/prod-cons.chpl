@@ -3,8 +3,8 @@
 
 use Time;
 
-config var numIterations: int = 5;
-config var sleepTime: uint = 2;
+config var numIterations: int = 5,
+           sleepTime: uint = 2;
 
 var s: sync int;
 
