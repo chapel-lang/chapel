@@ -8,7 +8,7 @@ default: all
 all: $(TARGETS)
 
 clean: FORCE
-	rm $(TARGETS)
+	rm -f $(TARGETS)
 
 stream: probSize.chpl stream.chpl
 	$(CHPL) -o $@ $^

@@ -19,10 +19,11 @@ default: all hpcc06
 all: $(TARGETS)
 
 clean: FORCE
-	rm $(TARGETS)
+	rm -f $(TARGETS)
+	cd hpcc06 && $(MAKE) clean
 
 hpcc06: FORCE
-	cd $@ && $(MAKE) all
+	cd hpcc06 && $(MAKE) all
 
 %: %.chpl
 	$(CHPL) -o $@ $<
