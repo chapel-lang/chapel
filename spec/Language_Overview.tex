@@ -196,45 +196,45 @@ and arrays.  More information about domains and arrays is given in~\rsec{Domains
 
 The Chapel code for this example follows.  
 \begin{numberedchapel}
-config var n = 5,
+config var n = 5,                  (*\label{jac_config_start}*)
            epsilon = 0.00001,
-           verbose = false;
+           verbose = false;        (*\label{jac_config_end}*)
 
-def main() {
-  const ProblemSpace = [1..n, 1..n],
-        BigDomain = [0..n+1, 0..n+1];
+def main() {                       (*\label{jac_main}*)
+  const ProblemSpace = [1..n, 1..n],  (*\label{problem_space}*)
+        BigDomain = [0..n+1, 0..n+1]; (*\label{big_domain}*)
 
-  var A, Temp: [BigDomain] real = 0.0;
+  var A, Temp: [BigDomain] real = 0.0; (*\label{a_temp_decl}*)
 
-  A[n+1, 1..n] = 1.0;
+  A[n+1, 1..n] = 1.0;                 (*\label{a_init_last_row}*)
 
-  if (verbose) {
+  if (verbose) {                      (*\label{verbose_init_start}*)
     writeln("Initial configuration:");
     writeln(A, "\n");
-  }
+  }                                   (*\label{verbose_init_end}*)
 
-  var iteration = 0,
-      delta: real;
+  var iteration = 0,                  (*\label{jac_var_start}*)
+      delta: real;                    (*\label{jac_var_end}*)
 
-  do {
-    forall (i,j) in ProblemSpace do
-      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+  do {                                (*\label{jac_do_start}*)
+    forall (i,j) in ProblemSpace do   (*\label{jac_forall}*)
+      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0; (*\label{jac_iter}*)
 
-    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
-    A[ProblemSpace] = Temp[ProblemSpace];
+    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]); (*\label{jac_reduce}*)
+    A[ProblemSpace] = Temp[ProblemSpace]; (*\label{jac_update_A}*)
 
-    iteration += 1;
+    iteration += 1; (*\label{jac_advance_iteration}*)
 
-    if (verbose) {
+    if (verbose) {  (*\label{verbose_iter_start}*)
       writeln("iteration: ", iteration);
       writeln(A);
       writeln("delta: ", delta, "\n");
-    }
-  } while (delta > epsilon);
+    }               (*\label{verbose_iter_end}*)
+  } while (delta > epsilon);          (*\label{jac_do_end}*)
 
-  writeln("Jacobi computation complete.");
+  writeln("Jacobi computation complete.");  (*\label{jac_output_start}*)
   writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
-  writeln("# of iterations: ", iteration);
+  writeln("# of iterations: ", iteration); (*\label{jac_output_end}*)
 }
 \end{numberedchapel}
 
@@ -248,7 +248,8 @@ Delta is 9.92124e-06 (< epsilon = 1e-05)
 
 It is possible to run a different sized problem, to use a different
 convergence tolerance, or enable more output without recompiling this
-program.  There are three variables defined in lines 1 - 3, 
+program.  There are three variables defined in lines~\ref{jac_config_start} - 
+\ref{jac_config_end}, 
 \chpl{n}, \chpl{epsilon} and \chpl{verbose} which are configuration variables,
 as indicated by the \chpl{config} keyword, 
 and can be set at the time of program execution through command line switches.
@@ -334,7 +335,7 @@ it is not necessary to specify that they are of domain type.  In this case,
 domain with additional 
 boundary rows and columns.  By defining \chpl{ProblemSpace} to be the interior
 points of the larger grid, \chpl{BigDomain}, the Jacobi computation can be cleanly 
-specified in one line, line 23, for just the interior points, 
+specified in one line, line~\ref{jac_iter}, for just the interior points, 
 eliminating the need to write special case computations for the boundary points.
 
 After the domains are declared, the arrays are declared using \chpl{BigDomain},
@@ -348,8 +349,10 @@ The arrays, \chpl{A} and \chpl{Temp} are declared to be of type \chpl{real} and
 are initialized to zero.  Because they are defined using \chpl{BigDomain}, the
 arrays are of size \chpl{n+2} $\times$ \chpl{n+2}. 
 
-Lines 13 - 16 print the initial configuration of the problem, if \chpl{verbose}
-is set to true.  Lines 18 - 19 contain the remaining variable declarations:
+Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
+configuration of the problem, if \chpl{verbose}
+is set to true.  Lines~\ref{jac_var_start} - \ref{jac_var_end} 
+contain the remaining variable declarations:
 \begin{chapel}
   var iteration = 0,
       delta: real;
@@ -357,7 +360,8 @@ is set to true.  Lines 18 - 19 contain the remaining variable declarations:
 The variable \chpl{delta} must be specified to be of type \chpl{real} since
 it does not have an initialization expression.
 
-The computational loop in lines 21 - 35 performs the Jacobi method.
+The computational loop in lines~\ref{jac_do_start} - \ref{jac_do_end}  
+performs the Jacobi method.
 This loop is executed until \chpl{delta} is less than or equal to \chpl{epsilon}.
 \begin{chapel}
   do {
@@ -388,27 +392,23 @@ index \chpl{j}.  The compiler determines how this loop is made parallel, accordi
 to the default distribution for the \chpl{ProblemSpace} domain.   
 
 After the next approximate solution is computed and stored in \chpl{Temp},
-the change between \chpl{Temp} and \chpl{A} is calculated and stored in
-\chpl{delta}.  
+the change between \chpl{Temp} and \chpl{A}, for just the interior points, is 
+calculated and stored in \chpl{delta}:  
 \begin{chapel}
     delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
 \end{chapel}
 The reduction, \chpl{max reduce}
 computes the maximum value of the expression that follows it.  If
-\chpl{ProblemSpace} is distributed, then this reduction is computed in 
-parallel accordingly.   
+\chpl{Temp} and \chpl{A} are distributed, then this reduction is computed in 
+parallel accordingly.  
 
-Once \chpl{delta} is
-less than or equal to the value in \chpl{epsilon}, the \chpl{do while} loop 
-exits.
-
+Next, \chpl{A} is updated with the new approximate solution and the iteration
+number is advanced.  If \chpl{verbose} is set to true, then information about
+the current approximate solution and \chpl{delta} is output.  If \chpl{delta}
+is greater than the convergence tolerance, \chpl{epsilon}, then the \chpl{do
+while} loop continues.  Otherwise, the loop exits.  
 The program ends with output, indicating that the computation is complete
-and giving information about convergence.  Optionally, according to the
-value of \chpl{verbose}, more output may be given before and during the
-computation of the Jacobi iteration.  Calls to the function \chpl{writeln}
-produce the output.  Each \chpl{writeln} call
-produces a line of output, followed by a line return.  The string \chpl{"\n"}
-results in  an additional line return, as in line 34 of the program.
+and giving information about convergence.  
 
 \subsection{Example: Norm}
 The following example contains a module \chpl{Norm} which defines  
