@@ -124,29 +124,47 @@ mainstream programming and scripting languages.
 
 \subsection{Getting Started}
 
-The Chapel version of "hello, world" is given below.
+A Chapel version of the standard ``hello world'' computation is given
+here:
 \begin{chapel}
-def main() {
-  writeln("hello, world");
-}
+writeln("Hello, world!");
 \end{chapel}
-Chapel program files end with the extension \chpl{.chpl}.  
-If this program were stored in a file called \chpl{helloworld.chpl},
-the program would contain one module, \chpl{helloworld}, which is implicitly
-named from the name of the file.  The keyword \chpl{def} indicates that 
-\chpl{main} is a function, and that the definition of \chpl{main} will 
-follow.  The function call to \chpl{writeln} will output the string
-literal argument \chpl{hello, world}.
+\noindent This program contains a single line of code that makes a
+call to the standard \chpl{writeln} subroutine, passing it a string
+literal argument, \chpl{"Hello, world!"}.  This call causes the string
+to be printed to the console when the program is executed.
 
-To compile and run this program, execute the following
-commands at the system prompt:
+In general, Chapel programs define code using one or more named
+\emph{modules}, each of which supports an initialization routine that
+is invoked the first time the module is used.  Programs also define a
+single entry point via a subroutine named \chpl{main}.  To facilitate
+exploratory programming, Chapel allows programmers to define modules
+using files rather than an explicit module declaration, to write
+module setup code at the module scope rather than in an explicit
+initialization routine, and to omit the program entry point when the
+program only has a single user module.  This example takes advantage
+of all three features.
+
+Chapel code is stored in files with the extension \chpl{.chpl}.
+Assuming this program is stored in a file called \chpl{hello.chpl}, it
+would define a single user module, \chpl{hello}, whose name is taken
+from the filename.  Since the module contains no initialization
+routine, it can contain executable code at the top level which will
+serve as its initialization code.  And since the program is composed
+of the single \chpl{hello} module, it need not define an entry point.
+Thus, when the program is executed, the single \chpl{hello} module
+will be initialized by executing its top-level code, invoking the call
+to \chpl{writeln()}, and printing out the message.
+
+To compile and run this program, execute the following commands at the
+system prompt:
 \begin{verbatim} 
-> chpl helloworld.chpl
-> ./a.out
+> chpl -o hello hello.chpl
+> ./hello
 \end{verbatim}
-The following output is shown:
+The following output will be printed to the console:
 \begin{verbatim}
-> hello, world
+> Hello, world!
 \end{verbatim}
 
 \subsection{Example: Jacobi}
