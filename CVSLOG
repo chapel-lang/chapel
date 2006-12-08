@@ -88825,3 +88825,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/08/06 14:21:35 -- bradc
+
+Log message:
+	Removed distinction between language specifiers
+	and developers in contributors file.  Added names
+	of people who helped with testing.
+
+Modified files:
+	./: CONTRIBUTORS 
+
