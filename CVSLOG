@@ -88747,3 +88747,22 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/07/06 17:39:57 -- bradc
+
+Log message:
+	Rewrote the Getting Started section to more closely
+	match our examples/ directory and README in terms of
+	the code example, the filename, and the commands given.
+	In doing so, got rid of the definition of the entry
+	point and added a short description of organizing
+	code into modules, with initialization routines and
+	entry points.  On one hand this might be a bit much
+	for the getting started section.  On the other, it
+	sets up the basic Chapel code structure and hopefully
+	will lead into the other examples nicely.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
