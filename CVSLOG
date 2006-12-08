@@ -88793,3 +88793,14 @@ Modified files:
 	chapel/test/release/examples/: Makefile 
 	chapel/test/release/examples/hpcc06/: Makefile 
 
+---------------------------------------------------------------------------
+
+12/07/06 23:06:21 -- marybeth
+
+Log message:
+	Update to Jacobi section.  Added labels for the numbered code listing lines
+	and finished revising the section for now.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
