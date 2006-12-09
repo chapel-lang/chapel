@@ -915,6 +915,18 @@ The use of \chpl{top} implies \chpl{this.top}, checking if the
 current \chpl{top} object is set to nil.
 
 \subsubsection{Generic Stack with Array Implementation}
+The following implementation of a generic stack uses the array,
+\chpl{data} to store the generic items in the stack, and the
+counter, \chpl{numItems}, to track the
+number of items in the stack and to indicate the index of
+the top item of the stack.  The number of items in the stack
+and the size of \chpl{data} are checked when a new item is pushed
+on the stack.  If necessary, the size of \chpl{data} is doubled.
+This example demonstrates how the size of an array is increased 
+by increasing its domain.
+
+This implementation of \chpl{Stack} can be used in the same
+way as the linked list implementation.
 
 \begin{numberedchapel}
 record Stack {                     (*\label{stack_array_start}*)
@@ -940,3 +952,35 @@ record Stack {                     (*\label{stack_array_start}*)
   def isEmpty? return numItems == 0; (*\label{stack_array_isempty}*)
 }                                   (*\label{stack_array_end}*)
 \end{numberedchapel}
+
+There are three fields defined for this \chpl{Stack} record, \chpl{itemType},
+an integer variable, \chpl{numItems} and an array \chpl{data} of \chpl{itemType}.
+When \chpl{Stack} is instantiated, a type must be specified for the type alias,
+\chpl{itemType} as in the linked list implementation.  When first instantiated,
+the stack is empty and \chpl{numItems} is initialized to zero.   The \chpl{data}
+array is declared with an anonymous one-dimensional domain, \chpl{[1..2]}.
+
+The same three methods, \chpl{push}, \chpl{pop} and \chpl{isEmpty?} are
+defined for this array implementation.  In \chpl{push}, lines~\ref{stack_array_push_start}
+- \ref{stack_array_push_end}, \chpl{item} is stored in the \chpl{data(numItems+1)}
+and the \chpl{numItems} counter is incremented.  Before \chpl{item} can be added
+to the stack, the data array must be checked to determine if the array's size
+needs to be increased to accomodate another item being added to the stack.
+The variable \chpl{height} is set to the number of
+elements in the \chpl{data} array by accessing the \chpl{numElements} field
+of \chpl{data}.  If the number of items in the stack, \chpl{numItems} equals
+\chpl{height}, then more storage in \chpl{data} is needed.  To increase the
+size of an array, the size of its domain must be increased.
+\begin{chapel}
+      data.domain = [1..height*2];  
+\end{chapel}
+By reseting \chpl{data}'s
+domain to a domain of twice the size, the array \chpl{data} itself is now doubled in size,
+and more items can be pushed onto the stack. 
+
+The \chpl{pop} method first checks to see if the stack is empty.  If it is, the program
+halts indicating that there was an attempt to pop an item off of an empty stack.
+Otherwise, the \chpl{numItems} counter is decremented and \chpl{data(numItems+1)}
+is returned as the popped item.  The \chpl{isEmpty?} method checks to see if
+the stack is empty, that is if \chpl{numItems} equals zero.
+
