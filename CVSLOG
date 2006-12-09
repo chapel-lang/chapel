@@ -88847,3 +88847,21 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/08/06 18:02:34 -- bradc
+
+Log message:
+	Made the RA example run in a tractable amount of time
+	and avoid the main memory leak by making the sequential
+	verification used if the number of locales is less than
+	log2(m).  Previously, had made the verification step be
+	"false" assuming vast numbers of locales, but as we
+	learned today, it makes the verification take a ridiculously
+	long time for a single locale.  On my machine, this now
+	runs in 3 minues, 15 seconds without causing any major
+	swapping.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README ra.chpl 
+
