@@ -15,7 +15,7 @@ config const n = computeProblemSize(elemType, numTables,
 const m = 2**n,                // probSize
       indexMask = m-1;
 
-config const sequentialVerify = false,
+config const sequentialVerify = (numLocales < log2(m)),
              errorTolerance = 1.0e-2;
 
 config const printParams = true,

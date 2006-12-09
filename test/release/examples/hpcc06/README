@@ -9,11 +9,14 @@ Award Competition for class 2 ("most productivity").  For a detailed
 explanation of these benchmarks, please refer to hpcc06.pdf in the
 doc/ directory.
 
-The codes in this directory have evolved somewhat as our
-implementation has matured.  Some of these changes resolve workarounds
-in our original implementations that were called out in "Compiler
-Status Notes".  Other changes may reflect evolution in the Chapel
-language or standard libraries.  The changes to date are:
+The codes in this directory have been improved from the versions in
+the paper.  Some of these changes resolve workarounds in our original
+implementations that were called out in "Compiler Status Notes".
+Other changes reflect evolution in the Chapel language or standard
+libraries.  Some changes reflect an improved understanding of the
+benchmarks.
+
+The changes to date are:
 
   * the compiler can now infer the return type of an iterator, so the
     explicit return types in the iterators of ra-randstream.chpl have
@@ -35,3 +38,14 @@ language or standard libraries.  The changes to date are:
     function taking a locale argument to a method on the locale type,
     so the calls to physicalMemory() were updated to reflect this
     change.
+
+  * the default value of the sequentialVerify configuration constant
+    in the RA benchmark was changed from "false" to a comparison
+    between the number of locales and the log of the problem size (m).
+    The reason for this is that the parallel verification step is an
+    O(m*log2(m)) algorithm (with a large constant factor) whereas the
+    sequential algorithm is O(m).  While the parallel version makes
+    sense to use for large numbers of locales, the sequential version
+    is preferable for smaller numbers.  This code doesn't reflect the
+    crossover point accurately, but at least makes the numLocales==1
+    case much less ridiculous.
