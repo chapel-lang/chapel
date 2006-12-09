@@ -88865,3 +88865,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: README ra.chpl 
 
+---------------------------------------------------------------------------
+
+12/08/06 18:22:49 -- marybeth
+
+Log message:
+	First pass of array implementation of stack example section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
