@@ -200,7 +200,8 @@ def _scan(r, s) {
 
 
 def _to_seq( i) {
-  var s: seq (i.getValue(i.getNextCursor(i.getHeadCursor()))).type;
+  // var s: seq (i.getValue(i.getNextCursor(i.getHeadCursor()))).type;
+  var s: seq (i.getElemType());
   for x in i {
     s #= x;
   }

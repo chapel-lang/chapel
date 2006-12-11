@@ -1039,6 +1039,7 @@ resolveCall(CallExpr* call) {
     if (dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!(call->isNamed( "_to_seq") ||
             call->isNamed( "_copy") ||
+            //            call->isNamed( "=") ||
             call->isNamed( "_cast") ||
             call->isNamed( "_init") ||
             call->isNamed( "_pass") ||

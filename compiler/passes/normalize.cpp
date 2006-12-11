@@ -432,6 +432,12 @@ iterator_transform( FnSymbol *fn) {
   iterator_formals( headcf, ic);
   headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
 
+  FnSymbol *elemtf = new FnSymbol( "getElemType");
+  iterator_method( elemtf);
+  m->stmts->insertAtHead(new DefExpr(elemtf));
+  iterator_formals( elemtf, ic);
+  elemtf->body->insertAtHead( new ReturnStmt( new CallExpr( PRIMITIVE_TYPEOF, new CallExpr( new CallExpr( ".", elemtf->_this, new_StringSymbol( "getValue")), new_IntSymbol(0)))));
+
   FnSymbol *valuef = new FnSymbol( "getValue");
   iterator_method( valuef);
   valuef->retExprType = nextcf->retExprType->remove();
