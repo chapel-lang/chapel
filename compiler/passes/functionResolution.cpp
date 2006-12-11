@@ -1289,6 +1289,7 @@ insertFormalTemps(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->intent != INTENT_PARAM &&
         formal->intent != INTENT_TYPE &&
+        formal->intent != INTENT_REF &&
         formal->name != _this &&
         !formal->isTypeVariable &&
         formal->type != dtSetterToken &&

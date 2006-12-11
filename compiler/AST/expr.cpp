@@ -1081,6 +1081,11 @@ void CallExpr::codegen(FILE* outfile) {
       codegen_member(outfile, get(1), get(2));
       fprintf(outfile, "))");
       break;
+    case PRIMITIVE_GET_MEMBER_VALUE:
+      fprintf(outfile, "(");
+      codegen_member(outfile, get(1), get(2));
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_SET_MEMBER:
       {
         codegen_member(outfile, get(1), get(2));
@@ -1243,14 +1248,21 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CHPL_FREE: {
-      fprintf( outfile, "_chpl_free( ");
-      SymExpr *s = dynamic_cast<SymExpr*>(get(1));
-      if (s && ((VarSymbol*)s->var)->on_heap) {
-        fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
-      } else {
-        get(1)->codegen( outfile);
-      }
-      fprintf( outfile, ")");
+      fprintf(outfile, "_chpl_free(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "); ");
+      get(1)->codegen(outfile);
+      fprintf(outfile, " = NULL");
+      /*** old CHPL_FREE code (by Wayne?) for heap variables/ not
+           used, rewriting ***/
+//       fprintf( outfile, "_chpl_free( ");
+//       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
+//       if (s && ((VarSymbol*)s->var)->on_heap) {
+//         fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
+//       } else {
+//         get(1)->codegen( outfile);
+//       }
+//       fprintf( outfile, ")");
       break;
     }
     case PRIMITIVE_TOSTRING: {
@@ -1316,6 +1328,43 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_PARAM:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
+    case PRIMITIVE_CLASS_NULL:
+      //      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf(outfile, "(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, " == NULL)");
+        //        fprintf(outfile, "(((%s)==NULL)||((*%s)==NULL))", sym->var->cname, sym->var->cname);
+        //      } else
+        //INT_FATAL(this, "ill-formed primitive_ref_null");
+      break;
+    case PRIMITIVE_GC_INIT:
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count = 0");
+      break;
+    case PRIMITIVE_GC_FREE:
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count--");
+      break;
+    case PRIMITIVE_GC_TOUCH:
+      fprintf(outfile, "if (");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ") ");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count++");
+      break;
+    case PRIMITIVE_GC_ISPOS:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count > 0)");
+      break;
+    case PRIMITIVE_GC_ISNEG:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count < 0)");
+      break;
+    case PRIMITIVE_INT_ERROR:
+      fprintf(outfile, "printInternalError(\"compiler generated error\")");
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");
       break;
@@ -1335,6 +1384,14 @@ void CallExpr::codegen(FILE* outfile) {
       }
     }
   }
+
+  if (isNamed("_free")) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+      if (sym->var->isReference)
+        fprintf(outfile, "if (%s) ", sym->var->cname);
+    }
+  }
+    
 
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");

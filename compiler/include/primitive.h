@@ -43,6 +43,7 @@ enum PrimitiveTag {
   PRIMITIVE_UNION_GETID,
   PRIMITIVE_UNION_SETID,
   PRIMITIVE_GET_MEMBER,
+  PRIMITIVE_GET_MEMBER_VALUE,
   PRIMITIVE_SET_MEMBER,
   PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
   PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
@@ -81,6 +82,17 @@ enum PrimitiveTag {
   PRIMITIVE_ERROR,
   PRIMITIVE_WHEN,
   PRIMITIVE_LOOP_PARAM,
+
+  PRIMITIVE_CLASS_NULL, // check reference/class is NULL
+
+  PRIMITIVE_GC_INIT,  // set reference count to zero
+  PRIMITIVE_GC_TOUCH, // increase reference count
+  PRIMITIVE_GC_FREE,  // decrease reference count
+  PRIMITIVE_GC_ISPOS, // check reference count is greater than zero
+  PRIMITIVE_GC_ISNEG, // check reference count is less than zero
+
+  PRIMITIVE_INT_ERROR,
+
   NUM_KNOWN_PRIMS
 };
 

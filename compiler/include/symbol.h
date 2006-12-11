@@ -219,8 +219,12 @@ class FnSymbol : public Symbol {
   void insertAtHead(AList* ast);
   void insertAtTail(AList* ast);
 
+  void insertBeforeReturn(Expr* ast);
+
   void insertFormalAtHead(BaseAST* ast);
   void insertFormalAtTail(BaseAST* ast);
+
+  Symbol* getReturnSymbol();
 
   ArgSymbol* getFormal(int i); // return ith formal
 };

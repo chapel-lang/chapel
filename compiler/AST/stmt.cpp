@@ -307,9 +307,9 @@ void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
   fprintf(outfile, "{\n");
   inBlockStmt++;
-  if (blkScope) {
-    blkScope->codegen(outfile, "\n");
-  }
+//   if (blkScope) {
+//     blkScope->codegen(outfile, "\n");
+//   }
   if (body) {
     if (parallelPass) {
       switch (blockTag) {

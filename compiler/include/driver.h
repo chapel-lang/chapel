@@ -18,6 +18,7 @@ extern bool unoptimized;
 extern bool no_bounds_checking;
 extern bool no_inline;
 extern bool no_scalar_replacement;
+extern bool free_memory;
 extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
 

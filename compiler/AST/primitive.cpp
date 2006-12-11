@@ -221,6 +221,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_UNION_SETID, "set_union_id", returnInfoVoid);
   prim_def(PRIMITIVE_UNION_GETID, "get_union_id", returnInfoBool);
   prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, true);
+  prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
 
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
@@ -265,6 +266,14 @@ initPrimitive() {
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
   prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);
+
+  prim_def(PRIMITIVE_CLASS_NULL, "_refnull", returnInfoBool);
+  prim_def(PRIMITIVE_GC_INIT, "_gc_init", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_TOUCH, "_refup", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_FREE, "_refdown", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_ISPOS, "_refgzero", returnInfoBool);
+  prim_def(PRIMITIVE_GC_ISNEG, "_reflzero", returnInfoBool);
+  prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
 
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);

@@ -10,6 +10,7 @@ PASSES_SRCS = \
         inlineFunctions.cpp \
         parallel.cpp \
 	printProgram.cpp \
+        memoryManage.cpp \
         normalize.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp \

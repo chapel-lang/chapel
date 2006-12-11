@@ -18,6 +18,7 @@ void destructureRecords();
 void inlineFunctions();
 void cullOverReferences();
 void copyPropagation();
+void memoryManage();
 void codegen();
 
 PassInfo passlist[] = {
@@ -46,6 +47,7 @@ PassInfo passlist[] = {
   RUN(cullOverReferences),
 
   RUN(copyPropagation),
+  RUN(memoryManage),        // insert memory frees, garbage collection
   RUN(codegen),
   LAST
 };

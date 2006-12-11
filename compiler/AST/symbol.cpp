@@ -444,8 +444,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   fprintf(outfile, " ");
   if (is_ref || on_heap || isReference) fprintf(outfile, "*");
-  fprintf(outfile, "%s", cname);
-  fprintf(outfile, ";\n");
+  fprintf(outfile, "%s;\n", cname);
 }
 
 
@@ -1398,6 +1397,24 @@ void FnSymbol::codegenPrototype(FILE* outfile) {
 }
 
 
+static void
+codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct) {
+  if (ct->classTag == CLASS_CLASS)
+    fprintf(outfile, "%s = NULL;\n", cname);
+  else {
+    for_fields(field, ct) {
+      if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+        char buffer[1024];
+        strcpy(buffer, cname);
+        strcat(buffer, ".");
+        strcat(buffer, field->cname);
+        codegenNullAssignments(outfile, buffer, fct);
+      }
+    }
+  }
+}
+
+
 void FnSymbol::codegenDef(FILE* outfile) {
   if (hasPragma("no codegen"))
     return;
@@ -1407,19 +1424,30 @@ void FnSymbol::codegenDef(FILE* outfile) {
   }
 
   codegenHeader(outfile);
-  fprintf(outfile, " ");
-
-  // while these braces seem like they should be extraneous since
-  // all function bodies are BlockStmts, it turns out that they are
-  // not because in C the function's parameter scope is the same as
-  // its local variable scope; so if we have a parameter and a local
-  // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
-  // extra braces are required to make the generated code work out.
-  // SJD: extra braces no longer necessary because of mangling
-  // SJD: Why should we not make the same scope restriction??
+  fprintf(outfile, " {\n");
+  Vec<BaseAST*> asts;
+  collect_top_asts(&asts, body);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+      if (!dynamic_cast<TypeSymbol*>(def->sym))
+        if (def->sym->parentScope->astParent->astType != SYMBOL_MODULE)
+          def->sym->codegenDef(outfile);
+  }
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (!dynamic_cast<TypeSymbol*>(def->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+          if (def->sym->isReference)
+            fprintf(outfile, "%s = NULL;\n", def->sym->cname);
+          else
+            codegenNullAssignments(outfile, def->sym->cname, ct);
+        }
+      }
+    }
+  }
   justStartedGeneratingFunction = true;
   body->codegen(outfile);
-  fprintf(outfile, "\n\n");
+  fprintf(outfile, "}\n\n");
 }
 
 
@@ -1432,6 +1460,30 @@ FnSymbol::insertAtHead(Expr* ast) {
 void
 FnSymbol::insertAtTail(Expr* ast) {
   body->insertAtTail(ast);
+}
+
+
+Symbol*
+FnSymbol::getReturnSymbol() {
+  ReturnStmt* ret = dynamic_cast<ReturnStmt*>(body->body->last());
+  if (!ret)
+    INT_FATAL(this, "function is not normal");
+  SymExpr* sym = dynamic_cast<SymExpr*>(ret->expr);
+  if (!sym)
+    INT_FATAL(this, "function is not normal");
+  return sym->var;
+}
+
+
+void
+FnSymbol::insertBeforeReturn(Expr* ast) {
+  Expr* last = dynamic_cast<ReturnStmt*>(body->body->last());
+  if (!last)
+    INT_FATAL(this, "function is not normal");
+  if (DefExpr* def = dynamic_cast<DefExpr*>(last->prev))
+    if (dynamic_cast<LabelSymbol*>(def->sym))
+      last = last->prev; // label before return
+  last->insertBefore(ast);
 }
 
 

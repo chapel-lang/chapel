@@ -36,6 +36,7 @@ int fcg = 0;
 bool unoptimized = false;
 bool no_scalar_replacement = true;
 bool no_bounds_checking = false;
+bool free_memory = false;
 bool no_inline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
@@ -95,6 +96,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-dir", ' ', "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
 
  {"", ' ', "Developer Workarounds", NULL, NULL, NULL, NULL},
+ {"free-memory", ' ', "Enable memory management", "F", &free_memory, "CHPL_FREE_MEMORY", NULL},
  {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
  {"", ' ', "Misc. Developer Flags", NULL, NULL, NULL, NULL},
