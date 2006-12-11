@@ -88894,3 +88894,122 @@ Removed files:
 	chapel/test/functions/deitz/iterators/: 
 	                                        test_iterator_side_effect3.future 
 
+---------------------------------------------------------------------------
+
+12/11/06 15:36:07 -- deitz
+
+Log message:
+	Implemented first pass of memory management on the generated code.
+	This memory management uses reference counting which should be
+	effective on our standard array and sequence implementations.  It is
+	preferable to a more sophisticated garbage collection technique for
+	data structures to which it can apply as it can free memory as soon as
+	possible.  This is especially important for large arrays.  It is also
+	a viable technique for handling references to variables that are
+	allocated on the heap for the implementation of begin statements.
+	
+	Added a flag --free-memory to enable this memory management.  It is
+	off by default.  The memory management is all handled in a single pass
+	before code generation called memoryManage.
+	
+	Current limitations include:
+	
+	  - memory leaks for all strings
+	  - memory leaks for all ddata allocated vectors (arrays)
+	  - memory leaks associated with our implementation of references
+	  - this implementation is not yet thread safe; the reference count is
+	    not incremented or decremented atomically
+	  - this implementation is not optimized; there is excessive code
+	      bloat for which optimizations over temporaries should be
+	      effective (generated code size increases by ~1500 LOC for
+	      jacobi.chpl)
+	  - unknown problems on a handful of tests (<10)
+	
+	Added 4 tests that show some simple examples for which this first pass
+	implementation applies.
+	
+	Added 2 .futures which should be fixed with better reference handling,
+	which is something we need to do anyway.
+	
+	Added convenience functions:
+	
+	  FnSymbol::getReturnSymbol() - returns the symbol that is returned by
+	    a function assuming the function has been normalized
+	
+	  FnSymbol::insertBeforeReturn(Expr* ast) - inserts an expression as
+	    the last expression in a function before the return statement.  If
+	    there is a label before the return statement, it is inserted
+	    before this label.  We may need two variants of this and I have to
+	    look into why I am using the before return label version.
+	
+	Added PRIMITIVE_GET_MEMBER_VALUE to return the value of a member
+	access rather than a reference to the member value.  This is only put
+	in the IR during the memory management pass so as to avoid even more
+	excessive code than what is already generated.
+	
+	Reworked code generation of PRIMITIVE_CHPL_FREE which is never used
+	and was previously used to free variables with the on_heap flag,
+	presumably those used for our implementation of begin.
+	
+	Added primitives for garbage collection:
+	
+	  PRIMITIVE_CLASS_NULL: checks to see if a class is null; with changes
+	    I made while in the middle of this, we could potentially do this
+	    instead with the != operator and nil to avoid this primitive.
+	  PRIMITIVE_GC_INIT: set reference count to zero
+	  PRIMITIVE_GC_FREE: decrement reference count
+	  PRIMITIVE_GC_TOUCH: increment reference count
+	  PRIMITIVE_GC_ISPOS: return true if reference count is positive
+	  PRIMITIVE_GC_ISNEG: return true if reference count is negative; this
+	    is used only for error checking in the implementation; checks are
+	    put in the generated code to make sure the reference count never
+	    goes below 0, which should be impossible
+	
+	Added primitive PRIMITIVE_INT_ERROR to halt the executable and print
+	out the cryptic "compiler generated error" message.  This should
+	eventually be parameterized on strings, but I didn't do this because
+	at some point I was trying to change the string representation.
+	
+	Note: the call to _free is special-cased for references (which need to
+	be reworked) to make sure the reference itself is not null.
+	
+	Added generated code to initialize all pointers to NULL so that we can
+	free uninitialized variables (without marking the initial MOVE).  The
+	function _free is designed to not do anything if the pointer is NULL.
+	
+	Changed the generation of variable declarations to be done at the
+	function level since we need to free all local variables at the end of
+	the function.  We can't do this trivially with a BlockStmt because of
+	goto statements, primarily the goto statements used to ensure that a
+	function has a single return point.
+	
+	All classes now have a field _ref_count in the generated code to keep
+	track of the references to it.  It is currently an int(32) but perhaps
+	should be an int(64).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: driver.h primitive.h symbol.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share functionResolution.cpp 
+Added files:
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/test/memory/deitz/: EXECOPTS test_seq_leak.chpl 
+	                           test_seq_leak.future 
+	                           test_seq_leak.good 
+	                           test_trivial_leak2.chpl 
+	                           test_trivial_leak2.good 
+	                           test_trivial_leak3.chpl 
+	                           test_trivial_leak3.good 
+	                           test_trivial_leak4.chpl 
+	                           test_trivial_leak4.good 
+	                           test_trivial_leak5.chpl 
+	                           test_trivial_leak5.good 
+	                           test_trivial_leak6.chpl 
+	                           test_trivial_leak6.future 
+	                           test_trivial_leak6.good 
+Removed files:
+	chapel/test/memory/deitz/: test_array_leak.compopts 
+	                           test_trivial_leak.compopts 
+
