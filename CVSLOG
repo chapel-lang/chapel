@@ -88875,3 +88875,22 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/11/06 14:01:39 -- waynew
+
+Log message:
+	Bug fix.  Temporary fix.  Added getElemType function to iterator
+	interface so that _to_seq can use it to declare the sequence type
+	without calling getNextCursor (indirectly).  Otherwise, side-effects
+	occur more than they should.
+	
+	Removed .future testing side-effects of iterators.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Removed files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_side_effect3.future 
+
