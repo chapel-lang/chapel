@@ -89013,3 +89013,17 @@ Removed files:
 	chapel/test/memory/deitz/: test_array_leak.compopts 
 	                           test_trivial_leak.compopts 
 
+---------------------------------------------------------------------------
+
+12/11/06 15:38:21 -- deitz
+
+Log message:
+	Updated memory test changes as the size of a class has increased.  A
+	_ref_count field is added to all classes, even if memory management is
+	disabled, as it is by default.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable2.good 
+
