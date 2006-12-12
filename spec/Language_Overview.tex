@@ -175,6 +175,7 @@ To introduce the Chapel language, four short example codes are presented and
 discussed.  
 
 \subsubsection{Jacobi Method}
+\index{Jacobi method!example}
 
 \paragraph{Description}
 The following example Chapel program solves a system of finite difference
@@ -190,7 +191,7 @@ approximation is calculated, and so on until the convergence test is met.
 
 \paragraph{Chapel Features:  Domains and Arrays}
 This program demonstrates how arrays are declared and used.  In Chapel, 
-{\em arrays} are declared using {\em domains} \index{domains}.  
+{\em arrays}\index{arrays} are declared using {\em domains} \index{domains}.  
 Domains are sets of indices which may be distributed
 across multiple processors indicating how data and parallel work should
 be divided among the processors.  An array is a mapping from the domain
@@ -263,6 +264,8 @@ convergence tolerance, or enable more output without recompiling this
 program.  There are three variables defined in lines~\ref{jac_config_start} - 
 \ref{jac_config_end}, 
 \chpl{n}, \chpl{epsilon} and \chpl{verbose} which are {\em configuration variables},
+\index{variables!configuration}
+\index{config@\chpl{config}}
 as indicated by the \chpl{config} keyword, 
 and can be set at the time of program execution through command line switches.
 Executing the following command line sequence,
@@ -388,14 +391,16 @@ solution using a \chpl{forall} loop.
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
 \end{chapel}
 This loop 
-uses the \chpl{ProblemSpace} domain as the iterator.  The \chpl{ProblemSpace}
-domain is the set of interior points of \chpl{A}'s domain. 
-All of the references to \chpl{A} in the loop are
-defined, and do not go out of bounds.  Each iteration 
+uses the \chpl{ProblemSpace} domain as an {\em iterator}.  Iterators
+for loops provide a value or a set of values to be used in each iteration
+of the loop.  In this case, each iteration 
 is indexed by a tuple of indices \chpl{(i,j)}, which avoids the use of
 a nest of two loops, one loop for the index \chpl{i} and one loop for the
 index \chpl{j}.  The compiler determines how this loop is made parallel, according
 to the default distribution for the \chpl{ProblemSpace} domain.   
+Note that the \chpl{ProblemSpace} domain is the set of interior points of 
+\chpl{A}'s domain.  All of the references to \chpl{A} in this loop are
+defined, and do not go out of bounds.  
 
 After the next approximate solution is computed and stored in \chpl{Temp},
 the change between \chpl{Temp} and \chpl{A}, for just the interior points, is 
@@ -403,7 +408,7 @@ calculated and stored in \chpl{delta}:
 \begin{chapel}
     delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
 \end{chapel}
-The {\em built-in reduction}, \chpl{max reduce}
+The {\em built-in reduction}\index{reductions}, \chpl{max reduce}
 computes the maximum value of the expression that follows it.  In this case
 the expression is the computed array of absolute values of the difference
 between the \chpl{Temp} and \chpl{A} arrays.  If
