@@ -1748,6 +1748,7 @@ pruneResolvedTree() {
         if (formal->isTypeVariable) {
           formal->defPoint->remove();
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
+          tmp->isCompilerTemp = true;
           fn->insertAtHead(new DefExpr(tmp));
           ASTMap map;
           map.put(formal, tmp);
