@@ -131,7 +131,7 @@ writeln("Hello, world!");
 \end{chapel}
 \noindent This program contains a single line of code that makes a
 call to the standard \chpl{writeln} subroutine, passing it a string
-literal argument, \chpl{"Hello, world!"}.  This call causes the string
+literal argument, \chpl{"Hello, world\!"}.  This call causes the string
 to be printed to the console when the program is executed.
 
 In general, Chapel programs define code using one or more named
@@ -158,16 +158,25 @@ to \chpl{writeln()}, and printing out the message.
 
 To compile and run this program, execute the following commands at the
 system prompt:
+\small{
 \begin{verbatim} 
 > chpl -o hello hello.chpl
 > ./hello
-\end{verbatim}
+\end{verbatim}}
 The following output will be printed to the console:
+\small{
 \begin{verbatim}
 > Hello, world!
-\end{verbatim}
+\end{verbatim}}
 
-\subsection{Example: Jacobi}
+\subsection{Example Chapel Programs}
+
+To introduce the Chapel language, four short example codes are presented and
+discussed.  
+
+\subsubsection{Jacobi Method}
+
+\paragraph{Description}
 The following example Chapel program solves a system of finite difference
 equations for the Laplace equation using the Jacobi method.  The program uses
 two-dimensional arrays, \chpl{A} and \chpl{Temp}, to store and calculate the approximate
@@ -179,9 +188,9 @@ After all entries in \chpl{Temp} are computed, \chpl{A} is assigned to \chpl{Tem
 and convergence is tested.  If convergence has not been reached, the next
 approximation is calculated, and so on until the convergence test is met.
 
+\paragraph{Chapel Features:  Domains and Arrays}
 This program demonstrates how arrays are declared and used.  In Chapel, 
-arrays are declared using {\em domains}.  In this example, \chpl{BigDomain} is
-used in the declaration of \chpl{A} and \chpl{Temp}.
+{\em arrays} are declared using {\em domains} \index{domains}.  
 Domains are sets of indices which may be distributed
 across multiple processors indicating how data and parallel work should
 be divided among the processors.  An array is a mapping from the domain
@@ -194,6 +203,7 @@ the Chapel language:  {\em arithmetic}, {\em sparse}, {\em indefinite},
 {\em opaque} and {\em enumerated}.  This example program uses arithmetic domains
 and arrays.  More information about domains and arrays is given in~\rsec{Domains_and_Arrays}.
 
+\paragraph{Code Listing}
 The Chapel code for this example follows.  
 \begin{numberedchapel}
 config var n = 5,                  (*\label{jac_config_start}*)
@@ -238,27 +248,31 @@ def main() {                       (*\label{jac_main}*)
 }
 \end{numberedchapel}
 
+\paragraph{Execution and Output}
 Compiling and running this program gives the following output:
+\small{
 \begin{verbatim}
 > ./a.out
 Jacobi computation complete.
 Delta is 9.92124e-06 (< epsilon = 1e-05)
 # of iterations: 60
-\end{verbatim}
+\end{verbatim}}
 
 It is possible to run a different sized problem, to use a different
 convergence tolerance, or enable more output without recompiling this
 program.  There are three variables defined in lines~\ref{jac_config_start} - 
 \ref{jac_config_end}, 
-\chpl{n}, \chpl{epsilon} and \chpl{verbose} which are configuration variables,
+\chpl{n}, \chpl{epsilon} and \chpl{verbose} which are {\em configuration variables},
 as indicated by the \chpl{config} keyword, 
 and can be set at the time of program execution through command line switches.
 Executing the following command line sequence,
+\small{
 \begin{verbatim}
 > ./a.out --verbose=true --n=2 --epsilon=0.01
-\end{verbatim}
+\end{verbatim}}
 results in overriding the default values for \chpl{verbose}, \chpl{n} and
 \chpl{epsilon}, producing the following output.
+\small{
 \begin{verbatim}
 Initial configuration:
 0.0 0.0 0.0 0.0
@@ -304,10 +318,11 @@ delta: 0.0078125
 Jacobi computation complete.
 Delta is 0.0078125 (< epsilon = 0.01)
 # of iterations: 5
-\end{verbatim}
+\end{verbatim}}
 
-Also, it is important to note that none of these three configuration variables contain a 
-type in their declaration: 
+\paragraph{Implementation Details}
+This example program begins with the declaration of the three configuration
+variables.  Note that these variables do not contain a type in their declaration: 
 \begin{chapel}
 config var n = 5,
            epsilon = 0.00001,
@@ -351,7 +366,10 @@ arrays are of size \chpl{n+2} $\times$ \chpl{n+2}.
 
 Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
 configuration of the problem, if \chpl{verbose}
-is set to true.  Lines~\ref{jac_var_start} - \ref{jac_var_end} 
+is set to true.  The \chpl{writeln} function outputs strings and values
+of variables that are passed as arguments, followed by a line return.
+
+Lines~\ref{jac_var_start} - \ref{jac_var_end} 
 contain the remaining variable declarations:
 \begin{chapel}
   var iteration = 0,
@@ -363,25 +381,13 @@ it does not have an initialization expression.
 The computational loop in lines~\ref{jac_do_start} - \ref{jac_do_end}  
 performs the Jacobi method.
 This loop is executed until \chpl{delta} is less than or equal to \chpl{epsilon}.
+Each iteration of the \chpl{do while} loop computes the next approximate
+solution using a \chpl{forall} loop.   
 \begin{chapel}
-  do {
     forall (i,j) in ProblemSpace do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
-
-    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
-    A[ProblemSpace] = Temp[ProblemSpace];
-
-    iteration += 1;
-
-    if (verbose) {
-      writeln("iteration: ", iteration);
-      writeln(A);
-      writeln("delta: ", delta, "\n");
-    }
-  } while (delta > epsilon);
 \end{chapel}
-Each iteration of the \chpl{do while} loop computes the next approximate
-solution using a \chpl{forall} loop.  This loop 
+This loop 
 uses the \chpl{ProblemSpace} domain as the iterator.  The \chpl{ProblemSpace}
 domain is the set of interior points of \chpl{A}'s domain. 
 All of the references to \chpl{A} in the loop are
@@ -397,20 +403,25 @@ calculated and stored in \chpl{delta}:
 \begin{chapel}
     delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
 \end{chapel}
-The reduction, \chpl{max reduce}
-computes the maximum value of the expression that follows it.  If
+The {\em built-in reduction}, \chpl{max reduce}
+computes the maximum value of the expression that follows it.  In this case
+the expression is the computed array of absolute values of the difference
+between the \chpl{Temp} and \chpl{A} arrays.  If
 \chpl{Temp} and \chpl{A} are distributed, then this reduction is computed in 
 parallel accordingly.  
 
 Next, \chpl{A} is updated with the new approximate solution and the iteration
-number is advanced.  If \chpl{verbose} is set to true, then information about
-the current approximate solution and \chpl{delta} is output.  If \chpl{delta}
-is greater than the convergence tolerance, \chpl{epsilon}, then the \chpl{do
+number is advanced.  The domain \chpl{ProblemSpace} is used in the assignment
+of \chpl{Temp} to \chpl{A}, updating only the interior points of the array.
+If \chpl{verbose} is set to true, then information about
+the current approximate solution and \chpl{delta} is output.  Then, \chpl{delta}
+is compared to the convergence tolerance, \chpl{epsilon}.  If \chpl{delta} is
+not small enough, then the \chpl{do
 while} loop continues.  Otherwise, the loop exits.  
 The program ends with output, indicating that the computation is complete
 and giving information about convergence.  
 
-\subsection{Example: Norm}
+\subsubsection{Norm}
 The following example contains a module \chpl{Norm} which defines  
 \chpl{norm} functions that compute either a vector or matrix norm, depending
 on the rank of the array that is passed as the argument.  There are three
@@ -532,6 +543,7 @@ are different between the vector and the matrix.  Thus, different
 functions are used to compute the norms, depending on the whether the
 input is a vector or matrix.
 
+\small{
 \begin{verbatim}
 Test of vector norms.  Array = 
 2.0 2.0 2.0 2.0
@@ -547,7 +559,7 @@ Test of matrix norms.  Array =
 infinity norm = 4.0
 frobenius norm = 4.0
 default norm = 4.0
-\end{verbatim}
+\end{verbatim}}
 
 The \chpl{Norm} module begins with defining \chpl{normType} to be an
 enumerated type with constant values \chpl{norm1}, \chpl{norm2}, 
@@ -659,7 +671,7 @@ is 1, the result of the function call \chpl{norm(x, norm2)} is returned.
 When the rank is 2, the result of the function call \chpl{norm(x, normFrob)}. 
 The \chpl{otherwise} clause gives a compiler error.
 
-\subsection{Example: Producer-Consumer}
+\subsubsection{Producer-Consumer}
 The following example demonstrates a simple producer and consumer program.
 The program contains a \chpl{sync} variable and a \chpl{begin} statement 
 in order to implement two concurrent computations, or threads, that execute 
@@ -706,9 +718,10 @@ can be set to override their default values at program execution time, through t
 use of command line switches.  For example, to change the number of iterations to 10
 and to change the number of seconds to sleep to 5, the following execution command 
 may be used:
+\small{
 \begin{verbatim}
 > a.out --numIterations=10 --sleepTime=5
-\end{verbatim}
+\end{verbatim}}
 
 In line~\ref{prodcons_var_2}, the variable \chpl{s} is 
 declared to be a \chpl{sync} variable 
@@ -771,17 +784,18 @@ switches back and forth between the producer and consumer computation for
 
 Running the program with the default 
 values for \chpl{numIterations} or \chpl{sleepTime} results in: 
+\small{
 \begin{verbatim}
 consumer got 1
 consumer got 2
 consumer got 3
 consumer got 4
 consumer got 5
-\end{verbatim}
+\end{verbatim}}
 Each line is printed after a delay of \chpl{sleepTime} seconds.
 
 
-\subsection{Example: Generic Stacks}
+\subsubsection{Generic Stacks}
 Two implementations of a generic stack type, \chpl{Stack}, are given below.  The first
 defines \chpl{Stack} to be a linked list of \chpl{MyNode} objects.  In
 the second implementation, \chpl{Stack} is an array.  Both implementations
@@ -844,11 +858,12 @@ will initialize \chpl{stack1.itemType} to be a string.
 The strings, \chpl{"one"}, \chpl{"two"} and \chpl{"three"}
 are pushed on \chpl{stack1}, and then three items are popped off of \chpl{stack1},
 outputting each item as it is popped off. The output of this example is:
+\small{
 \begin{verbatim}
 three
 two
 one
-\end{verbatim}
+\end{verbatim}}
 
 The example code begins with a definition of the \chpl{MyNode} class in 
 lines~\ref{mynode_class_start} - \ref{mynode_class_end}.  
