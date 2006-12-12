@@ -1710,12 +1710,14 @@ pruneResolvedTree() {
             }
           }
         }
-      } else {
+      } else if (FnSymbol* fn = call->isResolved()) {
         // Remove method and setter token actuals.
-        for_actuals(actual, call) {
-          if (actual->typeInfo() == dtMethodToken ||
-              actual->typeInfo() == dtSetterToken)
-            actual->remove();
+        for (int i = fn->formals->length(); i >= 1; i--) {
+          ArgSymbol* formal = fn->getFormal(i);
+          if (formal->type == dtMethodToken ||
+              formal->type == dtSetterToken ||
+              formal->isTypeVariable)
+            call->get(i)->remove();
         }
       }
     } else if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {
@@ -1727,7 +1729,11 @@ pruneResolvedTree() {
       // Remove type blocks--code that exists only to determine types.
       if (block->blockTag == BLOCK_TYPE)
         block->remove();
-    } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
       for_formals(formal, fn) {
         // Remove formal default values.
         if (formal->defaultExpr)
@@ -1736,8 +1742,17 @@ pruneResolvedTree() {
         if (formal->defPoint->exprType)
           formal->defPoint->exprType->remove();
         // Remove method and setter token formals.
-        if (formal->type == dtMethodToken || formal->type == dtSetterToken)
+        if (formal->type == dtMethodToken ||
+            formal->type == dtSetterToken)
           formal->defPoint->remove();
+        if (formal->isTypeVariable) {
+          formal->defPoint->remove();
+          VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
+          fn->insertAtHead(new DefExpr(tmp));
+          ASTMap map;
+          map.put(formal, tmp);
+          update_symbols(fn->body, &map);
+        }
       }
     }
   }
