@@ -89027,3 +89027,13 @@ Modified files:
 	                             printFinalMemStat.good 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+12/11/06 16:52:33 -- deitz
+
+Log message:
+	Added --free-memory compiler option to my memory leak tests directory.
+
+Added files:
+	chapel/test/memory/deitz/: COMPOPTS 
+
