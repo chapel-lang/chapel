@@ -89051,3 +89051,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/12/06 09:35:17 -- deitz
+
+Log message:
+	Fixed C warnings by making the formal temp we put in to replace type
+	formals a compiler temporary so that we remove them even when they are
+	at the global level via inlining.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
