@@ -89037,3 +89037,17 @@ Log message:
 Added files:
 	chapel/test/memory/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+12/12/06 09:15:22 -- deitz
+
+Log message:
+	Added code during the pruning phase at the end of function resolution
+	to eliminate all type actuals and formals from the IR since these have
+	already served their purpose of resolution and instantiation.
+	
+	This fixes the issue with using --no-inline.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
