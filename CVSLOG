@@ -89263,3 +89263,20 @@ Modified files:
 Removed files:
 	chapel/test/memory/deitz/: test_array_leak.future 
 
+---------------------------------------------------------------------------
+
+12/13/06 14:02:26 -- deitz
+
+Log message:
+	Added code so that we only build _free and _touch functions on types
+	that require them.  Previously we built these functions on all classes
+	and records.  We now build them on all classes but not on all records.
+	We only build them on records if some field in the record is a type
+	that has a _free function.
+	
+	This improves performance when using memory management on Jacobi on a
+	25x25 array from 54% overhead to 18% overhead.  More to do.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+
