@@ -59,9 +59,6 @@ insertMissingReturnTemps() {
   }
 }
 
-//
-// insertGC
-
 
 static bool
 disableReferences(Symbol* sym) {
@@ -90,6 +87,21 @@ isReferenceCounted(Type* t) {
 // types
 //
 static void
+insertSubclassFrees(ClassType* ct, FnSymbol* fn, ArgSymbol* arg, Symbol* ret) {
+  forv_Vec(Type, t, ct->dispatchChildren) {
+    if (ClassType* sct = dynamic_cast<ClassType*>(t)) {
+      BlockStmt* block = new BlockStmt();
+      VarSymbol* tmp = new VarSymbol("tmp", sct);
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, sct->symbol, arg)));
+      block->insertAtTail(new CallExpr(freeMap.get(sct), tmp));
+      block->insertAtTail(new GotoStmt(goto_normal, ret));
+      fn->body->body->head->insertAfter(new CondStmt(new CallExpr(PRIMITIVE_GETCID, arg, new_IntSymbol(sct->id)), block));
+    }
+  }
+}
+
+static void
 buildFreeFunctions() {
   forv_Vec(TypeSymbol, type, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
@@ -115,6 +127,9 @@ buildFreeFunctions() {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
       FnSymbol* fn = freeMap.get(ct);
       ArgSymbol* arg = fn->getFormal(1);
+      Symbol* ret = fn->getReturnLabel();
+      if (ct->classTag == CLASS_CLASS)
+        insertSubclassFrees(ct, fn, arg, ret);
       for_fields(field, ct) {
         if (!disableReferences(field))
           if (FnSymbol* fieldFree = freeMap.get(field->type))
@@ -122,6 +137,8 @@ buildFreeFunctions() {
               new CallExpr(fieldFree,
                 new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
       }
+      if (ct->symbol->hasPragma("data class"))
+        fn->insertBeforeReturn(new CallExpr(PRIMITIVE_ARRAY_FREE, arg));
       if (isReferenceCounted(ct))
         fn->insertBeforeReturn(new CallExpr(PRIMITIVE_CHPL_FREE, arg));
     }
@@ -251,7 +268,7 @@ void memoryManage(void) {
               if (!var->isReference) // do not free aliases
                 if (FnSymbol* _free = freeMap.get(var->type))
                   if (fn->getReturnSymbol() != var)
-                    fn->insertBeforeReturn(new CallExpr(_free, var));
+                    fn->insertBeforeReturnAfterLabel(new CallExpr(_free, var));
       }
     }
   }

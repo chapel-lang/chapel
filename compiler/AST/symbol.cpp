@@ -1475,6 +1475,18 @@ FnSymbol::getReturnSymbol() {
 }
 
 
+Symbol*
+FnSymbol::getReturnLabel() {
+  ReturnStmt* ret = dynamic_cast<ReturnStmt*>(body->body->last());
+  if (!ret)
+    INT_FATAL(this, "function is not normal");
+  if (DefExpr* def = dynamic_cast<DefExpr*>(ret->prev))
+    if (Symbol* sym = dynamic_cast<LabelSymbol*>(def->sym))
+      return sym;
+  return NULL;
+}
+
+
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
   Expr* last = dynamic_cast<ReturnStmt*>(body->body->last());
@@ -1483,6 +1495,15 @@ FnSymbol::insertBeforeReturn(Expr* ast) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(last->prev))
     if (dynamic_cast<LabelSymbol*>(def->sym))
       last = last->prev; // label before return
+  last->insertBefore(ast);
+}
+
+
+void
+FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
+  Expr* last = dynamic_cast<ReturnStmt*>(body->body->last());
+  if (!last)
+    INT_FATAL(this, "function is not normal");
   last->insertBefore(ast);
 }
 

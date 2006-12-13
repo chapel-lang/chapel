@@ -807,6 +807,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ARRAY_INIT:
       help_codegen_fn(outfile, "array_init", get(1), get(2)->typeInfo(), get(3));
       break;
+    case PRIMITIVE_ARRAY_FREE:
+      help_codegen_fn(outfile, "array_free", get(1));
+      break;
     case PRIMITIVE_NOOP:
       break;
     case PRIMITIVE_MOVE:

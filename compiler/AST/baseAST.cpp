@@ -198,6 +198,11 @@ void cleanAst() {
         if (method && !isLive(method))
           ts->type->methods.v[i] = NULL;
       }
+      for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
+        Type* type = ts->type->dispatchChildren.v[i];
+        if (type && !isLive(type->symbol))
+          ts->type->dispatchChildren.v[i] = NULL;
+      }
     }
   }
   forv_Vec(BaseAST, ast, gAsts) {

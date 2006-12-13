@@ -18,7 +18,8 @@ _real64 _now_time(void);
 
 #define array_get(x, i) (&((x)->_data[i]))
 #define array_set(x, i, v) ((x)->_data[i] = v)
-#define array_init(x, type, size) (x)->_data = _chpl_malloc(size, sizeof(type), "_data");
+#define array_init(x, type, size) (x)->_data = _chpl_malloc(size, sizeof(type), "_data")
+#define array_free(x) _chpl_free((x)->_data)
 
 #define _noop(x)
 

@@ -434,6 +434,14 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
 
 
 void _chpl_free(void* memAlloc) {
+  if (memtrace) {
+    if (memtrack) {
+      memTableEntry* memEntry = lookupMemory(memAlloc);
+      printToMemLog(memEntry->number, memEntry->size, memEntry->description, "free", memAlloc, NULL);
+    } else
+      printToMemLog(0, 0, "", "free", memAlloc, NULL);
+  }
+
   if (memtrack) {
     if (memstat) {
       memTableEntry* memEntry = lookupMemory(memAlloc);
