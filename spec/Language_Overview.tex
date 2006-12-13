@@ -426,26 +426,36 @@ while} loop continues.  Otherwise, the loop exits.
 The program ends with output, indicating that the computation is complete
 and giving information about convergence.  
 
-\subsubsection{Norm}
-The following example contains a module \chpl{Norm} which defines  
+\subsubsection{Matrix and Vector Norms}
+
+\paragraph{Description}
+The following example contains a module \chpl{Norm} which provides  
 \chpl{norm} functions that compute either a vector or matrix norm, depending
 on the rank of the array that is passed as the argument.  There are three
 norm type options for vector and matrix norm calculations.  For vectors,  
 the 1-norm, 2-norm and infinity norm are implemented in this module.  
 For matrices, the 1-norm, infinity norm and Frobenius norm are provided.   
-The module uses a variable of enumerated type \chpl{normType} to indicate the choice
-of norm.
+The module uses a variable of {\em enumerated type} \chpl{normType} to 
+indicate the choice of norm.
 
+\paragraph{Chapel Features:  Modules, Generic Functions, Function Overloading}
+\index{modules}
+\index{functions}
+\index{functions!generic}
+\index{generics!functions}
+This example demonstrates the definition and use of modules, generic functions
+function overloading.
 When the \chpl{Norm} module is used, the user may call 
 \chpl{norm(x)} or \chpl{norm(x,normType)} where
 \chpl{x} is any array and \chpl{normType} is the enumerated type as defined
-in the \chpl{Norm} module.  The \chpl{norm} function is overloaded with
+in the \chpl{Norm} module.  The \chpl{norm} function is {\em overloaded} with
 four separate function definitions for \chpl{norm}, based on the
 the dimension, or \chpl{rank}, of the input array, or the number of formal
 arguments used in the \chpl{norm} function call.  Each of these four function
 definitions is a {\em generic} function, not specifying the type of the array
 argument \chpl{x}.  Generic functions allow for code reuse and readability.
 
+\paragraph{Program Listing}
 The following program gives the definition of the \chpl{Norm} module followed
 by a module which tests \chpl{Norm}, demonstrating different calls to the \chpl{norm}
 function.
@@ -459,7 +469,7 @@ module Norm{                                    (*\label{norm_start}*)
       when norm1 do return + reduce abs(x);        (*\label{vec_norm1}*)
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  (*\label{vec_norm2}*)
       when normInf do return max reduce abs(x);  (*\label{vec_normInf}*)
-      when normFrob do halt("From-norm not defined for 1D arrays");(*\label{vec_normFrob}*)
+      when normFrob do halt("Frobenius norm not defined for 1D arrays");(*\label{vec_normFrob}*)
       otherwise halt("Unexpected norm type"); (*\label{vec_unexp}*)
     } (*\label{vec_select_end}*)
   } (*\label{vec_end}*)
@@ -525,28 +535,29 @@ module TestNorm { (*\label{test_mod_start}*)
 }              (*\label{test_mod_end}*)
 \end{numberedchapel}
 
+\paragraph{Execution and Output}
 After the definition of the \chpl{Norm} module, a \chpl{TestNorm} module
 is defined in lines~\ref{test_mod_start} - \ref{test_mod_end}, giving 
-an example of how the \chpl{norm} functions are used.
+an example of how the \chpl{norm} functions can be used in a program.
+
 On line~\ref{use_norm} , \chpl{use Norm}, indicates that the \chpl{Norm} module is to be
 used when resolving functions in the \chpl{TestNorm} module.  A \chpl{testNorm}
 function is defined, taking \chpl{arr} as an argument.  Based on \chpl{arr.rank},
 all of the valid norm options are tested, along with the generic \chpl{norm(arr)}
-function call.  The \chpl{main} function defines an example vector and matrix.
-The domain \chpl{D1} is a one-dimensional domain, indexed
-from \chpl{1} to \chpl{4}.  This domain is used to define the vector
-\chpl{a}.  The domain \chpl{D2} is a two-dimensional domain, indexed from \chpl{1}
-to \chpl{4} in each dimension.  This domain is used to define the matrix \chpl{b}.
-Both \chpl{a} and \chpl{b} are initialized to \chpl{2.0} and passed to
-\chpl{testNorm}.
+function call.  This \chpl{testNorm} function is called to test two arrays, \chpl{a}
+and \chpl{b}.  The array \chpl{a} is a one-dimensional array, as defined by the
+domain \chpl{D1}.  The array \chpl{b} is a two-dimensional array, as defined by
+the domain \chpl{D2}.  Each array has a total of four elements, and each
+is initialized to 2.0.  
 
-The output of this program is given below.  Note that the first set
-of norms is computed for a vector and the second set are computed for
+The output of this program is given below.  The first set
+of norms is computed for \chpl{a} which is a vector and the second set 
+are computed for \chpl{b} which is
 a matrix. Even though the vector and matrix in this example contain
 the same number of elements with the same values, the computed norms
 are different between the vector and the matrix.  Thus, different
-functions are used to compute the norms, depending on the whether the
-input is a vector or matrix.
+implementations of the norm functions are used to compute the norms, 
+depending on the whether the input is a vector or matrix.
 
 \small{
 \begin{verbatim}
@@ -566,6 +577,7 @@ frobenius norm = 4.0
 default norm = 4.0
 \end{verbatim}}
 
+\paragraph{Implementation Details}
 The \chpl{Norm} module begins with defining \chpl{normType} to be an
 enumerated type with constant values \chpl{norm1}, \chpl{norm2}, 
 \chpl{normInf}, \chpl{normFrob}.
@@ -585,27 +597,38 @@ The function definition contains a \chpl{where x.rank == 1} clause, indicating t
 this version of \chpl{norm} is be used when the input array \chpl{x}
 has just one dimension, and is thus, a vector.  The arguments for this version
 of \chpl{norm} are \chpl{x} of generic array type and \chpl{p} of \chpl{normType}.  
-Since all norm types for vectors can be computed with whole array operations, there 
+Since all norm types for the vector case can be computed with whole array 
+operations, there 
 is no need to specify a domain type for \chpl{x}.  It is good practice to
 specify \chpl{x} as an array type by using \chpl{: []} since the \chpl{norm}
 function is only defined for arrays.  The compiler can detect errors if other,
 non-array types are passed as arguments to \chpl{norm}.
 
-
 The body of the vector version of the \chpl{norm} function is a \chpl{select} statement on
 \chpl{p} in lines~\ref{vec_select_start} - \ref{vec_select_end}.  
+\begin{chapel}
+select (p) {                                   
+      when norm1 do return + reduce abs(x);   
+      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  
+      when normInf do return max reduce abs(x);  
+      when normFrob do halt("Frobenius norm not defined for 1D arrays");
+      otherwise halt("Unexpected norm type"); 
+    } 
+\end{chapel}
 For the first three cases of the select statement,
-when \chpl{p} is \chpl{norm1}, \chpl{norm2} or chpl{normInf},
+when \chpl{p} is \chpl{norm1}, \chpl{norm2} or \chpl{normInf},
 a reduction operator is used to compute the value that is returned. 
 The 1-norm of a vector is the sum of the absolute values of the entries of \chpl{x},
-which can be computed with the sum reduction expression, \chpl{ + reduce abs(x)}.
+computed with the sum reduction expression, \chpl{ + reduce abs(x)}.
 The 2-norm of a vector is the sum of the squares of the absolute values of
-the entries of \chpl{x}, which can be computed with the sum reduction expression,
+the entries of \chpl{x}, computed with the sum reduction expression,
 \chpl{ + reduce (abs(x)*abs(x))}.
 The infinity norm of a vector is the maximum entry of \chpl{x} in absolute value,
 which can be computed with the maximum reduction expression \chpl{max reduce abs(x)}.
 Reduction and scan expressions are discussed in more detail 
-in~\rsec{Reductions_and_Scans}.  The last two cases of the select statement result
+in~\rsec{Reductions_and_Scans}.  
+
+The last two cases of the select statement result
 in the program halting, outputting the string that is passed to the \chpl{halt}
 function.  Since the Frobenius norm is not defined for vectors, the program
 will halt when \chpl{p} is \chpl{normFrob}.  The \chpl{otherwise} clause will
@@ -620,18 +643,18 @@ This version of the function will be used when \chpl{x} is a matrix,
 that is the \chpl{rank} of the array \chpl{x} is \chpl{2}.  The arguments
 for this version of \chpl{norm} are \chpl{x} of generic array type and \chpl{p}
 of \chpl{normType}.  For this matrix version, the domain of \chpl{x} is
-needed to express the  norm computations.  So, the domain type is queried and set to 
-\chpl{D} with the expression \chpl{[?D]}.  
+needed to express the  norm computations.  So, the domain type is {\em queried} 
+and set to \chpl{D} with the expression \chpl{[?D]}.  
 
 The body of the matrix version of \chpl{norm}
 is a select statement on \chpl{p} in lines~\ref{mat_select_start} - \ref{mat_select_end}.
 The \chpl{norm1} case, 
-the 1-norm of a matrix, is the maximum absolute column sum, which is computed 
-with the expression 
+the 1-norm of a matrix, is the maximum absolute column sum of the matrix. 
 \begin{chapel}
-max reduce [j in D(2)] (+ reduce abs(x[D(1), j])).
+      when norm1 do           
+        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j])); 
 \end{chapel}
-This expression is the maximum reduction of a \chpl{forall} loop, which computes
+The return expression is the maximum reduction of a \chpl{forall} loop, which computes
 a sum reduction for each iteration.  
 It uses \chpl{D(1)} and \chpl{D(2)}, which are the first and second dimension,
 respectively, of the domain \chpl{D}.  The shorthand version of a \chpl{forall}
@@ -639,20 +662,32 @@ loop is used, \chpl{[j in D(2)]}, indicating that
 for all \chpl{j in D(2)}, the sum
 of the absolute values across the rows, \chpl{+ reduce abs(x[D(1), j])}, is computed. 
 Then, the maximum value of these \chpl{j} absolute column sums is computed with
-\chpl{max reduce}.  The \chpl{norm2} case, the 2-norm of a matrix, is not
+\chpl{max reduce}.  
+
+The \chpl{norm2} case, the 2-norm of a matrix, is not
 implemented.  This case will halt with a message indicating this unimplemented
-status.  The \chpl{normInf} case, the infinity norm of a matrix, is the maximum
-absolute row sum.  This norm is computed similarly to the 1-norm, using the maximum
-reduction of a chpl{forall} loop, 
+status.  
+
+The \chpl{normInf} case, the infinity norm of a matrix, is the maximum
+absolute row sum.  
 \begin{chapel}
-max reduce [i in D(1)] (+ reduce abs(x[i, D(2)])).  
+      when normInf do  
+        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)])); 
 \end{chapel}
 For all \chpl{i in D(1)}, the sum of the absolute values across columns,
 \chpl{+ reduce abs(x[i, D(2)])} is computed.  Then the maximum value of these
-\chpl{i} absolute row sums is computed with \chpl{max reduce}.  The \chpl{normFrob}
+\chpl{i} absolute row sums is computed with \chpl{max reduce}.  
+
+The \chpl{normFrob}
 case which is the Frobenius norm of a matrix, is the same computation as the
-2-norm of a vector.  The Frobenius norm is the square root of the sum of the
-squares of absolute values of all entries in the matrix.  The final case of
+2-norm of a vector.  
+\begin{chapel}
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x))); 
+\end{chapel}
+The Frobenius norm is the square root of the sum of the
+squares of absolute values of all entries in the matrix.  
+
+The final case of
 the select statement, the \chpl{otherwise} clause, halts with a message that
 the norm type is unexpected.
 
@@ -662,19 +697,31 @@ is for the case where \chpl{x.rank > 2}.
 The module was designed to only compute norms of vectors and matrices.  
 Calling the \chpl{norm} function with three-dimensional or higher arrays 
 should give an error at compile time.  In this case, an appropriate compiler error 
-is given using the \chpl{compilerError} function.  For more information about 
+is given using the \chpl{compilerError} function.  
+\begin{chapel}
+    compilerError("Norms not implemented for array ranks > 2D"); 
+\end{chapel}
+For more information about 
 user-defined compiler errors, see~\rsec{User-Defined_Compiler_Errors}.
 
-The fourth and final version of the \chpl{norm} function is given in 
+The final version of the \chpl{norm} function is given in 
 lines~\ref{norm_default_start} - \ref{norm_default_end}.
-This version has one formal argument, \chpl{x}, omitting the norm
-type.  It calls the other \chpl{norm} functions with default values for 
+\begin{chapel}
+  def norm(x: []) { 
+    select (x.rank) { 
+      when 1 do return norm(x, norm2);  
+      when 2 do return norm(x, normFrob); 
+      otherwise compilerError("Norms not implemented for array ranks > 2D"); 
+    }   
+  }  
+\end{chapel}
+This version has one formal argument, \chpl{x}, allowing the user to 
+omit the norm type.  It calls the other \chpl{norm} functions with default values for 
 \chpl{normType}.  For vectors, the default norm is defined to be the 2-norm.
 For matrices, the default norm is defined to be the Frobenius norm.  This 
-version of \chpl{norm} is a select statement on \chpl{x.rank}.  When the rank 
-is 1, the result of the function call \chpl{norm(x, norm2)} is returned.  
-When the rank is 2, the result of the function call \chpl{norm(x, normFrob)}. 
-The \chpl{otherwise} clause gives a compiler error.
+version of \chpl{norm} is a select statement on \chpl{x.rank}.  Depending
+on the rank of \chpl{x}, the \chpl{norm} function is called with the
+appropriate default norm type or a compiler error is given.
 
 \subsubsection{Producer-Consumer}
 The following example demonstrates a simple producer and consumer program.
