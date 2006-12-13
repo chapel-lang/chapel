@@ -89311,3 +89311,13 @@ Added files:
 	chapel/test/memory/deitz/: test_jacobi_leak.chpl 
 	                           test_jacobi_leak.good 
 
+---------------------------------------------------------------------------
+
+12/13/06 14:47:22 -- marybeth
+
+Log message:
+	More complete edits to Jacobi section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
