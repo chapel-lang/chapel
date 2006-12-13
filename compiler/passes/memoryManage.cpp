@@ -101,46 +101,67 @@ insertSubclassFrees(ClassType* ct, FnSymbol* fn, ArgSymbol* arg, Symbol* ret) {
   }
 }
 
+static bool
+requiresFreeFunction(ClassType* ct) {
+  if (freeMap.get(ct))
+    return false;
+  if (ct->classTag == CLASS_CLASS)
+    return true;
+  for_fields(field, ct) {
+    if (freeMap.get(field->type))
+      return true;
+  }
+  return false;
+}
+
 static void
 buildFreeFunctions() {
-  forv_Vec(TypeSymbol, type, gTypes) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-      FnSymbol* fn = new FnSymbol("_free");
-      fn->retType = dtVoid;
-      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
-      fn->insertFormalAtTail(arg);
-      if (isReferenceCounted(ct)) {
-        fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
-                                      new ReturnStmt()));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_GC_FREE, arg));
-        fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISPOS, arg),
-                                      new ReturnStmt()));
-        fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISNEG, arg),
-                                      new CallExpr(PRIMITIVE_INT_ERROR)));
+  bool change = true;
+  while (change) {
+    change = false;
+    forv_Vec(TypeSymbol, type, gTypes) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        if (requiresFreeFunction(ct)) {
+          FnSymbol* fn = new FnSymbol("_free");
+          fn->retType = dtVoid;
+          ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
+          fn->insertFormalAtTail(arg);
+          if (isReferenceCounted(ct)) {
+            fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
+                                          new ReturnStmt()));
+            fn->insertAtTail(new CallExpr(PRIMITIVE_GC_FREE, arg));
+            fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISPOS, arg),
+                                          new ReturnStmt()));
+            fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISNEG, arg),
+                                          new CallExpr(PRIMITIVE_INT_ERROR)));
+          }
+          type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
+          normalize(fn);
+          freeMap.put(ct, fn);
+          change = true;
+        }
       }
-      type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
-      normalize(fn);
-      freeMap.put(ct, fn);
     }
   }
   forv_Vec(TypeSymbol, type, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-      FnSymbol* fn = freeMap.get(ct);
-      ArgSymbol* arg = fn->getFormal(1);
-      Symbol* ret = fn->getReturnLabel();
-      if (ct->classTag == CLASS_CLASS)
-        insertSubclassFrees(ct, fn, arg, ret);
-      for_fields(field, ct) {
-        if (!disableReferences(field))
-          if (FnSymbol* fieldFree = freeMap.get(field->type))
-            fn->insertBeforeReturn(
-              new CallExpr(fieldFree,
-                new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+      if (FnSymbol* fn = freeMap.get(ct)) {
+        ArgSymbol* arg = fn->getFormal(1);
+        Symbol* ret = fn->getReturnLabel();
+        if (ct->classTag == CLASS_CLASS)
+          insertSubclassFrees(ct, fn, arg, ret);
+        for_fields(field, ct) {
+          if (!disableReferences(field))
+            if (FnSymbol* fieldFree = freeMap.get(field->type))
+              fn->insertBeforeReturn(
+                new CallExpr(fieldFree,
+                  new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+        }
+        if (ct->symbol->hasPragma("data class"))
+          fn->insertBeforeReturn(new CallExpr(PRIMITIVE_ARRAY_FREE, arg));
+        if (isReferenceCounted(ct))
+          fn->insertBeforeReturn(new CallExpr(PRIMITIVE_CHPL_FREE, arg));
       }
-      if (ct->symbol->hasPragma("data class"))
-        fn->insertBeforeReturn(new CallExpr(PRIMITIVE_ARRAY_FREE, arg));
-      if (isReferenceCounted(ct))
-        fn->insertBeforeReturn(new CallExpr(PRIMITIVE_CHPL_FREE, arg));
     }
   }
 }
@@ -154,30 +175,33 @@ static void
 buildTouchFunctions() {
   forv_Vec(TypeSymbol, type, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-      FnSymbol* fn = new FnSymbol("_touch");
-      fn->retType = dtVoid;
-      ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
-      fn->insertFormalAtTail(arg);
-      if (ct->classTag == CLASS_CLASS) {
-        fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
-                                      new ReturnStmt()));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_GC_TOUCH, arg));
+      if (freeMap.get(ct)) {
+        FnSymbol* fn = new FnSymbol("_touch");
+        fn->retType = dtVoid;
+        ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
+        fn->insertFormalAtTail(arg);
+        if (ct->classTag == CLASS_CLASS) {
+          fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
+                                        new ReturnStmt()));
+          fn->insertAtTail(new CallExpr(PRIMITIVE_GC_TOUCH, arg));
+        }
+        type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
+        normalize(fn);
+        touchMap.put(ct, fn);
       }
-      type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
-      normalize(fn);
-      touchMap.put(ct, fn);
     }
   }
   forv_Vec(TypeSymbol, type, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
       if (!isReferenceCounted(ct)) {
-        FnSymbol* fn = touchMap.get(ct);
-        ArgSymbol* arg = fn->getFormal(1);
-        for_fields(field, ct) {
-          if (FnSymbol* fieldTouch = touchMap.get(field->type))
-            fn->insertBeforeReturn(
-              new CallExpr(fieldTouch,
-                new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+        if (FnSymbol* fn = touchMap.get(ct)) {
+          ArgSymbol* arg = fn->getFormal(1);
+          for_fields(field, ct) {
+            if (FnSymbol* fieldTouch = touchMap.get(field->type))
+              fn->insertBeforeReturn(
+                new CallExpr(fieldTouch,
+                  new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+          }
         }
       }
     }
