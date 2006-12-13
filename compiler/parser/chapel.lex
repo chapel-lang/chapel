@@ -165,7 +165,7 @@ yield           processToken(TYIELD);
 "\""            processStringLiteral("\"");
 "\'"            processStringLiteral("\'");
 
-[ \t]           processWhitespace(yytext);
+[ \t\r]         processWhitespace(yytext);
 \n              processNewline();
 
 "--"            processSingleLineComment();
