@@ -89339,3 +89339,15 @@ Added files:
 	                                        memory2.execopts 
 	                                        memory2.good 
 
+---------------------------------------------------------------------------
+
+12/13/06 15:18:00 -- deitz
+
+Log message:
+	Added a script to the util directory to walk over a trace file created
+	with the --memtrace execution option and report all of the mallocs
+	that are not freed and compute the leaked size.
+
+Added files:
+	chapel/util/: lookForLeakInTrace 
+
