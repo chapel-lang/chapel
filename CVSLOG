@@ -89191,3 +89191,17 @@ Modified files:
 	                           test_trivial_leak.chpl 
 	                           test_trivial_leak.good 
 
+---------------------------------------------------------------------------
+
+12/13/06 11:35:07 -- bradc
+
+Log message:
+	This workshop is frustrating me, so I implemented
+	support for carriage-return linefeeds in the
+	lexer and added a test to ensure it works.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex 
+Added files:
+	chapel/test/trivial/bradc/: containsCRLF.chpl containsCRLF.good 
+
