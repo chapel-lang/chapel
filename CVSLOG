@@ -89226,3 +89226,40 @@ Log message:
 Modified files:
 	chapel/spec/: Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+12/13/06 13:36:04 -- deitz
+
+Log message:
+	Made _free functions on a class call the _free functions on the
+	subclass if the class is an instance of the subclass at runtime.
+	Basically, this means that _free is now dynamically dispatched, like a
+	C++ virtual destructor.
+	
+	Added a primitive to free the ddata vector and added a call to this
+	primitive in the _free function of all ddata classes.
+	
+	Fixed a bug in which the calls to free variables when they go out of
+	scope did not handle functions with returns not at the end.  These
+	free calls are now inserted with a new convenience function
+	inserBeforeReturnAfterLabel which complements insertBeforeReturn;
+	instead of inserting an expression right before the label befpre the
+	return (at the end of the function if the function is followed to the
+	end), the expression is inserted right before the return and these
+	expressions are executed regardless of what return is taken.
+	
+	Removed .future file for array leak test.  This changes seems to get
+	us to the point where we are freeing all memory associated with
+	sequences, arrays, and domains.  It currently has very high overhead.
+	To enable it, use --free-memory.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp 
+	chapel/compiler/include/: primitive.h symbol.h 
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/runtime/include/: chplrt.h 
+	chapel/runtime/src/: chplmem.c 
+Removed files:
+	chapel/test/memory/deitz/: test_array_leak.future 
+
