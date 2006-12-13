@@ -158,13 +158,13 @@ to \chpl{writeln()}, and printing out the message.
 
 To compile and run this program, execute the following commands at the
 system prompt:
-\small{
+{\small
 \begin{verbatim} 
 > chpl -o hello hello.chpl
 > ./hello
 \end{verbatim}}
 The following output will be printed to the console:
-\small{
+{\small
 \begin{verbatim}
 > Hello, world!
 \end{verbatim}}
@@ -251,7 +251,7 @@ def main() {                       (*\label{jac_main}*)
 
 \paragraph{Execution and Output}
 Compiling and running this program gives the following output:
-\small{
+{\small
 \begin{verbatim}
 > ./a.out
 Jacobi computation complete.
@@ -269,13 +269,13 @@ program.  There are three variables defined in lines~\ref{jac_config_start} -
 as indicated by the \chpl{config} keyword, 
 and can be set at the time of program execution through command line switches.
 Executing the following command line sequence,
-\small{
+{\small
 \begin{verbatim}
 > ./a.out --verbose=true --n=2 --epsilon=0.01
 \end{verbatim}}
 results in overriding the default values for \chpl{verbose}, \chpl{n} and
 \chpl{epsilon}, producing the following output.
-\small{
+{\small
 \begin{verbatim}
 Initial configuration:
 0.0 0.0 0.0 0.0
@@ -559,7 +559,7 @@ are different between the vector and the matrix.  Thus, different
 implementations of the norm functions are used to compute the norms, 
 depending on the whether the input is a vector or matrix.
 
-\small{
+{\small
 \begin{verbatim}
 Test of vector norms.  Array = 
 2.0 2.0 2.0 2.0
@@ -780,7 +780,7 @@ switches back and forth between the producer and consumer computation for
 
 Running the program with the default
 values for \chpl{numIterations} or \chpl{sleepTime} results in:
-\small{
+{\small
 \begin{verbatim}
 consumer got 1
 consumer got 2
@@ -795,7 +795,7 @@ Since the variables \chpl{numIterations} and \chpl{sleepTime} are
 For example, to change the number of iterations to 10
 and to change the number of seconds to sleep to 5, the following execution command
 may be used:
-\small{
+{\small
 \begin{verbatim}
 > a.out --numIterations=10 --sleepTime=5
 \end{verbatim}}
@@ -931,7 +931,7 @@ will initialize \chpl{stack1.itemType} to be a string.
 The strings, \chpl{"one"}, \chpl{"two"} and \chpl{"three"}
 are pushed on \chpl{stack1}, and then three items are popped off of \chpl{stack1},
 outputting each item as it is popped off. The output of this example is:
-\small{
+{\small
 \begin{verbatim}
 three
 two
