@@ -89321,3 +89321,21 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/13/06 15:03:52 -- waynew
+
+Log message:
+	Added couple memory leak check tests for indefinite domains and arrays.
+
+Added files:
+	chapel/test/domains/indefinite/waynew/: memory1.chpl 
+	                                        memory1.compopts 
+	                                        memory1.execopts 
+	                                        memory1.future 
+	                                        memory1.good 
+	                                        memory2.chpl 
+	                                        memory2.compopts 
+	                                        memory2.execopts 
+	                                        memory2.good 
+
