@@ -89280,3 +89280,34 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp 
 
+---------------------------------------------------------------------------
+
+12/13/06 14:22:54 -- deitz
+
+Log message:
+	Made a new test of Jacobi that is executed in a function.  The
+	function returns a tuple that contains the number of iterations and
+	the delta.  Added memory stats to the test to print out the memory
+	used after the function minus the memory used before the function.
+	This prints out zero.
+	
+	On the single test that I ran, --free-memory adds about 20% overhead.
+	I believe this can be decreased significantly with some more
+	optimization work.  I also ran this flag on the full test suite and
+	see five regressions:
+	
+	Runtime error (likely because of an untouched reference):
+	  arrays/deitz/part2/test_array_of_class1
+	  classes/bradc/records/assignRecord2
+	
+	Compiler error on cobegin packaging:
+	  parallel/cobegin/waynew/locals
+	
+	Non-deterministic (likely because GC is not thread-safe):
+	  parallel/begin/waynew/simple2
+	  parallel/sync/deitz/test_sync1
+
+Added files:
+	chapel/test/memory/deitz/: test_jacobi_leak.chpl 
+	                           test_jacobi_leak.good 
+
