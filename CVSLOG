@@ -89083,3 +89083,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/12/06 16:18:31 -- marybeth
+
+Log message:
+	Corrected typo in halt message in norm example.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
