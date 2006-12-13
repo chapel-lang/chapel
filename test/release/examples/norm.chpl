@@ -6,7 +6,7 @@ module Norm{
       when norm1 do return + reduce abs(x);
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
       when normInf do return max reduce abs(x);
-      when normFrob do halt("From-norm not defined for 1D arrays");
+      when normFrob do halt("Frobenius norm not defined for 1D arrays");
       otherwise halt("Unexpected norm type");
     }
   }
