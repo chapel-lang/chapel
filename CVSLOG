@@ -89129,3 +89129,13 @@ Modified files:
 Removed files:
 	chapel/test/memory/deitz/: test_trivial_leak6.future 
 
+---------------------------------------------------------------------------
+
+12/12/06 16:57:37 -- marybeth
+
+Log message:
+	Changes to Producer-Consumer and Stack examples.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
