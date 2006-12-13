@@ -38,8 +38,6 @@ insertMissingReturnTemps() {
 
 static bool
 disableReferences(Symbol* sym) {
-  if (sym->isReference)
-    return true;
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
     if (var->is_ref || var->on_heap)
       return true;
@@ -186,15 +184,15 @@ void memoryManage(void) {
     collect_asts(&asts, fn->body);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-        if (call->isPrimitive(PRIMITIVE_MOVE) ||
-            call->isPrimitive(PRIMITIVE_REF)) {
+        if (call->isPrimitive(PRIMITIVE_MOVE)) {
           if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(1))->var) {
-            if (!disableReferences(lhs)) // disable free on references--leak!!
+            if (!disableReferences(lhs)) // disable on_heap/is_ref
               if (FnSymbol* _free = freeMap.get(lhs->type))
                 call->insertBefore(new CallExpr(_free, lhs));
             if (FnSymbol* _touch = touchMap.get(lhs->type))
-              if (requiresTouch(call->get(2)))
-                call->insertAfter(new CallExpr(_touch, lhs));
+              if (!disableReferences(lhs)) // disable on_heap/is_ref
+                if (requiresTouch(call->get(2)))
+                  call->insertAfter(new CallExpr(_touch, lhs));
           }
         } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
@@ -221,10 +219,11 @@ void memoryManage(void) {
       forv_Vec(BaseAST, ast, asts) {
         if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
-            if (!disableReferences(var)) // leak!! see above
-              if (FnSymbol* _free = freeMap.get(var->type))
-                if (fn->getReturnSymbol() != var)
-                  fn->insertBeforeReturn(new CallExpr(_free, var));
+            if (!disableReferences(var)) // disable on_heap/is_ref
+              if (!var->isReference) // do not free aliases
+                if (FnSymbol* _free = freeMap.get(var->type))
+                  if (fn->getReturnSymbol() != var)
+                    fn->insertBeforeReturn(new CallExpr(_free, var));
       }
     }
   }
