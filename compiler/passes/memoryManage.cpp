@@ -10,11 +10,15 @@ static Map<Type*,FnSymbol*> freeMap;  // map of types to _free functions
 static Map<Type*,FnSymbol*> touchMap; // map of types to _touch functions
 
 //
-// insertMissingReturnTemps inserts temporary variables that are not
-// used to capture the return results of all functions that return a
-// value other than void; this is necessary because the symbol that is
-// returned is not freed, relying instead on the free of the symbol at
-// the call site that captures this value
+// insertGCTemps inserts two sets of temporaries: (1) temporary
+// variables (_gc_ret_tmp) to capture the return results of all
+// functions that return a value other than void but that are not
+// captured; this is necessary because the symbol that is returned is
+// not freed, relying instead on the free of the symbol at the call
+// site that captures this value, and (2) temporary variables
+// (_gc_norm_tmp) to capture the rhs of a move if the symbol on the
+// lhs is part of the rhs since otherwise a free of the lhs symbol
+// would potentially free it before it is used on the rhs
 //
 static void
 insertMissingReturnTemps() {
@@ -30,10 +34,33 @@ insertMissingReturnTemps() {
             def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
           }
         }
+      } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(1))->var) {
+          if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
+            bool requires_temp = false;
+            for_actuals(actual, rhs) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(actual)) {
+                if (sym->var == lhs) {
+                  requires_temp = true;
+                }
+              }
+            }
+            if (requires_temp) {
+              VarSymbol* tmp = new VarSymbol("_gc_norm_tmp", lhs->type);
+              DefExpr* def = new DefExpr(tmp);
+              call->insertBefore(def);
+              call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, rhs->remove()));
+              call->insertAtTail(new SymExpr(tmp));
+            }
+          }
+        }
       }
     }
   }
 }
+
+//
+// insertGC
 
 
 static bool
@@ -144,8 +171,9 @@ buildTouchFunctions() {
 static bool
 requiresTouch(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->isResolved()) {
-      return false;
+    if (FnSymbol* fn = call->isResolved()) {
+      if (!fn->getReturnSymbol()->isReference)
+        return false;
     }
   }
   return true;
