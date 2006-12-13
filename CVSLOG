@@ -89149,3 +89149,32 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/13/06 10:06:06 -- deitz
+
+Log message:
+	Inserted GC normalization temporaries during the memory management
+	pass to handle the case where a symbol on the left of a MOVE is also
+	used in the expression on the right of the move.
+	
+	Fixed a bug in memory management in which the captured result of a
+	function that returned an alias would not be touched; normally there
+	is a touch in the function on the returned value and therefore there
+	should be no touch at the call-site but in the case of aliases there
+	is no touch in the function since there is no touch on the initial
+	PRIMITIVE_REF to aliases.
+	
+	Removed the sequence leak test .future file.
+	
+	Using --free-memory seems to work on most tests though it is not yet
+	freeing arrays and I haven't tested it to see how it does on all of
+	the tests.  It also is unoptimized and currently slows down Jacobi on
+	a 25x25 array by 48%.  I think there is some easy optimization work to
+	do.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+Removed files:
+	chapel/test/memory/deitz/: test_seq_leak.future 
+
