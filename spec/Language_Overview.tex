@@ -723,17 +723,31 @@ version of \chpl{norm} is a select statement on \chpl{x.rank}.  Depending
 on the rank of \chpl{x}, the \chpl{norm} function is called with the
 appropriate default norm type or a compiler error is given.
 
-\subsubsection{Producer-Consumer}
+\subsubsection{Simple Producer-Consumer Program}
+\paragraph{Description}
 The following example demonstrates a simple producer and consumer program.
+The {\em producer computation} sets the value of a sync variable and the 
+{\em consumer computation} prints the value of the same variable.
+
+\paragraph{Chapel Features:  Sync Variables, Begin Statement}
 The program contains a \chpl{sync} variable and a \chpl{begin} statement 
 in order to implement two concurrent computations, or threads, that execute 
 in step with each other.
-The new computation that is created with the \chpl{begin} statement will 
-be referred to as the {\em consumer computation}.  The continuing computation
-will be referred to as the
-{\em producer computation}.  Execution control switches between the
-producer and consumer computations as the state of the sync variable \chpl{s} 
-changes when it is read and written to.  The Chapel code for this example is given below.
+Sync variables have extra state associated with them to
+indicate whether they are logically {\em full} or {\em empty}.  
+A sync variable
+is intended to be accessed by multiple concurrent computations, each of which may
+change the contents and state of the variable.  A sync variable
+can be read when its state is full.  Attempts to read an empty sync variable from one
+computation will suspend execution until another computation changes its state to full.
+Once a sync variable is able to be read, its state is atomically set to empty.
+Conversely, a sync variable can be written only when its state is empty.  Attempts
+to write to a full sync variable will suspend until its state is empty.  Once the variable
+is written to, the state is atomically set to full.  Sync variables are useful
+to coordinate operations between computations.
+
+\paragraph{Program Listing}
+The Chapel code for this example is given below.
 
 \begin{numberedchapel}
 use Time;                           (*\label{use_time}*)
@@ -754,6 +768,39 @@ for p in 1..numIterations {            (*\label{producer_start}*)
 }                                      (*\label{producer_end}*)
 \end{numberedchapel}
 
+\paragraph{Execution and Output}
+When this program executes, a consumer computation is created with the \chpl{begin}
+statement.
+However, the consumer computation cannot read \chpl{s} before it has been written
+to.  So, execution begins with the producer computation which assigns the value
+\chpl{1} to \chpl{s} after calling the sleep function.  Once \chpl{s} has the
+value \chpl{1}, the consumer computation can read it and print it.  Execution
+switches back and forth between the producer and consumer computation for
+\chpl{numIterations}.
+
+Running the program with the default
+values for \chpl{numIterations} or \chpl{sleepTime} results in:
+\small{
+\begin{verbatim}
+consumer got 1
+consumer got 2
+consumer got 3
+consumer got 4
+consumer got 5
+\end{verbatim}}
+Each line is printed after a delay of \chpl{sleepTime} seconds.
+
+Since the variables \chpl{numIterations} and \chpl{sleepTime} are 
+{\em configuration variables}, they can be reset at execution time.
+For example, to change the number of iterations to 10
+and to change the number of seconds to sleep to 5, the following execution command
+may be used:
+\small{
+\begin{verbatim}
+> a.out --numIterations=10 --sleepTime=5
+\end{verbatim}}
+
+\paragraph{Implementation Details}
 The program uses the \chpl{sleep} function in line~\ref{sleep_call}, which is 
 provided in the
 standard Chapel module, \chpl{Time}.  So, the first line, \chpl{use Time}, 
@@ -763,36 +810,26 @@ function calls in this program.
 Lines~\ref{prodcons_var_1} - \ref{prodcons_var_2} give the declarations 
 and initial default values
 for the two variables, \chpl{numIterations} and \chpl{sleepTime}.
-Both of these variables are 32 bits, the default size of \chpl{int} and \chpl{uint} types.
 The \chpl{config} keyword in front of these two variable declarations 
 indicates that these are configuration variables.  Configuration variables 
 can be set to override their default values at program execution time, through the 
-use of command line switches.  For example, to change the number of iterations to 10
-and to change the number of seconds to sleep to 5, the following execution command 
-may be used:
-\small{
-\begin{verbatim}
-> a.out --numIterations=10 --sleepTime=5
-\end{verbatim}}
+use of command line switches.  
 
 In line~\ref{prodcons_var_2}, the variable \chpl{s} is 
 declared to be a \chpl{sync} variable 
-of type \chpl{int}.  Sync variables have extra state associated with them to 
-indicate whether they are logically {\em full} or {\em empty}.  Since \chpl{s}
+of type \chpl{int}.  Since \chpl{s}
 is not initialized, its state is empty at the beginning of the program's execution.
-A sync variable
-is intended to be accessed by multiple concurrent computations, each of which may
-change the contents and state of the variable.  A sync variable
-can be read when its state is full.  Attempts to read an empty sync variable from one
-computation will suspend execution until another computation changes its state to full.  
-Once a sync variable is able to be read, its state is atomically set to empty.  
-Conversely, a sync variable can be written only when its state is empty.  Attempts
-to write to a full sync variable will suspend until its state is empty.  Once the variable
-is written to, the state is atomically set to full.  Sync variables are useful
-to coordinate operations between computations.  In this program, \chpl{s} is used
+The variable \chpl{s} will be used
 to synchronize the exchange of data between the producer and consumer computations.
 
 The remainder of the code defines the consumer and producer computations.
+The new computation that is created with the \chpl{begin} statement will
+be referred to as the consumer computation.  The continuing computation
+will be referred to as the
+producer computation.  Execution control switches between the
+producer and consumer computations as the state of the sync variable \chpl{s}
+changes when it is read and written to.
+
 The \chpl{begin} statement in line~\ref{consumer_start} creates a 
 new computation to execute the \chpl{for}
 loop in lines~\ref{consumer_for_1} - \ref{consumer_for_2}.  This loop is 
@@ -825,40 +862,24 @@ writes \chpl{s}, it will be the consumer computation that changes the state of
 \chpl{s} to empty allowing the next iteration to write its iteration number
 to \chpl{s}.
 
-When this program executes, a consumer computation is created with the \chpl{begin}
-statement.
-However, the consumer computation cannot read \chpl{s} before it has been written
-to.  So, execution begins with the producer computation which assigns the value
-\chpl{1} to \chpl{s} after calling the sleep function.  Once \chpl{s} has the
-value \chpl{1}, the consumer computation can read it and print it.  Execution
-switches back and forth between the producer and consumer computation for
-\chpl{numIterations}.  
+The program terminates after \chpl{numIterations} of both the consumer and
+producer loops.
 
-Running the program with the default 
-values for \chpl{numIterations} or \chpl{sleepTime} results in: 
-\small{
-\begin{verbatim}
-consumer got 1
-consumer got 2
-consumer got 3
-consumer got 4
-consumer got 5
-\end{verbatim}}
-Each line is printed after a delay of \chpl{sleepTime} seconds.
-
-
-\subsubsection{Generic Stacks}
+\subsubsection{Generic Stack Implementations}
+\paragraph{Description}
 Two implementations of a generic stack type, \chpl{Stack}, are given below.  The first
 defines \chpl{Stack} to be a linked list of \chpl{MyNode} objects.  In
-the second implementation, \chpl{Stack} is an array.  Both implementations
-use the unspecified type alias \chpl{itemType} as the generic type for the items
+the second implementation, \chpl{Stack} is an array.  
+
+\paragraph{Chapel Features:  Classes, Records, Type Aliases}
+These examples demonstrate {\em classes} and {\em records}.  Further, they
+use the {\em unspecified type alias} \chpl{itemType} as the generic type for the items
 in the stack and define generic stack methods.  To use either version,
 a type for \chpl{itemType} must be specified when \chpl{Stack} is instantiated.
-
 More information about type aliases can be found 
 in~\rsec{Type_Aliases_in_Generic_Types}.
 
-\subsubsection{Generic Stack with Linked List Implementation}
+\paragraph{Generic Stack with Linked List Implementation}
 This implementation of a generic stack defines a {\em class},
 \chpl{MyNode} and a {\em record}, \chpl{Stack}.  Chapel classes and records
 are both structured data types containing fields and methods.  However,
@@ -981,7 +1002,7 @@ is empty in the \chpl{pop} method, is defined to be:
 The use of \chpl{top} implies \chpl{this.top}, checking if the
 current \chpl{top} object is set to nil.
 
-\subsubsection{Generic Stack with Array Implementation}
+\paragraph{Generic Stack with Array Implementation}
 The following implementation of a generic stack uses the array,
 \chpl{data} to store the generic items in the stack, and the
 counter, \chpl{numItems}, to track the
