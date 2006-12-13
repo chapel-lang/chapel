@@ -189,19 +189,22 @@ After all entries in \chpl{Temp} are computed, \chpl{A} is assigned to \chpl{Tem
 and convergence is tested.  If convergence has not been reached, the next
 approximation is calculated, and so on until the convergence test is met.
 
-\paragraph{Chapel Features:  Domains and Arrays}
-This program demonstrates how arrays are declared and used.  In Chapel, 
-{\em arrays}\index{arrays} are declared using {\em domains} \index{domains}.  
+\paragraph{Chapel Features}
+This program demonstrates how {\em arrays} \index{arrays} 
+are declared and used.  In Chapel, 
+arrays are declared using {\em domains} \index{domains}.  
 Domains are sets of indices which may be distributed
 across multiple processors indicating how data and parallel work should
 be divided among the processors.  An array is a mapping from the domain
 to a collection of variables.  An array is thus defined using a domain, distributing
 the entries of the array according to the domain's distribution.
-A domain may also be used as the iterator in a \chpl{for} or
+A domain may also be used as the {\em iterator} in a \chpl{for} or
 \chpl{forall} statement, in which case the iterations are distributed among processors
 according to the domain's distribution.  There are five kinds of domains in
-the Chapel language:  {\em arithmetic}, {\em sparse}, {\em indefinite},
-{\em opaque} and {\em enumerated}.  This example program uses arithmetic domains
+the Chapel language:
+\index{domains!types}
+  {\em arithmetic}, {\em sparse}, {\em indefinite},
+{\em opaque} and {\em enumerated}.  This example program uses {\em arithmetic domains}
 and arrays.  More information about domains and arrays is given in~\rsec{Domains_and_Arrays}.
 
 \paragraph{Code Listing}
@@ -331,7 +334,7 @@ config var n = 5,
            epsilon = 0.00001,
            verbose = false;
 \end{chapel}
-Instead the types of these variables are inferred 
+Instead the types of these variables are inferred \index{type inference} 
 from their initial values: \chpl{n} is an integer, \chpl{epsilon} is a floating point
 type, and \chpl{verbose} is a boolean type.  In Chapel, if a variable declaration
 contains an initialization expression, it is optional to include a type specification.
@@ -339,7 +342,9 @@ More details about variable declarations are given in~\rsec{Variable_Declaration
 
 After the configuration variables are declared, the \chpl{main} function
 is defined.  The first two lines of \chpl{main} define two arithmetic domains:
+\index{domains!arithmetic}
 \begin{chapel}
+def main() {                       
   const ProblemSpace = [1..n, 1..n],
         BigDomain = [0..n+1, 0..n+1];
 \end{chapel}
@@ -369,8 +374,16 @@ arrays are of size \chpl{n+2} $\times$ \chpl{n+2}.
 
 Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
 configuration of the problem, if \chpl{verbose}
-is set to true.  The \chpl{writeln} function outputs strings and values
+is set to true.  
+\begin{chapel}
+  if (verbose) {                      
+    writeln("Initial configuration:");
+    writeln(A, "\n");
+  }                                   
+\end{chapel}
+The \chpl{writeln} \index{writeln@\chpl{writeln}} function outputs strings and values
 of variables that are passed as arguments, followed by a line return.
+Including the character string, \chpl{"\\n"} inserts an additional line return.
 
 Lines~\ref{jac_var_start} - \ref{jac_var_end} 
 contain the remaining variable declarations:
@@ -387,11 +400,12 @@ This loop is executed until \chpl{delta} is less than or equal to \chpl{epsilon}
 Each iteration of the \chpl{do while} loop computes the next approximate
 solution using a \chpl{forall} loop.   
 \begin{chapel}
+  do{
     forall (i,j) in ProblemSpace do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
 \end{chapel}
 This loop 
-uses the \chpl{ProblemSpace} domain as an {\em iterator}.  Iterators
+uses the \chpl{ProblemSpace} domain as an {\em iterator}\index{iterators}.  Iterators
 for loops provide a value or a set of values to be used in each iteration
 of the loop.  In this case, each iteration 
 is indexed by a tuple of indices \chpl{(i,j)}, which avoids the use of
@@ -416,15 +430,39 @@ between the \chpl{Temp} and \chpl{A} arrays.  If
 parallel accordingly.  
 
 Next, \chpl{A} is updated with the new approximate solution and the iteration
-number is advanced.  The domain \chpl{ProblemSpace} is used in the assignment
+number is advanced.  
+\begin{chapel}
+    A[ProblemSpace] = Temp[ProblemSpace]; 
+
+    iteration += 1; 
+\end{chapel}
+The domain \chpl{ProblemSpace} is used in the assignment
 of \chpl{Temp} to \chpl{A}, updating only the interior points of the array.
+
+The remaining part of the loop optionally provides output about the iteration.
+\begin{chapel}
+    if (verbose) {  
+      writeln("iteration: ", iteration);
+      writeln(A);
+      writeln("delta: ", delta, "\n");
+    }               
+  } while (delta > epsilon);       
+\end{chapel}
 If \chpl{verbose} is set to true, then information about
 the current approximate solution and \chpl{delta} is output.  Then, \chpl{delta}
 is compared to the convergence tolerance, \chpl{epsilon}.  If \chpl{delta} is
 not small enough, then the \chpl{do
 while} loop continues.  Otherwise, the loop exits.  
-The program ends with output, indicating that the computation is complete
-and giving information about convergence.  
+
+The program ends with three lines of output.
+\begin{chapel}
+  writeln("Jacobi computation complete.");  
+  writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
+  writeln("# of iterations: ", iteration); 
+}
+\end{chapel}
+Information about the convergence is given, printing the values
+for \chpl{epsilon} and the iteration counter.
 
 \subsubsection{Matrix and Vector Norms}
 
