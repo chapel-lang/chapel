@@ -89205,3 +89205,14 @@ Modified files:
 Added files:
 	chapel/test/trivial/bradc/: containsCRLF.chpl containsCRLF.good 
 
+---------------------------------------------------------------------------
+
+12/13/06 11:42:12 -- bradc
+
+Log message:
+	Updated CONTRIBUTORS to reflect latest round of
+	testing.
+
+Modified files:
+	./: CONTRIBUTORS 
+
