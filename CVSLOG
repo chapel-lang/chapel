@@ -89103,3 +89103,29 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/12/06 16:47:47 -- deitz
+
+Log message:
+	Fixed memory manager to work with aliases (isReference) at least in
+	principle.  This removes a .future, but there is still a leak with
+	sequences (and all the other short-comings discussed).
+	
+	The basic change is that aliases are now special cased.  The
+	definition of the alias (via a PRIMITIVE_REF) does not result in a
+	touch; the idea being that the temporary alias is temporary and does
+	not require bumping the count.  Then also there is no free put in at
+	the end of the function when the alias goes out of scope.  However, we
+	do touch and free the aliases on general moves because this impacts
+	whatever they are aliasing.
+	
+	Note that the aliases need to be temporary because we have no handle
+	to up their reference count since it would require a double touch not
+	only on a move to the alias but also on a move to whatever is aliased.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+Removed files:
+	chapel/test/memory/deitz/: test_trivial_leak6.future 
+
