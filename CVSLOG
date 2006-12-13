@@ -89178,3 +89178,16 @@ Modified files:
 Removed files:
 	chapel/test/memory/deitz/: test_seq_leak.future 
 
+---------------------------------------------------------------------------
+
+12/13/06 10:09:44 -- deitz
+
+Log message:
+	Simplified the format of these memory leak tests.
+
+Modified files:
+	chapel/test/memory/deitz/: test_array_leak.chpl 
+	                           test_array_leak.good 
+	                           test_trivial_leak.chpl 
+	                           test_trivial_leak.good 
+
