@@ -89473,3 +89473,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 14:57:12 -- deitz
+
+Log message:
+	Added a .future to show that we leak memory related to putting things
+	on the heap to handle begin.
+
+Added files:
+	chapel/test/memory/deitz/: test_threaded_leak.chpl 
+	                           test_threaded_leak.future 
+	                           test_threaded_leak.good 
+
