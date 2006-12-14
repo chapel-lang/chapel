@@ -264,7 +264,7 @@ void memoryManage(void) {
 
   forv_Vec(FnSymbol, fn, gFns) {
     Vec<BaseAST*> asts;
-    collect_asts(&asts, fn->body);
+    collect_top_asts(&asts, fn->body);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
         if (call->isPrimitive(PRIMITIVE_MOVE)) {
