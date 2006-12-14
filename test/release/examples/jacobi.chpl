@@ -1,3 +1,10 @@
+/*
+ *  Jacobi Method Example
+ *
+ *  This program computes the solution of a Laplace equation using Jacobi method.
+ *
+ */
+
 // Configuration variables for program:
 config var n = 5,                       // size of nxn grid
            epsilon = 0.00001,           // convergence tolerance

@@ -1,5 +1,9 @@
-// Producer-consumer example. Producer thread slowly writes to sync variable
-// s.  Child thread reads from s and outputs what was read.
+/* 
+ *   Producer-Consumer Example. 
+ *
+ *   Producer thread slowly writes to sync variable
+ *   s.  Child thread reads from s and outputs what was read.
+ */
 
 use Time;
 

@@ -1,8 +1,20 @@
+/*
+ *
+ *  Matrix and Vector Norms Example
+ *
+ *  Norm module for computing matrix and vector norms:
+ *  1-norm, 2-norm and infinity norm for vectors
+ *  1-norm, infinity norm and Frobenius norm for matrices
+ * 
+ *  normType specifies the type of norm to use
+ *  norm function may be called without specifying normType
+ *
+ *  TestNorm module tests norm function for 1-D and 2-D arrays 
+ *
+ */
 module Norm{
-  // Module for computing matrix and vector norms:
-  // 1-norm, 2-norm and infinity norm for vectors
-  // 1-norm, infinity norm and Frobenius norm for matrices
 
+  // normType specifies the type of norm to compute
   enum normType {norm1, norm2, normInf, normFrob};
 
   def norm(x: [], p: normType) where x.rank == 1 {
