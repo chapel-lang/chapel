@@ -89361,3 +89361,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/13/06 17:50:03 -- marybeth
+
+Log message:
+	Edits to producer-consumer section that address Brad's comments.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
