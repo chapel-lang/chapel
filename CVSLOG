@@ -89507,3 +89507,13 @@ Modified files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.chap07.good 
 
+---------------------------------------------------------------------------
+
+12/14/06 15:08:39 -- marybeth
+
+Log message:
+	Added a few comments in norm example.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
