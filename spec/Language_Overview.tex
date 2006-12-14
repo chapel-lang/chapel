@@ -476,7 +476,7 @@ For matrices, the 1-norm, infinity norm and Frobenius norm are provided.
 The module uses a variable of {\em enumerated type} \chpl{normType} to 
 indicate the choice of norm.
 
-\paragraph{Chapel Features:  Modules, Generic Functions, Function Overloading}
+\paragraph{Chapel Features}
 \index{modules}
 \index{functions}
 \index{functions!generic}
@@ -767,7 +767,7 @@ The following example demonstrates a simple producer and consumer program.
 The {\em producer computation} sets the value of a sync variable and the 
 {\em consumer computation} prints the value of the same variable.
 
-\paragraph{Chapel Features:  Sync Variables, Begin Statement}
+\paragraph{Chapel Features}
 The program contains a \chpl{sync} variable and a \chpl{begin} statement 
 in order to implement two concurrent computations, or threads, that execute 
 in step with each other.
@@ -907,21 +907,54 @@ producer loops.
 \paragraph{Description}
 Two implementations of a generic stack type, \chpl{Stack}, are given below.  The first
 defines \chpl{Stack} to be a linked list of \chpl{MyNode} objects.  In
-the second implementation, \chpl{Stack} is an array.  
+the second implementation, \chpl{Stack} is an array.  Both implementations of
+\chpl{Stack} define the methods, \chpl{push}, 
+\chpl{pop} and \chpl{isEmpty?}. 
 
-\paragraph{Chapel Features:  Classes, Records, Type Aliases}
-These examples demonstrate {\em classes} and {\em records}.  Further, they
+\paragraph{Chapel Features}
+These examples demonstrate {\em classes} and {\em records}.  
+Chapel classes and records
+are both structured data types containing fields and methods.
+Classes are reference types while records are value types.
+The examples also
 use the {\em unspecified type alias} \chpl{itemType} as the generic type for the items
 in the stack and define generic stack methods.  To use either version,
 a type for \chpl{itemType} must be specified when \chpl{Stack} is instantiated.
 More information about type aliases can be found 
-in~\rsec{Type_Aliases_in_Generic_Types}.
+in~\rsec{Type_Aliases_in_Generic_Types}.  The array implementation of
+the generic stack demonstrates
+the association of arrays to domains.  In this example, the array's size is
+doubled by reassigning its domain to one that is twice in size.
 
-\paragraph{Generic Stack with Linked List Implementation}
+\paragraph{Sample Stack}
+A simple example of how this generic stack can be used:
+\begin{chapel}
+var stack1: Stack(string);
+stack1.push("one");
+stack1.push("two");
+stack1.push("three");
+writeln(stack1.pop());
+writeln(stack1.pop());
+writeln(stack1.pop());
+\end{chapel}
+In this simple example, the variable \chpl{stack1} is declared to be a
+stack of string type.
+By specifying \chpl{string} as an input, the default constructor for \chpl{Stack}
+will initialize the type alias for the generic stack to be a string.
+The strings, \chpl{"one"}, \chpl{"two"} and \chpl{"three"}
+are pushed on \chpl{stack1}, and then three items are popped off of \chpl{stack1},
+in the reverse order from how they were put on the stack.
+The output of this example is:
+{\small
+\begin{verbatim}
+three
+two
+one
+\end{verbatim}}
+
+\paragraph{Linked List Implementation}
 This implementation of a generic stack defines a {\em class},
-\chpl{MyNode} and a {\em record}, \chpl{Stack}.  Chapel classes and records
-are both structured data types containing fields and methods.  However,
-classes are reference types while records are value types.  In the following
+\chpl{MyNode} and a {\em record}, \chpl{Stack}.  In the following
 code, the reference pointers of \chpl{MyNode} objects are used to point to
 the top of the stack and to point between items in the stack,
 thus implementing the stack as a linked list.
@@ -953,30 +986,7 @@ record Stack {                      (*\label{stack_list_start}*)
 }                                  (*\label{stack_list_end}*)
 \end{numberedchapel}
 
-A simple example of how this generic stack implementation can be used:
-\begin{chapel}
-var stack1: Stack(string);
-stack1.push("one");
-stack1.push("two");
-stack1.push("three");
-writeln(stack1.pop());
-writeln(stack1.pop());
-writeln(stack1.pop());
-\end{chapel}
-In this simple example, the variable \chpl{stack1} is declared to be of the structured 
-type \chpl{Stack}.  By specifying \chpl{string} as an input, the default constructor
-will initialize \chpl{stack1.itemType} to be a string.  
-The strings, \chpl{"one"}, \chpl{"two"} and \chpl{"three"}
-are pushed on \chpl{stack1}, and then three items are popped off of \chpl{stack1},
-outputting each item as it is popped off. The output of this example is:
-{\small
-\begin{verbatim}
-three
-two
-one
-\end{verbatim}}
-
-The example code begins with a definition of the \chpl{MyNode} class in 
+The code begins with a definition of the \chpl{MyNode} class in 
 lines~\ref{mynode_class_start} - \ref{mynode_class_end}.  
 \begin{chapel}
 class MyNode {                      
@@ -1011,10 +1021,15 @@ by resetting \chpl{top} to point to a new \chpl{MyNode} object.  This new
 top object stores the added item and sets its \chpl{next} field to the previous
 \chpl{top} object of the stack.
 \begin{chapel}
+  def push(item: itemType) {        
     top = MyNode(itemType, item, top); 
+  }                                 
 \end{chapel}
-In the above statement, \chpl{this.top} and \chpl{this.itemType} is
-implicit in the uses of \chpl{top} and \chpl{itemType}.
+The \chpl{MyNode} object is created with \chpl{itemType} and \chpl{top} fields
+of the \chpl{Stack} instance on which \chpl{pop} is called.  To reference
+fields of an instance of a structured type, \chpl{this} is used.
+In this case, \chpl{this.top} and \chpl{this.itemType} are 
+implicit in the uses of \chpl{top} and \chpl{itemType}. 
 
 The \chpl{pop} method is given in lines~\ref{stack_list_pop_start} -
 \ref{stack_list_pop_end}.  This method returns the item at the top of
@@ -1029,6 +1044,8 @@ an attempt was made to pop an item off of an empty stack.  Otherwise,
     top = top.next;               
     return oldTop.item;          
 \end{chapel}
+In \chpl{pop}, \chpl{this.isEmpty?} and \chpl{this.top} is implicit when
+\chpl{isEmpty?} and \chpl{top} are used.
 The memory of the \chpl{oldTop} object is freed, through automatic
 garbage collection.
 
@@ -1040,7 +1057,7 @@ is empty in the \chpl{pop} method, is defined to be:
 The use of \chpl{top} implies \chpl{this.top}, checking if the
 current \chpl{top} object is set to nil.
 
-\paragraph{Generic Stack with Array Implementation}
+\paragraph{Array Implementation}
 The following implementation of a generic stack uses the array,
 \chpl{data} to store the generic items in the stack, and the
 counter, \chpl{numItems}, to track the
@@ -1051,8 +1068,8 @@ on the stack.  If necessary, the size of \chpl{data} is doubled.
 This example demonstrates how the size of an array is increased 
 by increasing its domain.
 
-This implementation of \chpl{Stack} can be used in the same
-way as the linked list implementation.
+Instances of this version of \chpl{Stack} are declared and
+used the same as instances of the linked-list version.
 
 \begin{numberedchapel}
 record Stack {                     (*\label{stack_array_start}*)
@@ -1081,25 +1098,37 @@ record Stack {                     (*\label{stack_array_start}*)
 
 There are three fields defined for this \chpl{Stack} record, \chpl{itemType},
 an integer variable, \chpl{numItems} and an array \chpl{data} of \chpl{itemType}.
-When \chpl{Stack} is instantiated, a type must be specified for the type alias,
-\chpl{itemType} as in the linked list implementation.  When first instantiated,
+When first instantiated,
 the stack is empty and \chpl{numItems} is initialized to zero.   The \chpl{data}
 array is declared with an anonymous one-dimensional domain, \chpl{[1..2]}.
 
 The same three methods, \chpl{push}, \chpl{pop} and \chpl{isEmpty?} are
-defined for this array implementation.  In \chpl{push}, lines~\ref{stack_array_push_start}
+defined for this array implementation.  Like the linked list implementation,
+there are no explicit references to \chpl{this} when accessing fields and
+methods.
+
+In \chpl{push}, lines~\ref{stack_array_push_start}
 - \ref{stack_array_push_end}, \chpl{item} is stored in the \chpl{data(numItems+1)}
-and the \chpl{numItems} counter is incremented.  Before \chpl{item} can be added
-to the stack, the data array must be checked to determine if the array's size
-needs to be increased to accomodate another item being added to the stack.
-The variable \chpl{height} is set to the number of
-elements in the \chpl{data} array by accessing the \chpl{numElements} field
-of \chpl{data}.  If the number of items in the stack, \chpl{numItems} equals
-\chpl{height}, then more storage in \chpl{data} is needed.  To increase the
-size of an array, the size of its domain must be increased.
+and the \chpl{numItems} counter is incremented.  
 \begin{chapel}
-      data.domain = [1..height*2];  
+  def push(item: itemType) {       
+    var height = data.numElements;  
+    if numItems == height then     
+      data.domain = [1..height*2];
+    data(numItems+1) = item;        
+    numItems += 1;                 
+  }                               
 \end{chapel}
+Before \chpl{item} can be added
+to the stack, the size of \chpl{data} must be checked to determine if the array's size
+needs to be increased to accomodate another item being added to the stack.
+The method \chpl{numElements} is predefined for arrays, returning the total
+number of elements in an array.  The variable \chpl{height} is set to the
+total number of elements in \chpl{data}, which is the size of the current array
+allocated to store items in the stack.
+If the number of items in the stack, \chpl{numItems} equals
+\chpl{height}, then more storage in \chpl{data} is needed.  To increase the
+size of an array, the size of its domain is increased.
 By reseting \chpl{data}'s
 domain to a domain of twice the size, the array \chpl{data} itself is now doubled in size,
 and more items can be pushed onto the stack. 
