@@ -89448,3 +89448,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/06 14:41:10 -- deitz
+
+Log message:
+	Applied Wayne's suggested edits and bug fixes to the spec.
+
+Modified files:
+	chapel/spec/: Classes.tex Conversions.tex Domains_and_Arrays.tex 
+	              Expressions.tex Functions.tex Generics.tex 
+	              Iterators.tex Locality_and_Distribution.tex 
+	              Records.tex Sequences.tex Statements.tex 
+	              Tuples.tex Types.tex Variables.tex 
+	              syntax_listing.tex 
+
