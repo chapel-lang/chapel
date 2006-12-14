@@ -89371,3 +89371,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 10:38:12 -- waynew
+
+Log message:
+	Forgot to update with iterator+side-effects temporary bug fix.
+
+Modified files:
+	./: STATUS 
+
