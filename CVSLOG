@@ -89402,3 +89402,23 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 13:17:23 -- deitz
+
+Log message:
+	Added touch and free calls to handle the elements of ddata vectors via
+	the ARRAY_SET primitive.  Made related changes to get GC to work with
+	arrays of classes.  Added a test.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplrt.h 
+	chapel/runtime/src/: chplmem.c 
+Added files:
+	chapel/test/memory/deitz/: test_array_of_class_leak.chpl 
+	                           test_array_of_class_leak.good 
+
