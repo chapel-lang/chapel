@@ -89381,3 +89381,14 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+12/14/06 11:32:07 -- marybeth
+
+Log message:
+	Changed font size in \chpl environment to \small.  It looks better with the
+	font size of the normal text.
+
+Modified files:
+	chapel/spec/: chapel_listing.tex 
+
