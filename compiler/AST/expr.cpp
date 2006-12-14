@@ -801,7 +801,11 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ARRAY_GET:
       help_codegen_fn(outfile, "array_get", get(1), get(2));
       break;
+    case PRIMITIVE_ARRAY_GET_VALUE:
+      help_codegen_fn(outfile, "array_get_value", get(1), get(2));
+      break;
     case PRIMITIVE_ARRAY_SET:
+    case PRIMITIVE_ARRAY_SET_FIRST:
       help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
@@ -809,6 +813,9 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_ARRAY_FREE:
       help_codegen_fn(outfile, "array_free", get(1));
+      break;
+    case PRIMITIVE_ARRAY_FREE_ELTS:
+      help_codegen_fn(outfile, "array_free_elts", get(1), get(2), get(3));
       break;
     case PRIMITIVE_NOOP:
       break;

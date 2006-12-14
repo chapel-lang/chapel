@@ -309,7 +309,7 @@ static memTableEntry* removeBucketEntry(void* address) {
 
       memTableEntry* nextBucketEntry = thisBucketEntry->nextInBucket;
         
-      if (nextBucketEntry->memAlloc == address) {
+      if (nextBucketEntry && nextBucketEntry->memAlloc == address) {
         thisBucketEntry->nextInBucket = nextBucketEntry->nextInBucket;
         deletedBucket = nextBucketEntry;
       }

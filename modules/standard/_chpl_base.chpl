@@ -297,7 +297,7 @@ pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
 def init_elts(x, s, type t) {
   for i in 1..s {
     var y: t;
-    x(i-1) = y;
+    __primitive("array_set_first", x, i-1, y);
   }
 }
 
@@ -312,7 +312,7 @@ class _ddata {
   }
   pragma "inline" def init( d: elt_type) {
     __primitive("array_init", this, elt_type, size);
-    [i in 0..size-1] this(i) = d;
+    [i in 0..size-1] __primitive("array_set_first", this, i, d);
   }
   pragma "inline" def this(i: int) {
     return __primitive("array_get", this, i);

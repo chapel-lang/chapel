@@ -157,8 +157,19 @@ buildFreeFunctions() {
                 new CallExpr(fieldFree,
                   new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
         }
-        if (ct->symbol->hasPragma("data class"))
+        if (ct->symbol->hasPragma("data class")) {
+          Type* eltType = dynamic_cast<Type*>(ct->substitutions.v[0].value);
+          if (!eltType)
+            INT_FATAL(ct, "bad data class element type");
+          if (FnSymbol* eltFree = freeMap.get(eltType)) {
+            VarSymbol* ivar = new VarSymbol("_tmp", dtInt[INT_SIZE_32]);
+            fn->insertBeforeReturn(new DefExpr(ivar));
+            fn->insertBeforeReturn(new CallExpr(PRIMITIVE_ARRAY_FREE_ELTS,
+                                                arg, ivar,
+                                                new CallExpr(eltFree, new CallExpr(PRIMITIVE_ARRAY_GET_VALUE, arg, ivar))));
+          }
           fn->insertBeforeReturn(new CallExpr(PRIMITIVE_ARRAY_FREE, arg));
+        }
         if (isReferenceCounted(ct))
           fn->insertBeforeReturn(new CallExpr(PRIMITIVE_CHPL_FREE, arg));
       }
@@ -276,6 +287,30 @@ void memoryManage(void) {
               call->insertAfter(
                 new CallExpr(_touch,
                   new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                               call->get(1)->copy(),
+                               call->get(2)->copy())));
+          }
+        } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET)) {
+          if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
+            if (FnSymbol* _free = freeMap.get(lhs->type))
+              call->insertBefore(
+                new CallExpr(_free,
+                  new CallExpr(PRIMITIVE_ARRAY_GET_VALUE,
+                               call->get(1)->copy(),
+                               call->get(2)->copy())));
+            if (FnSymbol* _touch = touchMap.get(lhs->type))
+              call->insertAfter(
+                new CallExpr(_touch,
+                  new CallExpr(PRIMITIVE_ARRAY_GET_VALUE,
+                               call->get(1)->copy(),
+                               call->get(2)->copy())));
+          }
+        } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
+          if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
+            if (FnSymbol* _touch = touchMap.get(lhs->type))
+              call->insertAfter(
+                new CallExpr(_touch,
+                  new CallExpr(PRIMITIVE_ARRAY_GET_VALUE,
                                call->get(1)->copy(),
                                call->get(2)->copy())));
           }

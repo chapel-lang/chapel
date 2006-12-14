@@ -17,8 +17,10 @@ _int32 _now_day(void);
 _real64 _now_time(void);
 
 #define array_get(x, i) (&((x)->_data[i]))
+#define array_get_value(x, i) ((x)->_data[i])
 #define array_set(x, i, v) ((x)->_data[i] = v)
 #define array_init(x, type, size) (x)->_data = _chpl_malloc(size, sizeof(type), "_data")
+#define array_free_elts(x, i, call) for(i = 0; i < (x)->size; i++) call
 #define array_free(x) _chpl_free((x)->_data)
 
 #define _noop(x)
