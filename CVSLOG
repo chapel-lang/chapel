@@ -89538,3 +89538,24 @@ Modified files:
 	chapel/test/release/examples/: norm.chpl jacobi.chpl 
 	                               prod-cons.chpl 
 
+---------------------------------------------------------------------------
+
+12/14/06 15:41:32 -- deitz
+
+Log message:
+	Simplified nested function to handle conditional || and && operators.
+	These cannot be used as an lvalue so the nested function does not have
+	to be a setter.  (Really we shouldn't use nested functions at all, but
+	we have some more work to do on the IR before that can happen).  There
+	was an exponential explosion in long expressions of multiple || or &&
+	subexpressions.
+	
+	This fixes domains/indefinite/waynew/record_hash which uses a large
+	but modest || expression and was timing out on the Sun and almost
+	crashing on our Linux systems even.  Since the test used 14 ||
+	operators in a single expression, this resulted in the creation of,
+	crazily, 16384 functions, 14 of which were used.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+
