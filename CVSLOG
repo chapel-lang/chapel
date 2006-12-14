@@ -89392,3 +89392,13 @@ Log message:
 Modified files:
 	chapel/spec/: chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 12:46:35 -- marybeth
+
+Log message:
+	Added index items to Domains and Arrays section.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex 
+
