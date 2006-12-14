@@ -563,10 +563,10 @@ the default value associated with the element type of the array.
 
 \subsubsection{Changing the Indices in Sparse Domains}
 
-Indices can be added or removed to sparse domains.  Sparse domains
-support a method \chpl{add} that takes an index and adds this index to
-the sparse domain.  All arrays declared over this sparse domain can
-now be assigned values corresponding to this index.
+Indices can be added to or removed from sparse domains.  Sparse
+domains support a method \chpl{add} that takes an index and adds this
+index to the sparse domain.  All arrays declared over this sparse
+domain can now be assigned values corresponding to this index.
 
 Sparse domains support a method \chpl{remove} that takes an index and
 removes this index from the sparse domain.  The values in the arrays
@@ -617,7 +617,7 @@ to variables.
 Like with sparse domains, indices can be added or removed to
 indefinite domains.  Indefinite domains support a method \chpl{add}
 that takes an index and adds this index to the indefinite domain.  All
-arrays declared over this indefinite domain can now be assigned values
+arrays declared over this indefinite domain can now access elements
 corresponding to this index.
 
 Indefinite domains support a method \chpl{remove} that takes an index
@@ -648,7 +648,7 @@ D.remove(i);
 An indefinite domain supports a \chpl{member?} method that can test
 whether a particular value is part of the index set. It
 returns \chpl{true} if the index is in the indefinite domain and
-otherwise returns false.
+otherwise returns \chpl{false}.
 
 \subsection{Opaque Domains and Arrays}
 \label{Opaque_Domains_and_Arrays}

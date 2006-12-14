@@ -123,7 +123,8 @@ argument is passed by value unless it is a class, array, or domain in
 which case it is passed by reference.
 
 Intents~(\rsec{Intents}) result in potential assignments to temporary
-variables during a function call.
+variables during a function call.  For example, passing an array by
+intent \chpl{in}, a temporary array will be created.
 
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
@@ -222,7 +223,8 @@ Domains cannot be passed to a function via the \chpl{in} intent.
 If \chpl{out} is specified as the intent, the actual argument is
 ignored when the call is made, but after the call, the formal argument
 is assigned to the actual argument at the call site.  The actual
-argument must be a valid lvalue.
+argument must be a valid lvalue.  The formal argument can be assigned
+to and read from within the function.
 
 The formal argument cannot not be generic and is treated as a variable
 declaration.  Domains cannot be passed to a function via
@@ -238,6 +240,8 @@ both passed to the formal argument as if the \chpl{in} intent applied
 and then copied back as if the \chpl{out} intent applied.  The formal
 argument can be generic and takes its type from the actual argument.
 Domains cannot be passed to a function via the \chpl{inout} intent.
+The formal argument can be assigned to and read from within the
+function.
 
 \subsection{Variable Functions}
 \label{Variable_Functions}
@@ -306,7 +310,7 @@ side of the assignment statement.
 \begin{example}
 The following code defines a function \chpl{A} and a setter
 function \chpl{A}.  These two definitions of \chpl{A} are equivalent
-to the one definition in the previous section.
+to the single definition in the previous section.
 \begin{chapel}
 var x, y = 0;
 
@@ -377,7 +381,7 @@ From the set of visible functions, determine the set of candidate
 functions.  A function is a candidate if the function is a valid
 application of the function call's actual arguments as determined
 in~\rsec{Determining_Candidate_Functions}.  A compiler error occurs if
-there are no candidate functions,
+there are no candidate functions.
 \item
 From the set of candidate functions, the most specific function is
 determined.  The most specific function is a candidate function that
@@ -455,7 +459,7 @@ mapping to $F_2$ and none of the legal argument mappings to $F_2$ is a
 more specific argument mapping than the corresponding legal argument
 mapping to $F_1$, then $F_1$ is more specific.
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
-\item $F_1$ is not more specific than $F_2$.
+\item Otherwise, $F_1$ is not more specific than $F_2$.
 \end{itemize}
 
 Given an argument mapping, $M_1$, from an actual argument, $A$, of

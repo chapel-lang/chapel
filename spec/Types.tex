@@ -107,10 +107,11 @@ Like the integral and real types, the complex types can be
 parameterized by the number of bits used to represent them.  A complex
 number is composed of two real numbers so the number of bits used to
 represent a complex is twice the number of bits used to represent the
-real numbers.  The default complex type, \chpl{complex}, is 128 bits.
-The complex types that are supported are machine-dependent, but
-usually include \chpl{complex(64)} and \chpl{complex(128)}, and
-sometimes include \chpl{complex(256)}.
+real numbers.  The default complex type, \chpl{complex}, is 128 bits;
+it consists of two 64-bit real numbers.  The complex types that are
+supported are machine-dependent, but usually
+include \chpl{complex(64)} and \chpl{complex(128)}, and sometimes
+include \chpl{complex(256)}.
 
 The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
@@ -144,8 +145,8 @@ complex values with a zero imaginary part.
 Strings are a primitive type designated by the symbol \chpl{string}.
 Their length is unbounded.
 
-Characters in a string can be accessed via the substring method on
-strings.  This method takes an integer $i$ and returns the $i$th
+Characters in a string can be accessed via the \chpl{substring} method
+on strings.  This method takes an integer $i$ and returns the $i$th
 character in the string.
 \begin{example}
 The first character of a string \chpl{s} can be selected by the method

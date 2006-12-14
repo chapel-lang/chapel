@@ -2,7 +2,7 @@
 \label{Records}
 \index{records}
 
-A record is a data structure that is like a class but that has value
+A record is a data structure that is like a class but has value
 semantics.  The key differences between records and classes are
 described in this section.
 
@@ -37,9 +37,9 @@ the \chpl{record} keyword replaces the \chpl{class} keyword.
 \index{records!differences with classes}
 
 The main differences between records and classes are that records are
-value classes, do not need to be reclaimed since the data is recovered
-when the variable goes out of scope, do not support dynamic dispatch,
-and are assigned by value.
+value classes.  They do not need to be reclaimed since the data is
+recovered when the variable goes out of scope, do not support dynamic
+dispatch, and are assigned by value.
 
 \subsubsection{Records as Value Classes}
 \label{Records_as_Value_Classes}
@@ -73,10 +73,10 @@ record are assigned.
 \index{records!equality}
 \index{records!inequality}
 
-Default functions to overload \chpl{==} and \chpl{!=} are defined for
+Default functions to overload \chpl{==} and \chpl{\!=} are defined for
 records if there is none defined for the record in the Chapel program.
 The default implementation of \chpl{==} applies \chpl{==} to each
 field of the two argument records and reduces the result with
-the \chpl{&&} operator.  The default implementation of \chpl{!=}
-applies \chpl{!=} to each field of the two argument records and
+the \chpl{&&} operator.  The default implementation of \chpl{\!=}
+applies \chpl{\!=} to each field of the two argument records and
 reduces the result with the \chpl{||} operator.

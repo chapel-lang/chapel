@@ -173,8 +173,8 @@ is discussed in these later sections.
 \index{else@\chpl{else}}
 \index{conditional!statement}
 The conditional statement allows execution to choose between two
-statements based on the evaluation of an expression of bool type. The
-syntax for a conditional statement is given by
+statements based on the evaluation of an expression of \chpl{bool}
+type. The syntax for a conditional statement is given by
 \begin{syntax}
 conditional-statement:
   `if' expression `then' statement else-part[OPT]
@@ -290,7 +290,7 @@ The do-while loop is executed as follows:
   step 1 and the the statement is executed again.
 \end{enumerate}
 In this second form of the loop, note that the statement is executed
-unconditionally once.
+unconditionally the first time.
 
 \subsection{The For Loop}
 \label{The_For_Loop}
@@ -318,7 +318,7 @@ The identifiers are declared to be new variables for the scope of this
 statement.
 
 If the iterator-expression is a tuple, the components of the tuple
-must support iteration, e.g., a tuple of arrays, and thse components
+must support iteration, e.g., a tuple of arrays, and those components
 are iterated over using a zipper iteration defined
 in~\rsec{Zipper_Iteration}.  If the iterator-expression is a tuple
 delimited by square brackets, the components of the tuple must support

@@ -146,7 +146,7 @@ type explicitly replicated a number of times equal to the
 \begin{example}
 The following types are equivalent:
 \begin{center}
-\chpl{3*int}     \chpl{(int, int, int)}
+\chpl{3*int} \hspace{2pc} \chpl{(int, int, int)}
 \end{center}
 \end{example}
 
@@ -164,7 +164,7 @@ tuple-indexing-expression:
 The result of indexing a tuple by integer $k$ is the value of the
 $k$th component.  If the tuple is not homogeneous, the tuple can only
 be indexed by an integer parameter.  This ensures that the type of the
-indexing expression can be known at compile-time.
+indexing expression is known at compile-time.
 
 \subsection{Formal Arguments of Tuple Type}
 \label{Formal_Arguments_of_Tuple_Type}

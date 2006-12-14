@@ -271,11 +271,12 @@ The operators are defined in subsequent sections.
 
 This section describes the predefined arithmetic operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 All arithmetic operators are implemented over integral types of size
-32 and 64 only.  For example, adding two 8-bit integers is done by
-first converting them to 32-bit integers.
+32 and 64 bits only.  For example, adding two 8-bit integers is done
+by first converting them to 32-bit integers and then adding the 32-bit
+integers.  The result is a 32-bit integer.
 
 \subsubsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
@@ -648,7 +649,8 @@ def &(a: uint(64), b: int(64))
 def &(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is
-computed by applying the AND operation to the bits of the operands.
+computed by applying the logical and operation to the bits of the
+operands.
 
 It is a compile-time error to apply the bitwise and operator to a
 value of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and
@@ -669,7 +671,8 @@ def |(a: uint(64), b: int(64))
 def |(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is
-computed by applying the OR operation to the bits of the operands.
+computed by applying the logical or operation to the bits of the
+operands.
 
 It is a compile-time error to apply the bitwise or operator to a value
 of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and vice
@@ -725,8 +728,7 @@ The \chpl{>>} operator shifts the bits of \chpl{a} right by the
 integer \chpl{b}.  When \chpl{a} is negative, the new high-order bits
 are set to one; otherwise the new high-order bits are set to zero.
 
-The value of \chpl{b} must be at least zero and at most the number of
-bits used to represent \chpl{a}.
+The value of \chpl{b} must be non-negative.
 
 \subsection{Logical Operators}
 \label{Logical_Operators}
@@ -734,7 +736,7 @@ bits used to represent \chpl{a}.
 
 This section describes the predefined logical operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 \subsubsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}

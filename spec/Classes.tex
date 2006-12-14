@@ -38,8 +38,8 @@ from other classes if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
-where each of the statements either defines a variable, called a
-field, a function, called a method, or a type.
+where each of the statements either defines a variable (called a
+field), a function (called a method), or a type.
 
 If a class contains a type alias or a parameter, the class is generic.
 Generic classes are described in~\rsec{Generics}.
@@ -198,7 +198,7 @@ parentheses even if the argument list is empty.
 \begin{example}
 In the following code, the \chpl{this} method is used to create a
 class that acts like a simple array that contains three integers
-indexed by one, two, and three.
+indexed by 1, 2, and 3.
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
@@ -302,7 +302,7 @@ which is itself derived from a class that contains fields.
 
 A derived class contains data associated with the fields in its base
 classes.  The fields can be accessed in the same way that they are
-accessed in their base class unless the getter or setter methods is
+accessed in their base class unless the getter or setter method is
 overridden in the derived class, as discussed
 in~\rsec{Overriding_Base_Class_Methods}.
 

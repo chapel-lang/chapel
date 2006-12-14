@@ -20,8 +20,8 @@ defined over the domain.
 Throughout this section, the term {\em local} refers to data that is
 associated with the locale that a computation is running on and {\em
 remote} refers to data that is not. We assume that there is some
-overhead associated with accessing data that may be remote compared to
-data known to be local.
+execution overhead associated with accessing data that may be remote
+compared to data known to be local.
 
 \subsection{Locales}
 \label{Locales}
@@ -61,8 +61,8 @@ of \chpl{locale} type that can be distinct from the values stored
 in \chpl{Locales}. This value is used to denote an object or
 computation that has no defined affinity.
 
-When a program starts, a single thread is executing.  It is running on
-the locale given by \chpl{Locales(1)}.
+When a program starts, a single computation is executing.  It is
+running on the locale given by \chpl{Locales(1)}.
 
 \subsubsection{Querying the Locale of a Variable}
 \label{Querying_the_Locale_of_a_Variable}

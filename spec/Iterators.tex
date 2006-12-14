@@ -101,9 +101,9 @@ for i in C do
 is equivalent to the following loop:
 \begin{chapel}
 var cursor = C.getHeadCursor();
-if C.isValidCursor?(cursor) then do {
+while C.isValidCursor?(cursor) {
   var i = C.getValue(cursor);
   ; // body of loop
   cursor = C.getNextCursor(cursor);
-} while C.isValidCursor?(cursor);
+}
 \end{chapel}

@@ -5,7 +5,7 @@ A variable is a symbol that represents memory.  Chapel is a
 statically-typed, type-safe language so every variable has a type that
 is known at compile-time and the compiler enforces that values
 assigned to the variable can be stored in that variable as specified
-by the type.
+by its type.
 
 \subsection{Variable Declarations}
 \label{Variable_Declarations}
@@ -83,7 +83,7 @@ are as follows:
 \hline
 {\tt bool} & {\tt false} \\
 {\tt int(*)} & {\tt 0} \\
-{\tt unt(*)} & {\tt 0} \\
+{\tt uint(*)} & {\tt 0} \\
 {\tt real(*)} & {\tt 0.0} \\
 {\tt imag(*)} & {\tt 0.0i} \\
 {\tt complex(*)} & {\tt 0.0 + 0.0i} \\
@@ -91,7 +91,7 @@ are as follows:
 enums & first enum constant \\
 classes & {\tt nil} \\
 records & default constructed record \\
-sequences & {\tt (/ /)} \\
+sequences & empty sequence \\
 arrays & elements are default values \\
 tuples & components are default values \\
 \hline
@@ -121,8 +121,8 @@ modules that use that module.
 
 Local variables are variables that are not global.  Local variables
 are declared within block statements.  They can only be accessed
-within the scope of that block statement (including all nested block
-statements and functions).
+within the scope of that block statement (including all inner nested
+block statements and functions).
 
 A local variable only exists during the execution of code that lies
 within that block statement.  This time is called the lifetime of the
@@ -146,9 +146,9 @@ specified with the keyword \chpl{const}, are runtime constants.
 \index{param@\chpl{param}}
 \index{parameters}
 
-A compile-time constant or parameters must have a single value that is
-known by the compiler.  Parameters are restricted to primitive and
-enumerated types.
+A compile-time constant or parameter must have a single value that is
+known statically by the compiler.  Parameters are restricted to
+primitive and enumerated types.
 
 Parameters can be assigned expressions that are parameter expressions.
 Parameter expressions are restricted to the following constructs:
@@ -164,7 +164,7 @@ Parameter expressions are restricted to the following constructs:
  and \verb@~@ on operands that are bool or integral parameter
  expressions.
 \item
- Applications of the binary operators verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
+ Applications of the binary operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
 \item
  The conditional expression where the condition is a parameter and the
  then- and else-expressions are parameters.
