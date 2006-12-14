@@ -73,7 +73,6 @@ Tuples, Sequences, and Iterators
   * bugs
     - Iterator methods in classes
     - Iterator with tuple return type such as rank*int
-    - Iterator with side effects; effect happens more than # of iterations
     - Iterators with parameter arguments
     - Iterators with parameter locals
     - Iterators with intents
