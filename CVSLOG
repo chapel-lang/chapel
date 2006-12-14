@@ -89527,3 +89527,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+12/14/06 15:33:49 -- marybeth
+
+Log message:
+	Added standard header comment to norm, jacobi and prod-cons.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl jacobi.chpl 
+	                               prod-cons.chpl 
+
