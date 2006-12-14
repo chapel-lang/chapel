@@ -224,8 +224,11 @@ static bool
 requiresTouch(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (!fn->getReturnSymbol()->isReference)
-        return false;
+      Symbol* symbol = fn->getReturnSymbol();
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(symbol)) {
+        if (!var->isReference)
+          return false;
+      }
     }
   }
   return true;
