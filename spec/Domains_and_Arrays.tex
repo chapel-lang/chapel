@@ -1,5 +1,7 @@
 \sekshun{Domains and Arrays}
 \label{Domains_and_Arrays}
+\index{domains}
+\index{arrays}
 
 A {\em domain} is a description of a collection of names for data.
 These names are referred to as the {\em indices} of the domain.  All
@@ -47,6 +49,7 @@ type.
 
 \subsubsection{Domain Types}
 \label{Domain_Types}
+\index{domains!types}
 
 Domain types vary based on the kind of the domain.  The type of an
 arithmetic domain is parameterized by the rank of the domain and the
@@ -69,6 +72,7 @@ such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
 
 \subsubsection{Index Types}
 \label{Index_Types}
+\index{domains!index types}
 
 Each domain has a corresponding {\em index} type which is the type of
 the domain's indices qualified by its status as an index.  Variables
@@ -109,6 +113,7 @@ implemented.
 
 \subsubsection{Domain Assignment}
 \label{Domain_Assignment}
+\index{domains!assignment}
 
 Domain assignment is by value.  If arrays are declared over a domain,
 domain assignment impacts these arrays as discussed
@@ -117,6 +122,8 @@ associated with the same domain regardless of the assignment.
 
 \subsubsection{Formal Arguments of Domain Type}
 \label{Formal_Arguments_of_Domain_Type}
+\index{formal arguments!domains}
+\index{domains!as formal arguments}
 
 Domains are passed to functions by reference.  Formal arguments that
 receive domains are aliases of the actual arguments.  It is a
@@ -152,6 +159,7 @@ A = D;
 
 \subsection{Arrays}
 \label{Arrays}
+\index{arrays}
 
 Arrays associate variables or elements with the sets of indices in a
 domain.  Arrays must be declared over domains and have a specified
@@ -159,6 +167,7 @@ element type.
 
 \subsubsection{Array Types}
 \label{Array_Types}
+\index{arrays!types}
 
 The type of an array is parameterized by the type of the domain that
 it is declared over and the element type of the array.  Array types
@@ -189,6 +198,7 @@ Arrays of arrays are not currently supported.
 
 \subsubsection{Array Indexing}
 \label{Array_Indexing}
+\index{arrays!indexing}
 
 Arrays can be indexed by indices in the domain they are declared over.
 The indexing results in an access of the element that is mapped by
@@ -210,6 +220,7 @@ tuples), as described in~\rsec{Arithmetic_Array_Indexing}.
 
 \subsubsection{Array Slicing}
 \label{Array_Slicing}
+\index{arrays!slicing}
 
 An array can be indexed by a domain that has the same type as the
 domain which the array was declared over.  Indexing in this manner has
@@ -238,6 +249,7 @@ in~\rsec{Arithmetic_Array_Slicing}.
 
 \subsubsection{Array Assignment}
 \label{Array_Assignment}
+\index{arrays!assignment}
 
 Array assignment is by value.  Arrays can be assigned arrays,
 sequences, or domains.  If \chpl{A} is an lvalue of array type
@@ -271,6 +283,7 @@ forall i in A.domain do
 
 \subsubsection{Formal Arguments of Array Type}
 \label{Formal_Arguments_of_Array_Type}
+\index{arrays!as formal arguments}
 
 Arrays are passed to functions by reference.  Formal arguments that
 receive arrays are aliases of the actual arguments.  The ordinary rule
@@ -296,6 +309,7 @@ elements mapped to by the indices in the array's domain.
 
 \subsubsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
+\index{arrays!promotion}
 
 Array promotion of a scalar function is defined over the array type
 and the element type of the array.  Array promotion has the same
@@ -326,6 +340,7 @@ and \chpl{C}.
 
 \subsubsection{Array Initialization}
 \label{Array_Initialization}
+\index{arrays!initialization}
 
 By default, the elements in an array are initialized to the default
 values associated with the element type of the array.  There is an
@@ -369,6 +384,8 @@ expression \chpl{e} can include references to index \chpl{i}.
 
 \subsection{Arithmetic Domains and Arrays}
 \label{Arithmetic_Domains_and_Arrays}
+\index{domains!arithmetic}
+\index{arrays!arithmetic}
 
 An arithmetic domain is a rectilinear set of Cartesian indices.
 Arithmetic domains are specified as a tuple of arithmetic sequences
@@ -376,6 +393,7 @@ enclosed in square brackets.
 
 \subsubsection{Arithmetic Domain Literals}
 \label{Arithmetic_Domain_Literals}
+\index{domains!arithmetic literals}
 
 An arithmetic domain literal is specified by the following syntax:
 \begin{syntax}
@@ -418,6 +436,8 @@ type \chpl{domain(2,int)}.
 
 \subsubsection{Strided Arithmetic Domains}
 \label{Strided_Arithmetic_Domains_and_Arrays}
+\index{domains!arithmetic, strided}
+\index{arrays!arithmetic, strided}
 
 If the arithmetic sequences that define an arithmetic domain are
 strided, then the arithmetic domain is said to be strided.
@@ -488,6 +508,8 @@ slice of a different rank.
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
+\index{formal arguments!arithmetic arrays}
+\index{arrays!as formal arguments}
 
 Formal arguments of arithmetic array type allow an arithmetic domain
 to be specified that does not match the arithmetic domain of the
@@ -512,6 +534,8 @@ indexed by the integers between one and five.
 
 \subsection{Sparse Domains and Arrays}
 \label{Sparse_Domains_and_Arrays}
+\index{domains!sparse}
+\index{arrays!sparse}
 
 \begin{implementation}
 Sparse domains are not yet implemented.
@@ -569,6 +593,8 @@ D.remove(i);
 
 \subsection{Indefinite Domains and Arrays}
 \label{Indefinite_Domains_and_Arrays}
+\index{domains!indefinite}
+\index{arrays!indefinite}
 
 An indefinite domain type can be defined over any scalar type and is
 given by the following syntax:
@@ -626,6 +652,8 @@ otherwise returns false.
 
 \subsection{Opaque Domains and Arrays}
 \label{Opaque_Domains_and_Arrays}
+\index{domains!opaque}
+\index{arrays!opaque}
 
 \begin{implementation}
 Opaque domains are not yet implemented.
@@ -649,6 +677,8 @@ is rare.
 
 \subsection{Enumerated Domains and Arrays}
 \label{Enumerated_Domains_and_Arrays}
+\index{domains!enumerated}
+\index{arrays!enumerated}
 
 \begin{implementation}
 Enumerated domains are not yet implemented.
@@ -666,6 +696,8 @@ type.
 
 \subsection{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
+\index{domains!association to arrays}
+\index{arrays!association to domains}
 
 When an array is declared, it is linked during execution to the domain
 over which it was declared.  This linkage is constant and cannot be
@@ -690,6 +722,8 @@ values in the arrays associated with the assigned domain will be lost.
 
 \subsection{Subdomains}
 \label{Subdomains}
+\index{subdomains}
+\index{domains!subdomains}
 
 \begin{implementation}
 Subdomains are not yet implemented.
@@ -714,6 +748,7 @@ omitted bounds of the indefinite arithmetic sequences are taken from
 the bounds of the base domain.
 
 \subsection{Predefined Functions and Methods on Domains}
+\index{domains!predefined functions}
 
 There is an expectation that this list of predefined functions and
 methods will grow.
@@ -726,6 +761,7 @@ Returns the number of indices in the domain.
 \end{protobody}
 
 \subsection{Predefined Functions and Methods on Arrays}
+\index{arrays!predefined functions}
 
 There is an expectation that this list of predefined functions and
 methods will grow.
