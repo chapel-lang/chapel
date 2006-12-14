@@ -89496,3 +89496,14 @@ Log message:
 Modified files:
 	chapel/test/memory/deitz/: test_threaded_leak.good 
 
+---------------------------------------------------------------------------
+
+12/14/06 15:03:12 -- deitz
+
+Log message:
+	Update wrong memory info on chap07
+
+Modified files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap07.good 
+
