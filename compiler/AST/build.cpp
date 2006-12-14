@@ -14,12 +14,16 @@ Expr* buildDot(BaseAST* base, char* member) {
 
 
 Expr* buildLogicalAnd(Expr* left, Expr* right) {
-  return new CallExpr(new DefExpr(build_if_expr(new CallExpr(".", left, new_StringSymbol("false?")), new SymExpr(gFalse), new CallExpr(".", right, new_StringSymbol("true?")))));
+  FnSymbol* ifFn = build_if_expr(new CallExpr(".", left, new_StringSymbol("false?")), new SymExpr(gFalse), new CallExpr(".", right, new_StringSymbol("true?")));
+  ifFn->buildSetter = false;
+  return new CallExpr(new DefExpr(ifFn));
 }
 
 
 Expr* buildLogicalOr(Expr* left, Expr* right) {
-  return new CallExpr(new DefExpr(build_if_expr(new CallExpr(".", left, new_StringSymbol("true?")), new SymExpr(gTrue), new CallExpr(".", right, new_StringSymbol("true?")))));
+  FnSymbol* ifFn = build_if_expr(new CallExpr(".", left, new_StringSymbol("true?")), new SymExpr(gTrue), new CallExpr(".", right, new_StringSymbol("true?")));
+  ifFn->buildSetter = false;
+  return new CallExpr(new DefExpr(ifFn));
 }
 
 
