@@ -89486,3 +89486,13 @@ Added files:
 	                           test_threaded_leak.future 
 	                           test_threaded_leak.good 
 
+---------------------------------------------------------------------------
+
+12/14/06 14:57:44 -- deitz
+
+Log message:
+	Fixed .good to be what we want not what we have.
+
+Modified files:
+	chapel/test/memory/deitz/: test_threaded_leak.good 
+
