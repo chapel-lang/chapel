@@ -89463,3 +89463,13 @@ Modified files:
 	              Tuples.tex Types.tex Variables.tex 
 	              syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 14:55:47 -- marybeth
+
+Log message:
+	Changes to motivating principles section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
