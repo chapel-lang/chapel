@@ -768,9 +768,9 @@ The {\em producer computation} sets the value of a sync variable and the
 {\em consumer computation} prints the value of the same variable.
 
 \paragraph{Chapel Features}
-The program contains a \chpl{sync} variable and a \chpl{begin} statement 
-in order to implement two concurrent computations, or threads, that execute 
-in step with each other.
+The program contains a \chpl{begin} statement 
+to implement two concurrent computations, and a \chpl{sync} variable 
+to coordinate between the two.
 Sync variables have extra state associated with them to
 indicate whether they are logically {\em full} or {\em empty}.  
 A sync variable
@@ -781,8 +781,10 @@ computation will suspend execution until another computation changes its state t
 Once a sync variable is able to be read, its state is atomically set to empty.
 Conversely, a sync variable can be written only when its state is empty.  Attempts
 to write to a full sync variable will suspend until its state is empty.  Once the variable
-is written to, the state is atomically set to full.  Sync variables are useful
-to coordinate operations between computations.
+is written to, the state is atomically set to full.  In addition, there are
+functions that read and write sync variables which override this default behavior.
+More information about sync variables and their functions is in~\rsec{Sync_Variables}
+and~\rsec{Functions_on_Synchronization_Variables}.
 
 \paragraph{Program Listing}
 The Chapel code for this example is given below.
@@ -811,13 +813,17 @@ When this program executes, a consumer computation is created with the \chpl{beg
 statement.
 However, the consumer computation cannot read \chpl{s} before it has been written
 to.  So, execution begins with the producer computation which assigns the value
-\chpl{1} to \chpl{s} after calling the sleep function.  Once \chpl{s} has the
+\chpl{1} to \chpl{s} after calling the \chpl{sleep} function\footnote{The call to
+the \chpl{sleep} function 
+is used to mimic some amount of computational time.  It is not necessary to use
+a sleep function when synchronizing between concurrent computations.}.   
+Once \chpl{s} has the
 value \chpl{1}, the consumer computation can read it and print it.  Execution
 switches back and forth between the producer and consumer computation for
 \chpl{numIterations}.
 
 Running the program with the default
-values for \chpl{numIterations} or \chpl{sleepTime} results in:
+values for \chpl{numIterations} results in:
 {\small
 \begin{verbatim}
 consumer got 1
@@ -870,8 +876,14 @@ changes when it is read and written to.
 
 The \chpl{begin} statement in line~\ref{consumer_start} creates a 
 new computation to execute the \chpl{for}
-loop in lines~\ref{consumer_for_1} - \ref{consumer_for_2}.  This loop is 
-indexed by \chpl{c}, which iterates over
+loop in lines~\ref{consumer_for_1} - \ref{consumer_for_2}.  
+\begin{chapel}
+begin {                                
+  for c in 1..numIterations do        
+    writeln("consumer got ", s);     
+}                                   
+\end{chapel}
+This loop is indexed by \chpl{c}, which iterates over
 the arithmetic sequence \chpl{1..numIterations}.  The variable \chpl{c} is a new
 variable defined for the scope of the loop.  Its type is inferred to be integer from
 the integer arithmetic sequence that follows.  During each iteration of the \chpl{for}
@@ -880,14 +892,22 @@ literal \chpl{"consumer got "} and the value of the sync variable \chpl{s},
 followed by a line break.  In order to print the value stored in \chpl{s}, the
 sync variable is read only when its state is full.  Once \chpl{s} is successfully
 read, its state will be set to empty.  The next iteration follows, and the 
-consumer computations will suspend execution until the state of \chpl{s} is 
+consumer computation will suspend execution until the state of \chpl{s} is 
 made full again.  Since the consumer computation only reads \chpl{s}, it will be 
 the producer computation that changes the states of \chpl{s} to full.
 
 The producer computation executes the \chpl{for} loop in lines~\ref{producer_start} -
-\ref{producer_end}.  This
+\ref{producer_end}.  
+\begin{chapel}
+for p in 1..numIterations {            
+  sleep(sleepTime);   
+  s = p;
+}      
+\end{chapel}
+This
 loop is indexed by \chpl{p} which iterates over the same arithmetic sequence
-as the consumer computation.  Like \chpl{c}, \chpl{p} is inferred to be an integer.
+as the consumer computation.  Like the index \chpl{c}, \chpl{p} is inferred to 
+be an integer.
 During each iteration of this \chpl{for} loop, the \chpl{sleep} function is
 called with the argument\chpl{sleepTime}.  This \chpl{sleep} function is provided
 in the \chpl{Time} standard module, and it causes the producer computation to
