@@ -89435,3 +89435,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/06 13:53:26 -- deitz
+
+Log message:
+	Fixed a bug in which fields in a type nested in a function were freed
+	as if they were variables in the function.
+	
+	This fixes the cobegin test when using --free-memory.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+
