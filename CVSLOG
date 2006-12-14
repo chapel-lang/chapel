@@ -89517,3 +89517,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl 
 
+---------------------------------------------------------------------------
+
+12/14/06 15:21:18 -- marybeth
+
+Log message:
+	Added a few comments in jacobi example.
+
+Modified files:
+	chapel/test/release/examples/: jacobi.chpl 
+
