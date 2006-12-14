@@ -89351,3 +89351,13 @@ Log message:
 Added files:
 	chapel/util/: lookForLeakInTrace 
 
+---------------------------------------------------------------------------
+
+12/13/06 17:08:17 -- marybeth
+
+Log message:
+	Completed edits to Stack section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
