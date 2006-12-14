@@ -89422,3 +89422,16 @@ Added files:
 	chapel/test/memory/deitz/: test_array_of_class_leak.chpl 
 	                           test_array_of_class_leak.good 
 
+---------------------------------------------------------------------------
+
+12/14/06 13:42:54 -- deitz
+
+Log message:
+	Fixed a bug in GC in which a returned value was not touched at the
+	call site if the returned symbol was an argument.  It should be since
+	the arguments are not touched.  GC is now working on all
+	non-multithreaded tests, though with some efficiency issues.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+
