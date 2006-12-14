@@ -1,7 +1,12 @@
 module Norm{
+  // Module for computing matrix and vector norms:
+  // 1-norm, 2-norm and infinity norm for vectors
+  // 1-norm, infinity norm and Frobenius norm for matrices
+
   enum normType {norm1, norm2, normInf, normFrob};
 
   def norm(x: [], p: normType) where x.rank == 1 {
+  // vector norms
     select (p) {
       when norm1 do return + reduce abs(x);
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
@@ -12,6 +17,7 @@ module Norm{
   }
 
   def norm(x: [?D], p: normType) where x.rank == 2 {
+  // matrix norms
     select (p) {
       when norm1 do
         return max reduce [j in D(2)] (+ reduce abs(x[D(1), j]));
@@ -29,10 +35,12 @@ module Norm{
   }
 
   def norm(x: [], p: normType) where x.rank > 2 {
+  // norms not implemented for > 2D arrays
     compilerError("Norms not implemented for array ranks > 2D");
   }
 
   def norm(x: []) {
+  //  default norms
     select (x.rank) {
       when 1 do return norm(x, norm2);
       when 2 do return norm(x, normFrob);
@@ -82,9 +90,5 @@ module TestNorm {
     var e:[D2] complex;
     e = 1.0 + 1.0i;
     testNorm(e);
-
-    var f: [1..2, 1..3, 1..4] real = 0.0;
-    //    norm(f, norm1);
-    //    norm(f);
   }
 }
