@@ -89640,3 +89640,18 @@ Removed files:
 	                                        memory2.compopts 
 	chapel/test/memory/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+12/15/06 09:55:30 -- deitz
+
+Log message:
+	Disabled GC on the class that stores local arguments for begin and
+	cobegin since it is specially treated.
+	
+	There is an error on
+	  parallel/sync/deitz/test_sync2
+	which I believe can easily be fixed.  This fixes the other regressions.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp parallel.cpp 
+
