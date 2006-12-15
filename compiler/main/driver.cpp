@@ -36,7 +36,7 @@ int fcg = 0;
 bool unoptimized = false;
 bool no_scalar_replacement = true;
 bool no_bounds_checking = false;
-bool free_memory = false;
+bool no_gc = false;
 bool no_inline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
@@ -59,6 +59,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Optimization Control", NULL, NULL, NULL, NULL},
  {"no-bounds-checks", ' ', "Disable bounds checking", "F", &no_bounds_checking, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"no-gc", ' ', "Disable memory management", "F", &no_gc, "CHPL_NO_GC", NULL},
  {"no-inline", ' ', "Do not inline functions" , "F", &no_inline, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
 
@@ -96,7 +97,6 @@ static ArgumentDescription arg_desc[] = {
  {"log-dir", ' ', "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
 
  {"", ' ', "Developer Workarounds", NULL, NULL, NULL, NULL},
- {"free-memory", ' ', "Enable memory management", "F", &free_memory, "CHPL_FREE_MEMORY", NULL},
  {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
  {"", ' ', "Misc. Developer Flags", NULL, NULL, NULL, NULL},

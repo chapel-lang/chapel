@@ -1,3 +1,4 @@
+pragma "special free seqNode"
 class _seqNode {
   type elt_type;
 
