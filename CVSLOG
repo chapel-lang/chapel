@@ -89720,3 +89720,17 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 12:42:02 -- bradc
+
+Log message:
+	Incorporated feedback from John, Steve, Wayne into overview.
+	Bumped version number to 0.702 for release.
+	
+	Anybody else have outstanding edits to the overview, or can
+	we capture the PDF into the release docs directory?
+
+Modified files:
+	chapel/spec/: Language_Overview.tex spec.tex 
+
