@@ -89794,3 +89794,13 @@ Added files:
 	chapel/test/types/file/: fileIO.chpl fileIO.future fileIO.good 
 	                         fileIO2.chpl fileIO2.good 
 
+---------------------------------------------------------------------------
+
+12/15/06 14:50:01 -- bradc
+
+Log message:
+	A few updates/clarifications.
+
+Modified files:
+	./: STATUS 
+
