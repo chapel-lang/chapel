@@ -89734,3 +89734,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex spec.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 13:34:38 -- bradc
+
+Log message:
+	Removing jacobi-routine from examples directory.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README 
+Removed files:
+	chapel/test/release/examples/: jacobi-routine.chpl 
+	                               jacobi-routine.good 
+
