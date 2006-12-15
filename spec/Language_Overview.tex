@@ -475,10 +475,10 @@ for \chpl{epsilon} and the iteration counter.
 \paragraph{Description}
 The following example contains a module \chpl{Norm} which provides  
 \chpl{norm} functions that compute either a vector or matrix norm, depending
-on the rank of the array that is passed as the argument.  There are three
-norm type options for vector and matrix norm calculations.  For vectors,  
-the 1-norm, 2-norm and infinity norm are implemented in this module.  
-For matrices, the 1-norm, infinity norm and Frobenius norm are provided.   
+on the rank of the array that is passed as the argument.  There are four
+norm type options:  1-norm, 2-norm, infinity norm and Frobenius norm.  For vectors,  
+all four options are implemented in this module.  
+For matrices, all options but the 2-norm are provided.   
 The module uses a variable of {\em enumerated type} \chpl{normType} to 
 indicate the choice of norm.
 
@@ -488,13 +488,13 @@ indicate the choice of norm.
 \index{functions!generic}
 \index{generics!functions}
 This example demonstrates the definition and use of modules, generic functions
-function overloading.
+and function overloading.
 When the \chpl{Norm} module is used, the user may call 
 \chpl{norm(x)} or \chpl{norm(x,normType)} where
 \chpl{x} is any array and \chpl{normType} is the enumerated type as defined
 in the \chpl{Norm} module.  The \chpl{norm} function is {\em overloaded} with
 four separate function definitions for \chpl{norm}, based on the
-the dimension, or \chpl{rank}, of the input array, or the number of formal
+the rank of the input array, or the number of formal
 arguments used in the \chpl{norm} function call.  Each of these four function
 definitions is a {\em generic} function, not specifying the type of the array
 argument \chpl{x}.  Generic functions allow for code reuse and readability.
@@ -509,16 +509,18 @@ module Norm{                                    (*\label{norm_start}*)
   enum normType {norm1, norm2, normInf, normFrob}; (*\label{norm_enum}*)
 
   def norm(x: [], p: normType) where x.rank == 1 { (*\label{vec_start}*)
+  // vector norm routine
     select (p) {                                   (*\label{vec_select_start}*)
       when norm1 do return + reduce abs(x);        (*\label{vec_norm1}*)
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  (*\label{vec_norm2}*)
       when normInf do return max reduce abs(x);  (*\label{vec_normInf}*)
-      when normFrob do halt("Frobenius norm not defined for 1D arrays");(*\label{vec_normFrob}*)
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));(*\label{vec_normFrob}*)
       otherwise halt("Unexpected norm type"); (*\label{vec_unexp}*)
     } (*\label{vec_select_end}*)
   } (*\label{vec_end}*)
 
   def norm(x: [?D], p: normType) where x.rank == 2 { (*\label{mat_start}*)
+  // matrix norm routine
     select (p) {                                     (*\label{mat_select_start}*)
       when norm1 do                                  (*\label{mat_norm1_1}*)
         return max reduce [j in D(2)] (+ reduce abs(x[D(1), j])); (*\label{mat_norm1_2}*)
@@ -540,6 +542,7 @@ module Norm{                                    (*\label{norm_start}*)
   } (*\label{large_rank_end}*)
 
   def norm(x: []) { (*\label{norm_default_start}*)
+  // default norm routine
     select (x.rank) { (*\label{default_select_start}*)
       when 1 do return norm(x, norm2);  (*\label{default_vec}*)
       when 2 do return norm(x, normFrob); (*\label{default_mat}*)
@@ -559,8 +562,7 @@ module TestNorm { (*\label{test_mod_start}*)
     if (arr.rank == 1) then
       writeln("2-norm = " , norm(arr, norm2));
     writeln("infinity norm = ", norm(arr, normInf));
-    if (arr.rank == 2) then
-      writeln("frobenius norm = ", norm(arr, normFrob));
+    writeln("frobenius norm = ", norm(arr, normFrob));
     writeln("default norm = ", norm(arr)); (*\label{default_call}*)
     writeln();
   } (*\label{test_end}*)
@@ -596,9 +598,9 @@ is initialized to 2.0.
 
 The output of this program is given below.  The first set
 of norms is computed for \chpl{a} which is a vector and the second set 
-are computed for \chpl{b} which is
+is computed for \chpl{b} which is
 a matrix. Even though the vector and matrix in this example contain
-the same number of elements with the same values, the computed norms
+the same number of elements with the same values, some of the computed norms
 are different between the vector and the matrix.  Thus, different
 implementations of the norm functions are used to compute the norms, 
 depending on the whether the input is a vector or matrix.
@@ -610,6 +612,7 @@ Test of vector norms.  Array =
 1-norm = 8.0
 2-norm = 4.0
 infinity norm = 2.0
+frobenius norm = 4.0
 default norm = 4.0
 
 Test of matrix norms.  Array = 
@@ -638,7 +641,7 @@ begins with line~\ref{vec_start}:
   def norm(x: [], p: normType) where x.rank == 1 {
 \end{chapel}
 The function definition contains a \chpl{where x.rank == 1} clause, indicating that
-this version of \chpl{norm} is be used when the input array \chpl{x}
+this version of \chpl{norm} is to be used when the input array \chpl{x}
 has just one dimension, and is thus, a vector.  The arguments for this version
 of \chpl{norm} are \chpl{x} of generic array type and \chpl{p} of \chpl{normType}.  
 Since all norm types for the vector case can be computed with whole array 
@@ -655,28 +658,27 @@ select (p) {
       when norm1 do return + reduce abs(x);   
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  
       when normInf do return max reduce abs(x);  
-      when normFrob do halt("Frobenius norm not defined for 1D arrays");
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
       otherwise halt("Unexpected norm type"); 
     } 
 \end{chapel}
-For the first three cases of the select statement,
-when \chpl{p} is \chpl{norm1}, \chpl{norm2} or \chpl{normInf},
-a reduction operator is used to compute the value that is returned. 
+For the first four cases of the select statement,
+when \chpl{p} is \chpl{norm1}, \chpl{norm2}, \chpl{normInf} or \chpl{normFrob}
+a reduction operator is used along with \chpl{abs(x)} to compute the value 
+that is returned.  The \chpl{abs} function is promoted over the \chpl{x} array, 
+computing the absolute values of each entry of \chpl{x}.  
 The 1-norm of a vector is the sum of the absolute values of the entries of \chpl{x},
-computed with the sum reduction expression, \chpl{ + reduce abs(x)}.
+computed with the sum reduction expression, \chpl{ + reduce abs(x)}.  
 The 2-norm of a vector is the sum of the squares of the absolute values of
 the entries of \chpl{x}, computed with the sum reduction expression,
 \chpl{ + reduce (abs(x)*abs(x))}.
 The infinity norm of a vector is the maximum entry of \chpl{x} in absolute value,
 which can be computed with the maximum reduction expression \chpl{max reduce abs(x)}.
-Reduction and scan expressions are discussed in more detail 
-in~\rsec{Reductions_and_Scans}.  
+The Frobenius norm of a vector is the same computation as the 2-norm of a vector.
 
-The last two cases of the select statement result
+The last case of the select statement, the otherwise clause, results
 in the program halting, outputting the string that is passed to the \chpl{halt}
-function.  Since the Frobenius norm is not defined for vectors, the program
-will halt when \chpl{p} is \chpl{normFrob}.  The \chpl{otherwise} clause will
-result in the program halting if any other value is passed in for \chpl{p}.
+function indicating that \chpl{p} has an unexpected value.   
 
 The second \chpl{norm} function is defined for matrices.  This definition begins
 with line~\ref{mat_start}:
@@ -709,7 +711,10 @@ Then, the maximum value of these \chpl{j} absolute column sums is computed with
 \chpl{max reduce}.  
 
 The \chpl{norm2} case, the 2-norm of a matrix, is not
-implemented.  This case will halt with a message indicating this unimplemented
+implemented.  Since the 2-norm of a matrix $A$ is the square root of the maximum
+eigenvalue of the matrix $A^TA$ (or $A^HA$ in the case where $A$ is complex),
+this norm has not been included in this simple example code.
+This case will halt with a message indicating this unimplemented
 status.  
 
 The \chpl{normInf} case, the infinity norm of a matrix, is the maximum
