@@ -14,35 +14,35 @@ def main() {
   const ProblemSpace = [1..n, 1..n],    // domain for interior grid points
         BigDomain = [0..n+1, 0..n+1];   // larger domain including boundary points
 
-  var A, Temp: [BigDomain] real = 0.0;  // A contains approximate solution
-                                        // Temp is work array used in Jacobi iteration
-  A[n+1, 1..n] = 1.0;
+  var X, XNew: [BigDomain] real = 0.0;  // X contains approximate solution
+                                        // XNew is work array used in Jacobi iteration
+  X[n+1, 1..n] = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");
-    writeln(A, "\n");
+    writeln(X, "\n");
   }
 
   var iteration = 0,                    // iteration counter
       delta: real;                      // measure of convergence at each iteration
 
   do {
-    // compute next approximation using Jacobi method and store in Temp
+    // compute next approximation using Jacobi method and store in XNew
     forall (i,j) in ProblemSpace do
-      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+      XNew(i,j) = (X(i-1,j) + X(i+1,j) + X(i,j-1) + X(i,j+1)) / 4.0;
 
     // compute difference between next and current approximations
-    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
+    delta = max reduce abs(XNew[ProblemSpace] - X[ProblemSpace]);
 
-    // update A with next approximation
-    A[ProblemSpace] = Temp[ProblemSpace];
+    // update X with next approximation
+    X[ProblemSpace] = XNew[ProblemSpace];
 
     // advance iteration counter
     iteration += 1;
 
     if (verbose) {
       writeln("iteration: ", iteration);
-      writeln(A);
+      writeln(X);
       writeln("delta: ", delta, "\n");
     }
   } while (delta > epsilon);
