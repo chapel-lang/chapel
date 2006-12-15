@@ -89667,3 +89667,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/06 11:00:27 -- marybeth
+
+Log message:
+	Changes to jacobi and jacobi-routine:  Added more comments.  Changed
+	variable names from A and Temp to X and XNew.
+
+Modified files:
+	chapel/test/release/examples/: jacobi.chpl jacobi-routine.chpl 
+
