@@ -89559,3 +89559,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: build.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/06 16:13:37 -- marybeth
+
+Log message:
+	Changed norm example to implement Frobenius norm for vectors.
+	(It's the same as the 2-norm.)
+	
+	Changed the test program too, so the output changed.
+	
+	Corresponding changes will be made to the spec.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl norm.good 
+
