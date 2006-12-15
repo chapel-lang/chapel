@@ -89747,3 +89747,13 @@ Removed files:
 	chapel/test/release/examples/: jacobi-routine.chpl 
 	                               jacobi-routine.good 
 
+---------------------------------------------------------------------------
+
+12/15/06 14:22:16 -- marybeth
+
+Log message:
+	Added just a couple comments to the examples.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
