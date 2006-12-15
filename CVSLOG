@@ -89804,3 +89804,13 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+12/15/06 15:02:56 -- marybeth
+
+Log message:
+	Added index labels to Input and Output section.
+
+Modified files:
+	chapel/spec/: Input_and_Output.tex 
+
