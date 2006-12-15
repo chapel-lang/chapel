@@ -89655,3 +89655,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp parallel.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/06 10:27:11 -- deitz
+
+Log message:
+	Added touch to variables referenced by begin and cobegin wrapper
+	class.  These are not freed, so there is a memory leak here.  But that
+	is better than a seg fault and/or memory corruption.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp 
+
