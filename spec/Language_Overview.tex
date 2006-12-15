@@ -193,12 +193,12 @@ All examples in this section are included with the release of the Chapel compile
 \paragraph{Description}
 The following example Chapel program solves a system of finite difference
 equations for the Laplace equation using the Jacobi method.  The program uses
-two-dimensional arrays, \chpl{A} and \chpl{Temp}, to store and calculate the approximate
+two-dimensional arrays, \chpl{X} and \chpl{XNew}, to store and calculate the approximate
 solution.  At each iteration, the next approximation for the solution at 
-each grid point, \chpl{Temp(i,j)} is calculated by computing the average of 
+each grid point, \chpl{XNew(i,j)} is calculated by computing the average of 
 the four neighboring grid points,
-\chpl{A(i-1,j)}, \chpl{A(i,j-1)}, \chpl{A(i+1,j)}, and \chpl{A(i,j+1)}.  
-After all entries in \chpl{Temp} are computed, \chpl{A} is assigned to \chpl{Temp}
+\chpl{X(i-1,j)}, \chpl{X(i,j-1)}, \chpl{X(i+1,j)}, and \chpl{X(i,j+1)}.  
+After all entries in \chpl{XNew} are computed, \chpl{X} is assigned \chpl{XNew}
 and convergence is tested.  If convergence has not been reached, the next
 approximation is calculated, and so on until the convergence test is met.
 
@@ -211,50 +211,50 @@ across multiple processors indicating how data and parallel work should
 be divided among the processors.  An array is a mapping from the domain
 to a collection of variables.  An array is thus defined using a domain, distributing
 the entries of the array according to the domain's distribution.
-A domain may also be used as the {\em iterator} in a \chpl{for} or
-\chpl{forall} statement, in which case the iterations are distributed among processors
-according to the domain's distribution.  There are five kinds of domains in
+Domains may also be used to define array {\em slices} and as {\em iterators}.
+There are five kinds of domains in
 the Chapel language:
 \index{domains!types}
   {\em arithmetic}, {\em sparse}, {\em indefinite},
-{\em opaque} and {\em enumerated}.  This example program uses {\em arithmetic domains}
+{\em opaque} and {\em enumerated}.  This example program uses arithmetic domains
 and arrays.  
 
 \paragraph{Code Listing}
 The Chapel code for this example follows.  
 \begin{numberedchapel}
-config var n = 5,                  (*\label{jac_config_start}*)
-           epsilon = 0.00001,
-           verbose = false;        (*\label{jac_config_end}*)
+config var n = 5,                      // size of nxn grid (*\label{jac_config_start}*)
+           epsilon = 0.00001,          // convergence tolerance
+           verbose = false;            // control for amount of output (*\label{jac_config_end}*)
 
 def main() {                       (*\label{jac_main}*)
-  const ProblemSpace = [1..n, 1..n],  (*\label{problem_space}*)
-        BigDomain = [0..n+1, 0..n+1]; (*\label{big_domain}*)
+  const ProblemSpace = [1..n, 1..n],   // domain for interior points(*\label{problem_space}*)
+        BigDomain = [0..n+1, 0..n+1];  // domain with boundary points(*\label{big_domain}*)
 
-  var A, Temp: [BigDomain] real = 0.0; (*\label{a_temp_decl}*)
+  var X, XNew: [BigDomain] real = 0.0; // X holds approximate solution (*\label{a_temp_decl}*)
+                                       // XNew is work array
 
-  A[n+1, 1..n] = 1.0;                 (*\label{a_init_last_row}*)
+  X[n+1, 1..n] = 1.0;                 (*\label{a_init_last_row}*)
 
   if (verbose) {                      (*\label{verbose_init_start}*)
     writeln("Initial configuration:");
-    writeln(A, "\n");
+    writeln(X, "\n");
   }                                   (*\label{verbose_init_end}*)
 
-  var iteration = 0,                  (*\label{jac_var_start}*)
-      delta: real;                    (*\label{jac_var_end}*)
+  var iteration = 0,                  // iteration counter (*\label{jac_var_start}*)
+      delta: real;                    // covergence measure (*\label{jac_var_end}*)
 
   do {                                (*\label{jac_do_start}*)
     forall (i,j) in ProblemSpace do   (*\label{jac_forall}*)
-      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0; (*\label{jac_iter}*)
+      XNew(i,j) = (X(i-1,j) + X(i+1,j) + X(i,j-1) + X(i,j+1)) / 4.0; (*\label{jac_iter}*)
 
-    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]); (*\label{jac_reduce}*)
-    A[ProblemSpace] = Temp[ProblemSpace]; (*\label{jac_update_A}*)
+    delta = max reduce abs(XNew[ProblemSpace] - X[ProblemSpace]); (*\label{jac_reduce}*)
+    X[ProblemSpace] = XNew[ProblemSpace]; (*\label{jac_update_X}*)
 
     iteration += 1; (*\label{jac_advance_iteration}*)
 
     if (verbose) {  (*\label{verbose_iter_start}*)
       writeln("iteration: ", iteration);
-      writeln(A);
+      writeln(X);
       writeln("delta: ", delta, "\n");
     }               (*\label{verbose_iter_end}*)
   } while (delta > epsilon);          (*\label{jac_do_end}*)
@@ -374,20 +374,20 @@ specified in one line, line~\ref{jac_iter}, for just the interior points,
 eliminating the need to write special case computations for the boundary points.
 
 After the domains are declared, the arrays are declared using \chpl{BigDomain},
-and the last row of \chpl{A} is set to one.
+and the last row of \chpl{X} is set to one.
 \begin{chapel}
-  var A, Temp: [BigDomain] real = 0.0;
+  var X, XNew: [BigDomain] real = 0.0;
 
-  A[n+1, 1..n] = 1.0;
+  X[n+1, 1..n] = 1.0;
 \end{chapel}
 Because they are defined using \chpl{BigDomain}, the
-arrays \chpl{A} and \chpl{Temp} are of size \chpl{n+2} $\times$ \chpl{n+2}.  
+arrays \chpl{X} and \chpl{XNew} are of size \chpl{n+2} $\times$ \chpl{n+2}.  
 They are declared to be of type \chpl{real} and all elements of the arrays
 are initialized to zero.  When an array is assigned a scalar value, as in the
 initialization to zero, each element of the array is assigned the scalar value.  
 In the following line, the notation \chpl{n+1, 1..n} indicates a {\em slice}
-of the \chpl{A} is to be assigned the value one.  Each entry in this slice,
-which is the last row of \chpl{A}, is set to one.
+of the array \chpl{X} is to be assigned the value one.  Each entry in this slice,
+which is the last row of \chpl{X}, is set to one.
 
 Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
 configuration of the problem, if \chpl{verbose}
@@ -395,7 +395,7 @@ is set to true.
 \begin{chapel}
   if (verbose) {                      
     writeln("Initial configuration:");
-    writeln(A, "\n");
+    writeln(X, "\n");
   }                                   
 \end{chapel}
 The \chpl{writeln} \index{writeln@\chpl{writeln}} function outputs strings and values
@@ -422,7 +422,7 @@ solution using a \chpl{forall} loop.
 \begin{chapel}
   do{
     forall (i,j) in ProblemSpace do
-      Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+      XNew(i,j) = (X(i-1,j) + X(i+1,j) + X(i,j-1) + X(i,j+1)) / 4.0;
 \end{chapel}
 This loop 
 uses the \chpl{ProblemSpace} domain as an {\em iterator}\index{iterators}.  Iterators
@@ -433,40 +433,40 @@ a nest of two loops, one loop for the index \chpl{i} and one loop for the
 index \chpl{j}.  The compiler determines how this loop is made parallel, according
 to the default distribution for the \chpl{ProblemSpace} domain.   
 Note that the \chpl{ProblemSpace} domain is the set of interior points of 
-\chpl{A}'s domain.  All of the references to \chpl{A} in this loop are
+\chpl{X}'s domain.  All of the references to \chpl{X} in this loop are
 defined, and do not go out of bounds.  
 
-After the next approximate solution is computed and stored in \chpl{Temp},
-the change between \chpl{Temp} and \chpl{A}, for just the interior points, is 
+After the next approximate solution is computed and stored in \chpl{XNew},
+the change between \chpl{XNew} and \chpl{X}, for just the interior points, is 
 calculated and stored in \chpl{delta}:  
 \begin{chapel}
-    delta = max reduce abs(Temp[ProblemSpace] - A[ProblemSpace]);
+    delta = max reduce abs(XNew[ProblemSpace] - X[ProblemSpace]);
 \end{chapel}
 The {\em built-in reduction}\index{reductions}, \chpl{max reduce}
 computes the maximum value of the expression that follows it.  In this case
 the expression is the computed array of absolute values of the difference
-between the \chpl{Temp} and \chpl{A} arrays.  If
-\chpl{Temp} and \chpl{A} are distributed, then this reduction is computed in 
+between the \chpl{XNew} and \chpl{X} arrays.  If
+\chpl{XNew} and \chpl{X} are distributed, then this reduction is computed in 
 parallel accordingly.  The use of \chpl{ProblemSpace} with these two arrays
 indicates that the slice of the arrays corresponding 
 to the interior points are to be used in this calculation.
 
-Next, \chpl{A} is updated with the new approximate solution and the iteration
+Next, \chpl{X} is updated with the new approximate solution and the iteration
 number is advanced.  
 \begin{chapel}
-    A[ProblemSpace] = Temp[ProblemSpace]; 
+    X[ProblemSpace] = XNew[ProblemSpace]; 
 
     iteration += 1; 
 \end{chapel}
 The domain \chpl{ProblemSpace} is used in the assignment
-of \chpl{Temp} to \chpl{A}, updating only the slice of \chpl{A} corresponding
+of \chpl{XNew} to \chpl{X}, updating only the slice of \chpl{X} corresponding
 to the interior points of the array.
 
 The remaining part of the loop optionally provides output about the iteration.
 \begin{chapel}
     if (verbose) {  
       writeln("iteration: ", iteration);
-      writeln(A);
+      writeln(X);
       writeln("delta: ", delta, "\n");
     }               
   } while (delta > epsilon);       
