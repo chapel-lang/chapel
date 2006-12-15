@@ -89767,3 +89767,30 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 14:47:13 -- bradc
+
+Log message:
+	Adding futurized file I/O example that has three
+	bugs: whole array reads, multiple-argument reads,
+	and multiple-argument writes to files not being
+	spaced apart properly.  Adding a working version
+	of the test as well.
+	
+	Adding future showing that using --chpl-cg-lines
+	causes both branches of a conditional to be taken.
+	
+	Updated STATUS file with these issues.
+
+Modified files:
+	./: STATUS 
+	chapel/test/types/file/: .cvsignore 
+Added files:
+	chapel/test/compflags/bradc/: .cvsignore linenoConditional.chpl 
+	                              linenoConditional.compopts 
+	                              linenoConditional.future 
+	                              linenoConditional.good 
+	chapel/test/types/file/: fileIO.chpl fileIO.future fileIO.good 
+	                         fileIO2.chpl fileIO2.good 
+
