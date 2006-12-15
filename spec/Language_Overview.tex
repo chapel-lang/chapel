@@ -570,6 +570,7 @@ module TestNorm { (*\label{test_mod_start}*)
   use Norm;  (*\label{use_norm}*)
 
   def testNorm(arr: []) { (*\label{test_start}*)
+    // test all possible norms of arr
     var testType = if (arr.rank == 1) then "vector" else "matrix"; 
     writeln("Test of ", testType, " norms.  Array = ");
     writeln(arr);
@@ -583,11 +584,13 @@ module TestNorm { (*\label{test_mod_start}*)
   } (*\label{test_end}*)
 
   def main() {  (*\label{test_main_start}*)
+    // test vector norms:
     const D1 = [1..4];  (*\label{test_d1_def}*)
     var a:[D1] real;    (*\label{test_a_def}*)
     a = 2.0;            (*\label{test_a_init}*)
     testNorm(a);        (*\label{testnorm_a_call}*)
 
+    // test matrix norms:
     const D2 = [1..2,1..2];  (*\label{test_d2_def}*)
     var b:[D2] real;         (*\label{test_b_def}*)
     b = 2.0;                 (*\label{test_b_init}*)
@@ -823,11 +826,12 @@ config var numIterations: int = 5,  (*\label{prodcons_var_1}*)
 
 var s: sync int;                    (*\label{prodcons_var_3}*)
 
-begin {                                (*\label{consumer_start}*)
+begin { // create consumer computation (*\label{consumer_start}*)
   for c in 1..numIterations do         (*\label{consumer_for_1}*)
     writeln("consumer got ", s);       (*\label{consumer_for_2}*)
 }                                      (*\label{consumer_end}*)
 
+// producer computation
 for p in 1..numIterations {            (*\label{producer_start}*)
   sleep(sleepTime);   (*\label{sleep_call}*)
   s = p;
@@ -1005,7 +1009,6 @@ code, the reference pointers of \chpl{MyNode} objects are used to point to
 the top of the stack and to point between items in the stack,
 thus implementing the stack as a linked list.
 
-\paragraph{Code Listing}
 \begin{numberedchapel}
 class MyNode {                      (*\label{mynode_class_start}*)
   type itemType;                    (*\label{mynode_itemtype}*)
@@ -1033,7 +1036,7 @@ record Stack {                      (*\label{stack_list_start}*)
 }                                  (*\label{stack_list_end}*)
 \end{numberedchapel}
 
-\paragraph{Implementation Details}
+\paragraph{Linked List Implementation Details}
 The code begins with a definition of the \chpl{MyNode} class in 
 lines~\ref{mynode_class_start} - \ref{mynode_class_end}.  
 \begin{chapel}
@@ -1122,7 +1125,6 @@ on the stack.  If necessary, the size of \chpl{data} is doubled.
 This example demonstrates how the size of an array is increased 
 by increasing its domain.
 
-\paragraph{Code Listing}
 \begin{numberedchapel}
 record Stack {                     (*\label{stack_array_start}*)
   type itemType;                   (*\label{stack_array_itemtype}*)
@@ -1148,7 +1150,7 @@ record Stack {                     (*\label{stack_array_start}*)
 }                                   (*\label{stack_array_end}*)
 \end{numberedchapel}
 
-\paragraph{Implementation Details}
+\paragraph{Array Implementation Details}
 There are three fields defined for this \chpl{Stack} record, \chpl{itemType},
 an integer variable, \chpl{numItems} and an array \chpl{data} of \chpl{itemType}.
 When first instantiated,
