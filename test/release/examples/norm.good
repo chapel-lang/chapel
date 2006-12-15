@@ -3,6 +3,7 @@ Test of vector norms.  Array =
 1-norm = 8.0
 2-norm = 4.0
 infinity norm = 2.0
+frobenius norm = 4.0
 default norm = 4.0
 
 Test of matrix norms.  Array = 

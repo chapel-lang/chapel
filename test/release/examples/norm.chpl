@@ -3,7 +3,7 @@
  *  Matrix and Vector Norms Example
  *
  *  Norm module for computing matrix and vector norms:
- *  1-norm, 2-norm and infinity norm for vectors
+ *  1-norm, 2-norm, infinity norm and Frobenius norm for vectors
  *  1-norm, infinity norm and Frobenius norm for matrices
  * 
  *  normType specifies the type of norm to use
@@ -23,7 +23,7 @@ module Norm{
       when norm1 do return + reduce abs(x);
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
       when normInf do return max reduce abs(x);
-      when normFrob do halt("Frobenius norm not defined for 1D arrays");
+      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
       otherwise halt("Unexpected norm type");
     }
   }
@@ -73,8 +73,7 @@ module TestNorm {
     if (arr.rank == 1) then
       writeln("2-norm = " , norm(arr, norm2));
     writeln("infinity norm = ", norm(arr, normInf));
-    if (arr.rank == 2) then
-      writeln("frobenius norm = ", norm(arr, normFrob));
+    writeln("frobenius norm = ", norm(arr, normFrob));
     writeln("default norm = ", norm(arr));
     writeln();
   }
