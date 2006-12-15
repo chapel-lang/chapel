@@ -89757,3 +89757,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 14:44:02 -- marybeth
+
+Log message:
+	Added index label for array slicing.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex 
+
