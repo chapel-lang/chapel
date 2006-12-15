@@ -1,17 +1,18 @@
 This file contains an up-to-date list of unimplemented features and
-known bugs in the compiler.  This list is not meant to be complete as the
-language is still being defined.  In particular, missing functions
-from the standard modules are not enumerated.
+known bugs in the compiler.  This list is not meant to be complete;
+the language is still being defined and the set of standard modules is
+still being compiled.
 
-Variables and Types
-===================
-  * Non-ASCII strings
-  * Conversions from strings to other primitive types
-  * Configuration parameters
-  * Primitive type casts on arrays and sequences
-  * Parameter folding of conditional expressions
+Variables, Types and Expressions
+================================
+  Unimplemented Features
+    - Non-ASCII strings
+    - Conversions from strings to other primitive types
+    - Configuration parameters (config param)
+    - Primitive type casts on arrays and sequences
+    - Parameter folding of conditional expressions
 
-  * bugs
+  Bugs
     - Converting unsigned integers to complex
     - Unreliable const assignment error detection
     - Real literal initizalizer for real(32) type
@@ -20,57 +21,60 @@ Variables and Types
        - true + true ==> true instead of 2
     - Using type aliases across modules
     - Using parameters and constants across modules
-    - Iterators with parameter arguments
 
 Modules
 =======
-  * The argv sequence
-  * Accessing variables via explicit names, e.g., mod.x
-  * Using modules not explicitly passed to the compiler
+  Unimplemented Features
+    - The argv sequence
+    - Accessing variables via explicit names, e.g., mod.x
+    - Using modules not explicitly passed to the compiler
 
-  * bugs
+  Bugs
     - Using type aliases across modules
     - Using parameters and constants across modules
 
 Functions
 =========
-  * Formal arguments in a tuple
-  * Intents
-  * Functions as variables and/or arguments to functions
-  * Formal arguments of tuple type must match actual arguments exactly
-  * Promotion over variable and setter functions does not work
+  Unimplemented Features
+    - Formal arguments in a tuple
+    - Intents
+    - Functions as variables and/or arguments to functions
+    - Formal arguments of tuple type must match actual arguments exactly
+    - Promotion over variable and setter functions does not work
     - s(p)(r) = 0  where s, p, and r are sequences of integers
 
-  * bugs
+  Bugs
     - More visible nested functions are not more specific
     - Return statements in type select statements
 Future (deitz) [Error matching program output for functions/deitz/test_default_type]
 
 Classes, Records, and Unions
 ============================
-  * Nested classes and records
-  * Chained constructor calls for derived classes
-  * Shadowing base class fields
-  * Inheriting from multiple classes
-  * Garbage collection
-  * Anonymous record literals
-  * Type select on unions
-  * Assignment between classes and records
+  Unimplemented Features
+    - Nested classes and records
+    - Chained constructor calls for derived classes
+    - Shadowing base class fields
+    - Inheriting from multiple classes
+    - Garbage collection
+    - Anonymous record literals
+    - Type select on unions
+    - Assignment between classes and records
 
-  * bugs
+  Bugs
     - Class field of array type specified indirectly via a type alias
     - Iterator methods in classes
     - Class field initialized with conditional expression
 
 Tuples, Sequences, and Iterators
 ================================
-  * Ignoring values via underscores
-  * Implicit reductions in conditional, while, and select statements
-  * The transpose, spread, and reshape functions
-  * Indexing by indefinite arithmetic sequences
-  * Zipper iteration bounds matching
+  Unimplemented Features
+    - Ignoring values via underscores
+    - Implicit reductions in conditional, while, and select statements
+    - The transpose, spread, and reshape functions
+    - Indexing by indefinite arithmetic sequences
+    - Zipper iteration bounds matching
 
-  * bugs
+  Bugs
     - Iterator methods in classes
     - Iterator with tuple return type such as rank*int
     - Iterators with parameter arguments
@@ -81,15 +85,16 @@ Tuples, Sequences, and Iterators
 
 Arrays and Domains
 ==================
-  * Sparse arrays and domains
-  * Opaque arrays and domains
-  * Enumerated arrays and domains
-  * Arrays of arrays
-  * Index type bounds checking
-  * Subdomains
-  * Array promotion returns sequences
+  Unimplemented Features
+    - Sparse arrays and domains
+    - Opaque arrays and domains
+    - Enumerated arrays and domains
+    - Arrays of arrays
+    - Index type bounds checking
+    - Subdomains
+    - Array promotion returns sequences
 
-  * bugs
+  Bugs
     - Indefinite domains of explicit tuple type
        - var td: domain((int, int))
     - Element-wise negation of components of the element type of arrays
@@ -99,38 +104,39 @@ Arrays and Domains
 Generics
 ========
 
-  * bugs
+  Bugs
     - Generic functions without return statements in paths that will be
        eliminated via parameter folding
     - Type aliases in generic class defined by instantiated types
 
 Parallelism and Synchronization
 ===============================
-  * Atomic statements
-  * Serial statements
-  * User-defined reductions and scans
-  * Forall loops and ordered forall loops are serialized
-  * Reductions and scans are serialized
-  * Array and sequence operations and assignment are serialized
+  Unimplemented Features
+    - Atomic statements
+    - Serial statements
+    - User-defined reductions and scans
+    - Forall loops and ordered forall loops are serialized
+    - Reductions and scans are serialized
+    - Array and sequence operations and assignment are serialized
 
-  * bugs
+  Bugs
     - Arrays of synchronization variables
     - Synchronization variables in the expression of a conditional statement
     - Begin blocks that use sync/single variables that are locals
 
 Locality and Distributions
 ==========================
-  * Locales
-  * Distributions
+  Unimplemented Features
+    - Locales
+    - Distributions
 
 Standard Library
 ================
-  * bugs
+  Bugs
     - log2(n):int != log2(n:int)
 
-compiler
-========
-
-  * bugs
+Miscellaneous
+=============
+  Bugs
     - error messages are incomplete and/or inaccurate
     - help message printing config vars and their values
