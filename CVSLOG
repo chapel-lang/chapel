@@ -89589,3 +89589,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 18:13:48 -- marybeth
+
+Log message:
+	Updates to jacobi, prod-cons and stack.
+	
+	Intro to examples section added.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
