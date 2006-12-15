@@ -49,7 +49,6 @@ Functions
 ---------
   Unimplemented Features
     - Formal arguments in a tuple
-    - Intents
     - Functions as variables and/or arguments to functions
     - Formal arguments of tuple type must match actual arguments exactly
     - Promotion over variable and setter functions does not work
@@ -58,6 +57,7 @@ Functions
   Bugs
     - More visible nested functions are not more specific
     - Return statements in type select statements
+    - inout arguments with default values
 
 
 ----------------------------
@@ -149,7 +149,7 @@ Parallelism and Synchronization
 Locality and Distributions
 --------------------------
   Unimplemented Features
-    - Locales
+    - Running using multiple locales
     - Distributions
 
 
