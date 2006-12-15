@@ -89678,3 +89678,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: jacobi.chpl jacobi-routine.chpl 
 
+---------------------------------------------------------------------------
+
+12/15/06 11:02:17 -- deitz
+
+Log message:
+	Reformatted STATUS.
+
+Modified files:
+	./: STATUS 
+
