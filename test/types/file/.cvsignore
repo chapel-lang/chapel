@@ -4,3 +4,5 @@ output
 OUTPUT
 *.tmp
 a.out
+arr.out
+arr2.out

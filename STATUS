@@ -1,10 +1,18 @@
-This file contains an up-to-date list of unimplemented features and
-known bugs in the compiler.  This list is not meant to be complete;
-the language is still being defined and the set of standard modules is
-still being compiled.
+============================
+Chapel Implementation Status
+============================
 
+This file contains a list of unimplemented features and known bugs in
+the Chapel implementation.  This list is not complete; the language is
+still being defined and the set of standard modules is still being
+compiled.  If you find additional bugs and unimplemented features (or
+would like to request prioritization of those in this file), please
+let us know at chapel_bugs@cray.com or chapel_info@cray.com.
+
+
+--------------------------------
 Variables, Types and Expressions
-================================
+--------------------------------
   Unimplemented Features
     - Non-ASCII strings
     - Conversions from strings to other primitive types
@@ -22,8 +30,10 @@ Variables, Types and Expressions
     - Using type aliases across modules
     - Using parameters and constants across modules
 
+
+-------
 Modules
-=======
+-------
   Unimplemented Features
     - The argv sequence
     - Accessing variables via explicit names, e.g., mod.x
@@ -33,8 +43,10 @@ Modules
     - Using type aliases across modules
     - Using parameters and constants across modules
 
+
+---------
 Functions
-=========
+---------
   Unimplemented Features
     - Formal arguments in a tuple
     - Intents
@@ -46,10 +58,11 @@ Functions
   Bugs
     - More visible nested functions are not more specific
     - Return statements in type select statements
-Future (deitz) [Error matching program output for functions/deitz/test_default_type]
 
+
+----------------------------
 Classes, Records, and Unions
-============================
+----------------------------
   Unimplemented Features
     - Nested classes and records
     - Chained constructor calls for derived classes
@@ -65,8 +78,10 @@ Classes, Records, and Unions
     - Iterator methods in classes
     - Class field initialized with conditional expression
 
+
+--------------------------------
 Tuples, Sequences, and Iterators
-================================
+--------------------------------
   Unimplemented Features
     - Ignoring values via underscores
     - Implicit reductions in conditional, while, and select statements
@@ -83,8 +98,10 @@ Tuples, Sequences, and Iterators
     - Recursive iterators
     - Anonymous domain in iterator
 
+
+------------------
 Arrays and Domains
-==================
+------------------
   Unimplemented Features
     - Sparse arrays and domains
     - Opaque arrays and domains
@@ -100,17 +117,20 @@ Arrays and Domains
     - Element-wise negation of components of the element type of arrays
        - var A: [1..4] complex; A.im = -A.im;
     - Array of sync/single variables
-    
-Generics
-========
 
+    
+--------
+Generics
+--------
   Bugs
     - Generic functions without return statements in paths that will be
        eliminated via parameter folding
     - Type aliases in generic class defined by instantiated types
 
+
+-------------------------------
 Parallelism and Synchronization
-===============================
+-------------------------------
   Unimplemented Features
     - Atomic statements
     - Serial statements
@@ -124,19 +144,34 @@ Parallelism and Synchronization
     - Synchronization variables in the expression of a conditional statement
     - Begin blocks that use sync/single variables that are locals
 
+
+--------------------------
 Locality and Distributions
-==========================
+--------------------------
   Unimplemented Features
     - Locales
     - Distributions
 
+
+----------------
+Input and Output
+----------------
+  Bugs
+    - whole array reads not working
+    - multiple-argument reads not working
+
+
+-----------------
 Standard Library
-================
+-----------------
   Bugs
     - log2(n):int != log2(n:int)
 
+
+-------------
 Miscellaneous
-=============
+-------------
   Bugs
     - error messages are incomplete and/or inaccurate
     - help message printing config vars and their values
+    - using --chpl-cg-lineno flag can result in incorrect execution

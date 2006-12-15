@@ -1,0 +1,9 @@
+file I/O
+
+* writing multiple scalars to a file doesn't result 
+  in them being separating by spaces
+
+* reading multiple values from a file using a single
+  read call doesn't work
+
+* reading arrays from files doesn't work

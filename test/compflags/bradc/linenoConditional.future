@@ -1,0 +1,4 @@
+cg-chpl-lineno flag
+
+It seems that when generating conditionals with
+the --cg-chpl-lineno flag, both paths are taken.
