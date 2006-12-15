@@ -89613,3 +89613,30 @@ Modified files:
 Added files:
 	chapel/runtime/include/darwin/: chplsys.h 
 
+---------------------------------------------------------------------------
+
+12/14/06 20:53:42 -- deitz
+
+Log message:
+	Kludge on seqNode _free during code generation to make it
+	non-recursive.  A more general solution is later, after the initial
+	release.
+	
+	Replaced --free-memory with --no-gc and made garbage collection the
+	default.  Expect regressions associated with begin, cobegin, and
+	garbage collection.
+	
+	Expect regression compflags/bradc/help/userhelp.  There needs to be
+	some short readme about how to update this test.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Removed files:
+	chapel/test/domains/indefinite/waynew/: memory1.compopts 
+	                                        memory2.compopts 
+	chapel/test/memory/deitz/: COMPOPTS 
+
