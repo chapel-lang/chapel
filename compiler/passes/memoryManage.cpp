@@ -103,6 +103,8 @@ insertSubclassFrees(ClassType* ct, FnSymbol* fn, ArgSymbol* arg, Symbol* ret) {
 
 static bool
 requiresFreeFunction(ClassType* ct) {
+  if (ct->symbol->hasPragma("no gc"))
+    return false;
   if (freeMap.get(ct))
     return false;
   if (ct->classTag == CLASS_CLASS)

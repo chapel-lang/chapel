@@ -246,7 +246,7 @@ thread_args() {
               TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
                                                             fname),
                                                   ctype);
-
+              new_c->addPragma("no gc");
               
               // add the function args as fields in the class
               for_actuals(arg, fcall) {
