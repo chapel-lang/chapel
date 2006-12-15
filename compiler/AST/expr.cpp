@@ -770,6 +770,17 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
 }
 
 
+#define _REF_COUNT_LOCK(c)                      \
+  fprintf(outfile, "_chpl_mutex_lock( &(");     \
+  (c)->codegen(outfile);                        \
+  fprintf(outfile, "->_ref_count_lock));")
+
+#define _REF_COUNT_UNLOCK(c)                    \
+  fprintf(outfile, "_chpl_mutex_unlock( &(");   \
+  (c)->codegen(outfile);                        \
+  fprintf(outfile, "->_ref_count_lock));")
+
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -1349,18 +1360,26 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_GC_INIT:
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count = 0");
+      fprintf(outfile, "->_ref_count = 0;");
+      fprintf(outfile, "_chpl_mutex_init( &(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_ref_count_lock))");
       break;
     case PRIMITIVE_GC_FREE:
+      _REF_COUNT_LOCK(get(1));
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count--");
+      fprintf(outfile, "->_ref_count--;");
+      _REF_COUNT_UNLOCK(get(1));
       break;
     case PRIMITIVE_GC_TOUCH:
       fprintf(outfile, "if (");
       get(1)->codegen(outfile);
-      fprintf(outfile, ") ");
+      fprintf(outfile, ") {");
+      _REF_COUNT_LOCK(get(1));
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count++");
+      fprintf(outfile, "->_ref_count++;");
+      _REF_COUNT_UNLOCK(get(1));
+      fprintf(outfile, "}");
       break;
     case PRIMITIVE_GC_ISPOS:
       fprintf(outfile, "(");

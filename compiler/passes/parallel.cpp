@@ -192,15 +192,16 @@ begin_mark_locals() {
 
     // add touch + release for the begin block
     se->getStmtExpr()->parentExpr->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
-                                                              local,
-                                                              local->refc,
-                                                              local->refcMutex));
+                                                               local,
+                                                               local->refc,
+                                                               local->refcMutex));
     ArgSymbol *fa = dynamic_cast<ArgSymbol*>( actual_to_formal( se));
     fn->body->body->last()->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE,
                                                         fa,
                                                         rc_arg,
                                                         rcm_arg));
   }
+
 
 
   // for each on_heap variable, add call to allocate it
@@ -296,6 +297,14 @@ thread_args() {
                                                      wrap_c,
                                                      field));
               }
+
+              /* WAW: need to free the arg class later.
+              if (free_memory && (BLOCK_BEGIN == b->blockTag)) {
+                b->insertBefore( new CallExpr( new FnSymbol("_touch"), tempc));
+                wrap_fn->insertAtTail( new CallExpr( new FnSymbol("_free"), wrap_c));
+              }
+              */
+
               wrap_fn->retType = dtVoid;
               fcall->remove();                     // rm orig. call
               wrap_fn->insertAtHead( new_cofn);    // add new call
