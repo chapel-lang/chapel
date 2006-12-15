@@ -382,8 +382,10 @@ Because they are defined using \chpl{BigDomain}, the
 arrays \chpl{X} and \chpl{XNew} are of size \chpl{n+2} $\times$ \chpl{n+2}.  
 They are declared to be of type \chpl{real} and all elements of the arrays
 are initialized to zero.  When an array is assigned a scalar value, as in the
-initialization to zero, each element of the array is assigned the scalar value.  
+initialization to zero, each element of the array is assigned
+\index{arrays!assignment} the scalar value.  
 In the following line, the notation \chpl{n+1, 1..n} indicates a {\em slice}
+\index{arrays!slicing}
 of the array \chpl{X} is to be assigned the value one.  Each entry in this slice,
 which is the last row of \chpl{X}, is set to one.
 
@@ -399,7 +401,8 @@ is set to true.
 The \chpl{writeln} \index{writeln@\chpl{writeln}} function outputs strings and values
 of variables that are passed as arguments, followed by a line return.
 When an array is passed as an argument, it is output is row-major order with linefeeds
-after each row.  Including the character string, \chpl{"\\n"} inserts an 
+after each row.  \index{write!default methods}
+Including the character string, \chpl{"\\n"} inserts an 
 additional line return.
 
 
@@ -426,7 +429,7 @@ This loop
 uses the \chpl{ProblemSpace} domain as an {\em iterator}\index{iterators}.  Iterators
 for loops provide a value or a set of values to be used in each iteration
 of the loop.  In this case, each iteration 
-is indexed by a tuple of indices \chpl{(i,j)}, which avoids the use of
+is indexed by a {\em tuple} \index{tuples} of indices \chpl{(i,j)}, which avoids the use of
 a nest of two loops, one loop for the index \chpl{i} and one loop for the
 index \chpl{j}.  The compiler determines how this loop is made parallel, according
 to the default distribution for the \chpl{ProblemSpace} domain.   
@@ -446,7 +449,7 @@ the expression is the computed array of absolute values of the difference
 between the \chpl{XNew} and \chpl{X} arrays.  If
 \chpl{XNew} and \chpl{X} are distributed, then this reduction is computed in 
 parallel accordingly.  The use of \chpl{ProblemSpace} with these two arrays
-indicates that the slice of the arrays corresponding 
+indicates that the slice \index{arrays! slicing} of the arrays corresponding 
 to the interior points are to be used in this calculation.
 
 Next, \chpl{X} is updated with the new approximate solution and the iteration
@@ -494,7 +497,7 @@ on the rank of the array that is passed as the argument.  There are four
 norm type options:  1-norm, 2-norm, infinity norm and Frobenius norm.  For vectors,  
 all four options are implemented in this module.  
 For matrices, all options but the 2-norm are provided.   
-The module uses a variable of {\em enumerated type} \chpl{normType} to 
+The module uses a variable of enumerated type \chpl{normType} to 
 indicate the choice of norm.
 
 \paragraph{Chapel Features}
@@ -503,10 +506,10 @@ indicate the choice of norm.
 \index{functions!generic}
 \index{generics!functions}
 This example demonstrates the definition and use of modules, generic functions
-and function overloading.
+\index{generics!functions} and function overloading \index{functions!overloading}.
 When the \chpl{Norm} module is used, the user may call 
 \chpl{norm(x)} or \chpl{norm(x,normType)} where
-\chpl{x} is any array and \chpl{normType} is the enumerated type as defined
+\chpl{x} is any array and \chpl{normType} is the {\em enumerated type} as defined
 in the \chpl{Norm} module.  The \chpl{norm} function is {\em overloaded} with
 four separate function definitions for \chpl{norm}, based on the
 the rank of the input array, or the number of formal
@@ -644,7 +647,7 @@ default norm = 4.0
 
 \paragraph{Implementation Details}
 The \chpl{Norm} module begins with defining \chpl{normType} to be an
-enumerated type with constant values \chpl{norm1}, \chpl{norm2}, 
+enumerated type \index{enumerated types} with constant values \chpl{norm1}, \chpl{norm2}, 
 \chpl{normInf}, \chpl{normFrob}.
 For three of the four \chpl{norm} function definitions (see lines~\ref{vec_start},
 \ref{mat_start}, \ref{large_rank_start}), 
@@ -667,9 +670,10 @@ operations, there
 is no need to specify a domain type for \chpl{x}.  It is good practice to
 specify \chpl{x} as an array type by using \chpl{: []} since the \chpl{norm}
 function is only defined for arrays.  The compiler can detect errors if other,
-non-array types are passed as arguments to \chpl{norm}.
+non-array types are passed as arguments to \chpl{norm} \index{arrays!as formal arguments}.
 
-The body of the vector version of the \chpl{norm} function is a \chpl{select} statement on
+The body of the vector version of the \chpl{norm} function is a \chpl{select} 
+statement \index{select@\chpl{select}} on
 \chpl{p} in lines~\ref{vec_select_start} - \ref{vec_select_end}.  
 \begin{chapel}
 select (p) {                                   
@@ -797,8 +801,9 @@ The {\em producer computation} sets the value of a sync variable and the
 {\em consumer computation} prints the value of the same variable.
 
 \paragraph{Chapel Features}
-The program contains a \chpl{begin} statement 
+The program contains a \chpl{begin} statement \index{begin@\chpl{begin}}
 to implement two concurrent computations, and a \chpl{sync} variable 
+\index{synchronization variables}
 to coordinate between the two.
 Sync variables have extra state associated with them to
 indicate whether they are logically {\em full} or {\em empty}.  
@@ -865,7 +870,8 @@ consumer got 5
 Each line is printed after a delay of \chpl{sleepTime} seconds.
 
 Since the variables \chpl{numIterations} and \chpl{sleepTime} are 
-{\em configuration variables}, they can be reset at execution time.
+{\em configuration variables}, \index{configuration variables} they can 
+be reset at execution time.
 For example, to change the number of iterations to 10
 and to change the number of seconds to sleep to 5, the following execution command
 may be used:
@@ -962,18 +968,19 @@ the second implementation, \chpl{Stack} is an array.  Both implementations of
 \chpl{pop} and \chpl{isEmpty?}. 
 
 \paragraph{Chapel Features}
-These examples demonstrate {\em classes} and {\em records}.  
+These examples demonstrate {\em classes} \index{classes} and {\em records}\index{record}.  
 Chapel classes and records
 are both structured data types containing fields and methods.
 Classes are reference types while records are value types.
 The examples also
-use the {\em unspecified type alias} \chpl{itemType} as the generic type for the items
+use the {\em unspecified type alias} \index{type aliases} \chpl{itemType} 
+as the generic type for the items
 in the stack and define generic stack methods.  To use either version,
 a type for \chpl{itemType} must be specified when \chpl{Stack} is instantiated.
 More information about type aliases can be found 
 in~\rsec{Type_Aliases_in_Generic_Types}.  The array implementation of
 the generic stack demonstrates
-the association of arrays to domains.  In this example, the array's size is
+the association of arrays to domains \index{arrays! association to domains}.  In this example, the array's size is
 doubled by reassigning its domain to one that is twice in size.
 
 \paragraph{Sample Stack}
