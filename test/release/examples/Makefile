@@ -7,7 +7,6 @@ TARGETS = \
 	hello \
 	beer \
 	jacobi \
-	jacobi-routine \
 	genericStack \
 	genericStack2 \
 	norm \

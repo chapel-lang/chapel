@@ -7,7 +7,6 @@ This directory contains several Chapel example codes:
      hello.chpl             : "Hello, world!" program using a config variable
      beer.chpl              : computes lyrics to "99 bottles of beer"
      jacobi.chpl            : Jacobi iteration in Chapel
-     jacobi-routine.chpl    : Jacobi iteration factored into a routine
      genericStack.chpl      : a generic stack class (linked list implementation)
      genericStack2.chpl     : another generic stack class (array implementation)
      norm.chpl              : sample module for computing array norms
