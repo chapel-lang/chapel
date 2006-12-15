@@ -89699,3 +89699,13 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp type.cpp 
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/06 11:06:08 -- marybeth
+
+Log message:
+	Update to jacobi.chpl to keep lines with comments to 80 characters.
+
+Modified files:
+	chapel/test/release/examples/: jacobi.chpl 
+
