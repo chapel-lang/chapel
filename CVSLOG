@@ -89709,3 +89709,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+12/15/06 12:06:45 -- marybeth
+
+Log message:
+	Update to jacobi section, changing the names of the arrays from A and Temp
+	to X and XNew.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
