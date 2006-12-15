@@ -178,7 +178,14 @@ The following output will be printed to the console:
 \subsection{Example Chapel Programs}
 
 To introduce the Chapel language, four short example codes are presented and
-discussed.  
+discussed.  Each example highlights certain Chapel features, showing how they are used
+in the context of a program.  These examples do not cover all of Chapel's features.
+They are intended to introduce the user to many of the basic serial features that are
+currently supported in the compiler and to demonstrate how to program with 
+these features.  As more features are supported in the Chapel compiler, more 
+examples will be added to this section.
+
+All examples in this section are included with the release of the Chapel compiler.
 
 \subsubsection{Jacobi Method}
 \index{Jacobi method!example}
@@ -211,7 +218,7 @@ the Chapel language:
 \index{domains!types}
   {\em arithmetic}, {\em sparse}, {\em indefinite},
 {\em opaque} and {\em enumerated}.  This example program uses {\em arithmetic domains}
-and arrays.  More information about domains and arrays is given in~\rsec{Domains_and_Arrays}.
+and arrays.  
 
 \paragraph{Code Listing}
 The Chapel code for this example follows.  
@@ -272,10 +279,9 @@ It is possible to run a different sized problem, to use a different
 convergence tolerance, or enable more output without recompiling this
 program.  There are three variables defined in lines~\ref{jac_config_start} - 
 \ref{jac_config_end}, 
-\chpl{n}, \chpl{epsilon} and \chpl{verbose} which are {\em configuration variables},
+\chpl{n}, \chpl{epsilon} and \chpl{verbose}, which are {\em configuration variables}
 \index{variables!configuration}
 \index{config@\chpl{config}}
-as indicated by the \chpl{config} keyword, 
 and can be set at the time of program execution through command line switches.
 Executing the following command line sequence,
 {\small
@@ -341,7 +347,7 @@ config var n = 5,
            verbose = false;
 \end{chapel}
 Instead the types of these variables are inferred \index{type inference} 
-from their initial values: \chpl{n} is an integer, \chpl{epsilon} is a floating point
+from their initial values: \chpl{n} is an integer, \chpl{epsilon} is a real
 type, and \chpl{verbose} is a boolean type.  In Chapel, if a variable declaration
 contains an initialization expression, it is optional to include a type specification.
 More details about variable declarations are given in~\rsec{Variable_Declarations}.
@@ -374,9 +380,14 @@ and the last row of \chpl{A} is set to one.
 
   A[n+1, 1..n] = 1.0;
 \end{chapel}
-The arrays, \chpl{A} and \chpl{Temp} are declared to be of type \chpl{real} and
-are initialized to zero.  Because they are defined using \chpl{BigDomain}, the
-arrays are of size \chpl{n+2} $\times$ \chpl{n+2}. 
+Because they are defined using \chpl{BigDomain}, the
+arrays \chpl{A} and \chpl{Temp} are of size \chpl{n+2} $\times$ \chpl{n+2}.  
+They are declared to be of type \chpl{real} and all elements of the arrays
+are initialized to zero.  When an array is assigned a scalar value, as in the
+initialization to zero, each element of the array is assigned the scalar value.  
+In the following line, the notation \chpl{n+1, 1..n} indicates a {\em slice}
+of the \chpl{A} is to be assigned the value one.  Each entry in this slice,
+which is the last row of \chpl{A}, is set to one.
 
 Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
 configuration of the problem, if \chpl{verbose}
@@ -389,7 +400,10 @@ is set to true.
 \end{chapel}
 The \chpl{writeln} \index{writeln@\chpl{writeln}} function outputs strings and values
 of variables that are passed as arguments, followed by a line return.
-Including the character string, \chpl{"\\n"} inserts an additional line return.
+When an array is passed as an argument, it is output is row-major order with linefeeds
+after each row.  Including the character string, \chpl{"\\n"} inserts an 
+additional line return.
+
 
 Lines~\ref{jac_var_start} - \ref{jac_var_end} 
 contain the remaining variable declarations:
@@ -433,7 +447,9 @@ computes the maximum value of the expression that follows it.  In this case
 the expression is the computed array of absolute values of the difference
 between the \chpl{Temp} and \chpl{A} arrays.  If
 \chpl{Temp} and \chpl{A} are distributed, then this reduction is computed in 
-parallel accordingly.  
+parallel accordingly.  The use of \chpl{ProblemSpace} with these two arrays
+indicates that the slice of the arrays corresponding 
+to the interior points are to be used in this calculation.
 
 Next, \chpl{A} is updated with the new approximate solution and the iteration
 number is advanced.  
@@ -443,7 +459,8 @@ number is advanced.
     iteration += 1; 
 \end{chapel}
 The domain \chpl{ProblemSpace} is used in the assignment
-of \chpl{Temp} to \chpl{A}, updating only the interior points of the array.
+of \chpl{Temp} to \chpl{A}, updating only the slice of \chpl{A} corresponding
+to the interior points of the array.
 
 The remaining part of the loop optionally provides output about the iteration.
 \begin{chapel}
@@ -990,6 +1007,7 @@ code, the reference pointers of \chpl{MyNode} objects are used to point to
 the top of the stack and to point between items in the stack,
 thus implementing the stack as a linked list.
 
+\paragraph{Code Listing}
 \begin{numberedchapel}
 class MyNode {                      (*\label{mynode_class_start}*)
   type itemType;                    (*\label{mynode_itemtype}*)
@@ -1017,6 +1035,7 @@ record Stack {                      (*\label{stack_list_start}*)
 }                                  (*\label{stack_list_end}*)
 \end{numberedchapel}
 
+\paragraph{Implementation Details}
 The code begins with a definition of the \chpl{MyNode} class in 
 lines~\ref{mynode_class_start} - \ref{mynode_class_end}.  
 \begin{chapel}
@@ -1042,7 +1061,7 @@ record Stack {
 When \chpl{Stack} is instantiated, a type is specified for the type
 alias, \chpl{itemType}.  The \chpl{top} field is a pointer to the top
 of the stack, which is a \chpl{MyNode} object of \chpl{itemType}.  When
-the stack is first instantiated, \chpl{top} is set to nil.  To add items
+the stack is first instantiated, \chpl{top} is set to nil.  To 
 add and remove items from the stack, the \chpl{push} and \chpl{pop} 
 methods are used.
 
@@ -1056,26 +1075,34 @@ top object stores the added item and sets its \chpl{next} field to the previous
     top = MyNode(itemType, item, top); 
   }                                 
 \end{chapel}
-The \chpl{MyNode} object is created with \chpl{itemType} and \chpl{top} fields
-of the \chpl{Stack} instance on which \chpl{pop} is called.  To reference
+The default constructor for \chpl{MyNode} is called to create a new
+object with \chpl{itemType} and \chpl{top} fields
+of the \chpl{Stack} instance on which \chpl{pop} is called, and the
+formal argument \chpl{item} of the \chpl{pop} function call.
+To reference
 fields of an instance of a structured type, \chpl{this} is used.
 In this case, \chpl{this.top} and \chpl{this.itemType} are 
 implicit in the uses of \chpl{top} and \chpl{itemType}. 
 
 The \chpl{pop} method is given in lines~\ref{stack_list_pop_start} -
-\ref{stack_list_pop_end}.  This method returns the item at the top of
+\ref{stack_list_pop_end}.  
+\begin{chapel}
+  def pop() {           
+    if isEmpty? then   
+      halt("attempt to pop an item off an empty stack"); 
+    var oldTop = top;               
+    top = top.next;                
+    return oldTop.item;           
+  }                              
+\end{chapel}
+This method returns the item at the top of
 the stack and resets \chpl{top} to point to the next object in the stack.
 First, a call to the \chpl{Stack} method \chpl{isEmpty?} is made to 
 determine if the stack is
 empty.  If it is, the program halts with a message indicating that 
 an attempt was made to pop an item off of an empty stack.  Otherwise,
-\chpl{top} is reset, and the appropriate item is returned as follows:
-\begin{chapel}
-    var oldTop = top;              
-    top = top.next;               
-    return oldTop.item;          
-\end{chapel}
-In \chpl{pop}, \chpl{this.isEmpty?} and \chpl{this.top} is implicit when
+\chpl{top} is reset, and the appropriate item is returned.
+In this method, \chpl{this.isEmpty?} and \chpl{this.top} are implicit when
 \chpl{isEmpty?} and \chpl{top} are used.
 The memory of the \chpl{oldTop} object is freed, through automatic
 garbage collection.
@@ -1085,12 +1112,10 @@ is empty in the \chpl{pop} method, is defined to be:
 \begin{chapel}
   def isEmpty? return top == nil;   
 \end{chapel}
-The use of \chpl{top} implies \chpl{this.top}, checking if the
-current \chpl{top} object is set to nil.
 
 \paragraph{Array Implementation}
 The following implementation of a generic stack uses the array,
-\chpl{data} to store the generic items in the stack, and the
+\chpl{data}, to store the generic items in the stack, and the
 counter, \chpl{numItems}, to track the
 number of items in the stack and to indicate the index of
 the top item of the stack.  The number of items in the stack
@@ -1099,9 +1124,7 @@ on the stack.  If necessary, the size of \chpl{data} is doubled.
 This example demonstrates how the size of an array is increased 
 by increasing its domain.
 
-Instances of this version of \chpl{Stack} are declared and
-used the same as instances of the linked-list version.
-
+\paragraph{Code Listing}
 \begin{numberedchapel}
 record Stack {                     (*\label{stack_array_start}*)
   type itemType;                   (*\label{stack_array_itemtype}*)
@@ -1127,13 +1150,14 @@ record Stack {                     (*\label{stack_array_start}*)
 }                                   (*\label{stack_array_end}*)
 \end{numberedchapel}
 
+\paragraph{Implementation Details}
 There are three fields defined for this \chpl{Stack} record, \chpl{itemType},
 an integer variable, \chpl{numItems} and an array \chpl{data} of \chpl{itemType}.
 When first instantiated,
 the stack is empty and \chpl{numItems} is initialized to zero.   The \chpl{data}
 array is declared with an anonymous one-dimensional domain, \chpl{[1..2]}.
 
-The same three methods, \chpl{push}, \chpl{pop} and \chpl{isEmpty?} are
+The same three methods, \chpl{push}, \chpl{pop}, and \chpl{isEmpty?} are
 defined for this array implementation.  Like the linked list implementation,
 there are no explicit references to \chpl{this} when accessing fields and
 methods.
@@ -1164,9 +1188,24 @@ By reseting \chpl{data}'s
 domain to a domain of twice the size, the array \chpl{data} itself is now doubled in size,
 and more items can be pushed onto the stack. 
 
+In \chpl{pop}, the top item in the stack, as indicated by the \chpl{numItem} counter,
+is returned, if the stack is not empty.
+\begin{chapel}
+  def pop() {                       
+    if isEmpty? then                
+      halt("attempt to pop an item off an empty stack"); 
+    numItems -= 1;                  
+    return data(numItems+1);       
+  }
+\end{chapel}
 The \chpl{pop} method first checks to see if the stack is empty.  If it is, the program
 halts indicating that there was an attempt to pop an item off of an empty stack.
 Otherwise, the \chpl{numItems} counter is decremented and \chpl{data(numItems+1)}
-is returned as the popped item.  The \chpl{isEmpty?} method checks to see if
+is returned as the popped item.  
+
+The \chpl{isEmpty?} method checks to see if
 the stack is empty, that is if \chpl{numItems} equals zero.
+\begin{chapel}
+  def isEmpty? return numItems == 0; 
+\end{chapel}
 
