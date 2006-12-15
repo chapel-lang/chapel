@@ -295,6 +295,13 @@ void memoryManage(void) {
                                call->get(1)->copy(),
                                call->get(2)->copy())));
           }
+        } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER_REF_TO)) {
+          if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
+            // need to free -- parallel leak?
+            if (FnSymbol* _touch = touchMap.get(lhs->type))
+              call->insertAfter(
+                new CallExpr(_touch, call->get(3)->copy()));
+          }
         } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET)) {
           if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
             if (FnSymbol* _free = freeMap.get(lhs->type))
