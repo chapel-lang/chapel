@@ -89574,3 +89574,18 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl norm.good 
 
+---------------------------------------------------------------------------
+
+12/14/06 16:35:37 -- marybeth
+
+Log message:
+	Updated norm example section with comments from Steve, Wayne and John.
+	
+	Changed the vector norm case to compute the Frobenius norm (which is the
+	2-norm for vectors).
+	
+	Added 3 comments to the example code.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
