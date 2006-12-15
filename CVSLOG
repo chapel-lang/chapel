@@ -89601,3 +89601,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/14/06 18:32:31 -- deitz
+
+Log message:
+	Disabled bytesPerLocale on Mac OS X to get the runtime to compile.
+
+Modified files:
+	chapel/runtime/src/: chplsys.c 
+Added files:
+	chapel/runtime/include/darwin/: chplsys.h 
+
