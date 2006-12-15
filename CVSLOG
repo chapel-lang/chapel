@@ -89814,3 +89814,13 @@ Log message:
 Modified files:
 	chapel/spec/: Input_and_Output.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 15:40:07 -- marybeth
+
+Log message:
+	Added index labels to overview section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
