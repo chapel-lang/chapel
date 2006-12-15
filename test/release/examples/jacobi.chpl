@@ -1,7 +1,8 @@
 /*
  *  Jacobi Method Example
  *
- *  This program computes the solution of a Laplace equation using Jacobi method.
+ *  This program computes the solution of a Laplace equation using 
+ *  the Jacobi method.
  *
  */
 
@@ -12,10 +13,10 @@ config var n = 5,                       // size of nxn grid
 
 def main() {
   const ProblemSpace = [1..n, 1..n],    // domain for interior grid points
-        BigDomain = [0..n+1, 0..n+1];   // larger domain including boundary points
+        BigDomain = [0..n+1, 0..n+1];   // domain with boundary points
 
-  var X, XNew: [BigDomain] real = 0.0;  // X contains approximate solution
-                                        // XNew is work array used in Jacobi iteration
+  var X, XNew: [BigDomain] real = 0.0;  // X stores approximate solution
+                                        // XNew is work array 
   X[n+1, 1..n] = 1.0;
 
   if (verbose) {
@@ -24,7 +25,7 @@ def main() {
   }
 
   var iteration = 0,                    // iteration counter
-      delta: real;                      // measure of convergence at each iteration
+      delta: real;                      // measure of convergence 
 
   do {
     // compute next approximation using Jacobi method and store in XNew
