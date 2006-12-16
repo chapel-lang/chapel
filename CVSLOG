@@ -89869,3 +89869,16 @@ Added files:
 	                                      stream-nopromote.execopts 
 	                                      stream-nopromote.good 
 
+---------------------------------------------------------------------------
+
+12/15/06 16:37:28 -- bradc
+
+Log message:
+	Bumped version number to 0.4.-1 in hopes that
+	after check in, it will bump to 0.4.0 for the
+	release.
+
+Modified files:
+	./: BUILD_VERSION 
+	chapel/compiler/main/: version_num.h 
+
