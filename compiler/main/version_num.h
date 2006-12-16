@@ -2,7 +2,7 @@
 #define _version_num_H_
 
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 3
+#define MINOR_VERSION 4
 
 static const int BUILD_VERSION =
 #include "../../BUILD_VERSION"
