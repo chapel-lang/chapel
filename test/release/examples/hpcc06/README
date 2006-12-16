@@ -9,12 +9,27 @@ Award Competition for class 2 ("most productivity").  For a detailed
 explanation of these benchmarks, please refer to hpcc06.pdf in the
 doc/ directory.
 
+The primary performance bottleneck for these benchmarks comes from the
+insertion of sequence temporaries by the Chapel compiler to capture
+intermediate values for promoted operators and reductions.  This
+results in a much larger memory footprint than the benchmarks are
+intended to use and bogs down most systems (to select smaller problem
+sizes and avoid this overhead, set the m and n configuration variables
+that control the problem sizes on the executable command-line.  For
+example: "stream --m=100000").  These sequence temporaries are not
+required by Chapel semantics, but were inserted to move our compiler
+implementation forward more rapidly.  We plan to remove these sequence
+temporaries in the near future.  There are several other smaller
+performance issues, most of which can be resolved through traditional
+optimizations that we simply haven't prioritized in our implementation
+effort yet.
+
 The codes in this directory have been improved from the versions in
 the paper.  Some of these changes resolve workarounds in our original
-implementations that were called out in "Compiler Status Notes".
-Other changes reflect evolution in the Chapel language or standard
-libraries.  Some changes reflect an improved understanding of the
-benchmarks.
+implementations that were called out in the report using "Compiler
+Status Notes."  Other changes reflect evolution in the Chapel language
+or standard libraries.  Some changes reflect an improved understanding
+of the benchmarks.
 
 The changes to date are:
 
@@ -22,22 +37,23 @@ The changes to date are:
     explicit return types in the iterators of ra-randstream.chpl have
     been removed to match the style of the rest of the code.
 
-  * the compiler now supports cast to complex types other than simply
-    "complex", so the casts in the FFT codes were changed to refer to
-    the named type ":elemType" rather than ":complex".
+  * the compiler now supports casts to complex types other than the
+    default "complex", so the casts in the FFT codes were changed to
+    refer to the named type alias ":elemType" rather than ":complex".
 
   * the memRatio argument to computeProblemSize in probSize.chpl was
-    changed into a configuration constant, as alluded to in the paper.
+    changed into a configuration constant, as alluded to in the
+    report.
 
   * the physicalMemory() interface was updated to return an int(64) by
     default rather than an int, requiring a cast in computing the
     numIndices value to keep it an int as in the original
     implementation.
 
-  * the physicalMemory() interface was changed from a standalone
-    function taking a locale argument to a method on the locale type,
-    so the calls to physicalMemory() were updated to reflect this
-    change.
+  * the physicalMemory() interface was changed from a top-level
+    function taking a locale argument into a method on the locale
+    type, so the calls to physicalMemory() were updated to reflect
+    this change.
 
   * the default value of the sequentialVerify configuration constant
     in the RA benchmark was changed from "false" to a comparison
@@ -45,7 +61,8 @@ The changes to date are:
     The reason for this is that the parallel verification step is an
     O(m*log2(m)) algorithm (with a large constant factor) whereas the
     sequential algorithm is O(m).  While the parallel version makes
-    sense to use for large numbers of locales, the sequential version
-    is preferable for smaller numbers.  This code doesn't reflect the
-    crossover point accurately, but at least makes the numLocales==1
-    case much less ridiculous.
+    sense to use for large machine scales, the sequential version is
+    far superior for smaller scales like our current 1-locale
+    implementation.  This code doesn't reflect the crossover point
+    accurately, but at least makes small numLocales cases much less
+    ridiculous.
