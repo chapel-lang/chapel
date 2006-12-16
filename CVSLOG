@@ -89824,3 +89824,14 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+12/15/06 16:10:33 -- bradc
+
+Log message:
+	Tightened up wording of README and added a paragraph
+	about the performance bottlenecks.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README 
+
