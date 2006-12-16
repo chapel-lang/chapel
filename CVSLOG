@@ -89845,3 +89845,27 @@ Log message:
 Modified files:
 	chapel/doc/release/: spec.pdf 
 
+---------------------------------------------------------------------------
+
+12/15/06 16:32:09 -- bradc
+
+Log message:
+	Added stream-nopromote.chpl to the examples directory
+	which replaces the A = B + alpha * C; line with a
+	forall loop, causing it to run in ~30 seconds on
+	solitary rather than hours.
+	
+	Updated the README files to note this difference and
+	added the build option to the Makefile.  Also made
+	the hpcc06 Makefile throw the --ccflags=-O3 option
+	for maximum performance.
+
+Modified files:
+	chapel/test/release/examples/: README 
+	chapel/test/release/examples/hpcc06/: .cvsignore Makefile README 
+Added files:
+	chapel/test/release/examples/hpcc06/: stream-nopromote.chpl 
+	                                      stream-nopromote.compopts 
+	                                      stream-nopromote.execopts 
+	                                      stream-nopromote.good 
+
