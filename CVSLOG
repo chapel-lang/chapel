@@ -89835,3 +89835,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: README 
 
+---------------------------------------------------------------------------
+
+12/15/06 16:30:54 -- deitz
+
+Log message:
+	Release version of spec.
+
+Modified files:
+	chapel/doc/release/: spec.pdf 
+
