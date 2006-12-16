@@ -19,6 +19,7 @@ This directory contains several Chapel example codes:
        fft.chpl             : our global 1D FFT entry
        probSize.chpl        : a common module for computing problem sizes
        fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
+       stream-nopromote.chpl: a rewrite of the STREAM Triad to avoid promotion
      Bin/                   : helper scripts used by the test system
 
 Most of these examples can be compiled in a standalone manner, for

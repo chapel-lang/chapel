@@ -1,5 +1,6 @@
 *.tmp
 stream
+stream-nopromote
 ra
 fft
 fft-mta
