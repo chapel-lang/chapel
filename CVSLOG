@@ -89939,3 +89939,20 @@ Modified files:
 	chapel/compiler/main/: driver.cpp passlist.h 
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+12/18/06 14:30:17 -- bradc
+
+Log message:
+	Added a developer's flag (--ccwarnings) to turn on
+	warnings with the compiler-generated C code.  Once
+	we are back to a warning-free state (or maybe we
+	are, I didn't test this), the intention is to turn
+	this on in one or all of our nightly regressions.
+
+Modified files:
+	chapel/compiler/include/: files.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/make/: Makefile.gnu 
+
