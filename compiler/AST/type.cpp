@@ -534,7 +534,7 @@ void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   if (classTag == CLASS_CLASS) {
-    fprintf(outfile, "_int32 _ref_count;\n");
+    fprintf(outfile, "_int64 _ref_count;\n");
     fprintf(outfile, "_chpl_mutex_t _ref_count_lock;\n");
     fprintf(outfile, "_int64 _cid;\n");
     printedSomething = true;
@@ -553,7 +553,7 @@ void ClassType::codegenDef(FILE* outfile) {
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
-    dynamic_cast<DefExpr*>(fields->get(1))->sym->type->codegen(outfile);
+    dynamic_cast<Type*>(substitutions.v[0].value)->symbol->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {

@@ -1427,7 +1427,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
   if (!strcmp("_free", name) &&
       getFormal(1)->type->symbol->hasPragma("special free seqNode")) {
-    CallExpr* call = dynamic_cast<CallExpr*>(body->body->head->next->next->next->next->next);
+    CallExpr* call = dynamic_cast<CallExpr*>(body->body->head->next->next->next->next);
     fprintf(outfile,
             "{\n"
             "  %s tmp; %s next;\n"
@@ -1437,10 +1437,10 @@ void FnSymbol::codegenDef(FILE* outfile) {
             getFormal(1)->type->symbol->cname,
             getFormal(1)->type->symbol->cname);
     if (FnSymbol* fn = call->isResolved())
-      fprintf(outfile,
-              "      %s(&((*a)->elt_type));\n"
-              "      %s(&((*a)->_element));\n",
-              fn->cname, fn->cname);
+      if (fn != this)
+        fprintf(outfile,
+                "      %s(&((*a)->_element));\n",
+                fn->cname);
     fprintf(outfile,
             "  tmp = (*a)->_next;\n"
             "  while (tmp != NULL) {\n"
@@ -1448,10 +1448,10 @@ void FnSymbol::codegenDef(FILE* outfile) {
             "    tmp->_ref_count--;\n"
             "    if (tmp->_ref_count == 0) {\n");
     if (FnSymbol* fn = call->isResolved())
-      fprintf(outfile,
-              "      %s(&(tmp->elt_type));\n"
-              "      %s(&(tmp->_element));\n",
-              fn->cname, fn->cname);
+      if (fn != this)
+        fprintf(outfile,
+                "      %s(&(tmp->_element));\n",
+                fn->cname);
     fprintf(outfile,
             "      _chpl_free(tmp);\n"
             "    } else {\n"

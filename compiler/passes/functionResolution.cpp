@@ -1669,14 +1669,14 @@ resolve() {
 //
 static void
 pruneResolvedTree() {
-  // Remove unused functions.
+  // Remove unused functions
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol)
       if (!resolvedFns.set_in(fn))
         fn->defPoint->remove();
   }
 
-  // Remove unused types.
+  // Remove unused types
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
@@ -1689,16 +1689,26 @@ pruneResolvedTree() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
-        // Replace PRIMITIVE_TYPEOF with argument.
+        // Replace PRIMITIVE_TYPEOF with argument
         call->replace(call->get(1)->remove());
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
                  call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-        // Replace string literals with field symbols in member primitives.
+        // Remove member accesses of types
+        // Replace string literals with field symbols in member primitives
         Type* baseType = call->get(1)->typeInfo();
         char* memberName = get_string(call->get(2));
-        call->get(2)->replace(new SymExpr(baseType->getField(memberName)));
+        Symbol* sym = baseType->getField(memberName);
+        if (sym->isTypeVariable && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+          if (sym->type->defaultValue)
+            call->replace(new SymExpr(sym->type->defaultValue));
+          else
+            call->replace(new CallExpr(sym->type->defaultConstructor));
+        } else if (sym->isTypeVariable)
+          call->remove();
+        else
+          call->get(2)->replace(new SymExpr(sym));
       } else if (call->isNamed("_init")) {
-        // Special handling of array constructors via array pragma.
+        // Special handling of array constructors via array pragma
         if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
           if (FnSymbol* fn = construct->isResolved()) {
             if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
@@ -1711,7 +1721,7 @@ pruneResolvedTree() {
           }
         }
       } else if (FnSymbol* fn = call->isResolved()) {
-        // Remove method and setter token actuals.
+        // Remove method and setter token actuals
         for (int i = fn->formals->length(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
@@ -1721,12 +1731,12 @@ pruneResolvedTree() {
         }
       }
     } else if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {
-      // Remove names of named actuals.
+      // Remove names of named actuals
       Expr* actual = named->actual;
       actual->remove();
       named->replace(actual);
     } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-      // Remove type blocks--code that exists only to determine types.
+      // Remove type blocks--code that exists only to determine types
       if (block->blockTag == BLOCK_TYPE)
         block->remove();
     }
@@ -1735,13 +1745,13 @@ pruneResolvedTree() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       for_formals(formal, fn) {
-        // Remove formal default values.
+        // Remove formal default values
         if (formal->defaultExpr)
           formal->defaultExpr->remove();
-        // Remove formal type expressions.
+        // Remove formal type expressions
         if (formal->defPoint->exprType)
           formal->defPoint->exprType->remove();
-        // Remove method and setter token formals.
+        // Remove method and setter token formals
         if (formal->type == dtMethodToken ||
             formal->type == dtSetterToken)
           formal->defPoint->remove();
@@ -1753,6 +1763,19 @@ pruneResolvedTree() {
           ASTMap map;
           map.put(formal, tmp);
           update_symbols(fn->body, &map);
+        }
+      }
+    }
+  }
+
+  // Remove type fields
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (type->defPoint && type->defPoint->parentSymbol) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        for_fields(field, ct) {
+          if (field->isTypeVariable) {
+            field->defPoint->remove();
+          }
         }
       }
     }
