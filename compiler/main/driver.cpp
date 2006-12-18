@@ -87,6 +87,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', "Debug Output", NULL, NULL, NULL, NULL},
+ {"ccwarnings", ' ', "Give warnings for generated code", "T", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
  {"html", 't', "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"print-statistics", ' ', "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"print-dispatch", ' ', "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},

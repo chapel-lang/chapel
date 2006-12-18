@@ -33,11 +33,6 @@ CFLAGS += -pg
 LDFLAGS += -pg
 endif
 
-ifdef CHPL_DEVELOPER
-CFLAGS += -Wall -Werror
-endif
-
-
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -46,9 +41,11 @@ COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
 GEN_CFLAGS = 
 
-ifdef CHPL_DEVELOPER
-RUNTIME_CFLAGS += -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
-GEN_CFLAGS += -Wall -Werror -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
+#
+# Flags for turning on warnings for C++/C code
+#
+WARN_CXXFLAGS = -Wall -Werror
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 
 
 GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
@@ -59,9 +56,15 @@ GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); pri
 #
 ifeq ($(GNU_GCC_MAJOR_VERSION),3)
 ifeq ($(GNU_GCC_MINOR_VERSION),4)
-RUNTIME_CFLAGS += -Wdeclaration-after-statement -Wnested-externs
-GEN_CFLAGS += -Wdeclaration-after-statement -Wnested-externs
+WARN_CFLAGS += -Wdeclaration-after-statement -Wnested-externs 
 endif
 endif
 
+
+#
+# developer settings
+#
+ifdef CHPL_DEVELOPER
+COMP_CFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS)
 endif
