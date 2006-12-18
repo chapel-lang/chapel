@@ -89896,3 +89896,19 @@ Modified files:
 Added files:
 	chapel/test/compflags/bradc/help/: README 
 
+---------------------------------------------------------------------------
+
+12/18/06 11:39:11 -- deitz
+
+Log message:
+	Removed type fields from classes and records after function resolution.
+	
+	Updated seqNode _free kludge to work without these type fields.
+	
+	Changed _ref_count to int(64) mainly to get memory tests working on
+	all platforms.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
