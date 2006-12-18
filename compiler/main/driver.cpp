@@ -34,7 +34,6 @@ bool ignore_errors = false;
 int trace_level = 0;
 int fcg = 0;
 bool unoptimized = false;
-bool no_scalar_replacement = true;
 bool no_bounds_checking = false;
 bool no_gc = false;
 bool no_inline = false;
@@ -95,9 +94,6 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"log", 'd', "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
-
- {"", ' ', "Developer Workarounds", NULL, NULL, NULL, NULL},
- {"scalar-replace", ' ', "Replace tuples with scalars", "T", &no_scalar_replacement, NULL, NULL},
 
  {"", ' ', "Misc. Developer Flags", NULL, NULL, NULL, NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
