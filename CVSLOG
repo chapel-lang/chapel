@@ -89924,3 +89924,18 @@ Modified files:
 	                             printFinalMemStat.good 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+12/18/06 11:59:07 -- deitz
+
+Log message:
+	Removed unused code for scalar replacement of records.  This has been
+	unused for a long time, never was working, and would be more trouble
+	than it would be worth using as a starting point to do this work at a
+	later point.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: codegen.cpp 
+
