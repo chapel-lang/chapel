@@ -89882,3 +89882,17 @@ Modified files:
 	./: BUILD_VERSION 
 	chapel/compiler/main/: version_num.h 
 
+---------------------------------------------------------------------------
+
+12/18/06 10:44:42 -- bradc
+
+Log message:
+	Updated the userhelp and version tests and added a
+	README file for the userhelp test.
+
+Modified files:
+	chapel/test/compflags/bradc/help/: userhelp.txt 
+	chapel/test/compflags/bradc/noexec/: version.goodstart 
+Added files:
+	chapel/test/compflags/bradc/help/: README 
+
