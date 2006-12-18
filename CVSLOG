@@ -89912,3 +89912,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/18/06 11:39:55 -- deitz
+
+Log message:
+	Updated memory tests with change to _ref_count
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable2.good 
+
