@@ -982,6 +982,16 @@ userCall(CallExpr* call) {
 
 
 static void
+makeNoop(CallExpr* call) {
+  if (call->baseExpr)
+    call->baseExpr->remove();
+  while (call->argList->length())
+    call->get(1)->remove();
+  call->primitive = primitives[PRIMITIVE_NOOP];
+}
+
+
+static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
 
@@ -1004,26 +1014,35 @@ resolveCall(CallExpr* call) {
       }
     }
 
-
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var)) {
+      if (dynamic_cast<VarSymbol*>(sym->var) ||
+          dynamic_cast<ArgSymbol*>(sym->var)) {
         Expr* base = call->baseExpr;
         base->replace(new SymExpr("this"));
         call->insertAtHead(base);
       }
     }
-    if (dynamic_cast<CallExpr*>(call->baseExpr)) {
-      VarSymbol* this_temp = new VarSymbol("this_temp");
-      this_temp->isCompilerTemp = true;
-      this_temp->canReference = true;
-      Expr* base = call->baseExpr;
-      base->replace(new SymExpr("this"));
-      CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
-      call->insertAtHead(new SymExpr(this_temp));
-      call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
-      call->getStmtExpr()->insertBefore(move);
-      resolveCall(move);
+
+    if (CallExpr* base = dynamic_cast<CallExpr*>(call->baseExpr)) {
+      if (base->partialTag) {
+        for_actuals_backward(actual, base) {
+          actual->remove();
+          call->insertAtHead(actual);
+        }
+        base->replace(base->baseExpr->remove());
+      } else {
+        VarSymbol* this_temp = new VarSymbol("this_temp");
+        this_temp->isCompilerTemp = true;
+        this_temp->canReference = true;
+        base->replace(new SymExpr("this"));
+        CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
+        call->insertAtHead(new SymExpr(this_temp));
+        call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
+        call->getStmtExpr()->insertBefore(move);
+        resolveCall(move);
+      }
     }
+
     Vec<Type*> atypes;
     Vec<Symbol*> aparams;
     Vec<char*> anames;
@@ -1084,16 +1103,10 @@ resolveCall(CallExpr* call) {
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
     FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
-    if (!resolvedFn && call->partialTag) {
-      CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr);
-      if (!parentCall)
-        INT_FATAL(call, "Bad partial call");
-      for_actuals_backward(actual, call) {
-        actual->remove();
-        parentCall->insertAtHead(actual);
-      }
-      parentCall->baseExpr->replace(call->baseExpr->remove());
-      return;
+    if (call->partialTag) {
+      if (!resolvedFn)
+        return;
+      call->partialTag = false;
     }
     if (resolvedFn && resolvedFn->hasPragma("data set error")) {
       Type* elt_type = dynamic_cast<Type*>(resolvedFn->getFormal(1)->type->substitutions.v[0].value);
@@ -1170,6 +1183,8 @@ resolveCall(CallExpr* call) {
     }
     if (size == 0)
       INT_FATAL(call, "Invalid tuple expand primitive");
+    CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
+    call->getStmtExpr()->insertBefore(noop);
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp = new VarSymbol("_expand_temp");
       DefExpr* def = new DefExpr(tmp);
@@ -1178,14 +1193,10 @@ resolveCall(CallExpr* call) {
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
       call->getStmtExpr()->insertBefore(move);
       call->insertBefore(new SymExpr(tmp));
-      callStack.add(e);
-      resolveCall(e);
-      if (e->isResolved())
-        resolveFns(e->isResolved());
-      callStack.pop();
-      resolveCall(move);
     }
     call->remove();
+    noop->replace(call); // put call back in ast for function resolution
+    makeNoop(call);
   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
     Type* t= call->get(1)->typeInfo();
     if (t == dtUnknown)
@@ -1340,10 +1351,8 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn->body);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+  for_exprs_postorder(expr, fn->body) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
         CallExpr* from;
         for (int i = callStack.n-1; i >= 0; i--) {
@@ -1351,15 +1360,8 @@ resolveFns(FnSymbol* fn) {
           if (from->lineno > 0)
             break;
         }
-        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
-        VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-        USR_FATAL(from, "%s", var->immediate->v_string);
+        USR_FATAL(from, "%s", get_string(call->get(1)));
       }
-    }
-  }
-
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       callStack.add(call);
       resolveCall(call);
       if (call->isResolved())
@@ -1374,59 +1376,56 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
-  if (!last)
-    INT_FATAL(fn, "Function is not normal");
-  SymExpr* ret = dynamic_cast<SymExpr*>(last->expr);
-  if (!ret)
-    INT_FATAL(fn, "Function is not normal");
-  if (ret->var->isReference)
-    fn->retRef = true;
-  Type* rt = ret->var->type;
+  Symbol* ret = fn->getReturnSymbol();
+  Type* retType = ret->type;
 
-  Vec<Type*> types;
-  Vec<Symbol*> params;
-  if (rt == dtUnknown) {
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-        if (sym->var == ret->var) {
-          if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-            if (call->isPrimitive(PRIMITIVE_MOVE) || call->isPrimitive(PRIMITIVE_REF)) {
-              if (call->get(1) == sym) {
-                if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
-                  params.add(sym->var);
-                else
-                  params.add(NULL);
-                types.add(call->get(2)->typeInfo());
-              }
-            }
+  Vec<Type*> retTypes;
+  Vec<Symbol*> retParams;
+
+  for_exprs_postorder(expr, fn->body) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE) ||
+          call->isPrimitive(PRIMITIVE_REF)) {
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+          if (sym->var == ret) {
+            if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
+              retParams.add(sym->var);
+            else
+              retParams.add(NULL);
+            retTypes.add(call->get(2)->typeInfo());
           }
         }
       }
     }
-    if (types.n == 1)
-      rt = types.v[0];
-    if (types.n > 1) {
-      for (int i = 0; i < types.n; i++) {
+  }
+
+  if (ret->isReference)
+    fn->retRef = true;
+
+  if (retType == dtUnknown) {
+    if (retTypes.n == 1)
+      retType = retTypes.v[0];
+    if (retTypes.n > 1) {
+      for (int i = 0; i < retTypes.n; i++) {
         bool best = true;
-        for (int j = 0; j < types.n; j++) {
-          if (types.v[i] != types.v[j]) {
-            if (!canCoerce(types.v[j], params.v[j], types.v[i]))
+        for (int j = 0; j < retTypes.n; j++) {
+          if (retTypes.v[i] != retTypes.v[j]) {
+            if (!canCoerce(retTypes.v[j], retParams.v[j], retTypes.v[i]))
               best = false;
           }
         }
         if (best) {
-          rt = types.v[i];
+          retType = retTypes.v[i];
           break;
         }
       }
     }
   }
 
-  ret->var->type = rt;
+  ret->type = retType;
   if (fn->retType == dtUnknown)
-    fn->retType = rt;
-  if (rt == dtUnknown)
+    fn->retType = retType;
+  if (retType == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
 
   if (fn->fnClass == FN_CONSTRUCTOR) {

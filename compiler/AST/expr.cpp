@@ -1583,3 +1583,57 @@ get_constant(Expr *e) {
   }
   return 0;
 }
+
+
+// getNextExpr(expr) returns the lexically next expr in a normalized
+// tree
+#define AST_RET_CHILD(_t, _m) \
+  if (((_t*)expr)->_m) return getFirstExpr(((_t*)expr)->_m)
+#define AST_RET_LIST(_t, _m) \
+  if (((_t*)expr)->_m->head) return getFirstExpr(((_t*)expr)->_m->head)
+
+Expr* getFirstExpr(Expr* expr) {
+  switch (expr->astType) {
+  default:
+    INT_FATAL(expr, "unexpected expr in getFirstExpr");
+    return NULL;
+  case STMT_GOTO:
+  case EXPR_SYM:
+  case EXPR_DEF:
+    return expr;
+  case STMT_RETURN:
+    AST_RET_CHILD(ReturnStmt, expr);
+    break;
+  case STMT_BLOCK:
+    AST_RET_LIST(BlockStmt, body);
+    break;
+  case STMT_COND:
+    AST_RET_CHILD(CondStmt, condExpr);
+    break;
+  case EXPR_CALL:
+    AST_RET_CHILD(CallExpr, baseExpr);
+    AST_RET_LIST(CallExpr, argList);
+    break;
+  case EXPR_NAMED:
+    AST_RET_CHILD(NamedExpr, actual);
+    break;
+  }
+  return expr;
+}
+
+Expr* getNextExpr(Expr* expr) {
+  if (expr->next)
+    return getFirstExpr(expr->next);
+  if (CallExpr* parent = dynamic_cast<CallExpr*>(expr->parentExpr)) {
+    if (expr == parent->baseExpr && parent->argList->head)
+      return getFirstExpr(parent->argList->head);
+  } else if (CondStmt* parent = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+    if (expr == parent->condExpr && parent->thenStmt)
+      return getFirstExpr(parent->thenStmt);
+    else if (expr == parent->thenStmt && parent->elseStmt)
+      return getFirstExpr(parent->elseStmt);
+  }
+  if (expr->parentExpr)
+    return expr->parentExpr;
+  return NULL;
+}

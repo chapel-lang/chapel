@@ -159,4 +159,10 @@ bool get_string(Expr *e, char **s); // false is failure
 char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
 
+#define for_exprs_postorder(e, expr)                            \
+  for (Expr* e = getFirstExpr(expr); e; e = getNextExpr(e))
+
+Expr* getFirstExpr(Expr* expr);
+Expr* getNextExpr(Expr* expr);
+
 #endif
