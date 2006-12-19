@@ -89956,3 +89956,31 @@ Modified files:
 	chapel/compiler/util/: files.cpp 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+12/19/06 09:49:11 -- deitz
+
+Log message:
+	Added two functions for traversing expressions (no symbols or types)
+	in post-order without first collecting them all into a vector.
+	
+	  Expr* getFirstExpr(expr)
+	  Expr* getNextExpr(expr)
+	
+	Added a stylized loop for_exprs_postorder.  For example, use
+	
+	  for_exprs_postorder(expr, fn->body) { ... }
+	
+	to traverse the expressions in the body of a function.  The identifier
+	expr is a new variable of type Expr*.
+	
+	Refactored internal traversal of function resolution to use this new
+	traversal function instead of collect_top_asts.  It has the same
+	semantics, but does not do the whole collection first.  This change is
+	in preparation for moving parameter folding into function resolution.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
