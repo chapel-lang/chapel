@@ -89996,3 +89996,25 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/19/06 14:36:11 -- deitz
+
+Log message:
+	Moved expansion of functions that take a variable number of arguments
+	(...) into function resolution.  Unspecified variable number of
+	arguments are now handled in a more exact way (the arguments are
+	stamped out based on the number of actual arguments at the call site).
+	This is currently done during the determination of candidate functions
+	so we may still stamp out the function even if the call does not
+	result in a call to this function.  The stamped out functions are
+	cached so we only stamp out one version for each different number of
+	actual arguments.
+	
+	Statistics for compilation of arrays/deitz/jacobi
+	  Speedup of compilation:        10.0%
+	  Decrease in maximum AST size:  13.5%
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
