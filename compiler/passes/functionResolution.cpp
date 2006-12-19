@@ -365,6 +365,83 @@ computeGenericSubs(ASTMap &subs,
 }
 
 
+static Map<FnSymbol*,Vec<FnSymbol*>*> varArgsCache;
+
+static FnSymbol*
+expandVarArgs(FnSymbol* fn, int numActuals) {
+  for_formals(arg, fn) {
+
+    // handle unspecified variable number of arguments
+    if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
+
+      // ensure unspecified variable number of arguments is last
+//       if (arg->defPoint->next)
+//         INT_FATAL(arg, "unspecified variable number of arguments "
+//                        "can only be applied to the last argument");
+
+      // check for cached stamped out function
+      if (Vec<FnSymbol*>* cfns = varArgsCache.get(fn)) {
+        forv_Vec(FnSymbol, cfn, *cfns) {
+          if (cfn->formals->length() == numActuals)
+            return cfn;
+        }
+      }
+
+      int numCopies = numActuals - fn->formals->length() + 1;
+      if (numCopies <= 0)
+        return NULL;
+
+      ASTMap map;
+      FnSymbol* newFn = fn->copy(&map);
+      newFn->visible = false;
+      fn->defPoint->insertBefore(new DefExpr(newFn));
+      DefExpr* newDef = dynamic_cast<DefExpr*>(map.get(def));
+      newDef->replace(new SymExpr(new_IntSymbol(numCopies)));
+      newFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newDef->sym,
+                                       new_IntSymbol(numCopies)));
+      newFn->insertAtHead(newDef);
+
+      // add new function to cache
+      Vec<FnSymbol*>* cfns = varArgsCache.get(fn);
+      if (!cfns)
+        cfns = new Vec<FnSymbol*>();
+      cfns->add(newFn);
+      varArgsCache.put(fn, cfns);
+
+      return expandVarArgs(newFn, numActuals);
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
+
+      // handle specified number of variable arguments
+      if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
+          int n = n_var->immediate->int_value();
+          CallExpr* tupleCall = new CallExpr("_construct__tuple");
+          for (int i = 0; i < n; i++) {
+            DefExpr* new_arg_def = arg->defPoint->copy();
+            ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
+            new_arg->variableExpr = NULL;
+            tupleCall->insertAtTail(new SymExpr(new_arg));
+            new_arg->name = astr("_e", intstring(i), "_", arg->name);
+            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
+            arg->defPoint->insertBefore(new_arg_def);
+          }
+          VarSymbol* var = new VarSymbol(arg->name);
+          tupleCall->insertAtHead(new_IntSymbol(n));
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, tupleCall));
+          fn->insertAtHead(new DefExpr(var));
+          arg->defPoint->remove();
+          ASTMap update;
+          update.put(arg, var);
+          update_symbols(fn, &update);
+          normalize(fn);
+        }
+      }
+    }
+  }
+  return fn;
+}
+
+
 // Return actual-formal map if FnSymbol is viable candidate to call
 static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
@@ -374,6 +451,11 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Symbol*>* actual_params,
              Vec<char*>* actual_names,
              bool inst = false) {
+  fn = expandVarArgs(fn, actual_types->n);
+
+  if (!fn)
+    return;
+
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
   int num_actuals = actual_types->n;
@@ -402,8 +484,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     return;
   }
 
-  if (!fn->isGeneric)
-    resolveFormals(fn);
+  if (fn->isGeneric)
+    INT_FATAL(fn, "unexpected generic function");
+
+  resolveFormals(fn);
 
   int j = -1;
   for_formals(formal, fn) {

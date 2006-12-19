@@ -31,7 +31,6 @@ static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
 static void fold_params(BaseAST* base);
-static void expand_var_args(FnSymbol* fn);
 static int  tag_generic(FnSymbol* fn);
 static void tag_global(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
@@ -133,14 +132,6 @@ void normalize(BaseAST* base) {
   }
 
   fold_params(base);
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      expand_var_args(fn);
-    }
-  }
 
   dtAny->isGeneric = true;
   dtIntegral->isGeneric = true;
@@ -1309,79 +1300,6 @@ static void fold_params(BaseAST* base) {
     change_types_to_values(base);
   } while (change);
 }
-
-
-static int max_actuals = 0;
-
-static void
-compute_max_actuals() {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      int num_actuals = call->argList->length();
-      if (call->partialTag) {
-        if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
-          num_actuals += parent->argList->length();
-        }
-      }
-      if (num_actuals > max_actuals)
-        max_actuals = num_actuals;
-    }
-  }
-}
-
-static void
-expand_var_args(FnSymbol* fn) {
-  for_formals(arg, fn) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
-      // recursively handle variable argument list where number of
-      // variable arguments is one or more as in ...?k
-      if (max_actuals == 0)
-        compute_max_actuals();
-      for (int i = 1; i <= max_actuals; i++) {
-        arg->variableExpr->replace(new SymExpr(new_IntSymbol(i)));
-        FnSymbol* new_fn = fn->copy();
-        fn->defPoint->insertBefore(new DefExpr(new_fn));
-        DefExpr* new_def = def->copy();
-        new_def->init = new SymExpr(new_IntSymbol(i));
-        new_fn->insertAtHead(new_def);
-        ASTMap update;
-        update.put(def->sym, new_def->sym);
-        update_symbols(new_fn, &update);
-        expand_var_args(new_fn);
-      }
-      fn->defPoint->remove();
-    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
-      // handle expansion of variable argument list where number of
-      // variable arguments is a parameter
-      if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
-          int n = n_var->immediate->int_value();
-          CallExpr* tupleCall = new CallExpr("_tuple");
-          for (int i = 0; i < n; i++) {
-            DefExpr* new_arg_def = arg->defPoint->copy();
-            ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
-            new_arg->variableExpr = NULL;
-            tupleCall->insertAtTail(new SymExpr(new_arg));
-            new_arg->name = astr("_e", intstring(i), "_", arg->name);
-            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
-            arg->defPoint->insertBefore(new_arg_def);
-          }
-          VarSymbol* var = new VarSymbol(arg->name);
-          tupleCall->insertAtHead(new_IntSymbol(n));
-          fn->insertAtHead(new DefExpr(var, tupleCall));
-          arg->defPoint->remove();
-          ASTMap update;
-          update.put(arg, var);
-          update_symbols(fn, &update);
-          build(fn);
-        }
-      }
-    }
-  }
-}
-
 
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
