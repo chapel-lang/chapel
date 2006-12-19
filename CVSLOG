@@ -89984,3 +89984,15 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/19/06 11:28:30 -- deitz
+
+Log message:
+	Removed unused FnSymbol::hasVarArgs.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: normalize.cpp 
+
