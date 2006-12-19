@@ -630,7 +630,6 @@ FnSymbol::FnSymbol(char* initName) :
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
-  hasVarArgs(false),
   _this(NULL),
   isMethod(false),
   instantiatedFrom(NULL),

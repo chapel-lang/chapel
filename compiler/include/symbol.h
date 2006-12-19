@@ -173,7 +173,6 @@ class FnSymbol : public Symbol {
   SymScope* argScope;
   bool isSetter;
   bool isGeneric;
-  bool hasVarArgs;
   Symbol* _this;
   bool isMethod;
   FnSymbol *instantiatedFrom;

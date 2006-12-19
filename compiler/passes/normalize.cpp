@@ -33,7 +33,6 @@ static void fix_def_expr(DefExpr* def);
 static void fold_params(BaseAST* base);
 static void expand_var_args(FnSymbol* fn);
 static int  tag_generic(FnSymbol* fn);
-static void tag_hasVarArgs(FnSymbol* fn);
 static void tag_global(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
 static void fixup_array_formals(FnSymbol* fn);
@@ -162,7 +161,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_global(fn);
-      tag_hasVarArgs(fn);
     }
   }
 
@@ -1421,17 +1419,6 @@ tag_generic(FnSymbol* fn) {
     return 1;
   }
   return 0;
-}
-
-static void
-tag_hasVarArgs(FnSymbol* fn) {
-  fn->hasVarArgs = false;
-  if (fn->hasPragma("tuple"))
-    if (fn->isGeneric) // not if instantiated
-      fn->hasVarArgs = true;
-  for_formals(formal, fn)
-    if (formal->variableExpr)
-      fn->hasVarArgs = true;
 }
 
 static void tag_global(FnSymbol* fn) {
