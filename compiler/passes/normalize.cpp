@@ -158,20 +158,20 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (Expr* a = dynamic_cast<Expr*>(ast)) {
-      hack_resolve_types(a);
+    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
+      if (!a->isGeneric) {
+        change_types_to_values(a);
+      }
     }
   }
 
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
-      if (!a->isGeneric) {
-        change_types_to_values(a);
-      }
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
     }
   }
 }
@@ -628,14 +628,6 @@ static void decompose_special_calls(CallExpr* call) {
     }
     call->getStmtExpr()->remove();
   }
-}
-
-
-static bool can_resolve_type(Expr* type_expr) {
-  if (!type_expr)
-    return false;
-  Type* type = type_expr->typeInfo();
-  return type && type != dtUnknown && type != dtAny; // && type != dtNil;
 }
 
 
@@ -1297,16 +1289,18 @@ static void fold_params(BaseAST* base) {
       if (def->parentSymbol)
         change |= fold_def_expr(def);
     }
-    change_types_to_values(base);
   } while (change);
 }
 
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-      if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
-        arg->type = def->exprType->typeInfo();
-        def->exprType->remove();
+      if (arg->type == dtUnknown && def->exprType) {
+        Type* type = def->exprType->typeInfo();
+        if (type != dtUnknown && type != dtAny) {
+          arg->type = type;
+          def->exprType->remove();
+        }
       }
     }
   }
