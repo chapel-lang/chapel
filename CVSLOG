@@ -90018,3 +90018,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/06 11:13:14 -- deitz
+
+Log message:
+	Minor changes to normalize in order to clean and understand parameter
+	folding and the type changes in normalization.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
