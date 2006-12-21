@@ -247,7 +247,10 @@ thread_args() {
               TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
                                                             fname),
                                                   ctype);
-              new_c->addPragma("no gc");
+
+              // WAW: we'll try to ref count the class arg wrapper
+              // new_c->addPragma("no gc");
+              new_c->addPragma("beginblk refcount");
               
               // add the function args as fields in the class
               for_actuals(arg, fcall) {
@@ -289,6 +292,7 @@ thread_args() {
               wrap_fn->insertFormalAtTail( wrap_c);
               mod->stmts->insertAtTail(new DefExpr(wrap_fn));
               b->insertAtHead( new CallExpr( wrap_fn, tempc));
+              wrap_fn->addPragma("beginblk refcount");
               
               // translate the original cobegin function
               CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
@@ -298,8 +302,10 @@ thread_args() {
                                                      field));
               }
 
-              /* WAW: need to free the arg class later.
-              if (free_memory && (BLOCK_BEGIN == b->blockTag)) {
+              // WAW: touch + free for the class arg wrapper
+              /* WAW: this strategy doesn't work because the _touch/_free
+                 functions are not defined.
+              if (!no_gc && (BLOCK_BEGIN == b->blockTag)) {
                 b->insertBefore( new CallExpr( new FnSymbol("_touch"), tempc));
                 wrap_fn->insertAtTail( new CallExpr( new FnSymbol("_free"), wrap_c));
               }
