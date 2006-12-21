@@ -1450,13 +1450,14 @@ resolveFns(FnSymbol* fn) {
       resolveCall(call);
       if (call->isResolved())
         resolveFns(call->isResolved());
-      if (call->isPrimitive(PRIMITIVE_MOVE))
-        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
-          if (dynamic_cast<ClassType*>(sym->var->type)) {
-            resolveFormals(sym->var->type->defaultConstructor);
-            resolveFns(sym->var->type->defaultConstructor);
-          }
       callStack.pop();
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(sym->var->type)) {
+        if (!ct->isGeneric) {
+          resolveFormals(ct->defaultConstructor);
+          resolveFns(ct->defaultConstructor);
+        }
+      }
     }
   }
 

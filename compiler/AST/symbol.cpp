@@ -573,6 +573,7 @@ bool ArgSymbol::isRef(void) {
 TypeSymbol::TypeSymbol(char* init_name, Type* init_type) :
   Symbol(SYMBOL_TYPE, init_name, init_type)
 {
+  isTypeVariable = true;
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);

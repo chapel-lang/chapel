@@ -33,7 +33,6 @@ static void fix_def_expr(DefExpr* def);
 static void fold_params(BaseAST* base);
 static int  tag_generic(FnSymbol* fn);
 static void tag_global(FnSymbol* fn);
-static void change_types_to_values(BaseAST* base);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_parameterized_primitive_formals(FnSymbol* fn);
@@ -152,16 +151,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_global(fn);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
-      if (!a->isGeneric) {
-        change_types_to_values(a);
-      }
     }
   }
 
@@ -1363,42 +1352,6 @@ static void tag_global(FnSymbol* fn) {
     }
   }
 }
-
-static void
-change_types_to_values(BaseAST* base) {
-  Vec<BaseAST*> asts;
-  collect_top_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-        if (call->isNamed("_cast"))
-          continue;
-        if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC))
-          continue;
-      }
-      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym->var)) {
-        CallExpr* typecall = NULL;
-        if (type->type->defaultValue)
-          typecall = new CallExpr(PRIMITIVE_CAST, type, type->type->defaultValue);
-        else if (type->type->defaultConstructor)
-          typecall = new CallExpr(type->type->defaultConstructor);
-        else
-          INT_FATAL(type, "Bad type");
-        if (sym->getStmtExpr()) {
-          VarSymbol* typeTemp = new VarSymbol("_typeTmp", type->type);
-          typeTemp->isCompilerTemp = true;
-          typeTemp->isTypeVariable = true;
-          sym->getStmtExpr()->insertBefore(new DefExpr(typeTemp));
-          sym->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));
-          sym->replace(new SymExpr(typeTemp));
-        } else {
-          sym->replace(typecall);
-        }
-      }
-    }
-  }
-}
-
 
 
 static void fixup_array_formals(FnSymbol* fn) {
