@@ -90074,3 +90074,17 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/06 15:30:54 -- deitz
+
+Log message:
+	Removed most uses of build(ast) function, replacing them with
+	normalize(ast).  Two more uses to be removed next.
+	
+	Rearranged code in buildDefaultFunctions and refactored it to use gFns
+	rather than its own functions vector.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp parallel.cpp 
+
