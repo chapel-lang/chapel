@@ -316,7 +316,7 @@ thread_args() {
               wrap_fn->insertAtHead( new_cofn);    // add new call
               fcall_def->remove();                 // move orig. def
               mod->stmts->insertAtTail(fcall_def); // to top-level
-              build( wrap_fn);
+              normalize(wrap_fn);
             }
           }
         }

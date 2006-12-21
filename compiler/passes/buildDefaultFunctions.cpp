@@ -6,9 +6,9 @@
 #include "runtime.h"
 
 
-static Vec<FnSymbol*> fns;
-
 static void build_chpl_main(void);
+static void build_getter(ClassType* ct, Symbol* field);
+static void build_setter(ClassType* ct, Symbol* field);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(ClassType* ct);
@@ -19,6 +19,52 @@ static void build_record_inequality_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
+
+
+void build_default_functions(void) {
+  build_chpl_main();
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        for_fields(field, ct) {
+          VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
+          // if suppress for cobegin created arg classes
+          if (cfield && !cfield->is_ref) {
+            build_setter(ct, field);
+            build_getter(ct, field);
+          }
+        }
+      }
+      if (type->hasPragma("no default functions"))
+        continue;
+      buildDefaultIOFunctions(type->type);
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        if (ct->classTag == CLASS_RECORD) {
+          if (!(ct->symbol->hasPragma("domain") ||
+                ct->symbol->hasPragma("array") ||
+                ct->symbol->hasPragma("seq"))) {
+            build_record_equality_function(ct);
+            build_record_inequality_function(ct);
+          }
+          build_record_assignment_function(ct);
+          build_record_init_function(ct);
+          build_record_copy_function(ct);
+          build_record_hash_function(ct);
+        }
+        if (ct->classTag == CLASS_UNION) {
+          build_union_assignment_function(ct);
+        }
+      }
+      if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+        build_enum_assignment_function(et);
+      }
+    }
+  }
+}
+
 
 // function_exists returns true iff
 //  function's name matches name
@@ -40,7 +86,7 @@ static FnSymbol* function_exists(char* name,
                                  char* formalTypeName1 = NULL,
                                  char* formalTypeName2 = NULL,
                                  char* formalTypeName3 = NULL) {
-  forv_Vec(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, gFns) {
     if (strcmp(name, fn->name))
       continue;
 
@@ -98,8 +144,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
   ct->methods.add(fn);
   fn->isMethod = true;
   fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
@@ -156,8 +201,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
   ct->methods.add(fn);
   fn->isMethod = true;
   fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
@@ -166,56 +210,9 @@ static void build_setter(ClassType* ct, Symbol* field) {
 }
 
 
-void build_default_functions(void) {
-  collect_functions(&fns);
-  build_chpl_main();
-
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-        for_fields(field, ct) {
-          VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
-          // if suppress for cobegin created arg classes
-          if (cfield && !cfield->is_ref) {
-            build_setter(ct, field);
-            build_getter(ct, field);
-          }
-        }
-      }
-      if (type->hasPragma( "no default functions") ||
-          type->type->instantiatedFrom)
-        continue;
-      buildDefaultIOFunctions(type->type);
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-        if (ct->classTag == CLASS_RECORD) {
-          if (!(ct->symbol->hasPragma("domain") ||
-                ct->symbol->hasPragma("array") ||
-                ct->symbol->hasPragma("seq"))) {
-            build_record_equality_function(ct);
-            build_record_inequality_function(ct);
-          }
-          build_record_assignment_function(ct);
-          build_record_init_function(ct);
-          build_record_copy_function(ct);
-          build_record_hash_function(ct);
-        }
-        if (ct->classTag == CLASS_UNION) {
-          build_union_assignment_function(ct);
-        }
-      }
-      if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
-        build_enum_assignment_function(et);
-      }
-    }
-  }
-}
-
-
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
-  forv_Vec(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, gFns) {
     if (!strcmp("main", fn->name) && !fn->formals->length()) {
       if (!match) {
         match = fn;
@@ -236,7 +233,7 @@ static void build_chpl_main(void) {
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
       userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
-      build(chpl_main);
+      normalize(chpl_main);
     } else
       USR_FATAL("Code defines multiple modules but no main function.");
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
@@ -266,8 +263,7 @@ static void build_record_equality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
 }
 
 
@@ -290,8 +286,7 @@ static void build_record_inequality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
 }
 
 
@@ -308,8 +303,7 @@ static void build_enum_assignment_function(EnumType* et) {
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
 }
 
 
@@ -330,8 +324,7 @@ static void build_record_assignment_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
 }
 
 
@@ -353,8 +346,7 @@ static void build_union_assignment_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
 }
 
 
@@ -372,8 +364,7 @@ static void build_record_copy_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple copy");
 }
@@ -397,48 +388,46 @@ static void build_record_init_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  normalize(fn);
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple init");
 }
 
 
-static void build_record_hash_function( ClassType *ct) {
-  if ( function_exists( "_indefinite_hash", 1, ct->symbol->name))
+static void build_record_hash_function(ClassType *ct) {
+  if (function_exists("_indefinite_hash", 1, ct->symbol->name))
     return;
 
-  FnSymbol *fn = new FnSymbol( "_indefinite_hash");
-  fn->addPragma( "inline");
-  ArgSymbol *arg = new ArgSymbol( INTENT_BLANK, "r", ct);
-  fn->insertFormalAtTail( arg);
+  FnSymbol *fn = new FnSymbol("_indefinite_hash");
+  fn->addPragma("inline");
+  ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
+  fn->insertFormalAtTail(arg);
 
   if (ct->fields->length() < 0) {
-    fn->insertAtTail( new ReturnStmt( new_IntSymbol(0)));
+    fn->insertAtTail(new ReturnStmt(new_IntSymbol(0)));
   } else {
     CallExpr *call;
     bool first = true;
-    for_fields( field, ct) {
-      CallExpr *field_access = new CallExpr( field->name, gMethodToken, arg); 
+    for_fields(field, ct) {
+      CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 
       if (first) {
-        call =  new CallExpr( "_indefinite_hash", field_access);
+        call = new CallExpr("_indefinite_hash", field_access);
         first = false;
       } else {
-        call = new CallExpr( "^", 
-                             new CallExpr( "_indefinite_hash",
-                                           field_access),
-                             new CallExpr( "<<",
-                                           call,
-                                           new_IntSymbol(17)));
+        call = new CallExpr("^", 
+                            new CallExpr("_indefinite_hash",
+                                         field_access),
+                            new CallExpr("<<",
+                                         call,
+                                         new_IntSymbol(17)));
       }
     }
-    fn->insertAtTail( new ReturnStmt( call));
+    fn->insertAtTail(new ReturnStmt(call));
   }
-  DefExpr *def = new DefExpr( fn);
-  ct->symbol->defPoint->insertBefore( def);
-  reset_file_info( def, ct->symbol->lineno, ct->symbol->filename);
-  build(fn);
-  fns.add(fn);
+  DefExpr *def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  normalize(fn);
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple hash function");
 }
@@ -464,7 +453,6 @@ void buildDefaultIOFunctions(Type* type) {
       fn->isMethod = true;
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
-      fns.add(fn);
       type->methods.add(fn);
     }
   }
@@ -487,7 +475,6 @@ void buildDefaultIOFunctions(Type* type) {
       fn->isMethod = true;
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
-      fns.add(fn);
       type->methods.add(fn);
     }
   }
