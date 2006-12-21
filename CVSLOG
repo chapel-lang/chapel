@@ -90054,3 +90054,23 @@ Added files:
 	chapel/test/studies/lu/: NOTEST dongarra-lu-compiles.chpl 
 	                         dongarra-lu.chpl dongarra.matlab 
 
+---------------------------------------------------------------------------
+
+12/21/06 13:20:44 -- deitz
+
+Log message:
+	Removed change_types_to_values from normalization pass.
+	
+	Made Symbol::isTypeVariable true for all type symbols.  This is used
+	on VarSymbols to signal that it is a type.  Now that type symbols are
+	left in the AST in the places where they were changed to variables,
+	this signal lets us know that it is a type.
+	
+	Minor change to function resolution to evaluate the default
+	constructor for more types than previous.  This is necessitated
+	because moves are associated with less types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
