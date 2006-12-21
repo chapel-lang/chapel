@@ -90039,3 +90039,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: memoryManage.cpp parallel.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/06 12:18:51 -- bradc
+
+Log message:
+	Copy of Dongarra's reference LU code in Matlab
+	and a few attempts to sketch that code out in
+	Chapel, with some liberties taken.  This needs
+	more work, but wanted to snapshot, and for Mary
+	Beth's reference.
+
+Added files:
+	chapel/test/studies/lu/: NOTEST dongarra-lu-compiles.chpl 
+	                         dongarra-lu.chpl dongarra.matlab 
+
