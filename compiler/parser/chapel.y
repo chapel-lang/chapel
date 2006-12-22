@@ -188,7 +188,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <ft> fn_tag
 %type <btag> for_tag
 
-%type <boolval> fnretref
+%type <boolval> fnretref fn_param
 
 %type <pch> identifier fname opt_identifier
 %type <pch> pragma
@@ -642,7 +642,7 @@ mod_decl_stmt:
 
 
 fn_decl_stmt:
-  fn_tag function opt_formal_ls fnretref opt_type where parsed_block_stmt
+  fn_tag function opt_formal_ls fn_param fnretref opt_type where parsed_block_stmt
     {
       $2->fnClass = $1;
       if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
@@ -655,11 +655,12 @@ fn_decl_stmt:
           $2->insertFormalAtTail(def);
         }
       }
-      $2->buildSetter = $4;
-      $2->retExprType = $5;
-      if ($6)
-        $2->where = new BlockStmt($6);
-      $2->body = new BlockStmt($7);
+      $2->isParam = $4;
+      $2->buildSetter = $5;
+      $2->retExprType = $6;
+      if ($7)
+        $2->where = new BlockStmt($7);
+      $2->body = new BlockStmt($8);
       $$ = build_chpl_stmt(new DefExpr($2));
     }
 ;
@@ -714,6 +715,15 @@ formal:
       delete $2;
     }
 ;
+
+
+fn_param:
+  /* nothing */
+    { $$ = false; }
+| TPARAM
+    { $$ = true; }
+;
+
 
 
 fnretref:

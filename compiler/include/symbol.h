@@ -44,6 +44,7 @@ class Symbol : public BaseAST {
   bool isTypeVariable;
   bool isReference;    // is a reference
   bool canReference;   // can be a reference (determined during resolution)
+  bool canParam;       // can be a parameter (determined during resolution)
   Vec<SymExpr*> uses;
   Vec<char*> pragmas;
 
@@ -169,6 +170,7 @@ class FnSymbol : public Symbol {
   bool retRef;
   bool buildSetter;
   bool defSetGet;
+  bool isParam;
 
   SymScope* argScope;
   bool isSetter;

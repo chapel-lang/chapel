@@ -1375,6 +1375,20 @@ resolveCall(CallExpr* call) {
   }
 }
 
+static bool
+formalRequiresTemp(ArgSymbol* formal) {
+  if (formal->intent == INTENT_PARAM ||
+      formal->intent == INTENT_TYPE ||
+      formal->intent == INTENT_REF ||
+      formal->name == _this ||
+      formal->isTypeVariable ||
+      formal->instantiatedParam ||
+      formal->type == dtSetterToken ||
+      formal->type == dtMethodToken)
+    return false;
+  return true;
+}
+
 static void
 insertFormalTemps(FnSymbol* fn) {
   if (fn->name == _pass || fn->name == _init ||
@@ -1382,13 +1396,7 @@ insertFormalTemps(FnSymbol* fn) {
     return;
   ASTMap formals2vars;
   for_formals(formal, fn) {
-    if (formal->intent != INTENT_PARAM &&
-        formal->intent != INTENT_TYPE &&
-        formal->intent != INTENT_REF &&
-        formal->name != _this &&
-        !formal->isTypeVariable &&
-        formal->type != dtSetterToken &&
-        formal->type != dtMethodToken) {
+    if (formalRequiresTemp(formal)) {
       VarSymbol* tmp = new VarSymbol(stringcat("_formal_tmp_", formal->name));
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
@@ -1398,33 +1406,98 @@ insertFormalTemps(FnSymbol* fn) {
       formals2vars.put(formal, tmp);
     }
   }
-  update_symbols(fn, &formals2vars);
-  Vec<BaseAST*> formals;
-  formals2vars.get_keys(formals);
-  forv_Vec(BaseAST, ast, formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(ast);
-    VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
+  if (formals2vars.n > 0) {
+    update_symbols(fn, &formals2vars);
+    Vec<BaseAST*> formals;
+    formals2vars.get_keys(formals);
+    forv_Vec(BaseAST, ast, formals) {
+      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(ast);
+      VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
 
-    // hack for constant assignment checking
-    // remove when constant checking is improved
-    fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
+      // hack for constant assignment checking
+      // remove when constant checking is improved
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
 
-    if (formal->intent == INTENT_OUT) {
-      if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
+      if (formal->intent == INTENT_OUT) {
+        if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
+        else
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", formal)));
+      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
       else
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", formal)));
-    } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
-    else
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
-    fn->insertAtHead(new DefExpr(tmp));
-    if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-      formal->intent = INTENT_REF;
-      ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
-      last->insertBefore(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
+      fn->insertAtHead(new DefExpr(tmp));
+      if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
+        formal->intent = INTENT_REF;
+        ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
+        last->insertBefore(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
+      }
     }
   }
+}
+
+static Map<Symbol*,Symbol*> paramMap;
+
+static Expr*
+preFold(Expr* expr) {
+  Expr* result = expr;
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->isNamed("_construct__tuple") && !call->isResolved()) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+          if (var->immediate) {
+            int rank = var->immediate->int_value();
+            if (rank != call->argList->length() - 1) {
+              if (call->argList->length() != 2)
+                INT_FATAL(call, "bad homogeneous tuple");
+              Expr* actual = call->get(2);
+              for (int i = 1; i < rank; i++) {
+                call->insertAtTail(actual->copy());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+static Expr*
+postFold(Expr* expr) {
+  Expr* result = expr;
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (FnSymbol* fn = call->isResolved()) {
+      if (fn->isParam) {
+        VarSymbol* ret = dynamic_cast<VarSymbol*>(fn->getReturnSymbol());
+        if (ret->immediate) {
+          result = new SymExpr(ret);
+          expr->replace(result);
+        } else {
+          USR_FATAL(call, "param function does not resolve to a param symbol");
+        }
+      }
+    } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+        if (VarSymbol* rhsVar = dynamic_cast<VarSymbol*>(rhs->var)) {
+          if (rhsVar->immediate) {
+            if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
+              if (lhs->var->canParam) {
+                paramMap.put(lhs->var, rhsVar);
+                lhs->var->defPoint->remove();
+                makeNoop(call);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (paramMap.get(sym->var))
+      sym->var = paramMap.get(sym->var);
+  }
+  return result;
 }
 
 static void
@@ -1436,6 +1509,7 @@ resolveFns(FnSymbol* fn) {
   insertFormalTemps(fn);
 
   for_exprs_postorder(expr, fn->body) {
+    expr = preFold(expr);
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
         CallExpr* from;
@@ -1459,6 +1533,7 @@ resolveFns(FnSymbol* fn) {
         }
       }
     }
+    expr = postFold(expr);
   }
 
   Symbol* ret = fn->getReturnSymbol();
@@ -1755,9 +1830,10 @@ static void
 pruneResolvedTree() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->defPoint && fn->defPoint->parentSymbol)
-      if (!resolvedFns.set_in(fn))
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (!resolvedFns.set_in(fn) || fn->isParam)
         fn->defPoint->remove();
+    }
   }
 
   // Remove unused types

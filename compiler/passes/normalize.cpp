@@ -545,6 +545,8 @@ static void normalize_returns(FnSymbol* fn) {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
     retval->canReference = true;
+    if (fn->isParam)
+      retval->consClass = VAR_PARAM;
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -721,6 +723,7 @@ static void insert_call_temps(CallExpr* call) {
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
   tmp->isCompilerTemp = true;
   tmp->canReference = true;
+  tmp->canParam = true;
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
@@ -878,6 +881,7 @@ static bool fold_call_expr(CallExpr* call) {
                 VarSymbol* tmp = new VarSymbol("_tmp");
                 tmp->isCompilerTemp = true;
                 tmp->canReference = true;
+                tmp->canParam = true;
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", expr->copy())));
                 call->insertAtTail(tmp);

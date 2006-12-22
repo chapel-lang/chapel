@@ -122,7 +122,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   isCompilerTemp(false),
   isTypeVariable(false),
   isReference(false),
-  canReference(false)
+  canReference(false),
+  canParam(false)
 {}
 
 
@@ -343,6 +344,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->isTypeVariable = isTypeVariable;
   newVarSymbol->isReference = isReference;
   newVarSymbol->canReference = canReference;
+  newVarSymbol->canParam = canParam;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -628,6 +630,7 @@ FnSymbol::FnSymbol(char* initName) :
   retRef(false),
   buildSetter(false),
   defSetGet(false),
+  isParam(false),
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
@@ -704,6 +707,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->isMethod = isMethod;
   copy->visible = visible;
   copy->global = global;
+  copy->isParam = isParam;
   return copy;
 }
 
@@ -752,6 +756,7 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
   wrapper->retRef = fn->retRef;
+  wrapper->isParam = fn->isParam;
   wrapper->isMethod = fn->isMethod;
   return wrapper;
 }
