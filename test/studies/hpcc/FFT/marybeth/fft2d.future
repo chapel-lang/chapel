@@ -1,0 +1,11 @@
+This test does not pass when running in a linux64 environment.  The
+error doesn't match in the second most significant digit.
+
+This problem is most likely due to using different libraries in the
+linux64 environment and build than in the linux one.  When the error
+is computed, the answers themselves differ in the 16th digit, which is
+about as much precision as you can expect.
+
+Before dismissing the problem, though, I'd like to keep this as a future
+until a more thorough comparison of the linux and linux64 environments are
+done.
