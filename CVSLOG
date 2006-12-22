@@ -90143,3 +90143,13 @@ Added files:
 	chapel/test/trivial/marybeth/: .cvsignore 
 	chapel/test/types/type_variables/deitz/part5/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+12/22/06 11:17:55 -- deitz
+
+Log message:
+	Moved fold_params as far down in normalization as possible.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
