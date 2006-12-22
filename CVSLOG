@@ -90153,3 +90153,36 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/06 11:40:12 -- deitz
+
+Log message:
+	Added minimal support for parameter functions by moving some parameter
+	folding into function resolution to enable a test of parameter
+	functions to work.  The full parameter folding mechanism still exists
+	in normalization.  Parameter folding handled in function resolution
+	includes expansion of homogeneous tuple types, folding of primitive
+	moves, and updating of symbols that are parameters as determined by
+	the folding of primitive moves.
+	
+	A parameter function is declared like a variable function except with
+	the keyword param in place of var.
+	
+	During function resolution, if a call resolves to a parameter
+	function, the call is replaced by the parameter that the function
+	returns.
+	
+	Added Symbol tag canParam to complement canReference.  This tag is
+	used on temporaries to say that they can become parameters if a
+	parameter is moved into it during the parameter folding that takes
+	place in function resolution.
+	
+	Added FnSymbol tag isParam to mark a function as a parameter function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
