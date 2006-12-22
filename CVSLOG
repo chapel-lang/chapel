@@ -90104,3 +90104,42 @@ Modified files:
 	chapel/compiler/include/: astutil.h type.h 
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/06 11:16:45 -- deitz
+
+Log message:
+	Added or expanded .cvsignore files in test directory.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: .cvsignore 
+	chapel/test/studies/hpcc/RA/: .cvsignore 
+Added files:
+	chapel/test/arrays/deitz/domains/: .cvsignore 
+	chapel/test/arrays/deitz/myarray/: .cvsignore 
+	chapel/test/arrays/deitz/part2/: .cvsignore 
+	chapel/test/arrays/deitz/promotion/: .cvsignore 
+	chapel/test/arrays/deitz/stride/: .cvsignore 
+	chapel/test/arrays/waynew/: .cvsignore 
+	chapel/test/classes/deitz/constructors/: .cvsignore 
+	chapel/test/classes/deitz/dispatch/: .cvsignore 
+	chapel/test/classes/marybeth/: .cvsignore 
+	chapel/test/classes/waynew/: .cvsignore 
+	chapel/test/compflags/bradc/twomodulesnomain/: .cvsignore 
+	chapel/test/compflags/deitz/: .cvsignore 
+	chapel/test/domains/deitz/: .cvsignore 
+	chapel/test/domains/marybeth/: .cvsignore 
+	chapel/test/domains/waynew/: .cvsignore 
+	chapel/test/execflags/bradc/: .cvsignore 
+	chapel/test/flowanalysis/recursion/: .cvsignore 
+	chapel/test/functions/deitz/: test_fold1.chpl test_fold1.good 
+	chapel/test/functions/deitz/Time/: .cvsignore 
+	chapel/test/functions/deitz/hips06/: .cvsignore 
+	chapel/test/functions/deitz/infer/: .cvsignore 
+	chapel/test/functions/waynew/: .cvsignore 
+	chapel/test/memory/deitz/: .cvsignore 
+	chapel/test/studies/blas/marybeth/: .cvsignore 
+	chapel/test/studies/jacobi/bradc/: .cvsignore 
+	chapel/test/trivial/marybeth/: .cvsignore 
+	chapel/test/types/type_variables/deitz/part5/: .cvsignore 
+
