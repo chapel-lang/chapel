@@ -90088,3 +90088,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp parallel.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/06 09:29:35 -- deitz
+
+Log message:
+	Removed build(fn) function.  Use normalize instead, and scopeResolve
+	if necessary.
+	
+	Refactored code to build default read and write functions.  All
+	default functions are now built in buildDefaultFunctions.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp type.cpp 
+	chapel/compiler/include/: astutil.h type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
