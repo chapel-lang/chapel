@@ -130,22 +130,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-  fold_params(base);
-
-  dtAny->isGeneric = true;
-  dtIntegral->isGeneric = true;
-  dtNumeric->isGeneric = true;
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  int changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Vec(BaseAST, ast, asts) {
-      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) 
-        changed = tag_generic(fn) || changed;
-    }
-  }
-
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -161,6 +145,22 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
+    }
+  }
+
+  fold_params(base);
+
+  dtAny->isGeneric = true;
+  dtIntegral->isGeneric = true;
+  dtNumeric->isGeneric = true;
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  int changed = 1;
+  while (changed) {
+    changed = 0;
+    forv_Vec(BaseAST, ast, asts) {
+      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) 
+        changed = tag_generic(fn) || changed;
     }
   }
 }
