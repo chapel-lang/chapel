@@ -90186,3 +90186,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/06 14:49:35 -- marybeth
+
+Log message:
+	Checking in fft2d.future.
+	
+	I didn't have time to fully resolve this problem in my mind.  I'd like to
+	keep this as a future until I can do a more thorough comparison between
+	the linux and linux64 environments.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.future 
+
