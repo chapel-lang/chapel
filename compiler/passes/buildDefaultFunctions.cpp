@@ -1,9 +1,10 @@
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "stringutil.h"
 #include "runtime.h"
+#include "stmt.h"
+#include "stringutil.h"
+#include "symbol.h"
 
 
 static void build_chpl_main(void);
@@ -18,7 +19,13 @@ static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
-static void buildDefaultIOFunctions(Type* type);
+
+static void buildDefaultReadFunction(ClassType* type);
+static void buildDefaultReadFunction(EnumType* type);
+
+static void buildDefaultWriteFunction(ClassType* type);
+static void buildDefaultWriteFunction(EnumType* type);
+
 
 
 void build_default_functions(void) {
@@ -40,7 +47,15 @@ void build_default_functions(void) {
       }
       if (type->hasPragma("no default functions"))
         continue;
-      buildDefaultIOFunctions(type->type);
+      if (!fnostdincs) {
+        if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+          buildDefaultReadFunction(et);
+          buildDefaultWriteFunction(et);
+        } else if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+          buildDefaultReadFunction(ct);
+          buildDefaultWriteFunction(ct);
+        }
+      }
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
           if (!(ct->symbol->hasPragma("domain") ||
@@ -433,49 +448,207 @@ static void build_record_hash_function(ClassType *ct) {
 }
 
 
-void buildDefaultIOFunctions(Type* type) {
-  if (fnostdincs)
+static void buildDefaultReadFunction(ClassType* ct) {
+  if (function_exists("read", 3, dtMethodToken->symbol->name, "file", ct->symbol->name))
     return;
-  if (type->hasDefaultWriteFunction()) {
-    if (!function_exists("write", 3, dtMethodToken->symbol->name, type->symbol->name, "file")) {
-      FnSymbol* fn = new FnSymbol("write");
-      fn->cname = stringcat("_auto_", type->symbol->name, "_write");
-      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
-      fn->_this = new ArgSymbol(INTENT_BLANK, "this", type);
-      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
-      fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-      fn->insertFormalAtTail(fn->_this);
-      fn->insertFormalAtTail(fileArg);
-      fn->retType = dtVoid;
-      fn->body = type->buildDefaultWriteFunctionBody(fileArg);
-      DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->insertBefore(def);
-      fn->isMethod = true;
-      reset_file_info(def, type->symbol->lineno, type->symbol->filename);
-      build(fn);
-      type->methods.add(fn);
+
+  FnSymbol* fn = new FnSymbol("read");
+  fn->cname = stringcat("_auto_", ct->symbol->name, "_read");
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(arg);
+  fn->retType = dtVoid;
+
+  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
+  fn->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
+  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
+  fn->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
+  Expr* fileArgFP = buildDot(fn->_this, "_fp");
+  CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
+  fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
+  CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
+  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("_get_errno"));
+  CondStmt* readErrorCond = new CondStmt(notRead, readError);
+  fn->insertAtTail(readErrorCond);
+  bool first = true;
+  for_fields(tmp, ct) {
+    if (tmp->isTypeVariable)
+      continue;
+    if (!first) {
+      CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
+      fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
+      fn->insertAtTail(readErrorCond->copy());
+    }  
+    Symbol* fieldName = new VarSymbol("fieldName");
+    fn->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
+    CallExpr* readFieldName = new CallExpr(buildDot(fn->_this, "read"), fieldName);
+    fn->insertAtTail(readFieldName);
+    Symbol* name = new_StringSymbol(tmp->name);
+    Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
+    CondStmt* fieldNameCond = new CondStmt(confirmFieldName, readError->copy());
+    fn->insertAtTail(fieldNameCond);
+    CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("="), ignoreWhiteSpace);
+    fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
+    fn->insertAtTail(readErrorCond->copy());
+    CallExpr* argName = new CallExpr(".", arg, name);
+    CallExpr* readValue = new CallExpr(buildDot(fn->_this, "read"), argName);
+    fn->insertAtTail(readValue);
+    first = false;
+  }
+  CallExpr* readCloseBrace = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("}"), ignoreWhiteSpace);
+  fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
+  fn->insertAtTail(readErrorCond->copy());
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  ct->methods.add(fn);
+  fn->isMethod = true;
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  normalize(fn);
+  ct->methods.add(fn);
+}
+
+
+static void buildDefaultReadFunction(EnumType* et) {
+  if (function_exists("read", 3, dtMethodToken->symbol->name, "file", et->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("read");
+  fn->cname = stringcat("_auto_", et->symbol->name, "_read");
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(arg);
+  fn->retType = dtVoid;
+
+  Symbol* valString = new VarSymbol("valString");
+  fn->insertAtTail(new DefExpr(valString, new_StringSymbol("")));
+  fn->insertAtTail(new CallExpr(buildDot(fn->_this, "read"), valString));
+  Expr* elseStmt = new CallExpr("halt", 
+                                new_StringSymbol("***Error: Not of "), 
+                                new_StringSymbol(et->symbol->name), 
+                                new_StringSymbol(" type***"));
+  for_alist_backward(DefExpr, constant, et->constants) {
+    Expr* cond = new CallExpr("==", valString, new_StringSymbol(constant->sym->name));
+    Expr* thenStmt = new CallExpr("=", arg, constant->sym);
+    elseStmt = new CondStmt(cond, thenStmt, elseStmt);
+    
+  }
+  fn->insertAtTail(elseStmt);
+
+  DefExpr* def = new DefExpr(fn);
+  et->symbol->defPoint->insertBefore(def);
+  et->methods.add(fn);
+  fn->isMethod = true;
+  reset_file_info(def, et->symbol->lineno, et->symbol->filename);
+  normalize(fn);
+  et->methods.add(fn);
+}
+
+
+static void buildDefaultWriteFunction(ClassType* ct) {
+  if (function_exists("write", 3, dtMethodToken->symbol->name, ct->symbol->name, "file"))
+    return;
+
+  FnSymbol* fn = new FnSymbol("write");
+  fn->cname = stringcat("_auto_", ct->symbol->name, "_write");
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(fileArg);
+  fn->retType = dtVoid;
+
+  if (ct->classTag == CLASS_CLASS) {
+    BlockStmt* fwriteNil = new BlockStmt();
+    fwriteNil->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("nil")));
+    fwriteNil->insertAtTail(new ReturnStmt());
+    fn->insertAtTail(new CondStmt(new CallExpr("==", fn->_this, gNil),
+                                    fwriteNil));
+  }
+
+  if (ct->classTag == CLASS_CLASS) {
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("{")));
+  } else {
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("(")));
+  }
+
+  if (ct->classTag == CLASS_UNION) {
+    CondStmt* cond = NULL;
+    for_fields(tmp, ct) {
+      BlockStmt* writeFieldBlock = new BlockStmt();
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
+                                                 buildDot(fn->_this, tmp->name)));
+      cond = new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, fn->_this, new_IntSymbol(tmp->id)), writeFieldBlock, cond);
+    }
+    fn->insertAtTail(cond);
+  } else {
+    bool first = true;
+    for_fields(tmp, ct) {
+      if (tmp->isTypeVariable)
+        continue;
+      if (!first) {
+        fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
+      }
+      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
+      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
+      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
+                                      buildDot(fn->_this, tmp->name)));
+      first = false;
     }
   }
 
-  if (type->hasDefaultReadFunction()) {
-    if (!function_exists("read", 3, dtMethodToken->symbol->name, "file", type->symbol->name)) {
-      FnSymbol* fn = new FnSymbol("read");
-      fn->cname = stringcat("_auto_", type->symbol->name, "_read");
-      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
-      ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", type);
-      fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
-      fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-      fn->insertFormalAtTail(fn->_this);
-      fn->insertFormalAtTail(arg);
-      fn->retType = dtVoid;
-      fn->body = type->buildDefaultReadFunctionBody(arg);
-      DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->insertBefore(def);
-      type->methods.add(fn);
-      fn->isMethod = true;
-      reset_file_info(def, type->symbol->lineno, type->symbol->filename);
-      build(fn);
-      type->methods.add(fn);
-    }
+  if (ct->classTag == CLASS_CLASS) {
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("}")));
+  } else {
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(")")));
   }
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  fn->isMethod = true;
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  normalize(fn);
+  ct->methods.add(fn);
+}
+
+
+static void buildDefaultWriteFunction(EnumType* et) {
+  if (function_exists("write", 3, dtMethodToken->symbol->name, et->symbol->name, "file"))
+    return;
+
+  FnSymbol* fn = new FnSymbol("write");
+  fn->cname = stringcat("_auto_", et->symbol->name, "_write");
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", et);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(fileArg);
+  fn->retType = dtVoid;
+
+  CondStmt* body = NULL;
+  for_alist(DefExpr, constant, et->constants) {
+    body = new CondStmt(
+             new CallExpr("==", fn->_this, constant->sym),
+             new CallExpr(buildDot(fileArg, "write"),
+                          new_StringSymbol(constant->sym->name)),
+             body);
+  }
+  fn->insertAtTail(body);
+
+  DefExpr* def = new DefExpr(fn);
+  et->symbol->defPoint->insertBefore(def);
+  fn->isMethod = true;
+  reset_file_info(def, et->symbol->lineno, et->symbol->filename);
+  normalize(fn);
+  et->methods.add(fn);
 }

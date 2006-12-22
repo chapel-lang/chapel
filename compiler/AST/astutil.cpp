@@ -7,12 +7,6 @@
 #include "type.h"
 
 
-void build(FnSymbol* fn) {
-  cleanup(fn);
-  scopeResolve(fn);
-  normalize(fn);
-}
-
 void collect_functions(Vec<FnSymbol*>* fns) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);

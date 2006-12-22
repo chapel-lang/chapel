@@ -14,7 +14,6 @@ class CallExpr;
 void cleanup(Symbol* sym);
 void scopeResolve(Symbol* sym);
 void normalize(BaseAST* ast);
-void build(FnSymbol* fn);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);
