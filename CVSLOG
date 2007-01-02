@@ -90200,3 +90200,15 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.future 
 
+---------------------------------------------------------------------------
+
+01/02/07 10:32:41 -- deitz
+
+Log message:
+	Removed expansion of homogeneous tuples from normalization.  Applied
+	function resolution folding to the resolution of type expressions of
+	formal arguments and function returns.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
