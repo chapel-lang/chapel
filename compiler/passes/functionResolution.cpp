@@ -13,6 +13,9 @@ static char* _copy;
 static char* _this;
 static char* _assign;
 
+static Expr* preFold(Expr* expr);
+static Expr* postFold(Expr* expr);
+
 static void setFieldTypes(FnSymbol* fn);
 
 
@@ -972,11 +975,9 @@ computeActuals(CallExpr* call,
 
 static Type*
 resolve_type_expr(Expr* expr) {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, expr);
-
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+  for_exprs_postorder(e, expr) {
+    e = preFold(e);
+    if (CallExpr* call = dynamic_cast<CallExpr*>(e)) {
       if (call->parentSymbol) {
         callStack.add(call);
         resolveCall(call);
@@ -989,6 +990,7 @@ resolve_type_expr(Expr* expr) {
         callStack.pop();
       }
     }
+    e = postFold(e);
   }
   Type* t = expr->typeInfo();
   if (t == dtUnknown)

@@ -867,34 +867,6 @@ static bool fold_call_expr(CallExpr* call) {
     return false;
   }
 
-  if (call->isNamed("_construct__tuple") && call->argList->length() > 1) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (var->immediate) {
-          int rank = var->immediate->int_value();
-          if (rank != call->argList->length() - 1) {
-            if (call->argList->length() != 2)
-              INT_FATAL(call, "bad homogeneous tuple");
-            Expr* expr = call->get(2);
-            for (int i = 1; i < rank; i++) {
-              if (call->getStmtExpr()) {
-                VarSymbol* tmp = new VarSymbol("_tmp");
-                tmp->isCompilerTemp = true;
-                tmp->canReference = true;
-                tmp->canParam = true;
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", expr->copy())));
-                call->insertAtTail(tmp);
-              } else {
-                call->insertAtTail(new CallExpr("_copy", expr->copy()));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
   // fold parameter methods
   if (call->argList->length() == 2) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
