@@ -90249,3 +90249,20 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/test/trivial/deitz/: test_bpop2.chpl 
 
+---------------------------------------------------------------------------
+
+01/03/07 14:21:17 -- bradc
+
+Log message:
+	Fixed memory test regressions as a stopgap until the
+	memory routines can be rewritten in Chapel as a module.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable2.chpl 
+	                             printMemTable2.good 
+Added files:
+	chapel/test/memory/shannon/: memstatPrint.linux64.good 
+	                             printFinalMemStat.linux64.good 
+
