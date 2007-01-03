@@ -785,15 +785,6 @@ cast_fold(TypeSymbol* ts, VarSymbol* var) {
     return true;                                          \
   }
 
-#define FIND_PRIMITIVE_TYPE( prim_type, numoftypes, ptype_p)            \
-  for (int type=0; type<numoftypes; type++) {                           \
-    if (prim_type[type] &&                                              \
-        (prim_type[type]->symbol == dynamic_cast<TypeSymbol*>(base->var))) { \
-      ptype_p = prim_type;                                              \
-      break;                                                            \
-    }                                                                   \
-  }
-
 
 static bool
 isType(Expr* expr) {
@@ -927,95 +918,6 @@ static bool fold_call_expr(CallExpr* call) {
         if (isSubType(lt, rt))
           is_true = true;
         call->replace((is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse));
-      }
-    }
-  }
-
-  // replace call expr of primitive type with appropriate primitive type
-  if (call->argList->length() == 1) {
-    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      PrimitiveType **ptype_p = NULL;
-
-      FIND_PRIMITIVE_TYPE( dtInt, INT_SIZE_NUM, ptype_p);
-      if (!ptype_p) {
-        FIND_PRIMITIVE_TYPE( dtUInt, INT_SIZE_NUM, ptype_p);
-        if (!ptype_p) {
-          FIND_PRIMITIVE_TYPE( dtReal, FLOAT_SIZE_NUM, ptype_p);
-          if (!ptype_p) {
-            FIND_PRIMITIVE_TYPE( dtComplex, COMPLEX_SIZE_NUM, ptype_p);
-            if (!ptype_p) {
-              FIND_PRIMITIVE_TYPE( dtImag, FLOAT_SIZE_NUM, ptype_p);
-            }
-          }
-        }
-      }
-
-      if (ptype_p){
-        if (SymExpr* arg1 = dynamic_cast<SymExpr*>(call->get(1))) {
-          if (VarSymbol* v1 = dynamic_cast<VarSymbol*>(arg1->var)) {
-            if (Immediate* imm = v1->immediate) {
-              if ((NUM_KIND_INT == imm->const_kind) ||
-                  (NUM_KIND_UINT == imm->const_kind)) {
-                TypeSymbol *tsize;
-                int         size;
-                if (NUM_KIND_INT == imm->const_kind) {
-                  size = imm->int_value ();
-                } else {
-                  size = (int) imm->uint_value ();
-                }
-
-                if (ptype_p == dtInt) {
-                  switch (size) {
-                  case  8: tsize = dtInt[INT_SIZE_8]->symbol;  break;
-                  case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;
-                  case 32: tsize = dtInt[INT_SIZE_32]->symbol; break;
-                  case 64: tsize = dtInt[INT_SIZE_64]->symbol; break;
-                  default:
-                    USR_FATAL( call, "illegal size %d for int", size);
-                  }
-                  call->replace( new SymExpr(tsize));
-                } else if (ptype_p == dtUInt) {
-                  switch (size) {
-                  case  8: tsize = dtUInt[INT_SIZE_8]->symbol;  break;
-                  case 16: tsize = dtUInt[INT_SIZE_16]->symbol; break;
-                  case 32: tsize = dtUInt[INT_SIZE_32]->symbol; break;
-                  case 64: tsize = dtUInt[INT_SIZE_64]->symbol; break;
-                  default:
-                    USR_FATAL( call, "illegal size %d for uint", size);
-                  }
-                  call->replace( new SymExpr(tsize));
-                } else if (ptype_p == dtReal) {
-                  switch (size) {
-                  case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
-                  case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
-                  case 128: tsize = dtReal[FLOAT_SIZE_128]->symbol; break;
-                  default:
-                    USR_FATAL( call, "illegal size %d for real", size);
-                  }
-                  call->replace( new SymExpr(tsize));
-                } else if (ptype_p == dtImag) {
-                  switch (size) {
-                  case 32:  tsize = dtImag[FLOAT_SIZE_32]->symbol;  break;
-                  case 64:  tsize = dtImag[FLOAT_SIZE_64]->symbol;  break;
-                  case 128: tsize = dtImag[FLOAT_SIZE_128]->symbol; break;
-                  default:
-                    USR_FATAL( call, "illegal size %d for imag", size);
-                  }
-                  call->replace( new SymExpr(tsize));
-                } else if (ptype_p == dtComplex) {
-                  switch (size) {
-                  case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
-                  case 128: tsize = dtComplex[COMPLEX_SIZE_128]->symbol; break;
-                  case 256: tsize = dtComplex[COMPLEX_SIZE_256]->symbol; break;
-                  default:
-                    USR_FATAL( call, "illegal size %d for complex", size);
-                  }
-                  call->replace( new SymExpr(tsize));
-                }
-              }
-            }
-          }
-        }
       }
     }
   }

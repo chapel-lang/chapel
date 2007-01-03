@@ -57,14 +57,14 @@ checkMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
       return inst->newFn;
   return NULL;
 }
-
+/*
 static void
 removeMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
   forv_Vec(Inst, inst, *cache)
     if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
       inst->newFn = NULL;
 }
-
+*/
 static void
 addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
   cache->add(new Inst(oldFn, newFn, subs));
@@ -1332,19 +1332,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   normalize(newfn);
   instantiatedTo->add(newfn);
 
-  if (!newfn->isGeneric && newfn->where) {
-    SymExpr* symExpr = dynamic_cast<SymExpr*>(newfn->where->body->last());
-    if (!symExpr)
-      USR_FATAL(where, "Illegal where clause");
-    if (!strcmp(symExpr->var->name, "false")) {
-      removeMapCache(&icache, this, generic_substitutions);
-      return NULL;
-    }
-    if (strcmp(symExpr->var->name, "true"))
-      USR_FATAL(where, "Illegal where clause");
-  }
-
-  if (newfn->formals->length() > 1 && newfn->getFormal(1)->type == dtMethodToken)
+  if (newfn->formals->length() > 1 &&
+      newfn->getFormal(1)->type == dtMethodToken)
     newfn->getFormal(2)->type->methods.add(newfn);
 
   return newfn;

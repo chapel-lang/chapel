@@ -6,6 +6,7 @@
 #include "symbol.h"
 #include "symscope.h"
 #include "runtime.h"
+#include "../ifa/prim_data.h"
 
 static char* _init;
 static char* _pass;
@@ -15,6 +16,8 @@ static char* _assign;
 
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
+
+static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs);
 
 static void setFieldTypes(FnSymbol* fn);
 
@@ -357,7 +360,7 @@ computeGenericSubs(ASTMap &subs,
           subs.put(formal, formal_actuals->v[i]);
         }
       } else if (formal->defaultExpr) {
-        Type* defaultType = formal->defaultExpr->typeInfo();
+        Type* defaultType = resolve_type_expr(formal->defaultExpr);
         if (canInstantiate(defaultType, formal->type)) {
           subs.put(formal, defaultType);
         }
@@ -479,7 +482,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     ASTMap subs;
     computeGenericSubs(subs, fn, num_formals, &formal_actuals, &formal_params);
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
-      FnSymbol* inst_fn = fn->instantiate_generic(&subs);
+      FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
         addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);
     }
@@ -975,7 +978,10 @@ computeActuals(CallExpr* call,
 
 static Type*
 resolve_type_expr(Expr* expr) {
+  bool stop = false;
   for_exprs_postorder(e, expr) {
+    if (expr == e)
+      stop = true;
     e = preFold(e);
     if (CallExpr* call = dynamic_cast<CallExpr*>(e)) {
       if (call->parentSymbol) {
@@ -991,6 +997,10 @@ resolve_type_expr(Expr* expr) {
       }
     }
     e = postFold(e);
+    if (stop) {
+      expr = e;
+      break;
+    }
   }
   Type* t = expr->typeInfo();
   if (t == dtUnknown)
@@ -1441,11 +1451,185 @@ insertFormalTemps(FnSymbol* fn) {
 
 static Map<Symbol*,Symbol*> paramMap;
 
+static bool
+isType(Expr* expr) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (sym->var->isTypeVariable)
+      return true;
+    if (dynamic_cast<TypeSymbol*>(sym->var))
+      return true;
+  } else if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->isPrimitive(PRIMITIVE_TYPEOF))
+      return true;
+  }
+  return false;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->isNamed("_construct__tuple") && !call->isResolved()) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym->var)) {
+        if (call->argList->length() == 1) {
+          if (SymExpr* arg = dynamic_cast<SymExpr*>(call->get(1))) {
+            if (VarSymbol* var = dynamic_cast<VarSymbol*>(arg->var)) {
+              if (var->immediate) {
+                if (NUM_KIND_INT == var->immediate->const_kind ||
+                    NUM_KIND_UINT == var->immediate->const_kind) {
+                  int size;
+                  if (NUM_KIND_INT == var->immediate->const_kind) {
+                    size = var->immediate->int_value();
+                  } else {
+                    size = (int)var->immediate->uint_value();
+                  }
+                  TypeSymbol* tsize;
+                  if (type == dtInt[INT_SIZE_32]->symbol) {
+                    switch (size) {
+                    case 8: tsize = dtInt[INT_SIZE_8]->symbol; break;
+                    case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;
+                    case 32: tsize = dtInt[INT_SIZE_32]->symbol; break;
+                    case 64: tsize = dtInt[INT_SIZE_64]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for int", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  } else if (type == dtUInt[INT_SIZE_32]->symbol) {
+                    switch (size) {
+                    case  8: tsize = dtUInt[INT_SIZE_8]->symbol;  break;
+                    case 16: tsize = dtUInt[INT_SIZE_16]->symbol; break;
+                    case 32: tsize = dtUInt[INT_SIZE_32]->symbol; break;
+                    case 64: tsize = dtUInt[INT_SIZE_64]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for uint", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
+                    switch (size) {
+                    case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
+                    case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
+                    case 128: tsize = dtReal[FLOAT_SIZE_128]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for imag", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
+                    switch (size) {
+                    case 32:  tsize = dtImag[FLOAT_SIZE_32]->symbol;  break;
+                    case 64:  tsize = dtImag[FLOAT_SIZE_64]->symbol;  break;
+                    case 128: tsize = dtImag[FLOAT_SIZE_128]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for imag", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
+                    switch (size) {
+                    case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
+                    case 128: tsize = dtComplex[COMPLEX_SIZE_128]->symbol; break;
+                    case 256: tsize = dtComplex[COMPLEX_SIZE_256]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for complex", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (call->isNamed("_init")) {
+      if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
+        if (construct->isNamed("_build_array_type") ||
+            construct->isNamed("_build_sparse_domain_type") ||
+            construct->isNamed("_build_domain_type") ||
+            construct->isNamed("_build_index_type")) {
+          result = construct->remove();
+          call->replace(result);
+        } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(construct->isResolved())) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+            if (!ct->isGeneric) {
+              if (ct->defaultValue)
+                result = new CallExpr("_cast", fn->retType->symbol, gNil);
+              else
+                result = construct->remove();
+              call->replace(result);
+            }
+          }
+        }
+      } else if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+        TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var);
+        if (!ts && sym->var->isTypeVariable)
+          ts = sym->var->type->symbol;
+        if (ts) {
+          if (ts->type->defaultValue)
+            result = new CallExpr("_cast", ts, ts->type->defaultValue);
+          else if (ts->type->defaultConstructor)
+            result = new CallExpr(ts->type->defaultConstructor);
+          else
+            INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
+          call->replace(result);
+        }
+      }
+    } else if (call->isNamed("_copy")) {
+      if (call->argList->length() == 1) {
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+          if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var)) {
+            if (var->immediate) {
+              result = new SymExpr(var);
+              call->replace(result);
+            }
+          }
+        }
+      }
+    } else if (call->isNamed("_cast")) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+          if (var->immediate) {
+            if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+              TypeSymbol* ts = sym->var->type->symbol;
+              if (!is_imag_type(ts->type) && 
+                  !is_complex_type(ts->type) && ts->type != dtString) {
+                VarSymbol* typevar = dynamic_cast<VarSymbol*>(ts->type->defaultValue);
+                if (!typevar || !typevar->immediate)
+                  INT_FATAL("unexpected case in cast_fold");
+                Immediate coerce = *typevar->immediate;
+                coerce_immediate(var->immediate, &coerce);
+                result = new SymExpr(new_ImmediateSymbol(&coerce));
+                call->replace(result);
+              }
+            }
+          }
+        }
+      }
+    } else if (call->isNamed("==")) {
+      if (isType(call->get(1)) || isType(call->get(2))) {
+        Type* lt = call->get(1)->typeInfo();
+        Type* rt = call->get(2)->typeInfo();
+        if (lt != dtUnknown && rt != dtUnknown &&
+            !lt->isGeneric && !rt->isGeneric) {
+          result = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+          call->replace(result);
+        }
+      }
+    } else if (call->isNamed("!=")) {
+      if (isType(call->get(1)) || isType(call->get(2))) {
+        Type* lt = call->get(1)->typeInfo();
+        Type* rt = call->get(2)->typeInfo();
+        if (lt != dtUnknown && rt != dtUnknown &&
+            !lt->isGeneric && !rt->isGeneric) {
+          result = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+          call->replace(result);
+        }
+      }
+    } else if (call->isNamed("_construct__tuple") && !call->isResolved()) {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
           if (var->immediate) {
@@ -1466,6 +1650,24 @@ preFold(Expr* expr) {
   return result;
 }
 
+#define FOLD_CALL(prim) \
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) { \
+    if (VarSymbol* lhs = dynamic_cast<VarSymbol*>(sym->var)) { \
+      if (lhs->immediate) { \
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) { \
+          if (VarSymbol* rhs = dynamic_cast<VarSymbol*>(sym->var)) { \
+            if (rhs->immediate) { \
+              Immediate i3; \
+              fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
+              result = new SymExpr(new_ImmediateSymbol(&i3)); \
+              call->replace(result); \
+            } \
+          } \
+        } \
+      } \
+    } \
+  }
+
 static Expr*
 postFold(Expr* expr) {
   Expr* result = expr;
@@ -1481,19 +1683,29 @@ postFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
-      if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
-        if (VarSymbol* rhsVar = dynamic_cast<VarSymbol*>(rhs->var)) {
-          if (rhsVar->immediate) {
-            if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
-              if (lhs->var->canParam) {
+      if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
+        if (lhs->var->canParam || lhs->var->isParam()) {
+          if (paramMap.get(lhs->var))
+            INT_FATAL(call, "parameter set multiple times");
+          bool set = false;
+          if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+            if (VarSymbol* rhsVar = dynamic_cast<VarSymbol*>(rhs->var)) {
+              if (rhsVar->immediate) {
                 paramMap.put(lhs->var, rhsVar);
                 lhs->var->defPoint->remove();
                 makeNoop(call);
+                set = true;
               }
             }
           }
+          if (!set && lhs->var->isParam())
+            USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
         }
       }
+    } else if (call->isPrimitive(PRIMITIVE_LSH)) {
+      FOLD_CALL(P_prim_lsh);
+    } else if (call->isPrimitive(PRIMITIVE_RSH)) {
+      FOLD_CALL(P_prim_rsh);
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
     if (paramMap.get(sym->var))
@@ -1503,14 +1715,8 @@ postFold(Expr* expr) {
 }
 
 static void
-resolveFns(FnSymbol* fn) {
-  if (resolvedFns.set_in(fn))
-    return;
-  resolvedFns.set_add(fn);
-
-  insertFormalTemps(fn);
-
-  for_exprs_postorder(expr, fn->body) {
+resolveBody(Expr* body) {
+  for_exprs_postorder(expr, body) {
     expr = preFold(expr);
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
@@ -1537,6 +1743,17 @@ resolveFns(FnSymbol* fn) {
     }
     expr = postFold(expr);
   }
+}
+
+static void
+resolveFns(FnSymbol* fn) {
+  if (resolvedFns.set_in(fn))
+    return;
+  resolvedFns.set_add(fn);
+
+  insertFormalTemps(fn);
+
+  resolveBody(fn->body);
 
   Symbol* ret = fn->getReturnSymbol();
   Type* retType = ret->type;
@@ -1662,7 +1879,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
               subs.put(arg, pfn->getFormal(i)->type);
             }
           }
-          FnSymbol* icfn = cfn->instantiate_generic(&subs);
+          FnSymbol* icfn = instantiate(cfn, &subs);
           resolveFormals(icfn);
           if (signature_match(pfn, icfn)) {
             resolveFns(icfn);
@@ -1683,7 +1900,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
           }
         }
         if (subs.n)
-          cfn = cfn->instantiate_generic(&subs);
+          cfn = instantiate(cfn, &subs);
         resolveFormals(cfn);
         if (signature_match(pfn, cfn)) {
           resolveFns(cfn);
@@ -2005,4 +2222,22 @@ setFieldTypes(FnSymbol* fn) {
       INT_FATAL(formal, "Unable to find field in constructor");
   }
   fixTypeNames(ct);
+}
+
+
+static FnSymbol*
+instantiate(FnSymbol* fn, ASTMap* subs) {
+  FnSymbol* ifn = fn->instantiate_generic(subs);
+  if (!ifn->isGeneric && ifn->where) {
+    resolveBody(ifn->where);
+    normalize(ifn->where); // temporary call to normalize until parameter folding is fully folded
+    SymExpr* symExpr = dynamic_cast<SymExpr*>(ifn->where->body->last());
+    if (!symExpr)
+      USR_FATAL(ifn->where, "Illegal where clause");
+    if (!strcmp(symExpr->var->name, "false"))
+      return NULL;
+    if (strcmp(symExpr->var->name, "true"))
+      USR_FATAL(ifn->where, "Illegal where clause");
+  }
+  return ifn;
 }

@@ -210,10 +210,20 @@ pragma "inline" def <<(a: int(64), b: integral) return __primitive("<<", a, b);
 pragma "inline" def <<(a: uint(32), b: integral) return __primitive("<<", a, b);
 pragma "inline" def <<(a: uint(64), b: integral) return __primitive("<<", a, b);
 
+pragma "inline" def <<(param a: int(32), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" def <<(param a: int(64), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" def <<(param a: uint(32), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" def <<(param a: uint(64), param b: integral) param return __primitive("<<", a, b);
+
 pragma "inline" def >>(a: int(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def >>(a: int(64), b: integral) return __primitive(">>", a, b);
 pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
 pragma "inline" def >>(a: uint(64), b: integral) return __primitive(">>", a, b);
+
+pragma "inline" def >>(param a: int(32), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" def >>(param a: int(64), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" def >>(param a: uint(32), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" def >>(param a: uint(64), param b: integral) param return __primitive(">>", a, b);
 
 //
 // _init on primitive types and classes

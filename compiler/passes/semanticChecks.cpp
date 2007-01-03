@@ -176,23 +176,6 @@ check_normalized(void) {
 
 
 static void
-check_resolved_calls(CallExpr* call) {
-}
-
-
-static void
-check_resolved_vars(VarSymbol* var) {
-  if (var->immediate)
-    return;
-  if (!dynamic_cast<TypeSymbol*>(var->defPoint->parentSymbol))
-    if (var->isParam())
-      USR_FATAL(var,
-                "Initializing parameter '%s' to value not known at compile time",
-                var->name);
-}
-
-
-static void
 check_resolved_syms(Symbol* var) {
   if (!var->isConst() && !var->isParam())
     return;
@@ -226,10 +209,6 @@ check_resolved(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
-      check_resolved_calls(a);
-    else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
-      check_resolved_vars(a);
     if (dynamic_cast<VarSymbol*>(ast) || dynamic_cast<ArgSymbol*>(ast))
       check_resolved_syms(dynamic_cast<Symbol*>(ast));
   }
