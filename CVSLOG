@@ -90212,3 +90212,40 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/03/07 09:46:56 -- deitz
+
+Log message:
+	Refactored instantiation so that the where clause can be folded using
+	function resolution parameter folding.
+	
+	Applied function resolution parameter folding to the default
+	expressions on type arguments.
+	
+	Moved folding of parameterized primitive types to function resolution.
+	Replicated folding of _init, _copy, _cast, type equality and
+	inequality in function resolution (also done in normalization).
+	Replicated folding of << and >> in functio n resolution using
+	parameter functions added to the base module.
+	
+	Fixed cast in bpop test which will no longer work once parameter
+	folding follows the semantics of function resolution.  This is worth
+	noting:
+	
+	  -2:int(8)
+	
+	currently produces an int(8) value of -2 since 2 is cast to an int(8)
+	and then - is applied to it using parameter folding which maintains
+	the int(8) type.  But were this not folded, the result would be an
+	int(32) since all operations apply only to 32 and 64 bit integers.
+	Once parameter folding is handled correctly, the result will be the
+	same, an int(32) with value -2.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/trivial/deitz/: test_bpop2.chpl 
+
