@@ -1610,6 +1610,39 @@ preFold(Expr* expr) {
       }
     }
 
+    if (call->argList->length() == 2) {
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+        if (symExpr->var == gMethodToken) {
+          Type* type = call->get(2)->typeInfo();
+          Vec<BaseAST*> keys;
+          type->substitutions.get_keys(keys);
+          forv_Vec(BaseAST, key, keys) {
+            if (Symbol* var = dynamic_cast<Symbol*>(key)) {
+              if (call->isNamed(var->name)) {
+                if (Symbol* value = dynamic_cast<Symbol*>(type->substitutions.get(key))) {
+                  result = new SymExpr(value);
+                  call->replace(result);
+                } else if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
+                  if (var->isTypeVariable) {
+                    result = new SymExpr(value->symbol);
+                    call->replace(result);
+                  }
+                }
+              }
+            } else if (Type* var = dynamic_cast<Type*>(key)) {
+              INT_FATAL("type key encountered");
+              if (call->isNamed(var->symbol->name)) {
+                if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
+                  result = new SymExpr(value->symbol);
+                  call->replace(result);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     if (call->isNamed("_init")) {
       if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
         if (construct->isNamed("_build_array_type") ||

@@ -148,8 +148,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-  fold_params(base);
-
   dtAny->isGeneric = true;
   dtIntegral->isGeneric = true;
   dtNumeric->isGeneric = true;
@@ -163,6 +161,8 @@ void normalize(BaseAST* base) {
         changed = tag_generic(fn) || changed;
     }
   }
+
+  fold_params(base);
 }
 
 
