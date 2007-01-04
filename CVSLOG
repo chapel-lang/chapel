@@ -90266,3 +90266,19 @@ Added files:
 	chapel/test/memory/shannon/: memstatPrint.linux64.good 
 	                             printFinalMemStat.linux64.good 
 
+---------------------------------------------------------------------------
+
+01/03/07 16:38:21 -- deitz
+
+Log message:
+	Replicated the rest of parameter folding into function resolution.  It
+	is still first exercised in normalization and so this code is not
+	going to have much effect until more of that code is removed.  Added
+	parameter versions of the other arithmetic functions that we fold.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
