@@ -90282,3 +90282,16 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+01/04/07 10:10:11 -- deitz
+
+Log message:
+	Replicated handling of getters of parameters and types in function
+	resolution parameter folding (from normalization parameter handling).
+	
+	Moved normalization parameter folding to the end of normalization.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
