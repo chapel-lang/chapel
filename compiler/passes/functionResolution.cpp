@@ -380,11 +380,6 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     // handle unspecified variable number of arguments
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
 
-      // ensure unspecified variable number of arguments is last
-//       if (arg->defPoint->next)
-//         INT_FATAL(arg, "unspecified variable number of arguments "
-//                        "can only be applied to the last argument");
-
       // check for cached stamped out function
       if (Vec<FnSymbol*>* cfns = varArgsCache.get(fn)) {
         forv_Vec(FnSymbol, cfn, *cfns) {
@@ -403,9 +398,10 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       fn->defPoint->insertBefore(new DefExpr(newFn));
       DefExpr* newDef = dynamic_cast<DefExpr*>(map.get(def));
       newDef->replace(new SymExpr(new_IntSymbol(numCopies)));
-      newFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newDef->sym,
-                                       new_IntSymbol(numCopies)));
-      newFn->insertAtHead(newDef);
+
+      ASTMap update;
+      update.put(newDef->sym, new_IntSymbol(numCopies));
+      update_symbols(newFn, &update);
 
       // add new function to cache
       Vec<FnSymbol*>* cfns = varArgsCache.get(fn);
@@ -1465,6 +1461,75 @@ isType(Expr* expr) {
   return false;
 }
 
+static void fold_param_for(CallExpr* loop) {
+  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->next);
+  if (!block || block->blockTag != BLOCK_PARAM_FOR)
+    INT_FATAL(loop, "bad param loop primitive");
+  if (loop && loop->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
+    if (SymExpr* lse = dynamic_cast<SymExpr*>(loop->get(2))) {
+      if (SymExpr* hse = dynamic_cast<SymExpr*>(loop->get(3))) {
+        if (SymExpr* sse = dynamic_cast<SymExpr*>(loop->get(4))) {
+          if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
+            if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
+              if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
+                if (lvar->immediate && hvar->immediate && svar->immediate) {
+                  int64 low = lvar->immediate->int_value();
+                  int64 high = hvar->immediate->int_value();
+                  int64 stride = svar->immediate->int_value();
+                  Expr* index_expr = loop->get(1);
+                  loop->remove();
+                  block->blockTag = BLOCK_NORMAL;
+                  Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
+                  if (stride <= 0)
+                    INT_FATAL("fix this");
+                  for (int i = low; i <= high; i += stride) {
+                    VarSymbol* new_index = new VarSymbol(index->name);
+                    new_index->consClass = VAR_PARAM;
+                    block->insertBefore(new DefExpr(new_index, new_IntSymbol(i)));
+                    ASTMap map;
+                    map.put(index, new_index);
+                    block->insertBefore(block->copy(&map));
+                  }
+                  normalize(block->parentSymbol);
+                  block->remove();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static Expr* fold_cond_stmt(CondStmt* if_stmt) {
+  Expr* result = NULL;
+  if (SymExpr* cond = dynamic_cast<SymExpr*>(if_stmt->condExpr)) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(cond->var)) {
+      if (var->immediate &&
+          var->immediate->const_kind == NUM_KIND_UINT &&
+          var->immediate->num_index == INT_SIZE_1) {
+        result = new CallExpr(PRIMITIVE_NOOP);
+        if_stmt->insertBefore(result);
+        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
+          Expr* then_stmt = if_stmt->thenStmt;
+          then_stmt->remove();
+          if_stmt->replace(then_stmt);
+        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
+          Expr* else_stmt = if_stmt->elseStmt;
+          if (else_stmt) {
+            else_stmt->remove();
+            if_stmt->replace(else_stmt);
+          } else {
+            if_stmt->remove();
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -1645,28 +1710,54 @@ preFold(Expr* expr) {
           }
         }
       }
+    } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
+      fold_param_for(call);
+      makeNoop(call);
     }
   }
   return result;
 }
 
-#define FOLD_CALL(prim) \
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) { \
-    if (VarSymbol* lhs = dynamic_cast<VarSymbol*>(sym->var)) { \
-      if (lhs->immediate) { \
-        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) { \
-          if (VarSymbol* rhs = dynamic_cast<VarSymbol*>(sym->var)) { \
-            if (rhs->immediate) { \
-              Immediate i3; \
-              fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
-              result = new SymExpr(new_ImmediateSymbol(&i3)); \
-              call->replace(result); \
-            } \
-          } \
-        } \
-      } \
-    } \
+#define FOLD_CALL1(prim)                                                \
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {            \
+    if (VarSymbol* lhs = dynamic_cast<VarSymbol*>(sym->var)) {          \
+      if (lhs->immediate) {                                             \
+        Immediate i3;                                                   \
+        fold_constant(prim, lhs->immediate, NULL, &i3);                 \
+        result = new SymExpr(new_ImmediateSymbol(&i3));                 \
+        call->replace(result);                                          \
+      }                                                                 \
+    }                                                                   \
   }
+
+#define FOLD_CALL2(prim)                                                \
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {            \
+    if (VarSymbol* lhs = dynamic_cast<VarSymbol*>(sym->var)) {          \
+      if (lhs->immediate) {                                             \
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {      \
+          if (VarSymbol* rhs = dynamic_cast<VarSymbol*>(sym->var)) {    \
+            if (rhs->immediate) {                                       \
+              Immediate i3;                                             \
+              fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
+              result = new SymExpr(new_ImmediateSymbol(&i3));           \
+              call->replace(result);                                    \
+            }                                                           \
+          }                                                             \
+        }                                                               \
+      }                                                                 \
+    }                                                                   \
+  }
+
+static bool
+isSubType(Type* sub, Type* super) {
+  if (sub == super)
+    return true;
+  forv_Vec(Type, parent, sub->dispatchParents) {
+    if (isSubType(parent, super))
+      return true;
+  }
+  return false;
+}
 
 static Expr*
 postFold(Expr* expr) {
@@ -1702,14 +1793,92 @@ postFold(Expr* expr) {
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
         }
       }
+    } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      Type* baseType = call->get(1)->typeInfo();
+      char* memberName = get_string(call->get(2));
+      Symbol* sym = baseType->getField(memberName);
+      if (sym->isParam()) {
+        Vec<BaseAST*> keys;
+        baseType->substitutions.get_keys(keys);
+        forv_Vec(BaseAST, key, keys) {
+          if (Symbol* var = dynamic_cast<Symbol*>(key)) {
+            if (!strcmp(sym->name, var->name)) {
+              if (Symbol* value = dynamic_cast<Symbol*>(baseType->substitutions.get(key))) {
+                result = new SymExpr(value);
+                call->replace(result);
+              }
+            }
+          }
+        }
+      }
+    } else if (call->isPrimitive(PRIMITIVE_ISSUBTYPE)) {
+      if (isType(call->get(1)) || isType(call->get(2))) {
+        Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
+        Type* rt = call->get(1)->typeInfo();
+        if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
+            rt != dtAny && !lt->isGeneric) {
+          bool is_true = false;
+          if (lt->instantiatedFrom == rt)
+            is_true = true;
+          if (isSubType(lt, rt))
+            is_true = true;
+          result = (is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+          call->replace(result);
+        }
+      }
+    } else if (call->isPrimitive(PRIMITIVE_UNARY_MINUS)) {
+      FOLD_CALL1(P_prim_minus);
+    } else if (call->isPrimitive(PRIMITIVE_UNARY_PLUS)) {
+      FOLD_CALL1(P_prim_plus);
+    } else if (call->isPrimitive(PRIMITIVE_UNARY_NOT)) {
+      FOLD_CALL1(P_prim_not);
+    } else if (call->isPrimitive(PRIMITIVE_UNARY_LNOT)) {
+      FOLD_CALL1(P_prim_lnot);
+    } else if (call->isPrimitive(PRIMITIVE_ADD)) {
+      FOLD_CALL2(P_prim_add);
+    } else if (call->isPrimitive(PRIMITIVE_SUBTRACT)) {
+      FOLD_CALL2(P_prim_subtract);
+    } else if (call->isPrimitive(PRIMITIVE_MULT)) {
+      FOLD_CALL2(P_prim_mult);
+    } else if (call->isPrimitive(PRIMITIVE_DIV)) {
+      FOLD_CALL2(P_prim_div);
+    } else if (call->isPrimitive(PRIMITIVE_MOD)) {
+      FOLD_CALL2(P_prim_mod);
+    } else if (call->isPrimitive(PRIMITIVE_EQUAL)) {
+      FOLD_CALL2(P_prim_equal);
+    } else if (call->isPrimitive(PRIMITIVE_NOTEQUAL)) {
+      FOLD_CALL2(P_prim_notequal);
+    } else if (call->isPrimitive(PRIMITIVE_LESSOREQUAL)) {
+      FOLD_CALL2(P_prim_lessorequal);
+    } else if (call->isPrimitive(PRIMITIVE_GREATEROREQUAL)) {
+      FOLD_CALL2(P_prim_greaterorequal);
+    } else if (call->isPrimitive(PRIMITIVE_LESS)) {
+      FOLD_CALL2(P_prim_less);
+    } else if (call->isPrimitive(PRIMITIVE_GREATER)) {
+      FOLD_CALL2(P_prim_greater);
+    } else if (call->isPrimitive(PRIMITIVE_AND)) {
+      FOLD_CALL2(P_prim_and);
+    } else if (call->isPrimitive(PRIMITIVE_OR)) {
+      FOLD_CALL2(P_prim_or);
+    } else if (call->isPrimitive(PRIMITIVE_XOR)) {
+      FOLD_CALL2(P_prim_xor);
+    } else if (call->isPrimitive(PRIMITIVE_POW)) {
+      FOLD_CALL2(P_prim_pow);
     } else if (call->isPrimitive(PRIMITIVE_LSH)) {
-      FOLD_CALL(P_prim_lsh);
+      FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIMITIVE_RSH)) {
-      FOLD_CALL(P_prim_rsh);
+      FOLD_CALL2(P_prim_rsh);
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
     if (paramMap.get(sym->var))
       sym->var = paramMap.get(sym->var);
+  }
+  if (CondStmt* cond = dynamic_cast<CondStmt*>(result->parentExpr)) {
+    if (cond->condExpr == result) {
+      if (Expr* expr = fold_cond_stmt(cond)) {
+        result = expr;
+      }
+    }
   }
   return result;
 }

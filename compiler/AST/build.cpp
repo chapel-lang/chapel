@@ -311,11 +311,11 @@ BlockStmt* build_for_block(BlockTag tag,
 
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
+  BlockStmt* outer = new BlockStmt(block);
   block->blockTag = BLOCK_PARAM_FOR;
   VarSymbol* index_var = new VarSymbol(index);
-  block->insertAtHead(new CallExpr(PRIMITIVE_LOOP_PARAM, new SymExpr(index_var), low, high, stride));
-  BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
+  block->insertBefore(new CallExpr(PRIMITIVE_LOOP_PARAM, new SymExpr(index_var), low, high, stride));
   return build_chpl_stmt(outer);
 }
 

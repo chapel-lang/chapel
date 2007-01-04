@@ -158,6 +158,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
+  if (field->isParam())
+    fn->isParam = true;
   reset_file_info(fn, field->lineno, field->filename);
   normalize(fn);
   ct->methods.add(fn);

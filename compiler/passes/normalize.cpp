@@ -1084,7 +1084,7 @@ static void fold_cond_stmt(CondStmt* if_stmt) {
 }
 
 static void fold_param_for(CallExpr* loop) {
-  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->parentExpr);
+  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->next);
   if (!block || block->blockTag != BLOCK_PARAM_FOR)
     INT_FATAL(loop, "bad param loop primitive");
   if (loop && loop->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
