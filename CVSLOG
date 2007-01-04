@@ -90295,3 +90295,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/04/07 11:09:19 -- bradc
+
+Log message:
+	Fixed this test to work on Linux64 by making
+	the threshold twice as great as the aarray size.
+
+Modified files:
+	chapel/test/memory/shannon/: printMemTable2.chpl 
+	                             printMemTable2.good 
+
