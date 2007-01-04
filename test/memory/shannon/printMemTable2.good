@@ -6,8 +6,8 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-8        16       128      0xnnnnnnnn  _data
-8        16       128      0xnnnnnnnn  _data
-8        16       128      0xnnnnnnnn  _data
-8        16       128      0xnnnnnnnn  _data
+8        32       256      0xnnnnnnnn  _data
+8        32       256      0xnnnnnnnn  _data
+8        32       256      0xnnnnnnnn  _data
+8        32       256      0xnnnnnnnn  _data
 
