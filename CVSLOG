@@ -90307,3 +90307,18 @@ Modified files:
 	chapel/test/memory/shannon/: printMemTable2.chpl 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+01/04/07 13:31:10 -- deitz
+
+Log message:
+	Decreased the precedence of casts below unary minus.  Updated the spec
+	and fixed a test case.
+	
+	For example, this means '-2: uint(32)' is a uint(32), not an int(64).
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/spec/: Expressions.tex 
+	chapel/test/trivial/marybeth/: casts1.chpl 
+
