@@ -255,9 +255,9 @@ Is this "while x"(i); or "while x(i)";?
 %left TSHIFTLEFT TSHIFTRIGHT
 %left TPLUS TMINUS
 %left TSTAR TDIVIDE TMOD
+%left TCOLON TNOTCOLON
 %right TUPLUS TUMINUS TBNOT
 %right TEXP
-%left TCOLON TNOTCOLON
 %left TLP TLSBR
 %left TDOT
 
