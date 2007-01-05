@@ -90336,3 +90336,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/07 09:52:45 -- deitz
+
+Log message:
+	Added canType field to Symbol to mirror canParam field.  It is used
+	for compiler inserted temporaries and signals that the temporary can
+	be a type.  This fixes some problems with moving parameter folding
+	into function resolution.  When disabling normalization parameter
+	folding, we are now at 1387/1476 tests passing.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
