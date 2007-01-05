@@ -90352,3 +90352,15 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/07 13:45:38 -- deitz
+
+Log message:
+	Applied function resolution parameter folding to the variable argument
+	expression on a formal argument.  Disabling normalization parameter
+	folding now results in only 6 regressions.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
