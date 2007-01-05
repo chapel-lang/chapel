@@ -376,6 +376,9 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> varArgsCache;
 static FnSymbol*
 expandVarArgs(FnSymbol* fn, int numActuals) {
   for_formals(arg, fn) {
+    if (!fn->isGeneric && arg->variableExpr &&
+        !dynamic_cast<DefExpr*>(arg->variableExpr))
+      resolve_type_expr(arg->variableExpr);
 
     // handle unspecified variable number of arguments
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
@@ -438,7 +441,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           normalize(fn);
         }
       }
-    }
+    } else if (!fn->isGeneric && arg->variableExpr)
+      INT_FATAL("bad variableExpr");
   }
   return fn;
 }
