@@ -1477,20 +1477,15 @@ static void fold_param_for(CallExpr* loop) {
                   int64 high = hvar->immediate->int_value();
                   int64 stride = svar->immediate->int_value();
                   Expr* index_expr = loop->get(1);
-                  loop->remove();
                   block->blockTag = BLOCK_NORMAL;
                   Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
                   if (stride <= 0)
                     INT_FATAL("fix this");
                   for (int i = low; i <= high; i += stride) {
-                    VarSymbol* new_index = new VarSymbol(index->name);
-                    new_index->consClass = VAR_PARAM;
-                    block->insertBefore(new DefExpr(new_index, new_IntSymbol(i)));
                     ASTMap map;
-                    map.put(index, new_index);
+                    map.put(index, new_IntSymbol(i));
                     block->insertBefore(block->copy(&map));
                   }
-                  normalize(block->parentSymbol);
                   block->remove();
                 }
               }

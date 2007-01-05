@@ -713,7 +713,8 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
-    if (parentCall->isPrimitive(PRIMITIVE_MOVE))
+    if (parentCall->isPrimitive(PRIMITIVE_MOVE) ||
+        parentCall->isPrimitive(PRIMITIVE_REF))
       return;
     if (parentCall->isNamed("_init"))
       call = parentCall;
@@ -1004,8 +1005,6 @@ static bool fold_call_expr(CallExpr* call) {
           FOLD_CALL("~", P_prim_not);
           FOLD_CALL("!", P_prim_lnot);
         }
-
-        /* look for 8? */
       }
     }
   }
