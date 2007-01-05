@@ -90322,3 +90322,17 @@ Modified files:
 	chapel/spec/: Expressions.tex 
 	chapel/test/trivial/marybeth/: casts1.chpl 
 
+---------------------------------------------------------------------------
+
+01/04/07 16:06:34 -- deitz
+
+Log message:
+	Fixed some problems with parameter loop folding resulting from its
+	move to function resolution.
+	
+	Normalization parameter folding is still turned on, but turning it off
+	now works for many simple codes (1280/1476 tests).
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
