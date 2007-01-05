@@ -203,6 +203,9 @@ void countCommentLine(void) {
 
 void countSingleLineComment(char* comment) {
   if (printTokens) {
+    if (!comment) {
+      comment = "";
+    }
     sprintf(line, "%s -- %s", line, comment);
   }
 }
