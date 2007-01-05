@@ -123,7 +123,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   isTypeVariable(false),
   isReference(false),
   canReference(false),
-  canParam(false)
+  canParam(false),
+  canType(false)
 {}
 
 
@@ -345,6 +346,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->isReference = isReference;
   newVarSymbol->canReference = canReference;
   newVarSymbol->canParam = canParam;
+  newVarSymbol->canType = canType;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }

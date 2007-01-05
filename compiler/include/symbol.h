@@ -45,6 +45,7 @@ class Symbol : public BaseAST {
   bool isReference;    // is a reference
   bool canReference;   // can be a reference (determined during resolution)
   bool canParam;       // can be a parameter (determined during resolution)
+  bool canType;        // can be a type (determined during resolution)
   Vec<SymExpr*> uses;
   Vec<char*> pragmas;
 

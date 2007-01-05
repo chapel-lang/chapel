@@ -1802,11 +1802,11 @@ postFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      bool set = false;
       if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
         if (lhs->var->canParam || lhs->var->isParam()) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
-          bool set = false;
           if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
             if (VarSymbol* rhsVar = dynamic_cast<VarSymbol*>(rhs->var)) {
               if (rhsVar->immediate) {
@@ -1819,6 +1819,12 @@ postFold(Expr* expr) {
           }
           if (!set && lhs->var->isParam())
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
+        }
+        if (!set && lhs->var->canType) {
+          if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+            if (rhs->var->isTypeVariable)
+              lhs->var->isTypeVariable = true;
+          }
         }
       }
     } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {

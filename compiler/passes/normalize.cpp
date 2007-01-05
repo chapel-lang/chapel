@@ -725,6 +725,7 @@ static void insert_call_temps(CallExpr* call) {
   tmp->isCompilerTemp = true;
   tmp->canReference = true;
   tmp->canParam = true;
+  tmp->canType = true;
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
