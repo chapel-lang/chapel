@@ -90364,3 +90364,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/07 15:22:25 -- bradc
+
+Log message:
+	Fixed a SunOS regression due to their sprintf()
+	not being as resilient to NULL pointers as Linux's.
+
+Modified files:
+	chapel/compiler/parser/: countTokens.cpp 
+
