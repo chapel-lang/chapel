@@ -90387,3 +90387,64 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: defaultParamInOut.future 
 
+---------------------------------------------------------------------------
+
+01/05/07 16:30:51 -- deitz
+
+Log message:
+	Disabled parameter folding in normalization.  This completes the move
+	of parameter folding into function resolution and should enable some
+	major improvements and bug fixes.
+	
+	Fixed variable argument expansion to handle generic functions better
+	in the case that a function is generic but due to the variable
+	argument list needs to be instantiated twice, once on the arguments
+	before the variable number of arguments and then on the arguments
+	after.  This shows up in arrays/deitz/test_assign_slice2 which has a
+	situation like
+	
+	  def foo(x, a: int... x.rank, y) {
+	
+	This function needs to be instantiated twice.  In a first pass, x
+	needs to be instantiated.  Then the argument list can be expanded.
+	Then, only after the argument list is instantiated, y can be
+	instantiated.  The actual corresponding to y is not known before the
+	variable argument list is expanded.
+	
+	One way to simplify instantiation may be to have it work on one
+	argument at a time and always rely on multiple instantiations when
+	multiple arguments require subsitutions.
+	
+	Made it so that the isGeneric tag on functions is now copied when the
+	functions are copied.  It is unset during instantiation.  This enables
+	the case where parameter folding replicates a nested function that is
+	generic.  Previously, copied functions were set non-generic and
+	instantiation used copying.  This change is more sane and does not
+	embed this in copying.
+	
+	Disabled checking for over-instantiation on functions defined in the
+	base module.  This includes all of the parameter folding functions.
+	This makes the error message clearer for
+	types/type_variables/deitz/part3/test_overinstantiate1.  Without this
+	disabling, the compiler complains about + being over-instantiated.
+	Though not a problem in any of our tests, each unique parameter folded
+	value now results in a unique instantiation.  There is room for
+	optimization here, but it may not be as bad as it sounds.
+	
+	Moved the checking of valid enumerated type constants after
+	resolution, rather than after normalization, since parameter folding
+	is in function resolution.  Enumerated types and their constants are
+	still not as orthogonal as one would like, see comment in function
+	resolution.
+	
+	Updated test_param_fold5 to make a bogus function call in an
+	unexecuted path rather than a bogus variable access, since the bogus
+	variable access is now an error, with parameter folding in function
+	resolution.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/test/trivial/deitz/: test_param_fold5.chpl 
+
