@@ -1,3 +1,0 @@
-inout
-
-inout is implemented by reference leading to aliasing as seen in this test
