@@ -90490,3 +90490,22 @@ Modified files:
 	chapel/modules/standard/: Types.chpl 
 	chapel/test/release/examples/hpcc06/: README probSize.chpl 
 
+---------------------------------------------------------------------------
+
+01/05/07 17:25:30 -- bradc
+
+Log message:
+	Mary Beth pointed out that what I thought was an
+	approximate equals was actually a not-equals.  Oops!
+	Also, removed a file which I didn't realize never
+	got filled in.
+	
+	Still need to break this into three cases: ideal
+	implementation, safe implementation, compiles
+	currently.
+
+Modified files:
+	chapel/test/studies/lu/: dongarra-lu.chpl 
+Removed files:
+	chapel/test/studies/lu/: dongarra-lu-compiles.chpl 
+
