@@ -160,18 +160,6 @@ check_normalized(void) {
       }
     }
   }
-  forv_Vec(TypeSymbol, type, gTypes) {
-    if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
-      for_alist(DefExpr, def, et->constants) {
-        if (def->init) {
-          SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
-          if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
-                       !dynamic_cast<VarSymbol*>(sym->var)->immediate))
-            USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
-        }
-      }
-    }
-  }
 }
 
 
@@ -211,5 +199,18 @@ check_resolved(void) {
   forv_Vec(BaseAST, ast, asts) {
     if (dynamic_cast<VarSymbol*>(ast) || dynamic_cast<ArgSymbol*>(ast))
       check_resolved_syms(dynamic_cast<Symbol*>(ast));
+  }
+
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+      for_alist(DefExpr, def, et->constants) {
+        if (def->init) {
+          SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
+          if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
+                       !dynamic_cast<VarSymbol*>(sym->var)->immediate))
+            USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
+        }
+      }
+    }
   }
 }

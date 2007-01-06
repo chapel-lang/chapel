@@ -162,7 +162,7 @@ void normalize(BaseAST* base) {
     }
   }
 
-  fold_params(base);
+  if (0) fold_params(base);
 }
 
 

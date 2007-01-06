@@ -375,8 +375,11 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> varArgsCache;
 
 static FnSymbol*
 expandVarArgs(FnSymbol* fn, int numActuals) {
+  bool genericArg = false;
   for_formals(arg, fn) {
-    if (!fn->isGeneric && arg->variableExpr &&
+    if (arg->type->isGeneric)
+      genericArg = true;
+    if (!genericArg && arg->variableExpr &&
         !dynamic_cast<DefExpr*>(arg->variableExpr))
       resolve_type_expr(arg->variableExpr);
 
@@ -2172,6 +2175,17 @@ resolve() {
   _assign = astr("=");
 
   resolveFns(chpl_main);
+
+  // need to handle enumerated types better
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+      for_alist(DefExpr, def, et->constants) {
+        if (def->init) {
+          resolve_type_expr(def->init);
+        }
+      }
+    }
+  }
 
   int num_types;
   do {

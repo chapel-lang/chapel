@@ -5,4 +5,4 @@ param z = 3;
 if x * y > x / y then
   writeln(z);
 else
-  writeln(a);
+  a();

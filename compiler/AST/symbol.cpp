@@ -703,7 +703,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->retRef = retRef;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
-  copy->isGeneric = false;  // set in normalize()
+  copy->isGeneric = isGeneric;
   copy->isSetter = isSetter;
   copy->_this = _this;
   copy->isMethod = isMethod;
@@ -972,6 +972,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   ASTMap map;
 
   FnSymbol* clone = fn->copy(&map);
+  clone->isGeneric = false;
   clone->visible = false;
   clone->instantiatedFrom = fn;
   clone->substitutions.copy(*generic_subs);
@@ -1214,7 +1215,11 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   // instantiations of a particular type or function
   if (instantiatedTo == NULL)
     instantiatedTo = new Vec<FnSymbol*>();
-  if (instantiatedTo->n >= instantiation_limit) {
+  if (instantiatedTo->n >= instantiation_limit &&
+      // disable error on functions in base module
+      //  because folding is done via instantiation
+      //  caution: be careful developing in the base module
+      baseModule != getModule()) {
     if (fnClass == FN_CONSTRUCTOR) {
       USR_FATAL_CONT(retType, "Type '%s' has been instantiated too many times",
                      retType->symbol->name);
