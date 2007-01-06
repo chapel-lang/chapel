@@ -90476,3 +90476,17 @@ Added files:
 Removed files:
 	chapel/test/studies/jacobi/bradc/: NOTEST 
 
+---------------------------------------------------------------------------
+
+01/05/07 17:17:49 -- bradc
+
+Log message:
+	Since param functions are now supported, changed the
+	numBits() and numBytes() functions in the Types module
+	into param functions and removed an unnecessary cast
+	in the probSize module of the HPCC study.
+
+Modified files:
+	chapel/modules/standard/: Types.chpl 
+	chapel/test/release/examples/hpcc06/: README probSize.chpl 
+
