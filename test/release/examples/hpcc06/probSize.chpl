@@ -29,7 +29,7 @@ module HPCCProblemSize {
 
 
   def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
-    const bytesPerArray = problemSize * numBytes(elemType): psType,
+    const bytesPerArray = problemSize * numBytes(elemType),
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
           lgProbSize = log2(problemSize):psType;
 

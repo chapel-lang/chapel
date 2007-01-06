@@ -37,7 +37,7 @@ Status Notes."  Other changes reflect evolution in the Chapel language
 or standard libraries.  Some changes reflect an improved understanding
 of the benchmarks.
 
-The changes to date are:
+The changes that fix compiler status notes from the paper are:
 
   * the compiler can now infer the return type of an iterator, so the
     explicit return types in the iterators of ra-randstream.chpl have
@@ -46,6 +46,12 @@ The changes to date are:
   * the compiler now supports casts to complex types other than the
     default "complex", so the casts in the FFT codes were changed to
     refer to the named type alias ":elemType" rather than ":complex".
+
+  * the compiler now supports param functions and numBytes was
+    converted into a param function, so the explicit cast in the 
+    printProblemSize() routine in probSize.chpl was removed.
+
+Other changes to date are:
 
   * the memRatio argument to computeProblemSize in probSize.chpl was
     changed into a configuration constant, as alluded to in the
