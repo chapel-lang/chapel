@@ -7,7 +7,7 @@ const D: domain(rank) = [1..n]**rank;
 
 param StencilD: domain(rank) = [-1..1]**rank;
 
-param weights: [ijk in StencilD] real;
+var weights: [StencilD] real;
 
 for d in 1..rank {
   var ind: index(rank) = 0;
@@ -44,7 +44,8 @@ def computeBoundary(ijk: index(rank)) {
     if (ijk(d) < 0 || ijk(d) > n+1) {
       halt("Out of bounds error in computeBoundary");
     }
-  } else if (ijk(d) == n+1) {
+  }
+  if (ijk(1) == n+1) {
     return 1.0;
   } else {
     return 0.0;

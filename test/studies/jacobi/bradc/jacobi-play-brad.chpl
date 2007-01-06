@@ -12,6 +12,7 @@ param weights: [StencilD] real = (/ (/ 0.00, 0.25, 0.00 /),
                                      (/ 0.25, 0.00, 0.25 /),
                                      (/ 0.00, 0.25, 0.00 /) /);
 
+const south = (1,0);
 
 def main() {
   var A: [BigD] real = 0.0;

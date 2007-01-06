@@ -4,7 +4,7 @@ config const epsilon = 0.0001;    // threshold for iteration
 
 // domains for the problem
 const BigD: domain(2) = [0..n+1, 0..n+1];
-const D: subdomain(D) = [1..n, 1..n];     // really want to declare this first
+const D: subdomain(BigD) = [1..n, 1..n];  // really want to declare this first
 // could also imagine wanting to declare one of these in terms of the other
 
 // "directions" in the form of integer tuples
@@ -25,8 +25,8 @@ def main() {
 
   do {
     // assumes promotion of + over homogeneous tuples
-    B = (A[D.shift(north)] + A[D.shift(south)] +
-         A[D.shift(east)]  + A[D.shift(west)]  )/4;
+    B = (A[D.translate(north)] + A[D.translate(south)] +
+         A[D.translate(east)]  + A[D.translate(west)]  )/4;
 
     bigdiff = max reduce [ij in D] abs(A(ij) - B(ij));
 
