@@ -90375,3 +90375,15 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: countTokens.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/07 16:29:32 -- deitz
+
+Log message:
+	Removed .future for test that has been working for a while.  I'm not
+	sure why at some point I thought it wasn't as it doesn't appear that
+	it wasn't.
+
+Removed files:
+	chapel/test/functions/bradc/: defaultParamInOut.future 
+
