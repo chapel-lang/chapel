@@ -1,5 +1,4 @@
 // NEEDS:
-// * approximate ~= comparison for floats
 // * swap assignment operator (<=> ?)
 // * Triangular domain/matrix implementation
 // * flattening slices
@@ -19,10 +18,10 @@ def lutx(A: [1..?n, 1..n]) {
     // no need to convert m from slice-local to global
 
     // skip elimination if column is zero
-    if (abs(A(m, k)) < epsilon) {       // matlab uses ~= -- cute!  I want!
+    if (A(m, k)) != 0) {
 
       // swap pivot row
-      if (abs(m-k) < epsilon) {         // again, good use for ~=: m ~= k
+      if (m != k) {
         const TempRow = A[m,..];       // would like swap assignment here
         A[m,..] = A[k,..];
         A[k,..] = TempRow;
