@@ -90448,3 +90448,31 @@ Modified files:
 	                         semanticChecks.cpp 
 	chapel/test/trivial/deitz/: test_param_fold5.chpl 
 
+---------------------------------------------------------------------------
+
+01/05/07 17:14:38 -- bradc
+
+Log message:
+	Started cleaning up this directory so the NOTEST could
+	be removed before the release, but never finished.
+
+Modified files:
+	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.chpl 
+	                                   jacobi-rankind-brad.chpl 
+	                                   jacobi-simple-brad.chpl 
+	                                   jacobi-simple-compiles.chpl 
+	                                   jacobi-slice-brad.chpl 
+Added files:
+	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.notest 
+	                                   jacobi-play2-brad.notest 
+	                                   jacobi-rankind-brad.notest 
+	                                   jacobi-simple-brad.future 
+	                                   jacobi-simple-brad.good 
+	                                   jacobi-simple-compiles.good 
+	                                   jacobi-slice-brad.future 
+	                                   jacobi-slice-brad.good 
+	                                   jacobi-slice-compiles.chpl 
+	                                   jacobi-slice-compiles.good 
+Removed files:
+	chapel/test/studies/jacobi/bradc/: NOTEST 
+
