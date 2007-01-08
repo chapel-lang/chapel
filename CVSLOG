@@ -90519,3 +90519,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/08/07 09:40:15 -- deitz
+
+Log message:
+	Removed .future files for tests that work now that parameter folding
+	is done during function resolution.  Brad- see the note in
+	
+	  test/modules/bradc/ra-paramWidth.future
+	
+	It mentions fixing something in some of the ra* benchmarks.
+
+Removed files:
+	chapel/test/modules/bradc/: ra-paramWidth.future 
+	                            use_modulewithconst.future 
+
