@@ -90509,3 +90509,13 @@ Modified files:
 Removed files:
 	chapel/test/studies/lu/: dongarra-lu-compiles.chpl 
 
+---------------------------------------------------------------------------
+
+01/08/07 09:34:36 -- deitz
+
+Log message:
+	Removed dead code for parameter folding in normalization.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
