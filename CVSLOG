@@ -90556,3 +90556,32 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_true_plus.future 
 
+---------------------------------------------------------------------------
+
+01/08/07 12:21:38 -- deitz
+
+Log message:
+	Added a _cond_test inlined function to serve two purposes:
+	
+	  Restrict conditional expressions to bool, classes, and integral
+	  types, as per the spec.
+	
+	  Act on sync and single variables so they are read when used as
+	  conditional expressions.  This is not yet working because of an
+	  ambiguity resulting because a sync variable is itself a class and
+	  thus an object.
+	
+	I use conditional expressions here to refer to those expressions
+	controlling if...then statements and expressions, while statements,
+	and do...while statements.
+	
+	Added a test to show an error when using if on floats.  Previously
+	this "worked" and compared the float as C does.  Now it uses the
+	compilerError function to complain about the type.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_base.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_bad_if.chpl test_bad_if.good 
+
