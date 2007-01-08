@@ -14,6 +14,7 @@ static char* _copy;
 static char* _this;
 static char* _assign;
 
+Map<Symbol*,Symbol*> paramMap;
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
@@ -1452,8 +1453,6 @@ insertFormalTemps(FnSymbol* fn) {
   }
 }
 
-static Map<Symbol*,Symbol*> paramMap;
-
 static bool
 isType(Expr* expr) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
@@ -1911,8 +1910,15 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_rsh);
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    if (paramMap.get(sym->var))
-      sym->var = paramMap.get(sym->var);
+    if (Symbol* val = paramMap.get(sym->var)) {
+      if (sym->var->type != dtUnknown && sym->var->type != val->type) {
+        CallExpr* cast = new CallExpr("_cast", sym->var, val);
+        sym->replace(cast);
+        result = preFold(cast);
+      } else {
+        sym->var = val;
+      }
+    }
   }
   if (CondStmt* cond = dynamic_cast<CondStmt*>(result->parentExpr)) {
     if (cond->condExpr == result) {

@@ -12,6 +12,9 @@
 #include "astutil.h"
 #include "passes.h"
 
+
+extern Map<Symbol*,Symbol*> paramMap;
+
 FnSymbol *chpl_main = NULL;
 
 Symbol *gNil = NULL;
@@ -979,15 +982,34 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
   fn->defPoint->insertBefore(new DefExpr(clone));
 
-  // update body of function with parameter substitutions and, for
-  // constructors, with a return type substitution
-  ASTMap subs;
+  // add parameter instantiations to parameter map for function resolution
   for (int i = 0; i < generic_subs->n; i++) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(generic_subs->v[i].key)) {
-      if (arg->intent == INTENT_PARAM)
-        subs.put(map.get(arg), generic_subs->v[i].value);
+      if (arg->intent == INTENT_PARAM) {
+        Symbol* key = dynamic_cast<Symbol*>(map.get(arg));
+        Symbol* val = dynamic_cast<Symbol*>(generic_subs->v[i].value);
+        if (!key || !val)
+          INT_FATAL("error building parameter map in instantiation");
+        paramMap.put(key, val);
+      }
     }
   }
+
+  // extend parameter map if parameter intent argument is instantiated
+  // again; this may happen because the type is omitted and the
+  // argument is later instantiated based on the type of the parameter
+  for_formals(arg, fn) {
+    if (paramMap.get(arg)) {
+      Symbol* key = dynamic_cast<Symbol*>(map.get(arg));
+      Symbol* val = paramMap.get(arg);
+      if (!key || !val)
+        INT_FATAL("error building parameter map in instantiation");
+      paramMap.put(key, val);
+    }
+  }
+
+  // update body of constructors with a return type substitution
+  ASTMap subs;
   if (newType) {
     subs.put(fn->retType, newType);
     subs.put(fn->retType->symbol, newType->symbol);
