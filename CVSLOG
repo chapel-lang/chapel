@@ -90535,3 +90535,24 @@ Removed files:
 	chapel/test/modules/bradc/: ra-paramWidth.future 
 	                            use_modulewithconst.future 
 
+---------------------------------------------------------------------------
+
+01/08/07 11:49:37 -- deitz
+
+Log message:
+	Changed handling of instantiation by parameters to use the function
+	resolution parameter map rather than to subsitute the parameters
+	directly into the function.  Then changed handling of the parameter
+	map in function resolution to insert a cast if the type of the symbol
+	that the parameter is replacing is different then the type of the
+	parameter.  This fixes a .future which showed that "true + true"
+	yielded true rather than 2 even though "var x = true; var y = true; x
+	+ y" yielded 2.  Parameter folding is now the same as regular
+	evaluation in this case.  Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: test_true_plus.future 
+
