@@ -341,6 +341,21 @@ pragma "inline" def _copy(a) return a;
 pragma "inline" def _pass(a) return _copy(a);
 
 //
+// _cond_test function supports statement bool conversions and sync
+//   variables in conditional statements
+//
+pragma "inline" def _cond_test(x: object) return x != nil;
+pragma "inline" def _cond_test(x: bool) return x;
+pragma "inline" def _cond_test(x: integral) return x != 0;
+
+pragma "inline" def _cond_test(param x: bool) param return x;
+pragma "inline" def _cond_test(param x: integral) param return x != 0;
+
+pragma "inline" def _cond_test(x) {
+  compilerError("conditional expression has illegal type");
+}
+
+//
 // _tostring conversions on primitive types
 //
 pragma "inline" def _tostring(x: bool, format: string) return __primitive("to_string", format, x);

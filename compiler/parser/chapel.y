@@ -390,13 +390,13 @@ expr_stmt:
 
 if_stmt:
   TIF expr parsed_block_stmt            %prec TNOELSE
-    { $$ = build_chpl_stmt(new CondStmt($2, $3)); }
+    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $3)); }
 | TIF expr TTHEN stmt                   %prec TNOELSE
-    { $$ = build_chpl_stmt(new CondStmt($2, $4)); }
+    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $4)); }
 | TIF expr parsed_block_stmt TELSE stmt
-    { $$ = build_chpl_stmt(new CondStmt($2, $3, $5)); }
+    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $3, $5)); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = build_chpl_stmt(new CondStmt($2, $4, $6)); }
+    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $4, $6)); }
 ;
 
 
@@ -430,15 +430,15 @@ expr_for_stmt:
 
 while_do_stmt:
   TWHILE expr TDO stmt
-    { $$ = build_while_do_block($2, new BlockStmt($4)); }
+    { $$ = build_while_do_block(new CallExpr("_cond_test", $2), new BlockStmt($4)); }
 | TWHILE expr parsed_block_stmt
-    { $$ = build_while_do_block($2, $3); }
+    { $$ = build_while_do_block(new CallExpr("_cond_test", $2), $3); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = build_do_while_block($4, $2); }
+    { $$ = build_do_while_block(new CallExpr("_cond_test", $4), $2); }
 ;
 
 
@@ -1328,13 +1328,13 @@ expr:
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TIF expr TTHEN expr TELSE expr
-    { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
+    { $$ = new CallExpr(new DefExpr(build_if_expr(new CallExpr("_cond_test", $2), $4, $6))); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forif_fn = new FnSymbol("_forif_fn");
-      forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, $7));
+      forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, new CallExpr("_cond_test", $7)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 ;
