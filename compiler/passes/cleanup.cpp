@@ -90,7 +90,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits->length() == 0) {
+  if (ct->inherits->length() == 0 && !ct->symbol->hasPragma("no object")) {
     if (ct->classTag == CLASS_RECORD) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);

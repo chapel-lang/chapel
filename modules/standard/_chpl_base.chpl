@@ -457,6 +457,7 @@ pragma "inline" def =( a: _condvar_p, b: _condvar_p) return b;
 pragma "synchronization primitive" 
 pragma "sync var"
 pragma "no default functions"
+pragma "no object"
 class _syncvar {
   type base_type;
   var  value: base_type;     // actual data
@@ -616,6 +617,7 @@ def isFull( sv:_syncvar) {
 pragma "synchronization primitive" 
 pragma "single var" 
 pragma "no default functions"
+pragma "no object"
 class _singlevar {
   type base_type;
   var  value: base_type;     // actual data

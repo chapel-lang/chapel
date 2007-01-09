@@ -1,8 +1,0 @@
-waynew
-
-sync var broken when used in a conditional
-
-The sync var is not working correctly in this example. The original
-thread appears to see the fullness of "done" in the conditional
-before the second thread sets it with "done = true".  Hence, it
-doesn't wait correctly and prints out wrong value.
