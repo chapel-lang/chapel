@@ -90585,3 +90585,15 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: test_bad_if.chpl test_bad_if.good 
 
+---------------------------------------------------------------------------
+
+01/08/07 16:36:45 -- bradc
+
+Log message:
+	Based on Steve's latest parameter folding fix, changed
+	RA code to use randWidth named parameter to define
+	randType rather than hard-coding the value "64".
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README ra-randstream.chpl 
+
