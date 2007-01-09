@@ -90597,3 +90597,27 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: README ra-randstream.chpl 
 
+---------------------------------------------------------------------------
+
+01/08/07 16:46:24 -- deitz
+
+Log message:
+	Added a pragma "no object" and applied it to the _singlevar and
+	_syncvar generic classes that implement synchronization variables.
+	This pragma makes it so that these classes do not inherit from object,
+	the root of all classes.  This fixes the ambiguity with the new
+	_cond_test function and makes using a single or sync var in the
+	context of a conditional statement condition or while statement
+	condition count as a read.  Removed two .futures.
+	
+	The previous ambiguity arose because the _cond_test function is
+	defined over object and bool so a sync var of bool could be coerced to
+	both an object and a bool.  Now, sync var can no longer be coerced to
+	object.  That is good.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+Removed files:
+	chapel/test/parallel/sync/waynew/: if1.future if2.future 
+
