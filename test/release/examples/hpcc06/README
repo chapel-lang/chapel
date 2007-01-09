@@ -51,6 +51,11 @@ The changes that fix compiler status notes from the paper are:
     converted into a param function, so the explicit cast in the 
     printProblemSize() routine in probSize.chpl was removed.
 
+  * the compiler now supports inter-module parameters and types better
+    than it did, allowing randType in ra-randstream.chpl to be defined
+    in terms of randWidth rather than the literal "64".
+
+
 Other changes to date are:
 
   * the memRatio argument to computeProblemSize in probSize.chpl was

@@ -1,6 +1,6 @@
 module RARandomStream {
   param randWidth = 64;
-  type randType = uint(64);
+  type randType = uint(randWidth);
 
   const bitDom = [0..randWidth),
         m2: [bitDom] randType = computeM2Vals(randWidth);
