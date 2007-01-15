@@ -90656,3 +90656,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 12:02:20 -- deitz
+
+Log message:
+	Simplified implementation of short-circuiting && and || to rely on the
+	single method "true?" rather than the two methods "true?" and
+	"false?".  Updated the spec to document this change.  While I was
+	defining this, I knew I wanted to make this change.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/spec/: Expressions.tex 
+
