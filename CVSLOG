@@ -90697,3 +90697,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 14:03:52 -- deitz
+
+Log message:
+	Moved cullOverReferences from after inlining to before parallel2 and
+	inlining.  This decreases time spent culling excess references by 64%
+	(0.181 to 0.066) and better organizes the pass list into categories.
+	Added some documentation to the passlist file.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+
