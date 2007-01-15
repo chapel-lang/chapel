@@ -2328,7 +2328,10 @@ pruneResolvedTree() {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
+      if (call->isPrimitive(PRIMITIVE_NOOP)) {
+        // Remove Noops
+        call->remove();
+      } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
         // Replace PRIMITIVE_TYPEOF with argument
         call->replace(call->get(1)->remove());
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||

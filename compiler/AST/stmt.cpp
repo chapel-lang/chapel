@@ -305,7 +305,8 @@ codegenBegin( FILE* outfile, AList *body) {
 
 void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
-  fprintf(outfile, "{\n");
+  if (this != getFunction()->body)
+    fprintf(outfile, "{\n");
   inBlockStmt++;
 //   if (blkScope) {
 //     blkScope->codegen(outfile, "\n");
@@ -327,7 +328,8 @@ void BlockStmt::codegen(FILE* outfile) {
       body->codegen(outfile, "");
     }
   }
-  fprintf(outfile, "}\n");
+  if (this != getFunction()->body)
+    fprintf(outfile, "}\n");
   inBlockStmt--;
 }
 
