@@ -660,8 +660,11 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "NULL");
 
   dtAny = createPrimitiveType ("_any", "_any");
+  dtAny->isGeneric = true;
   dtIntegral = createPrimitiveType ("integral", "integral");
+  dtIntegral->isGeneric = true;
   dtNumeric = createPrimitiveType ("numeric", "numeric");
+  dtNumeric->isGeneric = true;
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
   dtSetterToken = createPrimitiveType ("_ST", "_ST");

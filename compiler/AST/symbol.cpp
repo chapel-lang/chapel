@@ -12,7 +12,8 @@
 #include "astutil.h"
 #include "passes.h"
 
-
+// for instantiate to see function resolution stuff
+extern bool tag_generic(FnSymbol* fn);
 extern Map<Symbol*,Symbol*> paramMap;
 
 FnSymbol *chpl_main = NULL;
@@ -1358,12 +1359,14 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       newfn = instantiate_tuple_hash( newfn);
   }
 
-  normalize(newfn);
   instantiatedTo->add(newfn);
 
   if (newfn->formals->length() > 1 &&
       newfn->getFormal(1)->type == dtMethodToken)
     newfn->getFormal(2)->type->methods.add(newfn);
+
+  normalize(newfn);
+  tag_generic(newfn);
 
   return newfn;
 }

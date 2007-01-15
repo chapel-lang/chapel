@@ -60,6 +60,33 @@ static bool canDispatch(Type* actualType,
 
 static void pruneResolvedTree();
 
+static bool
+hasGenericArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->type->isGeneric)
+      return true;
+    if (formal->defPoint->exprType &&
+        formal->defPoint->exprType->typeInfo()->isGeneric)
+      return true;
+    if (formal->intent == INTENT_PARAM)
+      return true;
+  }
+  return false;
+}
+
+bool
+tag_generic(FnSymbol* fn) {
+  if (fn->isGeneric)
+    return false;
+  if (hasGenericArgs(fn)) {
+    fn->isGeneric = 1; 
+    if (fn->retType != dtUnknown && fn->fnClass == FN_CONSTRUCTOR)
+      fn->retType->isGeneric = true;
+    return true;
+  }
+  return false;
+}
+
 static void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
@@ -2178,6 +2205,14 @@ resolve() {
   _copy = astr("_copy");
   _this = astr("this");
   _assign = astr("=");
+
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFns) {
+      changed = tag_generic(fn) || changed;
+    }
+  }
 
   resolveFns(chpl_main);
 

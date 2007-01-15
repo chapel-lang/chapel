@@ -30,7 +30,6 @@ static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
-static int  tag_generic(FnSymbol* fn);
 static void tag_global(FnSymbol* fn);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -144,20 +143,6 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
-    }
-  }
-
-  dtAny->isGeneric = true;
-  dtIntegral->isGeneric = true;
-  dtNumeric->isGeneric = true;
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  int changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Vec(BaseAST, ast, asts) {
-      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) 
-        changed = tag_generic(fn) || changed;
     }
   }
 }
@@ -779,32 +764,6 @@ static void hack_resolve_types(Expr* expr) {
   }
 }
 
-static bool
-hasGenericArgs(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (formal->type->isGeneric)
-      return true;
-    if (formal->defPoint->exprType &&
-        formal->defPoint->exprType->typeInfo()->isGeneric)
-      return true;
-    if (formal->intent == INTENT_PARAM)
-      return true;
-  }
-  return false;
-}
-
-static int
-tag_generic(FnSymbol* fn) {
-  if (fn->isGeneric)
-    return 0;
-  if (hasGenericArgs(fn)) {
-    fn->isGeneric = 1; 
-    if (fn->retType != dtUnknown && fn->fnClass == FN_CONSTRUCTOR)
-      fn->retType->isGeneric = true;
-    return 1;
-  }
-  return 0;
-}
 
 static void tag_global(FnSymbol* fn) {
   if (fn->global)
