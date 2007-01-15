@@ -243,7 +243,6 @@ pragma "inline" def **(param a: uint(64), param b: uint(64)) param return __prim
 //
 pragma "inline" def !(a: bool) return __primitive("!", a);
 pragma "inline" def bool.true? return this;
-pragma "inline" def bool.false? return !this;
 
 pragma "inline" def !(param a: bool) param return __primitive("!", a);
 

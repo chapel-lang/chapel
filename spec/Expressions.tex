@@ -764,18 +764,15 @@ a && b
 \end{chapel}
 is evaluated as the expression
 \begin{chapel}
-if a.false? then false else b.true?
+if a.true? then b.true? else false
 \end{chapel}
 
-The methods \chpl{false?} and \chpl{true?} are predefined over bool
-type as follows:
+The method \chpl{true?} is predefined over bool type as follows:
 \begin{chapel}
 def bool.true? return this;
-def bool.false? return !this;
 \end{chapel}
 Overloading the logical and operator over other types is accomplished
-by overloading the \chpl{false?} and \chpl{true?} methods over other
-types.
+by overloading the \chpl{true?} method over other types.
 
 \subsubsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
@@ -796,10 +793,10 @@ is evaluated as the expression
 if a.true? then true else b.true?
 \end{chapel}
 
-The methods \chpl{false?} and \chpl{true?} are predefined over bool
-type as described in~\rsec{Logical_And_Operators}.  Overloading the
-logical or operator over other types is accomplished by overloading
-the \chpl{false?} and \chpl{true?} methods over other types.
+The method \chpl{true?} is predefined over bool type as described
+in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
+over other types is accomplished by overloading the \chpl{true?}
+method over other types.
 
 \subsection{Relational Operators}
 \label{Relational_Operators}
