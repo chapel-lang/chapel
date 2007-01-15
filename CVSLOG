@@ -90710,3 +90710,16 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+01/15/07 14:11:49 -- deitz
+
+Log message:
+	Stylized all pass functions to use caps rather than underscores
+	between words.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         semanticChecks.cpp 
+
