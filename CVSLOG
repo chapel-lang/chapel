@@ -90621,3 +90621,15 @@ Modified files:
 Removed files:
 	chapel/test/parallel/sync/waynew/: if1.future if2.future 
 
+---------------------------------------------------------------------------
+
+01/15/07 10:05:45 -- deitz
+
+Log message:
+	Enabled cast from uint to complex. Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+Removed files:
+	chapel/test/types/complex/bradc/: uintToComplex.future 
+
