@@ -90723,3 +90723,22 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 14:46:10 -- deitz
+
+Log message:
+	Removed extra curly braces in generated functions that appear after
+	local variable declarations and were introduced within the past few
+	months, during the addition of reference counts.
+	
+	Removed noops after function resolution.  Most are inserted during
+	function resolution.
+	
+	This combination of changes shortens the generated code for jacobi to
+	9607 lines (counted via wc output/*) from 11259 lines.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
