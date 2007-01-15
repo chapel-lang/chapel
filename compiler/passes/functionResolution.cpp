@@ -442,7 +442,6 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           ASTMap update;
           update.put(arg, var);
           update_symbols(fn, &update);
-          normalize(fn);
         }
       }
     } else if (!fn->isGeneric && arg->variableExpr)
@@ -2463,7 +2462,6 @@ instantiate(FnSymbol* fn, ASTMap* subs) {
   FnSymbol* ifn = fn->instantiate_generic(subs);
   if (!ifn->isGeneric && ifn->where) {
     resolveBody(ifn->where);
-    normalize(ifn->where); // temporary call to normalize until parameter folding is fully folded
     SymExpr* symExpr = dynamic_cast<SymExpr*>(ifn->where->body->last());
     if (!symExpr)
       USR_FATAL(ifn->where, "Illegal where clause");
