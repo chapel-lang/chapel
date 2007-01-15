@@ -1104,6 +1104,7 @@ instantiate_tuple_get(FnSymbol* fn) {
   int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
+  normalize(fn);
   return fn;
 }
 
@@ -1119,6 +1120,7 @@ instantiate_tuple_set(FnSymbol* fn) {
   fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, dynamic_cast<DefExpr*>(fn->formals->last())->sym)));
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name))));
   fn->insertAtHead(new DefExpr(tmp));
+  normalize(fn);
   return fn;
 }
 
@@ -1133,6 +1135,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
   for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  normalize(fn);
   return fn;
 }
 
@@ -1148,6 +1151,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  normalize(fn);
   return fn;
 }
 
@@ -1183,6 +1187,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
     ret = new ReturnStmt( new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
   }
   fn->body->replace( new BlockStmt( ret));
+  normalize(fn);
   return fn;
 }
 
@@ -1365,7 +1370,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       newfn->getFormal(1)->type == dtMethodToken)
     newfn->getFormal(2)->type->methods.add(newfn);
 
-  normalize(newfn);
+  //normalize(newfn);
   tag_generic(newfn);
 
   return newfn;
