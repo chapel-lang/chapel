@@ -90645,3 +90645,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 11:15:07 -- deitz
+
+Log message:
+	Removed 2 superfluous calls to normalize now that parameter folding is
+	part of resolution.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
