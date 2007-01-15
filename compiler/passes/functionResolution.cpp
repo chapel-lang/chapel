@@ -2313,6 +2313,12 @@ pruneResolvedTree() {
           call->remove();
         else
           call->get(2)->replace(new SymExpr(sym));
+      } else if (call->isPrimitive(PRIMITIVE_MOVE) ||
+                 call->isPrimitive(PRIMITIVE_REF)) {
+        // Remove types to enable --unoptimized
+        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+        if (sym && dynamic_cast<TypeSymbol*>(sym->var))
+          call->remove();
       } else if (call->isNamed("_init")) {
         // Special handling of array constructors via array pragma
         if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
