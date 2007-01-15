@@ -1310,6 +1310,7 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen( outfile);
           fprintf( outfile, ".im))");
         } else if (is_real_type( get(2)->typeInfo()) || // float->complex
+                   is_uint_type( get(2)->typeInfo()) || // uint->complex
                    is_int_type( get(2)->typeInfo())) { // int->complex
           fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
