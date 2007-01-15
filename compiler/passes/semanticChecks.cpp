@@ -89,7 +89,7 @@ check_named_arguments(CallExpr* call) {
 
 
 void
-check_parsed(void) {
+checkParsed(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -119,7 +119,7 @@ check_parsed(void) {
 
 
 void
-check_normalized(void) {
+checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->noParens && !fn->_this)
       USR_FATAL_CONT(fn, "functions require parentheses");
@@ -192,7 +192,7 @@ check_resolved_syms(Symbol* var) {
 
 
 void
-check_resolved(void) {
+checkResolved(void) {
   compute_sym_uses();
   Vec<BaseAST*> asts;
   collect_asts(&asts);

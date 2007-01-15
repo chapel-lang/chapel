@@ -4,10 +4,10 @@
 //
 // prototypes of functions that are called as passes (alphabetical)
 //
-void build_default_functions();
-void check_normalized();
-void check_parsed();
-void check_resolved();
+void buildDefaultFunctions();
+void checkNormalized();
+void checkParsed();
+void checkResolved();
 void cleanup();
 void codegen();
 void copyPropagation();
@@ -28,22 +28,22 @@ void scopeResolve();
 PassInfo passlist[] = {
   FIRST,
   // Chapel to AST
-  RUN(parse),        // parse files and create AST
-  RUN(check_parsed), // checks semantics of parsed AST
+  RUN(parse),       // parse files and create AST
+  RUN(checkParsed), // checks semantics of parsed AST
 
   // Scope resolution and normalization
-  RUN(parallel1),        // parallel transforms, part 1
-  RUN(cleanup),          // post parsing transformations
-  RUN(scopeResolve),     // resolve symbols by scope
-  RUN(normalize),        // normalization transformations
-  RUN(check_normalized), // check semantics of normalized AST
+  RUN(parallel1),       // parallel transforms, part 1
+  RUN(cleanup),         // post parsing transformations
+  RUN(scopeResolve),    // resolve symbols by scope
+  RUN(normalize),       // normalization transformations
+  RUN(checkNormalized), // check semantics of normalized AST
 
   // Creation of default functions
-  RUN(build_default_functions), // build default functions
+  RUN(buildDefaultFunctions), // build default functions
 
   // Function resolution and shallow type inference
-  RUN(resolve),        // resolves function calls and types
-  RUN(check_resolved), // checks semantics of resolved AST
+  RUN(resolve),       // resolves function calls and types
+  RUN(checkResolved), // checks semantics of resolved AST
 
   // Post-resolution cleanup
   RUN(flattenFunctions),   // denest nested functions

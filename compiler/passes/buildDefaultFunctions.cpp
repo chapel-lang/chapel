@@ -28,7 +28,7 @@ static void buildDefaultWriteFunction(EnumType* type);
 
 
 
-void build_default_functions(void) {
+void buildDefaultFunctions(void) {
   build_chpl_main();
 
   Vec<BaseAST*> asts;
