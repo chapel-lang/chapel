@@ -90633,3 +90633,15 @@ Modified files:
 Removed files:
 	chapel/test/types/complex/bradc/: uintToComplex.future 
 
+---------------------------------------------------------------------------
+
+01/15/07 10:24:49 -- deitz
+
+Log message:
+	Removed types in AST that are on the rhs of moves during function
+	resolution cleanup.  This reenables --unoptimized and fixes the single
+	general regression.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
