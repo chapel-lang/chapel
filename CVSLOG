@@ -90671,3 +90671,16 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/spec/: Expressions.tex 
 
+---------------------------------------------------------------------------
+
+01/15/07 13:14:22 -- deitz
+
+Log message:
+	Refactored tag_generic to move it into function resolution and out of
+	normalization.  This should be almost enough to stop renormalizing on
+	each instantiation, but this checkin does not make that change.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
