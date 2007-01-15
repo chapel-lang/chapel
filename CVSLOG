@@ -90684,3 +90684,16 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 13:39:13 -- deitz
+
+Log message:
+	Stopped normalizing every function that is instantiated.  The only
+	functions that are now normalized during instantiation are the tuple
+	functions which are built during instantiation and so need to be
+	normalized.  This decreases function resolution time by 23%.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
