@@ -90742,3 +90742,23 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/15/07 16:47:27 -- waynew
+
+Log message:
+	Groundwork for the serial block feature.
+	 - Added primitives to set/get per-thread serial-mode state
+	 - _chpl_cobegin and _chpl_begin runtime routines now look at the serial-mode
+	   state
+	 - Added locks in the chplmem runtime for memtrack, memstat, and memtrace
+	   states.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/include/: chplmem.h chplthreads.h 
+	chapel/runtime/src/: chplmem.c chplthreads.c 
+
