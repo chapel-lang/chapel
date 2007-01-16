@@ -90788,3 +90788,29 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+01/16/07 15:20:38 -- waynew
+
+Log message:
+	Final bits of the serial block implementation.
+	 - Changed the parser to recognize serial and build the serial block.
+	 - Reversed the order of the reversed statements in a cobegin. Order matters
+	   now.
+	
+	Added a couple begin and cobegin tests with serial.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp view.cpp 
+	chapel/compiler/include/: build.h stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/src/: chplthreads.c 
+Added files:
+	chapel/test/parallel/serial/waynew/: begin1a.chpl begin1a.good 
+	                                     begin1b.chpl begin1b.good 
+	                                     cobegin1a.chpl 
+	                                     cobegin1a.good 
+	                                     cobegin1b.chpl 
+	                                     cobegin1b.good 
+
