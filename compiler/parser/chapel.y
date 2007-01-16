@@ -133,6 +133,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TRETURN
 %token TSELECT
 %token TSINGLE
+%token TSERIAL
 %token TSPARSE
 %token TSTATIC
 %token TSYNC

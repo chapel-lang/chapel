@@ -773,12 +773,12 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
 #define _REF_COUNT_LOCK(c)                      \
   fprintf(outfile, "_chpl_mutex_lock( &(");     \
   (c)->codegen(outfile);                        \
-  fprintf(outfile, "->_ref_count_lock));")
+  fprintf(outfile, "->_ref_count_lock));\n")
 
 #define _REF_COUNT_UNLOCK(c)                    \
   fprintf(outfile, "_chpl_mutex_unlock( &(");   \
   (c)->codegen(outfile);                        \
-  fprintf(outfile, "->_ref_count_lock));")
+  fprintf(outfile, "->_ref_count_lock));\n")
 
 
 void CallExpr::codegen(FILE* outfile) {
@@ -1173,8 +1173,20 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_REFC_RELEASE: // possibly free reference-counted var
       help_codegen_fn(outfile, "_CHPL_REFC_FREE", get(1), get(2), get(3));
       break;
+    case PRIMITIVE_THREAD_INIT: {
+      fprintf( outfile, "_chpl_thread_init()");
+      break;
+    }
     case PRIMITIVE_THREAD_ID:
       fprintf(outfile, "_chpl_thread_id()");
+      break;
+    case PRIMITIVE_GET_SERIAL:
+      fprintf(outfile, "_chpl_get_serial()");
+      break;
+    case PRIMITIVE_SET_SERIAL:
+      fprintf(outfile, "_chpl_set_serial(");
+      get(1)->codegen( outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_SYNC_LOCK:
       fprintf( outfile, "_chpl_mutex_lock((");
@@ -1182,14 +1194,14 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")->lock)");
       break;
     case PRIMITIVE_SYNC_UNLOCK:
-      fprintf( outfile, "_chpl_mutex_unlock((");
+      fprintf(outfile, "_chpl_mutex_unlock((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf(outfile, ")->lock)");
       break;
     case PRIMITIVE_SYNC_SIGNAL_FULL:
-      fprintf( outfile, "_chpl_condvar_signal((");
+      fprintf(outfile, "_chpl_condvar_signal((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_full)");
+      fprintf(outfile, ")->cv_full)");
       break;
     case PRIMITIVE_SYNC_BROADCAST_FULL:
       fprintf( outfile, "_chpl_condvar_broadcast((");
@@ -1369,7 +1381,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_GC_FREE:
       _REF_COUNT_LOCK(get(1));
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count--;");
+      fprintf(outfile, "->_ref_count--;\n");
       _REF_COUNT_UNLOCK(get(1));
       break;
     case PRIMITIVE_GC_TOUCH:
@@ -1378,7 +1390,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ") {");
       _REF_COUNT_LOCK(get(1));
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count++;");
+      fprintf(outfile, "->_ref_count++;\n");
       _REF_COUNT_UNLOCK(get(1));
       fprintf(outfile, "}");
       break;

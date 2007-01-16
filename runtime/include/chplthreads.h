@@ -27,7 +27,6 @@ int _chpl_condvar_signal( _chpl_condvar_p cond);
 int _chpl_condvar_broadcast( _chpl_condvar_p cond);
 int _chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex);
 
-
 // thread-related
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
 typedef void* _chpl_threadarg_t;           // function argument
@@ -40,10 +39,14 @@ typedef struct {                           // temporary work space
 
 
 // Chapel system thread control
-void initChplThreads( void);               // main thread init's thread support
-void exitChplThreads( void);               // called by the main thread
+void    initChplThreads(void);             // main thread init's thread support
+void    exitChplThreads(void);             // called by the main thread
 
-_uint64 _chpl_thread_id( void);            // return caller's thread id
+_uint64 _chpl_thread_id(void);             // return caller's thread id
+void    _chpl_thread_init(void);           // setup per-thread state
+_bool   _chpl_get_serial(void);            // set dynamic serial state
+void    _chpl_set_serial(_bool state);     // set dynamic serial state T or F
+void    _chpl_serial_delete(_bool *p);
 
 // macros to init, touch, and free reference-counted Chapel variables
 #define _CHPL_REFC_TOUCH(_var, _refc, _mutex)           \
@@ -63,7 +66,6 @@ _uint64 _chpl_thread_id( void);            // return caller's thread id
   } else {                                              \
     _chpl_mutex_unlock( &(_mutex));                     \
   }
-
 
 
 // Fork and wait on nthreads. Used to implement Chapel's cobegin statement.

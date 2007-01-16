@@ -4,7 +4,11 @@
 #include <stddef.h>
 #include "arg.h"
 #include "chpltypes.h"
+#include "chplthreads.h"
 
+extern _chpl_mutex_t _memtrack_lock;
+extern _chpl_mutex_t _memstat_lock;
+extern _chpl_mutex_t _memtrace_lock;
 
 void initMemTable(void);
 void printMemTable(_int64 threshold);

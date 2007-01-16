@@ -59,6 +59,10 @@ static FILE* memlog = NULL;
 static size_t totalMem = 0;  /* total memory currently allocated */
 static size_t maxMem = 0;    /* maximum total memory during run  */
 
+_chpl_mutex_t _memtrack_lock;
+_chpl_mutex_t _memstat_lock;
+_chpl_mutex_t _memtrace_lock;
+
 
 void initMemTable(void) {
   if (memtrack) {
@@ -159,9 +163,11 @@ _uint64 _mem_used(void) {
 
 void printMemStat(void) {
   if (memstat) {
+    _chpl_mutex_lock(&_memstat_lock);
     fprintf(stdout, "totalMem=%u, maxMem=%u\n", 
             (unsigned)totalMem, (unsigned)maxMem);
     alreadyPrintingStat = 1;
+    _chpl_mutex_unlock(&_memstat_lock);
   } else {
     char* message = "printMemStat() only works with the --memstat flag";
     printError(message);
@@ -402,12 +408,18 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
   confirm(memAlloc, description);
 
   if (memtrace) {
+    _chpl_mutex_lock(&_memtrace_lock);
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
+    _chpl_mutex_unlock(&_memtrace_lock);
   }
   if (memtrack) {
+    _chpl_mutex_lock(&_memtrack_lock);
     installMemory(memAlloc, number, size, description);  
+    _chpl_mutex_unlock(&_memtrack_lock);
     if (memstat) {
+      _chpl_mutex_lock(&_memstat_lock);
       increaseMemStat(chunk);
+      _chpl_mutex_unlock(&_memstat_lock);
     }
   }
   return memAlloc;
@@ -419,14 +431,21 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
   confirm(memAlloc, description);
 
   if (memtrace) {
+    _chpl_mutex_lock(&_memtrace_lock);
     printToMemLog(number, size, description, "calloc", memAlloc, NULL);
+    _chpl_mutex_unlock(&_memtrace_lock);
   }
 
   if (memtrack) {
+    _chpl_mutex_lock(&_memtrack_lock);
     installMemory(memAlloc, number, size, description);
+    _chpl_mutex_unlock(&_memtrack_lock);
     if (memstat) {
-      size_t chunk = number * size;
+      size_t chunk;
+      _chpl_mutex_lock(&_memstat_lock);
+      chunk = number * size;
       increaseMemStat(chunk);
+      _chpl_mutex_unlock(&_memstat_lock);
     }
   }
   return memAlloc;
@@ -435,23 +454,33 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
 
 void _chpl_free(void* memAlloc) {
   if (memtrace) {
+    _chpl_mutex_lock(&_memtrace_lock);
     if (memtrack) {
-      memTableEntry* memEntry = lookupMemory(memAlloc);
+      memTableEntry* memEntry;
+      _chpl_mutex_lock(&_memtrack_lock);
+      memEntry = lookupMemory(memAlloc);
+      _chpl_mutex_unlock(&_memtrack_lock);
       printToMemLog(memEntry->number, memEntry->size, memEntry->description, "free", memAlloc, NULL);
     } else
       printToMemLog(0, 0, "", "free", memAlloc, NULL);
+    _chpl_mutex_unlock(&_memtrace_lock);
   }
 
   if (memtrack) {
+    _chpl_mutex_lock(&_memtrack_lock);
     if (memstat) {
-      memTableEntry* memEntry = lookupMemory(memAlloc);
+      memTableEntry* memEntry;
       size_t chunk;
+      memEntry = lookupMemory(memAlloc);
       if (memEntry) {
         chunk = memEntry->number * memEntry->size;
+        _chpl_mutex_lock(&_memstat_lock);
         decreaseMemStat(chunk);
+        _chpl_mutex_unlock(&_memstat_lock);
       }
     }
     removeMemory(memAlloc);
+    _chpl_mutex_unlock(&_memtrack_lock);
   }
   free(memAlloc);
 }
@@ -467,10 +496,13 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     return NULL;
   }
   if (memtrack) {
+    _chpl_mutex_lock(&_memtrack_lock);
     memEntry = lookupMemory(memAlloc);
+    _chpl_mutex_unlock(&_memtrack_lock);
     if (!memEntry && (memAlloc != NULL) && !(isGlomStringsMem(memAlloc))) {
-      char* message = _glom_strings(3, "Attempting to realloc memory for ",
-                                    description, "that wasn't allocated");
+      char* message;
+      message = _glom_strings(3, "Attempting to realloc memory for ",
+                              description, "that wasn't allocated");
       printError(message);
     }
   }
@@ -478,11 +510,15 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
   confirm(moreMemAlloc, description);
 
   if (memtrack) { 
+    _chpl_mutex_lock(&_memtrack_lock);
     if (memAlloc != NULL) {
       if (memEntry) {
         if (memstat) {
-          size_t oldChunk = memEntry->number * memEntry->size;
+          size_t oldChunk;
+          _chpl_mutex_lock(&_memstat_lock);
+          oldChunk = memEntry->number * memEntry->size;
           decreaseMemStat(oldChunk);
+          _chpl_mutex_unlock(&_memstat_lock);
         }
         updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
       }
@@ -490,12 +526,17 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       installMemory(moreMemAlloc, number, size, description);
     }
     if (memstat) {
+      _chpl_mutex_lock(&_memstat_lock);
       increaseMemStat(newChunk);
+      _chpl_mutex_unlock(&_memstat_lock);
     }
+    _chpl_mutex_unlock(&_memtrack_lock);
   }
   if (memtrace) {
+    _chpl_mutex_lock(&_memtrace_lock);
     printToMemLog(number, size, description, "realloc", memAlloc, 
                   moreMemAlloc);
+    _chpl_mutex_unlock(&_memtrace_lock);
   }
   return moreMemAlloc;
 }

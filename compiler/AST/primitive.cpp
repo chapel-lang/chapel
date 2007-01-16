@@ -230,7 +230,12 @@ initPrimitive() {
   prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
+
+  // thread primitives
+  prim_def(PRIMITIVE_THREAD_INIT, "thread_init", returnInfoVoid);
   prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64);  // 64-bit
+  prim_def(PRIMITIVE_GET_SERIAL, "thread_get_serial", returnInfoBool);
+  prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid);
 
   // operations on sync/single vars
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid);

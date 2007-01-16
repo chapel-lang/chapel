@@ -313,7 +313,8 @@ thread_args() {
 
               wrap_fn->retType = dtVoid;
               fcall->remove();                     // rm orig. call
-              wrap_fn->insertAtHead( new_cofn);    // add new call
+              wrap_fn->insertAtHead(new_cofn);    // add new call
+              wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
               fcall_def->remove();                 // move orig. def
               mod->stmts->insertAtTail(fcall_def); // to top-level
               normalize(wrap_fn);
