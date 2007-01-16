@@ -90762,3 +90762,16 @@ Modified files:
 	chapel/runtime/include/: chplmem.h chplthreads.h 
 	chapel/runtime/src/: chplmem.c chplthreads.c 
 
+---------------------------------------------------------------------------
+
+01/16/07 09:23:45 -- deitz
+
+Log message:
+	Refactored implementation of local copy propagation making some minor
+	changes and removing some unnecessary conservativeness.
+	
+	Rearranged include list in normalize.cpp.
+
+Modified files:
+	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
+
