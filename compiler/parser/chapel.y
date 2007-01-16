@@ -199,7 +199,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> stmt_ls decl_stmt_ls class_body_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
+%type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt on_stmt
 
@@ -321,6 +321,7 @@ stmt:
 | block_stmt
 | decl_stmt
 | on_stmt
+| serial_stmt
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -339,6 +340,7 @@ parsed_block_single_stmt:
 | return_stmt
 | yield_stmt
 | on_stmt
+| serial_stmt
 ;
 
 
@@ -580,6 +582,14 @@ on_stmt:
       $3->insertAtHead($2);
       $$ = build_chpl_stmt($3);
     }
+
+
+serial_stmt:
+  TSERIAL expr parsed_block_stmt
+    { $$ = build_serial_block(new CallExpr("_cond_test", $2), $3); }
+;
+
+
 
 /** DECLARATION STATEMENTS ***************************************************/
 

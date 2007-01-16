@@ -239,6 +239,8 @@ thread_args() {
       if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
         if ((BLOCK_BEGIN == b->blockTag) ||
             (BLOCK_COBEGIN == b->blockTag)) {
+          BlockStmt *newb = new BlockStmt();
+          newb->blockTag = b->blockTag;
           for_alist(Expr, expr, b->body) {
             if (CallExpr *fcall = dynamic_cast<CallExpr*>(expr)) {
               // create a new class to capture refs to locals
@@ -291,7 +293,7 @@ thread_args() {
               ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
               wrap_fn->insertFormalAtTail( wrap_c);
               mod->stmts->insertAtTail(new DefExpr(wrap_fn));
-              b->insertAtHead( new CallExpr( wrap_fn, tempc));
+              newb->insertAtTail( new CallExpr( wrap_fn, tempc));
               wrap_fn->addPragma("beginblk refcount");
               
               // translate the original cobegin function
@@ -320,6 +322,7 @@ thread_args() {
               normalize(wrap_fn);
             }
           }
+          b->replace(newb);
         }
       }
     }

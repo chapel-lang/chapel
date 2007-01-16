@@ -273,6 +273,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       case BLOCK_FOR: fprintf( html_file, "for"); break;
       case BLOCK_FORALL: fprintf( html_file, "forall"); break;
       case BLOCK_ORDERED_FORALL: fprintf( html_file, "ordered forall"); break;
+      case BLOCK_SERIAL: fprintf( html_file, "serial"); break;
       default:
         break;
       }

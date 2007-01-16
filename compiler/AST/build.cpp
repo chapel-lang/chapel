@@ -196,6 +196,18 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 }
 
 
+BlockStmt* build_serial_block(Expr* cond, BlockStmt* body) {
+  BlockStmt *sbody = new BlockStmt();
+  sbody->blockTag = BLOCK_SERIAL;
+  VarSymbol *serial_state = new VarSymbol("_tmp_serial_state");
+  sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIMITIVE_GET_SERIAL)));
+  sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIMITIVE_SET_SERIAL, gTrue)));
+  sbody->insertAtTail(body);
+  sbody->insertAtTail(new CallExpr(PRIMITIVE_SET_SERIAL, serial_state));
+  return sbody;
+}
+
+
 // builds body of for expression
 BlockStmt*
 build_for_expr(BaseAST* indices,

@@ -130,19 +130,14 @@ void exitChplThreads() {
   pthread_key_delete(_chpl_serial);
 }
 
-#include <stdio.h>
+// #include <stdio.h>
 void _chpl_thread_init(void) {
-  /*
   _bool *p;
-  printf("0x%08x: _chpl_thread_init\n", (int) _chpl_thread_id());
   p = pthread_getspecific(_chpl_serial);
-  if (NULL != p) {
-    printInternalError("serial state already created");
+  if (NULL == p) {
+    pthread_setspecific(_chpl_serial, 
+                        (_bool*) _chpl_alloc(sizeof(_bool), "serial flag"));
   }
-  p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag");
-  */
-  pthread_setspecific(_chpl_serial, 
-                      (_bool*) _chpl_alloc(sizeof(_bool), "serial flag"));
 }
 
 
@@ -242,11 +237,9 @@ int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
   int                 error;
   _chpl_thread_t      thread;
-  // _chpl_thread_attr_t attr;
   _chpl_createarg_t  *nt;
 
   error = 0;
-
   if (_chpl_get_serial()) {
     (*fp)(a);
   } else {
@@ -254,24 +247,11 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
     _chpl_begin_cnt++;                     // assume begin will succeed
     _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
 
-    nt = (_chpl_createarg_t*) _chpl_malloc(1, 
-                                           sizeof(_chpl_createarg_t), 
-                                           "_chpl_begin helper arg");
+    nt = (_chpl_createarg_t*) _chpl_malloc(1, sizeof(_chpl_createarg_t), "_chpl_begin helper arg");
     nt->fun = fp;
     nt->arg = a;
-
-    // fork pthread
-    // error  = pthread_attr_init(&attr);
-    // error |= pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    error |= pthread_create(&thread, 
-                            NULL, 
-                            // &attr, 
-                            (_chpl_threadfp_t) _chpl_begin_helper, 
-                            nt);
+    error |= pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt);
     pthread_detach(thread);
-    // error |= pthread_attr_destroy(&attr);
-    // _chpl_free(nt);
   }
-
   return error;
 }
