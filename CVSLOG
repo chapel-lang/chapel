@@ -90775,3 +90775,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/07 10:42:08 -- deitz
+
+Log message:
+	Stopped inserting casts into default wrappers.
+	
+	Removed _cast functions defined over sync and single variable types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
