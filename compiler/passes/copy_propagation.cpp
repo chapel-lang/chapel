@@ -35,8 +35,11 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
 //
 // In the presence of threads, made even more conservative; compiler
 // temps only.
+//
+typedef ChainHashMap<Symbol*,PointerHashFns,Symbol*> AvailableMap;
 
-void updateCall(CallExpr* call, ChainHashMap<Symbol*,PointerHashFns,Symbol*>& available) {
+static void
+copyAvailable(AvailableMap& available, CallExpr* call) {
   if (call->primitive) {
     if (!strcmp(call->primitive->name, "fscanf"))
       return;
@@ -66,9 +69,24 @@ void updateCall(CallExpr* call, ChainHashMap<Symbol*,PointerHashFns,Symbol*>& av
   }
 }
 
+static void
+removeAvailable(AvailableMap& available, CallExpr* call) {
+  Vec<Symbol*> keys;
+  available.get_keys(keys);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, call);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+      forv_Vec(Symbol, key, keys) {
+        if (key == sym->var || available.get(key) == sym->var)
+          available.del(key);
+      }
+    }
+  }
+}
 
 void localCopyPropagation(BasicBlock* bb) {
-  ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
+  AvailableMap available;
   forv_Vec(Expr, expr, bb->exprs) {
     // Replace rhs that match available
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
@@ -77,39 +95,39 @@ void localCopyPropagation(BasicBlock* bb) {
           if (Symbol* copy = available.get(rhs->var))
             rhs->var = copy;
         if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
-          updateCall(rhs, available);
+          copyAvailable(available, rhs);
       } else {
-        updateCall(call, available);
+        copyAvailable(available, call);
       }
     }
 
     // Remove pairs of invalidated copies
     // This would be alot easier if we didn't have to worry about pass
     // by reference!
-    // Remove all pairs of global variables in presence of a
-    //  non-primitive function call
-    Vec<Symbol*> keys;
-    available.get_keys(keys);
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, expr);
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(ast))
-        forv_Vec(Symbol, key, keys)
-          if (key == sym->var || available.get(key) == sym->var)
-            available.del(key);
-      if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
-        if (!call->primitive)
-          forv_Vec(Symbol, key, keys)
-            if (key->parentScope != ast->parentScope)
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
+          Vec<Symbol*> keys;
+          available.get_keys(keys);
+          forv_Vec(Symbol, key, keys) {
+            if (key == lhs->var || available.get(key) == lhs->var)
               available.del(key);
+          }
+        }
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
+          removeAvailable(available, rhs);
+      } else {
+        removeAvailable(available, call);
+      }
     }
-    
+
     // Insert pairs of available copies
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
           if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
-
+            if (lhs->var == rhs->var)
+              continue;
             if (!lhs->var->isCompilerTemp) // only compiler temps
               continue;
             if (lhs->var->isReference || rhs->var->isReference)

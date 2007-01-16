@@ -3,18 +3,15 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
-#include <sys/time.h>
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
 #include "passes.h"
-#include "../ifa/prim_data.h"
 #include "runtime.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
-#include "stringutil.h"
-#include "view.h"
-#include "build.h"
 
 bool normalized = false;
 
