@@ -850,24 +850,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
           temp_init = NULL;
       if (formal->defPoint->exprType)
         temp_type = formal->defPoint->exprType->copy();
-      if (!temp_type && !temp_init)
+      else if (formal->type != dtUnknown && !formal->type->isGeneric)
         temp_type = new SymExpr(formal->type->symbol);
       if (formal->type->symbol->hasPragma( "synchronization primitive"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
-      bool cast = false;
-      ClassType* ct = dynamic_cast<ClassType*>(formal->type);
-      if (formal->type != dtUnknown &&
-          formal->intent != INTENT_REF &&
-          formal->intent != INTENT_OUT &&
-          formal->intent != INTENT_INOUT)
-        cast = true;
-      if (ct && ct->classTag != CLASS_CLASS)
-        cast = false;
-      if (cast)
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, temp));
-      else
-        call->insertAtTail(temp);
+      call->insertAtTail(temp);
     }
   }
   update_symbols(wrapper->body, &copy_map);

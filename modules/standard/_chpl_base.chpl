@@ -478,11 +478,6 @@ def _copy( sv:_syncvar) {
   return readFE(sv);
 }
 
-pragma "synchronization primitive"
-pragma "inline"
-def _cast(type t, x: _syncvar)
-  return __primitive("cast", t, x);
-
 pragma "synchronization primitive" 
 def _pass( sv:_syncvar) {
   return sv;
@@ -635,11 +630,6 @@ pragma "synchronization primitive"
 def _copy( sv:_singlevar) {
   return readFF( sv);
 }
-
-pragma "synchronization primitive"
-pragma "inline"
-def _cast(type t, x: _singlevar)
-  return __primitive("cast", t, x);
 
 pragma "synchronization primitive" 
 def _pass( sv:_singlevar) {
