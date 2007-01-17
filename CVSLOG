@@ -90981,3 +90981,24 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/spec/: Statements.tex 
 
+---------------------------------------------------------------------------
+
+01/17/07 15:18:24 -- deitz
+
+Log message:
+	Enabled scalar promotion over casts by removing the generic catch-all
+	_cast function that served to generated compiler errors.  Specialized
+	the compiler error for casts within the compiler if the _cast function
+	is unresolved or ambiguous.  This is necessary since a generic
+	argument is favored over a promoted argument during function
+	resolution.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_cast.chpl 
+	                           test_array_cast.good 
+
