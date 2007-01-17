@@ -1970,7 +1970,28 @@ resolveBody(Expr* body) {
           if (from->lineno > 0)
             break;
         }
-        USR_FATAL(from, "%s", get_string(call->get(1)));
+        char* str = "";
+        for_actuals(actual, call) {
+          if (SymExpr* sym = dynamic_cast<SymExpr*>(actual)) {
+            if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+              if (var->immediate &&
+                  var->immediate->const_kind == CONST_KIND_STRING) {
+                str = stringcat(str, var->immediate->v_string);
+                continue;
+              }
+            }
+            if (sym->var->isTypeVariable) {
+              str = stringcat(str, sym->var->type->symbol->name);
+              continue;
+            }
+          }
+          if (CallExpr* call = dynamic_cast<CallExpr*>(actual)) {
+            if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
+              str = stringcat(str, call->get(1)->typeInfo()->symbol->name);
+            }
+          }
+        }
+        USR_FATAL(from, "%s", str);
       }
       callStack.add(call);
       resolveCall(call);
@@ -2202,6 +2223,9 @@ build_ddf() {
 
 void
 resolve() {
+  // call _nilType nil so as to not confuse the user
+  dtNil->symbol->name = gNil->name;
+
   _init = astr("_init");
   _pass = astr("_pass");
   _copy = astr("_copy");
@@ -2501,6 +2525,7 @@ static FnSymbol*
 instantiate(FnSymbol* fn, ASTMap* subs) {
   FnSymbol* ifn = fn->instantiate_generic(subs);
   if (!ifn->isGeneric && ifn->where) {
+    resolveFormals(ifn);
     resolveBody(ifn->where);
     SymExpr* symExpr = dynamic_cast<SymExpr*>(ifn->where->body->last());
     if (!symExpr)

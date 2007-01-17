@@ -1258,9 +1258,9 @@ parenop_expr:
     {
       $$ = build_primitive_call($3);
     }
-| TCOMPILERERROR TLP STRINGLITERAL TRP
+| TCOMPILERERROR TLP expr_ls TRP
     {
-      $$ = new CallExpr(PRIMITIVE_ERROR, new_StringSymbol($3));
+      $$ = new CallExpr(PRIMITIVE_ERROR, $3);
     }
 ;
 
