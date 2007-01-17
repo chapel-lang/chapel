@@ -753,6 +753,16 @@ def _cast(type t, x) where !(x:object & t:x) {
   compilerError("illegal cast from ", x.type, " to ", t);
 }
 
+// inserts cast in compound assignments where necessary
+def _compound_cast(type lt, type rt, x) where _isPrimitiveType(lt)
+  return _cast(lt, x);
+
+def _compound_cast(type lt, type rt, x) where !_isPrimitiveType(lt)
+  return x;
+
+  // note: need to verify that rhs can be assigned to lhs; checking
+  // that rt:lt is not sufficient to handle parameter coercions
+
 //
 // MOVE THESE, maybe to a memory module?
 //

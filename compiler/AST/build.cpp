@@ -336,14 +336,22 @@ BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
   static int uid = 1;
   BlockStmt* stmt = build_chpl_stmt();
 
-  VarSymbol* tmp = new VarSymbol("_ltmp");
-  tmp->isCompilerTemp = true;
-  stmt->insertAtTail(new DefExpr(tmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  VarSymbol* ltmp = new VarSymbol("_ltmp");
+  ltmp->isCompilerTemp = true;
+  ltmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(ltmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, lhs));
+
+  VarSymbol* rtmp = new VarSymbol("_rtmp");
+  rtmp->isCompilerTemp = true;
+  rtmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(rtmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
+
   FnSymbol* fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_cast", tmp, new CallExpr("+", tmp, rhs->copy()))));
+  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_compound_cast", ltmp, rtmp, new CallExpr("+", ltmp, rtmp))));
   stmt->insertAtTail(new DefExpr(fn));
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
@@ -352,9 +360,9 @@ BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
       new SymExpr("_domain")));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("add")), rhs->copy()));
+  fn->insertAtTail(new CallExpr(new CallExpr(".", ltmp, new_StringSymbol("add")), rtmp));
   stmt->insertAtTail(new DefExpr(fn));
-  stmt->insertAtTail(new CallExpr(fn->name, tmp));
+  stmt->insertAtTail(new CallExpr(fn->name, ltmp));
   uid++;
   return stmt;
 }
@@ -364,14 +372,22 @@ BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
   static int uid = 1;
   BlockStmt* stmt = build_chpl_stmt();
 
-  VarSymbol* tmp = new VarSymbol("_ltmp");
-  tmp->isCompilerTemp = true;
-  stmt->insertAtTail(new DefExpr(tmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
+  VarSymbol* ltmp = new VarSymbol("_ltmp");
+  ltmp->isCompilerTemp = true;
+  ltmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(ltmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, lhs));
+
+  VarSymbol* rtmp = new VarSymbol("_rtmp");
+  rtmp->isCompilerTemp = true;
+  rtmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(rtmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
+
   FnSymbol* fn = new FnSymbol(stringcat("_assignminus", intstring(uid)));
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_cast", tmp, new CallExpr("-", tmp, rhs->copy()))));
+  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_compound_cast", ltmp, rtmp, new CallExpr("-", ltmp, rtmp))));
   stmt->insertAtTail(new DefExpr(fn));
 
   fn = new FnSymbol(stringcat("_assignminus", intstring(uid)));
@@ -380,9 +396,9 @@ BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
       new SymExpr("_domain")));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr(new CallExpr(".", tmp, new_StringSymbol("remove")), rhs->copy()));
+  fn->insertAtTail(new CallExpr(new CallExpr(".", ltmp, new_StringSymbol("remove")), rtmp));
   stmt->insertAtTail(new DefExpr(fn));
-  stmt->insertAtTail(new CallExpr(fn->name, tmp));
+  stmt->insertAtTail(new CallExpr(fn->name, ltmp));
   uid++;
   return stmt;
 }
@@ -403,11 +419,20 @@ build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
 BlockStmt*
 build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = build_chpl_stmt();
-  VarSymbol* tmp = new VarSymbol("_ltmp");
-  tmp->isCompilerTemp = true;
-  stmt->insertAtTail(new DefExpr(tmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
-  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_cast", tmp, new CallExpr(op, tmp, rhs))));
+
+  VarSymbol* ltmp = new VarSymbol("_ltmp");
+  ltmp->isCompilerTemp = true;
+  ltmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(ltmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, lhs));
+
+  VarSymbol* rtmp = new VarSymbol("_rtmp");
+  rtmp->isCompilerTemp = true;
+  rtmp->canParam = true;
+  stmt->insertAtTail(new DefExpr(rtmp));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
+
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_compound_cast", ltmp, rtmp, new CallExpr(op, ltmp, rtmp))));
   return stmt;
 }
 
@@ -418,7 +443,7 @@ BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs) {
   tmp->isCompilerTemp = true;
   stmt->insertAtTail(new DefExpr(tmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
-  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_cast", tmp, buildLogicalAnd(new SymExpr(tmp), rhs))));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), buildLogicalAnd(new SymExpr(tmp), rhs)));
   return stmt;
 }
 
@@ -429,7 +454,7 @@ BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs) {
   tmp->isCompilerTemp = true;
   stmt->insertAtTail(new DefExpr(tmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
-  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("_cast", tmp, buildLogicalOr(new SymExpr(tmp), rhs))));
+  stmt->insertAtTail(new CallExpr("=", lhs->copy(), buildLogicalOr(new SymExpr(tmp), rhs)));
   return stmt;
 }
 
