@@ -229,6 +229,7 @@ class _domain {
 }
 
 def =(a: _domain, b: _domain) {
+  if a == nil then return b; // stopgap: why? --sjd
   for e in a._arrs do
     e.reallocate(b);
   a._value = b._value;
