@@ -1,4 +1,0 @@
-waynew
-
-Using a domain in an iterator works for compilation
-but causes a seg fault at execution time.
