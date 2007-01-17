@@ -1243,7 +1243,11 @@ resolveCall(CallExpr* call) {
     }
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
-        if (!strcmp("=", name)) {
+        if (!strcmp("_cast", name)) {
+          USR_FATAL(userCall(call), "illegal cast from %s to %s",
+                    atypes.v[1]->symbol->name,
+                    atypes.v[0]->symbol->name);
+        } else if (!strcmp("=", name)) {
           if (atypes.v[1] == dtNil) {
             USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
                       atypes.v[0]->symbol->name);
