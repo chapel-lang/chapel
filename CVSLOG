@@ -90814,3 +90814,16 @@ Added files:
 	                                     cobegin1b.chpl 
 	                                     cobegin1b.good 
 
+---------------------------------------------------------------------------
+
+01/17/07 09:24:46 -- deitz
+
+Log message:
+	Removed some unnecessary casts that were inserted around a default
+	value of a type even if the type could be inferred from the default
+	value.  The only case where it cannot be inferred is with regards to
+	classes where the default value of all class types is nil.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
