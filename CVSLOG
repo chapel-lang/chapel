@@ -90861,3 +90861,58 @@ Modified files:
 Added files:
 	chapel/test/functions/deitz/: test_where.chpl test_where.good 
 
+---------------------------------------------------------------------------
+
+01/17/07 11:05:52 -- deitz
+
+Log message:
+	Note: regressions:
+	
+	[Error matching compiler output for arrays/bradc/stridedArrayArg2]
+	[Error matching compiler output for studies/blas/marybeth/saxpy1]
+	
+	  These tests use an illegal cast to implement something like
+	
+	    A *= 2;
+	
+	  where A is an array.  We need to be more careful about the implicit
+	  cast that we add to implement compound assignments.  Recall that
+	  this implicit cast is necessary to handle int(8), uint(8), etc.
+	
+	[Error matching compiler output for classes/deitz/dispatch/test_dd1]
+	
+	  This test uses a dynamic cast to convert a class C to a class D
+	  where D is derived from C.  Dynamic casts are not yet implemented
+	  but I'm working on it now.
+	
+	Specialized _cast function which prior to this change had been
+	completely generic except for the special handling of tuples to
+	complex.
+	
+	Added _cast functions between all primitive types as well as a generic
+	one that works for all implicit coercions other than the primitive
+	types.  Added an error case to catch all illegal casts and print out a
+	descriptive error message that mentions the two types by name.
+	
+	Fixed the output to
+	
+	  test classes/bocchino/test_nil_is_false
+	
+	This simple test contains an explicit cast of the value nil to bool.
+	I remember that what this test was supposed to check was to see if you
+	can do something like "if c then ..." where c is a class.  This
+	follows the statement implicit bool conversion rule and I wrote a test
+	that checks to make sure we can handle that.  This is very different
+	from allowing an explicit conversion from classes to bool.  That is
+	not in the spec so this test now works correctly and shows an error.
+	
+	Added a stopgap in the domain module to handle domain assignment where
+	the left-hand side is nil.  This only occurs in certain cases where a
+	domain is a field in a class.  An example shows up in
+	
+	  arrays/deitz/part2/test_array_in_class
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	chapel/test/classes/bocchino/: test_nil_is_false.good 
+
