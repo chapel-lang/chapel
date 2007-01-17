@@ -91002,3 +91002,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_cast.chpl 
 	                           test_array_cast.good 
 
+---------------------------------------------------------------------------
+
+01/17/07 15:46:34 -- deitz
+
+Log message:
+	Removed .future of a test that is now working, probably because of the
+	stopgap fix to the handling of domains inside classes.
+
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-domainInIterator.future 
+
