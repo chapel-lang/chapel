@@ -90827,3 +90827,37 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/07 09:52:16 -- deitz
+
+Log message:
+	note: I'm working on implementing the _cast function; the changes in
+	this checkin were part of a bigger change.  I'm pulling them out to
+	try to isolate a bug.
+	
+	Extended compilerError semantics so that it looks more like a halt; it
+	can now print out strings and types, rather than just a single string.
+	Updated the spec.
+	
+	Renamed _nilType to nil at the start of function resolution so that
+	errors relating to this type will be less mysterious to the user.
+	
+	Inserted a call to resolve the types of the formal arguments to a
+	function after it is instantiated and before the where clause is
+	expanded to handle codes like
+	
+	  def foo(type t, x: int(32)) where x.type == t {
+	
+	In this code, the type of the formal argument x needs to be resolved
+	before the where clause can be evaluated, but in some cases the type
+	of x cannot be resolved until after the function is instantiated.
+	Added a test case.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/spec/: Lexical_Structure.tex 
+Added files:
+	chapel/test/functions/deitz/: test_where.chpl test_where.good 
+
