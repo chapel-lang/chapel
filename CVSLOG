@@ -90916,3 +90916,24 @@ Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
 	chapel/test/classes/bocchino/: test_nil_is_false.good 
 
+---------------------------------------------------------------------------
+
+01/17/07 11:51:04 -- deitz
+
+Log message:
+	Implemented dynamic casts so you can cast a C to a D (assuming D is
+	derived from C).  The result is nil if the C value is not D or a
+	subclass of D.
+	
+	Note that dynamic casts require a runtime check.  Normal casts do not
+	require a runtime check since they are always valid.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/modules/standard/: _chpl_base.chpl 
+Added files:
+	chapel/test/classes/deitz/dispatch/: test_dc1.chpl test_dc1.good 
+
