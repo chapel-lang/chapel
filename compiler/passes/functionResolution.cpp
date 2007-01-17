@@ -1694,8 +1694,10 @@ preFold(Expr* expr) {
         if (!ts && sym->var->isTypeVariable)
           ts = sym->var->type->symbol;
         if (ts) {
-          if (ts->type->defaultValue)
+          if (ts->type->defaultValue == gNil)
             result = new CallExpr("_cast", ts, ts->type->defaultValue);
+          else if (ts->type->defaultValue)
+            result = new SymExpr(ts->type->defaultValue);
           else if (ts->type->defaultConstructor)
             result = new CallExpr(ts->type->defaultConstructor);
           else
