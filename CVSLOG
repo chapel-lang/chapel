@@ -90937,3 +90937,14 @@ Modified files:
 Added files:
 	chapel/test/classes/deitz/dispatch/: test_dc1.chpl test_dc1.good 
 
+---------------------------------------------------------------------------
+
+01/17/07 13:38:00 -- deitz
+
+Log message:
+	Added working test of error message for illegal cast.
+
+Added files:
+	chapel/test/trivial/deitz/: test_illegal_cast.chpl 
+	                            test_illegal_cast.good 
+
