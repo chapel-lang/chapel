@@ -746,7 +746,10 @@ pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: t) where !_isPrimitiveType(t)
   return x;
 
-def _cast(type t, x) {
+pragma "inline" def _cast(type t, x) where x:object & t:x
+  return __primitive("dynamic_cast", t, x);
+
+def _cast(type t, x) where !(x:object & t:x) {
   compilerError("illegal cast from ", x.type, " to ", t);
 }
 

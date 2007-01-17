@@ -781,6 +781,16 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
   fprintf(outfile, "->_ref_count_lock));\n")
 
 
+static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
+  value->codegen(outfile);
+  fprintf(outfile, "->_cid == %d", type->id);
+  forv_Vec(Type, child, type->dispatchChildren) {
+    fprintf(outfile, " || ");
+    codegenDynamicCastCheck(outfile, child, value);
+  }
+}
+
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -1351,6 +1361,21 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegen(outfile);
         fprintf(outfile, "))");
       }
+      break;
+    }
+    case PRIMITIVE_DYNAMIC_CAST: {
+      ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
+      if (ct && ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "((");
+        codegenDynamicCastCheck(outfile, typeInfo(), get(2));
+        fprintf(outfile, ") ? ");
+        fprintf(outfile, "((");
+        typeInfo()->codegen(outfile);
+        fprintf(outfile, ")(");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")) : NULL)");
+      } else
+        INT_FATAL("illegal dynamic cast encountered in codegen");
       break;
     }
     case PRIMITIVE_ISSUBTYPE:

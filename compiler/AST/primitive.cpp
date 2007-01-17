@@ -259,6 +259,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_TOSTRING, "to_string", returnInfoString);
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", returnInfoCast);
+  prim_def(PRIMITIVE_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
