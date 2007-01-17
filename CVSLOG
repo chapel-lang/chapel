@@ -90960,3 +90960,24 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-illegalcast.future 
 
+---------------------------------------------------------------------------
+
+01/17/07 14:55:33 -- deitz
+
+Log message:
+	Reworked implementation of
+	
+	  lhs op= rhs
+	
+	to use the special function _compound_cast which currently only
+	inserts a cast if the type of the lhs is a primitive type.  It does
+	not yet verify that the rhs can be assigned to the lhs in a simple
+	assignment.
+	
+	Updated the spec.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/spec/: Statements.tex 
+
