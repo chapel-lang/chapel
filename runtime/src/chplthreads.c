@@ -135,8 +135,9 @@ void _chpl_thread_init(void) {
   _bool *p;
   p = pthread_getspecific(_chpl_serial);
   if (NULL == p) {
-    pthread_setspecific(_chpl_serial, 
-                        (_bool*) _chpl_alloc(sizeof(_bool), "serial flag"));
+    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag");
+    *p = false;
+    pthread_setspecific(_chpl_serial, p);
   }
 }
 
