@@ -91013,3 +91013,15 @@ Log message:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-domainInIterator.future 
 
+---------------------------------------------------------------------------
+
+01/17/07 17:30:59 -- waynew
+
+Log message:
+	Bug fix.  Use of uninitialized data.  Showed up as bug in some threaded
+	tests on the Sun platform, but is really was a bug on all platforms.
+	Those should pass the nightly tests now.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
