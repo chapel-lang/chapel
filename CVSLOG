@@ -91025,3 +91025,20 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+01/18/07 15:58:34 -- deitz
+
+Log message:
+	Added four working tests that I had in my copy.
+
+Added files:
+	chapel/test/classes/deitz/: test_adotbdotcdotd.chpl 
+	                            test_adotbdotcdotd.good 
+	chapel/test/functions/deitz/: test_var_function2.chpl 
+	                              test_var_function2.good 
+	chapel/test/types/tuple/deitz/: test_tuple_index.chpl 
+	                                test_tuple_index.good 
+	chapel/test/types/type_variables/deitz/: test_default1.chpl 
+	                                         test_default1.good 
+
