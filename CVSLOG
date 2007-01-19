@@ -91069,3 +91069,23 @@ Removed files:
 	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
 	                                 zeroarity-bound-error-2.future 
 
+---------------------------------------------------------------------------
+
+01/19/07 14:21:33 -- deitz
+
+Log message:
+	Added code to mangle the names of arguments and fields that are
+	duplicated within the same function or class.  This can happen in the
+	iterator class and its constructor because the names of fields in this
+	class are taken directly from local variables.
+	
+	Added a test case of an iterator that has local variables with the
+	same name.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_local_vars_same_name.chpl 
+	                                        test_iterator_local_vars_same_name.good 
+
