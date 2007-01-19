@@ -1020,7 +1020,9 @@ resolve_type_expr(Expr* expr) {
         FnSymbol* fn = call->isResolved();
         if (fn && call->parentSymbol) {
           resolveFormals(fn);
-          if (call->typeInfo() == dtUnknown)
+          if (fn->retType == dtUnknown && fn->retExprType)
+            fn->retType = fn->retExprType->typeInfo();
+          if (fn->isParam || fn->retType == dtUnknown)
             resolveFns(fn);
         }
         callStack.pop();
@@ -1184,38 +1186,40 @@ resolveCall(CallExpr* call) {
     if (dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!(call->isNamed( "_to_seq") ||
             call->isNamed( "_copy") ||
-            //            call->isNamed( "=") ||
+            call->isNamed( "=") ||
             call->isNamed( "_cast") ||
             call->isNamed( "_init") ||
             call->isNamed( "_pass") ||
             call->isNamed( "getNextCursor") ||
             call->isNamed( "getHeadCursor") ||
             call->isNamed( "getValue") ||
-            call->isNamed( "isValidCursor?"))) {
+            call->isNamed( "isValidCursor?") ||
+            (call->isResolved() &&
+             call->isResolved()->fnClass == FN_CONSTRUCTOR))) {
         ASTMap subs;
-        int    pos = 0;
-        forv_Vec( Type, argtype, atypes) {
-          ClassType *ct = dynamic_cast<ClassType*>( argtype);
-          if (ct && ct->isIterator) {  // replace use with call to _to_seq
-            // YAH, skip if method on self
-            if (pos==1 && (atypes.v[0] == dtMethodToken))
+        for_actuals(actual, call) {
+          ClassType *ct = dynamic_cast<ClassType*>(actual->typeInfo());
+          if (ct && ct->isIterator) {
+            SymExpr* actualSym = dynamic_cast<SymExpr*>(actual);
+            if (!actualSym)
               continue;
-
-            VarSymbol *temp = new VarSymbol( stringcat( stringcat( "_to_seq_temp", intstring( call->id)), stringcat( "_", intstring( pos))));
-            call->getStmtExpr()->insertBefore( new DefExpr( temp));
-            subs.put( aparams.v[pos], temp);
-            CallExpr  *toseq = new CallExpr( "_to_seq", 
-                                             aparams.v[pos]);
-            CallExpr  *toseqass = new CallExpr( PRIMITIVE_MOVE,
-                                                temp,
-                                                toseq);
-            // CallExpr  *toseqass = new CallExpr( "=", temp, toseq);
-            call->getStmtExpr()->insertBefore( toseqass);
-            resolveCall( toseq);
-            resolveFns( toseq->isResolved());
-            resolveCall( toseqass);
+            if (actual->prev && actual->prev->typeInfo() == dtMethodToken)
+              continue; // skip methods
+            if (actualSym->var->isTypeVariable)
+              continue; // skip types
+            if (actual->prev && actual->prev->typeInfo() == dtSetterToken)
+              continue; // skip setter token for recursive iterators
+                        // is this safe?
+            VarSymbol* tmp = new VarSymbol("_to_seq_tmp");
+            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+            subs.put(actualSym->var, tmp);
+            CallExpr* toseq = new CallExpr("_to_seq", actualSym->var);
+            CallExpr* toseqmove = new CallExpr(PRIMITIVE_MOVE, tmp, toseq);
+            call->getStmtExpr()->insertBefore(toseqmove);
+            resolveCall(toseq);
+            resolveFns(toseq->isResolved());
+            resolveCall(toseqmove);
           }
-          pos++;
         }
 
         if (subs.n > 0) {
@@ -1453,7 +1457,7 @@ insertFormalTemps(FnSymbol* fn) {
     }
   }
   if (formals2vars.n > 0) {
-    update_symbols(fn, &formals2vars);
+    update_symbols(fn->body, &formals2vars);
     Vec<BaseAST*> formals;
     formals2vars.get_keys(formals);
     forv_Vec(BaseAST, ast, formals) {

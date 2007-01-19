@@ -160,6 +160,7 @@ iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
 // Create a field in the class for each local variable and replace uses.
 static void
 iterator_create_fields( FnSymbol *fn, ClassType *ic) {
+  int uid = 0;
   ArgSymbol   *_this = new ArgSymbol( INTENT_BLANK, "this", ic);
 
   // create a field for each formal
@@ -192,10 +193,13 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         if (v->isCompilerTemp)
           continue;
 
-         Expr* def_init = def->init;
+        Expr* def_init = def->init;
         Expr* def_type = def->exprType;
         def_init->remove();
         def_type->remove();
+
+        v->name = stringcat("_", intstring(uid++), "_", v->name);
+        v->cname = v->name;
 
         // need to reset default value (make re-entrant)
         if (!def_init)
@@ -222,8 +226,8 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
     formal->defPoint->remove();
 
   fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
-                                                         "_yummyMethodToken",
-                                                        dtMethodToken)));
+                                                      "_yummyMethodToken",
+                                                      dtMethodToken)));
   fn->_this = _this;
   fn->insertFormalAtTail( new DefExpr( fn->_this));
 }
@@ -382,12 +386,14 @@ iterator_transform( FnSymbol *fn) {
   normalize( ic_def);
   iterator_constructor_fixup( ic);
   ic->isIterator = true;
+  nextcf->retType = dtInt[INT_SIZE_32];
 
   FnSymbol *headcf = new FnSymbol( "getHeadCursor");
   iterator_method( headcf);
   m->stmts->insertAtHead(new DefExpr(headcf));
   iterator_formals( headcf, ic);
   headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
+  headcf->retType = dtInt[INT_SIZE_32];
 
   FnSymbol *elemtf = new FnSymbol( "getElemType");
   iterator_method( elemtf);
@@ -415,13 +421,14 @@ iterator_transform( FnSymbol *fn) {
   fn->fnClass = FN_FUNCTION;
   fn->retType = dtUnknown;
   fn->retExprType->remove();
-  AList actuals;
-  for_alist( DefExpr, formal,  fn->formals) {
-    ArgSymbol *a = dynamic_cast<ArgSymbol*>(formal->sym);
-    actuals.insertAtTail( new SymExpr( a));
+  CallExpr* wrapperCall = new CallExpr(ic->defaultConstructor);
+  for_formals(formal, fn) {
+    wrapperCall->insertAtTail(formal);
   }
-  fn->body->replace( new BlockStmt( new ReturnStmt( new CallExpr( ic->defaultConstructor, &actuals))));
-  normalize( fn->defPoint);
+  fn->body->replace(new BlockStmt(new ReturnStmt(wrapperCall)));
+  fn->retExprType = wrapperCall->copy();
+  insert_help(fn->retExprType, NULL, fn, fn->argScope);
+  normalize(fn->defPoint);
 }
 
 

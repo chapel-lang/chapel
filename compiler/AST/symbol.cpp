@@ -775,6 +775,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
+  wrapper->retType = retType;
   wrapper->cname = stringcat("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   for_formals(formal, this) {
