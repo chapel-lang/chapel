@@ -1,1 +1,1 @@
-error
+introduce-dispatch-1.chpl:5: error: type mismatch in assignment from C(real) to C(int)
