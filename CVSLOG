@@ -91089,3 +91089,53 @@ Added files:
 	                                        test_iterator_local_vars_same_name.chpl 
 	                                        test_iterator_local_vars_same_name.good 
 
+---------------------------------------------------------------------------
+
+01/19/07 15:31:14 -- deitz
+
+Log message:
+	This checkin gets recursive iterators working.
+	
+	Undid my previous checkin: removed code to mangle the names of
+	arguments and fields that are duplicated within the same function or
+	class.  At least for fields, the names need to be unique throughout
+	compilation; mangling the cname is insufficient.
+	
+	Set the return type of the coercion wrapper to be the return type of
+	the wrapped function when the wrapper is built.  The same is done with
+	the default wrapper; it helps with recursive functions and types.
+	
+	Added a special check to resolve_type_expr to check to see if the
+	retExprType resolves to a type before resolving the function.  This
+	gets rid of a recursive type dependency when a function uses a
+	constructor to specify its return type and that constructor calls the
+	function to determine the type of its fields.
+	
+	Added =, constructors, and the rhs of setters to places to not insert
+	a _to_seq function.  Disabled inserting the _to_seq function on
+	iterator classes that are types, rather than values.  This is a
+	troubled list.  To avoid inserting sequences for iterators, we should
+	see if we can come up with a more systematic decision.
+	
+	Fixed a bug in which the temporaries put in for formal arguments to
+	handle pass by copy were used to replace expressions in the formal
+	argument list even though these formal temporaries were not set until
+	inside the function.
+	
+	Mangled the names of all of the fields put into an iterator class in
+	the presence of duplicate local variable names.  There is still a
+	problem if an argument name duplicates a local variable name.
+	
+	Added more return type information to the functions that are built up
+	for an iterator to handle recursive iterators.
+	
+	Fixed and removed a .future that defines an iterator over a tree.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/test/functions/deitz/iterators/: tree.chpl 
+Removed files:
+	chapel/test/functions/deitz/iterators/: tree.future 
+
