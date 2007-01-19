@@ -78,6 +78,26 @@ static void legalizeCName(Symbol* sym) {
   }
 }
 
+static void
+mangleFieldNames(ClassType* ct) {
+  ChainHashMap<char*, StringHashFns, bool> map;
+  for_fields(field, ct) {
+    if (map.get(field->cname))
+      field->cname = stringcat("_", intstring(field->id), "_", field->cname);
+    map.put(field->cname, true);
+  }
+}
+
+static void
+mangleFormalNames(FnSymbol* fn) {
+  ChainHashMap<char*, StringHashFns, bool> map;
+  for_formals(formal, fn) {
+    if (map.get(formal->cname))
+      formal->cname = stringcat("_", intstring(formal->id), "_", formal->cname);
+    map.put(formal->cname, true);
+  }
+}
+
 static void codegen_header(void) {
   ChainHashMap<char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
@@ -135,7 +155,13 @@ static void codegen_header(void) {
           !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
           cnames.get(sym->cname))
         sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
-      
+
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
+        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+          mangleFieldNames(ct);
+      if (FnSymbol* fs = dynamic_cast<FnSymbol*>(sym))
+        mangleFormalNames(fs);
+
       cnames.put(sym->cname, 1);
     
       if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
