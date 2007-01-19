@@ -91042,3 +91042,15 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_default1.chpl 
 	                                         test_default1.good 
 
+---------------------------------------------------------------------------
+
+01/18/07 16:11:11 -- deitz
+
+Log message:
+	Removed extra writeln in test and removed .future.
+
+Modified files:
+	chapel/test/functions/bradc/: nameDefaultParamInOut.chpl 
+Removed files:
+	chapel/test/functions/bradc/: nameDefaultParamInOut.future 
+
