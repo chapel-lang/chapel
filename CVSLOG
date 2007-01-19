@@ -91054,3 +91054,18 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/: nameDefaultParamInOut.future 
 
+---------------------------------------------------------------------------
+
+01/18/07 16:21:11 -- deitz
+
+Log message:
+	Updated error message output on two tests and removed .futures.  These
+	are now yielding pretty decent error messages.
+
+Modified files:
+	chapel/test/functions/jplevyak/: introduce-dispatch-1.good 
+	                                 zeroarity-bound-error-2.good 
+Removed files:
+	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
+	                                 zeroarity-bound-error-2.future 
+
