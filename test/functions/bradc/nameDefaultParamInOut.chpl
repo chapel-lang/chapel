@@ -34,5 +34,4 @@ def main() {
 
   r = callinout2(x=b, y=a);
   writeln("at callsite, a is: ", a, ", b is: ", b, ", r is: ", r);
-  writeln();
 }
