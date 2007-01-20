@@ -10,7 +10,7 @@
 
 AList* yystmtlist = NULL;
 char* yyfilename;
-int yylineno;
+int chplLineno;
 int yystartlineno;
 extern YYLTYPE yylloc;
 
@@ -56,10 +56,10 @@ bool containsOnlyModules(AList* stmts) {
 ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   ModuleSymbol* newModule = NULL;
   yyfilename = filename;
-  yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 0;
+  yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 0;
 
   yylloc.first_column = yylloc.last_column = 0;
-  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 1;
+  yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 1;
   yyin = openInputFile(filename);
   
   yystmtlist = NULL;
@@ -83,7 +83,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yyfilename = "<internal>";
 
   yylloc.first_column = yylloc.last_column = 0;
-  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = -1;
+  yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = -1;
 
   return newModule;
 }

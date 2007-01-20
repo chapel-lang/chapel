@@ -14,7 +14,8 @@ CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-COMP_CFLAGS += -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include
+INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include
+COMP_CFLAGS += $(INCL_CFLAGS)
 
 #
 # add gc-related stuff

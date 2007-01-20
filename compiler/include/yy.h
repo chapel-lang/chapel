@@ -15,8 +15,8 @@ extern "C" {
   extern FILE *yyin;
 
   extern char* yytext;
+  extern int chplLineno;
   extern char* yyfilename;
-  extern int yylineno;
   
   int yyparse(void);
   void yyerror(const char* str);

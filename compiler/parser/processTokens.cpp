@@ -40,9 +40,9 @@ static void addChar(char c) {
 
 
 void processNewline(void) {
-  yylineno++;
+  chplLineno++;
   yylloc.first_column = yylloc.last_column = 0;
-  yylloc.first_line = yylloc.last_line = yylineno;
+  yylloc.first_line = yylloc.last_line = chplLineno;
   countNewline();
 }
 
