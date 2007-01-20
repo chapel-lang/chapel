@@ -1,2 +1,0 @@
-ra-bradc-illegalcast.chpl:30: In function 'randomAccessUpdate':
-ra-bradc-illegalcast.chpl:31: error: illegal cast from domain(1,int) to uint(64)
