@@ -91139,3 +91139,23 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/iterators/: tree.future 
 
+---------------------------------------------------------------------------
+
+01/19/07 17:15:26 -- bradc
+
+Log message:
+	Due to fixes in the compiler for domain promotion,
+	my illegalcast test became legal, but also had
+	enough other problems that it was hard to fix (and
+	poorly named).  So instead, captured the same
+	thing it was trying to do (assign domain to array)
+	using a working copy from a similar era and
+	created a new test for it which works.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-domainPromote.chpl 
+	                                    ra-bradc-domainPromote.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-illegalcast.chpl 
+	                                    ra-bradc-illegalcast.good 
+
