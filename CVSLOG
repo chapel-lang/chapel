@@ -91159,3 +91159,30 @@ Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-illegalcast.chpl 
 	                                    ra-bradc-illegalcast.good 
 
+---------------------------------------------------------------------------
+
+01/19/07 17:18:55 -- bradc
+
+Log message:
+	Updated lexer to work with cpkg/v5 (in particular with
+	flex 2.5.33, bison 1.875d, and g++ 4.1.1).  Most of
+	this involved renaming yylineno (a variable we had
+	invented) because flex now defines it.  Also, dialed
+	down warnings on generated C code for developers
+	because the flex-generated code causes warnings.
+	
+	Haven't yet checked to see whether this will fix the
+	problem that Wael was seeing (which he fixed in a
+	different manner).  That's work for next week.
+	
+	This code compiled and ran under cpkg/v4 and cpkg/v5
+	on linux, and worked on the chap servers without
+	using modules, so hopefully won't break too much
+	this weekend.  :)
+
+Modified files:
+	chapel/compiler/include/: yy.h 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/compiler/parser/: Makefile parser.cpp processTokens.cpp 
+	                         yy.c 
+
