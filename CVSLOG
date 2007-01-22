@@ -91320,3 +91320,16 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: enumarray.future 
 
+---------------------------------------------------------------------------
+
+01/22/07 15:12:58 -- deitz
+
+Log message:
+	Removed .future that makes no sense (outdated probably); it inherits
+	from the builtin _domain wrapper class.
+
+Removed files:
+	chapel/test/trivial/shannon/: condReturn3.chpl 
+	                              condReturn3.future 
+	                              condReturn3.good 
+
