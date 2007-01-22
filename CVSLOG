@@ -91233,3 +91233,15 @@ Removed files:
 	chapel/test/studies/jacobi/bocchino/: jacobi.future 
 	chapel/test/studies/jacobi/bradc/: jacobi-slice-brad.future 
 
+---------------------------------------------------------------------------
+
+01/22/07 12:00:27 -- bradc
+
+Log message:
+	Removed badred test which, as Steve points out, is horribly
+	out-of-synch with the spec.
+
+Removed files:
+	chapel/test/classes/bradc/: badred.chpl badred.future 
+	                            badred.good 
+
