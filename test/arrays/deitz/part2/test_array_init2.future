@@ -1,3 +1,0 @@
-semantic
-
-What does this mean?  Should we always insert a loop around the initialization expression if the domain is specified with indices?

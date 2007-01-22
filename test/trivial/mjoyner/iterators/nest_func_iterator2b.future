@@ -1,3 +1,7 @@
+semantic
+
+Steve: I think we should make this illegal.  No inout, out, or in intents to iterators.
+
 waynew
 
 Currently do not support inout arguments to iterators. Two problems are 1)
