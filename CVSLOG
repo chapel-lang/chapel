@@ -91245,3 +91245,31 @@ Removed files:
 	chapel/test/classes/bradc/: badred.chpl badred.future 
 	                            badred.good 
 
+---------------------------------------------------------------------------
+
+01/22/07 14:15:20 -- deitz
+
+Log message:
+	Improved constant assignment checking by specializing the code
+	generated for a constant definition in fix_def_expr.
+	
+	Removed hack in insertion of formal temps.
+	
+	Updated a test and removed a .future.
+	
+	The following three tests need to be fixed:
+	
+	  [Error matching compiler output for release/examples/hpcc06/fft-mta]
+	  [Error matching compiler output for studies/hpcc/FFT/fft-hpcc06-mta]
+	  [Error matching compiler output for studies/hpcc/RA/marybeth/ra]
+	
+	They reassign constants in error at the user level.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/test/trivial/deitz/: test_assign_const.chpl 
+	                            test_assign_const.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_assign_const.future 
+
