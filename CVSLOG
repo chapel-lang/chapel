@@ -91273,3 +91273,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_assign_const.future 
 
+---------------------------------------------------------------------------
+
+01/22/07 14:17:45 -- deitz
+
+Log message:
+	Fixed assignment to constant in test.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl 
+
