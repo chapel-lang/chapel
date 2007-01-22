@@ -91294,3 +91294,13 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/: formatoutput.chpl 
 
+---------------------------------------------------------------------------
+
+01/22/07 14:58:22 -- deitz
+
+Log message:
+	Fixed .good to match user error output, rather than developer error output.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_assign_const.good 
+
