@@ -1463,11 +1463,6 @@ insertFormalTemps(FnSymbol* fn) {
     forv_Vec(BaseAST, ast, formals) {
       ArgSymbol* formal = dynamic_cast<ArgSymbol*>(ast);
       VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
-
-      // hack for constant assignment checking
-      // remove when constant checking is improved
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, tmp));
-
       if (formal->intent == INTENT_OUT) {
         if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));

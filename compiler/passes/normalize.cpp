@@ -739,11 +739,23 @@ static void fix_def_expr(DefExpr* def) {
           def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_cast", def->exprType->remove(), def->init->remove())));
           return;
         }
+        if (var->consClass == VAR_CONST) {
+          VarSymbol* typeTemp = new VarSymbol("_typeTmp");
+          typeTemp->isTypeVariable = true;
+          def->insertBefore(new DefExpr(typeTemp));
+          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
+          VarSymbol* constTemp = new VarSymbol("_constTmp");
+          constTemp->isCompilerTemp = true;
+          def->insertBefore(new DefExpr(constTemp));
+          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, constTemp, new CallExpr("=", constTemp, def->init->remove())));
+          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, constTemp));
+          return;
+        }
       }
       def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
     }
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-    typeTemp->isTypeVariable = true;
     typeTemp->isTypeVariable = true;
     def->insertBefore(new DefExpr(typeTemp));
     def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));

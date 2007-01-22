@@ -170,8 +170,6 @@ check_resolved_syms(Symbol* var) {
   if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var))
     if (vs->immediate)
       return;
-  if (dynamic_cast<ArgSymbol*>(var) && var->type->symbol->hasPragma("array"))
-    return;
   int num_moves = 0;
   CallExpr* move = 0;
   forv_Vec(SymExpr*, sym, var->uses) {
@@ -182,12 +180,8 @@ check_resolved_syms(Symbol* var) {
       }
     }
   }
-  if (num_moves >= 3) {
+  if (num_moves > 1)
     USR_FATAL_CONT(move, "Assigning to a constant expression");
-  }
-  if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
-    USR_FATAL_CONT(move, "Assigning to a constant expression");
-  }
 }
 
 
