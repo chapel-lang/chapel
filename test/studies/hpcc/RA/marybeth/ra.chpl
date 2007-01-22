@@ -112,7 +112,6 @@ def main() {
   var totalMem:real = (MEMSIZE:real)/8.0;
   var TableSize:uint(64);
   var logTableSize:uint(64); 
-  const TableDomain: int;
 
   /* calculate local memory per node for the update table */
   totalMem = (MEMSIZE:real)/(8.0);
@@ -127,7 +126,7 @@ def main() {
    TableSize = TableSize << 1;
   }
 
-  TableDomain = (TableSize:int);
+  const TableDomain = TableSize:int;
   var D:domain(1) = [0..TableDomain-1];
   var Table: [D] uint(64);
 
