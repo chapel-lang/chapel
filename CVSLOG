@@ -91355,3 +91355,22 @@ Modified files:
 Removed files:
 	chapel/test/trivial/shannon/: condReturn2.future 
 
+---------------------------------------------------------------------------
+
+01/22/07 15:34:16 -- bradc
+
+Log message:
+	Added a new test directory for users codes (ones that are legal
+	to put into our repository, anyway), and added an initial code
+	that Richard Barrett sent me (diffuse2d-orig.chpl) and my rewrite
+	of it to fix bugs and improve style slightly
+	(diffuse2d-orig-blc.chpl).  This comes from an email conversation
+	we've been having as he's been getting used to the language.
+
+Added files:
+	chapel/test/users/rbarrett/: .cvsignore diffuse2d-orig-blc.chpl 
+	                             diffuse2d-orig-blc.execopts 
+	                             diffuse2d-orig-blc.good 
+	                             diffuse2d-orig.chpl 
+	                             diffuse2d-orig.notest 
+
