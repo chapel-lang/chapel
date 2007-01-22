@@ -127,7 +127,7 @@ void scopeResolve(Symbol* base) {
             if (UserType* ut = dynamic_cast<UserType*>(type->type)) {
               Expr* e = ut->typeExpr->copy();
               symExpr->replace(e);
-              //scopeResolve(e);
+              collect_asts_postorder(&asts, e); // scope resolve type alias
               continue;
             }
         }
