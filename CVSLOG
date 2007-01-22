@@ -91186,3 +91186,18 @@ Modified files:
 	chapel/compiler/parser/: Makefile parser.cpp processTokens.cpp 
 	                         yy.c 
 
+---------------------------------------------------------------------------
+
+01/22/07 10:53:55 -- deitz
+
+Log message:
+	Fixed an interaction between scope resolution and the UserType
+	construct so that when the UserType is subsituted during scope
+	resolution, the subsituted expression is scope resolved.  This fixes a
+	module ordering issue.  Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: scopeResolve.cpp 
+Removed files:
+	chapel/test/modules/bradc/: typeInModule.future 
+
