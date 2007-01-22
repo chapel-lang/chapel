@@ -1,5 +1,7 @@
 deitz
 
+this test should give an error about void being used from function that returns void
+
 return normalization should not be done on generic functions or variable argument functions
 
 deitz/jplevyak

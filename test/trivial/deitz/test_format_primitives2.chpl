@@ -8,7 +8,7 @@ s = i:"%lld";
 writeln(s);
 
 
-var f : real(32) = 1.23;
+var f : real(32) = 1.23:real(32);
 writeln(f:"%e");
 
 var c : complex = 2.0 + 3.0i;

@@ -1,2 +1,2 @@
-Halt reached: condReturn2.chpl:14
-rank/numdims mismatch
+condReturn2.chpl:4: In function 'foo':
+condReturn2.chpl:4: error: tuple size must be static

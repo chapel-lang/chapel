@@ -1,7 +1,7 @@
 class C {
   var rank: int = 2;
 
-  def foo(dim: (rank*int)) {
+  def foo(dim: rank*int) {
     writeln("In other foo()");
     var x = C();
     return x;

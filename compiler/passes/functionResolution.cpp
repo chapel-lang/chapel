@@ -1251,6 +1251,12 @@ resolveCall(CallExpr* call) {
           USR_FATAL(userCall(call), "illegal cast from %s to %s",
                     atypes.v[1]->symbol->name,
                     atypes.v[0]->symbol->name);
+        } else if (!strcmp("_construct__tuple", name)) {
+          SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+          if (!sym || !sym->isParam())
+            USR_FATAL(userCall(call), "tuple size must be static");
+          else
+            USR_FATAL(userCall(call), "invalid tuple");
         } else if (!strcmp("=", name)) {
           if (atypes.v[1] == dtNil) {
             USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
