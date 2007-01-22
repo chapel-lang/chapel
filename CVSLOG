@@ -91374,3 +91374,23 @@ Added files:
 	                             diffuse2d-orig.chpl 
 	                             diffuse2d-orig.notest 
 
+---------------------------------------------------------------------------
+
+01/22/07 15:50:00 -- deitz
+
+Log message:
+	Fixed syntax on one test and removed a .future.
+	
+	Updated several more .futures.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_of_array2.future 
+	chapel/test/arrays/deitz/part2/: test_array_init2.chpl 
+	                                 test_array_init2.good 
+	                                 test_array_of_array1.future 
+	chapel/test/trivial/marybeth/: typeselect.future 
+	chapel/test/trivial/mjoyner/iterators/: 
+	                                        nest_func_iterator2b.future 
+Removed files:
+	chapel/test/arrays/deitz/part2/: test_array_init2.future 
+
