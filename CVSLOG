@@ -91201,3 +91201,35 @@ Modified files:
 Removed files:
 	chapel/test/modules/bradc/: typeInModule.future 
 
+---------------------------------------------------------------------------
+
+01/22/07 11:27:54 -- deitz
+
+Log message:
+	Added syntactic support for subdomains without any semantic checking.
+	I added this as it is used in the tests, i.e., with the keyword
+	subdomain.  The spec is different; it suggests the keyword domain is
+	used instead of subdomain.  This may be an error in the spec.
+	
+	Removed three .futures.
+	
+	Refiled future studies/jacobi/bradc/jacobi-simple-brad under the
+	semantic heading meaning that we should discuss whether this test is
+	legal.  It attempts to promote over tuples.  Do we want to allow that?
+	
+	Refiled future classes/bradc/badred under the semantic heading also.
+	Should this test be rewritten to test the structural interface of
+	reductions?  It is outdated Chapel in many respects.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/bradc/: badred.future 
+	chapel/test/studies/jacobi/bocchino/: jacobi.chpl 
+	chapel/test/studies/jacobi/bradc/: jacobi-simple-brad.future 
+Removed files:
+	chapel/test/domains/bradc/: subdomain.future 
+	chapel/test/studies/jacobi/bocchino/: jacobi.future 
+	chapel/test/studies/jacobi/bradc/: jacobi-slice-brad.future 
+
