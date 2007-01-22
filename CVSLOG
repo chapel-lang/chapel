@@ -91283,3 +91283,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl 
 
+---------------------------------------------------------------------------
+
+01/22/07 14:50:28 -- deitz
+
+Log message:
+	Fixed .future semantic question test to use %d instead of %lld now
+	that int is not 64 bits by default.
+
+Modified files:
+	chapel/test/trivial/bradc/: formatoutput.chpl 
+
