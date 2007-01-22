@@ -1682,6 +1682,7 @@ preFold(Expr* expr) {
       if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
         if (construct->isNamed("_build_array_type") ||
             construct->isNamed("_build_sparse_domain_type") ||
+            construct->isNamed("_build_subdomain_type") ||
             construct->isNamed("_build_domain_type") ||
             construct->isNamed("_build_index_type")) {
           result = construct->remove();

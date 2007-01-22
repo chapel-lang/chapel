@@ -171,6 +171,11 @@ class _domain {
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
+  def _build_subdomain() {
+    var x = _value._build_subdomain();
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
+  }
+
   def _exclusive_upper
     return _domain(_domain_type, _index_type, _dim_index_type, rank, _value._exclusive_upper);
 
@@ -270,6 +275,9 @@ def _build_domain_type(type ind_type) {
   var x = _idomain(ind_type);
   return _domain(x.type, ind_type, ind_type, 0, x);
 }
+
+def _build_subdomain_type(dom)
+  return dom._build_subdomain();
 
 def _build_sparse_domain_type(dom)
   return dom._build_sparse_domain();
@@ -399,6 +407,9 @@ class _adomain {
 
   def _build_sparse_domain()
     return _sdomain(rank, dim_type, adomain=this);
+
+  def _build_subdomain()
+    return _adomain(rank, dim_type);
 
   def translate(dim: rank*int) {
     var x = _adomain(rank, int);

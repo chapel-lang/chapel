@@ -1,3 +1,8 @@
+semantic
+
+This test is outdated.  What is the point?  Should this be rewritten to
+test that a reduction class implements the structural interface?
+
 error message
 
 The goal here is to make sure that we don't read

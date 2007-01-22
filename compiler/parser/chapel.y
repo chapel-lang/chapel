@@ -136,6 +136,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TSERIAL
 %token TSPARSE
 %token TSTATIC
+%token TSUBDOMAIN
 %token TSYNC
 %token TTHEN
 %token TTYPE
@@ -1122,6 +1123,8 @@ type:
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
     { $$ = new CallExpr("_build_domain_type", $3); }
+| TSUBDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
+    { $$ = new CallExpr("_build_subdomain_type", $3); }
 | TDOMAIN
     { $$ = new SymExpr("_domain"); }
 | TSPARSE TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
