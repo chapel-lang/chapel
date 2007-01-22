@@ -91333,3 +91333,25 @@ Removed files:
 	                              condReturn3.future 
 	                              condReturn3.good 
 
+---------------------------------------------------------------------------
+
+01/22/07 15:32:28 -- deitz
+
+Log message:
+	Specialized error message on tuples of non-static size.  Removed a
+	.future.
+	
+	Started taking a pass over .futures and updating the messages.  We
+	should discuss semantic futures and what we should do with them.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/bradc/: formatoutput.future 
+	chapel/test/trivial/deitz/: test_format_primitives2.chpl 
+	                            test_format_primitives2.future 
+	chapel/test/trivial/jplevyak/: destruct-arg-1.future 
+	chapel/test/trivial/shannon/: condReturn.future condReturn2.chpl 
+	                              condReturn2.good 
+Removed files:
+	chapel/test/trivial/shannon/: condReturn2.future 
+
