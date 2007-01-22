@@ -91304,3 +91304,19 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_assign_const.good 
 
+---------------------------------------------------------------------------
+
+01/22/07 15:03:25 -- deitz
+
+Log message:
+	Fixed casting from integral types to enumerated types.
+	
+	Removed a .future relating to an arithmetic domain defined with an
+	enumerated type (not an enumerated domain).
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/arrays/bradc/: enumarray.chpl enumarray.good 
+Removed files:
+	chapel/test/arrays/bradc/: enumarray.future 
+
