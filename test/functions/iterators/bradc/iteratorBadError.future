@@ -1,4 +1,4 @@
-iterator error messages
+error message
 
 When an error occurs within an iterator, it is currently reported
 multiple times and phrased in terms of the functions that the

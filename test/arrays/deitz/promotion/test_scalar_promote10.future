@@ -1,3 +1,5 @@
+promoted var function
+
 deitz
 
-setters of setters don't work need ref type
+promoted setters of setters don't work, need ref type?
