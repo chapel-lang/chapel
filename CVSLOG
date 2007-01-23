@@ -91452,3 +91452,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/shannon/: condReturn.future 
 
+---------------------------------------------------------------------------
+
+01/23/07 11:58:03 -- deitz
+
+Log message:
+	Added working test I had in my directory.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_over_classes.chpl 
+	                                        test_iterator_over_classes.good 
+
