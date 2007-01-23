@@ -91540,3 +91540,20 @@ Added files:
 	                                        iteratorBadError.future 
 	                                        iteratorBadError.good 
 
+---------------------------------------------------------------------------
+
+01/23/07 14:19:10 -- deitz
+
+Log message:
+	Refiled and elaborated on several futures.
+
+Modified files:
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote10.future 
+	chapel/test/arrays/jplevyak/: simple-4.future 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2a.future 
+	                                        test_instantiate_iterator3.future 
+	                                        test_instantiate_iterator3a.future 
+	chapel/test/functions/iterators/bradc/: iteratorBadError.future 
+
