@@ -351,7 +351,7 @@ pragma "inline" def _cond_test(param x: bool) param return x;
 pragma "inline" def _cond_test(param x: integral) param return x != 0;
 
 pragma "inline" def _cond_test(x) {
-  compilerError("conditional expression has illegal type");
+  compilerError("illegal type '", x.type, "' used in if or while condition");
 }
 
 //
