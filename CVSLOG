@@ -91582,3 +91582,19 @@ Modified files:
 	chapel/test/modules/bradc/: multipleModulesSameName.future 
 	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.future 
 
+---------------------------------------------------------------------------
+
+01/23/07 15:21:41 -- deitz
+
+Log message:
+	Added a working iterator method test that references this.
+	
+	Added a working array type alias test.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_type_alias.chpl 
+	                           test_array_type_alias.good 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_in_class2.chpl 
+	                                        test_iterator_in_class2.good 
+
