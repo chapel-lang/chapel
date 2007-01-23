@@ -161,33 +161,32 @@ iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
 static void
 iterator_create_fields( FnSymbol *fn, ClassType *ic) {
   int uid = 0;
-  ArgSymbol   *_this = new ArgSymbol( INTENT_BLANK, "this", ic);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ic);
 
   // create a field for each formal
-  for_alist( DefExpr, formal, fn->formals) {
-    if (ArgSymbol *a = dynamic_cast<ArgSymbol*>(formal->sym)) {
-      Expr    *etype= (formal->exprType) ? formal->exprType->copy() : NULL;
-      consType const_type= (a->intent==INTENT_PARAM) ? VAR_PARAM : VAR_VAR;
-      VarSymbol *newfield = new VarSymbol( a->name,
-                                           dtUnknown,
-                                           VAR_NORMAL,
-                                           const_type);
-      ic->fields->insertAtTail(new DefExpr(newfield,
-                                           NULL,
-                                           etype));
-      // replace uses in body
-      forv_Vec( SymExpr, se, a->uses) {
-        se->replace( new CallExpr( ".", _this, new_StringSymbol( se->var->name)));
-
-      }
+  for_formals(formal, fn) {
+    formal->defPoint->remove();
+    if (formal->type == dtMethodToken)
+      continue;
+    formal->name = stringcat("_", intstring(uid++), "_", formal->name);
+    consType const_type = (formal->intent==INTENT_PARAM) ? VAR_PARAM : VAR_VAR;
+    VarSymbol *newfield = new VarSymbol(formal->name,
+                                        dtUnknown,
+                                        VAR_NORMAL,
+                                        const_type);
+    ic->fields->insertAtTail(
+      new DefExpr(newfield, NULL, formal->defPoint->exprType));
+    // replace uses in body
+    forv_Vec(SymExpr, se, formal->uses) {
+      se->replace(new CallExpr(".", _this, new_StringSymbol(se->var->name)));
     }
   }
 
 
   // create a field for each local
   Vec<BaseAST*> children;
-  collect_asts( &children, fn->body);
-  forv_Vec( BaseAST, ast, children) {
+  collect_asts(&children, fn->body);
+  forv_Vec(BaseAST, ast, children) {
     if (DefExpr *def = dynamic_cast<DefExpr*>(ast)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(def->sym)) {
         if (v->isCompilerTemp)
@@ -222,9 +221,6 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
   }
 
   // create formals
-  for_formals(formal, fn)
-    formal->defPoint->remove();
-
   fn->insertFormalAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
                                                       "_yummyMethodToken",
                                                       dtMethodToken)));
@@ -423,7 +419,8 @@ iterator_transform( FnSymbol *fn) {
   fn->retExprType->remove();
   CallExpr* wrapperCall = new CallExpr(ic->defaultConstructor);
   for_formals(formal, fn) {
-    wrapperCall->insertAtTail(formal);
+    if (formal->type != dtMethodToken)
+      wrapperCall->insertAtTail(formal);
   }
   fn->body->replace(new BlockStmt(new ReturnStmt(wrapperCall)));
   fn->retExprType = wrapperCall->copy();
