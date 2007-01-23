@@ -91512,3 +91512,17 @@ Added files:
 	chapel/test/classes/deitz/: test_empty_record.chpl 
 	                            test_empty_record.good 
 
+---------------------------------------------------------------------------
+
+01/23/07 14:03:58 -- deitz
+
+Log message:
+	Updated a .good and removed two .futures for visibility tests that now
+	work, but were failing because of empty records.
+
+Modified files:
+	chapel/test/functions/jplevyak/scoping/: visibility-4.good 
+Removed files:
+	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
+	                                         visibility-4.future 
+
