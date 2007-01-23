@@ -91557,3 +91557,17 @@ Modified files:
 	                                        test_instantiate_iterator3a.future 
 	chapel/test/functions/iterators/bradc/: iteratorBadError.future 
 
+---------------------------------------------------------------------------
+
+01/23/07 14:24:31 -- deitz
+
+Log message:
+	Improved list_futures script to alphabetize the output.  The order was
+	somewhat random as the names of the futures changed.  This also has
+	the advantage of grouping similar problems.  I use the headings 'error
+	message' to mean that we need to improve the error message and
+	'semantic' to mean that we need to discuss the meaning of this test.
+
+Modified files:
+	chapel/test/: list_futures 
+
