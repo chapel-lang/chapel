@@ -91526,3 +91526,17 @@ Removed files:
 	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
 	                                         visibility-4.future 
 
+---------------------------------------------------------------------------
+
+01/23/07 14:15:37 -- bradc
+
+Log message:
+	Adding a future showing that normal error messages (like
+	use-before-def) that occur in iterators result in confusing
+	and repetitious error messages.
+
+Added files:
+	chapel/test/functions/iterators/bradc/: iteratorBadError.chpl 
+	                                        iteratorBadError.future 
+	                                        iteratorBadError.good 
+
