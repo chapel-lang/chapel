@@ -2079,7 +2079,9 @@ resolveFns(FnSymbol* fn) {
   ret->type = retType;
   if (fn->retType == dtUnknown)
     fn->retType = retType;
-  if (retType == dtUnknown)
+  if (retTypes.n == 0 && fn->retType == dtUnknown)
+    fn->retType = ret->type = dtVoid;
+  else if (retType == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
 
   if (fn->fnClass == FN_CONSTRUCTOR) {

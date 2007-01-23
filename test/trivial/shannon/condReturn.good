@@ -1,3 +1,1 @@
-{m = 2.3}
-Halt reached: condReturn.chpl:14
-not enough args
+condReturn.chpl:19: error: illegal use of function that does not return a value
