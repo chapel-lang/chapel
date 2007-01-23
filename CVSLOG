@@ -91496,3 +91496,19 @@ Removed files:
 	                                   test_domain3.future 
 	chapel/test/functions/iterators/bradc/: iteratorInClass.future 
 
+---------------------------------------------------------------------------
+
+01/23/07 13:59:02 -- deitz
+
+Log message:
+	Fixed an uninitialized variable thinko in the code to build a default
+	hash function for a record that only showed up when encountering code
+	that contained an empty record (no fields).  Added a test that
+	contains an empty record.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_empty_record.chpl 
+	                            test_empty_record.good 
+
