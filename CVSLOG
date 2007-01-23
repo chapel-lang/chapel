@@ -91421,3 +91421,18 @@ Removed files:
 	                                    ra-bradc-badlineno.future 
 	                                    ra-bradc-badlineno.good 
 
+---------------------------------------------------------------------------
+
+01/22/07 16:46:43 -- deitz
+
+Log message:
+	Improved compiler error message for illegal types in if or while
+	conditions.
+	
+	The error for studies/beer/bradc/beer-promoted-infer.future looks
+	valid to me.  Brad, take a look and let me know if you agree or not.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/trivial/deitz/: test_bad_if.good 
+
