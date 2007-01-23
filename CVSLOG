@@ -91436,3 +91436,19 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/test/trivial/deitz/: test_bad_if.good 
 
+---------------------------------------------------------------------------
+
+01/23/07 11:16:06 -- deitz
+
+Log message:
+	Made resolution of functions robust to the case where a function may
+	or may not return a value based on parameters and instantiation.
+	
+	Updated .good error for test and removed .future.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/shannon/: condReturn.good 
+Removed files:
+	chapel/test/trivial/shannon/: condReturn.future 
+
