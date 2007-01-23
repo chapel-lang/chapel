@@ -91407,3 +91407,17 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: README fft-mta.chpl 
 	chapel/test/studies/hpcc/FFT/: fft-hpcc06-mta.chpl 
 
+---------------------------------------------------------------------------
+
+01/22/07 16:44:16 -- bradc
+
+Log message:
+	Removed a test that is no longer generating the same error
+	message that caused it to get filed (and I can't even figure
+	out where/why it did), and which is otherwise redundant.
+
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-badlineno.chpl 
+	                                    ra-bradc-badlineno.future 
+	                                    ra-bradc-badlineno.good 
+
