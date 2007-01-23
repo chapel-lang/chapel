@@ -91571,3 +91571,14 @@ Log message:
 Modified files:
 	chapel/test/: list_futures 
 
+---------------------------------------------------------------------------
+
+01/23/07 14:28:51 -- deitz
+
+Log message:
+	Refiled two futures.
+
+Modified files:
+	chapel/test/modules/bradc/: multipleModulesSameName.future 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.future 
+
