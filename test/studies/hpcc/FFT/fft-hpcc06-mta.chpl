@@ -265,9 +265,8 @@ def cftmd2(span, A, W) {
       const wk2 = W(k1),
             wk1 = W(2*k1 + 1),
             wk3 = interpRe(wk1, wk2);
-      wk2 = wk2*1.0i;
 
-      butterfly(wk1, wk2, wk3, A[j+k+m..j+k+m+3*span by span]);
+      butterfly(wk1, wk2*1.0i, wk3, A[j+k+m..j+k+m+3*span by span]);
     }
   }
 }

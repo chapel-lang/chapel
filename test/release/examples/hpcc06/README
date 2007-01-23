@@ -83,3 +83,7 @@ Other changes to date are:
     implementation.  This code doesn't reflect the crossover point
     accurately, but at least makes small numLocales cases much less
     ridiculous.
+
+  * fixed a bug in cftmd2() in fft-mta.chpl in which a wk2 value was
+    declared to be const, but then modified which the compiler wasn't
+    catching.
