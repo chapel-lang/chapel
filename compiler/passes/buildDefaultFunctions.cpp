@@ -439,7 +439,7 @@ static void build_record_hash_function(ClassType *ct) {
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   fn->insertFormalAtTail(arg);
 
-  if (ct->fields->length() < 0) {
+  if (ct->fields->length() == 0) {
     fn->insertAtTail(new ReturnStmt(new_IntSymbol(0)));
   } else {
     CallExpr *call;
