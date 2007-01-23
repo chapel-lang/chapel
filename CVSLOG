@@ -91464,3 +91464,35 @@ Added files:
 	                                        test_iterator_over_classes.chpl 
 	                                        test_iterator_over_classes.good 
 
+---------------------------------------------------------------------------
+
+01/23/07 13:22:32 -- deitz
+
+Log message:
+	Enabled iterator methods by:
+	
+	  1. Mangling the names of the formal arguments when inserting them as
+	     fields into an iterator class.  The same mangling is done for
+	     local variables to allow two local variables with the same name.
+	     Now two formals can have the same name as well.
+	
+	  2. Disabling the insertion of a method token as a field and
+	     eliminating it from the call site of the constructor in the
+	     iterator wrapper.  This was not strictly necessary.
+	
+	Added a very simple iterator in a class test.
+	
+	Fixed an oversight in a .good of a future, and removed three .futures.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/functions/iterators/bradc/: iteratorInClass.good 
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_in_class.chpl 
+	                                        test_iterator_in_class.good 
+Removed files:
+	chapel/test/arrays/deitz/domains/: test_domain2.future 
+	                                   test_domain3.future 
+	chapel/test/functions/iterators/bradc/: iteratorInClass.future 
+
