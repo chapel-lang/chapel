@@ -33,6 +33,12 @@ foreach $fname (@fnames) {
   chomp $worker;
   $fname =~ s/(.*)\.future$/$1/;
   if (index($worker, $username) != -1) {
-      print "$worker [$fname]\n";
+      push @output, "$worker [$fname]\n";
   }
+}
+
+@sorted = sort { lc($a) cmp lc($b) } @output;
+
+foreach $line (@sorted) {
+  print $line;
 }
