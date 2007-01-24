@@ -91709,3 +91709,16 @@ Added files:
 	                                   test_string_cat.chpl 
 	                                   test_string_cat.good 
 
+---------------------------------------------------------------------------
+
+01/24/07 11:56:59 -- deitz
+
+Log message:
+	Fixed a bug in the runtime _glom_strings routine in which a global
+	array of strings (!!) was used by the routine in a thread-unsafe
+	manner.  Removed the global array of strings and simplified.
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chplmem.c chpltypes.c 
+
