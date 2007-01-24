@@ -91771,3 +91771,15 @@ Added files:
 	                                   test_begin.future 
 	                                   test_begin.good 
 
+---------------------------------------------------------------------------
+
+01/24/07 13:58:43 -- deitz
+
+Log message:
+	Filed a future that shows that cg-chpl-lineno is not thread-safe.
+
+Added files:
+	chapel/test/parallel/begin/deitz/: test_begin_error_lineno.chpl 
+	                                   test_begin_error_lineno.future 
+	                                   test_begin_error_lineno.good 
+
