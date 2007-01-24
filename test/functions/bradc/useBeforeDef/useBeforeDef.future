@@ -1,3 +1,5 @@
+global use before def
+
 deitz
 
 Like test/studies/blas/marybeth/saxpy2.chpl, this test should report a

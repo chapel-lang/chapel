@@ -1,3 +1,5 @@
+global use before def
+
 deitz
 
 This test should fail with an error message that D is used before

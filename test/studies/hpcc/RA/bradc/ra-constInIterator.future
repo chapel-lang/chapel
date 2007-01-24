@@ -1,3 +1,5 @@
+const in iterator and param coercions
+
 waynew
 
 When using a const in an iterator, the initialization

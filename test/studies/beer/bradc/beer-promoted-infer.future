@@ -1,3 +1,9 @@
+semantic
+
+promotion over conditional expressions
+
+old:
+
 deitz
 
 For some reason, == doesn't seem to be promoting across integers and

@@ -1,4 +1,4 @@
-shannon
+config var value in help message
 
 Re-enable the ability to print the configuration 
 variable's default value.

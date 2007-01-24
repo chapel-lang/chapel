@@ -1,3 +1,5 @@
+lg2 error on real types
+
 bradc
 
 Need to catch EDOM return values from C's
