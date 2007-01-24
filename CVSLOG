@@ -91722,3 +91722,16 @@ Modified files:
 	chapel/runtime/include/: chpltypes.h 
 	chapel/runtime/src/: chplmem.c chpltypes.c 
 
+---------------------------------------------------------------------------
+
+01/24/07 12:57:46 -- diten
+
+Log message:
+	Check in a test that shows an apparent problem with assigning domains
+	from within class methods.
+
+Added files:
+	chapel/test/trivial/diten/: class_domain_init.chpl 
+	                            class_domain_init.future 
+	                            class_domain_init.good 
+
