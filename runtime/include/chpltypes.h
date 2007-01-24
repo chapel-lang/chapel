@@ -73,7 +73,6 @@ typedef _int64              _symbol;
 
 #define string_copy(rhs) (_glom_strings(1, rhs))
 
-int isGlomStringsMem(void*);
 char* _glom_strings(int numstrings, ...);
 
 char* _chpl_tostring_bool(_bool x, char* format);

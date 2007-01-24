@@ -499,7 +499,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     _chpl_mutex_lock(&_memtrack_lock);
     memEntry = lookupMemory(memAlloc);
     _chpl_mutex_unlock(&_memtrack_lock);
-    if (!memEntry && (memAlloc != NULL) && !(isGlomStringsMem(memAlloc))) {
+    if (!memEntry && (memAlloc != NULL)) {
       char* message;
       message = _glom_strings(3, "Attempting to realloc memory for ",
                               description, "that wasn't allocated");

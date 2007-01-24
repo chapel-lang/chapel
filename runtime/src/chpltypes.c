@@ -20,64 +20,27 @@ char* _default_format_write_complex64 = "%g + %gi";
 char* _default_format_write_complex128 = "%lg + %lgi";
 char* _default_format_write_complex256 = "%Lg + %Lgi";
 
-/* _glom_strings() expects every argument after the first to be 
-   of type char*. */
-static int maxNumStrings = 0;
-static char** stringlist = NULL;
-
-
-int isGlomStringsMem(void* ptr) {
-  return (ptr == stringlist);
-}
-
-
 char* _glom_strings(int numstrings, ...) {
-  int i;
   va_list ap;
-  unsigned int totlen = 0;
-  char* newstring;
-
-  if (numstrings > maxNumStrings) {
-    maxNumStrings = numstrings;
-    stringlist = (char**)_chpl_realloc(stringlist, numstrings, sizeof(char*),
-                                       "stringlist buffer in _glom_strings");
-  }
+  int i, len;
+  char* str;
 
   va_start(ap, numstrings);
-  for (i=0; i<numstrings; i++) {
-    stringlist[i] = va_arg(ap, char*);
-  }
+  len = 0;
+  for (i=0; i<numstrings; i++)
+    len += strlen(va_arg(ap, char*));
   va_end(ap);
 
-  for (i=0; i<numstrings; i++) {
-    totlen += strlen(stringlist[i]);
-  }
+  str = (char*)_chpl_malloc(len+1, sizeof(char), "_glom_strings result");
 
-  newstring = (char*)_chpl_malloc((totlen + 1), sizeof(char), 
-                                  "_glom_strings result");
-  newstring[0] = '\0';
-  for (i=0; i<numstrings; i++) {
-    strcat(newstring, stringlist[i]);
-  }
+  va_start(ap, numstrings);
+  str[0] = '\0';
+  for (i=0; i<numstrings; i++)
+    strcat(str, va_arg(ap, char*));
+  va_end(ap);
 
-  if (strlen(newstring) > totlen) {
-    char* message = "_glom_strings() buffer overflow";
-    printInternalError(message);
-  }
-
-  return newstring;
+  return str;
 }
-
-
-/* _string _copy_string(_string* lhs, _string rhs) { */
-/*   /\*** REALLOC vs MALLOC */
-/*        We have memory leaks when dealing with strings. */
-/*        *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), "string copy"); *\/ */
-/*   *lhs = (char*)_chpl_malloc(strlen(rhs)+1, sizeof(char), "string copy"); */
-
-/*   strcpy(*lhs, rhs); */
-/*   return *lhs; */
-/* } */
 
 
 char* _chpl_tostring_bool(_bool x, char* format) {
