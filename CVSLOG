@@ -91735,3 +91735,13 @@ Added files:
 	                            class_domain_init.future 
 	                            class_domain_init.good 
 
+---------------------------------------------------------------------------
+
+01/24/07 13:05:51 -- diten
+
+Log message:
+	Add a description of the problem to the .future file
+
+Modified files:
+	chapel/test/trivial/diten/: class_domain_init.future 
+
