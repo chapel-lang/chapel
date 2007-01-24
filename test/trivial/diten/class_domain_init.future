@@ -1,0 +1,4 @@
+deitz
+
+This class should allow the domain "D" to be assigned to by the initialize 
+method.  Instead it causes a segmentation violation.
