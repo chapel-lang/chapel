@@ -91796,3 +91796,17 @@ Added files:
 	chapel/test/parallel/begin/deitz/: 
 	                                   test_begin_error_lineno.compopts 
 
+---------------------------------------------------------------------------
+
+01/24/07 14:59:59 -- deitz
+
+Log message:
+	Filed a bug trying to cast a string to an int.
+	
+	Some primitive type casts are not implemented.  Is this supposed to work?
+
+Added files:
+	chapel/test/trivial/deitz/: test_string2int.chpl 
+	                            test_string2int.future 
+	                            test_string2int.good 
+
