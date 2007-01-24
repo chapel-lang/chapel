@@ -91757,3 +91757,17 @@ Log message:
 Modified files:
 	chapel/test/trivial/diten/: class_domain_init.future 
 
+---------------------------------------------------------------------------
+
+01/24/07 13:53:43 -- deitz
+
+Log message:
+	Filed .future related to for loop surrounding begin.  This test is
+	nondeterministic (unfortunately!) but I'm not sure it should ever show
+	the behaviour that it is showing.
+
+Added files:
+	chapel/test/parallel/begin/deitz/: test_begin.chpl 
+	                                   test_begin.future 
+	                                   test_begin.good 
+
