@@ -1,3 +1,12 @@
+uninitialized domain field
+
+Domain fields are brittle and special-cased by the compiler in a
+few places.  This looks like a good test to work on in order to
+get an array of arrays working.  The issue is that the domain is
+set to nil, but it shouldn't be, because it is a value type.
+
+old:
+
 deitz
 
 This class should allow the domain "D" to be assigned to by the initialize 
