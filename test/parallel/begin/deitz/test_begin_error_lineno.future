@@ -1,0 +1,4 @@
+cg-chpl-lineno
+
+This test shows the wrong line number because cg-chpl-lineno uses
+a global variable and is not thread-safe.
