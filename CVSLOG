@@ -91783,3 +91783,16 @@ Added files:
 	                                   test_begin_error_lineno.future 
 	                                   test_begin_error_lineno.good 
 
+---------------------------------------------------------------------------
+
+01/24/07 14:00:12 -- deitz
+
+Log message:
+	Fixed good .good.  Added .compopts to run with --cg-chpl-lineno.
+
+Modified files:
+	chapel/test/parallel/begin/deitz/: test_begin_error_lineno.good 
+Added files:
+	chapel/test/parallel/begin/deitz/: 
+	                                   test_begin_error_lineno.compopts 
+
