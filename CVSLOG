@@ -91745,3 +91745,15 @@ Log message:
 Modified files:
 	chapel/test/trivial/diten/: class_domain_init.future 
 
+---------------------------------------------------------------------------
+
+01/24/07 13:35:47 -- deitz
+
+Log message:
+	Categorized .future as 'uninitialized domain field.'  This test looks
+	like it would be a good starting point for somebody trying to get
+	arrays of arrays working.
+
+Modified files:
+	chapel/test/trivial/diten/: class_domain_init.future 
+
