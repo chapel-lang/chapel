@@ -91615,3 +91615,84 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/24/07 10:20:26 -- deitz
+
+Log message:
+	Categorized all .future files as follows:
+	
+	? - The test needs to be examined and categorized.  If you are filing
+	    a future and are not positive what is wrong, label it "?" so that
+	    either you or someone else can look at it later as time allows.
+	
+	semantic - The test illustrates something that is questionable in the
+	           language.  These need to be discussed as a group.  They
+	           should either be removed, categorized as a bug
+	
+	error message - The test shows a place where the compiler should
+	                provide a better error message.
+	
+	In addition to these general categories, the rest of the .futures now
+	have some specific bug category that summarizes what is wrong.  I only
+	use a user name to mean that this test is wrong and needs to be fixed
+	by this person.
+	
+	As a proposal, I think we should use a username if you have taken
+	ownership of a bug or are working on it.  In this case, you can put
+	your user name next to the category in the future.  Here is the
+	breakdown of the 62 futures to date:
+	
+	16 semantic
+	8 error message
+	4 generic iterators
+	3 global use before def
+	3 memory leak
+	3 uninstantiated generic parent
+	2 array of arrays
+	2 inout
+	1 ?
+	1 array fields and type aliases
+	1 array of syncs
+	1 cg-chpl-lineno
+	1 complicated expression in class
+	1 config var value in help message
+	1 const in iterator and param coercions
+	1 file I/O
+	1 formal type from default value
+	1 generic classes with default types
+	1 invalid executable command line arguments
+	1 lg2 error on real types
+	1 marybeth
+	1 nested classes
+	1 parameter folding
+	1 primitive to string conversions
+	1 promoted var function
+	1 query variables
+	1 return in type select
+	1 type in expression context
+	1 zippered iteration
+
+Modified files:
+	chapel/test/arrays/jplevyak/: simple-4.future 
+	chapel/test/classes/deitz/: test_type_in_class1.future 
+	chapel/test/classes/marybeth/: test-init.future 
+	chapel/test/compflags/bradc/: linenoConditional.future 
+	chapel/test/domains/indefinite/waynew/: memory1.future 
+	                                        tuple_domain.future 
+	chapel/test/execflags/shannon/: spellingTest.future 
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVarDefaultValue.future 
+	chapel/test/functions/bradc/useBeforeDef/: useBeforeDef.future 
+	                                           useBeforeDef2.future 
+	chapel/test/functions/deitz/: test_default_type.future 
+	chapel/test/functions/iterators/bradc/: paramInIterator.future 
+	chapel/test/modules/standard/math/: lg2.future 
+	chapel/test/parallel/single/waynew/: sarray.future 
+	chapel/test/studies/beer/bradc/: beer-promoted-infer.future 
+	chapel/test/studies/blas/marybeth/: saxpy2.future 
+	chapel/test/studies/hpcc/FFT/bradc/: twiddles-advanced.future 
+	                                     twiddles-advanced2.future 
+	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.future 
+	chapel/test/types/complex/bradc/: negateimaginary2.future 
+
