@@ -91696,3 +91696,16 @@ Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.future 
 	chapel/test/types/complex/bradc/: negateimaginary2.future 
 
+---------------------------------------------------------------------------
+
+01/24/07 11:55:13 -- deitz
+
+Log message:
+	Added threaded test that shows a runtime bug for string concatenation.
+	No future because I am checking in a fix presently.
+
+Added files:
+	chapel/test/parallel/begin/deitz/: .cvsignore 
+	                                   test_string_cat.chpl 
+	                                   test_string_cat.good 
+
