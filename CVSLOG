@@ -91598,3 +91598,20 @@ Added files:
 	                                        test_iterator_in_class2.chpl 
 	                                        test_iterator_in_class2.good 
 
+---------------------------------------------------------------------------
+
+01/23/07 16:11:23 -- deitz
+
+Log message:
+	Mangled the names of compiler-introduced iterator classes in case a
+	program has two iterators of the same name.  The issue is that default
+	functions are built based on the names of the types rather than the
+	types themselves.  This should be looked into further.  Can we avoid
+	basing this decision on type names?
+	
+	Added some type info to some of the fields of an iterator class if
+	they are known in the iterator function.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
