@@ -171,7 +171,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
     formal->name = stringcat("_", intstring(uid++), "_", formal->name);
     consType const_type = (formal->intent==INTENT_PARAM) ? VAR_PARAM : VAR_VAR;
     VarSymbol *newfield = new VarSymbol(formal->name,
-                                        dtUnknown,
+                                        formal->type,
                                         VAR_NORMAL,
                                         const_type);
     ic->fields->insertAtTail(
@@ -357,8 +357,9 @@ iterator_method( FnSymbol *fn) {
 
 static void
 iterator_transform( FnSymbol *fn) {
+  static int uid = 0;
   ModuleSymbol*m = fn->getModule();
-  char        *classn = stringcat("_iterator_", fn->name);
+  char        *classn = stringcat("_iterator_", intstring(uid++), "_", fn->name);
   ClassType   *ic = new ClassType( CLASS_CLASS);
   TypeSymbol  *ict = new TypeSymbol( classn, ic);
   DefExpr     *ic_def = new DefExpr( ict);
