@@ -55,6 +55,10 @@ The changes that fix compiler status notes from the paper are:
     than it did, allowing randType in ra-randstream.chpl to be defined
     in terms of randWidth rather than the literal "64".
 
+  * the compiler now supports iterators within classes, so we moved
+    the subBlocks iterator into the domain's implementation class
+    rather than having it as a standalone iterator taking a domain
+    as an argument.
 
 Other changes to date are:
 
