@@ -91839,3 +91839,23 @@ Added files:
 Removed files:
 	chapel/test/trivial/deitz/: test_string2int.future 
 
+---------------------------------------------------------------------------
+
+01/25/07 12:09:12 -- bradc
+
+Log message:
+	With Steve's recent improvements, moved the subBlocks
+	iterator into the domain class hierarchy rather than
+	having it be a standalone function.  This is something
+	I think of as being part of a distribution's optional
+	interface, though as such, I suspect it will continue
+	to evolve as we continue to get distributions better
+	specified.  In any case, it is better as a method on
+	a domain than it was as a standalone iterator.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/modules/bradc/: ra-paramWidth.chpl 
+	chapel/test/release/examples/hpcc06/: ra.chpl 
+	chapel/test/studies/hpcc/RA/: ra-hpcc06.chpl ra-latest.chpl 
+
