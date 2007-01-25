@@ -91896,3 +91896,25 @@ Log message:
 Modified files:
 	chapel/doc/release/: hpcc06.pdf 
 
+---------------------------------------------------------------------------
+
+01/25/07 14:19:06 -- deitz
+
+Log message:
+	Refactored cast code from primitive types to strings, moving it out of
+	chpltypes and into chplcast and using macros to avoid replicated code.
+	
+	Removed %format cast kludge.  Fixed some test cases.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: expr.h primitive.h 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplcast.h chpltypes.h 
+	chapel/runtime/src/: chplcast.c chpltypes.c 
+	chapel/test/arrays/bradc/: enumarray.chpl enumarray.good 
+	chapel/test/npb/ft/: ft-serial.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
+
