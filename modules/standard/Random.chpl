@@ -59,7 +59,7 @@ class RandomStream {
   def fillRandom(x:[?D] real) {
 
     if (D.rank > 1) {
-      writeln ("Not yet implemented for 2D or higher arrays.");
+      writeln ("fillRandom() not yet implemented for 2D or higher arrays.");
       [i in D] x(i) = -1.0;
     }
     else {
@@ -74,7 +74,7 @@ class RandomStream {
   def fillRandom(x:[?D] complex) {
 
     if (D.rank > 1) {
-      writeln ("Not yet implemented for 2D or higher arrays.");
+      writeln ("fillRandom() not yet implemented for 2D or higher arrays.");
       [i in D] x(i) = -1.0;
     }
     else {
