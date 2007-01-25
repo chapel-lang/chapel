@@ -91955,3 +91955,13 @@ Added files:
 	                            linked_list.good mandelbrot.chpl 
 	                            mandelbrot.good 
 
+---------------------------------------------------------------------------
+
+01/25/07 15:21:16 -- bradc
+
+Log message:
+	Updated copyright dates to include 2007.
+
+Modified files:
+	./: COPYRIGHT LICENSE 
+
