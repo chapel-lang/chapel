@@ -93,68 +93,6 @@ bool Expr::isParam(void){
 }
 
 
-static void genTostringRoutineName(FILE* outfile, Type* exprType) {
-  fprintf(outfile, "_chpl_tostring_");
-  if (exprType == dtBool) {
-    fprintf(outfile, "bool");
-    
-  } else if (exprType == dtInt[INT_SIZE_8]) {
-    fprintf(outfile, "int32");
-  } else if (exprType == dtInt[INT_SIZE_16]) {
-    fprintf(outfile, "int32");
-  } else if (exprType == dtInt[INT_SIZE_32]) {
-    fprintf(outfile, "int32");
-  } else if (exprType == dtInt[INT_SIZE_64]) {
-    fprintf(outfile, "int64");
-    
-  } else if (exprType == dtUInt[INT_SIZE_1]) {
-    fprintf(outfile, "bool");
-  } else if (exprType == dtUInt[INT_SIZE_8]) {
-    fprintf(outfile, "uint32");
-  } else if (exprType == dtUInt[INT_SIZE_16]) {
-    fprintf(outfile, "uint32");
-  } else if (exprType == dtUInt[INT_SIZE_32]) {
-    fprintf(outfile, "uint32");
-  } else if (exprType == dtUInt[INT_SIZE_64]) {
-    fprintf(outfile, "uint64");
-    
-  } else if (exprType == dtReal[FLOAT_SIZE_32]) {
-    fprintf(outfile, "real32");
-  } else if (exprType == dtReal[FLOAT_SIZE_64]) {
-    fprintf(outfile, "real64");
-  } else if (exprType == dtReal[FLOAT_SIZE_128]) {
-    fprintf(outfile, "real128");
-
-  } else if (exprType == dtImag[FLOAT_SIZE_32]) {
-    fprintf(outfile, "imag32");
-  } else if (exprType == dtImag[FLOAT_SIZE_64]) {
-    fprintf(outfile, "imag64");
-  } else if (exprType == dtImag[FLOAT_SIZE_128]) {
-    fprintf(outfile, "imag128");
-
-  } else if (exprType == dtComplex[COMPLEX_SIZE_64]) {
-    fprintf(outfile, "complex64");
-  } else if (exprType == dtComplex[COMPLEX_SIZE_128]) {
-    fprintf(outfile, "complex128");
-  } else if (exprType == dtComplex[COMPLEX_SIZE_256]) {
-    fprintf(outfile, "complex256");
-  } else {
-    INT_FATAL(exprType, "Unexpected type case in codegenCastToString");
-  }
-}
-
-
-void Expr::codegenCastToString(FILE* outfile) {
-  Type* exprType = typeInfo();
-  genTostringRoutineName(outfile, exprType);
-  fprintf(outfile, "(");
-  codegen(outfile);
-  fprintf(outfile, ", ");
-  exprType->codegenDefaultFormat(outfile, false);
-  fprintf(outfile, ")");
-}
-
-
 bool Expr::isRef() {
   INT_FATAL("bad call to Expr::isRef()");
   return false;
@@ -1302,23 +1240,12 @@ void CallExpr::codegen(FILE* outfile) {
 //       fprintf( outfile, ")");
       break;
     }
-    case PRIMITIVE_TOSTRING: {
-      genTostringRoutineName(outfile, get(2)->typeInfo());
-      fprintf( outfile, "(");
-      get(2)->codegen( outfile);
-      fprintf( outfile, ", ");
-      get(1)->codegen( outfile);
-      fprintf( outfile, ")");
-      break;
-    }
     case PRIMITIVE_CAST: {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
       if (dst == src) {
         get(2)->codegen(outfile);
-      } else if (dst == dtString) {
-        get(2)->codegenCastToString(outfile);
-      } else if (src == dtString) {
+      } else if (dst == dtString || src == dtString) {
         fprintf(outfile, "%s_to%s(", src->symbol->cname, dst->symbol->cname);
         get(2)->codegen(outfile);
         fprintf(outfile, ")");
@@ -1471,15 +1398,6 @@ void CallExpr::codegen(FILE* outfile) {
     if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128**)");
     }
-  }
-  if (primitive && !strcmp(primitive->name, "string_copy")) {
-    get(1)->codegen(outfile);
-    fprintf(outfile, ", ");
-    get(2)->codegenCastToString(outfile);
-    fprintf(outfile, ")");
-    if (getStmtExpr() && getStmtExpr() == this)
-      fprintf(outfile, ";\n");
-    return;
   }
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {

@@ -52,11 +52,7 @@ static void
 specialize_casts(CallExpr* call) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-      if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
-        Expr* arg1 = call->get(2);
-        Expr* arg2 = call->get(1);
-        call->replace(new CallExpr("_tostring", arg1->remove(), arg2->remove()));
-      } else if (var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
+      if (var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
         Expr* arg1 = call->get(2);
         Expr* arg2 = call->get(1);
         call->replace(new CallExpr("_seq_to_tuple", arg1->remove(), arg2->remove()));

@@ -340,7 +340,7 @@ def checksum(i, X1) {
   chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;
   if verbose then
-    writeln("T = ", i, "    Checksum = ", sums(i).re:"%15.12e", " ", sums(i).im:"%15.12e");
+    writeln("T = ", i, "    Checksum = ", sums(i).re, " ", sums(i).im);
 }
 
 --

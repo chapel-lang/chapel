@@ -256,7 +256,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
-  prim_def(PRIMITIVE_TOSTRING, "to_string", returnInfoString);
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", returnInfoCast);
   prim_def(PRIMITIVE_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);

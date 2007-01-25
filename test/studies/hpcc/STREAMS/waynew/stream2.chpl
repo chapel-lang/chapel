@@ -94,7 +94,7 @@ def main() {
     var curGBs = mintime[test];
     curGBs *= 1.0e-9 * bytes[test] * vectorSize;
     avgtime[test] = sumtime[test]/(numIters-1);  // skipped the 1st iteration
-    writeln( test, curGBs:"\t\t%g", avgtime[test]:"\t\t%g", mintime[test]:"\t\t%g", maxtime[test]:"\t\t%g");
+    writeln( test, "\t\t", curGBs, "\t\t", avgtime[test], "\t\t", mintime[test], "\t\t", maxtime[test]);
   }
 }
 

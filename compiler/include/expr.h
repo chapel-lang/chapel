@@ -42,9 +42,6 @@ class Expr : public BaseAST {
 
   Expr* getStmtExpr();
 
-  void codegenCastToString(FILE* outfile);
-
-
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Expr* remove(void);

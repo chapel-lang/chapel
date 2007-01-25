@@ -75,23 +75,6 @@ typedef _int64              _symbol;
 
 char* _glom_strings(int numstrings, ...);
 
-char* _chpl_tostring_bool(_bool x, char* format);
-char* _chpl_tostring_int32(_int32 x, char* format);
-char* _chpl_tostring_int64(_int64 x, char* format);
-char* _chpl_tostring_uint32(_uint32 x, char* format);
-char* _chpl_tostring_uint64(_uint64 x, char* format);
-char* _chpl_tostring_real32(_real32 x, char* format);
-char* _chpl_tostring_real64(_real64 x, char* format);
-char* _chpl_tostring_real128(_real128 x, char* format);
-
-#define _chpl_tostring_imag32 _chpl_tostring_real32
-#define _chpl_tostring_imag64 _chpl_tostring_real64
-#define _chpl_tostring_imag128 _chpl_tostring_real128
-
-char* _chpl_tostring_complex64(_complex64 x, char* format);
-char* _chpl_tostring_complex128(_complex128 x, char* format);
-char* _chpl_tostring_complex256(_complex256 x, char* format);
-
 _bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y);
 _string string_index(_string x, int i);

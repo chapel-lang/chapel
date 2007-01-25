@@ -149,6 +149,6 @@ def writeStreamResults() {
   curGBs = mintime;
   curGBs *= 1.0e-9 * bytes * vectorSize;
   avgtime = sumtime/(numIters-1);  // skipped the 1st iteration
-  writeln( "Triad    ", curGBs:"\t%g", avgtime:"\t%g", mintime:"\t%g", maxtime:"\t%g");
+  writeln( "Triad    \t", curGBs, "\t", avgtime, "\t", mintime, "\t", maxtime);
 }
 

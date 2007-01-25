@@ -355,15 +355,6 @@ pragma "inline" def _cond_test(x) {
 }
 
 //
-// _tostring conversions on primitive types
-//
-pragma "inline" def _tostring(x: bool, format: string) return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x: int, format: string) return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x: real, format: string) return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x: imag, format: string) return __primitive("to_string", format, x);
-pragma "inline" def _tostring(x: complex, format: string) return __primitive("to_string", format, x);
-
-//
 // complex component methods re and im
 //
 //  bug?  in setters, parameterize real argument over complex bit width
