@@ -91965,3 +91965,14 @@ Log message:
 Modified files:
 	./: COPYRIGHT LICENSE 
 
+---------------------------------------------------------------------------
+
+01/25/07 15:36:19 -- bradc
+
+Log message:
+	Oops forgot to update README about change to ra.chpl that
+	will show up in the release.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README 
+
