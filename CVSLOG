@@ -91918,3 +91918,24 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 	chapel/test/studies/hpcc/STREAMS/waynew/: stream2.chpl 
 
+---------------------------------------------------------------------------
+
+01/25/07 14:22:50 -- bradc
+
+Log message:
+	Tiny fix to Random -- it prints out a message indicating
+	that fillRandom() isn't supported for 2D or higher arrays,
+	but doesn't give any indication where this message is
+	coming from, which makes it hard to determine who's printing
+	it out when encountering it.  Put the name fillRandom()
+	into the message to clarify.  (Should really, probably turn
+	it into a halt(), but didn't quite have the stomach to go
+	this far).
+	
+	Maybe David would enjoy implementing fillRandom() for
+	higher dimensional-arrays as an exercise using Chapel
+	domains and arrays?
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
