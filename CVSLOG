@@ -91870,3 +91870,19 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/: formatoutput.chpl formatoutput.good 
 
+---------------------------------------------------------------------------
+
+01/25/07 12:16:18 -- deitz
+
+Log message:
+	Removed two tests that tested nothing more than the %format strings.
+	One of these was a future that showed this was not implemented on all
+	types.
+
+Removed files:
+	chapel/test/trivial/deitz/: test_format_primitives2.chpl 
+	                            test_format_primitives2.future 
+	                            test_format_primitives2.good 
+	                            test_format_primitives.chpl 
+	                            test_format_primitives.good 
+
