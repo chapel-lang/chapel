@@ -91859,3 +91859,14 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: ra.chpl 
 	chapel/test/studies/hpcc/RA/: ra-hpcc06.chpl ra-latest.chpl 
 
+---------------------------------------------------------------------------
+
+01/25/07 12:14:25 -- deitz
+
+Log message:
+	Removed %format string casts from this test and modified test so that
+	it still captures the future of array promotion.
+
+Modified files:
+	chapel/test/trivial/bradc/: formatoutput.chpl formatoutput.good 
+
