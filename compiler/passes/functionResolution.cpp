@@ -1731,10 +1731,13 @@ preFold(Expr* expr) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
           if (var->immediate) {
             if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-              TypeSymbol* ts = sym->var->type->symbol;
-              if (!is_imag_type(ts->type) && 
-                  !is_complex_type(ts->type) && ts->type != dtString) {
-                VarSymbol* typevar = dynamic_cast<VarSymbol*>(ts->type->defaultValue);
+              Type* src = var->type;
+              Type* dst = sym->var->type;
+              if (!is_real_type(src) &&
+                  !is_imag_type(dst) && !is_imag_type(src) &&
+                  !is_complex_type(dst) && !is_complex_type(src) &&
+                  dst != dtString && src != dtString) {
+                VarSymbol* typevar = dynamic_cast<VarSymbol*>(dst->defaultValue);
                 if (!typevar || !typevar->immediate)
                   INT_FATAL("unexpected case in cast_fold");
                 Immediate coerce = *typevar->immediate;

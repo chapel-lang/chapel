@@ -1,3 +1,0 @@
-cast from string to int
-
-There is no support for converting a string to a non-string primitive type.

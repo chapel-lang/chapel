@@ -146,18 +146,12 @@ static void genTostringRoutineName(FILE* outfile, Type* exprType) {
 
 void Expr::codegenCastToString(FILE* outfile) {
   Type* exprType = typeInfo();
-  if (exprType == dtString) {
-    codegen(outfile);
-  } else if (exprType == dtNil) {
-    fprintf(outfile, "\"\"");
-  } else {
-    genTostringRoutineName(outfile, exprType);
-    fprintf(outfile, "(");
-    codegen(outfile);
-    fprintf(outfile, ", ");
-    exprType->codegenDefaultFormat(outfile, false);
-    fprintf(outfile, ")");
-  }
+  genTostringRoutineName(outfile, exprType);
+  fprintf(outfile, "(");
+  codegen(outfile);
+  fprintf(outfile, ", ");
+  exprType->codegenDefaultFormat(outfile, false);
+  fprintf(outfile, ")");
 }
 
 
@@ -1318,48 +1312,54 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CAST: {
-      if (typeInfo() == dtString) {
+      Type* dst = get(1)->typeInfo();
+      Type* src = get(2)->typeInfo();
+      if (dst == src) {
+        get(2)->codegen(outfile);
+      } else if (dst == dtString) {
         get(2)->codegenCastToString(outfile);
-        break;
-      } else if (is_complex_type( typeInfo())) {
-        int width1 = get_width(get(1)->typeInfo());
+      } else if (src == dtString) {
+        fprintf(outfile, "%s_to%s(", src->symbol->cname, dst->symbol->cname);
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else if (is_complex_type(dst)) {
+        int width1 = get_width(dst);
         fprintf( outfile, "_chpl_complex%d( ", width1);
-        if (is_complex_type(get(2)->typeInfo())) {       // complex->complex
+        if (is_complex_type(src)) {       // complex->complex
           fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".re), ");
           fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, ".im))");
-        } else if (is_real_type( get(2)->typeInfo()) || // float->complex
-                   is_uint_type( get(2)->typeInfo()) || // uint->complex
-                   is_int_type( get(2)->typeInfo())) { // int->complex
+        } else if (is_real_type(src) || // float->complex
+                   is_uint_type(src) || // uint->complex
+                   is_int_type(src)) { // int->complex
           fprintf( outfile, "(_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "), 0.0)");
-        } else if (is_imag_type( get(2)->typeInfo())) {
+        } else if (is_imag_type(src)) {
           fprintf( outfile, "0.0, (_real%d)(", width1/2);
           get(2)->codegen( outfile);
           fprintf( outfile, "))");
         } else {
           INT_FATAL(this, "illegal cast to complex");
         }
-        break;
-      }
-
-      ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
-      if (ct && ct->classTag != CLASS_CLASS) {
-        fprintf(outfile, "(*((");
-        typeInfo()->codegen(outfile);
-        fprintf(outfile, "*)(&(");
-        get(2)->codegen(outfile);
-        fprintf(outfile, "))))");
       } else {
-        fprintf(outfile, "((");
-        typeInfo()->codegen(outfile);
-        fprintf(outfile, ")(");
-        get(2)->codegen(outfile);
-        fprintf(outfile, "))");
+        ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
+        if (ct && ct->classTag != CLASS_CLASS) {
+          fprintf(outfile, "(*((");
+          typeInfo()->codegen(outfile);
+          fprintf(outfile, "*)(&(");
+          get(2)->codegen(outfile);
+          fprintf(outfile, "))))");
+        } else {
+          fprintf(outfile, "((");
+          typeInfo()->codegen(outfile);
+          fprintf(outfile, ")(");
+          get(2)->codegen(outfile);
+          fprintf(outfile, "))");
+        }
       }
       break;
     }

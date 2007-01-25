@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include "arg.h"
 #include "config.h"
+#include "chplcast.h"
 #include "chplio.h"
 #include "chplmem.h"
 #include "chplmem_tests.h"
