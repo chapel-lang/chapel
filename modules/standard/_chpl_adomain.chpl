@@ -231,6 +231,11 @@ class _domain {
     var x = _value.translate(i);
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
+
+  iterator subBlocks {
+    for d in _value.subBlocks do
+      yield d;
+  }
 }
 
 def =(a: _domain, b: _domain) {
@@ -455,15 +460,12 @@ class _adomain {
     return x;
   }
 
-}
-
-
-// this should eventually...
-// ...be an iterator
-// ...be in the distribtion's implementation of the blocked domain
-// ...yield a subBlock of the domain per thread per locale
-iterator subBlocks(D: ?DT): DT {
-  yield [D.low..D.high];
+  // this should eventually...
+  //  ...be in the distribtion's implementation of the blocked domain
+  // ...yield a subBlock of the domain per thread per locale
+  iterator subBlocks {
+    yield this;
+  }
 }
 
 
