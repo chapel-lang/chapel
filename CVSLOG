@@ -91939,3 +91939,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+01/25/07 15:09:05 -- diten
+
+Log message:
+	Add a few currently passing tests.  These aren't designed to test any
+	specific compiler functionality, but mostly just to get familiar with the
+	language and compiler.
+
+Added files:
+	chapel/test/trivial/diten/: jacobi.chpl jacobi.good life.chpl 
+	                            life.good linediff.chpl 
+	                            linediff.good linked_list.chpl 
+	                            linked_list.good mandelbrot.chpl 
+	                            mandelbrot.good 
+
