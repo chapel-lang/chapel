@@ -91810,3 +91810,32 @@ Added files:
 	                            test_string2int.future 
 	                            test_string2int.good 
 
+---------------------------------------------------------------------------
+
+01/25/07 10:49:53 -- deitz
+
+Log message:
+	Implemented first draft of casts from strings to all other primitive
+	types.
+	
+	Added runtime files chplcast.h and chplcast.c that should eventually
+	contain all of the cast functions and macros.
+	
+	Disabled parameter folding of a few more casts involving real,
+	imaginary, complex, and string types.
+	
+	Added a test case.  Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/runtime/include/: chplcast.h 
+	chapel/runtime/src/: chplcast.c 
+	chapel/test/trivial/deitz/: test_string2prims.chpl 
+	                            test_string2prims.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_string2int.future 
+
