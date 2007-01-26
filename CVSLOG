@@ -92042,3 +92042,23 @@ Added files:
 	                                        configVarInvalidInteger.future 
 	                                        configVarInvalidIntegerLineno.future 
 
+---------------------------------------------------------------------------
+
+01/26/07 14:57:28 -- diten
+
+Log message:
+	Move tests for fillRandom to the modules/standard/Random directory from the
+	trivial directory.
+
+Added files:
+	chapel/test/modules/standard/Random/diten/: 
+	                                            test_2D_fillRandom_complex.chpl 
+	                                            test_2D_fillRandom_complex.good 
+	                                            test_2D_fillRandom_real.chpl 
+	                                            test_2D_fillRandom_real.good 
+Removed files:
+	chapel/test/trivial/diten/: test_2D_fillRandom_complex.chpl 
+	                            test_2D_fillRandom_complex.good 
+	                            test_2D_fillRandom_real.chpl 
+	                            test_2D_fillRandom_real.good 
+
