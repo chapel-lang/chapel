@@ -6,6 +6,7 @@
 #include "chplcast.h"
 #include "chplrt.h"
 #include "chpltypes.h"
+#include "chplfp.h"
 
 /*
  *  string to complex
@@ -16,24 +17,24 @@ static _string _get_string_imag_part(_string s) {
     ps++;
   if (*ps == '-' || *ps == '+') // eat sign
     ps++;
-  if (!isdigit(*ps)) // test for digit
+  if (!isdigit((int)*ps)) // test for digit
     return NULL;
-  while (isdigit(*ps)) // eat integral part
+  while (isdigit((int)*ps)) // eat integral part
     ps++;
   if (*ps == '.') { // test for decimal
     ps++;
-    if (!isdigit(*ps)) // test for digit
+    if (!isdigit((int)*ps)) // test for digit
       return NULL;
-    while (isdigit(*ps)) // eat fractional part
+    while (isdigit((int)*ps)) // eat fractional part
       ps++;
   }
   if (*ps == 'e' || *ps == 'E') { // test for exponent
     ps++;
     if (*ps == '+' || *ps == '-') // test for exponent sign
       ps++;
-    if (!isdigit(*ps)) // test for digit
+    if (!isdigit((int)*ps)) // test for digit
       return NULL;
-    while (isdigit(*ps)) // eat exponent part
+    while (isdigit((int)*ps)) // eat exponent part
       ps++;
   }
   while (*ps == ' ') // eat space
