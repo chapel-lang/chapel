@@ -310,6 +310,7 @@ static void build_record_inequality_function(ClassType* ct) {
 
 
 static void build_enum_cast_function(EnumType* et) {
+  // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol("_cast");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->isGeneric = false;
@@ -320,6 +321,31 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_CAST, et->symbol, arg2)));
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   DefExpr* def = new DefExpr(fn);
+  et->symbol->defPoint->insertBefore(def);
+  reset_file_info(def, et->symbol->lineno, et->symbol->filename);
+  normalize(fn);
+
+  // string to enumerated type cast function
+  fn = new FnSymbol("_cast");
+  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg1->isGeneric = false;
+  arg1->isTypeVariable = true;
+  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+
+  CondStmt* cond = NULL;
+  for_alist(DefExpr, constant, et->constants) {
+    cond = new CondStmt(
+             new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
+             new ReturnStmt(constant->sym),
+             cond);
+  }
+  fn->insertAtTail(cond);
+  fn->insertAtTail(new CallExpr("halt", new_StringSymbol("illegal conversion of string \\\""), arg2, new_StringSymbol("\\\" to "), new_StringSymbol(et->symbol->name)));
+
+  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   normalize(fn);

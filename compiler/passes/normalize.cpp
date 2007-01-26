@@ -26,7 +26,7 @@ static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
-static void fix_def_expr(DefExpr* def);
+static void fix_def_expr(VarSymbol* var);
 static void tag_global(FnSymbol* fn);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -108,9 +108,9 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(a->sym))
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->sym))
         if (dynamic_cast<FnSymbol*>(a->parentSymbol))
-          fix_def_expr(a);
+          fix_def_expr(var);
     }
   }
 
@@ -726,40 +726,91 @@ static void fix_user_assign(CallExpr* call) {
   move->insertAtTail(call);
 }
 
+//
+// fix_def_expr removes DefExpr::exprType and DefExpr::init from a
+//   variable's def expression, normalizing the AST with primitive
+//   moves, calls to _copy, _init, and _cast, and assignments.
+//
+static void
+fix_def_expr(VarSymbol* var) {
+  Expr* type = var->defPoint->exprType;
+  Expr* init = var->defPoint->init;
+  Expr* stmt = var->defPoint; // insertion point
+  VarSymbol* constTemp = var; // temp for constants
 
-static void fix_def_expr(DefExpr* def) {
-  if (def->exprType) {
-    if (def->init) {
-      // parameters can only be assigned once so cast the init
-      // expression to the type
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-        if (var->consClass == VAR_PARAM) {
-          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_cast", def->exprType->remove(), def->init->remove())));
-          return;
-        }
-        if (var->consClass == VAR_CONST) {
-          VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-          typeTemp->isTypeVariable = true;
-          def->insertBefore(new DefExpr(typeTemp));
-          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
-          VarSymbol* constTemp = new VarSymbol("_constTmp");
-          constTemp->isCompilerTemp = true;
-          def->insertBefore(new DefExpr(constTemp));
-          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
-          def->insertBefore(new CallExpr(PRIMITIVE_MOVE, constTemp, new CallExpr("=", constTemp, def->init->remove())));
-          def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, constTemp));
-          return;
-        }
-      }
-      def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
+  if (!type && !init)
+    return; // already fixed
+
+  //
+  // insert temporary for constants to assist constant checking
+  //
+  if (var->consClass == VAR_CONST) {
+    constTemp = new VarSymbol("_constTmp");
+    constTemp->isCompilerTemp = true;
+    constTemp->canReference = true;
+    stmt->insertBefore(new DefExpr(constTemp));
+    stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, constTemp));
+  }
+
+  //
+  // insert code to initialize config variable from the command line
+  //
+  if (var->varClass == VAR_CONFIG) {
+    Expr* noop = new CallExpr(PRIMITIVE_NOOP);
+    ModuleSymbol* module = var->getModule();
+    stmt->insertAfter(
+      new CondStmt(
+        new CallExpr("!",
+          new CallExpr(primitives_map.get("_config_has_value"),
+                       new_StringSymbol(var->name),
+                       new_StringSymbol(module->name))),
+        noop,
+        new CallExpr(PRIMITIVE_MOVE, constTemp,
+          new CallExpr("_cast",
+            new CallExpr(PRIMITIVE_TYPEOF, constTemp),
+            new CallExpr(primitives_map.get("_config_get_value"),
+                         new_StringSymbol(var->name),
+                         new_StringSymbol(module->name))))));
+    stmt = noop; // insert regular definition code in then block
+  }
+
+  if (type) {
+
+    //
+    // use cast for parameters to avoid multiple parameter assignments
+    //
+    if (init && var->consClass == VAR_PARAM) {
+      stmt->insertAfter(
+        new CallExpr(PRIMITIVE_MOVE, var,
+          new CallExpr("_cast", type->remove(), init->remove())));
+      return;
     }
+
+    //
+    // initialize variable based on specified type and then assign it
+    // the initialization expression if it exists
+    //
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->isTypeVariable = true;
-    def->insertBefore(new DefExpr(typeTemp));
-    def->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
-    def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
-  } else if (def->init) {
-    def->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
+    stmt->insertBefore(new DefExpr(typeTemp));
+    stmt->insertBefore(
+      new CallExpr(PRIMITIVE_MOVE, typeTemp,
+        new CallExpr("_init", type->remove())));
+    if (init)
+      stmt->insertAfter(
+        new CallExpr(PRIMITIVE_MOVE, constTemp,
+          new CallExpr("=", constTemp, init->remove())));
+    stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+
+  } else {
+
+    //
+    // initialize untyped variable with initialization expression
+    //
+    stmt->insertAfter(
+      new CallExpr(PRIMITIVE_MOVE, constTemp,
+        new CallExpr("_copy", init->remove())));
+
   }
 }
 

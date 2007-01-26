@@ -284,6 +284,9 @@ initPrimitive() {
   prim_def(PRIMITIVE_GC_ISNEG, "_reflzero", returnInfoBool);
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
 
+  prim_def("_config_has_value", returnInfoBool);
+  prim_def("_config_get_value", returnInfoString);
+
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);
   prim_def("asin", returnInfoFloat);

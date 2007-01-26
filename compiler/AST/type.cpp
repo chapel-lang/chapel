@@ -88,14 +88,6 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
-void Type::codegenStringToType(FILE* outfile) {
-}
-
-
-void Type::codegenConfigVarRoutines(FILE* outfile) {
-}
-
-
 void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
   fprintf(outfile, "_default_format");
   if (isRead) {
@@ -261,59 +253,6 @@ void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n\n");
-}
-
-
-
-void EnumType::codegenStringToType(FILE* outfile) {
-  fprintf(outfile, "int _convert_string_to_enum");
-  symbol->codegen(outfile);
-  fprintf(outfile, "(char* inputString, ");
-  symbol->codegen(outfile);
-  fprintf(outfile, "* val) {\n");
-  for_alist(DefExpr, constant, constants) {
-    fprintf(outfile, "if (strcmp(inputString, \"");
-    constant->sym->codegen(outfile);
-    fprintf(outfile, "\") == 0) {\n");
-    fprintf(outfile, "*val = ");
-    constant->sym->codegen(outfile);
-    fprintf(outfile, ";\n");
-    fprintf(outfile, "} else ");
-  }
-  fprintf(outfile, "{ \n");
-  fprintf(outfile, "return 0;\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "return 1;\n}\n\n");
-}
-
-
-void EnumType::codegenConfigVarRoutines(FILE* outfile) {
-  fprintf(outfile, "int setInCommandLine");
-  symbol->codegen(outfile);
-  fprintf(outfile, "(char* varName, ");
-  symbol->codegen(outfile);
-  fprintf(outfile, "* value, char* moduleName) {\n");
-  fprintf(outfile, "int varSet = 0;\n");
-  fprintf(outfile, "char* setValue = lookupSetValue(varName, moduleName);\n");
-  fprintf(outfile, "if (setValue) {\n");
-  fprintf(outfile, "int validEnum = _convert_string_to_enum");
-  symbol->codegen(outfile);
-  fprintf(outfile, "(setValue, value);\n");
-  fprintf(outfile, "if (validEnum) {\n");
-  fprintf(outfile, "varSet = 1;\n");
-  fprintf(outfile, "} else {\n");
-  fprintf(outfile, "char* message = _glom_strings(5, \"\\\"\", setValue, ");
-  fprintf(outfile, "\"\\\" is not a valid \"\n");
-  fprintf(outfile, "\"value for a config var \\\"\"");
-  fprintf(outfile, ", varName,\n");
-  fprintf(outfile, "\"\\\" of type ");
-  symbol->codegen(outfile);
-  fprintf(outfile, "\");\n");
-  fprintf(outfile, "printError(message);\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "return varSet;\n");
-  fprintf(outfile, "}\n\n");
 }
 
 

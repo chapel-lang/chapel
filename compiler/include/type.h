@@ -59,8 +59,6 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual void codegenStringToType(FILE* outfile);
-  virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
 
   virtual bool requiresCParamTmp(intentTag intent);
@@ -84,8 +82,6 @@ class EnumType : public Type {
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
-  void codegenStringToType(FILE* outfile);
-  void codegenConfigVarRoutines(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
 };

@@ -3,15 +3,8 @@
 
 #include "chpltypes.h"
 
-/*** WANT:
-#define _INIT_CONFIG(v, v_type, chapel_name, module_name, default_init) \
-  if (!setInCommandLine##v_type(chapel_name, &v, module_name)) { \
-    v = default_init; \
-  }
-***/
-
-#define _INIT_CONFIG(v, v_type, chapel_name, module_name) \
-  (!setInCommandLine##v_type(chapel_name, v, module_name))
+#define _config_has_value(v,m) (lookupSetValue(v,m) != NULL)
+#define _config_get_value(v, m) (lookupSetValue(v,m))
 
 void addToConfigList(char* currentArg, int isSingleArg);
 int askedToParseArgs(void);

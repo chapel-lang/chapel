@@ -784,18 +784,6 @@ void CallExpr::codegen(FILE* outfile) {
           fprintf(outfile, ";\n");
         return;
       } 
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-          if (var->varClass == VAR_CONFIG) {
-            fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
-                    (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex128**)&" : "&",
-                    var->cname, 
-                    var->type->symbol->cname,
-                    var->name,
-                    var->defPoint->getModule()->name);
-          }
-        }
-      }
       get(1)->codegen(outfile);
       fprintf(outfile, " = ");
       if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())

@@ -132,15 +132,6 @@ void localCopyPropagation(BasicBlock* bb) {
               continue;
             if (lhs->var->isReference || rhs->var->isReference)
               continue;
-
-            // Note: Disabled on configuration variables until those
-            // are in the AST for real
-
-            VarSymbol* lhs_var = dynamic_cast<VarSymbol*>(lhs->var);
-            if (lhs_var) {
-              if (lhs_var->varClass == VAR_CONFIG)
-                continue;
-            }
             available.put(lhs->var, rhs->var);
           }
         }

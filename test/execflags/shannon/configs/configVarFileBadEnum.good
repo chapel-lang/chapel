@@ -1,1 +1,1 @@
-***Error: "garlic" is not a valid value for a config var "gingerbread" of type ingredients***
+Halt reached: illegal conversion of string "garlic" to ingredients
