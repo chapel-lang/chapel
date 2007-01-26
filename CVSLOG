@@ -91976,3 +91976,20 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: README 
 
+---------------------------------------------------------------------------
+
+01/26/07 12:41:35 -- diten
+
+Log message:
+	Remove a restriction on the domain rank from the fillRandom functions.
+	Without changing anything else, the support is there for filling higher order
+	domains with random values.  Also add two tests to check that functionality.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+Added files:
+	chapel/test/trivial/diten/: test_2D_fillRandom_complex.chpl 
+	                            test_2D_fillRandom_complex.good 
+	                            test_2D_fillRandom_real.chpl 
+	                            test_2D_fillRandom_real.good 
+
