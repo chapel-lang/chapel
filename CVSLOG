@@ -92062,3 +92062,13 @@ Removed files:
 	                            test_2D_fillRandom_real.chpl 
 	                            test_2D_fillRandom_real.good 
 
+---------------------------------------------------------------------------
+
+01/26/07 15:46:48 -- deitz
+
+Log message:
+	Fixed Sun build error in new runtime file.
+
+Modified files:
+	chapel/runtime/src/: chplcast.c 
+
