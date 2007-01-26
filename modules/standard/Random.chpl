@@ -58,32 +58,20 @@ class RandomStream {
 
   def fillRandom(x:[?D] real) {
 
-    if (D.rank > 1) {
-      writeln ("fillRandom() not yet implemented for 2D or higher arrays.");
-      [i in D] x(i) = -1.0;
-    }
-    else {
-      var randlc_last_x: real = initrandlc(numGenerated+1);
-      for i in D {
-        (randlc_last_x,x(i)) = nextrandlc(randlc_last_x);    
-        numGenerated += 1;
-      }
+    var randlc_last_x: real = initrandlc(numGenerated+1);
+    for i in D {
+      (randlc_last_x,x(i)) = nextrandlc(randlc_last_x);    
+      numGenerated += 1;
     }
   }
 
   def fillRandom(x:[?D] complex) {
 
-    if (D.rank > 1) {
-      writeln ("fillRandom() not yet implemented for 2D or higher arrays.");
-      [i in D] x(i) = -1.0;
-    }
-    else {
-      var randlc_last_x: real = initrandlc(numGenerated+1);
-      for i in D {
-        (randlc_last_x,x(i).re) = nextrandlc(randlc_last_x);    
-        (randlc_last_x,x(i).im) = nextrandlc(randlc_last_x);    
-        numGenerated += 2;
-      }
+    var randlc_last_x: real = initrandlc(numGenerated+1);
+    for i in D {
+      (randlc_last_x,x(i).re) = nextrandlc(randlc_last_x);    
+      (randlc_last_x,x(i).im) = nextrandlc(randlc_last_x);    
+      numGenerated += 2;
     }
   }
 }
