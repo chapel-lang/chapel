@@ -91993,3 +91993,52 @@ Added files:
 	                            test_2D_fillRandom_real.chpl 
 	                            test_2D_fillRandom_real.good 
 
+---------------------------------------------------------------------------
+
+01/26/07 14:05:59 -- deitz
+
+Log message:
+	Removed special handling of config variables during code generation.
+	Instead it uses explicit casting from strings to primitive types.  The
+	primitive ops to handle configuration variables are
+	
+	 _config_has_value: returns true if the config was passed to a.out
+	 _config_get_value: returns the value of the config passed to a.out
+	
+	Implemented support for casts from strings to enumerated types.
+	
+	Removed disabling of copy propagation based on kludge codegen
+	treatment of configuration variables.
+	
+	Added support for configuration variables and unified the support of
+	constants in fix_def_expr.  Refactored and documented fix_def_expr.
+	This routine normalizes the DefExpr of variables.
+	
+	Removed INIT_CONFIG macro.
+	
+	Futurized several tests that expect error messages due to invalid
+	configuration variable assignments.  The cast from strings to
+	primitive types does not currently generate errors.  I am looking into
+	doing this hopefully with a unified way to generate fatal errors with
+	line numbers in runtime functions.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp 
+	                      symscope.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         copy_propagation.cpp normalize.cpp 
+	chapel/runtime/include/: config.h 
+	chapel/test/execflags/shannon/configs/: configVarBadEnum.good 
+	                                        configVarFileBadEnum.good 
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarInvalidBoolean.future 
+	                                        configVarInvalidBooleanLineno.future 
+	                                        configVarInvalidComplex.future 
+	                                        configVarInvalidComplexLineno.future 
+	                                        configVarInvalidFloat.future 
+	                                        configVarInvalidFloatLineno.future 
+	                                        configVarInvalidInteger.future 
+	                                        configVarInvalidIntegerLineno.future 
+
