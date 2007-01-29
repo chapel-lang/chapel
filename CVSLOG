@@ -92072,3 +92072,16 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplcast.c 
 
+---------------------------------------------------------------------------
+
+01/29/07 09:48:19 -- deitz
+
+Log message:
+	Updated .future and .good.  This test fails because of a bug with the
+	reference counting gc and the special handling of begin blocks or heap
+	variables.
+
+Modified files:
+	chapel/test/parallel/begin/deitz/: test_begin.future 
+	                                   test_begin.good 
+
