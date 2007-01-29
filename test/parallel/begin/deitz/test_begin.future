@@ -1,5 +1,3 @@
-?
+gc bug
 
-use of index in begin
-
-this test is non-deterministic as written, but why would i ever be 0?
+seg fault without --no-gc
