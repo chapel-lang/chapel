@@ -330,13 +330,6 @@ void memoryManage(void) {
       }
     }
 
-    if (fn->hasPragma( "beginblk refcount")) {
-      DefExpr *arg1 = dynamic_cast<DefExpr*>(fn->formals->get(1));
-      Symbol  *args_class = arg1->sym;
-      fn->insertBeforeReturn( new CallExpr( freeMap.get(args_class->type),
-                                            args_class));
-    }
-
     // Insert _free call on all local variables except the returned one
     if (fn->getModule()->initFn != fn) {
       forv_Vec(BaseAST, ast, asts) {
@@ -345,8 +338,7 @@ void memoryManage(void) {
             if (!disableReferences(var)) // disable on_heap/is_ref
               if (!var->isReference) // do not free aliases
                 if (FnSymbol* _free = freeMap.get(var->type))
-                  if ((fn->getReturnSymbol() != var) &&
-                      !(var->type->symbol->hasPragma("beginblk refcount")))
+                  if (fn->getReturnSymbol() != var)
                     fn->insertBeforeReturnAfterLabel(new CallExpr(_free, var));
       }
     }

@@ -250,9 +250,8 @@ thread_args() {
                                                             fname),
                                                   ctype);
 
-              // WAW: we'll try to ref count the class arg wrapper
-              // new_c->addPragma("no gc");
-              new_c->addPragma("beginblk refcount");
+              // disable reference counting, handle manually
+              new_c->addPragma("no gc");
               
               // add the function args as fields in the class
               for_actuals(arg, fcall) {
@@ -294,8 +293,8 @@ thread_args() {
               wrap_fn->insertFormalAtTail( wrap_c);
               mod->stmts->insertAtTail(new DefExpr(wrap_fn));
               newb->insertAtTail( new CallExpr( wrap_fn, tempc));
-              wrap_fn->addPragma("beginblk refcount");
-              
+              wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
+
               // translate the original cobegin function
               CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
               for_fields(field, ctype) {  // insert args
