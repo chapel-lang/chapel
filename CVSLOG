@@ -92085,3 +92085,21 @@ Modified files:
 	chapel/test/parallel/begin/deitz/: test_begin.future 
 	                                   test_begin.good 
 
+---------------------------------------------------------------------------
+
+01/29/07 11:45:02 -- deitz
+
+Log message:
+	Fixed a gc bug with begin blocks inside loops.
+	
+	Removed pragma "beginblk refcount" which was an attempt to handle the
+	beginblk class using the standard gc reference counting.  This class
+	is more easily handled separately.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: memoryManage.cpp parallel.cpp 
+Removed files:
+	chapel/test/parallel/begin/deitz/: test_begin.future 
+
