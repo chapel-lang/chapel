@@ -92103,3 +92103,21 @@ Modified files:
 Removed files:
 	chapel/test/parallel/begin/deitz/: test_begin.future 
 
+---------------------------------------------------------------------------
+
+01/30/07 17:20:06 -- bradc
+
+Log message:
+	Checking in a test inspired by Paul Casella's post-tech
+	forum question: "if a config const/var's default value
+	is over-ridden on the command line, is its initializing
+	expression evaluated?"  My answer was that it shouldn't
+	be.  I wrote this test last week and found that it was.
+	Since then, Steve cleaned up the implementation of configs
+	and now it works as expected.
+
+Added files:
+	chapel/test/execflags/bradc/: defaultconfig.chpl 
+	                              defaultconfig.execopts 
+	                              defaultconfig.good 
+
