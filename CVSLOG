@@ -92121,3 +92121,20 @@ Added files:
 	                              defaultconfig.execopts 
 	                              defaultconfig.good 
 
+---------------------------------------------------------------------------
+
+01/30/07 17:48:38 -- bradc
+
+Log message:
+	This is Richard Barrett's second version of his code (now
+	many days old, I was just slow to check it in) and my
+	rewrite of that code to make it work and test a bit better.
+
+Modified files:
+	chapel/test/users/rbarrett/: .cvsignore 
+Added files:
+	chapel/test/users/rbarrett/: diffuse2d-v3-blc.chpl 
+	                             diffuse2d-v3-blc.good 
+	                             diffuse2d-v3.chpl 
+	                             diffuse2d-v3.notest 
+
