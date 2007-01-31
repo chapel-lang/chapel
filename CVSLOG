@@ -92254,3 +92254,13 @@ Removed files:
 	                         openStdout.compopts 
 	                         unableToOpenFile.compopts 
 
+---------------------------------------------------------------------------
+
+01/31/07 11:05:59 -- deitz
+
+Log message:
+	Forgot to add new file.
+
+Added files:
+	chapel/compiler/passes/: insertLineNumbers.cpp 
+
