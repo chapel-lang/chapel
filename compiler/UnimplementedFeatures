@@ -17,7 +17,7 @@ DONE predicate expressions "x = [i in D] if i < 10 then ..."
 DONE iterator functions
 DONE reductions
 DONE indefinite domains
-       -=/remove method
+DONE   -=/remove method
 DONE   member? method
 DONE domain arguments to functions
 DONE association of arrays to domains
@@ -33,10 +33,10 @@ DONE sync variables
 
 MEDIUM PRIORITY ITEMS (Maybe implemented by Dec 1)
 
-     primitive to string casts
-     string to primitive functions
+DONE primitive to string casts
+DONE string to primitive functions
      config parameters
-     config variables (more orthogonal implementation)
+DONE config variables (more orthogonal implementation)
      underscore to destructure tuples
      variables accessed via modules (mod.x)
      using modules not in files passed to the compiler
@@ -50,21 +50,18 @@ DONE sequence to tuple cast
      index types in domain type
      subdomains
      association of subdomains to domains
-     array aliasing
-     complex array initialization "var x : [i in D] int = i"
+DONE array slicing
+     array rank change
+DONE complex array initialization "var x : [i in D] int = i"
      arrays of arrays
-     serial statement
+DONE serial statement
 
 LOW PRIORITY ITEMS (Probably not implemented by Dec 1)
 
-     fixed size strings
-     intents (in, out, inout, const)
+DONE intents (in, out, inout, const)
      functions as arguments to functions
      conditional declarations
-     module initialize function
-     module finalize function
      predefined argv sequence
-     anonymous record literals
      nested classes
      nested records
      sequence primitives
@@ -78,6 +75,10 @@ LOW PRIORITY ITEMS (Probably not implemented by Dec 1)
 
 CHOPPING BLOCK ITEMS
 
+     anonymous record literals
+     module initialize function
+     module finalize function
+     fixed size strings
      static methods
      assignment of records to classes
      sequence of length-1 strings special features
