@@ -264,10 +264,10 @@ The sequence of bool values is then implicitly reduced using
 the \chpl{&&} operator to produce a single bool value.  Reductions are
 defined in~\rsec{Reductions_and_Scans}.
 
-\begin{implementation}
+\begin{status}
 Neither the implicit conversion nor the implicit reduction is
 currently implemented.
-\end{implementation}
+\end{status}
 
 \subsubsection{Sequences in Select Statements}
 \label{Sequences_in_Select_Statements}
@@ -283,11 +283,11 @@ equality operator is used to compare the sequences and then an
 implicit \chpl{||} reduction is applied to produce a single bool
 value.
 
-\begin{implementation}
+\begin{status}
 The implicit reduction is currently not implemented.  Sequences cannot
 be used in the condition of a select statement or in the when
 expression.
-\end{implementation}
+\end{status}
 
 \subsection{Filtering Predicates}
 \label{Filtering_Predicates}
@@ -335,9 +335,9 @@ greater than one, the expression \chpl{s.reverse(d)} is equivalent to
 [e in s] e.reverse(d-1)
 \end{chapel}
 
-\begin{implementation}
+\begin{status}
 The \chpl{dim} argument is not implemented.
-\end{implementation}
+\end{status}
 
 \subsubsection{The {\em spread} Function}
 \label{The_em_spread_Function}
@@ -356,9 +356,9 @@ than one, we generate the sequence:
 [e in s] spread(e, length, dim-1)
 \end{chapel}
 
-\begin{implementation}
+\begin{status}
 The spread function is not implemented.
-\end{implementation}
+\end{status}
 
 \subsubsection{The {\em transpose} Function}
 \label{The_em_transpose_Function}
@@ -393,9 +393,9 @@ same length.  In the general case we require all sequences selected by
 a $q$-tuple to have the same length whenever an index position $q$ is
 less than $p$.
 
-\begin{implementation}
+\begin{status}
 The transpose function is not implemented.
-\end{implementation}
+\end{status}
 
 \subsubsection{The {\em reshape} Function}
 \label{The_em_reshape_Function}
@@ -418,9 +418,9 @@ pad the sequence if the number of leaf values in that sequence is too
 few to conform with \chpl{shape}. If the input sequence has too many
 values, it is truncated.
 
-\begin{implementation}
+\begin{status}
 The reshape function is not implemented.
-\end{implementation}
+\end{status}
 
 \subsection{Arithmetic Sequences}
 \label{Arithmetic_Sequences}
@@ -513,9 +513,9 @@ arithmetic sequence that does not have the same sign stride.
 Indefinite arithmetic sequences can be used to index into arithmetic
 sequences, sequences, arrays, and strings.  In thesse cases, the
 elided bound conforms to the expression being indexed.
-\begin{implementation}
+\begin{status}
 Indexing by indefinite arithmetic sequences is not yet supported.
-\end{implementation}
+\end{status}
 
 \subsection{Conversions Between Sequences and Tuples}
 \label{Conversions_Between_Sequences_and_Tuples}

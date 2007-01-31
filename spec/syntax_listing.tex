@@ -1,82 +1,37 @@
 \lstdefinelanguage{syntax}
   {
-    morekeywords={},
+    morekeywords={
+      atomic,
+      begin, bool, break, by,
+      class, cobegin, complex, compilerError, config, const, continue,
+      def, distributed, do, domain,
+      else, elt_type, enum,
+      false, for, forall,
+      goto,
+      if, imag, in, index, int, inout, iterator,
+      let, locale,
+      module,
+      nil,
+      of, on, opaque, ordered, otherwise, out,
+      param, pragma,
+      real, record, reduce, return,
+      scan, select, seq, serial, single, sparse, string, sync,
+      then, true, type,
+      uint, union, use,
+      var,
+      when, where, while,
+      yield
+    },
     sensitive=false,
     mathescape=true,
-    columns=fixed,
-    basicstyle=\footnotesize,
-    keywordstyle=\footnotesize,
+    columns=fullflexible,
+    basicstyle=\small,
+    keywordstyle=\footnotesize\ttfamily,
     commentstyle=\footnotesize\ttfamily,
-    identifierstyle=\footnotesize\itshape,
+    identifierstyle=\small\itshape,
     morecomment=[s]{`}{'},
     literate={-}{{\ttfamily -}}{1}
              {[OPT]}{{{\scriptsize $_{opt}$}}}{2}
-             {`atomic'}{{\ttfamily atomic}}{6}
-             {`begin'}{{\ttfamily begin}}{5}
-             {`bool'}{{\ttfamily bool}}{4}
-             {`break'}{{\ttfamily break}}{5}
-             {`by'}{{\ttfamily by}}{2}
-             {`class'}{{\ttfamily class}}{5}
-             {`cobegin'}{{\ttfamily cobegin}}{7}
-             {`compilerError'}{{\ttfamily compilerError}}{13}
-             {`complex'}{{\ttfamily complex}}{7}
-             {`config'}{{\ttfamily config}}{6}
-             {`const'}{{\ttfamily const}}{5}
-             {`continue'}{{\ttfamily continue}}{8}
-             {`def'}{{\ttfamily def}}{3}
-             {`distributed'}{{\ttfamily distributed}}{11}
-             {`do'}{{\ttfamily do}}{2}
-             {`domain'}{{\ttfamily domain}}{6}
-             {`else'}{{\ttfamily else}}{4}
-             {`elt_type'}{{\ttfamily elt\_type}}{8}
-             {`enum'}{{\ttfamily enum}}{4}
-             {`false'}{{\ttfamily false}}{5}
-             {`for'}{{\ttfamily for}}{3}
-             {`forall'}{{\ttfamily forall}}{6}
-             {`goto'}{{\ttfamily goto}}{4}
-             {`i'}{{\ttfamily i}}{1}
-             {`if'}{{\ttfamily if}}{2}
-             {`imag'}{{\ttfamily imag}}{4}
-             {`in'}{{\ttfamily in}}{2}
-             {`index'}{{\ttfamily int}}{5}
-             {`int'}{{\ttfamily int}}{3}
-             {`inout'}{{\ttfamily inout}}{5}
-             {`iterator'}{{\ttfamily iterator}}{8}
-             {`let'}{{\ttfamily let}}{3}
-             {`locale'}{{\ttfamily locale}}{6}
-             {`module'}{{\ttfamily module}}{6}
-             {`nil'}{{\ttfamily nil}}{3}
-             {`of'}{{\ttfamily of}}{2}
-             {`on'}{{\ttfamily on}}{2}
-             {`opaque'}{{\ttfamily opaque}}{6}
-             {`ordered'}{{\ttfamily ordered}}{7}
-             {`otherwise'}{{\ttfamily otherwise}}{9}
-             {`out'}{{\ttfamily out}}{3}
-             {`param'}{{\ttfamily param}}{5}
-             {`pragma'}{{\ttfamily pragma}}{6}
-             {`real'}{{\ttfamily real}}{4}
-             {`record'}{{\ttfamily record}}{6}
-             {`reduce'}{{\ttfamily reduce}}{6}
-             {`return'}{{\ttfamily return}}{6}
-             {`scan'}{{\ttfamily scan}}{4}
-             {`select'}{{\ttfamily select}}{6}
-             {`seq'}{{\ttfamily seq}}{3}
-             {`serial'}{{\ttfamily serial}}{6}
-             {`single'}{{\ttfamily single}}{6}
-             {`sparse'}{{\ttfamily sparse}}{6}
-             {`string'}{{\ttfamily string}}{6}
-             {`sync'}{{\ttfamily sync}}{4}
-             {`then'}{{\ttfamily then}}{4}
-             {`true'}{{\ttfamily true}}{4}
-             {`type'}{{\ttfamily type}}{4}
-             {`uint'}{{\ttfamily uint}}{4}
-             {`union'}{{\ttfamily union}}{5}
-             {`use'}{{\ttfamily use}}{3}
-             {`var'}{{\ttfamily var}}{3}
-             {`when'}{{\ttfamily when}}{4}
-             {`where'}{{\ttfamily where}}{5}
-             {`while'}{{\ttfamily while}}{5}
-             {`yield'}{{\ttfamily yield}}{5}
   }
 
 \lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}

@@ -52,9 +52,9 @@ concurrency where each loop body iteration instance is executed in a
 separate computation, or somewhere in between.
 \end{example}
 
-\begin{implementation}
+\begin{status}
 The forall loop is currently executed serially.
-\end{implementation}
+\end{status}
 
 \subsubsection{Alternative Forall Loop Syntax}
 \label{Alternative_Forall_Loop_Syntax}
@@ -114,9 +114,9 @@ immediate children nodes.  The work on sibling nodes can be executed
 concurrently.
 \end{example}
 
-\begin{implementation}
+\begin{status}
 The ordered forall loop is currently executed serially.
-\end{implementation}
+\end{status}
 
 \subsection{The Forall Expression}
 \label{Forall_Expressions}
@@ -145,9 +145,9 @@ result of this expression is a sequence containing the evaluated
 expressions.
 \end{example}
 
-\begin{implementation}
+\begin{status}
 Forall expressions are evaluated serially.
-\end{implementation}
+\end{status}
 
 \subsection{The Cobegin Statement}
 \label{Cobegin}
@@ -192,9 +192,9 @@ return-statements.
 \label{Ordered_Expressions}
 \index{ordered@\chpl{ordered}}
 
-\begin{implementation}
+\begin{status}
 The ordered expression is not yet implemented.
-\end{implementation}
+\end{status}
 
 The \chpl{ordered} keyword can be used as an unary operator to suppress
 parallel execution among instances of an expression that can involve
@@ -220,9 +220,9 @@ not propagate to inhibit parallelism within \chpl{f}.
 \label{Serial}
 \index{serial@\chpl{serial}}
 
-\begin{implementation}
+\begin{status}
 The serial statement is not yet implemented.
-\end{implementation}
+\end{status}
 
 The \chpl{serial} statement can be used to dynamically control the
 degree of parallelism.  The syntax is:
@@ -445,9 +445,9 @@ This section is forthcoming.
 \index{atomic transactions}
 \index{atomic@\chpl{atomic}}
 
-\begin{implementation}
+\begin{status}
 Atomic statements are not yet implemented.
-\end{implementation}
+\end{status}
 
 The atomic statement creates an atomic transaction of a statement. The
 statement is executed with transaction semantics in that the statement

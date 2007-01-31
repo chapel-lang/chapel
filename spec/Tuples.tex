@@ -110,11 +110,11 @@ If an underscore appears as a component in a tuple expression in a
 destructuring context, the expression on the right-hand side is
 ignored, though it is still evaluated.
 
-\begin{implementation}
+\begin{status}
 Underscores are currently not treated specially.  The only way to
 ignore values when destructuring a tuple is to put them into variables
 that are never read.
-\end{implementation}
+\end{status}
 
 \subsection{Homogeneous Tuples}
 \label{Homogeneous_Tuples}
@@ -171,16 +171,16 @@ indexing expression is known at compile-time.
 
 \index{formal arguments!tuples}
 
-\begin{implementation}
+\begin{status}
 Formal arguments of tuple type are treated as if they were records.
 Conversions are not applied to the components.
-\end{implementation}
+\end{status}
 
 \subsubsection{Formal Argument Declarations in a Tuple}
 \label{Formal_Argument_Declarations_in_a_Tuple}
 
 \index{formal arguments!tuples}
 
-\begin{implementation}
+\begin{status}
 Formal arguments cannot be grouped together in a tuple.
-\end{implementation}
+\end{status}

@@ -105,11 +105,11 @@ domain. It may therefore be less expensive to access arrays using
 values of appropriate index type rather than values of the more
 general type the domain is defined over.
 
-\begin{implementation}
+\begin{status}
 In the current implementation, the index type is not distinguished
 from the underlying type of the indices.  The index method is not yet
 implemented.
-\end{implementation}
+\end{status}
 
 \subsubsection{Domain Assignment}
 \label{Domain_Assignment}
@@ -192,9 +192,9 @@ var A: [D] real;
 elements of type \chpl{real}.
 \end{example}
 
-\begin{implementation}
+\begin{status}
 Arrays of arrays are not currently supported.
-\end{implementation}
+\end{status}
 
 \subsubsection{Array Indexing}
 \label{Array_Indexing}
@@ -323,9 +323,9 @@ function.  In the event of zipper promotion over multiple arrays or
 both arrays and sequences, the promoted function returns a value based
 on the first argument to the function that enables promotion.
 
-\begin{implementation}
+\begin{status}
 In the current implementation, promotion always returns sequences.
-\end{implementation}
+\end{status}
 
 \begin{example}
 Whole array operations is a special case of array promotion of scalar
@@ -500,12 +500,12 @@ directly.  If each dimension is indexed by an arithmetic sequence,
 this is equivalent to slicing the domain by an arithmetic domain
 defined by those arithmetic sequences.
 
-\begin{implementation}
+\begin{status}
 It is currently required that each dimension be indexed by an
 arithmetic sequence.  There is an expectation that indexing some
 dimensions directly by values of integral type will result in an array
 slice of a different rank.
-\end{implementation}
+\end{status}
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
@@ -538,9 +538,9 @@ indexed by the integers between one and five.
 \index{domains!sparse}
 \index{arrays!sparse}
 
-\begin{implementation}
+\begin{status}
 Sparse domains are not yet implemented.
-\end{implementation}
+\end{status}
 
 A sparse domain type is given by the syntax
 \begin{syntax}
@@ -656,9 +656,9 @@ otherwise returns \chpl{false}.
 \index{domains!opaque}
 \index{arrays!opaque}
 
-\begin{implementation}
+\begin{status}
 Opaque domains are not yet implemented.
-\end{implementation}
+\end{status}
 
 An opaque domain is a form of indefinite domain where there is no
 algebra on the types of the indices.  The indices are, in essence,
@@ -681,9 +681,9 @@ is rare.
 \index{domains!enumerated}
 \index{arrays!enumerated}
 
-\begin{implementation}
+\begin{status}
 Enumerated domains are not yet implemented.
-\end{implementation}
+\end{status}
 
 Enumerated domains are a special case of indefinite domains where the
 indices are the constants defined by an enumerated type.  Enumerated
@@ -726,9 +726,9 @@ values in the arrays associated with the assigned domain will be lost.
 \index{subdomains}
 \index{domains!subdomains}
 
-\begin{implementation}
+\begin{status}
 Subdomains are not yet implemented.
-\end{implementation}
+\end{status}
 
 A subdomain is a domain whose indices are indices of a {\em base
   domain}.  A subdomain is specified by the following syntax:
