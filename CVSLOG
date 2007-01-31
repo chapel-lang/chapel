@@ -92148,3 +92148,109 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+01/31/07 11:04:36 -- deitz
+
+Log message:
+	Expect regressions:
+	
+	[Error matching program output for memory/shannon/freedWithoutMallocLineno]
+	[Error matching program output for memory/shannon/memmaxExceedsLineno]
+	[Error matching program output for memory/shannon/memstatFlagLineno]
+	[Error matching program output for memory/shannon/memtrackFlagLineno]
+	[Error matching program output for memory/shannon/reallocWithoutMallocLineno]
+	[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemoryLineno]
+	[Error matching program output for trivial/shannon/readStringOverflowLineno]
+	
+	Pair programmed the following with David.
+	
+	Added primitives get_lineno and get_filename to mark places where user
+	line numbers and filenames should be printed.  This is currently only
+	done in the halt and assert functions.  It needs to be added to
+	certain primitives.
+	
+	Removed global variables chpl_input_lineno and chpl_input_filename.
+	
+	Fixed a .future where line numbers on errors were printed out
+	incorrectly in a parallel context.
+	
+	Added a pass insertLineNumbers after resolution to insert line numbers
+	and filenames to functions that are in the standard modules so that
+	user line numbers and filename are printed out instead.
+	
+	Removed access to global line number and filename from runtime.  This
+	leads to a few regressions that will be fixed when we start passing
+	line numbers and filenames to some primitives.  I will be working on
+	this now.
+	
+	Updated output to compflags/bradc/help/userhelp.chpl.
+	
+	Removed compiler option --cg-chpl-lineno and updated tests not to use
+	this.
+	
+	Updated tests that didn't previously show line numbers because they
+	did not use --cg-chpl-lineno.  They now do show line numbers.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: primitive.h stmt.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/modules/standard/: Standard.chpl _chpl_base.chpl 
+	chapel/runtime/include/: error.h 
+	chapel/runtime/src/: error.c 
+	chapel/test/arrays/deitz/: test_bounds1.good test_bounds2.good 
+	chapel/test/arrays/waynew/: init2.good 
+	chapel/test/classes/bradc/: setterForField.good 
+	chapel/test/classes/deitz/: test_union2.good test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/compflags/bradc/help/: userhelp.txt 
+	chapel/test/domains/indefinite/waynew/: indef8-fail2.good 
+	chapel/test/execflags/shannon/configs/: configVarBadEnum.good 
+	                                        configVarFileBadEnum.good 
+	chapel/test/modules/standard/machine/: numLocales2.good 
+	chapel/test/parallel/single/waynew/: simple0.good simple0b.good 
+	chapel/test/sparse/deitz/: test_sparse1.good 
+	chapel/test/spec/marybeth/: expstmt.good 
+	chapel/test/trivial/shannon/quit/: haltOneArg.good 
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.good 
+	                               changeModeWhileOpen.good 
+	                               changePathWhileOpen.good 
+Removed files:
+	chapel/test/domains/shannon/: expandError.compopts 
+	                              interiorErrorNeg.compopts 
+	                              interiorErrorPos.compopts 
+	                              interiorErrorPosLarge.compopts 
+	chapel/test/memory/shannon/: freedWithoutMallocLineno.compopts 
+	                             memmaxExceedsLineno.compopts 
+	                             memstatFlagLineno.compopts 
+	                             memtrackFlagLineno.compopts 
+	                             reallocWithoutMallocLineno.compopts 
+	chapel/test/memory/shannon/outofmemory/: 
+	                                         mallocOutOfMemoryLineno.compopts 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.compopts 
+	chapel/test/trivial/shannon/: multipleArgAssert.compopts 
+	                              readStringOverflowLineno.compopts 
+	                              readWriteBool.compopts 
+	                              readWriteBoolLineno.compopts 
+	                              readWriteComplex.compopts 
+	                              readWriteComplexFail1.compopts 
+	                              readWriteComplexLineno.compopts 
+	                              readWriteEnum.compopts 
+	chapel/test/trivial/shannon/quit/: assert.compopts halt.compopts 
+	                                   haltNoArgs.compopts 
+	chapel/test/types/file/: closeStdin.compopts 
+	                         closedWithoutOpen.compopts 
+	                         freadComplex.compopts 
+	                         freadIntFailed.compopts 
+	                         freadIntUnopenedFile.compopts 
+	                         freadNoFloat.compopts 
+	                         freadNoInt.compopts 
+	                         freadNotABoolean.compopts 
+	                         fwriteIntFailed.compopts 
+	                         fwriteIntUnopenedFile.compopts 
+	                         invalidMode.compopts 
+	                         openStdout.compopts 
+	                         unableToOpenFile.compopts 
+
