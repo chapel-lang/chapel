@@ -92138,3 +92138,13 @@ Added files:
 	                             diffuse2d-v3.chpl 
 	                             diffuse2d-v3.notest 
 
+---------------------------------------------------------------------------
+
+01/31/07 10:40:22 -- deitz
+
+Log message:
+	Updated unimplemented features list to reflect recent progress.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
