@@ -9,9 +9,7 @@
 
 
 extern bool printCppLineno;
-extern bool printChplLineno;
 extern bool inUserModule;
-extern bool justStartedGeneratingFunction;
 
 void codegenStmt(FILE* outfile, Expr* stmt);
 

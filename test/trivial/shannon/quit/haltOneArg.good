@@ -1,1 +1,2 @@
-Halt reached: x != y
+Halt reached: haltOneArg.chpl:7
+x != y

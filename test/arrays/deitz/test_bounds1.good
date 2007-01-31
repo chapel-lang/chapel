@@ -1,1 +1,2 @@
-Halt reached: array index out of bounds: (6, 1)
+Halt reached: test_bounds1.chpl:3
+array index out of bounds: (6, 1)

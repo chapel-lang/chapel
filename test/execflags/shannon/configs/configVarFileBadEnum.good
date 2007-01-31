@@ -1,1 +1,2 @@
-Halt reached: illegal conversion of string "garlic" to ingredients
+Halt reached: configVarFileBadEnum.chpl:1
+illegal conversion of string "garlic" to ingredients

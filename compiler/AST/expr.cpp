@@ -1300,6 +1300,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ERROR:
     case PRIMITIVE_WHEN:
     case PRIMITIVE_LOOP_PARAM:
+    case PRIMITIVE_GET_LINENO:
+    case PRIMITIVE_GET_FILENAME:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:

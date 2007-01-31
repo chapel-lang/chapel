@@ -20,7 +20,6 @@ Optimization Control:
 Code Generation:
 ----------------
       --cg-cpp-lines      false     ->true   Generate #line annotations
-      --cg-chpl-lineno    false     ->true   Generate line numbers for errors
       --savec             (null)    path     Save generated C code
   -p, --parallel          true      toggle   Toggle threaded code generation
 

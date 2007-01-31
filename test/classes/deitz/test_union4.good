@@ -1,2 +1,3 @@
 x: (-1)
-Halt reached: illegal union access
+Halt reached: test_union4.chpl:2
+illegal union access

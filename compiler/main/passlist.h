@@ -14,6 +14,7 @@ void copyPropagation();
 void cullOverReferences();
 void flattenFunctions();
 void inlineFunctions();
+void insertLineNumbers();
 void memoryManage();
 void normalize();
 void parallel1();
@@ -49,6 +50,7 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(cullOverReferences), // remove excess references
   RUN(parallel2),          // parallel transforms, part 2
+  RUN(insertLineNumbers),  // insert line numbers for error messages
 
   // Optimizations
   RUN(inlineFunctions), // function inlining

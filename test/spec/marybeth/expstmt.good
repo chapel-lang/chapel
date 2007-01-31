@@ -1,2 +1,3 @@
 Non-zero value.  Continuing.
-Halt reached: Value is zero.
+Halt reached: expstmt.chpl:9
+Value is zero.

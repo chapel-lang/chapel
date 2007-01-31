@@ -1495,7 +1495,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
       }
     }
   }
-  justStartedGeneratingFunction = true;
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
 }

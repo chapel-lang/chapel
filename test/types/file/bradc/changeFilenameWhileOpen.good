@@ -1,1 +1,2 @@
-Halt reached: Cannot change filename of file ./f.out while it is open
+Halt reached: changeFilenameWhileOpen.chpl:4
+Cannot change filename of file ./f.out while it is open

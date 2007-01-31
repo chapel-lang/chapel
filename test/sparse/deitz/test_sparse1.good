@@ -1,1 +1,2 @@
-Halt reached: Sparse arrays are not implemented
+Halt reached: test_sparse1.chpl:5
+Sparse arrays are not implemented

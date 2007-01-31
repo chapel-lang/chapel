@@ -1,1 +1,2 @@
-Halt reached: ***Error: single var already defined***
+Halt reached: simple0.chpl:6
+***Error: single var already defined***

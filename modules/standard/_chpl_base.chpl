@@ -667,8 +667,8 @@ def readFF( sv:_singlevar) {
 // Functions on _file primitive type, the C file pointer type
 //
 
-pragma "no codegen" var chpl_input_filename: string;
-pragma "no codegen" var chpl_input_lineno: int;
+pragma "inline" def _get_filename() return __primitive("get_filename");
+pragma "inline" def _get_lineno() return __primitive("get_lineno");
 
 pragma "inline" def _get_errno() return __primitive("get_errno");
 pragma "inline" def _get_eof() return __primitive("get_eof");

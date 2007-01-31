@@ -8,6 +8,7 @@ PASSES_SRCS = \
         flattenFunctions.cpp \
         functionResolution.cpp \
         inlineFunctions.cpp \
+	insertLineNumbers.cpp \
         parallel.cpp \
 	printProgram.cpp \
         memoryManage.cpp \

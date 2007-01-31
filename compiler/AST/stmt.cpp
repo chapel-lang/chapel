@@ -11,32 +11,14 @@
 
 static int inBlockStmt = 0;
 bool printCppLineno = false;
-bool printChplLineno = false;
 bool inUserModule = false;
-bool justStartedGeneratingFunction = false;
 
 
 void codegenStmt(FILE* outfile, Expr* stmt) {
-  static char* priorFilename = "";
-  static int priorLineno = -1;
-
   if (stmt->lineno > 0) {
     if (printCppLineno) {
       fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->filename);
     } 
-    
-    if (printChplLineno && inBlockStmt && inUserModule) {
-      if (strcmp(stmt->filename, priorFilename) != 0 ||  
-          justStartedGeneratingFunction) {
-        fprintf(outfile, "chpl_input_filename = \"%s\";\n", stmt->filename);
-        priorFilename = stringcpy(stmt->filename);
-        justStartedGeneratingFunction = false;
-      }
-      if (stmt->lineno != priorLineno) {
-        fprintf(outfile, "chpl_input_lineno = %d;\n", stmt->lineno);
-        priorLineno = stmt->lineno;
-      }
-    }
   }
 }
 

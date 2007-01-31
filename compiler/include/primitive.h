@@ -99,6 +99,9 @@ enum PrimitiveTag {
   PRIMITIVE_GC_ISPOS, // check reference count is greater than zero
   PRIMITIVE_GC_ISNEG, // check reference count is less than zero
 
+  PRIMITIVE_GET_LINENO,
+  PRIMITIVE_GET_FILENAME,
+
   PRIMITIVE_INT_ERROR,
 
   NUM_KNOWN_PRIMS

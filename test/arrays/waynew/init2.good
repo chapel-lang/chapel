@@ -1,1 +1,2 @@
-Halt reached: array index out of bounds: (1)
+Halt reached: init2.chpl:8
+array index out of bounds: (1)

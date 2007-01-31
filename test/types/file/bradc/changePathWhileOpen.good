@@ -1,1 +1,2 @@
-Halt reached: Cannot change path of file ./f.out while it is open
+Halt reached: changePathWhileOpen.chpl:4
+Cannot change path of file ./f.out while it is open

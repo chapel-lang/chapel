@@ -1,1 +1,2 @@
-Halt reached: illegal conversion of string "meatloaf" to ingredients
+Halt reached: configVarBadEnum.chpl:1
+illegal conversion of string "meatloaf" to ingredients

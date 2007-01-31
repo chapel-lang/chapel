@@ -64,7 +64,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Code Generation", NULL, NULL, NULL, NULL},
  {"cg-cpp-lines", ' ', "Generate #line annotations", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
- {"cg-chpl-lineno", ' ', "Generate line numbers for errors", "F", &printChplLineno, "CHPL_CG_CHPL_LINENO", NULL},
  {"savec", ' ', "Save generated C code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"parallel", 'p', "Toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
 
