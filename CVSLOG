@@ -92264,3 +92264,15 @@ Log message:
 Added files:
 	chapel/compiler/passes/: insertLineNumbers.cpp 
 
+---------------------------------------------------------------------------
+
+01/31/07 11:38:35 -- bradc
+
+Log message:
+	Trying to shorten running time of test to
+	lower probability of timeout on Sunos
+	until we eliminate promotion temps.
+
+Modified files:
+	chapel/test/users/rbarrett/: diffuse2d-v3-blc.chpl 
+
