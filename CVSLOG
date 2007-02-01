@@ -92309,3 +92309,50 @@ Log message:
 Modified files:
 	chapel/spec/: syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+02/01/07 14:54:02 -- deitz
+
+Log message:
+	This checkin fixes the current regressions.
+	
+	Added support for passing user code line number and filename
+	information to primitives in the runtime that require it for reporting
+	errors.  Added line number and filename arguments to many functions in
+	the runtime.  In some places in the runtime, I pass 0, 0 to avoid
+	adding it to more functions.  These need to be cleaned up in another
+	checkin.
+	
+	Added PrimitiveOp::passLineno to signal that this primitive requires
+	line number and filename information.  This is added to the AST just
+	before code generation so as not to burden code in the rest of the
+	compiler.  Moved insertLineNumbers just before code generation.
+	
+	Removed support for the "no codegen" pragma and turned the last of the
+	functions that used it (to test the runtime memory functions) into
+	primitives.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	                         inlineFunctions.cpp 
+	                         insertLineNumbers.cpp memoryManage.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_standard.chpl 
+	chapel/runtime/include/: chplio.h chplmem.h chplmem_tests.h 
+	                         chplrt.h chplthreads.h error.h 
+	chapel/runtime/src/: arg.c chplio.c chplmem.c chplmem_tests.c 
+	                     chplthreads.c chpltypes.c config.c error.c 
+	                     main.c 
+	chapel/test/classes/deitz/: test_union2.good test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/memory/shannon/: freedWithoutMalloc.good 
+	                             memmaxExceeds.good memstatFlag.good 
+	                             memtrackFlag.good 
+	                             reallocWithoutMalloc.good 
+	chapel/test/memory/shannon/outofmemory/: mallocOutOfMemory.good 
+	chapel/test/trivial/shannon/: readStringOverflow.good 
+
