@@ -92437,3 +92437,46 @@ Log message:
 Modified files:
 	chapel/spec/: syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+02/01/07 15:45:33 -- bradc
+
+Log message:
+	A few interesting array slicing tests inspired
+	by a suggestion made by Paul Casella -- using
+	math on arithmetic sequences to create interesting
+	slices for arrays with less repetition of values
+	in the upper and lower bounds.
+	
+	The first test works (slices into an array directly).
+	The second doesn't (tries to pass the slice into a
+	function expecting an array [1..4].  I believe this
+	is because operations on arithmetic sequences
+	currently result in converting the arithmetic sequence
+	into a sequence of ints, so I filed it as a semantic
+	future.
+	
+	These tests also raise the question of whether:
+	
+	      1..n by 2
+	
+	should result in the sequence:
+	
+	      1, 2, 3, 4, ... 2*n
+	
+	or:
+	
+	      1, 3, 5, 7, 9, 2*n-1
+	
+	It currently seems to be the latter unless I'm missing
+	something.  I'm not sure whether or not this seems
+	right to me offhand.  There's definitely a question
+	here in my mind.  (If it turns out to be the former,
+	I need to add some "by" expressions to my test to make
+	it work as intended).
+
+Added files:
+	chapel/test/arrays/bradc/: paulslice.chpl paulslice.good 
+	                           paulslice2.chpl paulslice2.future 
+	                           paulslice2.good 
+
