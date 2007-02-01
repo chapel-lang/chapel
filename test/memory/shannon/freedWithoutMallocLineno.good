@@ -1,1 +1,0 @@
-freedWithoutMallocLineno.chpl, line1:  ***Error: Attempting to free memory that wasn't allocated***

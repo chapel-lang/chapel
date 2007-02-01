@@ -1,4 +1,0 @@
-true
-false
-Halt reached: readWriteBoolLineno.chpl:9
-***Error: Not of bool type***
