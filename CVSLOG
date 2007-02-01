@@ -92427,3 +92427,13 @@ Removed files:
 	                              readWriteComplexLineno.ifuture 
 	                              readWriteComplexLineno.stdin 
 
+---------------------------------------------------------------------------
+
+02/01/07 15:30:42 -- marybeth
+
+Log message:
+	My best attempt at getting the syntax listing to look better.
+
+Modified files:
+	chapel/spec/: syntax_listing.tex 
+
