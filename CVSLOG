@@ -92356,3 +92356,15 @@ Modified files:
 	chapel/test/memory/shannon/outofmemory/: mallocOutOfMemory.good 
 	chapel/test/trivial/shannon/: readStringOverflow.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 15:09:42 -- deitz
+
+Log message:
+	Removed --cg-chpl-lineno compiler option and then .future on test that
+	now works.
+
+Removed files:
+	chapel/test/memory/shannon/: memmaxExceedsLineno2.compopts 
+	                             memmaxExceedsLineno2.future 
+
