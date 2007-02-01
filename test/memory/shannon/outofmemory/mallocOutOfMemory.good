@@ -1,1 +1,1 @@
-***Error: Out of memory allocating "malloc test"***
+mallocOutOfMemory.chpl, line1:  ***Error: Out of memory allocating "malloc test"***

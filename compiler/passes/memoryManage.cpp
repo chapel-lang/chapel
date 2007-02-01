@@ -125,6 +125,7 @@ buildFreeFunctions() {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         if (requiresFreeFunction(ct)) {
           FnSymbol* fn = new FnSymbol("_free");
+          fn->isCompilerTemp = true;
           fn->retType = dtVoid;
           ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
           fn->insertFormalAtTail(arg);
@@ -190,6 +191,7 @@ buildTouchFunctions() {
     if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
       if (freeMap.get(ct)) {
         FnSymbol* fn = new FnSymbol("_touch");
+        fn->isCompilerTemp = true;
         fn->retType = dtVoid;
         ArgSymbol* arg = new ArgSymbol(INTENT_REF, "a", ct);
         fn->insertFormalAtTail(arg);

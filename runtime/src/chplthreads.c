@@ -25,7 +25,7 @@ static pthread_key_t   _chpl_serial;         // per-thread serial state
 _chpl_mutex_p 
 _chpl_mutex_new(void) {
   _chpl_mutex_p m;
-  m = (_chpl_mutex_p) _chpl_alloc(sizeof(_chpl_mutex_t), "mutex");
+  m = (_chpl_mutex_p) _chpl_alloc(sizeof(_chpl_mutex_t), "mutex", 0, 0);
   _chpl_mutex_init(m);
   return m;
 }
@@ -65,7 +65,7 @@ _chpl_mutex_destroy(_chpl_mutex_p mutex) {
 // Condition variables
 _chpl_condvar_p _chpl_condvar_new(void) {
   _chpl_condvar_p cv;
-  cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var");
+  cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
   _chpl_condvar_init(cv);
   return cv;
 }
@@ -98,7 +98,7 @@ int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex) {
 
 void _chpl_serial_delete(_bool *p) {
   if (NULL != p) {
-    _chpl_free(p);
+    _chpl_free(p, 0, 0);
   }
 }
 
@@ -135,7 +135,7 @@ void _chpl_thread_init(void) {
   _bool *p;
   p = pthread_getspecific(_chpl_serial);
   if (NULL == p) {
-    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag");
+    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
     *p = false;
     pthread_setspecific(_chpl_serial, p);
   }
@@ -221,7 +221,7 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
   }
   _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
 
-  _chpl_free(nt);
+  _chpl_free(nt, 0, 0);
 
 }
 
@@ -248,7 +248,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
     _chpl_begin_cnt++;                     // assume begin will succeed
     _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
 
-    nt = (_chpl_createarg_t*) _chpl_malloc(1, sizeof(_chpl_createarg_t), "_chpl_begin helper arg");
+    nt = (_chpl_createarg_t*) _chpl_malloc(1, sizeof(_chpl_createarg_t), "_chpl_begin helper arg", 0, 0);
     nt->fun = fp;
     nt->arg = a;
     error |= pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt);

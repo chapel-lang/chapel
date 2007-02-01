@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   initChplThreads();
   _chpl_main();
   exitChplThreads();
-  printFinalMemStat();
+  printFinalMemStat(0, 0);
 
   return 0;
 }

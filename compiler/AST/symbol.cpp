@@ -1400,8 +1400,6 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  if (hasPragma("no codegen"))
-    return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -1426,9 +1424,6 @@ codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (hasPragma("no codegen"))
-    return;
-
   if (fnClass == FN_CONSTRUCTOR) {
     fprintf(outfile, "/* constructor */\n");
   }
@@ -1449,7 +1444,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     if (FnSymbol* fn = call->isResolved())
       if (fn != this)
         fprintf(outfile,
-                "      %s(&((*a)->_element));\n",
+                "      %s(&((*a)->_element), 0, 0);\n",
                 fn->cname);
     fprintf(outfile,
             "  tmp = (*a)->_next;\n"
@@ -1460,16 +1455,16 @@ void FnSymbol::codegenDef(FILE* outfile) {
     if (FnSymbol* fn = call->isResolved())
       if (fn != this)
         fprintf(outfile,
-                "      %s(&(tmp->_element));\n",
+                "      %s(&(tmp->_element), 0, 0);\n",
                 fn->cname);
     fprintf(outfile,
-            "      _chpl_free(tmp);\n"
+            "      _chpl_free(tmp, 0, 0);\n"
             "    } else {\n"
             "      break;\n"
             "    }\n"
             "    tmp = next;\n"
             "  }\n"
-            "  _chpl_free((*a)); (*a) = NULL;\n"
+            "  _chpl_free((*a), 0, 0); (*a) = NULL;\n"
             "}\n\n");
     return;
   }

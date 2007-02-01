@@ -3,8 +3,29 @@
 #include "stmt.h"
 #include "symbol.h"
 
+static void
+insertLineNumberInCall(CallExpr* call) {
+  FnSymbol * fn = call->getFunction();
+  int length = fn->formals->length();
+  if (!length || strcmp(fn->getFormal(length)->name, "_filename")) {
+    if (fn->getModule()->modtype == MOD_STANDARD) {
+      currentLineno = call->lineno;
+      currentFilename = call->filename;
+      call->insertAtTail(new CallExpr(PRIMITIVE_GET_LINENO));
+      call->insertAtTail(new CallExpr(PRIMITIVE_GET_FILENAME));
+    } else {
+      call->insertAtTail(new SymExpr(new_IntSymbol(call->lineno)));
+      call->insertAtTail(new SymExpr(new_StringSymbol(call->filename)));
+    }
+  } else {
+    call->insertAtTail(fn->getFormal(length-1));
+    call->insertAtTail(fn->getFormal(length));
+  }
+}
+
 void insertLineNumbers() {
   compute_call_sites();
+
   Vec<FnSymbol *> fns;
 
   forv_Vec(BaseAST, ast, gAsts) {
@@ -12,13 +33,18 @@ void insertLineNumbers() {
       if (call->isPrimitive(PRIMITIVE_GET_LINENO) ||
           call->isPrimitive(PRIMITIVE_GET_FILENAME)) {
         fns.add_exclusive(call->getFunction());
+      } else if (call->primitive && call->primitive->passLineno) {
+        currentLineno = call->lineno;
+        currentFilename = call->filename;
+        call->insertAtTail(new CallExpr(PRIMITIVE_GET_LINENO));
+        call->insertAtTail(new CallExpr(PRIMITIVE_GET_FILENAME));
       }
     }
   }
 
   forv_Vec(FnSymbol, fn, fns) {
 
-    if (fn->getModule()->modtype == MOD_USER) {
+    if (fn->getModule()->modtype == MOD_USER && !fn->isCompilerTemp) {
       Vec<BaseAST *> asts;
       collect_asts(&asts, fn->body);
 
@@ -57,24 +83,9 @@ void insertLineNumbers() {
         }
       }
     }
-    forv_Vec(CallExpr, caller, *fn->calledBy) {
-      FnSymbol * fn = caller->getFunction();
-      int length = fn->formals->length();
-      if ((length == 0) || 
-          (strcmp(fn->getFormal(length)->name, "_filename"))) {
-        if (fn->getModule()->modtype == MOD_STANDARD) {
-          caller->insertAtTail(new CallExpr(PRIMITIVE_GET_LINENO));
-          caller->insertAtTail(new CallExpr(PRIMITIVE_GET_FILENAME));
-        } else {
-          caller->insertAtTail(new SymExpr(new_IntSymbol(caller->lineno)));
-          caller->insertAtTail(new SymExpr(new_StringSymbol(caller->filename)));
-        }
-      } else {
-        caller->insertAtTail(fn->getFormal(length-1));
-        caller->insertAtTail(fn->getFormal(length));
-      }
-        
-      fns.add_exclusive(caller->getFunction());
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      insertLineNumberInCall(call);
+      fns.add_exclusive(call->getFunction());
     }
   }
 

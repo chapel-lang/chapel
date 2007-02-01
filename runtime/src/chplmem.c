@@ -93,8 +93,7 @@ void setMemtrack(void) {
 
 void setMemthreshold(_int64 value) {
   if (!memlog) {
-    char* message = "--memthreshold useless when used without --memtrace";
-    printError(message);
+    printError("--memthreshold useless when used without --memtrace", 0, 0);
   }
   memthreshold = 1;
   memthresholdValue = value;
@@ -108,7 +107,7 @@ void setMemtrace(char* memlogname) {
     if (!memlog) {
       char* message = _glom_strings(3, "Unable to open \"", memlogname, 
                                     "\"");
-      printError(message);
+      printError(message, 0, 0);
     }
   } 
 }
@@ -121,11 +120,11 @@ static void updateMaxMem(void) {
 }
 
 
-static void increaseMemStat(size_t chunk) {
+static void increaseMemStat(size_t chunk, _int32 lineno, _string filename) {
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
       char* message = "Exceeded memory limit";
-      printError(message);
+      printError(message, lineno, filename);
     }
   updateMaxMem();
 }
@@ -152,16 +151,16 @@ void startTrackingMem(void) {
 
 static int alreadyPrintingStat = 0;
 
-_uint64 _mem_used(void) {
+_uint64 _mem_used(_int32 lineno, _string filename) {
   _uint64 u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
-    printError("memoryUsed() only works with the --memstat flag");
+    printError("memoryUsed() only works with the --memstat flag", lineno, filename);
   u = (_uint64)totalMem;
   return u;
 }
 
-void printMemStat(void) {
+void printMemStat(_int32 lineno, _string filename) {
   if (memstat) {
     _chpl_mutex_lock(&_memstat_lock);
     fprintf(stdout, "totalMem=%u, maxMem=%u\n", 
@@ -170,20 +169,20 @@ void printMemStat(void) {
     _chpl_mutex_unlock(&_memstat_lock);
   } else {
     char* message = "printMemStat() only works with the --memstat flag";
-    printError(message);
+    printError(message, lineno, filename);
   }
 }
 
 
-void printFinalMemStat(void) {
+void printFinalMemStat(_int32 lineno, _string filename) {
   if (!alreadyPrintingStat && memstat) {
     fprintf(stdout, "Final Memory Statistics:  ");
-    printMemStat();
+    printMemStat(lineno, filename);
   }
 }
 
 
-void printMemTable(_int64 threshold) {
+void printMemTable(_int64 threshold, _int32 lineno, _string filename) {
   memTableEntry* memEntry = NULL;
 
   int numberWidth   = 9;
@@ -201,7 +200,7 @@ void printMemTable(_int64 threshold) {
   if (!memtrack) {
     char* message = "The printMemTable function only works with the "
       "--memtrack flag";
-    printError(message);
+    printError(message, lineno, filename);
   }
 
   fprintf(stdout, "\n");
@@ -270,7 +269,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
     if (!memEntry) {
       char* message = _glom_strings(3, "Out of memory allocating table entry "
                                     "for \"", description, "\"");
-      printError(message);
+      printError(message, 0, 0);
     }
 
     hashValue = hash(memAlloc);
@@ -290,7 +289,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
     if (!memEntry->description) {
       char* message = _glom_strings(3, "Out of memory allocating table entry "
                                     "for \"", description, "\"");
-      printError(message);
+      printError(message, 0, 0);
     }
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
@@ -343,7 +342,7 @@ static void updateMemory(memTableEntry* memEntry, void* oldAddress,
 }
 
 
-static void removeMemory(void* memAlloc) {
+static void removeMemory(void* memAlloc, _int32 lineno, _string filename) {
   memTableEntry* memEntry = lookupMemory(memAlloc);
   memTableEntry* thisBucketEntry;
 
@@ -369,16 +368,17 @@ static void removeMemory(void* memAlloc) {
     free(thisBucketEntry);
   } else {
     char* message = "Attempting to free memory that wasn't allocated";
-    printError(message);
+    printError(message, lineno, filename);
   }
 }
 
 
-static void confirm(void* memAlloc, char* description) {
+static void
+confirm(void* memAlloc, char* description, _int32 lineno, _string filename) {
   if (!memAlloc) {
     char message[1024];
     sprintf(message, "Out of memory allocating \"%s\"", description);
-    printError(message);
+    printError(message, lineno, filename);
   }
 }
 
@@ -402,10 +402,11 @@ static void printToMemLog(size_t number, size_t size, char* description,
 }
 
 
-void* _chpl_malloc(size_t number, size_t size, char* description) {
+void* _chpl_malloc(size_t number, size_t size, char* description,
+                   _int32 lineno, _string filename) {
   size_t chunk = number * size;
   void* memAlloc = malloc(chunk);
-  confirm(memAlloc, description);
+  confirm(memAlloc, description, lineno, filename);
 
   if (memtrace) {
     _chpl_mutex_lock(&_memtrace_lock);
@@ -418,7 +419,7 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
     _chpl_mutex_unlock(&_memtrack_lock);
     if (memstat) {
       _chpl_mutex_lock(&_memstat_lock);
-      increaseMemStat(chunk);
+      increaseMemStat(chunk, lineno, filename);
       _chpl_mutex_unlock(&_memstat_lock);
     }
   }
@@ -426,9 +427,9 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
 }
 
 
-void* _chpl_calloc(size_t number, size_t size, char* description) {
+void* _chpl_calloc(size_t number, size_t size, char* description, _int32 lineno, _string filename) {
   void* memAlloc = calloc(number, size);
-  confirm(memAlloc, description);
+  confirm(memAlloc, description, lineno, filename);
 
   if (memtrace) {
     _chpl_mutex_lock(&_memtrace_lock);
@@ -444,7 +445,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
       size_t chunk;
       _chpl_mutex_lock(&_memstat_lock);
       chunk = number * size;
-      increaseMemStat(chunk);
+      increaseMemStat(chunk, lineno, filename);
       _chpl_mutex_unlock(&_memstat_lock);
     }
   }
@@ -452,7 +453,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
 }
 
 
-void _chpl_free(void* memAlloc) {
+void _chpl_free(void* memAlloc, _int32 lineno, _string filename) {
   if (memtrace) {
     _chpl_mutex_lock(&_memtrace_lock);
     if (memtrack) {
@@ -479,7 +480,7 @@ void _chpl_free(void* memAlloc) {
         _chpl_mutex_unlock(&_memstat_lock);
       }
     }
-    removeMemory(memAlloc);
+    removeMemory(memAlloc, lineno, filename);
     _chpl_mutex_unlock(&_memtrack_lock);
   }
   free(memAlloc);
@@ -487,12 +488,12 @@ void _chpl_free(void* memAlloc) {
 
 
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
-                    char* description) {
+                    char* description, _int32 lineno, _string filename) {
   size_t newChunk = number * size;
   memTableEntry* memEntry;
   void* moreMemAlloc;
   if (!newChunk) {
-    _chpl_free(memAlloc);
+    _chpl_free(memAlloc, lineno, filename);
     return NULL;
   }
   if (memtrack) {
@@ -503,11 +504,11 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       char* message;
       message = _glom_strings(3, "Attempting to realloc memory for ",
                               description, "that wasn't allocated");
-      printError(message);
+      printError(message, lineno, filename);
     }
   }
   moreMemAlloc = realloc(memAlloc, newChunk);
-  confirm(moreMemAlloc, description);
+  confirm(moreMemAlloc, description, lineno, filename);
 
   if (memtrack) { 
     _chpl_mutex_lock(&_memtrack_lock);
@@ -527,7 +528,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     }
     if (memstat) {
       _chpl_mutex_lock(&_memstat_lock);
-      increaseMemStat(newChunk);
+      increaseMemStat(newChunk, lineno, filename);
       _chpl_mutex_unlock(&_memstat_lock);
     }
     _chpl_mutex_unlock(&_memtrack_lock);

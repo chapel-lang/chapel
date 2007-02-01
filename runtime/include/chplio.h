@@ -52,7 +52,7 @@ extern char* _default_format_write_complex256;
 
 typedef FILE* _cfile;
 
-_string string_fscanf(FILE* fp);
+_string string_fscanf(FILE* fp, _int32 lineno, _string filename);
 _bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace);
 
 #endif

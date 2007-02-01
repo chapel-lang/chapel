@@ -750,18 +750,15 @@ def _compound_cast(type lt, type rt, x) where !_isPrimitiveType(lt)
   // note: need to verify that rhs can be assigned to lhs; checking
   // that rt:lt is not sufficient to handle parameter coercions
 
-//
-// MOVE THESE, maybe to a memory module?
-//
-pragma "no codegen" def _chpl_memtest_printMemTable(threshold: int = 1000);
-pragma "no codegen" def _chpl_memtest_printMemStat();
-pragma "no codegen" def _chpl_memtest_resetMemStat();
-pragma "no codegen" def _chpl_memtest_allocAndFree();
-pragma "no codegen" def _chpl_memtest_freedMalloc();
-pragma "no codegen" def _chpl_memtest_freedWithoutMalloc();
-pragma "no codegen" def _chpl_memtest_reallocWithoutMalloc();
-pragma "no codegen" def _chpl_memtest_reallocZeroSize();
-pragma "no codegen" def _chpl_memtest_mallocOutOfMemory();
-pragma "no codegen" def _chpl_memtest_reallocOutOfMemory();
+pragma "inline" def _chpl_memtest_printMemTable(threshold: int = 1000) { __primitive("_chpl_memtest_printMemTable", threshold); }
+pragma "inline" def _chpl_memtest_printMemStat() { __primitive("_chpl_memtest_printMemStat"); }
+pragma "inline" def _chpl_memtest_resetMemStat() { __primitive("_chpl_memtest_resetMemStat"); }
+pragma "inline" def _chpl_memtest_allocAndFree() { __primitive("_chpl_memtest_allocAndFree"); }
+pragma "inline" def _chpl_memtest_freedMalloc() { __primitive("_chpl_memtest_freedMalloc"); }
+pragma "inline" def _chpl_memtest_freedWithoutMalloc() { __primitive("_chpl_memtest_freedWithoutMalloc"); }
+pragma "inline" def _chpl_memtest_reallocWithoutMalloc() { __primitive("_chpl_memtest_reallocWithoutMalloc"); }
+pragma "inline" def _chpl_memtest_reallocZeroSize() { __primitive("_chpl_memtest_reallocZeroSize"); }
+pragma "inline" def _chpl_memtest_mallocOutOfMemory() { __primitive("_chpl_memtest_mallocOutOfMemory"); }
+pragma "inline" def _chpl_memtest_reallocOutOfMemory() { __primitive("_chpl_memtest_reallocOutOfMemory"); }
 
-pragma "no codegen" def startTrackingMem();
+pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }

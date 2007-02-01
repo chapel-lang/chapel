@@ -88,13 +88,13 @@ static _int64 getIntArg(char* valueString, char* memFlag) {
   if (!valueString || strcmp(valueString, "") == 0) {
     message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
                                   "its int input");
-    printError(message);
+    printError(message, 0, 0);
   }
   numScans = sscanf(valueString, _default_format_read_int64"%c", 
                     &value, &extraChars);
   if (numScans != 1) {
     message = _glom_strings(2, valueString, " is not of int type");
-    printError(message);
+    printError(message, 0, 0);
   }
   return value; 
 }
@@ -105,7 +105,7 @@ static char* getStringArg(char* valueString, char* memFlag) {
   if (!valueString || strcmp(valueString, "") == 0) {
     message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
                                   "its string input");
-    printError(message);
+    printError(message, 0, 0);
   }
   return valueString;
 }
@@ -115,7 +115,7 @@ static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
   if (equalsSign) {
     char* message = _glom_strings(3, "The ", memFlag, " flag takes no "
                                   "argument");
-    printError(message);
+    printError(message, 0, 0);
   }
 }
 
@@ -206,7 +206,7 @@ void parseArgs(int argc, char* argv[]) {
     if (argLength < 2) {
       char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
                                     "argument");
-      printError(message);
+      printError(message, 0, 0);
     }
     
     switch (currentArg[0]) {
@@ -226,7 +226,7 @@ void parseArgs(int argc, char* argv[]) {
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, 
                                           "\" is not a valid argument");
-            printError(message);
+            printError(message, 0, 0);
           }
           addToConfigList(currentArg + 2, isSingleArg);
           break;
@@ -245,7 +245,7 @@ void parseArgs(int argc, char* argv[]) {
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
                                           "valid argument");
-            printError(message);
+            printError(message, 0, 0);
           }
           addToConfigList(currentArg + 2, isSingleArg);
           break;
@@ -259,7 +259,7 @@ void parseArgs(int argc, char* argv[]) {
         {
           char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, 
                                         "\"");
-          printError(message);
+          printError(message, 0, 0);
         }
       }
     }

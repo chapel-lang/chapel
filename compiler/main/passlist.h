@@ -50,7 +50,6 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(cullOverReferences), // remove excess references
   RUN(parallel2),          // parallel transforms, part 2
-  RUN(insertLineNumbers),  // insert line numbers for error messages
 
   // Optimizations
   RUN(inlineFunctions), // function inlining
@@ -58,7 +57,8 @@ PassInfo passlist[] = {
   RUN(memoryManage),    // insert memory frees, garbage collection
 
   // AST to C
-  RUN(codegen), // generate C code and build it
+  RUN(insertLineNumbers), // insert line numbers for error messages
+  RUN(codegen),           // generate C code and build it
   LAST
 };
 

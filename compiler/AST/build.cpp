@@ -73,7 +73,6 @@ static void createInitFn(ModuleSymbol* mod) {
   currentFilename = mod->filename;
 
   mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
-  mod->initFn->isCompilerTemp = true;
   mod->stmts->insertAtHead(new DefExpr(mod->initFn));
   mod->initFn->retType = dtVoid;
   mod->initFn->body->blkScope = mod->modScope;

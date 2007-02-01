@@ -41,8 +41,8 @@ static argType* lastArg = NULL;
 
 void addToConfigList(char* currentArg, int isSingleArg) {
   char* description = _glom_strings(2, "argument list entry for ", currentArg);
-  argType* arg = (argType*) _chpl_calloc(1, sizeof(argType), description);
-  _chpl_free(description);
+  argType* arg = (argType*) _chpl_calloc(1, sizeof(argType), description, 0, 0);
+  _chpl_free(description, 0, 0);
 
   arg->isSingleArg = isSingleArg;
   arg->input = string_copy(currentArg);
@@ -116,7 +116,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
           setConfigBuffer[stringLength] = '\0';
           message = _glom_strings(2, "Found end of file while reading string: ",
                                   equalsSign + 1);
-          printError(message);
+          printError(message, 0, 0);
           break;
         }
       case '\n':
@@ -125,7 +125,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
           setConfigBuffer[stringLength] = '\0';
           message = _glom_strings(2, "Found newline while reading string: ", 
                                   equalsSign + 1);
-          printError(message);
+          printError(message, 0, 0);
           break;
         }
       default:
@@ -136,7 +136,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
             sprintf(dsl, "%d", _default_string_length);
             message = _glom_strings(2, "String exceeds the maximum "
                                           "string length of ", dsl);
-            printError(message);
+            printError(message, 0, 0);
           }
           setConfigBuffer[stringLength] = nextChar;
           stringLength++;
@@ -170,17 +170,17 @@ static void parseSingleArg(char* currentArg) {
         char* message = _glom_strings(3, "Configuration variable \"", 
                                       varName, "\" is missing its "
                                       "initialization value");
-        printError(message);
+        printError(message, 0, 0);
       }
       initSetValue(varName, value, moduleName);
     } else {
       char* message = _glom_strings(3, "\"", value, "\" is not a valid value");
-      printError(message);
+      printError(message, 0, 0);
     }
   } else {
     char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
                                   "configuration variable");
-    printError(message);
+    printError(message, 0, 0);
   }
 }
 
@@ -190,7 +190,7 @@ static void parseFileArgs(char* currentArg) {
   FILE* argFile = fopen(argFilename, "r");
   if (!argFile) {
     char* message = _glom_strings(2, "Unable to open ", argFilename);
-    printError(message);
+    printError(message, 0, 0);
   } 
   while (!feof(argFile)) {
     int numScans = 0;
@@ -351,25 +351,25 @@ void initSetValue(char* varName, char* value, char* moduleName) {
   configVarType* configVar;
   if  (*varName == '\0') {
     char* message = "No variable name given";
-    printError(message);
+    printError(message, 0, 0);
   }
   configVar = lookupConfigVar(varName, moduleName);
   if (configVar == NULL) {
     if (strcmp(moduleName, "") != 0) {
       char* message = _glom_strings(4, "There is no \"", varName, "\" config "
                                     "var in ", moduleName);
-      printError(message);
+      printError(message, 0, 0);
     } else {
       char* message = _glom_strings(3, "There is no config var \"", varName, 
                                     "\" in the program");
-      printError(message);
+      printError(message, 0, 0);
     }
   } else if (configVar == ambiguousConfigVar) {
     char* message = _glom_strings(5, "Config var \"", varName, "\" is defined "
                                   "in more than one module.  Use \"-h\" for "
                                   "a list of config vars and \"-s<module>.", 
                                   varName, "\" to indicate which to use.");
-    printError(message);
+    printError(message, 0, 0);
   }
   configVar->setValue = string_copy(value);
 }
@@ -396,8 +396,8 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
   unsigned hashValue;
   char* description = _glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
-    _chpl_calloc(1, sizeof(configVarType), description);
-  _chpl_free(description);
+    _chpl_calloc(1, sizeof(configVarType), description, 0, 0);
+  _chpl_free(description, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
@@ -429,7 +429,7 @@ int setInCommandLine_int32(char* varName, _int32* value,
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type int");
-      printError(message);
+      printError(message, 0, 0);
     }
   }   
   return varSet;
@@ -450,7 +450,7 @@ int setInCommandLine_uint32(char* varName, _uint32* value, char* moduleName) {
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type uint");
-      printError(message);
+      printError(message, 0, 0);
     }
   }
   return varSet;
@@ -472,7 +472,7 @@ int setInCommandLine_int64(char* varName, _int64* value,
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type int");
-      printError(message);
+      printError(message, 0, 0);
     }
   }   
   return varSet;
@@ -493,7 +493,7 @@ int setInCommandLine_uint64(char* varName, _uint64* value, char* moduleName) {
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type uint");
-      printError(message);
+      printError(message, 0, 0);
     }
   }
   return varSet;
@@ -515,7 +515,7 @@ int setInCommandLine_real64(char* varName, _real64* value,
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type real");
-      printError(message);
+      printError(message, 0, 0);
     }
   }
   return varSet;
@@ -545,7 +545,7 @@ int setInCommandLine_bool(char* varName, _bool* value,
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type bool");
-      printError(message);
+      printError(message, 0, 0);
     }
   }
   return varSet;
@@ -582,7 +582,7 @@ int setInCommandLine_complex128( char* varName,
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
                                     "\" of type complex");
-      printError(message);
+      printError(message, 0, 0);
     }
   }
   return varSet;

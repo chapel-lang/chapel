@@ -112,8 +112,9 @@ class PrimitiveOp { public:
   char *name;
   Type *(*returnInfo)(CallExpr*);
   bool isReference;
+  bool passLineno; // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*), bool aIsReference);
+  PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;

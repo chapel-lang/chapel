@@ -8,16 +8,16 @@
 
 static void scanfError(void) {
   char* message = _glom_strings(2, "Read failed: ", strerror(errno));
-  printError(message);
+  printError(message, 0, 0);
 }
 
-_string string_fscanf(FILE* fp) {
+_string string_fscanf(FILE* fp, _int32 lineno, _string filename) {
   char localVal[_default_string_length];
   char dsl[1024];
   int returnVal = 0;
   returnVal = fscanf(fp, "%255s", localVal);
   if (returnVal == EOF) {
-    printError("Read failed: EOF");
+    printError("Read failed: EOF", lineno, filename);
   }
   if (returnVal < 0) {
     scanfError();
@@ -26,7 +26,7 @@ _string string_fscanf(FILE* fp) {
     char* message;
     sprintf(dsl, "%d", _default_string_length);
     message = _glom_strings(2, "The maximum string length is ", dsl);
-    printError(message);
+    printError(message, lineno, filename);
   }
   return string_copy(localVal);
 }

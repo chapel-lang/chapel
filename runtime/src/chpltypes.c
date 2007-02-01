@@ -31,7 +31,7 @@ char* _glom_strings(int numstrings, ...) {
     len += strlen(va_arg(ap, char*));
   va_end(ap);
 
-  str = (char*)_chpl_malloc(len+1, sizeof(char), "_glom_strings result");
+  str = (char*)_chpl_malloc(len+1, sizeof(char), "_glom_strings result", 0, 0);
 
   va_start(ap, numstrings);
   str[0] = '\0';
@@ -52,7 +52,7 @@ string_concat(_string x, _string y) {
 _string
 string_strided_select(_string x, int low, int high, int stride) {
   _string result =
-    _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp");
+    _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp", 0, 0);
   _string src = x + low - 1;
   _string dst = result;
   while (src - x <= high - 1) {

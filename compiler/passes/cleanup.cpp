@@ -320,6 +320,7 @@ static void build_constructor(ClassType* ct) {
   ct->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
   fn->cname = stringcat("_construct_", ct->symbol->cname);
+  fn->isCompilerTemp = true; // compiler inserted
 
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple");

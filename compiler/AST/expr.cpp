@@ -762,10 +762,10 @@ void CallExpr::codegen(FILE* outfile) {
       help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
-      help_codegen_fn(outfile, "array_init", get(1), get(2)->typeInfo(), get(3));
+      help_codegen_fn(outfile, "array_init", get(1), get(2)->typeInfo(), get(3), get(4), get(5));
       break;
     case PRIMITIVE_ARRAY_FREE:
-      help_codegen_fn(outfile, "array_free", get(1));
+      help_codegen_fn(outfile, "array_free", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_FREE_ELTS:
       help_codegen_fn(outfile, "array_free_elts", get(1), get(2), get(3));
@@ -1101,7 +1101,7 @@ void CallExpr::codegen(FILE* outfile) {
       help_codegen_fn(outfile, "_CHPL_REFC_TOUCH", get(1), get(2), get(3));
       break;
     case PRIMITIVE_REFC_RELEASE: // possibly free reference-counted var
-      help_codegen_fn(outfile, "_CHPL_REFC_FREE", get(1), get(2), get(3));
+      help_codegen_fn(outfile, "_CHPL_REFC_FREE", get(1), get(2), get(3), get(4), get(5));
       break;
     case PRIMITIVE_THREAD_INIT: {
       fprintf( outfile, "_chpl_thread_init()");
@@ -1207,12 +1207,20 @@ void CallExpr::codegen(FILE* outfile) {
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     }
     case PRIMITIVE_CHPL_FREE: {
       fprintf(outfile, "_chpl_free(");
       get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
       fprintf(outfile, "); ");
       get(1)->codegen(outfile);
       fprintf(outfile, " = NULL");
