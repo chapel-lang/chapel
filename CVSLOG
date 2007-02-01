@@ -92297,3 +92297,15 @@ Modified files:
 	              Statements.tex Tuples.tex Types.tex Unions.tex 
 	              spec.tex syntax_listing.tex 
 
+---------------------------------------------------------------------------
+
+01/31/07 17:24:12 -- marybeth
+
+Log message:
+	Steve pointed out how the terminal symbols were not handled
+	properly in my first attempt.  Here is the next attempt at
+	the syntax_listing file.
+
+Modified files:
+	chapel/spec/: syntax_listing.tex 
+
