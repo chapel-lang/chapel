@@ -92368,3 +92368,62 @@ Removed files:
 	chapel/test/memory/shannon/: memmaxExceedsLineno2.compopts 
 	                             memmaxExceedsLineno2.future 
 
+---------------------------------------------------------------------------
+
+02/01/07 15:16:27 -- deitz
+
+Log message:
+	Removed tests that were duplicated solely to use the --cg-chpl-lineno
+	flag and to not use the flag.
+
+Removed files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarInvalidBooleanLineno.chpl 
+	                                        configVarInvalidBooleanLineno.compopts 
+	                                        configVarInvalidBooleanLineno.execopts 
+	                                        configVarInvalidBooleanLineno.future 
+	                                        configVarInvalidBooleanLineno.good 
+	                                        configVarInvalidComplexLineno.chpl 
+	                                        configVarInvalidComplexLineno.compopts 
+	                                        configVarInvalidComplexLineno.execopts 
+	                                        configVarInvalidComplexLineno.future 
+	                                        configVarInvalidComplexLineno.good 
+	                                        configVarInvalidFloatLineno.chpl 
+	                                        configVarInvalidFloatLineno.compopts 
+	                                        configVarInvalidFloatLineno.execopts 
+	                                        configVarInvalidFloatLineno.future 
+	                                        configVarInvalidFloatLineno.good 
+	                                        configVarInvalidIntegerLineno.chpl 
+	                                        configVarInvalidIntegerLineno.compopts 
+	                                        configVarInvalidIntegerLineno.execopts 
+	                                        configVarInvalidIntegerLineno.future 
+	                                        configVarInvalidIntegerLineno.good 
+	chapel/test/memory/shannon/: freedWithoutMallocLineno.chpl 
+	                             freedWithoutMallocLineno.execopts 
+	                             freedWithoutMallocLineno.good 
+	                             memmaxExceedsLineno.chpl 
+	                             memmaxExceedsLineno.execopts 
+	                             memmaxExceedsLineno.good 
+	                             memstatFlagLineno.chpl 
+	                             memstatFlagLineno.good 
+	                             memtrackFlagLineno.chpl 
+	                             memtrackFlagLineno.good 
+	                             reallocWithoutMallocLineno.chpl 
+	                             reallocWithoutMallocLineno.execopts 
+	                             reallocWithoutMallocLineno.good 
+	chapel/test/memory/shannon/outofmemory/: 
+	                                         mallocOutOfMemoryLineno.chpl 
+	                                         mallocOutOfMemoryLineno.good 
+	chapel/test/trivial/shannon/: readStringOverflowLineno.chpl 
+	                              readStringOverflowLineno.good 
+	                              readStringOverflowLineno.ifuture 
+	                              readStringOverflowLineno.stdin 
+	                              readWriteBoolLineno.chpl 
+	                              readWriteBoolLineno.good 
+	                              readWriteBoolLineno.ifuture 
+	                              readWriteBoolLineno.stdin 
+	                              readWriteComplexLineno.chpl 
+	                              readWriteComplexLineno.good 
+	                              readWriteComplexLineno.ifuture 
+	                              readWriteComplexLineno.stdin 
+
