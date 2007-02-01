@@ -1,27 +1,5 @@
 \lstdefinelanguage{syntax}
   {
-    morekeywords={
-      atomic,
-      begin, bool, break, by,
-      class, cobegin, complex, compilerError, config, const, continue,
-      def, distributed, do, domain,
-      else, elt_type, enum,
-      false, for, forall,
-      goto,
-      if, imag, in, index, int, inout, iterator,
-      let, locale,
-      module,
-      nil,
-      of, on, opaque, ordered, otherwise, out,
-      param, pragma,
-      real, record, reduce, return,
-      scan, select, seq, serial, single, sparse, string, sync,
-      then, true, type,
-      uint, union, use,
-      var,
-      when, where, while,
-      yield
-    },
     sensitive=false,
     mathescape=true,
     columns=fullflexible,
@@ -29,7 +7,7 @@
     keywordstyle=\footnotesize\ttfamily,
     commentstyle=\footnotesize\ttfamily,
     identifierstyle=\small\itshape,
-    morecomment=[s]{`}{'},
+    moredelim=[is][\small\ttfamily]{`}{'},
     literate={-}{{\ttfamily -}}{1}
              {[OPT]}{{{\scriptsize $_{opt}$}}}{2}
   }
