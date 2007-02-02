@@ -12,6 +12,7 @@ modulefinder.tab.c
 modulefinder.tab.h
 modulefinder.lex.yy.c
 lex.yy.c
+lex.yy.h
 modulefinder
 
 
