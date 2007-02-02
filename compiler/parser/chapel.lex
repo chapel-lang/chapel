@@ -8,9 +8,6 @@
 #include "lexyacc.h"
 #include "chapel.tab.h"
 
-/* avoid warnings */
-#define YY_NO_UNPUT
-
 #ifndef processToken
 #define processToken(t) \
   countToken(yytext);  \
