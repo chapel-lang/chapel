@@ -92618,3 +92618,13 @@ Added files:
 Removed files:
 	chapel/compiler/parser/: yy.c 
 
+---------------------------------------------------------------------------
+
+02/02/07 09:46:39 -- bradc
+
+Log message:
+	Quick fix to address last night's broken build.
+
+Modified files:
+	chapel/compiler/parser/: Makefile Makefile.share chapel.lex 
+
