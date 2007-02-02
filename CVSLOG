@@ -92515,3 +92515,19 @@ Added files:
 	                              multArithSeq.future 
 	                              multArithSeq.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:10:50 -- bradc
+
+Log message:
+	Adding a future test of using an enumerated domain/array.
+	This isn't yet implemented, but I had this test lying
+	around after my previous enumarray.chpl test was fixed
+	up.
+
+Modified files:
+	chapel/test/arrays/bradc/: enumarray.chpl 
+Added files:
+	chapel/test/arrays/bradc/: enumarray2.chpl enumarray2.future 
+	                           enumarray2.good 
+
