@@ -72,7 +72,7 @@ $(PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INC
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<
 
 $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS) -o $@ $<
+	$(CXX) -c $(INCL_CFLAGS) -o $@ $<
 
 $(PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ $<
