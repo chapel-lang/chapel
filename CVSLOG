@@ -92556,3 +92556,19 @@ Added files:
 	                           promote-shortcircuit.future 
 	                           promote-shortcircuit.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:42:48 -- deitz
+
+Log message:
+	How do we deal with intents and coercions?  Does this test make sense?
+	
+	Should intents disable coercions?  If so, should this be an error, or
+	should the dispatch constraint be a match exactly.  Consider also the
+	implicit subclass conversions.
+
+Added files:
+	chapel/test/trivial/deitz/: test_coerce_inout.chpl 
+	                            test_coerce_inout.future 
+	                            test_coerce_inout.good 
+
