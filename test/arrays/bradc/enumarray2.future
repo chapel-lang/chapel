@@ -1,0 +1,6 @@
+enumerated domains
+
+This test is a morph of my previous enumarray.chpl test
+which uses an enumerated domain/array in what I believe 
+is a more correct way given current thinking.  Enumerated
+domains and arrays are not yet implemented.

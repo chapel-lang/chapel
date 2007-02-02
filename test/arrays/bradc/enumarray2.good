@@ -1,0 +1,9 @@
+probSize(S) = 123
+probSize(S) = 123
+probSize(W) = 456
+probSize(A) = 789
+probSize(B) = 12
+probSize(C) = 345
+probSize(D) = 678
+probSize(O) = 901
+probSize = 123 456 789 12 345 678 901

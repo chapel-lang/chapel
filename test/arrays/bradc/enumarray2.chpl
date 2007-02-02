@@ -1,6 +1,6 @@
 enum classVals { S, W, A, B, C, D, O };
 
-var DClass: domain(1) = [S..O];
+var DClass: domain(classVals) = [S..O];
 
 var probSize: [DClass] int;
 
@@ -14,6 +14,6 @@ probSize(O) = 901;
 
 writeln("probSize(S) = ", probSize(S));
 for i in DClass {
-  writeln("probSize(", i:classVals, ") = ", probSize(i));
+  writeln("probSize(", i, ") = ", probSize(i));
 }
 writeln("probSize = ", probSize);
