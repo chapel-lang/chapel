@@ -92572,3 +92572,29 @@ Added files:
 	                            test_coerce_inout.future 
 	                            test_coerce_inout.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:53:28 -- diten
+
+Log message:
+	Add ability to not assign tuple fields that are given as "_" on the lhs of
+	a tuple destructuring.  Also, make "_" a keyword so it cannot be used as a
+	symbol name.  Add tests for these.
+	
+	For example,
+	var a, b: int;
+	(a, _, b) = (0, foo(), 1);
+	
+	results in foo getting called, but the return value is not assigned to anything.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/passes/: cleanup.cpp semanticChecks.cpp 
+Added files:
+	chapel/test/types/tuple/diten/: tensor_destructure.chpl 
+	                                tensor_destructure.good 
+	                                tuple_underscore.chpl 
+	                                tuple_underscore.good 
+	                                underscore_is_special.chpl 
+	                                underscore_is_special.good 
+
