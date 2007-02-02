@@ -97,8 +97,10 @@ checkParsed(void) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
       check_named_arguments(call);
 
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-      if (dynamic_cast<VarSymbol*>(def->sym))
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (!strcmp(def->sym->name, "_"))
+        USR_FATAL("Symbol cannot be named \"_\"");
+      else if (dynamic_cast<VarSymbol*>(def->sym))
         if (dynamic_cast<FnSymbol*>(def->parentSymbol) ||
             dynamic_cast<ModuleSymbol*>(def->parentSymbol))
           if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
@@ -106,6 +108,7 @@ checkParsed(void) {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+    }
 
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
       check_redefinition(sym);

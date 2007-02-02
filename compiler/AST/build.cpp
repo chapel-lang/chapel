@@ -267,8 +267,15 @@ static void exprsToIndices(Vec<DefExpr*>* defs,
       if (call->isNamed("_tuple")) {
         int i = 0;
         for_actuals(actual, call) {
-          if (i > 0) // skip first (size parameter)
+          if (i > 0) { // skip first (size parameter)
+            if (SymExpr *sym_expr = dynamic_cast<SymExpr*>(actual)) {
+              if (!strcmp(sym_expr->var->name, "_")) {
+                i++;
+                continue;
+              }
+            }
             exprsToIndices(defs, actual, new CallExpr(init->copy(), new_IntSymbol(i)));
+          }
           i++;
         }
       }

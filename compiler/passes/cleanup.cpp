@@ -299,10 +299,18 @@ static void destructure_tuple(CallExpr* call) {
   parent->replace(stmt);
   int i = 1;
   for_actuals(expr, call) {
-    if (i > 1)
+    if (i > 1) {
+      Expr *removed_expr = expr->remove();
+      if (SymExpr *sym_expr = dynamic_cast<SymExpr *>(removed_expr)) {
+        if (!strcmp(sym_expr->var->name, "_")) {
+          i++;
+          continue;
+        }
+      }
       stmt->insertAfter(
-        new CallExpr("=", expr->remove(),
+        new CallExpr("=", removed_expr,
           new CallExpr(temp, new_IntSymbol(i-1))));
+    }
     i++;
   }
 }
