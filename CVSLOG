@@ -92639,3 +92639,18 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: Makefile Makefile.share chapel.lex 
 
+---------------------------------------------------------------------------
+
+02/02/07 13:06:42 -- bradc
+
+Log message:
+	Steve found a make problem with bison 1.875 (the
+	non-module bison on Linux) whereas I had only tested
+	bison 1.875d (the module-based bison).  This checkin
+	should fix the problem and hopefully be my last
+	fix to the parser/scanner build process today.  Please
+	let me know if you find any other problems.
+
+Modified files:
+	chapel/compiler/parser/: Makefile 
+
