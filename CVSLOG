@@ -92598,3 +92598,23 @@ Added files:
 	                                underscore_is_special.chpl 
 	                                underscore_is_special.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:57:58 -- bradc
+
+Log message:
+	Cleaned up more of the lexer by making the C file
+	we were compiling into a .cpp file, removing
+	extern "C" declarations in our header files,
+	getting rid of special compiler flags.  Please
+	let me know if this breaks anyone's builds.  I've
+	tested on linux, linux64, and sunos so far.
+
+Modified files:
+	chapel/compiler/include/: yy.h 
+	chapel/compiler/parser/: .cvsignore Makefile chapel.lex 
+Added files:
+	chapel/compiler/parser/: yy.cpp 
+Removed files:
+	chapel/compiler/parser/: yy.c 
+
