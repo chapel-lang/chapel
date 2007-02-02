@@ -92542,3 +92542,17 @@ Added files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
 	                                      test_forbegin.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:24:55 -- bradc
+
+Log message:
+	Committing a future test trying promotion of
+	short-circuiting operators that I wrote after
+	our discussion from the other day.
+
+Added files:
+	chapel/test/arrays/bradc/: promote-shortcircuit.chpl 
+	                           promote-shortcircuit.future 
+	                           promote-shortcircuit.good 
+
