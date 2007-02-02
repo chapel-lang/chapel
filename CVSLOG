@@ -92531,3 +92531,14 @@ Added files:
 	chapel/test/arrays/bradc/: enumarray2.chpl enumarray2.future 
 	                           enumarray2.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:24:14 -- marybeth
+
+Log message:
+	Checking in test of for..begin.
+
+Added files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
+	                                      test_forbegin.good 
+
