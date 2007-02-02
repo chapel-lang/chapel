@@ -92480,3 +92480,38 @@ Added files:
 	                           paulslice2.chpl paulslice2.future 
 	                           paulslice2.good 
 
+---------------------------------------------------------------------------
+
+02/01/07 16:06:37 -- bradc
+
+Log message:
+	Another semantic future which breaks the "operations on
+	arithmetic sequences" question from my previous check-in
+	into its own test.  Fixing the CVSLOG message for that
+	commit, it should have asked:
+	
+	      These tests also raise the question of whether:
+	
+	            (1..n)*2
+	
+	      should result in the sequence:
+	
+	            2, 3, 4, ... 2*n  (i.e., scale the low and high bounds)
+	
+	      or:
+	
+	            2, 4, 6, 8, 10, 2*n  (i.e., scale each sequence element)
+	
+	This test more clearly illustrates that doing ops on
+	sequences results in the realization of the sequence,
+	without mixing it into the array slicing question
+	as in the previous test.  I'd like for us to consider
+	making arithmetic ops on scalars & arithmetic sequences
+	result in arithmetic sequences, so am filing this future
+	to help us confront that question (eventually).
+
+Added files:
+	chapel/test/types/seq/bradc/: multArithSeq.chpl 
+	                              multArithSeq.future 
+	                              multArithSeq.good 
+
