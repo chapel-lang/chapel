@@ -98,9 +98,9 @@ checkParsed(void) {
       check_named_arguments(call);
 
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (!strcmp(def->sym->name, "_"))
+      if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
-      else if (dynamic_cast<VarSymbol*>(def->sym))
+      } else if (dynamic_cast<VarSymbol*>(def->sym))
         if (dynamic_cast<FnSymbol*>(def->parentSymbol) ||
             dynamic_cast<ModuleSymbol*>(def->parentSymbol))
           if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
