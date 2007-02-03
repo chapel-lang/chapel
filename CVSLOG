@@ -92665,3 +92665,17 @@ Log message:
 Added files:
 	chapel/test/memory/shannon/: memmaxExceedsLineno2.future 
 
+---------------------------------------------------------------------------
+
+02/02/07 16:41:30 -- deitz
+
+Log message:
+	Fixed regression from yesterday on missing error message on
+	
+	  trivial/deitz/test_infer1.chpl
+	
+	caused by missing curly braces on nested if condition.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
