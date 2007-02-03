@@ -92654,3 +92654,14 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: Makefile 
 
+---------------------------------------------------------------------------
+
+02/02/07 16:35:07 -- deitz
+
+Log message:
+	Readded future of test that does not show a line number in the runtime
+	error message.
+
+Added files:
+	chapel/test/memory/shannon/: memmaxExceedsLineno2.future 
+
