@@ -92867,3 +92867,16 @@ Modified files:
 	                               changeModeWhileOpen.good 
 	                               changePathWhileOpen.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 11:53:53 -- deitz
+
+Log message:
+	Added .future that looks at accessing a variable inside a module
+	directly with something like M.x where M is a module.
+
+Added files:
+	chapel/test/trivial/deitz/: test_module_access1.chpl 
+	                            test_module_access1.future 
+	                            test_module_access1.good 
+
