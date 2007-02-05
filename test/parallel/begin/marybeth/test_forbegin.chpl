@@ -9,7 +9,6 @@ for i in 1..3 {
     m = i;
     var n = i;
     writeln("i = ",i);
-    writeln("j = ",j);
     writeln("k = ",k);
     writeln("m = ",m);
     writeln("n = ",n);
