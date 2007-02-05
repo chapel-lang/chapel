@@ -92933,3 +92933,25 @@ Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.chpl 
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+02/05/07 15:13:19 -- deitz
+
+Log message:
+	Changed elt_type to eltType.  Updated the spec.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_ds.chpl _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl _chpl_seq.chpl 
+	                          _chpl_sparse.chpl 
+	chapel/spec/: Generics.tex Sequences.tex 
+	chapel/test/reductions/bradc/manual/: usetype2.chpl 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft.chpl 
+	chapel/test/types/type_variables/deitz/part2/: 
+	                                               test_typevar_record2.chpl 
+	chapel/test/types/type_variables/deitz/part7/: test_stack.chpl 
+
