@@ -92768,3 +92768,32 @@ Added files:
 	                            test_string_write2.chpl 
 	                            test_string_write2.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 11:34:14 -- deitz
+
+Log message:
+	Unified runtime and compiler runtime error message printing to use the
+	same mechanism and style.
+	
+	Removed get_lineno and get_filename primitives.  Added printError
+	primitive which is the function in the runtime that prints out runtime
+	errors.
+	
+	Reimplemented and simplified insertLineNumbers to avoid the need for
+	the get_lineno and get_filename primitives.  This speeds it up by a
+	factor of two as well (though it is not a bottleneck).
+	
+	Commented insertLineNumbers.
+	
+	Reworked halt and assert in the standard modules to call into the
+	runtime error printing routine.  Used string.write functionality to
+	pass it a single string.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: insertLineNumbers.cpp 
+	chapel/modules/standard/: Standard.chpl _chpl_base.chpl 
+	chapel/runtime/src/: error.c 
+
