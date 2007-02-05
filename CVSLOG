@@ -92797,3 +92797,73 @@ Modified files:
 	chapel/modules/standard/: Standard.chpl _chpl_base.chpl 
 	chapel/runtime/src/: error.c 
 
+---------------------------------------------------------------------------
+
+02/05/07 11:35:51 -- deitz
+
+Log message:
+	Updated .goods to reflect last change.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_bounds1.good test_bounds2.good 
+	chapel/test/arrays/waynew/: init2.good 
+	chapel/test/classes/bradc/: setterForField.good 
+	chapel/test/classes/deitz/: test_union2.good test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/domains/indefinite/waynew/: indef8-fail2.good 
+	chapel/test/domains/shannon/: expandError.good 
+	                              interiorErrorNeg.good 
+	                              interiorErrorPos.good 
+	                              interiorErrorPosLarge.good 
+	chapel/test/execflags/shannon/: invalidExecOption.good 
+	                                unexpectedFlag.good 
+	chapel/test/execflags/shannon/configs/: configVarBadEnum.good 
+	                                        configVarDash.good 
+	                                        configVarDashS.good 
+	                                        configVarDashSVarEquals.good 
+	                                        configVarFileBadEnum.good 
+	                                        configVarFileStringOverflow.good 
+	                                        configVarFileStringsMismatch.good 
+	                                        configVarFileStringsNoEquals.good 
+	                                        configVarInvalidName.good 
+	                                        configVarNotInModule.good 
+	                                        configVarSetNotDeclared.good 
+	                                        configVarTwoModsNoneSpecified.good 
+	                                        configVarWithSpaces.good 
+	chapel/test/memory/shannon/: freedWithoutMalloc.good 
+	                             invalidMemFlag.good 
+	                             memmaxBytes.good memmaxExceeds.good 
+	                             memmaxInput.good memmaxIntOnly.good 
+	                             memstatEquals.good memstatFlag.good 
+	                             memtraceNoFilename.good 
+	                             memtrackFlag.good 
+	                             reallocWithoutMalloc.good 
+	                             thresholdWithoutTrace.good 
+	chapel/test/memory/shannon/outofmemory/: mallocOutOfMemory.good 
+	chapel/test/modules/standard/machine/: numLocales2.good 
+	chapel/test/parallel/single/waynew/: simple0.good simple0b.good 
+	chapel/test/sparse/deitz/: test_sparse1.good 
+	chapel/test/spec/marybeth/: expstmt.good 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.good 
+	chapel/test/trivial/shannon/: multipleArgAssert.good 
+	                              readStringOverflow.good 
+	                              readWriteBool.good 
+	                              readWriteComplex.good 
+	                              readWriteComplexFail1.good 
+	                              readWriteEnum.good 
+	chapel/test/trivial/shannon/quit/: assert.good halt.good 
+	                                   haltNoArgs.good 
+	                                   haltOneArg.good 
+	chapel/test/types/file/: closeStdin.good closedWithoutOpen.good 
+	                         freadComplex.good freadIntFailed.good 
+	                         freadIntUnopenedFile.good 
+	                         freadNoFloat.good freadNoInt.good 
+	                         freadNotABoolean.good 
+	                         fwriteIntFailed.good 
+	                         fwriteIntUnopenedFile.good 
+	                         invalidMode.good openStdout.good 
+	                         unableToOpenFile.good 
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.good 
+	                               changeModeWhileOpen.good 
+	                               changePathWhileOpen.good 
+
