@@ -29,7 +29,7 @@ def main() {
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) distributed(block) = [0..N);
+  const ProblemDom: domain(1) distributed(Block) = [0..N);
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 

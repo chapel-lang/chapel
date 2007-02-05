@@ -27,7 +27,7 @@ config const vectorSize = if flg2 <= maxIntBits2
                                                     else maxPossibleElems
                           else 1 << maxIntBits2;
 // the vectors
-const VecDomain: domain(1) distributed(block) = [1..vectorSize];
+const VecDomain: domain(1) distributed(Block) = [1..vectorSize];
 var A, B, C: [VecDomain] elemType;
 
 // config constants for output

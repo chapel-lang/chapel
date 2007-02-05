@@ -257,6 +257,17 @@ def by(a: _domain, b) {
 
 ////////////////////////////////////////////////////
 
+class SingleLocaleDistribution {
+  def buildDomain(param rank: int, type dimensional_index_type) {
+    return _adomain(rank, dimensional_index_type);
+  }
+  def buildDomain(type ind_type) {
+    return _idomain(ind_type);
+  }
+}
+
+var Block = SingleLocaleDistribution();
+
 def _build_domain(x)
   return x;
 
@@ -269,15 +280,15 @@ def _build_domain(ranges: _aseq ...?rank) {
 def _build_domain_exclusive_upper(x: _domain)
   return x._exclusive_upper;
 
-def _build_domain_type(param rank : int, type dimensional_index_type = int) {
-  var x = _adomain(rank, dimensional_index_type);
+def _build_domain_type(dist, param rank : int, type dimensional_index_type = int) {
+  var x = dist.buildDomain(rank, dimensional_index_type);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
 }
 
 // note: rank of indefinite domain is zero, should be 1? but doesn't matter
 // see note next to reallocate function
-def _build_domain_type(type ind_type) {
-  var x = _idomain(ind_type);
+def _build_domain_type(dist, type ind_type) {
+  var x = dist.buildDomain(ind_type);
   return _domain(x.type, ind_type, ind_type, 0, x);
 }
 

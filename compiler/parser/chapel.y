@@ -1073,11 +1073,9 @@ composable_type:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = NULL; }
-| TDISTRIBUTED
-    { $$ = NULL; }
+    { $$ = new CallExpr("SingleLocaleDistribution"); }
 | TDISTRIBUTED TLP expr TRP
-    { $$ = NULL; }
+    { $$ = $3; }
 ;
 
 
@@ -1121,13 +1119,17 @@ type:
 | composable_type TOF type  
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | array_type
-| TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
-    { $$ = new CallExpr("_build_domain_type", $3); }
-| TSUBDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
+| TDOMAIN TLP expr_ls TRP distributed_expr
+    {
+      CallExpr* call = new CallExpr("_build_domain_type", $5);
+      call->insertAtTail($3);
+      $$ = call;
+    }
+| TSUBDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_subdomain_type", $3); }
 | TDOMAIN
     { $$ = new SymExpr("_domain"); }
-| TSPARSE TDOMAIN TLP expr_ls TRP distributed_expr /* distributed ignored */
+| TSPARSE TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_sparse_domain_type", $4); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
