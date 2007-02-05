@@ -3,22 +3,22 @@
 param _INIT_STACK_SIZE = 8;
 
 class _stack {
-  type elt_type;
+  type eltType;
   var  size: int;
   var  top: int;
-  var  data: _ddata(elt_type);
+  var  data: _ddata(eltType);
   
   def initialize() {
     top = 0;
     size = _INIT_STACK_SIZE;
-    data = _ddata(elt_type, 8);
+    data = _ddata(eltType, 8);
     data.init();
   }
 
-  def push( e: elt_type) {
+  def push( e: eltType) {
     if (top == size-1) {  // supersize as necessary
       size *= 2;
-      var supersize = _ddata(elt_type, size);
+      var supersize = _ddata(eltType, size);
       supersize.init();
       [i in 0..(size/2)-1] supersize[i] = data[i];
       data = supersize;
@@ -28,7 +28,7 @@ class _stack {
   }
 
   def pop() {
-    var e: elt_type;
+    var e: eltType;
     if top>0 then {
       top -= 1;
       e = data[top];

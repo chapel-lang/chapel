@@ -218,9 +218,9 @@ a linked list data structure.  It is generic over the type of the
 element contained in the linked list.
 \begin{chapel}
 class Node {
-  type elt_type;
-  var data: elt_type;
-  var next: Node(elt_type);
+  type eltType;
+  var data: eltType;
+  var next: Node(eltType);
 }
 \end{chapel}
 The call \chpl{Node(real, 3.14)} creates a node in the linked list
@@ -229,7 +229,7 @@ nil.  The type specifier \chpl{Node} is a generic type and cannot be
 used to define a variable.  The type specifier \chpl{Node(real)}
 denotes the type of the \chpl{Node} class instantiated over
 \chpl{real}.  Note that the type of the \chpl{next} field is specified
-as \chpl{Node(elt_type)}; the type of \chpl{next} is the same type as
+as \chpl{Node(eltType)}; the type of \chpl{next} is the same type as
 the type of the object that it is a field of.
 \end{example}
 
@@ -319,9 +319,9 @@ field's specified generic type.
 All methods bound to generic classes or records are generic over the
 implicit \chpl{this} argument and any other argument that is generic.
 
-\subsubsection{The {\em elt\_type} Type}
-\label{The_em_elt_type_Type}
-\index{elt\_type@\chpl{elt_type}}
+\subsubsection{The {\em eltType} Type}
+\label{The_eltType_Type}
+\index{eltType@\chpl{eltType}}
 
 The common idiom of parameterizing a collection-oriented data type by
 a single element type has special syntactic support given by
@@ -330,10 +330,10 @@ of-type:
   type `of' type
 \end{syntax}
 This syntax is a short-hand for passing the second type by name
-\chpl{elt_type} as the only argument to the first type.  Given the
+\chpl{eltType} as the only argument to the first type.  Given the
 definition of \chpl{Node} in the example
 in~\rsec{Type_Aliases_in_Generic_Types}, one can specify the type
-\chpl{Node(real)} or \chpl{Node(elt_type=real)} by writing \chpl{Node
+\chpl{Node(real)} or \chpl{Node(eltType=real)} by writing \chpl{Node
 of real}.
 
 \subsection{Where Expressions}

@@ -29,12 +29,12 @@ the following syntax:
 sequence-type:
   `seq' `of' type
   `seq' ( type )
-  `seq' ( `elt_type' = type )
+  `seq' ( `eltType' = type )
 \end{syntax}
 
 The element type of a sequence can be referred to by its
-name \chpl{elt_type}.  If \chpl{s} is a sequence, then the
-type \chpl{s.elt_type} refers to the type of its elements.
+name \chpl{eltType}.  If \chpl{s} is a sequence, then the
+type \chpl{s.eltType} refers to the type of its elements.
 
 \subsection{Sequence Rank}
 \label{Sequence_Rank}
@@ -103,8 +103,8 @@ of types according to the rules of function resolution as specified by
 the following function prototypes:
 \begin{chapel}
 def #(s1: seq, s2: seq) where s1.type == s2.type // concatenate
-def #(e, s: seq) where e.type:s.elt_type // prepend
-def #(s: seq, e) where e.type:s.elt_type // append
+def #(e, s: seq) where e.type:s.eltType // prepend
+def #(s: seq, e) where e.type:s.eltType // append
 \end{chapel}
 
 \subsection{Sequence Indexing}
@@ -474,8 +474,8 @@ accomplished by multiplying the strides.
 \index{stride@\chpl{stride}}
 
 \begin{protohead}
-def $arithmetic\mbox{ }sequence$.low: elt_type
-def $arithmetic\mbox{ }sequence$.high: elt_type
+def $arithmetic\mbox{ }sequence$.low: eltType
+def $arithmetic\mbox{ }sequence$.high: eltType
 def $arithmetic\mbox{ }sequence$.stride: int
 \end{protohead}
 \begin{protobody}

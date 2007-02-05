@@ -20,7 +20,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = mysumreduce(t = A.elt_type);
+var myreduce = mysumreduce(t = A.eltType);
 var state: myreduce.t = myreduce.ident();
 for i in D {
   state = myreduce.combine(state, A(i));

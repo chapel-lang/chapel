@@ -3,12 +3,12 @@ class _sdomain {
   type dim_type;
   var adomain : _adomain(rank, dim_type);
 
-  def _build_array(type elt_type)
-    return _sarray(elt_type, rank, dim_type, dom=this);
+  def _build_array(type eltType)
+    return _sarray(eltType, rank, dim_type, dom=this);
 }
 
 class _sarray: _abase {
-  type elt_type;
+  type eltType;
   param rank : int;
   type dim_type;
 

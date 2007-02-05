@@ -24,7 +24,7 @@ class _abase {
 pragma "array"
 class _array {
   type _array_type;
-  type elt_type;
+  type eltType;
   param rank : int;
   var _value : _array_type;
   var dom : _domain;
@@ -41,7 +41,7 @@ class _array {
     _value.slice(d._value) = val;
   }
 
-  def =this(d: _domain, val: elt_type) {
+  def =this(d: _domain, val: eltType) {
     _value.slice(d._value) = val;
   }
 
@@ -50,7 +50,7 @@ class _array {
     _value.slice(d._value) = val;
   }
 
-  def =this(i: _aseq(dom._dim_index_type) ...rank, val: elt_type) where rank > 0 {
+  def =this(i: _aseq(dom._dim_index_type) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
     _value.slice(d._value) = val;
   }
@@ -61,11 +61,11 @@ class _array {
   def this(i: dom._dim_index_type ...rank) where rank > 1
     return _value(i);
 
-  def =this(i: dom._index_type, val: elt_type) {
+  def =this(i: dom._index_type, val: eltType) {
     _value(i) = val;
   }
 
-  def =this(i: dom._dim_index_type ...rank, val: elt_type) where rank > 1 {
+  def =this(i: dom._dim_index_type ...rank, val: eltType) where rank > 1 {
     _value(i) = val;
   }
 
@@ -81,7 +81,7 @@ class _array {
   def isValidCursor?(c)
     return _value.isValidCursor?(c);
 
-  iterator this() : elt_type {
+  iterator this() : eltType {
     forall x in _value
       yield x; 
   }
@@ -107,13 +107,13 @@ def =(a: _array, b) {
   return a;
 }
 
-def =(a: _array, b: a.elt_type) {
+def =(a: _array, b: a.eltType) {
   a._value.assign(b);
   return a;
 }
 
 def _copy(a: _array) {
-  var b : [a.dom] a.elt_type;
+  var b : [a.dom] a.eltType;
   b = a;
   return b;
 }
@@ -123,7 +123,7 @@ def _pass(a: _array) {
 }
 
 def _init(a: _array) {
-  var b : [a.dom] a.elt_type;
+  var b : [a.dom] a.eltType;
   return b;
 }
 
@@ -160,10 +160,10 @@ class _domain {
   def this(dim : int)
     return _value(dim);
 
-  def _build_array(type elt_type) {
-    var x = _value._build_array(elt_type);
+  def _build_array(type eltType) {
+    var x = _value._build_array(eltType);
     _arrs #= x;
-    return _array(x.type, elt_type, rank, x, this);
+    return _array(x.type, eltType, rank, x, this);
   }
 
   def _build_sparse_domain() {
@@ -272,7 +272,7 @@ def _build_domain(x)
   return x;
 
 def _build_domain(ranges: _aseq ...?rank) {
-  type t = ranges(1).elt_type;
+  type t = ranges(1).eltType;
   var x = _adomain(rank, t, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
 }
@@ -298,8 +298,8 @@ def _build_subdomain_type(dom)
 def _build_sparse_domain_type(dom)
   return dom._build_sparse_domain();
 
-def _build_array_type(dom, type elt_type)
-  return dom._build_array(elt_type);
+def _build_array_type(dom, type eltType)
+  return dom._build_array(eltType);
 
 def _build_index_type(param i: int) where i > 1 {
   var x : i*int;
@@ -417,8 +417,8 @@ class _adomain {
       commpilerError("high currently implemented only for rank-1 domains");
   }
 
-  def _build_array(type elt_type) {
-    return _aarray(elt_type, rank, dim_type, dom=this);
+  def _build_array(type eltType) {
+    return _aarray(eltType, rank, dim_type, dom=this);
   }
 
   def _build_sparse_domain()
@@ -496,7 +496,7 @@ def by(dom : _adomain, dim : int) {
 
 
 class _aarray: _abase {
-  type elt_type;
+  type eltType;
   param rank : int;
   type dim_type;
 
@@ -506,7 +506,7 @@ class _aarray: _abase {
   var str: rank*int;
   var orig: rank*dim_type;
   var size : dim_type;
-  var data : _ddata(elt_type);
+  var data : _ddata(eltType);
   var noinit: bool = false;
 
   def getHeadCursor()
@@ -532,7 +532,7 @@ class _aarray: _abase {
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
     size = blk(1) * dom(1).length;
-    data = _ddata(elt_type, size:int); // ahh!!! can't cast to int here
+    data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
   }
 
@@ -561,7 +561,7 @@ class _aarray: _abase {
     for param i in 1..rank do
       if d(i).length != dom(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
+    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -570,7 +570,7 @@ class _aarray: _abase {
       alias.str(i) = d(i)._stride;
       alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
+    return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
   def checkSlice(d: _adomain) {
@@ -586,7 +586,7 @@ class _aarray: _abase {
 
   def slice(d: _adomain) {
     checkSlice(d);
-    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
+    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -595,12 +595,12 @@ class _aarray: _abase {
       alias.str(i) = str(i);
       alias.orig(i) = orig(i);
     }
-    return _array(alias.type, elt_type, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
+    return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
   def =slice(d: _adomain, val) {
     checkSlice(d);
-    var alias = _aarray(elt_type, rank, dim_type, d, noinit=true);
+    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -617,7 +617,7 @@ class _aarray: _abase {
   // then rank of indefinite domain can be changed back to 1
   def reallocate(d: _domain) {
     if ((d.rank == rank) & (d._dim_index_type == dim_type)) {
-      var new = _aarray(elt_type, rank, dim_type, d._value);
+      var new = _aarray(eltType, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);
       dom = new.dom;
@@ -635,7 +635,7 @@ class _aarray: _abase {
       this(i) = e;
   }
 
-  def assign(y: elt_type) {
+  def assign(y: eltType) {
     for i in dom do
       this(i) = y;
   }
@@ -676,17 +676,17 @@ def _aarray.writeThis(f: Writer) {
 def _intersect(a: _aseq, b: _aseq) {
   var g, x: int;
   (g, x) = _extended_euclid(a._stride, b._stride);
-  var gg = g:a.elt_type;
-  var xx = x:a.elt_type;
-  var as = (a._stride):a.elt_type;
+  var gg = g:a.eltType;
+  var xx = x:a.eltType;
+  var as = (a._stride):a.eltType;
   if abs(a._low - b._low) % gg != 0 then
-    return 1..0:a.elt_type;
+    return 1..0:a.eltType;
   var low = max(a._low, b._low);
   var high = min(a._high, b._high);
   var stride = a._stride * b._stride / g;
   var alignment = a._low + (b._low - a._low) * xx * as / gg;
   if alignment == 0 then
-    alignment = stride:a.elt_type;
+    alignment = stride:a.eltType;
   low = low + low % alignment;
   return low..high by stride;
 }
@@ -736,24 +736,24 @@ def _build_aseq(low, high) {
 }
 
 record _aseq {
-  type elt_type;
-  var _low : elt_type;
-  var _high : elt_type;
+  type eltType;
+  var _low : eltType;
+  var _high : eltType;
   var _stride : int = 1;
 
-  def low: elt_type return _low;
-  def high: elt_type return _high;
-  def stride: elt_type return _stride;
+  def low: eltType return _low;
+  def high: eltType return _high;
+  def stride: eltType return _stride;
 
   def initialize() {
     if _low > _high {
-      _low = 1:elt_type;
-      _high = 0:elt_type;
+      _low = 1:eltType;
+      _high = 0:eltType;
       _stride = 1;
     }
   }
 
-  iterator this() : elt_type {
+  iterator this() : eltType {
     forall x in this
       yield x; 
   }
@@ -765,7 +765,7 @@ record _aseq {
       return _high;
 
   def getNextCursor(c)
-    return c + _stride:elt_type;
+    return c + _stride:eltType;
 
   def getValue(c)
     return c;
@@ -776,26 +776,26 @@ record _aseq {
   def length
     return
       (if _stride > 0
-        then (_high - _low + _stride:elt_type) / _stride:elt_type
-        else (_low - _high + _stride:elt_type) / _stride:elt_type);
+        then (_high - _low + _stride:eltType) / _stride:eltType
+        else (_low - _high + _stride:eltType) / _stride:eltType);
 }
 
 def by(s : _aseq, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
   if s._low == 1 && s._high == 0 then
-    return _aseq(s.elt_type, s._low, s._high, s._stride);
-  var as = _aseq(s.elt_type, s._low, s._high, s._stride * i);
+    return _aseq(s.eltType, s._low, s._high, s._stride);
+  var as = _aseq(s.eltType, s._low, s._high, s._stride * i);
   if as._stride < 0 then
-    as._low = as._low + (as._high - as._low) % (-as._stride):as.elt_type;
+    as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
   else
-    as._high = as._high - (as._high - as._low) % (as._stride):as.elt_type;
+    as._high = as._high - (as._high - as._low) % (as._stride):as.eltType;
   return as;
 }
 
-def _in(s : _aseq, i : s.elt_type)
+def _in(s : _aseq, i : s.eltType)
   return i >= s._low && i <= s._high &&
-    (i - s._low) % abs(s._stride):s.elt_type == 0;
+    (i - s._low) % abs(s._stride):s.eltType == 0;
 
 // really slow --- REWRITE
 def _in(s1: _aseq, s2: _aseq) {
@@ -833,12 +833,12 @@ def _build_iaseq(bound, upper) {
 }
 
 record _iaseq {
-  type elt_type;
+  type eltType;
   param _upper: int; // 0 bound is lower bound, 1 bound is upper bound
-  var _bound: elt_type;
+  var _bound: eltType;
   var _stride : int = 1;
 
-  iterator this() : elt_type {
+  iterator this() : eltType {
     forall x in this
       yield x; 
   }
@@ -852,7 +852,7 @@ record _iaseq {
   }
 
   def getNextCursor(c)
-    return c + _stride:elt_type;
+    return c + _stride:eltType;
 
   def getValue(c)
     return c;
@@ -862,14 +862,14 @@ record _iaseq {
 
   def length {
     halt("error: attempt to determine length of an indefinite arithmetic sequence");
-    return 0:elt_type;
+    return 0:eltType;
   }
 }
 
 def by(s : _iaseq, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
-  return _iaseq(s.elt_type, s._upper, s._bound, s._stride * i);
+  return _iaseq(s.eltType, s._upper, s._bound, s._stride * i);
 }
 
 def _iaseq.writeThis(f: Writer) {

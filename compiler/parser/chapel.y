@@ -1117,7 +1117,7 @@ type:
 | anon_record_type
 | tuple_type
 | composable_type TOF type  
-    { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
+    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {

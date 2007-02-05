@@ -91,7 +91,7 @@ def _tuple.writeThis(f: Writer) {
 }
 
 def _seq_to_tuple(s: seq, param i: int) {
-  var t: i*s.elt_type;
+  var t: i*s.eltType;
   for param j in 1..i do
     t(j) = s(j);
   return t;

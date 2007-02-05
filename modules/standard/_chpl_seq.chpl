@@ -1,20 +1,20 @@
 pragma "special free seqNode"
 class _seqNode {
-  type elt_type;
+  type eltType;
 
-  var _element : elt_type;
-  var _next : _seqNode of elt_type;
+  var _element : eltType;
+  var _next : _seqNode of eltType;
 }
 
 pragma "seq"
 record seq {
-  type elt_type;
+  type eltType;
 
   var _length : int;
-  var _first : _seqNode of elt_type;
-  var _last : _seqNode of elt_type;
+  var _first : _seqNode of eltType;
+  var _last : _seqNode of eltType;
 
-  iterator this() : elt_type {
+  iterator this() : eltType {
     forall x in this
       yield x; 
   }
@@ -64,18 +64,18 @@ record seq {
     compilerError("illegal assignment to sequence's length");
   }
 
-  def _append(e : elt_type)
+  def _append(e : eltType)
     return this._copy()._append_in_place(e);
 
-  def _prepend(e : elt_type)
+  def _prepend(e : eltType)
     return this._copy()._prepend_in_place(e);
 
   def _concat(s : seq)
     return this._copy()._concat_in_place(s);
 
-  def _append_in_place(e : elt_type) {
+  def _append_in_place(e : eltType) {
     var tmp = e;
-    var new = _seqNode(elt_type, tmp);
+    var new = _seqNode(eltType, tmp);
     if _length > 0 {
       _last._next = new;
       _last = new;
@@ -87,13 +87,13 @@ record seq {
     return this;
   }
 
-  def _yield(e: elt_type) {
+  def _yield(e: eltType) {
     this._append_in_place(e);
   } 
 
-  def _prepend_in_place(e : elt_type) {
+  def _prepend_in_place(e : eltType) {
     var tmp = e;
-    var new = _seqNode(elt_type, tmp);
+    var new = _seqNode(eltType, tmp);
     if _length > 0 {
       new._next = _first;
       _first = new;
@@ -119,7 +119,7 @@ record seq {
   }
 
   def _copy() {
-    var new : seq of elt_type;
+    var new : seq of eltType;
     var tmp = _first;
     while tmp != nil {
       new._append_in_place(tmp._element);
@@ -135,7 +135,7 @@ record seq {
   }
 
   def _reverse() {
-    var new : seq of elt_type;
+    var new : seq of eltType;
     var tmp = _first;
     while (tmp != nil) {
       new._prepend_in_place(tmp._element);
@@ -156,11 +156,11 @@ def #(s1:seq, s2) where s1.type == s2.type {
   return s1._concat(s2);
 }
 
-def #(s:seq, e) where e.type:s.elt_type {
+def #(s:seq, e) where e.type:s.eltType {
   return s._append(e);
 }
 
-def #(e, s:seq) where e.type:s.elt_type {
+def #(e, s:seq) where e.type:s.eltType {
   return s._prepend(e);
 }
 
@@ -191,7 +191,7 @@ def _reduce(r, s) { // reduce sequence s by reduction r
 }
 
 def _scan(r, s) {
-  var s2: seq(r.elt_type);
+  var s2: seq(r.eltType);
   for e in s {
     r.accumulate(e);
     s2._append_in_place(r.generate());
@@ -210,14 +210,14 @@ def _to_seq( i) {
 }
 
 
-def _sum_type(type elt_type) {
-  var x: elt_type;
+def _sum_type(type eltType) {
+  var x: eltType;
   return x + x;
 }
 
 class _sum {
-  type elt_type;
-  var value : _sum_type(elt_type).type;
+  type eltType;
+  var value : _sum_type(eltType).type;
   def accumulate(x) {
     value = value + x;
   }
@@ -225,8 +225,8 @@ class _sum {
 }
 
 class _prod {
-  type elt_type;
-  var value : elt_type = _prod_id( elt_type);
+  type eltType;
+  var value : eltType = _prod_id( eltType);
 
   def accumulate(x) {
     value = value * x;
@@ -235,8 +235,8 @@ class _prod {
 }
 
 class _max {
-  type elt_type;
-  var value : elt_type = min( elt_type);
+  type eltType;
+  var value : eltType = min( eltType);
 
   def accumulate(x) {
     value = max(x, value);
@@ -245,8 +245,8 @@ class _max {
 }
 
 class _min {
-  type elt_type;
-  var value : elt_type = max( elt_type);
+  type eltType;
+  var value : eltType = max( eltType);
 
   def accumulate(x) {
     value = min(x, value);
@@ -255,8 +255,8 @@ class _min {
 }
 
 class _land {                 // logical and
-  type elt_type;
-  var value : elt_type = _land_id( elt_type);
+  type eltType;
+  var value : eltType = _land_id( eltType);
 
   def accumulate(x) {
     value = value && x;
@@ -265,8 +265,8 @@ class _land {                 // logical and
 }
 
 class _lor {                 // logical or
-  type elt_type;
-  var value : elt_type = _lor_id( elt_type);
+  type eltType;
+  var value : eltType = _lor_id( eltType);
 
   def accumulate(x) {
     value = value || x;
@@ -275,8 +275,8 @@ class _lor {                 // logical or
 }
 
 class _band {                 // bit-wise and
-  type elt_type;
-  var value : elt_type = _band_id( elt_type);
+  type eltType;
+  var value : eltType = _band_id( eltType);
 
   def accumulate(x) {
     value = value & x;
@@ -285,8 +285,8 @@ class _band {                 // bit-wise and
 }
 
 class _bor {                 // bit-wise or
-  type elt_type;
-  var value : elt_type = _bor_id( elt_type);
+  type eltType;
+  var value : eltType = _bor_id( eltType);
 
   def accumulate(x) {
     value = value | x;
@@ -295,8 +295,8 @@ class _bor {                 // bit-wise or
 }
 
 class _bxor {                // bit-wise xor
-  type elt_type;
-  var value : elt_type = _bxor_id( elt_type);
+  type eltType;
+  var value : eltType = _bxor_id( eltType);
 
   def accumulate(x) {
     value = value ^ x;

@@ -1,6 +1,6 @@
 record foo {
-  type elt_type;
-  var x : elt_type;
+  type eltType;
+  var x : eltType;
   def print() {
     writeln(x);
   }

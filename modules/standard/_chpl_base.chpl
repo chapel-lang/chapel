@@ -415,20 +415,20 @@ def init_elts(x, s, type t) {
 // dynamic data block class
 pragma "data class"
 class _ddata {
-  type elt_type;
+  type eltType;
   var size: int;
   pragma "inline" def init() {
-    __primitive("array_init", this, elt_type, size);
-    init_elts(this, size, elt_type);
+    __primitive("array_init", this, eltType, size);
+    init_elts(this, size, eltType);
   }
-  pragma "inline" def init( d: elt_type) {
-    __primitive("array_init", this, elt_type, size);
+  pragma "inline" def init( d: eltType) {
+    __primitive("array_init", this, eltType, size);
     [i in 0..size-1] __primitive("array_set_first", this, i, d);
   }
   pragma "inline" def this(i: int) {
     return __primitive("array_get", this, i);
   }
-  pragma "inline" def =this(i: int, val: elt_type) {
+  pragma "inline" def =this(i: int, val: eltType) {
     __primitive("array_set", this, i, val);
   }
   pragma "data set error" pragma "inline" def =this(i: int, val) {

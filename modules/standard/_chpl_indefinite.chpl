@@ -184,8 +184,8 @@ class _idomain {
       halt( "index not found: ", ind);
   }
 
-  def _build_array(type elt_type) {
-    var ia = _iarray(elt_type, ind_type, dom=this); 
+  def _build_array(type eltType) {
+    var ia = _iarray(eltType, ind_type, dom=this); 
     _arrs #= ia;
     return ia;
   }
@@ -302,23 +302,23 @@ def _idomain.writeThis(f: Writer) {
 
 
 class _iarray: _abase {
-  type elt_type;
+  type eltType;
   type ind_type;
   var dom : _idomain(ind_type);
-  var data : _ddata(elt_type);
+  var data : _ddata(eltType);
 
   def initialize() {
-    data = _ddata( elt_type, _ps(0)/2);
+    data = _ddata( eltType, _ps(0)/2);
     data.init();
   }
 
   def purge( ind: int) {
-    var d: elt_type;
+    var d: eltType;
     data( ind) = d;
   }
 
   def _resize( length: int, old_map: _ddata(int)) {
-    var new_data: _ddata(elt_type) = _ddata( elt_type, length);
+    var new_data: _ddata(eltType) = _ddata( eltType, length);
     new_data.init();
     for i in 0..old_map.size-1 {
       new_data(i) = data(old_map(i));
@@ -326,7 +326,7 @@ class _iarray: _abase {
     data = new_data;
   }
 
-  def this(ind : ind_type) var : elt_type
+  def this(ind : ind_type) var : eltType
     return data(dom._get_index(ind));
 
   def getHeadCursor()

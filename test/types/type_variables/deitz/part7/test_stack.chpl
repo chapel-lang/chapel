@@ -1,22 +1,22 @@
 class stack_elt {
-  type elt_type;
-  var value : elt_type;
-  var next : stack_elt(elt_type);
+  type eltType;
+  var value : eltType;
+  var next : stack_elt(eltType);
 }
 
 record stack {
-  type elt_type;
-  var top : stack_elt(elt_type);
+  type eltType;
+  var top : stack_elt(eltType);
 }
 
 def stack.empty
   return top == nil;
 
-def stack.push(v : elt_type) {
-  top = stack_elt(elt_type, v, top);
+def stack.push(v : eltType) {
+  top = stack_elt(eltType, v, top);
 }
 
-def stack.pop() : elt_type {
+def stack.pop() : eltType {
   var v = top.value;
   top = top.next;
   return v;

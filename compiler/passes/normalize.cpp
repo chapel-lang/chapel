@@ -893,7 +893,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           if (call->argList->length() == 2)
             expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
-                              new CallExpr(".", parent->sym, new_StringSymbol("elt_type")))));
+                              new CallExpr(".", parent->sym, new_StringSymbol("eltType")))));
           if (def) {
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
