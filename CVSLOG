@@ -92880,3 +92880,14 @@ Added files:
 	                            test_module_access1.future 
 	                            test_module_access1.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 14:12:21 -- marybeth
+
+Log message:
+	Changing for...begin test to have determinate output.
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
+	                                      test_forbegin.good 
+
