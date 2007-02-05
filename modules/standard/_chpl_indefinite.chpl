@@ -284,7 +284,7 @@ def =(a: _idomain, b: _idomain) {
 }
 
 
-def _idomain.write(f : file) {
+def _idomain.writeThis(f: Writer) {
   f.write("[");
   var inds_count = 0;
   var inds_pos = 0;
@@ -386,7 +386,7 @@ class _iarray: _abase {
   }
 }
 
-def _iarray.write(f : file) {
+def _iarray.writeThis(f: Writer) {
   var inds_count = 0;
   var inds_pos = 0;
   while inds_count<dom.num_inds {

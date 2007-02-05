@@ -171,7 +171,7 @@ def reverse(s : seq, dim : int = 1) {
   return s._reverse();
 }
 
-def seq.write(f : file) {
+def seq.writeThis(f: Writer) {
   f.write("(/");
   var tmp = _first;
   while tmp != nil {

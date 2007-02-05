@@ -2,7 +2,7 @@ record myrecord {
   var x: int;
   var y: real;
 
-  def write(f: file) { 
+  def writeThis(f: Writer) { 
     f.write(x, " ", y);
   }
 }

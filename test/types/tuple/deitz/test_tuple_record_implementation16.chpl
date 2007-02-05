@@ -11,7 +11,7 @@ record mytuple {
   }
 }
 
-def mytuple.write(f : file) {
+def mytuple.writeThis(f : Writer) {
   f.write("(", f1, ", ", f2, ")");
 }
 

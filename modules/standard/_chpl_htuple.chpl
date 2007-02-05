@@ -83,7 +83,7 @@ def !=( a: _tuple, b: _tuple): bool {
   return false;
 }
 
-def _tuple.write(f : file) {
+def _tuple.writeThis(f: Writer) {
   f.write("(", this(1));
   for param i in 2..size do
     f.write(", ", this(i));

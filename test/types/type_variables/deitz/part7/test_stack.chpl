@@ -22,7 +22,7 @@ def stack.pop() : elt_type {
   return v;
 }
 
-def stack.write(f : file) {
+def stack.writeThis(f : Writer) {
   var tmp = top;
   while tmp != nil {
     f.write(tmp.value, " ");

@@ -430,6 +430,12 @@ static void add_this_formal_to_method(FnSymbol* fn) {
       fn->getFormal(fn->formals->length()-1)->type != dtSetterToken)
     fn->formals->last()->insertBefore
       (new DefExpr(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken)));
+  if (fn->hasPragma("ref this")) {
+    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->_this);
+    if (!arg)
+      INT_FATAL(fn, "bad pragma \"ref this\"");
+    arg->intent = INTENT_REF;
+  }
 }
 
 

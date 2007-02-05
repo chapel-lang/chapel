@@ -65,5 +65,6 @@ void parse(void) {
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");
     chpl_stderr = fileModule->lookupVar("stderr");
+    dtWriter = fileModule->lookupType("Writer")->type;
   }
 }

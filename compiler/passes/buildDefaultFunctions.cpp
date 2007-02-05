@@ -599,14 +599,13 @@ static void buildDefaultReadFunction(EnumType* et) {
 
 
 static void buildDefaultWriteFunction(ClassType* ct) {
-  if (function_exists("write", 3, dtMethodToken->symbol->name, ct->symbol->name, "file"))
+  if (function_exists("writeThis", 3, dtMethodToken->symbol->name, ct->symbol->name, "Writer"))
     return;
 
-  FnSymbol* fn = new FnSymbol("write");
+  FnSymbol* fn = new FnSymbol("writeThis");
   fn->cname = stringcat("_auto_", ct->symbol->name, "_write");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(fileArg);
@@ -669,14 +668,13 @@ static void buildDefaultWriteFunction(ClassType* ct) {
 
 
 static void buildDefaultWriteFunction(EnumType* et) {
-  if (function_exists("write", 3, dtMethodToken->symbol->name, et->symbol->name, "file"))
+  if (function_exists("writeThis", 3, dtMethodToken->symbol->name, et->symbol->name, "Writer"))
     return;
 
-  FnSymbol* fn = new FnSymbol("write");
+  FnSymbol* fn = new FnSymbol("writeThis");
   fn->cname = stringcat("_auto_", et->symbol->name, "_write");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", et);
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(fileArg);

@@ -10,6 +10,7 @@ ModuleSymbol* domainModule = NULL;
 
 TypeSymbol* chpl_seq;
 TypeSymbol* chpl_array;
+Type* dtWriter;
 
 VarSymbol* chpl_stdin = NULL;
 VarSymbol* chpl_stdout = NULL;

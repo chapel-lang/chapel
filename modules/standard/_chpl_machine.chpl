@@ -11,8 +11,8 @@ class locale {
   const id: int;
 }
 
-def locale.write(outfile: file) {
-  outfile.write("LOCALE", id);
+def locale.writeThis(f: Writer) {
+  f.write("LOCALE", id);
 }
 
 const Locale: [loc in LocaleDomain] locale = locale(id = loc);

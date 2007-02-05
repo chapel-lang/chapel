@@ -3,7 +3,7 @@ class myclass {
   var y: real;
 }
 
-def myclass.write(f:file) {
+def myclass.writeThis(f:Writer) {
   f.write(x, " ", y);
 }
 

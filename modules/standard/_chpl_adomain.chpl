@@ -127,7 +127,7 @@ def _init(a: _array) {
   return b;
 }
 
-def _array.write(f: file) {
+def _array.writeThis(f: Writer) {
   f.write(_value);
 }
 
@@ -246,7 +246,7 @@ def =(a: _domain, b: _domain) {
   return a;
 }
 
-def _domain.write(f : file) {
+def _domain.writeThis(f: Writer) {
   f.write(_value);
 }
 
@@ -630,14 +630,14 @@ class _aarray: _abase {
   }
 }
 
-def _adomain.write(f : file) {
+def _adomain.writeThis(f: Writer) {
   f.write("[", this(1));
   for i in 2..rank do
     f.write(", ", this(i));
   f.write("]");
 }
 
-def _aarray.write(f : file) {
+def _aarray.writeThis(f: Writer) {
   var i : rank*dim_type;
   for dim in 1..rank do
     i(dim) = dom(dim)._low;
@@ -794,7 +794,7 @@ def _in(s1: _aseq, s2: _aseq) {
   return true;
 }
 
-def _aseq.write(f : file) {
+def _aseq.writeThis(f: Writer) {
   f.write(_low, "..", _high);
   if (_stride != 1) then
     f.write(" by ", _stride);
@@ -861,7 +861,7 @@ def by(s : _iaseq, i : int) {
   return _iaseq(s.elt_type, s._upper, s._bound, s._stride * i);
 }
 
-def _iaseq.write(f : file) {
+def _iaseq.writeThis(f: Writer) {
   if _upper then
     f.write("..", _bound);
   else

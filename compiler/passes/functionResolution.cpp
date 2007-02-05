@@ -161,6 +161,8 @@ fits_in_uint(int width, Immediate* imm) {
 // results in an instantiation.
 static bool
 canInstantiate(Type* actualType, Type* formalType) {
+  if (actualType == dtMethodToken || actualType == dtSetterToken)
+    return false;
   if (formalType == dtAny)
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))

@@ -7,7 +7,7 @@ record Matrix {
   def this(i: int, j: int) var return A(i,j);
 }
 
-def Matrix.write(f: file) {
+def Matrix.writeThis(f: Writer) {
   f.write(A);
 }
 

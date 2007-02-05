@@ -4,7 +4,7 @@ record foo {
   var z : int = 3;
 }
 
-def foo.write(fp : file) {
+def foo.writeThis(fp : Writer) {
   fp.write("(---", x, " ", y, " ", z, "---)");
 }
 

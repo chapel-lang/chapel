@@ -7,7 +7,7 @@ const stdin  = file("stdin", "r", "/dev", _get_stdin());
 const stdout = file("stdout", "w", "/dev", _get_stdout());
 const stderr = file("stderr", "w", "/dev", _get_stderr());
 
-class file {
+class file: Writer {
   var filename : string = "";
   var mode : string = "r";
   var path : string = ".";
@@ -220,34 +220,61 @@ def file.read(inout val: bool) {
   }
 }
 
-def string.write(f: file) {
-  if !f.isOpen then
-    _fopenError(f, isRead = false);
-  if f.mode != "w" then
-    _fmodeError(f, isRead = false);
-  var returnVal = fprintf(f._fp, "%s", this);
+def string.writeThis(f: Writer) {
+  f.writeIt(this);
+}
+
+def file.writeIt(s: string) {
+  if !isOpen then
+    _fopenError(this, isRead = false);
+  if mode != "w" then
+    _fmodeError(this, isRead = false);
+  var returnVal = fprintf(_fp, "%s", s);
   if returnVal < 0 then
     _fprintfError();
 }
 
-def file.write(args ...?n) {
-  var need_release: bool = _lockFile(this);
-  for param i in 1..n do
-    args(i).write(this);
-  if need_release then _unlockFile(this);
+class StringClass: Writer {
+  var s: string;
+  def writeIt(s: string) { this.s += s; }
 }
 
-def file.writeln(args ...?n) {
-  var need_release: bool = _lockFile(this);
-  write((...args));
-  writeln();
-  if need_release then _unlockFile(this);
+pragma "ref this"
+def string.write(args ...?n) {
+  var sc = StringClass(this);
+  sc.write((...args));
+  this = sc.s;
 }
 
-def file.writeln() {
-  var need_release: bool = _lockFile(this);
-  write("\n");
-  if need_release then _unlockFile(this);
+def file.lockWrite() {
+  var me: uint(64) = __primitive("thread_id");
+  if isFull(_lock) then
+    if readXX(_lock) == me then
+      return false;
+  _lock = me;
+  return true;
+}
+
+def file.unlockWrite() {
+  writeFE(_lock, 0); // this can also be 'writeXE' since _lock is full
+}
+
+class Writer {
+  def writeIt(s: string);
+  def lockWrite() return false;
+  def unlockWrite();
+  def write(args ...?n) {
+    var need_release: bool = lockWrite();
+    for param i in 1..n do
+      args(i).writeThis(this);
+    if need_release then unlockWrite();
+  }
+  def writeln(args ...?n) {
+    write((...args), "\n");
+  }
+  def writeln() {
+    write("\n");
+  }
 }
 
 def write(args ...?n) {
@@ -260,17 +287,4 @@ def writeln(args ...?n) {
 
 def writeln() {
   stdout.writeln();
-}
-
-def _lockFile(f: file) {
-  var me: uint(64) = __primitive("thread_id");
-  if isFull(f._lock) then
-    if readXX(f._lock) == me then
-      return false;
-  f._lock = me;
-  return true;
-}
-
-def _unlockFile(f: file) {
-  writeFE(f._lock, 0); // this can also be 'writeXE' since _lock is full
 }

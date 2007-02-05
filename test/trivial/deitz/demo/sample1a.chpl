@@ -7,7 +7,7 @@ class trio {
     return x1 + x2 + x3;
 }
 
-def trio.write(f : file) {
+def trio.writeThis(f : Writer) {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 

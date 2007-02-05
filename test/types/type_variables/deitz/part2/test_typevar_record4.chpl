@@ -39,7 +39,7 @@ record foo {
   }
 }
 
-def foo.write(fp : file) {
+def foo.writeThis(fp : Writer) {
   fp.write("(/");
   var tmp = first;
   while tmp != nil {

@@ -93,6 +93,13 @@ writeln("Hello, World!");
 \end{chapel}
 \end{example}
 
+\subsection{User-Defined {\em writeThis} methods}
+
+To define the output for a given type, the user must define a method
+called \chpl{writeThis} on that type that takes a single argument of
+\chpl{Writer} type.  If such a method does not exist, a default method is
+created.
+
 \subsection{The {\em write} and {\em writeln} method on files}
 \label{filewrite}
 \index{write!on files}
@@ -100,12 +107,53 @@ writeln("Hello, World!");
 The \chpl{file} type supports methods \chpl{write} and \chpl{writeln}
 for output.  These methods are defined to take an arbitrary number of
 arguments.  Each argument is written in turn by calling
-the \chpl{write} method bound to that type.  Default \chpl{write}
-methods are bound to any type that the user does not explicitly create
-one for.
+the \chpl{writeThis} method on that argument.
+Default \chpl{writeThis} methods are bound to any type that the user
+does not explicitly create one for.
 
 A lock is used to ensure that output is serialized across multiple
 computations.
+
+\subsubsection{The {\em write} and {\em writeln} method on strings}
+\label{stringwrite}
+\index{write!on strings}
+
+The \chpl{write} and \chpl{writeln} methods can also be called on
+strings to write the output to a string instead of a file.
+
+\subsubsection{Generalized {\em write} and {\em writeln}}
+\label{writer}
+\index{Writer@\chpl{Writer}}
+
+The \chpl{Writer} class contains no arguments and serves as a base
+class to allow user-defined classes to be written to.  If a class is
+defined to be a subclass of Writer, it must override
+the \chpl{writeIt} method that takes a \chpl{string} as an argument.
+
+\begin{example}
+The following code defines a subclass of \chpl{Writer} that overrides
+the \chpl{writeIt} method to allow it to be written to.  It also
+overrides the \chpl{writeThis} method to override the default way that
+it is written.
+\begin{chapel}
+class C: Writer {
+  var data: string;
+  def writeIt(s: string) {
+    data += s.substring(1);
+  }
+  def writeThis(x: Writer) {
+    x.write(data);
+  }
+}
+
+var c = C();
+c.write(41, 32, 23, 14);
+writeln(c);
+\end{chapel}
+The \chpl{C} class filters the arguments sent to it, printing out only
+the first letter.  The output to the above is thus \chpl{4321}.
+\end{example}
+
 
 \subsection{The {\em read} method on files}
 \label{fileread}
@@ -115,12 +163,6 @@ The \chpl{file} type supports a method \chpl{read} that takes an
 arbitrary number of arguments.  Each argument is read in turn by
 calling a method also bound to the \chpl{file} type that takes a
 single argument of that type.
-
-\subsection{User-Defined {\em read} and {\em write} methods}
-
-To define the output for a given type, the user must define a method
-called \chpl{write} on that type that takes a single argument of file
-type.  If such a method does not exist, a default method is created.
 
 \subsection{Default {\em read} and {\em write} methods}
 \index{write!default methods}
