@@ -92955,3 +92955,17 @@ Modified files:
 	                                               test_typevar_record2.chpl 
 	chapel/test/types/type_variables/deitz/part7/: test_stack.chpl 
 
+---------------------------------------------------------------------------
+
+02/05/07 15:22:06 -- marybeth
+
+Log message:
+	Simple LU routine to serve as baseline test for
+	other Chapel versions which use other features.
+	
+	The output of this routine also matches the output
+	of the LU routine in Matlab.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: lu1.chpl lu1.good 
+
