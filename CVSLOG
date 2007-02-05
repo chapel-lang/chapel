@@ -92679,3 +92679,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+02/05/07 09:24:40 -- deitz
+
+Log message:
+	Updated .good due to format string change.
+
+Modified files:
+	chapel/test/npb/ft/: ft-serial.good 
+
