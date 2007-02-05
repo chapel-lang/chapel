@@ -295,8 +295,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_GC_ISPOS, "_refgzero", returnInfoBool);
   prim_def(PRIMITIVE_GC_ISNEG, "_reflzero", returnInfoBool);
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
-  prim_def(PRIMITIVE_GET_LINENO, "get_lineno", returnInfoInt32);
-  prim_def(PRIMITIVE_GET_FILENAME, "get_filename", returnInfoString);
 
   prim_def("_config_has_value", returnInfoBool);
   prim_def("_config_get_value", returnInfoString);
@@ -389,6 +387,8 @@ initPrimitive() {
   prim_def("_chpl_memtest_mallocOutOfMemory", returnInfoVoid, true);
   prim_def("_chpl_memtest_reallocOutOfMemory", returnInfoVoid, true);
   prim_def("startTrackingMem", returnInfoVoid);
+
+  prim_def("printError", returnInfoVoid, true);
 
   prim_def("_mem_used", returnInfoUInt64, true);
 }

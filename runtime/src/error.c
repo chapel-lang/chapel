@@ -6,14 +6,14 @@
 void printError(char* message, _int32 lineno, _string filename) {
   fflush(stdout);
   if (lineno)
-    fprintf(stderr, "%s, line%d:  ***Error: %s***\n", filename, lineno, message);
+    fprintf(stderr, "%s:%d: error: %s\n", filename, lineno, message);
   else
-    fprintf(stderr, "***Error: %s***\n", message);
+    fprintf(stderr, "error: %s\n", message);
   exit(0);
 }
 
 void printInternalError(char* message) {
   fflush(stdout);
-  fprintf(stderr, "***Internal Error: %s***\n", message);
+  fprintf(stderr, "internal error: %s\n", message);
   exit(1);
 }
