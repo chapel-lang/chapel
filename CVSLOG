@@ -92891,3 +92891,45 @@ Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
 	                                      test_forbegin.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 14:51:12 -- deitz
+
+Log message:
+	Added a distribution class hook.  There is no parent distribution
+	class since the arrays are generic and this would violate return
+	restrictions on class methods.  The Distribution class therefore must
+	implement a structural interface.
+	
+	Added a serial distribution class called
+	
+	  SingleLocaleDistribution
+	
+	that is the default distribution class.  It is used currently to build
+	our default arithmetic and associative domains.
+	
+	Removed support for writing "distributed" and not specifying a
+	distribution.  Currently the distribution must be a value, not a type.
+	
+	Defined a bogus variable Block to be an instance of the
+	SingleLocaleDistribution class to support its use in tests.
+	
+	Changed reference to "block" distribution to refer to "Block" in
+	several of MB's tests.  Changed a reference to "blockcyclic" to
+	"Block" in studies/hpcc/RA/marybeth/ra-test-dist.chpl.
+	
+	Expect major module code renaming and refactoring presently, and then
+	an example of defining a user-defined array and domain via a
+	distribution.  As always, I am open to naming suggestions, have only a
+	preference for consistency.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: test_parse_distributed.chpl 
+	                           test_parse_distributed.good 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-test-dist.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+
