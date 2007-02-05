@@ -1,1 +1,1 @@
-readStringOverflow.chpl, line2:  ***Error: The maximum string length is 256***
+readStringOverflow.chpl:2: error: The maximum string length is 256

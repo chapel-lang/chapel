@@ -1,1 +1,1 @@
-Halt reached: haltNoArgs.chpl:7
+haltNoArgs.chpl:7: error: halt reached

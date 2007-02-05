@@ -1,2 +1,1 @@
-Halt reached: changeModeWhileOpen.chpl:4
-Cannot change mode of file ./f.out while it is open
+changeModeWhileOpen.chpl:4: error: halt reached - Cannot change mode of file ./f.out while it is open

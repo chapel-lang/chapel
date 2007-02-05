@@ -1,2 +1,1 @@
-Halt reached: freadIntFailed.chpl:5
-***Error: Read failed: EOF***
+freadIntFailed.chpl:5: error: halt reached - ***Error: Read failed: EOF***

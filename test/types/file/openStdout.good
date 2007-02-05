@@ -1,2 +1,1 @@
-Halt reached: openStdout.chpl:3
-***Error: It is not necessary to open "stdout"***
+openStdout.chpl:3: error: halt reached - ***Error: It is not necessary to open "stdout"***

@@ -1,4 +1,3 @@
 true
 false
-Halt reached: readWriteBool.chpl:9
-***Error: Not of bool type***
+readWriteBool.chpl:9: error: halt reached - ***Error: Not of bool type***

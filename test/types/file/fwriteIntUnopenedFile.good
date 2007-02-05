@@ -1,2 +1,1 @@
-Halt reached: fwriteIntUnopenedFile.chpl:4
-***Error: You must open "./unopenedFile.txt" before trying to write to it***
+fwriteIntUnopenedFile.chpl:4: error: halt reached - ***Error: You must open "./unopenedFile.txt" before trying to write to it***

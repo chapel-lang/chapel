@@ -1,1 +1,1 @@
-***Error: Configuration variable "x" is missing its initialization value***
+error: Configuration variable "x" is missing its initialization value

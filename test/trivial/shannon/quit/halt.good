@@ -1,3 +1,2 @@
-Halt reached: halt.chpl:8
-x and y are not equal!
+halt.chpl:8: error: halt reached - x and y are not equal!
 x = 13, y = 99.9

@@ -1,1 +1,1 @@
-memstatFlag.chpl, line4:  ***Error: printMemStat() only works with the --memstat flag***
+memstatFlag.chpl:4: error: printMemStat() only works with the --memstat flag

@@ -1,1 +1,1 @@
-memmaxExceeds.chpl, line10:  ***Error: Exceeded memory limit***
+memmaxExceeds.chpl:10: error: Exceeded memory limit

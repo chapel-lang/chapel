@@ -1,4 +1,3 @@
 myC is: {x = 2}
 myC is: {x = 3}
-Halt reached: setterForField.chpl:6
-Can only assign C.x non-negative integers!
+setterForField.chpl:6: error: halt reached - Can only assign C.x non-negative integers!

@@ -1,1 +1,1 @@
-memtrackFlag.chpl, line1:  ***Error: The printMemTable function only works with the --memtrack flag***
+memtrackFlag.chpl:1: error: The printMemTable function only works with the --memtrack flag

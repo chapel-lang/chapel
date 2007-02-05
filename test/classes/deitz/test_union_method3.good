@@ -1,5 +1,4 @@
 x: (2.2)
 x: (-1)
 Hello
-Halt reached: test_union_method3.chpl:8
-illegal union access
+test_union_method3.chpl:8: error: halt reached - illegal union access

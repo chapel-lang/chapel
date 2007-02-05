@@ -1,1 +1,1 @@
-freedWithoutMalloc.chpl, line1:  ***Error: Attempting to free memory that wasn't allocated***
+freedWithoutMalloc.chpl:1: error: Attempting to free memory that wasn't allocated

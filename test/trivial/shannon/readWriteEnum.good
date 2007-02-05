@@ -1,3 +1,2 @@
 Tuesday
-Halt reached: readWriteEnum.chpl:1
-***Error: Not of week type***
+readWriteEnum.chpl:1: error: halt reached - ***Error: Not of week type***

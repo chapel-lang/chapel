@@ -1,2 +1,1 @@
-Halt reached: test_sparse1.chpl:5
-Sparse arrays are not implemented
+test_sparse1.chpl:5: error: halt reached - Sparse arrays are not implemented

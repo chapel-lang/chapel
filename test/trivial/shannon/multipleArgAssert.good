@@ -1,2 +1,1 @@
-Assertion failed: multipleArgAssert.chpl:4
-x = 10
+multipleArgAssert.chpl:4: error: assert failed - x = 10

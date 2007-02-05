@@ -1,2 +1,1 @@
-Halt reached: freadNoFloat.chpl:5
-***Error: No real was read***
+freadNoFloat.chpl:5: error: halt reached - ***Error: No real was read***

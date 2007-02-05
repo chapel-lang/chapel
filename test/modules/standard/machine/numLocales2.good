@@ -1,2 +1,1 @@
-Halt reached: numLocales2.chpl:1
-Multiple locales not yet supported
+numLocales2.chpl:1: error: halt reached - Multiple locales not yet supported

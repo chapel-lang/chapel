@@ -1,2 +1,1 @@
-Halt reached: readWriteComplexFail1.chpl:2
-***Error: Incorrect format for complex numbers***
+readWriteComplexFail1.chpl:2: error: halt reached - ***Error: Incorrect format for complex numbers***

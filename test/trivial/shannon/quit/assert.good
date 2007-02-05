@@ -1,1 +1,1 @@
-Assertion failed: assert.chpl:5
+assert.chpl:5: error: assert failed
