@@ -92689,3 +92689,82 @@ Log message:
 Modified files:
 	chapel/test/npb/ft/: ft-serial.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 09:52:46 -- deitz
+
+Log message:
+	Enabled writing to strings using a write method on strings as in
+	
+	  s.write(A, b, i);
+	
+	where s is a string and A, b, and i are variables of types that can be
+	written using the general write mechanism including the default write
+	methods that are created by the compiler.  This is not your typical
+	user-defineable string method as the 'this' argument is changed via
+	assignment.  Rationale: It is intuitive rather than orthogonal and the
+	oddness is contained.
+	
+	Added support for inheriting from a Writer class that allows other
+	classes to be defined that can be written to.  The only method that
+	needs to be overridden is a method called "writeIt" that takes a
+	string.  (Yes, I am open to better names.)  To override the default
+	approach to writing for a given type, you now need to override a
+	method called writeThis (used to be write) that takes an argument of
+	type Writer.  An example is shown in
+	
+	  classes/deitz/test_write_class.chpl
+	
+	Updated the Input and Output section of the spec.
+	
+	Added dtWriter to compiler to point to the Writer class type defined
+	in the standard modules.  Reworked the creation of the default
+	writeThis methods to use dtWriter in their definition.
+	
+	Added pragma "ref this" to indicate that 'this' is a reference.  This
+	is used to implement the string.write method that requires changing
+	the implicit 'this' argument.
+	
+	Fixed a bug in function resolution in which method and setter tokens
+	could be 'passed' to formal arguments of generic any types and create
+	functions instantiated by these tokens.
+	
+	Changed all write methods in the modules and the tests that took files
+	to be writeThis methods that take Writers.
+	
+	Added two test cases of writing to strings and one test case of a
+	user-defined Writer subclass.
+
+Modified files:
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         filesToAST.cpp functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_file.chpl 
+	                          _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl 
+	                          _chpl_machine.chpl _chpl_seq.chpl 
+	                          _chpl_sparse.chpl 
+	chapel/spec/: Input_and_Output.tex 
+	chapel/test/arrays/deitz/: matrix.chpl 
+	chapel/test/classes/bradc/: writeclass1a.chpl writerecord1a.chpl 
+	chapel/test/classes/deitz/: test_record_user_write.chpl 
+	chapel/test/demo/review_060130/: history_accumulator.chpl 
+	chapel/test/trivial/deitz/demo/: sample1.chpl sample1a.chpl 
+	                                 sample1b.chpl 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation16.chpl 
+	chapel/test/types/type_variables/deitz/part2/: 
+	                                               test_typevar_record3.chpl 
+	                                               test_typevar_record4.chpl 
+	                                               test_typevar_record5.chpl 
+	                                               test_typevar_record6.chpl 
+	chapel/test/types/type_variables/deitz/part7/: test_stack.chpl 
+Added files:
+	chapel/test/classes/deitz/: test_write_class.chpl 
+	                            test_write_class.good 
+	chapel/test/trivial/deitz/: test_string_write.chpl 
+	                            test_string_write.good 
+	                            test_string_write2.chpl 
+	                            test_string_write2.good 
+
