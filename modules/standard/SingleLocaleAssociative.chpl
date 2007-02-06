@@ -346,7 +346,7 @@ class _iarray: _abase {
   // domain assignment will perform the reallocation of each array that
   // maps to it.
   def reallocate(d: _domain) {
-    if (d.rank == 0) {
+    if (d._value.type == dom.type) {
       var td = d._value;
       var inds_count = 0;
       var inds_pos = 0;
