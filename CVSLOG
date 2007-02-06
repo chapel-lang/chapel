@@ -93007,3 +93007,14 @@ Removed files:
 	                          _chpl_indefinite.chpl 
 	                          _chpl_sparse.chpl 
 
+---------------------------------------------------------------------------
+
+02/05/07 16:57:58 -- marybeth
+
+Log message:
+	Modification of lu1 test to use array slices into the
+	i dimension of A.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: lu3.chpl lu3.good 
+
