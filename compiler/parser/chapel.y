@@ -1295,7 +1295,7 @@ non_tuple_lvalue:
     { $$ = new CallExpr("_build_domain", $2); }
 | TLSBR nonempty_expr_ls TRP
     {
-      $$ = new CallExpr("_build_domain_exclusive_upper",
+      $$ = new CallExpr("_build_exclusive_upper_domain",
              new CallExpr("_build_domain", $2));
     }
 ;

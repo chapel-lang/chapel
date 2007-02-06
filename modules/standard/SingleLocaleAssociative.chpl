@@ -184,7 +184,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       halt( "index not found: ", ind);
   }
 
-  def _build_array(type eltType) {
+  def buildArray(type eltType) {
     var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
     _arrs #= ia;
     return ia;

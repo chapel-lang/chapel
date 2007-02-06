@@ -3,7 +3,7 @@ class SingleLocaleSparseDomain: BaseDomain {
   type dim_type;
   var adomain : SingleLocaleArithmeticDomain(rank, dim_type);
 
-  def _build_array(type eltType)
+  def buildArray(type eltType)
     return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
 }
 

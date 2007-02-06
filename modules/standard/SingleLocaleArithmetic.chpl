@@ -14,7 +14,7 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   type dim_type;
   var ranges : rank*_aseq(dim_type);
 
-  def _exclusive_upper {
+  def buildExclusiveUpperDomain() {
     var x = SingleLocaleArithmeticDomain(rank, dim_type);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then
@@ -79,14 +79,14 @@ class SingleLocaleArithmeticDomain: BaseDomain {
       commpilerError("high currently implemented only for rank-1 domains");
   }
 
-  def _build_array(type eltType) {
+  def buildArray(type eltType) {
     return SingleLocaleArithmeticArray(eltType, rank, dim_type, dom=this);
   }
 
-  def _build_sparse_domain()
+  def buildSparseDomain()
     return SingleLocaleSparseDomain(rank, dim_type, adomain=this);
 
-  def _build_subdomain()
+  def buildSubdomain()
     return SingleLocaleArithmeticDomain(rank, dim_type);
 
   def translate(dim: rank*int) {

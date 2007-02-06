@@ -10,13 +10,13 @@ def _build_domain_type(dist, type ind_type) {
 
 
 def _build_subdomain_type(dom)
-  return dom._build_subdomain();
+  return dom.buildSubdomain();
 
 def _build_sparse_domain_type(dom)
-  return dom._build_sparse_domain();
+  return dom.buildSparseDomain();
 
 def _build_array_type(dom, type eltType)
-  return dom._build_array(eltType);
+  return dom.buildArray(eltType);
 
 def _build_domain(x)
   return x;
@@ -27,8 +27,8 @@ def _build_domain(ranges: _aseq ...?rank) {
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
 }
 
-def _build_domain_exclusive_upper(x: _domain)
-  return x._exclusive_upper;
+def _build_exclusive_upper_domain(x: _domain)
+  return x.buildExclusiveUpperDomain();
 
 def _build_index_type(param i: int) where i > 1 {
   var x : i*int;
@@ -74,24 +74,24 @@ class _domain {
   def this(dim : int)
     return _value(dim);
 
-  def _build_array(type eltType) {
-    var x = _value._build_array(eltType);
+  def buildArray(type eltType) {
+    var x = _value.buildArray(eltType);
     _arrs #= x;
     return _array(x.type, eltType, rank, x, this);
   }
 
-  def _build_sparse_domain() {
-    var x = _value._build_sparse_domain();
+  def buildSparseDomain() {
+    var x = _value.buildSparseDomain();
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def _build_subdomain() {
-    var x = _value._build_subdomain();
+  def buildSubdomain() {
+    var x = _value.buildSubdomain();
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def _exclusive_upper
-    return _domain(_domain_type, _index_type, _dim_index_type, rank, _value._exclusive_upper);
+  def buildExclusiveUpperDomain()
+    return _domain(_domain_type, _index_type, _dim_index_type, rank, _value.buildExclusiveUpperDomain());
 
   def add(i) {
     _value.add(i);
