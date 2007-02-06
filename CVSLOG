@@ -93187,3 +93187,19 @@ Added files:
 	chapel/test/types/tuple/diten/: tuple_var_def.chpl 
 	                                tuple_var_def.good 
 
+---------------------------------------------------------------------------
+
+02/06/07 15:10:37 -- bradc
+
+Log message:
+	This test uses the "var (x, y, _)" construct to
+	create a destructuring-style declaration of variables
+	while dropping other tuple values on the floor.  It
+	currently causes a seg fault, but probably has a
+	not-too-difficult fix.
+
+Added files:
+	chapel/test/types/tuple/bradc/: underscoreInVarDecl.chpl 
+	                                underscoreInVarDecl.future 
+	                                underscoreInVarDecl.good 
+
