@@ -17,23 +17,24 @@ static ModuleSymbol* parseStandardModule(char* name) {
 }
 
 static void parseStandardModules(void) {
-  baseModule = parseStandardModule("_chpl_base.chpl");
+  baseModule = parseStandardModule("ChapelBase.chpl");
   if (!fnostdincs) {
-    fileModule = parseStandardModule("_IO.chpl");
-    tupleModule = parseStandardModule("_Tuple.chpl");
-    domainModule = parseStandardModule("_Arrays.chpl");
-    parseStandardModule("_SingleLocaleArithmetic.chpl");
-    parseStandardModule("_SingleLocaleAssociative.chpl");
-    parseStandardModule("_SingleLocaleSparse.chpl");
-    seqModule = parseStandardModule("_chpl_seq.chpl");
-    parseStandardModule("_chpl_ds.chpl");
-    parseStandardModule("_chpl_machine.chpl");
-    standardModule = parseStandardModule("_chpl_standard.chpl");
-    parseStandardModule("Time.chpl");
-    parseStandardModule("Random.chpl");
-    parseStandardModule("Standard.chpl");
+    standardModule = parseStandardModule("ChapelStandard.chpl");
+    parseStandardModule("ChapelLocale.chpl");
+    fileModule = parseStandardModule("ChapelIO.chpl");
+    tupleModule = parseStandardModule("ChapelTuple.chpl");
+    seqModule = parseStandardModule("ChapelSeq.chpl");
+    domainModule = parseStandardModule("ChapelArray.chpl");
+    parseStandardModule("ChapelUtil.chpl");
+    parseStandardModule("SingleLocaleArithmetic.chpl");
+    parseStandardModule("SingleLocaleAssociative.chpl");
+    parseStandardModule("SingleLocaleSparse.chpl");
+
     parseStandardModule("Types.chpl");
     parseStandardModule("Math.chpl");
+
+    parseStandardModule("Time.chpl");
+    parseStandardModule("Random.chpl");
     parseStandardModule("BitOps.chpl");
     parseStandardModule("Memory.chpl");
     parseStandardModule("Schedules.chpl");

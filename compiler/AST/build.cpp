@@ -77,7 +77,7 @@ static void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->body->blkScope = mod->modScope;
 
-  if (strcmp(mod->name, "_chpl_compiler")) {
+  if (strcmp(mod->name, "_compiler")) {
     // guard init function so it is not run more than once
     VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime"));
     compilerModule->initFn->insertAtHead(new DefExpr(guard,
@@ -86,12 +86,12 @@ static void createInitFn(ModuleSymbol* mod) {
       new CondStmt(new CallExpr("!", guard), new ReturnStmt()));
     mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
 
-    if (strcmp(mod->name, "_chpl_standard")) {
+    if (strcmp(mod->name, "ChapelStandard")) {
       if (fnostdincs) {
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_compiler")));
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_base")));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_compiler")));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelBase")));
       } else
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_standard")));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelStandard")));
     }
   }
 

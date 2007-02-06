@@ -530,7 +530,7 @@ void initPrimitiveTypes(void) {
   dtBool = createPrimitiveType ("bool", "_bool");
 
   // Create initial compiler module and its scope
-  compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList());
+  compilerModule = build_module("_compiler", MOD_STANDARD, new AList());
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
