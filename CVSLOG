@@ -93123,3 +93123,17 @@ Modified files:
 	                          SingleLocaleArithmetic.chpl 
 	                          SingleLocaleAssociative.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 11:40:00 -- deitz
+
+Log message:
+	Renamed SingleLocale arrays and domains.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleSparse.chpl 
+
