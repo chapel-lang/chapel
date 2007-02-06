@@ -93165,3 +93165,25 @@ Modified files:
 	chapel/modules/standard/: ChapelArray.chpl 
 	                          SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 14:50:57 -- diten
+
+Log message:
+	Fix a problem with the code:
+	def foo(a:int, b:int, c:int) {
+	  return (a, b, c);
+	}
+	var (a, _, c) = foo(1, 2, 3);
+	
+	The _ in the tuple was being treated as a var name in the parser, so during
+	the checkParse phase an error was getting issued since "_" is not a valid
+	variable name.  Now throw away the value that would be stored to the "_"
+	position and don't complain about it or generate a variable for it.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/types/tuple/diten/: tuple_var_def.chpl 
+	                                tuple_var_def.good 
+
