@@ -92969,3 +92969,41 @@ Log message:
 Added files:
 	chapel/test/studies/lu/marybeth/: lu1.chpl lu1.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 16:00:55 -- deitz
+
+Log message:
+	Renamed several standard modules and files, and refactored:
+	
+	Changed:
+	
+	Old module file        New module file
+	===============        ===============
+	_chpl_file.chpl        _IO.chpl
+	_chpl_htuple.chpl      _Tuple.chpl
+	_chpl_adomain.chpl     _Arrays.chpl and _SingleLocaleArithmetic.chpl
+	_chpl_indefinite.chpl  _SingleLocaleAssociative.chpl
+	_chpl_sparse.chpl      _SingleLocaleSparse.chpl
+	
+	Split _chpl_adomain which used to contain the arithmetic array and
+	domain implementations plus the array and domain wrapper
+	implementations into two files.  The wrappers are now in _Arrays, the
+	arithmetic implementations are now in _SingleLocaleArithmetic.
+	
+	Moved the arithmetic sequence code back into _chpl_seq.chpl.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: _Arrays.chpl _IO.chpl 
+	                          _SingleLocaleArithmetic.chpl 
+	                          _SingleLocaleAssociative.chpl 
+	                          _SingleLocaleSparse.chpl _Tuple.chpl 
+Removed files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_file.chpl 
+	                          _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl 
+	                          _chpl_sparse.chpl 
+
