@@ -93109,3 +93109,17 @@ Log message:
 Modified files:
 	chapel/runtime/src/: config.c 
 
+---------------------------------------------------------------------------
+
+02/06/07 10:04:28 -- deitz
+
+Log message:
+	Set the rank of associative domains to 1.  This was previously
+	necessarily set to 0 before parameter folding was moved into function
+	resolution.  Fixed the reallocate method, removing a few hacks.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+
