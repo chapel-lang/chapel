@@ -93018,3 +93018,82 @@ Log message:
 Added files:
 	chapel/test/studies/lu/marybeth/: lu3.chpl lu3.good 
 
+---------------------------------------------------------------------------
+
+02/05/07 17:02:32 -- deitz
+
+Log message:
+	Moved halt and assert code in Standard.chpl to _IO.chpl.
+	
+	Renamed several standard module files:
+	
+	_Arrays.chpl                   ChapelArray.chpl
+	_IO.chpl                       ChapelIO.chpl
+	_SingleLocaleArithmetic.chpl   SingleLocaleArithmetic.chpl
+	_SingleLocaleAssociative.chpl  SingleLocaleAssociative.chpl
+	_SingleLocaleSparse.chpl       SingleLocaleSparse.chpl
+	_Tuple.chpl                    ChapelTuple.chpl
+	_chpl_base.chpl                ChapelBase.chpl
+	_chpl_ds.chpl                  ChapelUtil.chpl
+	_chpl_machine.chpl             ChapelLocale.chpl
+	_chpl_seq.chpl                 ChapelSeq.chpl
+	_chpl_standard.chpl            ChapelStandard.chpl
+	
+	Rationale:
+	
+	Some of these standard modules export an interface, others do not.  In
+	all cases, we can't rename what a user calls their own file and we can
+	expose to the user the name of these modules without exposing their
+	implementation.  I'm open to discuss these names if anybody cares.
+	The Chapel prefix is meant to signify that the user will never want to
+	'use' this module or explicitly name anything in it with the module
+	name.
+	
+	The distinctions that we need to draw between these modules are:
+	
+	  Are they 'used' automatically?
+	  Will the user ever want to name one explicitly?
+	  Will they be specialized or changed when porting Chapel?
+	
+	Here is my best summary of what is in all of the modules:
+	
+	BitOps.chpl                    bit manipulation operations
+	ChapelArray.chpl               wrapper arrays and domains
+	ChapelBase.chpl                core features like + and ddata
+	ChapelIO.chpl                  file, Writer, halt, ...
+	ChapelLocale.chpl              locale type and functionality
+	ChapelSeq.chpl                 sequences and arithmetic sequences
+	ChapelStandard.chpl            factored automatic uses
+	ChapelTuple.chpl               tuples and tensor-product tuples
+	ChapelUtil.chpl                internal utilities, e.g., a stack
+	Math.chpl                      math functions
+	Memory.chpl                    memoryUsed and querying physical memory
+	Random.chpl                    random numbers
+	Schedules.chpl                 unknown
+	SingleLocaleArithmetic.chpl    base single locale arithmetic arrays
+	SingleLocaleAssociative.chpl   base single locale associative arrays
+	SingleLocaleSparse.chpl        base single locale sparse arrays
+	Time.chpl                      timing and time/date query functions
+	Types.chpl                     functions on base types
+
+Modified files:
+	chapel/compiler/AST/: build.cpp type.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/runtime/src/: config.c 
+Added files:
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelIO.chpl ChapelLocale.chpl 
+	                          ChapelSeq.chpl ChapelStandard.chpl 
+	                          ChapelTuple.chpl ChapelUtil.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleSparse.chpl 
+Removed files:
+	chapel/modules/standard/: Standard.chpl _Arrays.chpl _IO.chpl 
+	                          _SingleLocaleArithmetic.chpl 
+	                          _SingleLocaleAssociative.chpl 
+	                          _SingleLocaleSparse.chpl _Tuple.chpl 
+	                          _chpl_base.chpl _chpl_ds.chpl 
+	                          _chpl_machine.chpl _chpl_seq.chpl 
+	                          _chpl_standard.chpl 
+
