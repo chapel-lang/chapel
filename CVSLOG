@@ -93152,3 +93152,16 @@ Modified files:
 	                          SingleLocaleAssociative.chpl 
 	                          SingleLocaleSparse.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 13:59:11 -- deitz
+
+Log message:
+	Made the view function in the single locale arithmetic array not need
+	to access the array wrapper.  Commented out an unused single locale
+	arithmetic array indexing function.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+
