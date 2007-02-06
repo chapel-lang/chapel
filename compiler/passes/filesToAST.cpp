@@ -16,16 +16,15 @@ static ModuleSymbol* parseStandardModule(char* name) {
   return ParseFile(stringcat(modulePath, name), MOD_STANDARD);
 }
 
-
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("_chpl_base.chpl");
-
   if (!fnostdincs) {
-    fileModule = parseStandardModule("_chpl_file.chpl");
-    tupleModule = parseStandardModule("_chpl_htuple.chpl");
-    domainModule = parseStandardModule("_chpl_adomain.chpl");
-    parseStandardModule("_chpl_indefinite.chpl");
-    parseStandardModule("_chpl_sparse.chpl");
+    fileModule = parseStandardModule("_IO.chpl");
+    tupleModule = parseStandardModule("_Tuple.chpl");
+    domainModule = parseStandardModule("_Arrays.chpl");
+    parseStandardModule("_SingleLocaleArithmetic.chpl");
+    parseStandardModule("_SingleLocaleAssociative.chpl");
+    parseStandardModule("_SingleLocaleSparse.chpl");
     seqModule = parseStandardModule("_chpl_seq.chpl");
     parseStandardModule("_chpl_ds.chpl");
     parseStandardModule("_chpl_machine.chpl");
@@ -39,9 +38,7 @@ static void parseStandardModules(void) {
     parseStandardModule("Memory.chpl");
     parseStandardModule("Schedules.chpl");
   }
-  
 }
-  
 
 void parse(void) {
   yydebug = debugParserLevel;
@@ -55,9 +52,6 @@ void parse(void) {
     ParseFile(inputFilename, MOD_USER);
   }
   finishCountingTokens();
-
-//   forv_Vec(ModuleSymbol, mod, allModules)
-//     insert_help(mod, NULL, NULL, mod, mod->modScope);
 
   if (!fnostdincs) {
     chpl_seq = seqModule->lookupType("seq");

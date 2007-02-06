@@ -303,3 +303,189 @@ class _bxor {                // bit-wise xor
   }
   def generate() return value;
 }
+
+
+def _aseq._translate(i : int) {
+  return _low+i.._high+i by _stride;
+}
+
+def _aseq._interior(i : int) {
+  var x = _low.._high by _stride;
+  if (i < 0) {
+    x = _low.._low-1-i by _stride;
+  } else if (i > 0) {
+    x = _high+1-i.._high by _stride;
+  }
+  return x;
+}
+
+def _aseq._exterior(i : int) {
+  var x = _low.._high by _stride;
+  if (i < 0) {
+    x = _low+i.._low-1 by _stride;
+  } else if (i > 0) {
+    x = _high+1.._high+i by _stride;
+  }
+  return x;
+}
+
+def _aseq._expand(i : int) {
+  return _low-i.._high+i by _stride;
+}
+
+// Arithmetic sequence
+
+def _build_aseq(low: int, high: int) return _aseq(int, low, high);
+def _build_aseq(low: uint, high: uint) return _aseq(uint, low, high);
+def _build_aseq(low: int(64), high: int(64)) return _aseq(int(64), low, high);
+def _build_aseq(low: uint(64), high: uint(64)) return _aseq(uint(64), low, high);
+
+def _build_aseq(low, high) {
+  compilerError("arithmetic sequence bounds are not of integral type");
+}
+
+record _aseq {
+  type eltType;
+  var _low : eltType;
+  var _high : eltType;
+  var _stride : int = 1;
+
+  def low: eltType return _low;
+  def high: eltType return _high;
+  def stride: eltType return _stride;
+
+  def initialize() {
+    if _low > _high {
+      _low = 1:eltType;
+      _high = 0:eltType;
+      _stride = 1;
+    }
+  }
+
+  iterator this() : eltType {
+    forall x in this
+      yield x; 
+  }
+
+  def getHeadCursor()
+    if _stride > 0 then
+      return _low;
+    else
+      return _high;
+
+  def getNextCursor(c)
+    return c + _stride:eltType;
+
+  def getValue(c)
+    return c;
+
+  def isValidCursor?(c)
+    return _low <= c && c <= _high;
+
+  def length
+    return
+      (if _stride > 0
+        then (_high - _low + _stride:eltType) / _stride:eltType
+        else (_low - _high + _stride:eltType) / _stride:eltType);
+}
+
+def by(s : _aseq, i : int) {
+  if i == 0 then
+    halt("illegal stride of 0");
+  if s._low == 1 && s._high == 0 then
+    return _aseq(s.eltType, s._low, s._high, s._stride);
+  var as = _aseq(s.eltType, s._low, s._high, s._stride * i);
+  if as._stride < 0 then
+    as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
+  else
+    as._high = as._high - (as._high - as._low) % (as._stride):as.eltType;
+  return as;
+}
+
+def _in(s : _aseq, i : s.eltType)
+  return i >= s._low && i <= s._high &&
+    (i - s._low) % abs(s._stride):s.eltType == 0;
+
+// really slow --- REWRITE
+def _in(s1: _aseq, s2: _aseq) {
+  for i in s2 do
+    if !_in(s1, i) then
+      return false;
+  return true;
+}
+
+def _aseq.writeThis(f: Writer) {
+  f.write(_low, "..", _high);
+  if (_stride != 1) then
+    f.write(" by ", _stride);
+}
+
+pragma "inline" def string.substring(s: _aseq)
+  if s._stride != 1 then
+    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
+  else
+    return __primitive("string_select", this, s._low, s._high);
+
+// indefinite arithmetic sequence
+
+def _build_iaseq(bound: int, param upper: int)
+  return _iaseq(int, upper, bound);
+def _build_iaseq(bound: uint, param upper: int)
+  return _iaseq(uint, upper, bound);
+def _build_iaseq(bound: int(64), param upper: int)
+  return _iaseq(int(64), upper, bound);
+def _build_iaseq(bound: uint(64), param upper: int)
+  return _iaseq(uint(64), upper, bound);
+
+def _build_iaseq(bound, upper) {
+  compilerError("arithmetic sequence bound is not of integral type");
+}
+
+record _iaseq {
+  type eltType;
+  param _upper: int; // 0 bound is lower bound, 1 bound is upper bound
+  var _bound: eltType;
+  var _stride : int = 1;
+
+  iterator this() : eltType {
+    forall x in this
+      yield x; 
+  }
+
+  def getHeadCursor() {
+    if _upper == 1 && _stride > 0 then
+      halt("error: indefinite arithmetic sequence has positive stride and upper bound");
+    if _upper == 0 && _stride < 0 then
+      halt("error: indefinite arithmetic sequence has negative stride and lower bound");
+    return _bound;
+  }
+
+  def getNextCursor(c)
+    return c + _stride:eltType;
+
+  def getValue(c)
+    return c;
+
+  def isValidCursor?(c)
+    return true;
+
+  def length {
+    halt("error: attempt to determine length of an indefinite arithmetic sequence");
+    return 0:eltType;
+  }
+}
+
+def by(s : _iaseq, i : int) {
+  if i == 0 then
+    halt("illegal stride of 0");
+  return _iaseq(s.eltType, s._upper, s._bound, s._stride * i);
+}
+
+def _iaseq.writeThis(f: Writer) {
+  if _upper then
+    f.write("..", _bound);
+  else
+    f.write(_bound, "..");
+  if (_stride != 1) then
+    f.write(" by ", _stride);
+}
