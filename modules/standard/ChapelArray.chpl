@@ -237,8 +237,10 @@ class _array {
 
   def numElements return dom.numIndices;
 
-  def view(d: _domain)
-    return _value.view(d._value);
+  def view(d: _domain) {
+    var x = _value.view(d._value);
+    return _array(x.type, eltType, rank, x, d);
+  }
 }
 
 def =(a: _array, b: _array) {

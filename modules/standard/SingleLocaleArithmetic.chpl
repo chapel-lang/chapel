@@ -212,10 +212,10 @@ class SingleLocaleArithmeticArray: BaseArray {
     return data(sum:int); // !!ahh
   }
 
-  def this(ind: _aseq(dim_type) ...rank) var {
-    var d = [(...ind)];
-    return slice(d._value);
-  }
+//  def this(ind: _aseq(dim_type) ...rank) var {
+//    var d = [(...ind)];
+//    return slice(d._value);
+//  }
 
   def view(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
@@ -232,7 +232,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.str(i) = d(i)._stride;
       alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
     }
-    return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
+    return alias;
   }
 
   def checkSlice(d: SingleLocaleArithmeticDomain) {
