@@ -989,12 +989,16 @@ var_decl_stmt_inner:
 tuple_var_decl_stmt_inner_ls:
   identifier
     {
-      $$ = build_chpl_stmt(new DefExpr(new VarSymbol($1)));
+      if (strcmp($1, "_")) {
+        $$ = build_chpl_stmt(new DefExpr(new VarSymbol($1)));
+      }
     }
 | tuple_var_decl_stmt_inner_ls TCOMMA identifier
     {
-      $1->insertAtTail(new DefExpr(new VarSymbol($3)));
-      $$ = $1;
+      if (strcmp($3, "_")) {
+        $1->insertAtTail(new DefExpr(new VarSymbol($3)));
+        $$ = $1;
+      }
     }
 ;
 
