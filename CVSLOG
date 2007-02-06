@@ -93137,3 +93137,18 @@ Modified files:
 	                          SingleLocaleAssociative.chpl 
 	                          SingleLocaleSparse.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 13:26:43 -- deitz
+
+Log message:
+	Renamed some array and domain interface methods as they will be
+	exposed to the user.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleSparse.chpl 
+
