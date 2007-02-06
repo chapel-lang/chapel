@@ -45,9 +45,9 @@ record _ind_data_t {
 }
 
 
-class _idomain {
+class SingleLocaleAssociativeDomain: BaseDomain {
   type ind_type;
-  var _arrs: seq(_abase);    // WAW: unfortunately redundant list
+  var _arrs: seq(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
   var table: _ddata(int);
@@ -185,7 +185,7 @@ class _idomain {
   }
 
   def _build_array(type eltType) {
-    var ia = _iarray(eltType, ind_type, dom=this); 
+    var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
     _arrs #= ia;
     return ia;
   }
@@ -247,7 +247,7 @@ class _idomain {
 }
 
 
-def =(a: _idomain, b: _idomain) {
+def =(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
   var indices = seq( int);
   var inds_count = 0;
   var inds_pos = 0;
@@ -284,7 +284,7 @@ def =(a: _idomain, b: _idomain) {
 }
 
 
-def _idomain.writeThis(f: Writer) {
+def SingleLocaleAssociativeDomain.writeThis(f: Writer) {
   f.write("[");
   var inds_count = 0;
   var inds_pos = 0;
@@ -301,10 +301,10 @@ def _idomain.writeThis(f: Writer) {
 }
 
 
-class _iarray: _abase {
+class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type ind_type;
-  var dom : _idomain(ind_type);
+  var dom : SingleLocaleAssociativeDomain(ind_type);
   var data : _ddata(eltType);
 
   def initialize() {
@@ -368,7 +368,7 @@ class _iarray: _abase {
     return dom.numIndices;
   }
 
-  def assign( b: _iarray) {
+  def assign( b: SingleLocaleAssociativeArray) {
     var a_dom = this.dom;
     if a_dom.num_inds != b.dom.num_inds then
       halt( "array assignment with domains of different lengths") ;
@@ -386,7 +386,7 @@ class _iarray: _abase {
   }
 }
 
-def _iarray.writeThis(f: Writer) {
+def SingleLocaleAssociativeArray.writeThis(f: Writer) {
   var inds_count = 0;
   var inds_pos = 0;
   while inds_count<dom.num_inds {

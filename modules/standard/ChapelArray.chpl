@@ -23,7 +23,7 @@ def _build_domain(x)
 
 def _build_domain(ranges: _aseq ...?rank) {
   type t = ranges(1).eltType;
-  var x = _adomain(rank, t, ranges);
+  var x = SingleLocaleArithmeticDomain(rank, t, ranges);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
 }
 
@@ -52,7 +52,7 @@ class _domain {
   type _dim_index_type;
   param rank : int;
   var _value : _domain_type;
-  var _arrs: seq(_abase);
+  var _arrs: seq(BaseArray);
 
   def getHeadCursor()
     return _value.getHeadCursor();
@@ -280,21 +280,20 @@ def _array.writeThis(f: Writer) {
   f.write(_value);
 }
 
-var _abase_error = " not implemented for this array";
-
 // this is the class that all array classes are derived from
-pragma "abase"
-class _abase {
+pragma "BaseArray"
+class BaseArray {
   def reallocate(d: _domain) {
-    halt("reallocation", _abase_error);
+    halt("reallocating not support for this array type");
   }
 
   def purge( ind: int) {
-    halt("purge", _abase_error);
+    halt("purging not supported for this array type");
   }
 
   def _resize( length: int, old_map: _ddata(int)) {
-    halt("_resize", _abase_error);
+    halt("resizing not supported for this array type");
   }
 }
 
+class BaseDomain { }

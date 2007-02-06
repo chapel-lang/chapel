@@ -1,20 +1,20 @@
-class _sdomain {
+class SingleLocaleSparseDomain: BaseDomain {
   param rank : int;
   type dim_type;
-  var adomain : _adomain(rank, dim_type);
+  var adomain : SingleLocaleArithmeticDomain(rank, dim_type);
 
   def _build_array(type eltType)
-    return _sarray(eltType, rank, dim_type, dom=this);
+    return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
 }
 
-class _sarray: _abase {
+class SingleLocaleSparseArray: BaseArray {
   type eltType;
   param rank : int;
   type dim_type;
 
-  var dom : _sdomain(rank, dim_type);
+  var dom : SingleLocaleSparseDomain(rank, dim_type);
 }
 
-def _sarray.writeThis(f: Writer) {
+def SingleLocaleSparseArray.writeThis(f: Writer) {
   halt("Sparse arrays are not implemented");
 }

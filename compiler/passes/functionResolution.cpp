@@ -2478,7 +2478,7 @@ pruneResolvedTree() {
 static bool
 is_array_type(Type* type) {
   forv_Vec(Type, t, type->dispatchParents) {
-    if (t->symbol->hasPragma("abase"))
+    if (t->symbol->hasPragma("BaseArray"))
       return true;
     else if (is_array_type(t))
       return true;
@@ -2497,9 +2497,9 @@ fixTypeNames(ClassType* ct) {
     ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
   if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, "_adomain")) {
+      !strcmp(ct->instantiatedFrom->symbol->name, "SingleLocaleArithmeticDomain")) {
     ct->symbol->defPoint->parentScope->undefine(ct->symbol);
-    ct->symbol->name = astr(ct->symbol->name+2);
+    ct->symbol->name = astr("domain", ct->symbol->name+28);
     ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
   if (ct->symbol->hasPragma("array") || ct->symbol->hasPragma("domain")) {

@@ -1,21 +1,21 @@
 class SingleLocaleDistribution {
   def buildDomain(param rank: int, type dimensional_index_type) {
-    return _adomain(rank, dimensional_index_type);
+    return SingleLocaleArithmeticDomain(rank, dimensional_index_type);
   }
   def buildDomain(type ind_type) {
-    return _idomain(ind_type);
+    return SingleLocaleAssociativeDomain(ind_type);
   }
 }
 
 var Block = SingleLocaleDistribution();
 
-class _adomain {
+class SingleLocaleArithmeticDomain: BaseDomain {
   param rank : int;
   type dim_type;
   var ranges : rank*_aseq(dim_type);
 
   def _exclusive_upper {
-    var x = _adomain(rank, dim_type);
+    var x = SingleLocaleArithmeticDomain(rank, dim_type);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then
         halt("syntax [domain-specification) requires a stride of one");
@@ -80,24 +80,24 @@ class _adomain {
   }
 
   def _build_array(type eltType) {
-    return _aarray(eltType, rank, dim_type, dom=this);
+    return SingleLocaleArithmeticArray(eltType, rank, dim_type, dom=this);
   }
 
   def _build_sparse_domain()
-    return _sdomain(rank, dim_type, adomain=this);
+    return SingleLocaleSparseDomain(rank, dim_type, adomain=this);
 
   def _build_subdomain()
-    return _adomain(rank, dim_type);
+    return SingleLocaleArithmeticDomain(rank, dim_type);
 
   def translate(dim: rank*int) {
-    var x = _adomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
   def interior(dim: rank*int) {
-    var x = _adomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank, int);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
           (dim(i) < 0) && (this(i)._low-1-dim(i) > this(i)._high)) {
@@ -109,14 +109,14 @@ class _adomain {
   }
 
   def exterior(dim: rank*int) {
-    var x = _adomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
 
   def expand(dim: rank*int) {
-    var x = _adomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank, int);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -127,7 +127,7 @@ class _adomain {
   }  
 
   def expand(dim: int) {
-    var x = _adomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank, int);
     for i in 1..rank do
       x.ranges(i) = ranges(i)._expand(dim);
     return x;
@@ -142,27 +142,27 @@ class _adomain {
 }
 
 
-def by(dom : _adomain, dim : dom.rank*int) {
-  var x = _adomain(dom.rank, dom.dim_type);
+def by(dom : SingleLocaleArithmeticDomain, dim : dom.rank*int) {
+  var x = SingleLocaleArithmeticDomain(dom.rank, dom.dim_type);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
   return x;
 }
 
-def by(dom : _adomain, dim : int) {
-  var x = _adomain(dom.rank, dom.dim_type);
+def by(dom : SingleLocaleArithmeticDomain, dim : int) {
+  var x = SingleLocaleArithmeticDomain(dom.rank, dom.dim_type);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim;
   return x;
 }
 
 
-class _aarray: _abase {
+class SingleLocaleArithmeticArray: BaseArray {
   type eltType;
   param rank : int;
   type dim_type;
 
-  var dom : _adomain(rank, dim_type);
+  var dom : SingleLocaleArithmeticDomain(rank, dim_type);
   var off: rank*dim_type;
   var blk: rank*dim_type;
   var str: rank*int;
@@ -217,13 +217,13 @@ class _aarray: _abase {
     return slice(d._value);
   }
 
-  def view(d: _adomain) {
+  def view(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
       halt("array rank change not supported");
     for param i in 1..rank do
       if d(i).length != dom(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -235,7 +235,7 @@ class _aarray: _abase {
     return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
-  def checkSlice(d: _adomain) {
+  def checkSlice(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
       halt("array rank change not supported");
     for param i in 1..rank {
@@ -246,9 +246,9 @@ class _aarray: _abase {
     }
   }
 
-  def slice(d: _adomain) {
+  def slice(d: SingleLocaleArithmeticDomain) {
     checkSlice(d);
-    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -260,9 +260,9 @@ class _aarray: _abase {
     return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
   }
 
-  def =slice(d: _adomain, val) {
+  def =slice(d: SingleLocaleArithmeticDomain, val) {
     checkSlice(d);
-    var alias = _aarray(eltType, rank, dim_type, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -279,7 +279,7 @@ class _aarray: _abase {
   // then rank of indefinite domain can be changed back to 1
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var new = _aarray(eltType, rank, dim_type, d._value);
+      var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);
       dom = new.dom;
@@ -305,14 +305,14 @@ class _aarray: _abase {
   }
 }
 
-def _adomain.writeThis(f: Writer) {
+def SingleLocaleArithmeticDomain.writeThis(f: Writer) {
   f.write("[", this(1));
   for i in 2..rank do
     f.write(", ", this(i));
   f.write("]");
 }
 
-def _aarray.writeThis(f: Writer) {
+def SingleLocaleArithmeticArray.writeThis(f: Writer) {
   var i : rank*dim_type;
   for dim in 1..rank do
     i(dim) = dom(dim)._low;
@@ -355,8 +355,8 @@ def _intersect(a: _aseq, b: _aseq) {
   return low..high by stride;
 }
 
-def _intersect(a: _adomain, b: _adomain) {
-  var c = _adomain(a.rank, a.dim_type);
+def _intersect(a: SingleLocaleArithmeticDomain, b: SingleLocaleArithmeticDomain) {
+  var c = SingleLocaleArithmeticDomain(a.rank, a.dim_type);
   for param i in 1..a.rank do
     c.ranges(i) = _intersect(a(i), b(i));
   return c;
