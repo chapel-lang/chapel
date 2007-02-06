@@ -287,7 +287,7 @@ void printConfigVarTable(void) {
          configVar != NULL; 
          configVar = configVar->nextInstalled) {
 
-      if (strncmp(configVar->moduleName, "_chpl_", 6) != 0) {
+      if (strncmp(configVar->moduleName, "Chapel", 6) != 0) {
         if (foundMultipleModules) {
           if (moduleName == NULL) {
             moduleName = configVar->moduleName;
