@@ -93097,3 +93097,15 @@ Removed files:
 	                          _chpl_machine.chpl _chpl_seq.chpl 
 	                          _chpl_standard.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 09:19:39 -- deitz
+
+Log message:
+	Re-disabled printing out config variables that exist in the standard
+	modules prefixed with "Chapel" (changed from "_chpl_") in the config
+	help message.  I don't think we should disable printing these.
+
+Modified files:
+	chapel/runtime/src/: config.c 
+
