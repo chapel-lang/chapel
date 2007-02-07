@@ -66,17 +66,25 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def low {
-    if (rank == 1) then 
+    if rank == 1 {
       return ranges(1)._low;
-    else
-      compilerError("low currently implemented only for rank-1 domains");
+    } else {
+      var result: rank*dim_type;
+      for param i in 1..rank do
+        result(i) = ranges(i)._low;
+      return result;
+    }
   }
 
   def high {
-    if (rank == 1) then
+    if rank == 1 {
       return ranges(1)._high;
-    else
-      commpilerError("high currently implemented only for rank-1 domains");
+    } else {
+      var result: rank*dim_type;
+      for param i in 1..rank do
+        result(i) = ranges(i)._high;
+      return result;
+    }
   }
 
   def buildArray(type eltType) {
