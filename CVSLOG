@@ -93250,3 +93250,24 @@ Added files:
 	chapel/test/parallel/begin/deitz/: test_global_for_begin.chpl 
 	                                   test_global_for_begin.good 
 
+---------------------------------------------------------------------------
+
+02/07/07 10:21:20 -- deitz
+
+Log message:
+	Unified assignment to arrays to be by shape as specified in the spec,
+	removing the need for a method assign to be written on arrays.  We may
+	eventually add something like this as an optimization, however.
+	
+	Added a method strideBy to SingleLocaleArithmeticDomain to allow a
+	domain to be strided, rather than by overloading the 'by' operator,
+	which is not possible for the user.
+	
+	Updated an associative array assignment test to follow the semantics
+	of assignment via shape.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/domains/indefinite/waynew/: indef8-fail2.good 
+
