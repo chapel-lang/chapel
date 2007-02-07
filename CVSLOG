@@ -93282,3 +93282,13 @@ Modified files:
 	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
 	                          SingleLocaleAssociative.chpl 
 
+---------------------------------------------------------------------------
+
+02/07/07 11:15:01 -- waynew
+
+Log message:
+	Minor cleanup and comments.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
