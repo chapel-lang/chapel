@@ -93226,3 +93226,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 16:44:52 -- waynew
+
+Log message:
+	Minor edits to comments.
+
+Modified files:
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: chplthreads.c 
+
