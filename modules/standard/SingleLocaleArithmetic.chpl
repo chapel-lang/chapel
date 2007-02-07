@@ -212,11 +212,6 @@ class SingleLocaleArithmeticArray: BaseArray {
     return data(sum:int); // !!ahh
   }
 
-//  def this(ind: _aseq(dim_type) ...rank) var {
-//    var d = [(...ind)];
-//    return slice(d._value);
-//  }
-
   def view(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
       halt("array rank change not supported");
@@ -257,26 +252,9 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.str(i) = str(i);
       alias.orig(i) = orig(i);
     }
-    return _array(alias.type, eltType, rank, alias, _domain(d.type, d.getValue(d.getHeadCursor()).type, dim_type, rank, d));
+    return alias;
   }
 
-  def =slice(d: SingleLocaleArithmeticDomain, val) {
-    checkSlice(d);
-    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d, noinit=true);
-    alias.data = data;
-    alias.size = size;
-    for param i in 1..rank {
-      alias.off(i) = off(i);
-      alias.blk(i) = blk(i);
-      alias.str(i) = str(i);
-      alias.orig(i) = orig(i);
-    }
-    alias.assign(val);
-  }
-
-  // when condition compares d.type to dom.type
-  // when parameter folding is done in function resolution
-  // then rank of indefinite domain can be changed back to 1
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
       var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value);

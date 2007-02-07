@@ -178,30 +178,40 @@ class _array {
   var _value : _array_type;
   var dom : _domain;
 
-  def this(d: _domain)
-    return _value.slice(d._value);
+  def this(d: _domain) {
+    var x = _value.slice(d._value);
+    return _array(x.type, eltType, rank, x, d);
+  }
 
   def this(i: _aseq(dom._dim_index_type) ...rank) {
     var d = [(...i)];
-    return _value.slice(d._value);
+    return this(d);
   }
 
   def =this(d: _domain, val) {
-    _value.slice(d._value) = val;
+    var y = _array(_array_type, eltType, rank, dom=d);
+    y._value = _value.slice(d._value);
+    y = val;
   }
 
   def =this(d: _domain, val: eltType) {
-    _value.slice(d._value) = val;
+    var y = _array(_array_type, eltType, rank, dom=d);
+    y._value = _value.slice(d._value);
+    y = val;
   }
 
   def =this(i: _aseq(dom._dim_index_type) ...rank, val) where rank > 0 {
     var d = [(...i)];
-    _value.slice(d._value) = val;
+    var y = _array(_array_type, eltType, rank, dom=d);
+    y._value = _value.slice(d._value);
+    y = val;
   }
 
   def =this(i: _aseq(dom._dim_index_type) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
-    _value.slice(d._value) = val;
+    var y = _array(_array_type, eltType, rank, dom=d);
+    y._value = _value.slice(d._value);
+    y = val;
   }
 
   def this(i: dom._index_type)
@@ -264,6 +274,7 @@ def =(a: _array, b: a.eltType) {
 }
 
 def _copy(a: _array) {
+  if a._value == nil then return a;
   var b : [a.dom] a.eltType;
   b = a;
   return b;
