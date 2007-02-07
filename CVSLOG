@@ -93325,3 +93325,28 @@ Modified files:
 	                          SingleLocaleAssociative.chpl 
 	chapel/test/parallel/single/waynew/: simple0.good simple0b.good 
 
+---------------------------------------------------------------------------
+
+02/07/07 14:49:06 -- deitz
+
+Log message:
+	Changed test_for2d.c to use int instead of long long int for
+	comparative purposes since Chapel int is not 32 bits.
+	
+	Here is a summary of results from running this performance test today:
+	
+	test_for2d.c                              :  0.40 sec
+	
+	test_for2d.chpl (w/out garbage collection): 17.46 sec
+	test_for2d.chpl (w/out gc & bounds checks): 10.19 sec
+	
+	test_for2d.chpl (w/ garbage collection): > 4 min and killed
+	
+	Clearly the current reference counting implementation and indeed
+	reference counting in general is not a good idea.  We should fix
+	promotion, optimize array and domain wrapper classes specially, rip
+	the reference counting work out, and handle garbage collection right.
+
+Modified files:
+	chapel/test/performance/deitz/: test_for2d.c 
+
