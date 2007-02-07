@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define myint long long int
+#define myint int
 #define N 1024
 #define ITERS 100
 
@@ -19,6 +19,6 @@ int main() {
     for (i = 0; i < N; i++)
       for (j = 0; j < N; j++)
         A(i,j) = i + j + 2 + k + 1;
-  printf("%ld\n", A(51,51));
+  printf("%d\n", A(51,51));
   return 0;
 }
