@@ -93312,3 +93312,16 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/bradc/: underscoreInVarDecl.future 
 
+---------------------------------------------------------------------------
+
+02/07/07 13:59:10 -- waynew
+
+Log message:
+	Minor comment changes.  Also changed halt message to match new style and
+	associated test outputs.
+
+Modified files:
+	chapel/modules/standard/: ChapelBase.chpl 
+	                          SingleLocaleAssociative.chpl 
+	chapel/test/parallel/single/waynew/: simple0.good simple0b.good 
+
