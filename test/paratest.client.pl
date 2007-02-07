@@ -1,8 +1,10 @@
 #!/usr/bin/perl
 
+# Client-side of the parallel testing script, paratest.server.pl.
+# Used remotely by paratest.server.pl to run start_test locally.
+#
 # Usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts]
 #  
-# Used remotely by paratest.server.pl to run start_test locally.
 #  id - used to create a file to synchronize with paratest.server.pl
 #  chapeltestdir - root dir of Chapel test infrastructure
 #  testdir - directory to run start_test on
@@ -20,7 +22,6 @@ $publish_delay = 2;
 
 sub systemd {
     my ($cmd) = @_;
-
     print "$cmd\n" if ($debug);
     system ($cmd);
 }

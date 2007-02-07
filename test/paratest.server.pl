@@ -38,18 +38,20 @@
 #      http://upc.lbl.gov/docs/user/sshagent.html for a short tutorial.
 #
 
-$debug = 0;
-$verbose = 0;
+
+# for debugging
+$debug = 0;                            # turn on debug output
+$verbose = 0;                          # more verbose output
 
 $dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
 
-$logdir = "Logs";
-$synchdir = "$logdir/.synch";
+$logdir = "Logs";                      # dir under test to store logs
+$synchdir = "$logdir/.synch";          # where to store temporary metadata
 $client_script = "paratest.client.pl";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
-$sleep_time = 1;                      # polling time (sec) to distribute work
+$sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
 $valgrind = 0;
@@ -58,7 +60,6 @@ my (@testdir_list, @node_list, $starttime, $endtime);
 
 sub systemd {
     local ($cmd) = @_;
-
     print "$cmd\n" if $debug;
     system ($cmd);
 }
@@ -81,18 +82,6 @@ sub collect_logs {
     foreach $log (@logs) {
         if (-e $log) {
             print "Merging $log\n" if $verbose;
-
-            # output of grep seem broken on sunos; hack one for now
-            # $len = `wc -l $log`;
-            # ($len, $junk) = split (/\s/, $len, 2);
-            #
-            # $grep_out = `grep -n "^\\[Test Summary" $log`;
-            # print "grep_out = $grep_out\n" if $debug;
-            # if ($grep_out =~ /Summary/) {
-            #    ($len, $junk) = split (/:/, $grep_out, 2);
-            #    $len--;
-            #}
-
             open GLOG, $log or die "Cannot open log '$log'\n";
             $len = 0;
             while (<GLOG>) {
@@ -143,7 +132,6 @@ sub collect_logs {
 # Return a list of IDs of nodes ready to work
 sub free_workers {
     local (@readyv, @readyids, $node, $id);
-
     print "checking for available workers\n" if $debug;
 
     opendir WORKDIR, "$synchdir";
@@ -161,6 +149,11 @@ sub free_workers {
 }
 
 
+# While there is still work to do, continually feed the client nodes
+# bits of work. If the file "PARAHALT" exists in the test directory,
+# distribution of work stops.  This is one hack to stop the testing.
+# Of course, you'll have to wait on the client processes or kill them
+# manually.
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
     $| = 1;    # autoflush stdout
@@ -252,17 +245,16 @@ sub nodes_free {
     # signal that all nodes are free
     for ($id=0; $id<=$#node_list; $id++) {
         $fname = "$node_list[$id].$id";
-        # print "$fname\n";
         systemd ("echo feed me > $synchdir/$fname");
     }
 }
 
 
+# Return true if a *.chpl exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     foreach $fname (@fnames) {
         if ($fname =~ /\.chpl$/) {
-            # printf "found .chpl\n";
             return 1;
         }
     }
@@ -270,6 +262,7 @@ sub chpl_files {
 }
 
 
+# Gather all the subdirectories into a flat list and return it.
 sub find_subdirs {
     local ($targetdir, $level) = @_;
     local ($filen, @cdir, @founddirs, $i);
@@ -298,6 +291,7 @@ sub find_subdirs {
 }
 
 
+# Gather the list of files to test and return it.
 sub find_files {
     local ($targetdir, $level, $no_futures, $recursive) = @_;
     local ($filen, @cdir, @foundfiles);
@@ -410,7 +404,6 @@ sub main {
             chomp;
             push @node_list, $_;
         }
-        # @node_list = sort @node_list;
     } else { # else, just current node
         local ($node) = `uname -n`;
         ($node, $junk) = split (/\./, $node, 2);
