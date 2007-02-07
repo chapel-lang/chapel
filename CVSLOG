@@ -93350,3 +93350,13 @@ Log message:
 Modified files:
 	chapel/test/performance/deitz/: test_for2d.c 
 
+---------------------------------------------------------------------------
+
+02/07/07 15:17:06 -- waynew
+
+Log message:
+	Minor comment changes and cleanup.
+
+Modified files:
+	chapel/compiler/passes/: parallel.cpp 
+
