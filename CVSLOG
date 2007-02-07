@@ -93271,3 +93271,14 @@ Modified files:
 	                          SingleLocaleArithmetic.chpl 
 	chapel/test/domains/indefinite/waynew/: indef8-fail2.good 
 
+---------------------------------------------------------------------------
+
+02/07/07 10:33:27 -- deitz
+
+Log message:
+	Removed unused assign methods.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+
