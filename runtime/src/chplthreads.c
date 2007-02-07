@@ -13,56 +13,49 @@ typedef struct {
   _chpl_threadarg_t arg;                   // argument for the created thread
 } _chpl_createarg_t;
 
+
 // The global vars are to synchronize with threads created with 
 // begin's which are not joined.  We need to wait on them before the
-// main thread can call exit.
+// main thread can call exit for the process.
 static _chpl_mutex_t   _chpl_begin_cnt_lock; // protect _chpl_begin_cnt
 static int             _chpl_begin_cnt;      // number of unjoined threads 
 static _chpl_condvar_t _chpl_can_exit;       // can main thread exit?
 static pthread_key_t   _chpl_serial;         // per-thread serial state
 
+
 // Mutex
-_chpl_mutex_p 
-_chpl_mutex_new(void) {
+
+_chpl_mutex_p _chpl_mutex_new(void) {
   _chpl_mutex_p m;
   m = (_chpl_mutex_p) _chpl_alloc(sizeof(_chpl_mutex_t), "mutex", 0, 0);
   _chpl_mutex_init(m);
   return m;
 }
 
-
-int 
-_chpl_mutex_init(_chpl_mutex_p mutex) {
+int _chpl_mutex_init(_chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   return pthread_mutex_init(mutex, NULL);
 }
 
-
-int
-_chpl_mutex_lock(_chpl_mutex_p mutex) {
+int _chpl_mutex_lock(_chpl_mutex_p mutex) {
   return pthread_mutex_lock(mutex);
 }
 
-
-int 
-_chpl_mutex_trylock(_chpl_mutex_p mutex) {
+int _chpl_mutex_trylock(_chpl_mutex_p mutex) {
   return pthread_mutex_trylock(mutex);
 }
 
-
-int
-_chpl_mutex_unlock(_chpl_mutex_p mutex) {
+int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
   return pthread_mutex_unlock(mutex);
 }
 
-
-int  
-_chpl_mutex_destroy(_chpl_mutex_p mutex) {
+int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
   return pthread_mutex_destroy(mutex);
 }
 
 
 // Condition variables
+
 _chpl_condvar_p _chpl_condvar_new(void) {
   _chpl_condvar_p cv;
   cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
@@ -75,25 +68,22 @@ int _chpl_condvar_init (_chpl_condvar_p cond) {
   return pthread_cond_init(cond, NULL);
 }
 
-
 int _chpl_condvar_destroy(_chpl_condvar_p cond) {
   return pthread_cond_destroy(cond);
 }
-
 
 int _chpl_condvar_signal(_chpl_condvar_p cond) {
   return pthread_cond_signal(cond);
 }
 
-
 int _chpl_condvar_broadcast(_chpl_condvar_p cond) {
   return pthread_cond_broadcast(cond);
 }
 
-
 int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex) {
   return pthread_cond_wait(cond, mutex);
 }
+
 
 
 void _chpl_serial_delete(_bool *p) {
@@ -104,6 +94,7 @@ void _chpl_serial_delete(_bool *p) {
 
 
 // Threads
+
 void initChplThreads() {
   _chpl_mutex_init(&_chpl_begin_cnt_lock);
   _chpl_begin_cnt = 0;                          // only main thread running
@@ -114,7 +105,6 @@ void initChplThreads() {
   _chpl_mutex_init(&_memtrace_lock);
 
   pthread_key_create(&_chpl_serial, (void(*)(void*))_chpl_serial_delete);
-  // pthread_key_create(&_chpl_serial, NULL);
   _chpl_thread_init();
 }
 
@@ -130,7 +120,7 @@ void exitChplThreads() {
   pthread_key_delete(_chpl_serial);
 }
 
-// #include <stdio.h>
+
 void _chpl_thread_init(void) {
   _bool *p;
   p = pthread_getspecific(_chpl_serial);

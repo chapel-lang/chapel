@@ -31,7 +31,7 @@ int _chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex);
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
 typedef void* _chpl_threadarg_t;           // function argument
 typedef pthread_attr_t _chpl_thread_attr_t;// thread attributes
-typedef pthread_t _chpl_thread_t;          // pthread handle
+typedef pthread_t _chpl_thread_t;          // thread handle
 typedef struct {                           // temporary work space
   _chpl_thread_t thread;                   // thread handle for join/wait
   int            error;                    // to store fork error code
@@ -45,8 +45,9 @@ void    exitChplThreads(void);             // called by the main thread
 _uint64 _chpl_thread_id(void);             // return caller's thread id
 void    _chpl_thread_init(void);           // setup per-thread state
 _bool   _chpl_get_serial(void);            // set dynamic serial state
-void    _chpl_set_serial(_bool state);     // set dynamic serial state T or F
+void    _chpl_set_serial(_bool state);     // set dynamic serial state true or false
 void    _chpl_serial_delete(_bool *p);
+
 
 // macros to init, touch, and free reference-counted Chapel variables
 #define _CHPL_REFC_TOUCH(_var, _refc, _mutex)           \
