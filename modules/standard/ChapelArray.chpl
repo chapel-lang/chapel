@@ -165,7 +165,7 @@ def _domain.writeThis(f: Writer) {
 }
 
 def by(a: _domain, b) {
-  var x = a._value by b;
+  var x = a._value.strideBy(b);
   return _domain(x.type, a._index_type, a._dim_index_type, a.rank, x);
 }
 
@@ -253,23 +253,15 @@ class _array {
   }
 }
 
-def =(a: _array, b: _array) {
-  a._value.assign(b._value);
-  return a;
-}
-
-def =(a: _array, b: _domain) {
-  a._value.assign(b._value);
-  return a;
-}
-
 def =(a: _array, b) {
-  a._value.assign(b);
+  for (i,bb) in (a.dom,b) do
+    a(i) = bb;
   return a;
 }
 
 def =(a: _array, b: a.eltType) {
-  a._value.assign(b);
+  for i in a.dom do
+    a(i) = b;
   return a;
 }
 

@@ -147,21 +147,20 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   iterator subBlocks {
     yield this;
   }
-}
 
+  def strideBy(dim : rank*int) {
+    var x = SingleLocaleArithmeticDomain(rank, dim_type);
+    for i in 1..rank do
+      x.ranges(i) = ranges(i) by dim(i);
+    return x;
+  }
 
-def by(dom : SingleLocaleArithmeticDomain, dim : dom.rank*int) {
-  var x = SingleLocaleArithmeticDomain(dom.rank, dom.dim_type);
-  for i in 1..dom.rank do
-    x.ranges(i) = dom.ranges(i) by dim(i);
-  return x;
-}
-
-def by(dom : SingleLocaleArithmeticDomain, dim : int) {
-  var x = SingleLocaleArithmeticDomain(dom.rank, dom.dim_type);
-  for i in 1..dom.rank do
-    x.ranges(i) = dom.ranges(i) by dim;
-  return x;
+  def strideBy(dim : int) {
+    var x = SingleLocaleArithmeticDomain(rank, dim_type);
+    for i in 1..rank do
+      x.ranges(i) = ranges(i) by dim;
+    return x;
+  }
 }
 
 
