@@ -93237,3 +93237,16 @@ Modified files:
 	chapel/runtime/include/: chplthreads.h 
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+02/07/07 09:30:01 -- deitz
+
+Log message:
+	Added a test that captures the difference between variables declared
+	outside of the for loop and those declared inside the for loop that
+	shows up when a begin is inside the for loop.
+
+Added files:
+	chapel/test/parallel/begin/deitz/: test_global_for_begin.chpl 
+	                                   test_global_for_begin.good 
+
