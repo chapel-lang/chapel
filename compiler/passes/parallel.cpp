@@ -1,5 +1,5 @@
 // This pass performs some transformations to enable parallel code
-// generation.
+// generation for begin and cobegin blocks.
 
 #include "astutil.h"
 #include "expr.h"
@@ -77,6 +77,7 @@ cobegin_encapsulation() {
 }
 
 
+// First pass of the parallel transformations for begin and cobegin blocks.
 void
 parallel1 (void) {
   addLibInfo ("-lpthread");
@@ -90,7 +91,10 @@ parallel1 (void) {
 // Mark locals that should be heap allocated and insert a call to allocate
 // them on the heap.  This is for begin blocks where the forked child thread 
 // and parent thread may have different lifetimes.  The locals cannot live 
-// on a thread's stack.
+// on a thread's stack.  
+//   In addition to moving these vars to the heap, we will also use
+// reference counting to garbage collect.  Will need a counter and mutex 
+// for each var.  Of course, those will be heap allocated also.
 static void
 begin_mark_locals() {
   Vec<SymExpr*> arglist;
@@ -303,18 +307,9 @@ thread_args() {
                                                      field));
               }
 
-              // WAW: touch + free for the class arg wrapper
-              /* WAW: this strategy doesn't work because the _touch/_free
-                 functions are not defined.
-              if (!no_gc && (BLOCK_BEGIN == b->blockTag)) {
-                b->insertBefore( new CallExpr( new FnSymbol("_touch"), tempc));
-                wrap_fn->insertAtTail( new CallExpr( new FnSymbol("_free"), wrap_c));
-              }
-              */
-
               wrap_fn->retType = dtVoid;
               fcall->remove();                     // rm orig. call
-              wrap_fn->insertAtHead(new_cofn);    // add new call
+              wrap_fn->insertAtHead(new_cofn);     // add new call
               wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
               fcall_def->remove();                 // move orig. def
               mod->stmts->insertAtTail(fcall_def); // to top-level
@@ -329,6 +324,7 @@ thread_args() {
 }
 
 
+// Second pass of the parallel transformations for begin and cobegin blocks.
 void
 parallel2 (void) {
   if (parallelPass) {
