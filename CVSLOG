@@ -93215,3 +93215,14 @@ Modified files:
 	chapel/modules/standard/: ChapelArray.chpl 
 	                          SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+02/06/07 16:35:21 -- deitz
+
+Log message:
+	Implemented low and high functions on single locale arithmetic domains
+	for domains of all ranks.  It only worked with rank one domains.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+
