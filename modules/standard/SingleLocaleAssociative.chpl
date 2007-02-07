@@ -209,7 +209,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         hash = _map(ind);
       }
       table(hash) = ind_pos;
-      inds(ind_pos).data = ind;       // WAW: fixme w/ anon record literal
+      inds(ind_pos).data = ind;
       inds(ind_pos).valid = true;
       num_inds += 1;
     } // else, already in domain
