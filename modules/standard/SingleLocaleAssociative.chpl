@@ -367,23 +367,6 @@ class SingleLocaleAssociativeArray: BaseArray {
   def numElements {
     return dom.numIndices;
   }
-
-  def assign( b: SingleLocaleAssociativeArray) {
-    var a_dom = this.dom;
-    if a_dom.num_inds != b.dom.num_inds then
-      halt( "array assignment with domains of different lengths") ;
-    var b_inds = b.dom.inds;
-    for i in 0..b_inds.size-1 {
-      if (b_inds(i).valid) {
-        var t = a_dom.table(a_dom._map( b_inds(i).data));
-        if t>=0 {
-          this.data(t) = b.data(t);
-        } else {
-          halt( "array assignment with different domain values");
-        }
-      }
-    }
-  }
 }
 
 def SingleLocaleAssociativeArray.writeThis(f: Writer) {

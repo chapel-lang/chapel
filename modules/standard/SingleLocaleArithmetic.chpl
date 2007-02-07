@@ -278,16 +278,6 @@ class SingleLocaleArithmeticArray: BaseArray {
       halt("illegal reallocation");
     }
   }
-
-  def assign(y) {
-    for (i,e) in (dom,y) do
-      this(i) = e;
-  }
-
-  def assign(y: eltType) {
-    for i in dom do
-      this(i) = y;
-  }
 }
 
 def SingleLocaleArithmeticDomain.writeThis(f: Writer) {
