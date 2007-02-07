@@ -93203,3 +93203,15 @@ Added files:
 	                                underscoreInVarDecl.future 
 	                                underscoreInVarDecl.good 
 
+---------------------------------------------------------------------------
+
+02/06/07 16:34:13 -- deitz
+
+Log message:
+	Made the slice function in the single locale arithmetic array not need
+	to access the array wrapper.  Simplified to a single slice function.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+
