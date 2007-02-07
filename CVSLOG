@@ -93292,3 +93292,23 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+02/07/07 11:24:58 -- diten
+
+Log message:
+	Fix a problem with handling of "_" in tuple style variable defs.
+	
+	Move the check for a symbol name of "_" to a point a little later in the
+	parse.  Previously a DefExpr was not inserted into the AST if its symbol name
+	was "_".  This threw off a count of which tuple field matched with which
+	variable, and resulted in a bad pointer dereference when the first field was
+	an underscore.  Now, the DefExpr is inserted, but later removed if its symbol
+	name is "_".
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/types/tuple/diten/: tuple_var_def.good 
+Removed files:
+	chapel/test/types/tuple/bradc/: underscoreInVarDecl.future 
+
