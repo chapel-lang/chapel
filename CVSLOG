@@ -93385,3 +93385,21 @@ Log message:
 Modified files:
 	./: CONTRIBUTORS 
 
+---------------------------------------------------------------------------
+
+02/08/07 15:15:32 -- diten
+
+Log message:
+	Initial handling for accessing fields in a module with moduleName.fieldName
+	without having used the module in the current scope.  This is currently working
+	for fields and non-overloaded functions.
+
+Modified files:
+	chapel/compiler/passes/: scopeResolve.cpp 
+Added files:
+	chapel/test/modules/diten/: module_overloaded_function.chpl 
+	                            module_overloaded_function.good 
+	                            nested_module_collision.chpl 
+	                            nested_module_collision.future 
+	                            nested_module_collision.good 
+
