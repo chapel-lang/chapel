@@ -93375,3 +93375,13 @@ Log message:
 Added files:
 	chapel/test/npb/cg/bradc/: NOTEST cg-core.chpl cg.chpl 
 
+---------------------------------------------------------------------------
+
+02/08/07 14:47:25 -- bradc
+
+Log message:
+	Added David's list to the CONTRIBUTORS list.
+
+Modified files:
+	./: CONTRIBUTORS 
+
