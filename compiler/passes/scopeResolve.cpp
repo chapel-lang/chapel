@@ -84,14 +84,30 @@ void scopeResolve(Symbol* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    // Translate M.x where M is a ModuleSymbol into just x
+    // where x is the symbol from module M.
+    if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
+      SymExpr *base, *sym1, *sym2;
+      ModuleSymbol *module;
+      if ((base = dynamic_cast<SymExpr*>(callExpr->baseExpr)) &&
+          (!strcmp(base->var->name, "."))                     &&
+          (sym1 = dynamic_cast<SymExpr*>(callExpr->get(1)))   &&
+          (module = dynamic_cast<ModuleSymbol*>(sym1->var))   &&
+          (sym2 = dynamic_cast<SymExpr*>(callExpr->get(2)))) {
+        SymExpr *newSym =
+          new SymExpr(module->modScope->lookup(get_string(sym2)));
+        callExpr->replace(newSym);
+      }
+    }
+
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (dynamic_cast<UnresolvedSymbol*>(symExpr->var)) {
         char* name = symExpr->var->name;
         if (!strcmp(name, "."))
           continue;
 
-        // resolve method's type if in a method
         Symbol* parent = symExpr->parentSymbol;
+        // resolve method's type if in a method
         while (!dynamic_cast<ModuleSymbol*>(parent)) {
           if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
             if (method->_this) {
@@ -122,7 +138,6 @@ void scopeResolve(Symbol* base) {
         if (sym) {
           if (!fn)
             symExpr->var = sym;
-
           if (type)
             if (UserType* ut = dynamic_cast<UserType*>(type->type)) {
               Expr* e = ut->typeExpr->copy();
