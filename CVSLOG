@@ -93360,3 +93360,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/07 16:56:05 -- bradc
+
+Log message:
+	Checking in sketches of NAS CG for reference.  These leave out
+	some particularly sticky details like initializing the sparse
+	domain and array.  cg-core.chpl is just the conjugant gradiant
+	subroutine in isolation for reference.  cg.chpl wraps it with
+	some of the trappings of the benchmark (though it could use
+	more as well).
+
+Added files:
+	chapel/test/npb/cg/bradc/: NOTEST cg-core.chpl cg.chpl 
+
