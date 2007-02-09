@@ -50,15 +50,14 @@ class BlockStmt : public Expr {
  public:
   BlockTag blockTag;
   AList* body;
+  CallExpr* loopInfo;
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
-  BlockStmt(AList* init_body,
-                       BlockTag init_blockTag = BLOCK_NORMAL);
-  BlockStmt(Expr* init_body = NULL,
-                       BlockTag init_blockTag = BLOCK_NORMAL);
+  BlockStmt(AList* init_body, BlockTag init_blockTag = BLOCK_NORMAL);
+  BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   virtual ~BlockStmt();
   virtual void verify();
   COPY_DEF(BlockStmt);

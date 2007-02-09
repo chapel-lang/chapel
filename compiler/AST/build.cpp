@@ -327,13 +327,26 @@ BlockStmt* build_for_block(BlockTag tag,
 }
 
 
+static Symbol*
+insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
+  Symbol* expr_var = new VarSymbol("_tmp");
+  expr_var->isCompilerTemp = true;
+  expr_var->canParam = true;
+  stmt->insertBefore(new DefExpr(expr_var));
+  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, expr_var, expr));
+  return expr_var;
+}
+
+
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
-  BlockStmt* block = new BlockStmt(stmts);
+  BlockStmt* block = new BlockStmt(stmts, BLOCK_PARAM_FOR);
   BlockStmt* outer = new BlockStmt(block);
-  block->blockTag = BLOCK_PARAM_FOR;
-  VarSymbol* index_var = new VarSymbol(index);
-  block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
-  block->insertBefore(new CallExpr(PRIMITIVE_LOOP_PARAM, new SymExpr(index_var), low, high, stride));
+  VarSymbol* indexVar = new VarSymbol(index);
+  block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64)0)));
+  Symbol* lowVar = insertBeforeCompilerTemp(block, low);
+  Symbol* highVar = insertBeforeCompilerTemp(block, high);
+  Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
+  block->loopInfo = new CallExpr(PRIMITIVE_LOOP_PARAM, indexVar, lowVar, highVar, strideVar);
   return build_chpl_stmt(outer);
 }
 

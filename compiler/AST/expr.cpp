@@ -1557,6 +1557,7 @@ Expr* getFirstExpr(Expr* expr) {
     AST_RET_CHILD(ReturnStmt, expr);
     break;
   case STMT_BLOCK:
+    AST_RET_CHILD(BlockStmt, loopInfo);
     AST_RET_LIST(BlockStmt, body);
     break;
   case STMT_COND:

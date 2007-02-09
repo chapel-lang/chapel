@@ -1505,39 +1505,39 @@ isType(Expr* expr) {
 }
 
 static void fold_param_for(CallExpr* loop) {
-  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->next);
-  if (!block || block->blockTag != BLOCK_PARAM_FOR)
+  BlockStmt* block = dynamic_cast<BlockStmt*>(loop->parentExpr);
+  if (!block || block->blockTag != BLOCK_PARAM_FOR || block->loopInfo != loop)
     INT_FATAL(loop, "bad param loop primitive");
-  if (loop && loop->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
-    if (SymExpr* lse = dynamic_cast<SymExpr*>(loop->get(2))) {
-      if (SymExpr* hse = dynamic_cast<SymExpr*>(loop->get(3))) {
-        if (SymExpr* sse = dynamic_cast<SymExpr*>(loop->get(4))) {
-          if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
-            if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
-              if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
-                if (lvar->immediate && hvar->immediate && svar->immediate) {
-                  int64 low = lvar->immediate->int_value();
-                  int64 high = hvar->immediate->int_value();
-                  int64 stride = svar->immediate->int_value();
-                  Expr* index_expr = loop->get(1);
-                  block->blockTag = BLOCK_NORMAL;
-                  Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
-                  if (stride <= 0)
-                    INT_FATAL("fix this");
-                  for (int i = low; i <= high; i += stride) {
-                    ASTMap map;
-                    map.put(index, new_IntSymbol(i));
-                    block->insertBefore(block->copy(&map));
-                  }
-                  block->remove();
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  SymExpr* lse = dynamic_cast<SymExpr*>(loop->get(2));
+  SymExpr* hse = dynamic_cast<SymExpr*>(loop->get(3));
+  SymExpr* sse = dynamic_cast<SymExpr*>(loop->get(4));
+  if (!lse || !hse || !sse)
+    INT_FATAL(loop, "bad param loop primitive");
+  VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var);
+  VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var);
+  VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var);
+  if (!lvar || !hvar || !svar)
+    INT_FATAL(loop, "bad param loop primitive");
+  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
+    INT_FATAL(loop, "bad param loop primitive");
+  int64 low = lvar->immediate->int_value();
+  int64 high = hvar->immediate->int_value();
+  int64 stride = svar->immediate->int_value();
+  Expr* index_expr = loop->get(1);
+  block->blockTag = BLOCK_NORMAL;
+  loop->remove();
+  CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
+  block->insertAfter(noop);
+  Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
+  if (stride <= 0)
+    INT_FATAL("fix this");
+  for (int i = low; i <= high; i += stride) {
+    ASTMap map;
+    map.put(index, new_IntSymbol(i));
+    noop->insertBefore(block->copy(&map));
   }
+  block->replace(loop);
+  makeNoop(loop);
 }
 
 static Expr* fold_cond_stmt(CondStmt* if_stmt) {

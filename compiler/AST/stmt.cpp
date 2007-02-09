@@ -124,6 +124,7 @@ BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(init_body),
+  loopInfo(NULL),
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL)
@@ -136,6 +137,7 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(new AList(init_body)),
+  loopInfo(NULL),
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL)
@@ -164,12 +166,16 @@ void BlockStmt::verify() {
 BlockStmt*
 BlockStmt::copyInner(ASTMap* map) {
   BlockStmt* _this = new BlockStmt(COPY_INT(body), blockTag);
+  _this->loopInfo = COPY_INT(loopInfo);
   return _this;
 }
 
 
 void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
+  if (old_ast == loopInfo)
+    loopInfo = dynamic_cast<CallExpr*>(new_ast);
+  else
+    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
 }
 
 
@@ -290,9 +296,6 @@ void BlockStmt::codegen(FILE* outfile) {
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
   inBlockStmt++;
-//   if (blkScope) {
-//     blkScope->codegen(outfile, "\n");
-//   }
   if (body) {
     if (parallelPass) {
       switch (blockTag) {
