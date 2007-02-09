@@ -460,7 +460,7 @@ Symbol* ClassType::getField(char* name) {
     if (!strcmp(sym->name, name))
       return sym;
   }
-  INT_FATAL(this, "field not in class in getField");
+  INT_FATAL(this, "field '%s' not in class in getField", name);
   return NULL;
 }
 
