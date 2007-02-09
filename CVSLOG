@@ -93403,3 +93403,23 @@ Added files:
 	                            nested_module_collision.future 
 	                            nested_module_collision.good 
 
+---------------------------------------------------------------------------
+
+02/08/07 17:11:41 -- bradc
+
+Log message:
+	Two minor changes:
+	
+	1) improvement to an internal error message about
+	   not finding a field within a struct to print
+	   out the name of the field.
+	
+	2) a few refactorings of the start_test script
+	   and am trying the -i (ignore interrupts flag)
+	   with tee to see if that fixes the cygwin
+	   cron job regressions.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/test/: start_test 
+
