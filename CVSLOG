@@ -93423,3 +93423,22 @@ Modified files:
 	chapel/compiler/AST/: type.cpp 
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+02/09/07 13:33:00 -- deitz
+
+Log message:
+	Added CallExpr field BlockStmt::loopInfo to eventually contain all
+	loop related information for all for and while loops.  The plan is to
+	eventually lower for loops after function resolution so that they can
+	be specialized to iterator ranks.
+	
+	Reworked parameter for loops to use the loopInfo field to store the
+	PRIMITIVE_LOOP_PARAM call that determines the indices of the parameter
+	for loop.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
