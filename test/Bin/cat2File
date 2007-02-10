@@ -1,0 +1,25 @@
+#!/bin/sh
+
+legal=0
+if [ $# -eq 1 ]; then
+   append=0;
+   filename=$1;
+   legal=1;
+elif [ $# -eq 2 ]; then
+   if [ $1 = "-a" ]; then
+     append=1;
+     filename=$2;
+     legal=1;
+   fi
+fi
+
+if [ $legal -eq 0 ]; then
+   echo usage\: cat2File \[\-a\] filename;
+   exit;
+fi
+
+if [ $append -eq 1 ]; then
+  cat </dev/stdin >> $filename;
+else
+  cat </dev/stdin > $filename;
+fi

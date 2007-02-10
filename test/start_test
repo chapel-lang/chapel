@@ -45,6 +45,7 @@
 #   -onetest   <single test>          N/A
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
+#   -notee
 #   -futures
 #   -futuresonly
 #   -interpret (DEPRECATED)
@@ -92,6 +93,10 @@
 # executable should be run using valgrind in order to find errors.
 # The -valgrindexe option specifies that the generated executable
 # should be run using valgrind, but not the compiler.
+#
+# The -notee option indicates that "tee" should not be used.  This was
+# added due to a sense that tee was breaking the nightly regression
+# runs on the Cygwin platform.
 #
 # The -futures option specifies that the testing system should test
 # both future and non-future tests.  By default, future tests are
@@ -315,6 +320,7 @@ set testfutures = 0
 set testfuturesonly = 0
 set testnotests = 0
 set recurse = 1
+set tee = "tee"
 
 
 while ( $#argv > 0 )
@@ -388,6 +394,11 @@ while ( $#argv > 0 )
                 shift
                 set valgrindexe = 1
                 breaksw
+        case -notee:
+        case --notee:
+                shift
+                set tee = "$testdir/Bin/cat2File"
+                breaksw
 	case -h:
 	case -help:
         case --help
@@ -403,6 +414,7 @@ while ( $#argv > 0 )
                 echo "          -futuresonly"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
+                echo "          -notee"
 #                echo "          -interpret (or -i)"
 		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -h, -help"
@@ -415,27 +427,27 @@ while ( $#argv > 0 )
 	endsw
 end
 
-echo \[Starting Chapel regression tests - $datestr\] |& tee -i $logtmp
-echo \[pwd: \"$testdir\"\] |& tee -i -a $logtmp
+echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
+echo \[pwd: \"$testdir\"\] |& $tee -a $logtmp
 
-echo \[platform: $platform\] |& tee -i -a $logtmp
+echo \[platform: $platform\] |& $tee -a $logtmp
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
-    echo \[valgrind: ON\] |& tee -i -a $logtmp
+    echo \[valgrind: ON\] |& $tee -a $logtmp
     setenv CHPL_TEST_VGRND_COMP on
     setenv CHPL_TEST_VGRND_EXE on
     which valgrind > /dev/null
     if ( $status != 0 ) then
-	echo ERROR: can\'t find valgrind |& tee -i -a $logtmp
+	echo ERROR: can\'t find valgrind |& $tee -a $logtmp
 	exit 1
     endif
 else
     setenv CHPL_TEST_VGRND_COMP off
     if ($valgrindexe) then
-        echo \[valgrind: EXE only\] |& tee -i -a $logtmp
+        echo \[valgrind: EXE only\] |& $tee -a $logtmp
         setenv CHPL_TEST_VGRND_EXE on
     else
-        echo \[valgrind: OFF\] |& tee -i -a $logtmp
+        echo \[valgrind: OFF\] |& $tee -a $logtmp
         setenv CHPL_TEST_VGRND_EXE off
     endif
 endif
@@ -445,11 +457,11 @@ if ($compiler == "") then
 endif
 
 if ($interpret) then
-    echo \[interpreter: ON\] |& tee -i -a $logtmp
+    echo \[interpreter: ON\] |& $tee -a $logtmp
     set compopts = "-i $compopts"
     setenv CHPL_TEST_INTERP on
 else
-    echo \[interpreter: OFF\] |& tee -i -a $logtmp
+    echo \[interpreter: OFF\] |& $tee -a $logtmp
     setenv CHPL_TEST_INTERP off
 endif
 
@@ -460,20 +472,20 @@ if ( -f $compiler && -x $compiler ) then
 	set compiler = $cwd/`basename $compiler`
 	popd >& /dev/null
 
-	echo \[compiler: \"$compiler\"\] |& tee -i -a $logtmp
+	echo \[compiler: \"$compiler\"\] |& $tee -a $logtmp
 else
 	echo \[Cannot find or execute compiler: \"$compiler\"\] \
-		|& tee -i -a $logtmp
+		|& $tee -a $logtmp
         exit 1
 endif
 
-echo \[compopts: \"$compopts\"\] |& tee -i -a $logtmp
+echo \[compopts: \"$compopts\"\] |& $tee -a $logtmp
 
-echo \[execopts: \"$execopts\"\] |& tee -i -a $logtmp
+echo \[execopts: \"$execopts\"\] |& $tee -a $logtmp
 
 if ($onetestpath != "") then
     if ($startdir != $testdir) then
-        echo \[Using -startdir with -onetest doesn\'t make sense\] |& tee -i -a $logtmp
+        echo \[Using -startdir with -onetest doesn\'t make sense\] |& $tee -a $logtmp
         exit 1
     endif
     if ( -r "$onetestpath") then
@@ -481,7 +493,7 @@ if ($onetestpath != "") then
         set onetest = `basename $onetestpath`
         set recurse = 0
     else
-        echo \[Can\'t access test: \"$onetestpath\"\] |& tee -i -a $logtmp
+        echo \[Can\'t access test: \"$onetestpath\"\] |& $tee -a $logtmp
         exit 1
     endif
 endif
@@ -493,17 +505,17 @@ if ( -d "$startdir" && -x "$startdir" ) then
 	popd >& /dev/null
 
         if ($recurse == 1) then
-            echo \[startdir: \"$startdir\"\] |& tee -i -a $logtmp
+            echo \[startdir: \"$startdir\"\] |& $tee -a $logtmp
         else
-            echo \[startdir \(nonrecursive\): \"$startdir\"\] |& tee -i -a $logtmp
+            echo \[startdir \(nonrecursive\): \"$startdir\"\] |& $tee -a $logtmp
             if ($onetest != "") then
-                echo \[onetest: $onetest\] |& tee -i -a $logtmp
+                echo \[onetest: $onetest\] |& $tee -a $logtmp
             else
             endif
         endif
 else
 	echo \[Permission denied for starting directory: \"$startdir\"\] \
-		|& tee -i -a $logtmp
+		|& $tee -a $logtmp
 	exit 1
 endif
 
@@ -513,10 +525,10 @@ if ( -d `dirname $logfile` && -x `dirname $logfile` ) then
 	set logfile = `pwd`/`basename $logfile`
 	popd >& /dev/null
 
-	echo \[logfile: \"$logfile\"\] |& tee -i -a $logtmp
+	echo \[logfile: \"$logfile\"\] |& $tee -a $logtmp
 else
 	echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
-		|& tee -i -a $logtmp
+		|& $tee -a $logtmp
 	exit 1
 endif
 
@@ -580,10 +592,10 @@ foreach dir ($dirs)
 		cd $dir
 	else
 		echo \["Warning: Cannot cd into" $dir "skipping directory."\]|&\
-			tee -i -a $logfile
+			$tee -a $logfile
 		continue
 	endif
-       	echo " " |& tee -i -a $logfile
+       	echo " " |& $tee -a $logfile
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 	if ((! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
             (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS))) \
@@ -603,12 +615,12 @@ foreach dir ($dirs)
                 if ($onetest != "") then
                     setenv CHPL_ONETEST "$onetest"
                 endif
-		echo "[Starting $sub_test `date`]" |& tee -i -a $logfile
-		$sub_clean "$testdir" |& tee -i -a $logfile
-		$sub_test "$compiler" "$testdir" |& tee -i -a $logfile
+		echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+		$sub_clean "$testdir" |& $tee -a $logfile
+		$sub_test "$compiler" "$testdir" |& $tee -a $logfile
 	else
 		echo \["No tests in directory " $dir\] |& \
-			tee -i -a $logfile
+			$tee -a $logfile
 	endif
 	cd $basedir
 end
@@ -616,27 +628,29 @@ end
 # return to directory where we started and remove lock
 cd $testdir
 
-echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& tee -i -a $logfile
-echo " " |& tee -i -a $logfile
+echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& $tee -a $logfile
+echo " " |& $tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
 set errormarker = "^\[Error"
 set successmarker = "^\[Success matching"
 
-echo \[Test Summary - $datestr\] |& tee -i $logfile.summary
-grep "$errormarker" $logfile |& tee -i -a $logfile.summary
-grep "$futuremarker" $logfile |& tee -i -a $logfile.summary
+echo \[Test Summary - $datestr\] |& $tee $logfile.summary
+grep "$errormarker" $logfile |& $tee -a $logfile.summary
+grep "$futuremarker" $logfile |& $tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
 set failures = `grep "$errormarker" $logfile | wc -l`
 if ($testfutures == 0 && $testfuturesonly == 0) then
-    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& tee -i -a $logfile.summary
+    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& $tee -a $logfile.summary
 else
     set futures = `grep "$futuremarker" $logfile | wc -l`
-    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& tee -i -a $logfile.summary
+    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& $tee -a $logfile.summary
 endif
-echo \[END\] |& tee -i -a $logfile.summary
+
+echo \[END\] |& $tee -a $logfile.summary
 cat $logfile.summary >> $logfile
+
 echo ''
 echo
