@@ -93442,3 +93442,21 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+02/09/07 16:35:12 -- bradc
+
+Log message:
+	Another, hopefully invisible, change to the testing
+	system, allowing it to be run with a new "-notee" flag
+	in order to avoid using the tee utility.  In this
+	case output is written directly to the Log file
+	without reflecting it to the console.  This is being
+	added in hopes of getting the cygwin regressions to
+	complete again.
+
+Modified files:
+	chapel/test/: start_test 
+Added files:
+	chapel/test/Bin/: cat2File 
+
