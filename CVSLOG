@@ -93478,3 +93478,15 @@ Modified files:
 	chapel/compiler/include/: primitive.h 
 	chapel/compiler/passes/: copy_propagation.cpp 
 
+---------------------------------------------------------------------------
+
+02/12/07 10:29:47 -- deitz
+
+Log message:
+	Made do..while loops use the BlockStmt::loopInfo field with simple
+	primitive call PRIMITIVE_LOOP_DOWHILE throughout compilation.  This
+	means do..while loops are code generated as C while loops.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp stmt.cpp 
+
