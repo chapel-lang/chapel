@@ -16,7 +16,8 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-      if (block->blockTag == BLOCK_COBEGIN ||
+      if (block->loopInfo ||
+          block->blockTag == BLOCK_COBEGIN ||
           block->blockTag == BLOCK_BEGIN)
         continue;
       if (block->list) {

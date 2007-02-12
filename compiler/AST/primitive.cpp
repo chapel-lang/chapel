@@ -287,6 +287,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
   prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);
+  prim_def(PRIMITIVE_LOOP_WHILEDO, "while...do loop", returnInfoVoid);
+  prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
 
   prim_def(PRIMITIVE_CLASS_NULL, "_refnull", returnInfoBool);
   prim_def(PRIMITIVE_GC_INIT, "_gc_init", returnInfoVoid);

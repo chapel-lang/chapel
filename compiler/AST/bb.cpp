@@ -56,8 +56,23 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
       BB_ADD(s->expr);
     } else if (BlockStmt* s = dynamic_cast<BlockStmt*>(stmt)) {
-      for_alist(Expr, stmt, s->body) {
-        BBB(stmt);
+      if (s->loopInfo) {
+        BasicBlock* top = basicBlock;
+        BB_RESTART();
+        BasicBlock* loopTop = basicBlock;
+        for_alist(Expr, stmt, s->body) {
+          BBB(stmt);
+        }
+        BasicBlock* loopBottom = basicBlock;
+        BB_RESTART();
+        BasicBlock* bottom = basicBlock;
+        BB_THREAD(top, loopTop);
+        BB_THREAD(loopBottom, bottom);
+        BB_THREAD(loopBottom, top);
+      } else {
+        for_alist(Expr, stmt, s->body) {
+          BBB(stmt);
+        }
       }
     } else if (CondStmt* s = dynamic_cast<CondStmt*>(stmt)) {
       BB_ADD(s->condExpr);

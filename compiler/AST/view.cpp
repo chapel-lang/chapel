@@ -28,8 +28,10 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf("%s", astTypeName[expr->astType]);
 
     if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
-      printf( " ");
-      view_ast( gs->label, number, mark, indent+1);
+      if (gs->label) {
+        printf( " ");
+        view_ast( gs->label, number, mark, indent+1);
+      }
     }
 
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr))

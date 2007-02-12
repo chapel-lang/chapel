@@ -9,7 +9,6 @@
 #include "symscope.h"
 
 
-static int inBlockStmt = 0;
 bool printCppLineno = false;
 bool inUserModule = false;
 
@@ -293,29 +292,28 @@ codegenBegin( FILE* outfile, AList *body) {
 
 void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
+
+  if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) {
+    fprintf(outfile, "while (");
+    loopInfo->get(1)->codegen(outfile);
+    fprintf(outfile, ") ");
+  }
+
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
-  inBlockStmt++;
-  if (body) {
-    if (parallelPass) {
-      switch (blockTag) {
-      case BLOCK_COBEGIN:
-        codegenCobegin( outfile, body);
-        break;
-      case BLOCK_BEGIN:
-        codegenBegin( outfile, body);
-        break;
-      default:
-        body->codegen(outfile, "");
-      }
 
-    } else {  // else, serial code gen
+  if (body) {
+    if (parallelPass && blockTag == BLOCK_COBEGIN) {
+      codegenCobegin( outfile, body);
+    } else if (parallelPass && blockTag == BLOCK_BEGIN) {
+      codegenBegin( outfile, body);
+    } else {
       body->codegen(outfile, "");
     }
   }
+
   if (this != getFunction()->body)
     fprintf(outfile, "}\n");
-  inBlockStmt--;
 }
 
 

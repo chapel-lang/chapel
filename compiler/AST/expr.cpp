@@ -1308,6 +1308,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ERROR:
     case PRIMITIVE_WHEN:
     case PRIMITIVE_LOOP_PARAM:
+    case PRIMITIVE_LOOP_WHILEDO:
+    case PRIMITIVE_LOOP_DOWHILE:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:
@@ -1585,6 +1587,9 @@ Expr* getNextExpr(Expr* expr) {
       return getFirstExpr(parent->thenStmt);
     else if (expr == parent->thenStmt && parent->elseStmt)
       return getFirstExpr(parent->elseStmt);
+  } else if (BlockStmt* parent = dynamic_cast<BlockStmt*>(expr->parentExpr)) {
+    if (expr == parent->loopInfo && parent->body->head)
+      return getFirstExpr(parent->body->head);
   }
   if (expr->parentExpr)
     return expr->parentExpr;

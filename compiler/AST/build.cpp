@@ -165,13 +165,18 @@ static void build_loop_labels(BlockStmt* body) {
 
 
 BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
+  VarSymbol* condVar = new VarSymbol("_cond");
+  condVar->isCompilerTemp = true;
   body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
   build_loop_labels(body);
   BlockStmt* stmts = build_chpl_stmt();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
-  stmts->insertAtTail(new CondStmt(cond, body));
-  body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
+  stmts->insertAtTail(new DefExpr(condVar));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  stmts->insertAtTail(body);
+  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
