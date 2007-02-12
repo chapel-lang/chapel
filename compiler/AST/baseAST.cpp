@@ -492,8 +492,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     AST_ADD_CHILD(ReturnStmt, expr);
     break;
   case STMT_BLOCK:
-    AST_ADD_CHILD(BlockStmt, loopInfo);
     AST_ADD_LIST(BlockStmt, body);
+    AST_ADD_CHILD(BlockStmt, loopInfo);
     break;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);

@@ -170,31 +170,40 @@ BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
+  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   build_loop_labels(body);
   BlockStmt* stmts = build_chpl_stmt();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(body);
-  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
 
 
 BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
-  BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->first());
-  if (!block) {
-    block = new BlockStmt(body);
-    body = block;
+  VarSymbol* condVar = new VarSymbol("_cond");
+  condVar->isCompilerTemp = true;
+
+  // make variables declared in the scope of the body visible to
+  // expressions in the condition of a do..while block
+  if ((body->body->length() == 1) &&
+      dynamic_cast<BlockStmt*>(body->body->only())) {
+    BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->only());
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  } else {
+    body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   }
+
   body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
   build_loop_labels(body);
   BlockStmt* stmts = build_chpl_stmt();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
+  stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(body);
-  block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }

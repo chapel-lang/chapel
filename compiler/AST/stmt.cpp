@@ -293,10 +293,14 @@ codegenBegin( FILE* outfile, AList *body) {
 void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
 
-  if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) {
-    fprintf(outfile, "while (");
-    loopInfo->get(1)->codegen(outfile);
-    fprintf(outfile, ") ");
+  if (loopInfo) {
+    if (loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) {
+      fprintf(outfile, "while (");
+      loopInfo->get(1)->codegen(outfile);
+      fprintf(outfile, ") ");
+    } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
+      fprintf(outfile, "do ");
+    }
   }
 
   if (this != getFunction()->body)
@@ -313,7 +317,15 @@ void BlockStmt::codegen(FILE* outfile) {
   }
 
   if (this != getFunction()->body)
-    fprintf(outfile, "}\n");
+    fprintf(outfile, "}");
+
+  if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
+    fprintf(outfile, " while (");
+    loopInfo->get(1)->codegen(outfile);
+    fprintf(outfile, ");\n");
+  } else {
+    fprintf(outfile, "\n");
+  }
 }
 
 
