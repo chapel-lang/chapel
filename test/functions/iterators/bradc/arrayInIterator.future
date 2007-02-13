@@ -1,0 +1,7 @@
+array in iterator (deitz?)
+
+It seems that using an array in an iterator causes
+problem.  Here we see one type of problem (a seg
+fault at runtime).  In other cases which I have yet
+to capture in a small test, I get compile errors
+with confusing error messages.
