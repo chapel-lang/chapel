@@ -93578,3 +93578,14 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
 
+---------------------------------------------------------------------------
+
+02/13/07 11:40:46 -- deitz
+
+Log message:
+	Implemented minloc and maxloc to explicitly require an index.  See new
+	test for example.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+
