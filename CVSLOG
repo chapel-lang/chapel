@@ -93545,3 +93545,36 @@ Added files:
 	                               mpi2.tex rma.eps rma.fig 
 	                               shmem.tex 
 
+---------------------------------------------------------------------------
+
+02/13/07 11:05:27 -- deitz
+
+Log message:
+	Reworked mechanism to determine whether a class promotes over scalar
+	types.  It used to be marked by specifying an iterator with the name
+	'this' even though the iterator was ignored.  It is now specified by
+	declaring a field called '_promotionType' and the type of this field
+	is used to determine the type of the scalar over which the class
+	promotes.  The '_' indicates that this is not being exposed to users
+	yet.  There are many options of how to indicate a class promotes that
+	we need to think through before we expose it to the user, if we expose
+	it to the user.
+	
+	The 'this' iterator approach has a number of problems.  The main
+	implementation difficulty is that we rely on the structural iterator
+	interface instead of iterator functions.  A language difficulty is
+	that iterators can be used like normal functions so there is an
+	inherent ambiguity between the this iterator and the this function.
+	Even assuming we allow 'this' iterators, we may not want to say that
+	any class that defines a 'this' iterator promotes.  Besides, it is
+	currently limited to built-in types and not yet exposed to the user.
+	
+	This checkin dramatically simplifies the compiler code used to detect
+	scalar promotion.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
+
