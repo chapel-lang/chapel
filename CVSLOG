@@ -93589,3 +93589,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelSeq.chpl 
 
+---------------------------------------------------------------------------
+
+02/13/07 11:41:11 -- deitz
+
+Log message:
+	Forgot to add test of minloc and maxloc.
+
+Added files:
+	chapel/test/reductions/deitz/: test_loc_reduce.chpl 
+	                               test_loc_reduce.good 
+
