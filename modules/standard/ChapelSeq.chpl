@@ -14,10 +14,7 @@ record seq {
   var _first : _seqNode of eltType;
   var _last : _seqNode of eltType;
 
-  iterator this() : eltType {
-    forall x in this
-      yield x; 
-  }
+  var _promotionType : eltType;
 
   def this(i : int) var {
     if i >= 0 {
@@ -350,6 +347,8 @@ record _aseq {
   var _high : eltType;
   var _stride : int = 1;
 
+  var _promotionType : eltType;
+
   def low: eltType return _low;
   def high: eltType return _high;
   def stride: eltType return _stride;
@@ -360,11 +359,6 @@ record _aseq {
       _high = 0:eltType;
       _stride = 1;
     }
-  }
-
-  iterator this() : eltType {
-    forall x in this
-      yield x; 
   }
 
   def getHeadCursor()
@@ -446,11 +440,7 @@ record _iaseq {
   param _upper: int; // 0 bound is lower bound, 1 bound is upper bound
   var _bound: eltType;
   var _stride : int = 1;
-
-  iterator this() : eltType {
-    forall x in this
-      yield x; 
-  }
+  var _promotionType : eltType;
 
   def getHeadCursor() {
     if _upper == 1 && _stride > 0 then

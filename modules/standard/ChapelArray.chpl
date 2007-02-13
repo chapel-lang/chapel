@@ -53,6 +53,7 @@ class _domain {
   param rank : int;
   var _value : _domain_type;
   var _arrs: seq(BaseArray);
+  var _promotionType : _index_type;
 
   def getHeadCursor()
     return _value.getHeadCursor();
@@ -65,11 +66,6 @@ class _domain {
 
   def isValidCursor?(c)
     return _value.isValidCursor?(c);
-
-  iterator this() : _index_type {
-    forall x in _value
-      yield x; 
-  }
 
   def this(dim : int)
     return _value(dim);
@@ -177,6 +173,7 @@ class _array {
   param rank : int;
   var _value : _array_type;
   var dom : _domain;
+  var _promotionType : eltType;
 
   def this(d: _domain) {
     var x = _value.slice(d._value);
@@ -239,11 +236,6 @@ class _array {
 
   def isValidCursor?(c)
     return _value.isValidCursor?(c);
-
-  iterator this() : eltType {
-    forall x in _value
-      yield x; 
-  }
 
   def numElements return dom.numIndices;
 

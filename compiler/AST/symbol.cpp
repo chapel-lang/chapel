@@ -1034,31 +1034,6 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
 }
 
 static void
-check_promoter(ClassType *at) {
-  ClassType *t = dynamic_cast<ClassType*>(at->instantiatedFrom);
-  for_fields(field, t) {
-    if (field->hasPragma("promoter")) {
-      bool updated = false;
-      Vec<BaseAST*> keys;
-      at->substitutions.get_keys(keys);
-      forv_Vec(BaseAST, ast, keys) {
-        if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
-          if (!strcmp(field->name, sym->name)) {
-            Type* type = dynamic_cast<Type*>(at->substitutions.get(sym));
-            if (type && type != dtUnknown) {
-              at->scalarPromotionType = type;
-              updated = true;
-            }
-          }
-        }
-      }
-      if (!updated)
-        INT_FATAL(at, "Fail to resolve scalar promotion type on instantiation");
-    }
-  }
-}
-
-static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
   int64 size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->int_value();
@@ -1320,7 +1295,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     newfn = instantiate_function(this, generic_substitutions, clone->type);
     clone->type->defaultConstructor = newfn;
     newfn->retType = clone->type;
-    check_promoter(dynamic_cast<ClassType*>(clone->type));
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
 

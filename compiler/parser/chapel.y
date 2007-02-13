@@ -657,8 +657,6 @@ fn_decl_stmt:
   fn_tag function opt_formal_ls fn_param fnretref opt_type where parsed_block_stmt
     {
       $2->fnClass = $1;
-      if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
-        $2->name = astr("_promoter");
       if (!$3)
         $2->noParens = true;
       else {

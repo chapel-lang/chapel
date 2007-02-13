@@ -16,7 +16,6 @@
 bool normalized = false;
 
 static void change_method_into_constructor(FnSymbol* fn);
-static void enable_scalar_promotion(FnSymbol* fn);
 static void iterator_transform(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
@@ -53,7 +52,6 @@ void normalize(BaseAST* base) {
       clone_parameterized_primitive_methods(fn);
       fixup_parameterized_primitive_formals(fn);
       if (fn->fnClass == FN_ITERATOR) {
-        enable_scalar_promotion( fn);
         iterator_transform( fn);
       }
       change_method_into_constructor(fn);
@@ -427,43 +425,6 @@ iterator_transform( FnSymbol *fn) {
   fn->retExprType = wrapperCall->copy();
   insert_help(fn->retExprType, NULL, fn, fn->argScope);
   normalize(fn->defPoint);
-}
-
-
-static void
-enable_scalar_promotion( FnSymbol *fn) {
-  Expr* seqType = fn->retExprType;
-  if (!seqType)
-    return;
-  Type *seqElementType = seqType->typeInfo();
-  
-  if (!strcmp("_promoter", fn->name)) {
-    if (seqElementType != dtUnknown) {
-      fn->_this->type->scalarPromotionType = seqElementType;
-    } else {
-      if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
-        if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {
-          if (!strcmp(".", b->var->name) && c->argList->length() == 2) {
-            if (SymExpr *a1 = dynamic_cast<SymExpr*>(c->argList->get(1))) {
-              if (a1->var == fn->_this) {
-                if (SymExpr *a2 = dynamic_cast<SymExpr*>(c->argList->get(2))) {
-                  if (VarSymbol *vs = dynamic_cast<VarSymbol*>(a2->var)) {
-                    if (vs->immediate) {
-                      char *s = vs->immediate->v_string;
-                      ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
-                      for_fields(field, ct)
-                        if (!strcmp(field->name, s))
-                          field->addPragma("promoter");
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 

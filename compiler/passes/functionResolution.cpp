@@ -2529,6 +2529,8 @@ setFieldTypes(FnSymbol* fn) {
       if (!strcmp(field->name, formal->name)) {
         field->type = t;
         found = true;
+        if (!strcmp(field->name, "_promotionType"))
+          ct->scalarPromotionType = t;
       }
     }
     if (!found)
