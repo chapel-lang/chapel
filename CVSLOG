@@ -93600,3 +93600,17 @@ Added files:
 	chapel/test/reductions/deitz/: test_loc_reduce.chpl 
 	                               test_loc_reduce.good 
 
+---------------------------------------------------------------------------
+
+02/13/07 11:52:59 -- marybeth
+
+Log message:
+	Changed forbegin test to be deterministic.  I used a sync var
+	to ensure that the threads started by the begin statements would
+	execute serially, and a single var to ensure that the final printing
+	would occur after all threads were complete.
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
+	                                      test_forbegin.good 
+
