@@ -1,16 +1,22 @@
 use Time;
 
-var j, m:int;
+var j: sync int;
+var done: single bool;
+
+var a: [1..3] int;
+a = 0;
 
 for i in 1..3 {
   j = i;
   var k = i;
   begin {
-    m = i;
-    var n = i;
+    a(i) = j;
     writeln("i = ",i);
     writeln("k = ",k);
-    writeln("m = ",m);
-    writeln("n = ",n);
+    if (i == 3) then done = true;
   }
+}
+
+if (done) {
+writeln(a);
 }
