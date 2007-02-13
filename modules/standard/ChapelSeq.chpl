@@ -251,6 +251,32 @@ class _min {
   def generate() return value;
 }
 
+class maxloc {
+  type eltType;
+  var value: eltType;
+  var uninitialized = true;
+
+  def accumulate(x) {
+    if uninitialized || x(1) > value(1) then
+      value = x;
+    uninitialized = false;
+  }
+  def generate() return value;
+}
+
+class minloc {
+  type eltType;
+  var value: eltType;
+  var uninitialized = true;
+
+  def accumulate(x) {
+    if uninitialized || x(1) < value(1) then
+      value = x;
+    uninitialized = false;
+  }
+  def generate() return value;
+}
+
 class _land {                 // logical and
   type eltType;
   var value : eltType = _land_id( eltType);
