@@ -93513,3 +93513,17 @@ Added files:
 Removed files:
 	chapel/test/npb/cg/bradc/: NOTEST 
 
+---------------------------------------------------------------------------
+
+02/12/07 17:28:24 -- bradc
+
+Log message:
+	Adding a future showing that using arrays within
+	iterators seems to cause problems -- in this case
+	a runtime segfault.
+
+Added files:
+	chapel/test/functions/iterators/bradc/: arrayInIterator.chpl 
+	                                        arrayInIterator.future 
+	                                        arrayInIterator.good 
+
