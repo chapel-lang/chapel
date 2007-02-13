@@ -93527,3 +93527,21 @@ Added files:
 	                                        arrayInIterator.future 
 	                                        arrayInIterator.good 
 
+---------------------------------------------------------------------------
+
+02/13/07 10:57:41 -- bradc
+
+Log message:
+	Checking the sources for Wayne's communication libraries
+	survey into CVS.
+
+Added files:
+	chapel/doc/internal/commLibs/: .cvsignore Makefile 
+	                               armci-stride.eps armci-stride.fig 
+	                               armci-vector.eps armci-vector.fig 
+	                               armci.tex chapel.bib 
+	                               comm_libs.tex gasnet.tex 
+	                               mpi2-epoch.eps mpi2-epoch.fig 
+	                               mpi2.tex rma.eps rma.fig 
+	                               shmem.tex 
+
