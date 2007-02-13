@@ -93490,3 +93490,26 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp build.cpp stmt.cpp 
 
+---------------------------------------------------------------------------
+
+02/12/07 16:12:51 -- bradc
+
+Log message:
+	Following up today's developer meeting, added a test of
+	enumerated domains and arrays as we might use them in the
+	NPB as a future test for David's reference (cg-enumDomArr.chpl).
+	
+	Also added a non-future version that uses an arithmetic domain for
+	comparison.
+
+Added files:
+	chapel/test/npb/cg/bradc/: .cvsignore cg-arithDomArr.chpl 
+	                           cg-arithDomArr.execopts 
+	                           cg-arithDomArr.good cg-core.notest 
+	                           cg-enumDomArr.chpl 
+	                           cg-enumDomArr.execopts 
+	                           cg-enumDomArr.future 
+	                           cg-enumDomArr.good cg.notest 
+Removed files:
+	chapel/test/npb/cg/bradc/: NOTEST 
+
