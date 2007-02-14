@@ -291,12 +291,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     } else if (dynamic_cast<CondStmt*>(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "<B>if</B> ");
-    } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(expr)) {
-      fprintf(html_file, "<DL>\n");
-      if (s->yield)
-        fprintf(html_file, "<B>yield</B> ");
-      else
-        fprintf(html_file, "<B>return</B> ");
     } else {
       if (expr->getStmtExpr() && expr->getStmtExpr() == expr) {
         fprintf(html_file, "<DL>\n");
@@ -373,7 +367,12 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         if (!e->primitive) {
           fprintf(html_file, "<B>call</B> ");
         } else {
-          fprintf(html_file, "'%s' ", e->primitive->name);
+          if (e->isPrimitive(PRIMITIVE_RETURN))
+            fprintf(html_file, "<B>return</B> ");
+          else if (e->isPrimitive(PRIMITIVE_YIELD))
+            fprintf(html_file, "<B>yield</B> ");
+          else
+            fprintf(html_file, "'%s' ", e->primitive->name);
         }
         if (e->partialTag)
           fprintf(html_file, "(partial) ");
@@ -408,7 +407,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     if (dynamic_cast<BlockStmt*>(expr) ||
         dynamic_cast<CondStmt*>(expr) ||
         dynamic_cast<GotoStmt*>(expr) ||
-        dynamic_cast<ReturnStmt*>(expr) ||
         expr->getStmtExpr() && expr->getStmtExpr() == expr) {
       if (dynamic_cast<BlockStmt*>(expr))
         fprintf(html_file, "}");

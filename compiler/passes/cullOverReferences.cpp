@@ -32,7 +32,8 @@ isReferenced(SymExpr* sym) {
         return true;
     }
   }
-  if (dynamic_cast<ReturnStmt*>(sym->getStmtExpr()) && sym->getFunction()->retRef)
+  CallExpr* ret = dynamic_cast<CallExpr*>(sym->getStmtExpr());
+  if (ret && ret->isPrimitive(PRIMITIVE_RETURN) && sym->getFunction()->retRef)
     return true;
   return false;
 }
@@ -61,12 +62,8 @@ void cullOverReferences() {
                 refCount++;
             }
             if (FnSymbol* fn = def->getFunction()) {
-              if (ReturnStmt* stmt = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
-                if (SymExpr* expr = dynamic_cast<SymExpr*>(stmt->expr)) {
-                  if (expr->var == var && !fn->retRef)
-                    writeCount = refCount = 0;
-                }
-              }
+              if (fn->getReturnSymbol() == var && !fn->retRef)
+                writeCount = refCount = 0;
             }
             if (refCount == 0 && writeCount == 0) {
               change = true;

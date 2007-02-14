@@ -1406,14 +1406,10 @@ resolveCall(CallExpr* call) {
 
       // do not resolve function return type yet
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol)) {
-        if (ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
-          if (SymExpr* ret = dynamic_cast<SymExpr*>(last->expr)) {
-            if (ret->var == sym->var) {
-              if (ret->var->isCompilerTemp)
-                ret->var->type = dtUnknown;
-              return;
-            }
-          }
+        if (fn->getReturnSymbol() == sym->var) {
+          if (sym->var->isCompilerTemp)
+            sym->var->type = dtUnknown;
+          return;
         }
       }
 
@@ -1483,8 +1479,7 @@ insertFormalTemps(FnSymbol* fn) {
       fn->insertAtHead(new DefExpr(tmp));
       if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
         formal->intent = INTENT_REF;
-        ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
-        last->insertBefore(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
+        fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
       }
     }
   }

@@ -280,7 +280,7 @@ iterator_constructor_fixup( ClassType *ct) {
 // and a vec of labels (for cursor returns).
 static void
 iterator_replace_yields( FnSymbol *fn, 
-                         Vec<ReturnStmt*>  *vals_returned,
+                         Vec<CallExpr*>  *vals_returned,
                          Vec<LabelSymbol*> *labels) {
   uint return_pt= 0;
   Vec<BaseAST*> children;
@@ -289,14 +289,14 @@ iterator_replace_yields( FnSymbol *fn,
 
   collect_asts( &children, fn->body);
   forv_Vec( BaseAST, ast, children) {
-    if (ReturnStmt *rs=dynamic_cast<ReturnStmt*>( ast)) {
-      if (rs->yield) {
+    if (CallExpr *rs=dynamic_cast<CallExpr*>( ast)) {
+      if (rs->isPrimitive(PRIMITIVE_YIELD)) {
         return_pt++;
-        rs->insertBefore( new ReturnStmt( new_IntSymbol( return_pt)));
+        rs->insertBefore( new CallExpr(PRIMITIVE_RETURN,  new_IntSymbol( return_pt)));
         l = new LabelSymbol( stringcat( "return_", intstring( return_pt)));
         labels->add( l);
         rs->insertAfter(new DefExpr(l));
-        vals_returned->add( dynamic_cast<ReturnStmt*>(rs->remove()));
+        vals_returned->add( dynamic_cast<CallExpr*>(rs->remove()));
       }
     }
   }
@@ -305,7 +305,7 @@ iterator_replace_yields( FnSymbol *fn,
 
 // Build and insert the jump table for getNextCursor method
 static void
-iterator_build_jtable( FnSymbol *fn, ArgSymbol *c, Vec<ReturnStmt*> *vals_returned, Vec<LabelSymbol*> *labels) {
+iterator_build_jtable( FnSymbol *fn, ArgSymbol *c, Vec<CallExpr*> *vals_returned, Vec<LabelSymbol*> *labels) {
   BlockStmt *b= new BlockStmt();
   LabelSymbol *l = labels->first();
   b->insertAtTail(new DefExpr(l)); 
@@ -315,18 +315,18 @@ iterator_build_jtable( FnSymbol *fn, ArgSymbol *c, Vec<ReturnStmt*> *vals_return
     l = labels->first();
   }
   fn->body->insertAtHead( b);
-  fn->body->insertAtTail( new ReturnStmt( new_IntSymbol( vals_returned->length()+1)));
+  fn->body->insertAtTail( new CallExpr(PRIMITIVE_RETURN,  new_IntSymbol( vals_returned->length()+1)));
 }
 
 
 // Build the return value jump table (i.e., getValue method)
 static void
-iterator_build_vtable( FnSymbol *fn, ArgSymbol *c, Vec<ReturnStmt*> *vals_returned) {
+iterator_build_vtable( FnSymbol *fn, ArgSymbol *c, Vec<CallExpr*> *vals_returned) {
   BlockStmt *b= build_chpl_stmt();
   uint retpt= 1;
-  forv_Vec(Expr, stmt, *vals_returned) {
+  forv_Vec(CallExpr, stmt, *vals_returned) {
     b->insertAtTail( new CondStmt( new CallExpr( "==", c, new_IntSymbol( retpt)),
-                                   stmt));
+                                   new CallExpr(PRIMITIVE_RETURN, stmt->get(1)->remove())));
     retpt++;
   }
   fn->body->insertAtHead( b);
@@ -373,7 +373,7 @@ iterator_transform( FnSymbol *fn) {
   compute_sym_uses( nextcf);
   iterator_create_fields( nextcf, ic);
   nextcf->insertFormalAtTail( new DefExpr( cursor));
-  Vec<ReturnStmt*> vals_returned;
+  Vec<CallExpr*> vals_returned;
   Vec<LabelSymbol*> labels;
   iterator_replace_yields( nextcf, &vals_returned, &labels);
   iterator_build_jtable( nextcf, cursor, &vals_returned, &labels);
@@ -387,14 +387,14 @@ iterator_transform( FnSymbol *fn) {
   iterator_method( headcf);
   m->stmts->insertAtHead(new DefExpr(headcf));
   iterator_formals( headcf, ic);
-  headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
+  headcf->body->insertAtHead( new CallExpr(PRIMITIVE_RETURN,  new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
   headcf->retType = dtInt[INT_SIZE_32];
 
   FnSymbol *elemtf = new FnSymbol( "getElemType");
   iterator_method( elemtf);
   m->stmts->insertAtHead(new DefExpr(elemtf));
   iterator_formals( elemtf, ic);
-  elemtf->body->insertAtHead( new ReturnStmt( new CallExpr( PRIMITIVE_TYPEOF, new CallExpr( new CallExpr( ".", elemtf->_this, new_StringSymbol( "getValue")), new_IntSymbol(0)))));
+  elemtf->body->insertAtHead( new CallExpr(PRIMITIVE_RETURN,  new CallExpr( PRIMITIVE_TYPEOF, new CallExpr( new CallExpr( ".", elemtf->_this, new_StringSymbol( "getValue")), new_IntSymbol(0)))));
 
   FnSymbol *valuef = new FnSymbol( "getValue");
   iterator_method( valuef);
@@ -409,7 +409,7 @@ iterator_transform( FnSymbol *fn) {
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
   iterator_method( isvalidcf);
   m->stmts->insertAtHead(new DefExpr(isvalidcf));
-  isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
+  isvalidcf->body->insertAtHead( new CallExpr(PRIMITIVE_RETURN,  new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
 
   // iterator -> wrapper function
@@ -421,7 +421,7 @@ iterator_transform( FnSymbol *fn) {
     if (formal->type != dtMethodToken)
       wrapperCall->insertAtTail(formal);
   }
-  fn->body->replace(new BlockStmt(new ReturnStmt(wrapperCall)));
+  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, wrapperCall)));
   fn->retExprType = wrapperCall->copy();
   insert_help(fn->retExprType, NULL, fn, fn->argScope);
   normalize(fn->defPoint);
@@ -450,10 +450,11 @@ static void build_lvalue_function(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, new_fn->body);
   forv_Vec(BaseAST, ast, asts) {
-    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
-      if (returnStmt->parentSymbol == new_fn) {
-        Expr* expr = returnStmt->expr;
-        returnStmt->expr->replace(new SymExpr(gVoid));
+    if (CallExpr* returnStmt = dynamic_cast<CallExpr*>(ast)) {
+      if (returnStmt->isPrimitive(PRIMITIVE_RETURN) &&
+          returnStmt->parentSymbol == new_fn) {
+        Expr* expr = returnStmt->get(1);
+        expr->replace(new SymExpr(gVoid));
         returnStmt->insertBefore(new CallExpr("=", expr, lvalue));
       }
     }
@@ -463,29 +464,31 @@ static void build_lvalue_function(FnSymbol* fn) {
 
 static void normalize_returns(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  Vec<ReturnStmt*> rets;
+  Vec<CallExpr*> rets;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
-      if (returnStmt->parentSymbol == fn) // not in a nested function
-        rets.add(returnStmt);
+    if (CallExpr* returnStmt = dynamic_cast<CallExpr*>(ast)) {
+      if (returnStmt->isPrimitive(PRIMITIVE_RETURN))
+        if (returnStmt->parentSymbol == fn) // not in a nested function
+          rets.add(returnStmt);
     }
   }
   if (rets.n == 0) {
-    fn->insertAtTail(new ReturnStmt(gVoid));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
   }
   if (rets.n == 1) {
-    ReturnStmt* ret = rets.v[0];
-    if (ret == fn->body->body->last() && dynamic_cast<SymExpr*>(ret->expr))
+    CallExpr* ret = rets.v[0];
+    if (ret == fn->body->body->last() && dynamic_cast<SymExpr*>(ret->get(1)))
       return;
   }
-  bool returns_void = rets.v[0]->returnsVoid();
+  SymExpr* retSym = dynamic_cast<SymExpr*>(rets.v[0]->get(1));
+  bool returns_void = retSym && retSym->var == gVoid;
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
   if (returns_void) {
-    fn->insertAtTail(new ReturnStmt());
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
@@ -493,12 +496,12 @@ static void normalize_returns(FnSymbol* fn) {
     if (fn->isParam)
       retval->consClass = VAR_PARAM;
     fn->insertAtHead(new DefExpr(retval));
-    fn->insertAtTail(new ReturnStmt(retval));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
   }
   bool label_is_used = false;
-  forv_Vec(ReturnStmt, ret, rets) {
+  forv_Vec(CallExpr, ret, rets) {
     if (retval) {
-      Expr* ret_expr = ret->expr;
+      Expr* ret_expr = ret->get(1);
       ret_expr->remove();
       if (fn->retExprType)
         ret_expr = new CallExpr("_cast", fn->retExprType->copy(), ret_expr);
@@ -1023,7 +1026,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->symbol)));
   fn->insertAtHead(new DefExpr(fn->_this));
-  fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
   ASTMap map;
   map.put(fn->getFormal(2), fn->_this);
   fn->formals->get(2)->remove();

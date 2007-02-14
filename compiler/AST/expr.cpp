@@ -3,6 +3,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "misc.h"
+#include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
@@ -539,6 +540,16 @@ void CallExpr::verify() {
   }
   if (argList->parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
+  if (normalized && isPrimitive(PRIMITIVE_RETURN)) {
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(parentSymbol);
+    SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
+    if (!fn)
+      INT_FATAL(this, "Return is not in a function.");
+    if (fn->body->body->last() != this)
+      INT_FATAL(this, "Return is in middle of function.");
+    if (!sym)
+      INT_FATAL(this, "Return does not return a symbol.");
+  }
 }
 
 
@@ -802,6 +813,17 @@ void CallExpr::codegen(FILE* outfile) {
           fprintf(outfile, ")");
       } else
         INT_FATAL(this, "bad primitive ref in codegen");
+      break;
+    case PRIMITIVE_RETURN:
+      fprintf(outfile, "return");
+      if (typeInfo() != dtVoid) {
+        fprintf(outfile, " ");
+        FnSymbol* fn = getFunction();
+        SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
+        if (fn->retRef)
+          fprintf(outfile, "&");
+        sym->codegen(outfile);
+      }
       break;
     case PRIMITIVE_UNARY_MINUS:
       help_codegen_op(outfile, "-", get(1));
@@ -1310,6 +1332,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_PARAM:
     case PRIMITIVE_LOOP_WHILEDO:
     case PRIMITIVE_LOOP_DOWHILE:
+    case PRIMITIVE_YIELD:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:
@@ -1555,9 +1578,6 @@ Expr* getFirstExpr(Expr* expr) {
   case EXPR_SYM:
   case EXPR_DEF:
     return expr;
-  case STMT_RETURN:
-    AST_RET_CHILD(ReturnStmt, expr);
-    break;
   case STMT_BLOCK:
     AST_RET_CHILD(BlockStmt, loopInfo);
     AST_RET_LIST(BlockStmt, body);

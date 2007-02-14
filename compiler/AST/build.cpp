@@ -83,7 +83,9 @@ static void createInitFn(ModuleSymbol* mod) {
     compilerModule->initFn->insertAtHead(new DefExpr(guard,
                                                      new SymExpr(gTrue)));
     mod->initFn->insertAtTail(
-      new CondStmt(new CallExpr("!", guard), new ReturnStmt()));
+      new CondStmt(
+        new CallExpr("!", guard),
+        new CallExpr(PRIMITIVE_RETURN, gVoid)));
     mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
 
     if (strcmp(mod->name, "ChapelStandard")) {
@@ -139,7 +141,10 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   fn->buildSetter = true;
   fn->addPragma("inline");
   if (e2)
-    fn->insertAtTail(new CondStmt(e, new ReturnStmt(e1), new ReturnStmt(e2)));
+    fn->insertAtTail(
+      new CondStmt(e,
+        new CallExpr(PRIMITIVE_RETURN, e1),
+        new CallExpr(PRIMITIVE_RETURN, e2)));
   else
     USR_FATAL("if-then expressions currently require an else-clause");
   return fn;
@@ -151,7 +156,7 @@ FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr) {
   FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
   fn->addPragma("inline");
   fn->insertAtTail(decls);
-  fn->insertAtTail(new ReturnStmt(expr));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, expr));
   return fn;
 }
 
@@ -260,7 +265,7 @@ build_for_expr(BaseAST* indices,
   rettmp->isCompilerTemp = true;
   stmts->insertAtTail(new DefExpr(rettmp));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rettmp, seq));
-  stmts->insertAtTail(new ReturnStmt(rettmp));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_RETURN, rettmp));
   return stmts;
 }
 
@@ -603,7 +608,7 @@ FnSymbol* build_reduce(Expr* red, Expr* seq) {
   VarSymbol* tmp = new VarSymbol("_red_seq");
   fn->insertAtTail(new DefExpr(tmp, seq));
   red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
-  fn->insertAtTail(new ReturnStmt(new CallExpr("_reduce", red, tmp)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("_reduce", red, tmp)));
   return fn;
 }
 
@@ -624,7 +629,7 @@ FnSymbol* build_scan(Expr* scan, Expr* seq) {
   VarSymbol* tmp = new VarSymbol("_scan_seq");
   fn->insertAtTail(new DefExpr(tmp, seq));
   scan = new CallExpr(scan, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
-  fn->insertAtTail(new ReturnStmt(new CallExpr("_scan", scan, tmp)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", scan, tmp)));
   return fn;
 }
 

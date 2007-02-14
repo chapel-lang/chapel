@@ -13,22 +13,6 @@ extern bool inUserModule;
 
 void codegenStmt(FILE* outfile, Expr* stmt);
 
-class ReturnStmt : public Expr {
- public:
-  Expr* expr;
-  bool yield;
-  ReturnStmt(Expr* initExpr = NULL, bool init_yield = false);
-  ReturnStmt(Symbol* initExpr, bool init_yield = false);
-  ReturnStmt(char* initExpr, bool init_yield = false);
-  virtual void verify();
-  COPY_DEF(ReturnStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  bool returnsVoid();
-};
-
-
 enum BlockTag {
   BLOCK_NORMAL = 0,
   BLOCK_ATOMIC,

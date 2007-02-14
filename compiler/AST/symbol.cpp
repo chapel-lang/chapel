@@ -670,7 +670,8 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::astType");
   }
   if (normalized) {
-    if (!dynamic_cast<ReturnStmt*>(body->body->last()))
+    CallExpr* last = dynamic_cast<CallExpr*>(body->body->last());
+    if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
   }
   if (formals->parent != this)
@@ -723,10 +724,10 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 static bool
 returns_void(FnSymbol* fn) {
-  ReturnStmt* ret = dynamic_cast<ReturnStmt*>(fn->body->body->last());
-  if (!ret)
+  CallExpr* ret = dynamic_cast<CallExpr*>(fn->body->body->last());
+  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(fn, "Function is not in normal form");
-  return ret->expr->typeInfo() == dtVoid;
+  return ret->typeInfo() == dtVoid;
 }
 
 
@@ -802,7 +803,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
   if (returns_void(this))
     wrapper->insertAtTail(call);
   else
-    wrapper->insertAtTail(new ReturnStmt(call));
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertAfter(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
   normalize(wrapper);
@@ -855,7 +856,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   if (returns_void(this))
     wrapper->insertAtTail(call);
   else
-    wrapper->insertAtTail(new ReturnStmt(call));
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertAfter(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
   add_dwcache(wrapper, this, defaults);
@@ -884,7 +885,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
   if (returns_void(this))
     wrapper->insertAtTail(call);
   else
-    wrapper->insertAtTail(new ReturnStmt(call));
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
   normalize(wrapper);
@@ -937,10 +938,6 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                          new BlockStmt(actualCall))));
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
-//     ReturnStmt* ret = dynamic_cast<ReturnStmt*>(wrapper->body->body->last());
-//     SymExpr* sym = dynamic_cast<SymExpr*>(ret->expr);
-//     if (wrapper->retRef)
-//       sym->var->isReference = true;
     wrapper->retRef = false;
   }
   defPoint->insertBefore(new DefExpr(wrapper));
@@ -1057,7 +1054,7 @@ instantiate_tuple_get(FnSymbol* fn) {
     return fn;
   int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
-  fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
+  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   normalize(fn);
   return fn;
 }
@@ -1088,7 +1085,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
-  fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
   return fn;
 }
@@ -1104,7 +1101,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
-  fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
   return fn;
 }
@@ -1116,9 +1113,9 @@ instantiate_tuple_hash( FnSymbol* fn) {
     INT_FATAL(fn, "tuple hash function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
   ClassType  *ct = dynamic_cast<ClassType*>(arg->type);
-  ReturnStmt *ret;
+  CallExpr *ret;
   if (ct->fields->length() < 0) {
-    ret = new ReturnStmt(new_IntSymbol(0, INT_SIZE_64));
+    ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call;
     bool first = true;
@@ -1138,7 +1135,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
     }
     // YAH, make sure that we do not return a negative hash value for now
     call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-    ret = new ReturnStmt( new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+    ret = new CallExpr(PRIMITIVE_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
   }
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);
@@ -1483,10 +1480,10 @@ FnSymbol::insertAtTail(Expr* ast) {
 
 Symbol*
 FnSymbol::getReturnSymbol() {
-  ReturnStmt* ret = dynamic_cast<ReturnStmt*>(body->body->last());
-  if (!ret)
+  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
-  SymExpr* sym = dynamic_cast<SymExpr*>(ret->expr);
+  SymExpr* sym = dynamic_cast<SymExpr*>(ret->get(1));
   if (!sym)
     INT_FATAL(this, "function is not normal");
   return sym->var;
@@ -1495,8 +1492,8 @@ FnSymbol::getReturnSymbol() {
 
 Symbol*
 FnSymbol::getReturnLabel() {
-  ReturnStmt* ret = dynamic_cast<ReturnStmt*>(body->body->last());
-  if (!ret)
+  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   if (DefExpr* def = dynamic_cast<DefExpr*>(ret->prev))
     if (Symbol* sym = dynamic_cast<LabelSymbol*>(def->sym))
@@ -1507,9 +1504,10 @@ FnSymbol::getReturnLabel() {
 
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
-  Expr* last = dynamic_cast<ReturnStmt*>(body->body->last());
-  if (!last)
+  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
+  Expr* last = ret;
   if (DefExpr* def = dynamic_cast<DefExpr*>(last->prev))
     if (dynamic_cast<LabelSymbol*>(def->sym))
       last = last->prev; // label before return
@@ -1519,10 +1517,10 @@ FnSymbol::insertBeforeReturn(Expr* ast) {
 
 void
 FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
-  Expr* last = dynamic_cast<ReturnStmt*>(body->body->last());
-  if (!last)
+  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
-  last->insertBefore(ast);
+  ret->insertBefore(ast);
 }
 
 

@@ -39,23 +39,23 @@ check_redefinition(Symbol* sym) {
 static void
 check_returns(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  Vec<ReturnStmt*> rets;
+  Vec<CallExpr*> rets;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (ReturnStmt* ret = dynamic_cast<ReturnStmt*>(ast)) {
-      if (ret->parentSymbol == fn)
+    if (CallExpr* ret = dynamic_cast<CallExpr*>(ast))
+      if (ret->isPrimitive(PRIMITIVE_RETURN) && ret->parentSymbol == fn)
         rets.add(ret);
-    }
   }
   if (rets.n == 0)
     return;
   bool returns_void = false;
-  forv_Vec(ReturnStmt, ret, rets) {
-    if (ret->returnsVoid())
-      returns_void = true;
+  forv_Vec(CallExpr, ret, rets) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(ret->get(1)))
+      if (sym->var == gVoid)
+        returns_void = true;
   }
-  forv_Vec(ReturnStmt, ret, rets) {
-    if (returns_void && !ret->returnsVoid())
+  forv_Vec(CallExpr, ret, rets) {
+    if (returns_void && ret->typeInfo() != dtVoid)
       USR_FATAL(fn, "Not all function returns return a value");
   }
 }

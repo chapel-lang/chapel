@@ -478,13 +478,13 @@ when_stmt:
 
 return_stmt:
   TRETURN opt_expr TSEMI
-    { $$ = build_chpl_stmt(new ReturnStmt($2)); }
+    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_RETURN, $2)); }
 ;
 
 
 yield_stmt:
   TYIELD opt_expr TSEMI
-    { $$ = build_chpl_stmt(new ReturnStmt($2, true)); }
+    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_YIELD, $2)); }
 ;
 
 
@@ -1329,7 +1329,7 @@ seq_expr:
 
 opt_expr:
   /* nothing */
-    { $$ = NULL; }
+    { $$ = new SymExpr(gVoid); }
 | expr
 ;
 

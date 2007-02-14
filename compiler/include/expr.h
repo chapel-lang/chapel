@@ -15,7 +15,7 @@ class FnSymbol;
    (e)->astType == EXPR_DEF || (e)->astType == EXPR_NAMED)
 
 #define IS_STMT(e)                                              \
-  ((e)->astType == STMT_RETURN || (e)->astType == STMT_BLOCK || \
+  ((e)->astType == STMT_BLOCK ||                                \
    (e)->astType == STMT_COND || (e)->astType == STMT_GOTO)
 
 class Expr : public BaseAST {

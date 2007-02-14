@@ -406,7 +406,7 @@ static void build_constructor(ClassType* ct) {
     }
   }
 
-  fn->insertAtTail(new ReturnStmt(fn->_this));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
   fn->retType = ct;
 }
 

@@ -131,10 +131,10 @@ buildFreeFunctions() {
           fn->insertFormalAtTail(arg);
           if (isReferenceCounted(ct)) {
             fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
-                                          new ReturnStmt()));
+                                          new CallExpr(PRIMITIVE_RETURN, gVoid)));
             fn->insertAtTail(new CallExpr(PRIMITIVE_GC_FREE, arg));
             fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISPOS, arg),
-                                          new ReturnStmt()));
+                                          new CallExpr(PRIMITIVE_RETURN, gVoid)));
             fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISNEG, arg),
                                           new CallExpr(PRIMITIVE_INT_ERROR)));
           }
@@ -197,7 +197,7 @@ buildTouchFunctions() {
         fn->insertFormalAtTail(arg);
         if (ct->classTag == CLASS_CLASS) {
           fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_CLASS_NULL, arg),
-                                        new ReturnStmt()));
+                                        new CallExpr(PRIMITIVE_RETURN, gVoid)));
           fn->insertAtTail(new CallExpr(PRIMITIVE_GC_TOUCH, arg));
         }
         type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));

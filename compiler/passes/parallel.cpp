@@ -182,7 +182,8 @@ begin_mark_locals() {
                                          local->refcMutex));
     BlockStmt *mainfb = dynamic_cast<BlockStmt*>(localdef->parentExpr);
     Expr      *laststmt = mainfb->body->last();
-    if (dynamic_cast<ReturnStmt*>(laststmt)) {
+    CallExpr* ret = dynamic_cast<CallExpr*>(laststmt);
+    if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
       laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                             local,
                                             local->refc,

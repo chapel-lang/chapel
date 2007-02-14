@@ -39,10 +39,10 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
   mapFormalsToActuals(call, &map);
   AList* fn_body = fn->body->body->copy();
   reset_file_info(fn_body, call->lineno, call->filename);
-  ReturnStmt* return_stmt = dynamic_cast<ReturnStmt*>(fn_body->last());
-  if (!return_stmt)
+  CallExpr* return_stmt = dynamic_cast<CallExpr*>(fn_body->last());
+  if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(call, "Cannot inline function, function is not normalized");
-  Expr* return_value = return_stmt->expr;
+  Expr* return_value = return_stmt->get(1);
   return_stmt->remove();
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn_body);

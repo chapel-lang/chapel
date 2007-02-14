@@ -55,7 +55,6 @@ void printStatistics(char* pass) {
   if (last_asts == gAsts.n)
     return;
 
-  decl_counters(ReturnStmt, STMT_RETURN);
   decl_counters(CondStmt, STMT_COND);
   decl_counters(BlockStmt, STMT_BLOCK);
   decl_counters(GotoStmt, STMT_GOTO);
@@ -77,7 +76,6 @@ void printStatistics(char* pass) {
   decl_counters(ClassType, TYPE_CLASS);
   forv_Vec(BaseAST, ast, gAsts) {
     switch (ast->astType) {
-      case_counters(ReturnStmt, STMT_RETURN);
       case_counters(CondStmt, STMT_COND);
       case_counters(BlockStmt, STMT_BLOCK);
       case_counters(GotoStmt, STMT_GOTO);
@@ -100,7 +98,6 @@ void printStatistics(char* pass) {
     default: break;
     }
   }
-  calc_counters(ReturnStmt, STMT_RETURN);
   calc_counters(CondStmt, STMT_COND);
   calc_counters(BlockStmt, STMT_BLOCK);
   calc_counters(GotoStmt, STMT_GOTO);
@@ -120,8 +117,8 @@ void printStatistics(char* pass) {
   calc_counters(EnumType, TYPE_ENUM);
   calc_counters(UserType, TYPE_USER);
   calc_counters(ClassType, TYPE_CLASS);
-  int nStmt = nReturnStmt + nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kReturnStmt + kCondStmt + kBlockStmt + kGotoStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
   int nExpr = nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nUnresolvedSymbol+nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
@@ -132,14 +129,14 @@ void printStatistics(char* pass) {
   fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9d  Ret   %9d  Cond %9d  Block %9d  Goto  %9d\n",
-            nStmt, nReturnStmt, nCondStmt, nBlockStmt, nGotoStmt);
+    fprintf(stderr, "  Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
+            nStmt, nCondStmt, nBlockStmt, nGotoStmt);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9dK Ret   %9dK Cond %9dK Block %9dK Goto  %9dK\n",
-            kStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+    fprintf(stderr, "  Stmt %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+            kStmt, kCondStmt, kBlockStmt, kGotoStmt);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %6dK Ret   %6dK Cond %6dK Block %6dK Goto  %6dK\n",
-            kStmt, kReturnStmt, kCondStmt, kBlockStmt, kGotoStmt);
+    fprintf(stderr, "  Stmt %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+            kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "  Expr %9d  Sym   %9d  Def  %9d  Call  %9d  Named %9d\n",
@@ -448,7 +445,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "DefExpr",
   "CallExpr",
   "NamedExpr",
-  "ReturnStmt",
   "BlockStmt",
   "CondStmt",
   "GotoStmt",
@@ -487,9 +483,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case EXPR:
   case SYMBOL:
   case TYPE:
-    break;
-  case STMT_RETURN:
-    AST_ADD_CHILD(ReturnStmt, expr);
     break;
   case STMT_BLOCK:
     AST_ADD_LIST(BlockStmt, body);

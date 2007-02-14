@@ -34,7 +34,6 @@ enum astType_t {
   EXPR_DEF,
   EXPR_CALL,
   EXPR_NAMED,
-  STMT_RETURN,
   STMT_BLOCK,
   STMT_COND,
   STMT_GOTO,

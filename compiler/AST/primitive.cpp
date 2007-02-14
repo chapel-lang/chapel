@@ -196,6 +196,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
   prim_def(PRIMITIVE_REF, "ref", returnInfoMove);
+  prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst);
+  prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", returnInfoFirst);
   prim_def(PRIMITIVE_UNARY_PLUS, "u+", returnInfoFirst);
   prim_def(PRIMITIVE_UNARY_NOT, "u~", returnInfoFirst);
