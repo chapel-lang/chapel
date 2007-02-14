@@ -93709,3 +93709,14 @@ Modified files:
 	chapel/compiler/AST/: view.cpp 
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+02/14/07 14:17:15 -- bradc
+
+Log message:
+	Updating Wayne's paper sources based on most recent version
+	that he mailed me this morning.
+
+Modified files:
+	chapel/doc/internal/commLibs/: comm_libs.tex gasnet.tex 
+
