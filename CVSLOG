@@ -93660,3 +93660,52 @@ Added files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin2.chpl 
 	                                      test_forbegin2.good 
 
+---------------------------------------------------------------------------
+
+02/14/07 14:01:41 -- deitz
+
+Log message:
+	Added new gdb command lv and new debug function list_view called by
+	lv.  This new debug facility attempts to print out the IR in a more
+	concise fashion than nv.
+	
+	For example, to print out the DefExpr of the init function of the user
+	module by BaseAST::id number using the ast function, type
+	
+	(gdb) lv ast(36672)
+	
+	The result is as follows:
+	
+	36672   def fn __init_test_var_decl4[36670]:void[8]
+	36671     {
+	86051       def _tmp[86049]:bool[15]
+	86052       move( _tmp[86049] call( fn ![5500] __run_test_var_decl4_firsttime[36673] ) )
+	36682       if _tmp[86049]
+	36683         {
+	86038           goto _end___init_test_var_decl4[86034]
+	36683         }
+	86055       move( __run_test_var_decl4_firsttime[36673] call( fn =[105] __run_test_var_decl4_firsttime[36673] false[20] ) )
+	36752       call( fn __init_ChapelStandard[10203] )
+	86040       def _typeTmp[86039]:string[75]
+	86044       move( _typeTmp[86039] "" )
+	36653       def s[36652]:string[75]
+	86046       move( s[36652] _typeTmp[86039] )
+	86057       move( s[36652] call( fn =[243] s[36652] "hello world" ) )
+	36667       call( fn writeln[183455] s[36652] )
+	86035       def _end___init_test_var_decl4[86034]
+	86036       return( _void[9] )
+	36671     }
+	
+	The numbers to the left indicate the BaseAST::id number of the
+	particular top-level expression written on that line.  Note that the
+	numbers match for block statement opens and closes.
+	
+	All primitive calls are indicated by the name of the primitive
+	followed by the arguments in parentheses.  Function calls are
+	indicated by 'call' followed by the base expression and then the
+	arguments in parentheses.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/util/: files.cpp 
+
