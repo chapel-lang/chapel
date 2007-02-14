@@ -93614,3 +93614,35 @@ Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
 	                                      test_forbegin.good 
 
+---------------------------------------------------------------------------
+
+02/13/07 16:10:13 -- deitz
+
+Log message:
+	Normalized returns and yields in preparation of moving the iterator
+	transformation after function resolution.
+	
+	Removed ReturnStmt subclass.  It is replaced by two primitives:
+	PRIMITIVE_RETURN and PRIMITIVE_YIELD.  This is more consistent within
+	our representation given the normalization of returns and yields such
+	that the return is the last statement in a function and has no effect
+	on code generation.
+	
+	Though it should be clear that the elimination of unnecessary
+	variations is good, I will mention that this change both simplifies
+	the compiler and makes it more effective.  For example, without any
+	extra effort, copy propagation is more applicable and our generated
+	code is shorter.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp bb.cpp build.cpp expr.cpp 
+	                      primitive.cpp stmt.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h expr.h primitive.h stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         cullOverReferences.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp memoryManage.cpp 
+	                         normalize.cpp parallel.cpp 
+	                         semanticChecks.cpp 
+
