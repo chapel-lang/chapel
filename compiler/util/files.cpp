@@ -271,6 +271,9 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "define nview\n");
   fprintf(gdbfile, "  call nprint_view($arg0)\n");
   fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define lview\n");
+  fprintf(gdbfile, "  call list_view($arg0)\n");
+  fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "break gdbShouldBreakHere\n");
 
   closefile(gdbfile);

@@ -9,6 +9,128 @@
 #include "log.h"
 
 
+static void
+list_sym(Symbol* sym, bool type = true) {
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
+    if (var->immediate) {
+      if (var->immediate->const_kind == NUM_KIND_INT) {
+        printf("%lld ", var->immediate->int_value());
+        return;
+      } else if (var->immediate->const_kind == CONST_KIND_STRING) {
+        printf("\"%s\" ", var->immediate->v_string);
+        return;
+      }
+    }
+  }
+  if (dynamic_cast<FnSymbol*>(sym)) {
+    printf("fn ");
+  } else if (dynamic_cast<ArgSymbol*>(sym)) {
+    printf("arg ");
+  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+    printf("type ");
+  }
+  if (sym->isReference)
+    printf("ref ");
+  printf("%s", sym->name);
+  printf("[%d]", sym->id);
+  if (!type) {
+    printf(" ");
+  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    printf(":%s", fn->retType->symbol->name);
+    printf("[%d] ", fn->retType->symbol->id);
+  } else if (sym->type && sym->type->symbol) {
+    printf(":%s", sym->type->symbol->name);
+    printf("[%d] ", sym->type->symbol->id);
+  } else {
+    printf(" ");
+  }
+}
+
+
+static bool
+list_line(Expr* expr) {
+  if (IS_STMT(expr))
+    return true;
+  if (CondStmt* cond = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+    if (cond->condExpr == expr)
+      return false;
+  }
+  if (!expr->parentExpr || IS_STMT(expr->parentExpr))
+    return true;
+  return false;
+}
+
+
+static void
+list_ast(BaseAST* ast, int indent = 0) {
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (list_line(expr)) {
+      printf("%-7d ", expr->id);
+      for (int i = 0; i < indent; i++)
+        printf(" ");
+    }
+    if (GotoStmt* e = dynamic_cast<GotoStmt*>(ast)) {
+      printf("goto ");
+      if (e->label) {
+        list_ast(e->label, indent+1);
+      }
+    } else if (dynamic_cast<BlockStmt*>(ast)) {
+      printf("{\n");
+    } else if (dynamic_cast<CondStmt*>(ast)) {
+      printf("if ");
+    } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+      if (e->primitive)
+        printf("%s( ", e->primitive->name);
+      else
+        printf("call( ");
+    } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+      printf("%s = ", e->name);
+    } else if (dynamic_cast<DefExpr*>(expr)) {
+      printf("def ");
+    } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+      list_sym(e->var, false);
+    }
+  }
+
+  if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+    list_sym(sym);
+  if (dynamic_cast<FnSymbol*>(ast) || dynamic_cast<ModuleSymbol*>(ast)) {
+    printf("\n");
+  }
+
+  int new_indent = indent;
+
+  if (Expr* expr = dynamic_cast<Expr*>(ast))
+    if (list_line(expr))
+      new_indent = indent+2;
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, ast, asts)
+    list_ast(ast, new_indent);
+
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (dynamic_cast<CallExpr*>(expr)) {
+      printf(") ");
+    }
+    if (dynamic_cast<BlockStmt*>(ast)) {
+      printf("%-7d ", expr->id);
+      for (int i = 0; i < indent; i++)
+        printf(" ");
+      printf("}\n");
+    } else if (CondStmt* cond = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+      if (cond->condExpr == expr)
+        printf("\n");
+    } else if (!dynamic_cast<CondStmt*>(expr) && list_line(expr)) {
+      DefExpr* def = dynamic_cast<DefExpr*>(expr);
+      if (!(def && (dynamic_cast<FnSymbol*>(def->sym) ||
+                    dynamic_cast<ModuleSymbol*>(def->sym))))
+        printf("\n");
+    }
+  }
+}
+
+
 static char*
 html_file_name( int pass, char *module) {
   return stringcat( "pass", intstring(pass), "_module_", module, ".html");
@@ -133,6 +255,14 @@ static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
     view_symtab(ast, number, indent + 2);
+}
+
+void list_view(BaseAST* ast) {
+  if (dynamic_cast<Symbol*>(ast))
+    printf("%-7d ", ast->id);
+  list_ast(ast);
+  printf("\n");
+  fflush(stdout);
 }
 
 void print_view(BaseAST* ast) {
