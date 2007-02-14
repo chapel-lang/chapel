@@ -93646,3 +93646,17 @@ Modified files:
 	                         normalize.cpp parallel.cpp 
 	                         semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+02/13/07 16:59:38 -- marybeth
+
+Log message:
+	Added another forbegin test which does not serialize the begin threads
+	for each iteration of the for loop.  I set the default output to be
+	deterministic, but the test does allow for the user to choose non-deterministic
+	output.
+
+Added files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin2.chpl 
+	                                      test_forbegin2.good 
+
