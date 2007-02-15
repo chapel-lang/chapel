@@ -93720,3 +93720,19 @@ Log message:
 Modified files:
 	chapel/doc/internal/commLibs/: comm_libs.tex gasnet.tex 
 
+---------------------------------------------------------------------------
+
+02/15/07 12:05:57 -- marybeth
+
+Log message:
+	Removed printing from within the threads so that test_forbegin2
+	truly does have deterministic output.
+	
+	(Duh.  I do know how to program in parallel.  I'm just being lazy
+	thinking about the output since the threads tend to run in a
+	deterministic way.)
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin2.chpl 
+	                                      test_forbegin2.good 
+
