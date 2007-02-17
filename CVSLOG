@@ -93736,3 +93736,15 @@ Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin2.chpl 
 	                                      test_forbegin2.good 
 
+---------------------------------------------------------------------------
+
+02/16/07 16:28:41 -- deitz
+
+Log message:
+	Added test I forgot to add when I implemented low and high on arrays
+	for dimensions other than one (2/6).
+
+Added files:
+	chapel/test/trivial/deitz/: test_array_low.chpl 
+	                            test_array_low.good 
+
