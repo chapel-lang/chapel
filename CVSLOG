@@ -93748,3 +93748,49 @@ Added files:
 	chapel/test/trivial/deitz/: test_array_low.chpl 
 	                            test_array_low.good 
 
+---------------------------------------------------------------------------
+
+02/20/07 12:32:16 -- diten
+
+Log message:
+	Initial check in for handling classes nested in other classes.  Some things
+	that are mostly working:
+	 * Classes are now allowed to be defined inside of other classes.
+	 * Nested classes can be constructed from within the class they are nested in.
+	 * Symbols in an instance of a nested class can be accessed using 'nested.x'.
+	 * Inner classes with the same name as outer classes don't collide.
+	
+	Things known to not yet be working or that have known flaws:
+	  class outerClass {
+	    var a: int;
+	    class innerClass {
+	      def foo() {
+	        a = 3; // "a" not defined
+	      }
+	    }
+	    var innerInstance = inner(); // working but not correct
+	  }
+	
+	  * In innerClass.foo(), a should refer to outerClass.a.  The outer this
+	    pointer is available in innerClass, but is not yet used.
+	  * The constructor inner() is internally called "inner".  It is a
+	    constructor, so should be internally called "_construct_inner".
+	
+	Since these changes do not cause any new test failures, I'm checking in the
+	changes despite knowing some of it is incorrect.  Additional work to follow.
+
+Modified files:
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: Makefile.share cleanup.cpp 
+	                         functionResolution.cpp 
+	chapel/test/modules/diten/: nested_module_collision.chpl 
+	chapel/test/trivial/diten/: linked_list.chpl 
+Added files:
+	chapel/compiler/passes/: flattenClasses.cpp 
+	chapel/test/classes/diten/: class_nest_simple.chpl 
+	                            class_nest_simple.good 
+	                            doublenest.chpl doublenest.good 
+	                            test_no_name_collision.chpl 
+	                            test_no_name_collision.good 
+
