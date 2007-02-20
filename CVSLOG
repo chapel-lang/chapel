@@ -93840,3 +93840,13 @@ Modified files:
 Added files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+02/20/07 15:40:45 -- deitz
+
+Log message:
+	Removed a few old unused prototypes from the generated code.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
