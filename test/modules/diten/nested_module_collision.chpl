@@ -1,5 +1,5 @@
 module a {
-  module b {}
+  module b { var a: int; }
 }
 
 module b {}

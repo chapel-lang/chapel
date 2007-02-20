@@ -241,6 +241,10 @@ void cleanup(Symbol* base) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
       if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
         build_constructor(ct);
+        if (ct->defaultConstructor->isMethod) {
+          // This is a nested class constructor
+          flatten_primary_methods(ct->defaultConstructor);
+        }
       }
     }
   }
@@ -322,12 +326,20 @@ static void build_constructor(ClassType* ct) {
 
   if (ct->symbol->hasPragma("synchronization primitive"))
     ct->defaultValue = NULL;
-
-  char* name = stringcat("_construct_", ct->symbol->name);
+  char* name;
+  if (!dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type)) {
+    name = stringcat("_construct_", ct->symbol->name);
+  } else {
+    name = stringcat(ct->symbol->name);
+  }
   FnSymbol* fn = new FnSymbol(name);
   ct->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
-  fn->cname = stringcat("_construct_", ct->symbol->cname);
+  if (!dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type)) {
+    fn->cname = stringcat("_construct_", ct->symbol->cname);
+  } else {
+    fn->cname = stringcat(ct->symbol->cname);
+  }
   fn->isCompilerTemp = true; // compiler inserted
 
   if (ct->symbol->hasPragma("tuple"))
@@ -361,8 +373,8 @@ static void build_constructor(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   fn->_this = new VarSymbol("this", ct);
-
   fn->insertAtTail(new DefExpr(fn->_this));
+
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
                        new CallExpr(PRIMITIVE_CHPL_ALLOC,
@@ -387,7 +399,7 @@ static void build_constructor(ClassType* ct) {
                              new CallExpr(".",
                                           fn->_this,
                                           new_StringSymbol(field->name)),
-                                                                                       formal)));
+                             formal)));
         } else {
           Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                            new_StringSymbol(field->name), formal);
@@ -395,6 +407,35 @@ static void build_constructor(ClassType* ct) {
         }
       }
     }
+  }
+  ClassType *outerType =
+    dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type);
+  if (outerType) {
+    // Create a "this0" pointer to the outer class in the inner class
+    VarSymbol* _this0 = new VarSymbol("this0", outerType);
+    ct->fields->insertAtHead(new DefExpr(_this0));
+
+    // Save the this pointer -- addDeclarations will overwrite it
+    Symbol* myThis = fn->_this;
+
+    // Remove the DefPoint for this constructor, 
+    // add it to the outer class's method list.
+    DefExpr* fnDef = fn->defPoint;
+    fnDef->remove();
+    outerType->addDeclarations(new AList(fnDef), true);
+
+    // Save what is currently "this" into "this->this0".  "this" 
+    // currently points at an instance of the outer class.
+    Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, myThis,
+                                     new_StringSymbol("this0"), fn->_this);
+    fn->insertAtTail(assign_expr);
+    ct->_this0 = _this0;
+    
+    // Restore the "this" pointer to point to the inner class
+    fn->_this = myThis;
+    CallExpr *ce = new CallExpr(PRIMITIVE_MOVE, 
+                                new SymExpr(fn->_this), new SymExpr(myThis));
+    fn->insertAtTail(ce);
   }
 
   forv_Vec(FnSymbol, method, ct->methods) {

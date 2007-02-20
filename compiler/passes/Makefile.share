@@ -5,6 +5,7 @@ PASSES_SRCS = \
         copy_propagation.cpp \
         cullOverReferences.cpp \
 	filesToAST.cpp \
+	flattenClasses.cpp \
         flattenFunctions.cpp \
         functionResolution.cpp \
         inlineFunctions.cpp \

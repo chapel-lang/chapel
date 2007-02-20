@@ -12,6 +12,7 @@ void cleanup();
 void codegen();
 void copyPropagation();
 void cullOverReferences();
+void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
 void insertLineNumbers();
@@ -36,6 +37,7 @@ PassInfo passlist[] = {
   RUN(parallel1),       // parallel transforms, part 1
   RUN(cleanup),         // post parsing transformations
   RUN(scopeResolve),    // resolve symbols by scope
+  RUN(flattenClasses),  // denest nested classes
   RUN(normalize),       // normalization transformations
   RUN(checkNormalized), // check semantics of normalized AST
 

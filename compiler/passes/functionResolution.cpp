@@ -2520,6 +2520,12 @@ setFieldTypes(FnSymbol* fn) {
     if (t == dtNil)
       USR_FATAL(formal, "unable to determine type of field from nil");
     bool found = false;
+    if (!strcmp(formal->name, "_mt")) {
+      continue;
+    }
+    if (!strcmp(formal->name, "this")) {
+      continue;
+    }
     for_fields(field, ct) {
       if (!strcmp(field->name, formal->name)) {
         field->type = t;

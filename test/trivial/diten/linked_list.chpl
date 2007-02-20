@@ -3,6 +3,11 @@ class ll {
   type itemType;
   var list: ll_entry(itemType);
 
+  class a_class {
+    var a: int;
+    def bar() { writeln(a); }
+  }
+
   def add_front(e) {
     list = ll_entry(itemType, e, list);
   }
