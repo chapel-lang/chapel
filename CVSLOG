@@ -93794,3 +93794,49 @@ Added files:
 	                            test_no_name_collision.chpl 
 	                            test_no_name_collision.good 
 
+---------------------------------------------------------------------------
+
+02/20/07 15:15:58 -- deitz
+
+Log message:
+	Made for loops use the BlockStmt::loopInfo field throughout
+	compilation.  Before resolution, for loops store two symbols, an index
+	and an iterator.  During resolution, for loops are expanded into calls
+	into the iterator interface and the for loop is changed to store only
+	a single condition symbol, much like a while loop.
+	
+	Added utility function istr that takes an integer and returns a
+	canonicalized string.  The functions astr and istr return unique char*
+	pointers stored in a hash table allowing for fast string comparisons
+	of canonicalized strings.
+	
+	Moved the iterator transformation into its own pass called
+	lowerIterators.  The code has been completely rewritten.  This pass is
+	run after function resolution now.  Previously, iterators were
+	transformed during normalization.  This improves the generated code in
+	some ways.  With some optimizations to the iterator function before
+	the transformation, e.g. copy propagation, this can be improved
+	further.
+	
+	Sorted functions in a module prior to code generation so that we
+	generate the functions in order.  Also added a comment before each
+	function is printed that lists its location in the Chapel source.
+	
+	Reworked function resolution to determine the return type of
+	iterators, change it into a sequence of whatever it yields, and ensure
+	that the append function is always resolved.  The append function is
+	then used in the iterator transform to build up an actual sequence in
+	the case that the iterator is not called inside a loop.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp stmt.cpp symbol.cpp 
+	                      symscope.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h primitive.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: Makefile.share functionResolution.cpp 
+	                         inlineFunctions.cpp memoryManage.cpp 
+	                         normalize.cpp 
+Added files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
