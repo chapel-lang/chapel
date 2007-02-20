@@ -16,6 +16,7 @@ void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
 void insertLineNumbers();
+void lowerIterators();
 void memoryManage();
 void normalize();
 void parallel1();
@@ -52,6 +53,8 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(cullOverReferences), // remove excess references
   RUN(parallel2),          // parallel transforms, part 2
+
+  RUN(lowerIterators),     // lowers iterators into functions/classes
 
   // Optimizations
   RUN(inlineFunctions), // function inlining

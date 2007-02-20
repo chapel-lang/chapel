@@ -270,37 +270,36 @@ build_for_expr(BaseAST* indices,
 }
 
 
-static void exprsToIndices(Vec<DefExpr*>* defs,
-                           BaseAST* indices,
-                           Expr* init) {
+static void
+destructureIndices(BlockStmt* block,
+                   BaseAST* indices,
+                   Expr* init) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
     if (call->isNamed("_cast")) {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
         Expr* type = call->get(1);
         type->remove();
-        defs->add(new DefExpr(new VarSymbol(sym->var->name), init, type));
-        //        call->replace(sym);
+        block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init, type));
       } else
         USR_FATAL(call, "invalid index expression");
-    } else {
-      if (call->isNamed("_tuple")) {
-        int i = 0;
-        for_actuals(actual, call) {
-          if (i > 0) { // skip first (size parameter)
-            if (SymExpr *sym_expr = dynamic_cast<SymExpr*>(actual)) {
-              if (!strcmp(sym_expr->var->name, "_")) {
-                i++;
-                continue;
-              }
+    } else if (call->isNamed("_tuple")) {
+      int i = 0;
+      for_actuals(actual, call) {
+        if (i > 0) { // skip first (size parameter)
+          if (SymExpr *sym_expr = dynamic_cast<SymExpr*>(actual)) {
+            if (!strcmp(sym_expr->var->name, "_")) {
+              i++;
+              continue;
             }
-            exprsToIndices(defs, actual, new CallExpr(init->copy(), new_IntSymbol(i)));
           }
-          i++;
+          destructureIndices(block, actual,
+                             new CallExpr(init->copy(), new_IntSymbol(i)));
         }
+        i++;
       }
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(indices)) {
-    defs->add(new DefExpr(new VarSymbol(sym->var->name), init));
+    block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init));
   }
 }
 
@@ -309,39 +308,51 @@ BlockStmt* build_for_block(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body) {
-  static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;
   BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
-  VarSymbol* index = new VarSymbol(stringcat("_index_", intstring(uid)));
-  Vec<DefExpr*> defs;
-  exprsToIndices(&defs, indices, new SymExpr(index));
-  forv_Vec(DefExpr, def, defs) {
-    body->insertAtHead(def);
-  }
-  Symbol* iteratorSym;
-  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iterator)) {
-    iteratorSym = symExpr->var;
-  } else {
-    iteratorSym = new VarSymbol(stringcat("_iterator_", intstring(uid)));
-    stmts->insertAtTail(new DefExpr(iteratorSym, iterator));
-  }
-  VarSymbol* cursor = new VarSymbol(stringcat("_cursor_", intstring(uid)));
-  stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor")))));
+
+  VarSymbol* iteratorSym = new VarSymbol("_iterator");
+  iteratorSym->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(iteratorSym));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
+
+  VarSymbol* index = new VarSymbol("_index");
+  index->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(index));
+  stmts->insertAtTail(new BlockStmt(
+    new CallExpr(PRIMITIVE_MOVE, index, 
+      new CallExpr(
+        new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
+        new CallExpr(
+          new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor"))))),
+    BLOCK_TYPE));
+
+  destructureIndices(body, indices, new SymExpr(index));
+
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+  /*
+  VarSymbol* cursor = new VarSymbol("_cursor");
+  cursor->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(cursor));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor")))));
+  */
   stmts->insertAtTail(new DefExpr(body->pre_loop));
-
+  /*
   stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
-
-  CallExpr* index_init = new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getValue")), cursor);
-  stmts->insertAtTail(new DefExpr(index, index_init));
+  stmts->insertAtTail(
+    new CallExpr(PRIMITIVE_MOVE, index,
+      new CallExpr(
+        new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
+        cursor)));
+  */
   stmts->insertAtTail(body);
-
+  /*
   stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor)));
   stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-
+  */
   stmts->insertAtTail(new DefExpr(body->post_loop));
-  uid++;
   return stmts;
 }
 

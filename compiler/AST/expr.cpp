@@ -734,6 +734,27 @@ static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
 }
 
 
+static void
+codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct, int skip=0) {
+  if (!skip && ct->classTag == CLASS_CLASS)
+    fprintf(outfile, "%s = NULL;\n", cname);
+  else {
+    for_fields(field, ct) {
+      if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+        char buffer[1024];
+        strcpy(buffer, cname);
+        if (skip)
+          strcat(buffer, "->");
+        else
+          strcat(buffer, ".");
+        strcat(buffer, field->cname);
+        codegenNullAssignments(outfile, buffer, fct, 0);
+      }
+    }
+  }
+}
+
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -1221,10 +1242,10 @@ void CallExpr::codegen(FILE* outfile) {
       if (!is_struct) {
         fprintf( outfile, "*");
       } 
-      fprintf( outfile, ") ");
+      fprintf( outfile, ")");
 
       // target: void* _chpl_alloc(size_t size, char* description);
-      fprintf( outfile, "_chpl_alloc( sizeof( ");
+      fprintf( outfile, "_chpl_alloc(sizeof(");
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
@@ -1332,6 +1353,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_PARAM:
     case PRIMITIVE_LOOP_WHILEDO:
     case PRIMITIVE_LOOP_DOWHILE:
+    case PRIMITIVE_LOOP_FOR:
     case PRIMITIVE_YIELD:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
@@ -1386,6 +1408,20 @@ void CallExpr::codegen(FILE* outfile) {
     }
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
+
+    // initialize iterator class due to reference counting
+    if (isPrimitive(PRIMITIVE_MOVE)) {
+      if (CallExpr* rhs = dynamic_cast<CallExpr*>(get(2))) {
+        if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
+          if (parentSymbol->hasPragma("first member sets")) {
+            SymExpr* se = dynamic_cast<SymExpr*>(get(1));
+            ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
+            codegenNullAssignments(outfile, se->var->cname, ct, 1);
+          }
+        }
+      }
+    }
+
     return;
   }
 

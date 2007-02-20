@@ -64,6 +64,7 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
     call->replace(return_value);
 }
 
+
 static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
@@ -91,6 +92,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
     }
   }
 }
+
 
 void inlineFunctions(void) {
   if (no_inline)

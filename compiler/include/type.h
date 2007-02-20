@@ -45,6 +45,10 @@ class Type : public BaseAST {
   Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
 
+  FnSymbol* append; // append to sequence, used in lowerIterators--
+                    // need general mechanism to handle functions
+                    // after function resolution
+
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual ~Type();
   virtual void verify(); 

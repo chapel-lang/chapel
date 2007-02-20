@@ -284,7 +284,8 @@ void memoryManage(void) {
         } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           if (Symbol* lhs = dynamic_cast<SymExpr*>(call->get(3))->var) {
             if (FnSymbol* _free = freeMap.get(lhs->type))
-              if (fn->fnClass != FN_CONSTRUCTOR) // first set
+              if (fn->fnClass != FN_CONSTRUCTOR &&
+                  !fn->hasPragma("first member sets")) // first set
                 call->insertBefore(
                   new CallExpr(_free,
                     new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,

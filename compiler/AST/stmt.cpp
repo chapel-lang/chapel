@@ -203,6 +203,10 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, ") ");
     } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
       fprintf(outfile, "do ");
+    } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR)) {
+      fprintf(outfile, "for (;");
+      loopInfo->get(1)->codegen(outfile);
+      fprintf(outfile, ";) ");
     }
   }
 
@@ -219,15 +223,12 @@ void BlockStmt::codegen(FILE* outfile) {
     }
   }
 
-  if (this != getFunction()->body)
-    fprintf(outfile, "}");
-
   if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
-    fprintf(outfile, " while (");
+    fprintf(outfile, "} while (");
     loopInfo->get(1)->codegen(outfile);
     fprintf(outfile, ");\n");
-  } else {
-    fprintf(outfile, "\n");
+  } else if (this != getFunction()->body) {
+    fprintf(outfile, "}\n");
   }
 }
 

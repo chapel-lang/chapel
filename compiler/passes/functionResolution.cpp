@@ -87,6 +87,23 @@ tag_generic(FnSymbol* fn) {
   return false;
 }
 
+
+static void
+resolveSpecifiedReturnType(FnSymbol* fn) {
+  fn->retType = resolve_type_expr(fn->retExprType);
+  if (fn->retType != dtUnknown) {
+    fn->retExprType->remove();
+    if (fn->fnClass == FN_ITERATOR) {
+      CallExpr* seq = new CallExpr("_construct_seq", fn->retType->symbol);
+      fn->insertBeforeReturn(seq);
+      resolveCall(seq);
+      fn->retType = seq->typeInfo();
+      seq->remove();
+    }
+  }
+}
+
+
 static void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
@@ -102,10 +119,8 @@ resolveFormals(FnSymbol* fn) {
         formal->defPoint->exprType->remove();
       }
     }
-    if (fn->retExprType) {
-      fn->retType = resolve_type_expr(fn->retExprType);
-      fn->retExprType->remove();
-    }
+    if (fn->retExprType)
+      resolveSpecifiedReturnType(fn);
     if (fn->fnClass == FN_CONSTRUCTOR)
       setFieldTypes(fn);
   }
@@ -1022,8 +1037,6 @@ resolve_type_expr(Expr* expr) {
         FnSymbol* fn = call->isResolved();
         if (fn && call->parentSymbol) {
           resolveFormals(fn);
-          if (fn->retType == dtUnknown && fn->retExprType)
-            fn->retType = fn->retExprType->typeInfo();
           if (fn->isParam || fn->retType == dtUnknown)
             resolveFns(fn);
         }
@@ -1535,6 +1548,50 @@ static void fold_param_for(CallExpr* loop) {
   makeNoop(loop);
 }
 
+static Expr*
+expand_for_loop(CallExpr* call) {
+  CallExpr* result;
+  BlockStmt* block = dynamic_cast<BlockStmt*>(call->parentExpr);
+  if (!block || block->loopInfo != call)
+    INT_FATAL(call, "bad for loop primitive");
+  SymExpr* se1 = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* se2 = dynamic_cast<SymExpr*>(call->get(2));
+  if (!se1 || !se2)
+    INT_FATAL(call, "bad for loop primitive");
+  VarSymbol* index = dynamic_cast<VarSymbol*>(se1->var);
+  VarSymbol* iterator = dynamic_cast<VarSymbol*>(se2->var);
+  if (!index || !iterator)
+    INT_FATAL(call, "bad for loop primitive");
+  VarSymbol* cursor = new VarSymbol("_cursor");
+  cursor->isCompilerTemp = true;
+  block->insertBefore(new DefExpr(cursor));
+  result = new CallExpr("getHeadCursor", gMethodToken, iterator);
+  result->partialTag = true;
+  block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(result)));
+  VarSymbol* cond = new VarSymbol("_cond");
+  cond->isCompilerTemp = true;
+  block->insertBefore(new DefExpr(cond));
+  CallExpr* partial = new CallExpr("isValidCursor?", gMethodToken, iterator);
+  partial->partialTag = true;
+  block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
+
+  partial = new CallExpr("getValue", gMethodToken, iterator);
+  partial->partialTag = true;
+  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index,
+                                   new CallExpr(partial, cursor)));
+
+  partial = new CallExpr("getNextCursor", gMethodToken, iterator);
+  partial->partialTag = true;
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(partial, cursor)));
+
+  partial = new CallExpr("isValidCursor?", gMethodToken, iterator);
+  partial->partialTag = true;
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
+
+  call->replace(new CallExpr(PRIMITIVE_LOOP_FOR, cond));
+  return result;
+}
+
 static Expr* fold_cond_stmt(CondStmt* if_stmt) {
   Expr* result = NULL;
   if (SymExpr* cond = dynamic_cast<SymExpr*>(if_stmt->condExpr)) {
@@ -1784,7 +1841,9 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
-      makeNoop(call);
+    } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
+               call->argList->length() == 2) {
+      result = expand_for_loop(call);
     }
   }
   return result;
@@ -2059,7 +2118,7 @@ resolveFns(FnSymbol* fn) {
   if (retType == dtUnknown) {
     if (retTypes.n == 1)
       retType = retTypes.v[0];
-    if (retTypes.n > 1) {
+    else if (retTypes.n > 1) {
       for (int i = 0; i < retTypes.n; i++) {
         bool best = true;
         for (int j = 0; j < retTypes.n; j++) {
@@ -2077,12 +2136,19 @@ resolveFns(FnSymbol* fn) {
   }
 
   ret->type = retType;
-  if (fn->retType == dtUnknown)
-    fn->retType = retType;
+  fn->retType = retType;
   if (retTypes.n == 0 && fn->retType == dtUnknown)
     fn->retType = ret->type = dtVoid;
   else if (retType == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
+
+  if (fn->fnClass == FN_ITERATOR) {
+    CallExpr* seq = new CallExpr("_construct_seq", fn->retType->symbol);
+    fn->insertBeforeReturn(seq);
+    resolveCall(seq);
+    fn->retType = seq->typeInfo();
+    seq->remove();
+  }
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
@@ -2099,6 +2165,16 @@ resolveFns(FnSymbol* fn) {
             resolveFns(fct->defaultConstructor);
           }
         }
+      }
+      if (ct->symbol->hasPragma("seq")) {
+        CallExpr* call = new CallExpr("_append_in_place", gMethodToken, fn->_this, ct->getField(5));
+        fn->insertAtTail(call);
+        resolveCall(call);
+        call->remove();
+        ct->append = call->isResolved();
+        if (!ct->append)
+          INT_FATAL("unable to capture append method");
+        resolveFns(ct->append);
       }
     }
   }

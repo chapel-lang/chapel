@@ -1395,8 +1395,10 @@ codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (fnClass == FN_CONSTRUCTOR) {
-    fprintf(outfile, "/* constructor */\n");
+  if (strcmp(saveCDir, "") && filename) {
+    char* name = strrchr(filename, '/');
+    name = (!name) ? filename : name + 1;
+    fprintf(outfile, "/* %s:%d */\n", name, lineno);
   }
 
   codegenHeader(outfile);

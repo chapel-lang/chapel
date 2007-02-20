@@ -20,7 +20,8 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   defaultConstructor(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
-  instantiatedWith(NULL)
+  instantiatedWith(NULL),
+  append(NULL)
 {}
 
 

@@ -33,6 +33,13 @@ astr(char* s1, char* s2, char* s3, char* s4) {
   return canonicalize_string(s);
 }
 
+char*
+istr(int i) {
+  char s[64];
+  sprintf(s, "%d", i);
+  return canonicalize_string(s);
+}
+
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;

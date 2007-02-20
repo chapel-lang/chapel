@@ -10,6 +10,7 @@ PASSES_SRCS = \
         functionResolution.cpp \
         inlineFunctions.cpp \
 	insertLineNumbers.cpp \
+        lowerIterators.cpp \
         parallel.cpp \
 	printProgram.cpp \
         memoryManage.cpp \
