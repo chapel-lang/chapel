@@ -3,7 +3,7 @@ use Time;
 var j: sync int;
 var done: single bool;
 
-var a: [1..3] int;
+var a,b: [1..3] int;
 a = 0;
 
 for i in 1..3 {
@@ -11,12 +11,12 @@ for i in 1..3 {
   var k = i;
   begin {
     a(i) = j;
-    writeln("i = ",i);
-    writeln("k = ",k);
+    b(i) = k;
     if (i == 3) then done = true;
   }
 }
 
 if (done) {
 writeln(a);
+writeln(b);
 }
