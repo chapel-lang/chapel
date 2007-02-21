@@ -93918,3 +93918,36 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+02/21/07 12:36:28 -- deitz
+
+Log message:
+	Started work on updating Conversions section in the Spec.  More to do.
+	
+	Removed implementation support for -- commenting style.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex 
+	chapel/spec/: Conversions.tex 
+	chapel/test/classes/bradc/: callMethodOnClass.chpl 
+	chapel/test/classes/bradc/unions/: assign1a.chpl 
+	chapel/test/compflags/bradc/tokenflags/: tokentest.chpl 
+	                                         tokentest2.chpl 
+	                                         tokentest3.chpl 
+	chapel/test/distributions/bradc/foundations/: blockdist2.chpl 
+	                                              blockdist3.chpl 
+	chapel/test/domains/roxana/index/: test_index_expr0.chpl 
+	chapel/test/modules/bradc/manymodules/: flatmodules.chpl 
+	                                        manymodules.chpl 
+	chapel/test/trivial/bradc/: testAllScopes.chpl 
+	                            testAllScopes2.chpl 
+	chapel/test/trivial/preston/: aliasing.chpl boundfunction.chpl 
+	                              gcd.chpl if.chpl tuple.chpl 
+	chapel/test/types/file/: freadToClassDataMember.chpl 
+	chapel/test/types/seq/bradc/: length.modify.chpl 
+	chapel/test/types/tuple/bradc/: writeTuple.chpl 
+	chapel/test/types/typedefs/bradc/: localType.chpl 
+	                                   localType2.chpl 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
+
