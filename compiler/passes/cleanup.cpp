@@ -426,16 +426,20 @@ static void build_constructor(ClassType* ct) {
 
     // Save what is currently "this" into "this->this0".  "this" 
     // currently points at an instance of the outer class.
+    VarSymbol* tmp = new VarSymbol("_tmp");
+    tmp->isCompilerTemp = true;
+    fn->insertAtTail(new DefExpr(tmp));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, fn->_this));
+    
     Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, myThis,
-                                     new_StringSymbol("this0"), fn->_this);
+                                     new_StringSymbol("this0"), tmp);
     fn->insertAtTail(assign_expr);
     ct->_this0 = _this0;
     
     // Restore the "this" pointer to point to the inner class
     fn->_this = myThis;
-    CallExpr *ce = new CallExpr(PRIMITIVE_MOVE, 
-                                new SymExpr(fn->_this), new SymExpr(myThis));
-    fn->insertAtTail(ce);
+  } else {
+    ct->_this0 = NULL;
   }
 
   forv_Vec(FnSymbol, method, ct->methods) {
