@@ -93868,3 +93868,19 @@ Modified files:
 Added files:
 	chapel/compiler/include/: optimizations.h 
 
+---------------------------------------------------------------------------
+
+02/21/07 09:20:20 -- deitz
+
+Log message:
+	Removed .future files for five tests that are now working due to
+	moving the iterator transformation after function resolution.
+
+Removed files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator3.future 
+	                                        test_instantiate_iterator3a.future 
+	chapel/test/functions/iterators/bradc/: arrayInIterator.future 
+	                                        paramInIterator.future 
+	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.future 
+
