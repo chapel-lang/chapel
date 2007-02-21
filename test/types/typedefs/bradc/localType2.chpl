@@ -1,8 +1,8 @@
--- This is a test to make sure that local type default
--- values are evaluated ony when the type is reached
--- and not every time a variable of that type is
--- declared (if, in fact, that is the language's
--- intention.
+// This is a test to make sure that local type default
+// values are evaluated ony when the type is reached
+// and not every time a variable of that type is
+// declared (if, in fact, that is the language's
+// intention.
 
 def readDefaultVal(): int {
   var defaultVal: int;

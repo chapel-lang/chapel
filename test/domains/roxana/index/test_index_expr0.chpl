@@ -5,13 +5,13 @@ var D : domain(2) = [1..n, 1..n];
 var A : [D] real;
 
 var iD : index(D);
---var i2 : index(2);
+//var i2 : index(2);
 
---forall (i,j) in D {
---  A(i,j) = 1;
---}
+//forall (i,j) in D {
+//  A(i,j) = 1;
+//}
 
---writeln("A:\n", A);
+//writeln("A:\n", A);
 
 [i in D] A(i) = 2;
 

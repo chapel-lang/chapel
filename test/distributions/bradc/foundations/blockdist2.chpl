@@ -18,15 +18,15 @@ var mylo: [rankD] indexType;
 var myhi: [rankD] indexType;
 
 for loc in localeD {
-  var pos: [rankD] int = loc;  -- only works for 1D
+  var pos: [rankD] int = loc;  // only works for 1D
   for d in 1..rank {
-    var firstLoc = 1;            -- localeD.lo(d)
-    var numLocs = numLocales;       -- localeD.extent(d)
+    var firstLoc = 1;            // localeD.lo(d)
+    var numLocs = numLocales;       // localeD.extent(d)
     var myPos = pos(d) - firstLoc;
     var numElems = globHi(d) - globLo(d) + 1;
 
     if (numElems < numLocs) {
---    halt("ERROR: fewer elements than locales");
+//    halt("ERROR: fewer elements than locales");
       writeln("ERROR: fewer elements than locales");
     }
 

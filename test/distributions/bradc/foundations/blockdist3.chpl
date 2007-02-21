@@ -9,7 +9,7 @@ config const n: int = 10;
 var rankD: domain(1) = [1..rank];
 var localeD: domain(1) = [1..myNumLocales];
 
---var locales: [i in localeD] locale = i;
+//var locales: [i in localeD] locale = i;
 var locales: [localeD] locale;
 for i in localeD {
   locales(i) = i;
@@ -22,15 +22,15 @@ var mylo: [rankD] indexType;
 var myhi: [rankD] indexType;
 
 for loc in localeD {
-  var pos: [rankD] int = loc;  -- only works for 1D
+  var pos: [rankD] int = loc;  // only works for 1D
   for d in 1..rank {
-    var firstLoc = 1;            -- localeD.lo(d)
-    var numLocs = myNumLocales;       -- localeD.extent(d)
+    var firstLoc = 1;            // localeD.lo(d)
+    var numLocs = myNumLocales;       // localeD.extent(d)
     var myPos = pos(d) - firstLoc;
     var numElems = globHi(d) - globLo(d) + 1;
 
     if (numElems < numLocs) {
---    halt("ERROR: fewer elements than locales");
+//    halt("ERROR: fewer elements than locales");
       writeln("ERROR: fewer elements than locales");
     }
 

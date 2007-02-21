@@ -1,4 +1,4 @@
--- what about aliasing of parameters?
+// what about aliasing of parameters?
 
 def zap(inout x : int, inout y : int) {
   writeln(x, ' ', y);
@@ -15,4 +15,4 @@ writeln(x, ' ', y);
 zap(x, x);
 writeln(x, ' ', y);
 
--- the final value of x seems ill-defined by the spec.
+// the final value of x seems ill-defined by the spec.

@@ -170,7 +170,6 @@ yield           processToken(TYIELD);
 [ \t\r]         processWhitespace(yytext);
 \n              processNewline();
 
-"--"            processSingleLineComment();
 "//"            processSingleLineComment();
 
 "/*"            processMultiLineComment();

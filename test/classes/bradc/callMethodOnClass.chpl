@@ -22,6 +22,6 @@ class D {
 
 def main() {
   var myD = D();
-  D.start;  -- BUG if I call this on D!!
+  D.start;  // BUG if I call this on D!!
   D.testit;
 }

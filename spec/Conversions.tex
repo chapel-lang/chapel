@@ -2,21 +2,18 @@
 \label{Conversions}
 
 A conversion allows an expression of one type to be converted into
-another type.  Conversions can be either implicit or explicit.
+another type.  Conversions can be either
+implicit~(\rsec{Implicit_Conversions}) or
+explicit~(\rsec{Implicit_Conversions}).
+
+\subsection{Implicit Conversions}
+\label{Implicit_Conversions}
+\index{conversions!implicit}
 
 Implicit conversions can occur during an assignment (from the
 expression on the right-hand side to the variable on the left-hand
 side) or during a function call (from the actual expression to the
 formal argument).  An implicit conversion does not require a cast.
-
-Explicit conversions require a cast in the code.  Casts are defined
-in~\rsec{Casts}.  Explicit conversions are supported between more
-types than implicit conversions, but explicit conversions are not
-supported between all types.
-
-\subsection{Implicit Conversions}
-\label{Implicit_Conversions}
-\index{conversions!implicit}
 
 Implicit conversions are allowed between numeric
 types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
@@ -31,22 +28,31 @@ implicit conversions are supported from integeral and class types to
 bool in the context of a
 statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Implicit Numeric Conversions}
+\subsubsection{Implicit Bool and Numeric Conversions}
 \label{Implicit_Numeric_Conversions}
 \index{conversions!numeric}
+\index{conversions!bool}
 
-Let $i$, $j$, and $k$ range over the constants $8$, $16$, $32$, and
-$64$ when parameterizing \chpl{int} and \chpl{uint} and over the
-constants $32$, $64$, and $128$ when
-parameterizing \chpl{real}, \chpl{imag}, and \chpl{complex}.  The
-implicit numeric conversions are as follows:
+The implicit numeric conversions are as follows:
 \begin{itemize}
-\item From \chpl{bool} to \chpl{int($j$)}, \chpl{uint($j$)}, or \chpl{string}
-\item From \chpl{int($i$)} to \chpl{int($j$)}, \chpl{real($k$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$
-\item From \chpl{uint($i$)} to \chpl{int($j$)}, \chpl{uint($j$)}, \chpl{real($k$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$
-\item From \chpl{real($i$)} to \chpl{real($j$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$ and $k \geq 2i$
-\item From \chpl{imag($i$)} to \chpl{imag($j$)}, \chpl{complex($k$)}, or \chpl{string} where $j > i$ and $k \geq 2i$
-\item From \chpl{complex($i$)} to \chpl{complex($j$)}, or \chpl{string} where $j > i$
+\item From \chpl{bool} to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string}
+\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(64)} to \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(64)} to \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{real(32)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{real(64)} to \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{real(128)} to \chpl{complex(256)} or \chpl{string}
+\item From \chpl{imag(32)} to \chpl{imag(64)}, \chpl{imag(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{imag(64)} to \chpl{imag(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{imag(128)} to \chpl{complex(256)} or \chpl{string}
+\item From \chpl{complex(64)} to \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{complex(128)} to \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{complex(256)} to \chpl{string}
 \end{itemize}
 
 The implicit numeric conversions do not result in any loss of
@@ -69,17 +75,17 @@ the enumerated constant.
 \label{Implicit_Class_Conversions}
 \index{conversions!class}
 
-An expression of class type \chpl{C} can be implicitly converted to
-another class type \chpl{D} provided that \chpl{C} is derived
-from \chpl{D}.
+An expression of class type \chpl{D} can be implicitly converted to
+another class type \chpl{C} provided that \chpl{D} is a subclass
+of \chpl{C}.
 
 \subsubsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
 \index{conversions!record}
 
-An expression of record type \chpl{C} can be implicitly converted to
-another record type \chpl{D} provided that \chpl{C} is derived
-from \chpl{D}.
+An expression of record type \chpl{D} can be implicitly converted to
+another record type \chpl{C} provided that \chpl{D} is a nominal
+subtype of \chpl{C}.
 
 \subsubsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
@@ -109,14 +115,20 @@ the following implicit conversions are supported:
 \label{Explicit_Conversions}
 \index{conversions!explicit}
 
+Explicit conversions require a cast in the code.  Casts are defined
+in~\rsec{Casts}.  Explicit conversions are supported between more
+types than implicit conversions, but explicit conversions are not
+supported between all types.
+
 The explicit conversions are a superset of the implicit conversions.
 
 \subsubsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 \index{conversions!numeric}
 
-Explicit conversions are allowed from any numeric type to any other
-numeric type, bool, or string, and vice versa.
+Explicit conversions are allowed from any numeric type, bool, or
+string to any other numeric type, bool, or string.  The definitions of
+how these explicit conversions work is forthcoming.
 
 \subsubsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}

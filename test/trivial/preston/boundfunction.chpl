@@ -1,4 +1,4 @@
--- playing with bound funs
+// playing with bound funs
 
 def int.fact() {
   var i = 1;
@@ -13,4 +13,4 @@ def int.fact() {
 var j = 5;
 writeln(j.fact());
 
--- but writeln(5.fact) provokes a syntax error at the "."
+// but writeln(5.fact) provokes a syntax error at the "."

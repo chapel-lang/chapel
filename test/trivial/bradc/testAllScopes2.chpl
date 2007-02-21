@@ -1,8 +1,8 @@
-var a: int = 1;                      -- module scope
+var a: int = 1;                      // module scope
 var n: int = 14;
 
-def b(c: int): int {        -- def param scope
-  var d: int = 4;                    -- def scope
+def b(c: int): int {        // def param scope
+  var d: int = 4;                    // def scope
   writeln("c is: ", c);
   writeln("d is: ", d);
 
@@ -10,10 +10,10 @@ def b(c: int): int {        -- def param scope
 }
 
 class e {
-  var f: int = 6;                    -- class scope
+  var f: int = 6;                    // class scope
   def g(h: int): int {
     var i: int = 9;
---    writeln("f is: ", f);
+//    writeln("f is: ", f);
     writeln("h is: ", h);
     writeln("i is: ", i);
     return 7;
@@ -29,14 +29,14 @@ def main() {
   writeln("e.g(8) is: ", myG);
 
 /*  
-  for j in 1..n {                        -- for loop scope
+  for j in 1..n {                        // for loop scope
     writeln("j is: ", j);
     var k: int = 11;
     writeln("k is: ", k);
   }
 */
--- [l in 1..n] writeln("l is: ", l);     -- forall expr scope
-  {                                      -- block stmt scope
+// [l in 1..n] writeln("l is: ", l);     // forall expr scope
+  {                                      // block stmt scope
     var m: int = 13;
     {
       var o: int = 15;
@@ -46,5 +46,5 @@ def main() {
     }
   }
 
---  var q: int = let p = a+n in p*p;   -- let expr scope
+//  var q: int = let p = a+n in p*p;   // let expr scope
 }

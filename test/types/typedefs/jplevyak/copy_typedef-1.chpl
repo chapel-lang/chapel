@@ -1,5 +1,5 @@
--- This is a test to make sure that local type default
--- values are evaluated each time the type is encountered
+// This is a test to make sure that local type default
+// values are evaluated each time the type is encountered
 
 def foo(param defval: int) {
   type myfooint = int;

@@ -1,6 +1,6 @@
--- BLC: This was a workaround for assign.chpl which doesn't seem
--- to be working yet because of union prints; it's a reasonable test
--- in itself, though
+// BLC: This was a workaround for assign.chpl which doesn't seem
+// to be working yet because of union prints; it's a reasonable test
+// in itself, though
 union U {
   var x: int;
   var y: real;
