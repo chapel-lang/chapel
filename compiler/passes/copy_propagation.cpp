@@ -141,6 +141,13 @@ void localCopyPropagation(BasicBlock* bb) {
   }
 }
 
+void localCopyPropagation(FnSymbol* fn) {
+  buildBasicBlocks(fn);
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    localCopyPropagation(bb);
+  }
+}
+
 //
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
@@ -258,10 +265,7 @@ void copyPropagation(void) {
     compressUnnecessaryScopes(fn);
     removeUnnecessaryGotos(fn);
     removeUnusedLabels(fn);
-    buildBasicBlocks(fn);
-    forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-      localCopyPropagation(bb);
-    }
+    localCopyPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }
