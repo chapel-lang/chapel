@@ -93884,3 +93884,19 @@ Removed files:
 	                                        paramInIterator.future 
 	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.future 
 
+---------------------------------------------------------------------------
+
+02/21/07 09:27:34 -- deitz
+
+Log message:
+	Updated a test due to change which made 1*int not equivalent to int
+	and removed a .future, due to yesterday's iterator transformation
+	move.
+
+Modified files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2a.chpl 
+Removed files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2a.future 
+
