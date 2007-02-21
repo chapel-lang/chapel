@@ -93951,3 +93951,15 @@ Modified files:
 	                                   localType2.chpl 
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
 
+---------------------------------------------------------------------------
+
+02/21/07 13:11:33 -- marybeth
+
+Log message:
+	Removed printing from within the threads so that test_forbegin
+	has deterministic output.
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
+	                                      test_forbegin.good 
+
