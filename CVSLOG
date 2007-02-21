@@ -93900,3 +93900,21 @@ Removed files:
 	chapel/test/functions/deitz/iterators/: 
 	                                        test_instantiate_iterator2a.future 
 
+---------------------------------------------------------------------------
+
+02/21/07 12:03:44 -- diten
+
+Log message:
+	Fix execution time segmentation violations when nested classes are used and
+	the --unoptimized flag is on.
+	
+	Was inserting an expression that did an assignment that looked like: "a = a;".
+	With optimization on, this got removed.  With optimization off, it got
+	translated to "free(a); a = a; touch(a);".
+	
+	I stopped inserting the "a = a"; assignment, and flattened one other assignment
+	to use a temp variable, ie: "a = b;" became: "_tmp = b; a = _tmp;"
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
