@@ -93850,3 +93850,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+02/20/07 16:05:41 -- deitz
+
+Log message:
+	Applied the optimizations in the copy propagation pass to iterator
+	functions before the iterators are lowered to try to decrease the
+	number of fields in the iterator class.  The next thing to do is
+	implement a live variable analysis and only put locals into the
+	iterator class if the local is live at any yield point.
+	
+	Prototyped all optimizing transformations in new file optimizations.h.
+
+Modified files:
+	chapel/compiler/passes/: copy_propagation.cpp lowerIterators.cpp 
+Added files:
+	chapel/compiler/include/: optimizations.h 
+
