@@ -94006,3 +94006,36 @@ Modified files:
 	                         semanticChecks.cpp verify.cpp 
 	chapel/test/classes/deitz/: test_method_call2.good 
 
+---------------------------------------------------------------------------
+
+02/22/07 14:52:23 -- deitz
+
+Log message:
+	Simplified ModuleSymbol replacing the fields
+	
+	  AList* stmts
+	  SymScope* modScope
+	  Vec<ModuleSymbol*> modUses
+	
+	with the single field
+	
+	  BlockStmt* block
+	
+	This reduces the unnecessary variations that we make when associating
+	scopes with AST nodes by one.
+	
+	Removed unused global variable inUserModule, unused methods
+	numUserModules and setModScope, and unused macro OPERATOR_CHAR.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp stmt.cpp 
+	                      symbol.cpp symscope.cpp view.cpp 
+	chapel/compiler/include/: stmt.h symbol.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp codegen.cpp 
+	                         copy_propagation.cpp flattenClasses.cpp 
+	                         flattenFunctions.cpp 
+	                         functionResolution.cpp memoryManage.cpp 
+	                         normalize.cpp parallel.cpp 
+	                         printProgram.cpp scopeResolve.cpp 
+	                         verify.cpp 
+
