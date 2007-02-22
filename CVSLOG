@@ -94073,3 +94073,18 @@ Modified files:
 Removed files:
 	chapel/compiler/passes/: printProgram.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/07 15:43:58 -- deitz
+
+Log message:
+	Added two nested class .futures for David.
+
+Added files:
+	chapel/test/classes/deitz/nested/: .cvsignore test_nested1.chpl 
+	                                   test_nested1.future 
+	                                   test_nested1.good 
+	                                   test_nested2.chpl 
+	                                   test_nested2.future 
+	                                   test_nested2.good 
+
