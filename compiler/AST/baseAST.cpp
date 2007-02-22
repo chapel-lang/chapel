@@ -306,26 +306,6 @@ void BaseAST::clean() {
 }
 
 
-void BaseAST::print(FILE* outfile) {
-  if (!this) {
-    INT_FATAL("Calling print() on a Null AST");
-  } else {
-    INT_FATAL("print() is unimplemented for a subclass of BaseAST");
-  }
-}
-
-
-void BaseAST::printDef(FILE* outfile) {
-  INT_FATAL("printDef() is unimplemented for a subclass of BaseAST");
-}
-
-
-void BaseAST::println(FILE* outfile) {
-  print(outfile);
-  fprintf(outfile, "\n");
-}
-
-
 void BaseAST::codegen(FILE* outfile) {
   if (!this) {
     INT_FATAL("Calling codegen() on a Null AST");

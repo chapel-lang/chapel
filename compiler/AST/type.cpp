@@ -65,15 +65,6 @@ void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void Type::print(FILE* outfile) {
-  symbol->print(outfile);
-}
-
-
-void Type::printDef(FILE* outfile) {
-  print(outfile);
-}
-
 void Type::codegen(FILE* outfile) {
   if (this == dtUnknown) {
     INT_FATAL(this, "Cannot generate unknown type");
@@ -220,22 +211,6 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void EnumType::printDef(FILE* outfile) {
-  printf("enum ");
-  symbol->print(outfile);
-  printf(" = ");
-  bool first = true;
-  for_alist(DefExpr, constant, constants) {
-    if (!first) {
-      fprintf(outfile, " | ");
-    } else {
-      first = false;
-    }
-    constant->sym->print(outfile);
-  }
-}
-
-
 void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef enum {\n");
   bool first = true;
@@ -303,12 +278,6 @@ void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
-}
-
-
-void UserType::printDef(FILE* outfile) {
-  fprintf(outfile, "type ");
-  symbol->print(outfile);
 }
 
 

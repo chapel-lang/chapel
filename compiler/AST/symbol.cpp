@@ -206,11 +206,6 @@ bool Symbol::isThis(void) {
 }
 
 
-void Symbol::print(FILE* outfile) {
-  fprintf(outfile, "%s", name);
-}
-
-
 void Symbol::codegen(FILE* outfile) {
   fprintf(outfile, "%s", cname);
 }
@@ -222,11 +217,6 @@ void Symbol::codegenDef(FILE* outfile) {
 
 
 void Symbol::codegenPrototype(FILE* outfile) { }
-
-
-void Symbol::printDef(FILE* outfile) {
-  print(outfile);
-}
 
 
 FnSymbol* Symbol::getFnSymbol(void) {
@@ -366,43 +356,6 @@ bool VarSymbol::isParam(void){
 }
 
 
-void VarSymbol::print(FILE* outfile) {
-  if (immediate) {
-    bool isString = (immediate->const_kind == CONST_KIND_STRING);
-    if (isString) {
-      fprintf(outfile, "\"");
-    }
-    fprint_imm(outfile, *immediate);
-    if (isString) {
-      fprintf(outfile, "\"");
-    }
-  } else
-    Symbol::print(outfile);
-}
-
-
-void VarSymbol::printDef(FILE* outfile) {
-  if (varClass == VAR_CONFIG) {
-    fprintf(outfile, "config ");
-  }
-  if (varClass == VAR_STATE) {
-    fprintf(outfile, "state ");
-  }
-  //Roxana -- introduced various types of constness: const, param, nothing (var)
-  if (consClass == VAR_CONST) {
-    fprintf(outfile, "const ");
-  } else if (consClass == VAR_PARAM){
-        fprintf(outfile, "param");
-  }
-  else {
-    fprintf(outfile, "var ");
-  }
-  print(outfile);
-  fprintf(outfile, ": ");
-  type->print(outfile);
-}
-
-
 void VarSymbol::codegen(FILE* outfile) {
   if (on_heap || isReference)
     fprintf(outfile, "(*");
@@ -461,18 +414,6 @@ bool VarSymbol::isImmediate() {
 }
 
 
-static char* intentTagNames[NUM_INTENT_TYPES] = {
-  "",
-  "in",
-  "inout",
-  "out",
-  "const",
-  "ref",
-  "param",
-  "type"
-};
-
-
 ArgSymbol::ArgSymbol(intentTag iIntent, char* iName, 
                      Type* iType, Expr* iDefaultExpr,
                      Expr* iVariableExpr) :
@@ -516,14 +457,6 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     variableExpr = dynamic_cast<Expr*>(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
-}
-
-
-void ArgSymbol::printDef(FILE* outfile) {
-  fprintf(outfile, "%s ", intentTagNames[intent]);
-  Symbol::print(outfile);
-  fprintf(outfile, ": ");
-  type->print(outfile);
 }
 
 
@@ -1324,26 +1257,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   tag_generic(newfn);
 
   return newfn;
-}
-
-
-void FnSymbol::printDef(FILE* outfile) {
-  fprintf(outfile, "function ");
-  print(outfile);
-  fprintf(outfile, "(");
-  if (formals) {
-    formals->print(outfile, ", ");
-  }
-  fprintf(outfile, ")");
-  if (retType == dtVoid) {
-    fprintf(outfile, " ");
-  } else {
-    fprintf(outfile, ": ");
-    retType->print(outfile);
-    fprintf(outfile, " ");
-  }
-  body->print(outfile);
-  fprintf(outfile, "\n\n");
 }
 
 

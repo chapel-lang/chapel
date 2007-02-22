@@ -69,7 +69,6 @@ class DefExpr : public Expr {
 
   Type* typeInfo(void);
 
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 
@@ -86,7 +85,6 @@ class SymExpr : public Expr {
   Type* typeInfo(void);
   virtual bool isConst(void);
   virtual bool isParam(void);
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
   virtual bool isRef(void);
 };
@@ -119,7 +117,6 @@ class CallExpr : public Expr {
 
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
-  virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
   void insertAtHead(BaseAST* ast);
@@ -147,7 +144,6 @@ class NamedExpr : public Expr {
   COPY_DEF(NamedExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 

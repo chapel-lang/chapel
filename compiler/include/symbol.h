@@ -62,8 +62,6 @@ class Symbol : public BaseAST {
   virtual bool isParam(void);
   bool isThis(void);
 
-  virtual void print(FILE* outfile);
-  virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
@@ -112,8 +110,6 @@ class VarSymbol : public Symbol {
   bool isConst(void);
   bool isParam(void);
 
-  void print(FILE* outfile);
-  void printDef(FILE* outfile);
   void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual bool isRef(void);

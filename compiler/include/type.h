@@ -58,8 +58,6 @@ class Type : public BaseAST {
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  virtual void print(FILE* outfile);
-  virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
@@ -84,7 +82,6 @@ class EnumType : public Type {
   COPY_DEF(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
   bool implementedUsingCVals(void);
@@ -99,8 +96,6 @@ class UserType : public Type {
   virtual void verify(); 
   COPY_DEF(UserType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
-  void printDef(FILE* outfile);
 };
 
 

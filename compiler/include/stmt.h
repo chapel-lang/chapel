@@ -45,7 +45,6 @@ class BlockStmt : public Expr {
   virtual void verify();
   COPY_DEF(BlockStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 
   void insertAtHead(Expr* ast);
@@ -68,7 +67,6 @@ class CondStmt : public Expr {
   COPY_DEF(CondStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 
@@ -90,7 +88,6 @@ class GotoStmt : public Expr {
   GotoStmt(gotoType init_goto_type, Symbol* init_label);
   virtual void verify();
   COPY_DEF(GotoStmt);
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 

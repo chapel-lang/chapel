@@ -254,11 +254,6 @@ bool SymExpr::isParam(void){
 }
 
 
-void SymExpr::print(FILE* outfile) {
-  var->print(outfile);
-}
-
-
 void SymExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -337,24 +332,6 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 Type* DefExpr::typeInfo(void) {
   INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
   return NULL;
-}
-
-
-void DefExpr::print(FILE* outfile) {
-  if (dynamic_cast<FnSymbol*>(sym)) {
-    sym->printDef(outfile);
-    return;
-  } else if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-    ts->type->printDef(outfile);
-  } else if (dynamic_cast<VarSymbol*>(sym)) {
-    sym->printDef(outfile);
-  } else {
-    sym->printDef(outfile);
-  }
-  if (init) {
-    fprintf(outfile, " = ");
-    init->print(outfile);
-  }
 }
 
 
@@ -573,24 +550,6 @@ void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
-  }
-}
-
-
-void CallExpr::print(FILE* outfile) {
-  if (baseExpr) {
-    baseExpr->print(outfile);
-    fprintf(outfile, "(");
-    if (argList)
-      argList->print(outfile);
-    fprintf(outfile, ")");
-  } else if (primitive) {
-    fprintf(outfile, "__primitive(\"%s\"", primitive->name);
-    if (argList) {
-      fprintf(outfile, ", ");
-      argList->print(outfile);
-    }
-    fprintf(outfile, ")");
   }
 }
 
@@ -1529,13 +1488,6 @@ void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 Type* NamedExpr::typeInfo(void) {
   return actual->typeInfo();
-}
-
-
-void NamedExpr::print(FILE* outfile) {
-  fprintf(outfile, "(\"%s\" = ", name);
-  actual->print(outfile);
-  fprintf(outfile, ")");
 }
 
 

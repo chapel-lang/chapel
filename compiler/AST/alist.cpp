@@ -126,26 +126,6 @@ void AList::insertAtTail(AList* new_ast) {
 }
 
 
-void AList::print(FILE* outfile, char* separator) {
-  for_asts(node, this) {
-    node->print(outfile);
-    if (node->next != tail) {
-      fprintf(outfile, "%s", separator);
-    }
-  }
-}
-
-
-void AList::printDef(FILE* outfile, char* separator) {
-  for_asts(node, this) {
-    node->printDef(outfile);
-    if (node->next != tail) {
-      fprintf(outfile, "%s", separator);
-    }
-  }
-}
-
-
 void AList::codegen(FILE* outfile, char* separator) {
   for_asts(node, this) {
     node->codegen(outfile);

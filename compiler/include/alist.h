@@ -39,9 +39,7 @@ class AList {
   void insertAtTail(Expr* new_ast);
   void insertAtTail(AList* new_ast);
 
-  // different ways to print/codegen lists
-  void print(FILE* outfile, char* separator = ", ");
-  void printDef(FILE* outfile, char* separator = ", ");
+  // codegen list
   void codegen(FILE* outfile, char* separator = ", ");
 };
 

@@ -80,27 +80,6 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-void BlockStmt::print(FILE* outfile) {
-  switch (blockTag) {
-  case BLOCK_ATOMIC: fprintf( outfile, "atomic "); break;
-  case BLOCK_BEGIN: fprintf( outfile, "begin "); break;
-  case BLOCK_COBEGIN: fprintf( outfile, "cobegin "); break;
-  case BLOCK_DO_WHILE: fprintf( outfile, "do while "); break;
-  case BLOCK_FOR: fprintf( outfile, "for "); break;
-  case BLOCK_FORALL: fprintf( outfile, "forall "); break;
-  case BLOCK_ORDERED_FORALL: fprintf( outfile, "ordered forall "); break;
-  default:
-    break;
-  }
-  fprintf(outfile, "{\n");
-  if (body) {
-    body->print(outfile, "\n");
-  fprintf(outfile, "\n");
-  }
-  fprintf(outfile, "}");
-}
-
-
 static void
 codegenCobegin( FILE* outfile, AList *body) {
   int stmt_cnt;
@@ -335,17 +314,6 @@ void CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-void CondStmt::print(FILE* outfile) {
-  fprintf(outfile, "if (");
-  condExpr->print(outfile);
-  fprintf(outfile, ") ");
-  thenStmt->print(outfile);
-  if (elseStmt) {
-    fprintf(outfile, " else ");
-    elseStmt->print(outfile);
-  }
-}
-
 void CondStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
   fprintf(outfile, "if (");
@@ -394,23 +362,6 @@ void GotoStmt::verify() {
 GotoStmt*
 GotoStmt::copyInner(ASTMap* map) {
   return new GotoStmt(goto_type, label);
-}
-
-
-void GotoStmt::print(FILE* outfile) {
-  switch (goto_type) {
-  case goto_normal:
-    fprintf(outfile, "goto ");
-    break;
-  case goto_break:
-    fprintf(outfile, "break goto ");
-    break;
-  case goto_continue:
-    fprintf(outfile, "continue goto ");
-    break;
-  }
-  label->print(outfile);
-  fprintf(outfile, "\n");
 }
 
 

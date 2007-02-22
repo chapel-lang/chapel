@@ -12,7 +12,6 @@ PASSES_SRCS = \
 	insertLineNumbers.cpp \
         lowerIterators.cpp \
         parallel.cpp \
-	printProgram.cpp \
         memoryManage.cpp \
         normalize.cpp \
         scopeResolve.cpp \

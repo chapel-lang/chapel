@@ -104,10 +104,6 @@ class BaseAST {
   virtual void verify(); 
   virtual void clean();
 
-  virtual void print(FILE* outfile);
-  virtual void printDef(FILE* outfile);
-  void println(FILE* outfile);
-
   virtual void codegen(FILE* outfile);
 
   virtual bool inTree(void);
