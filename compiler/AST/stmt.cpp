@@ -10,7 +10,6 @@
 
 
 bool printCppLineno = false;
-bool inUserModule = false;
 
 
 void codegenStmt(FILE* outfile, Expr* stmt) {

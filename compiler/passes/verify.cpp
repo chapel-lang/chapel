@@ -51,5 +51,5 @@ verify_ast(BaseAST* ast,
 void
 verify() {
   forv_Vec(ModuleSymbol, mod, allModules)
-    verify_ast(mod, NULL, mod, mod->modScope);
+    verify_ast(mod, NULL, mod, rootScope);
 }

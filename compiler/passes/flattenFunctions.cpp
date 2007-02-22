@@ -14,7 +14,7 @@ static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, SymScope* scope = NULL) {
   if (!scope)
     scope = fn->parentScope;
-  if (scope->astParent && dynamic_cast<ModuleSymbol*>(scope->astParent))
+  if (scope->astParent == scope->astParent->getModule()->block)
     return false;
   else if (sym->parentScope == scope)
     return true;
@@ -126,7 +126,7 @@ void flattenFunctions(void) {
     ModuleSymbol* mod = fn->getModule();
     Expr* def = fn->defPoint;
     def->remove();
-    mod->stmts->insertAtTail(def);
+    mod->block->insertAtTail(def);
   }
 
   // add extra formals to nested functions

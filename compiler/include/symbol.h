@@ -250,22 +250,15 @@ enum modType {
 class ModuleSymbol : public Symbol {
  public:
   modType modtype;
-  AList* stmts;
+  BlockStmt* block;
   FnSymbol* initFn;
-
-  SymScope* modScope;
-  Vec<ModuleSymbol*> modUses; // modules used via use statement
 
   ModuleSymbol(char* init_name, modType init_modtype);
   ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);
-  void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
   void codegenDef(FILE* outfile);
-
-  static int numUserModules(Vec<ModuleSymbol*>* moduleList);
 };
 
 

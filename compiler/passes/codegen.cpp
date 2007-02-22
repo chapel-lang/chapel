@@ -140,7 +140,7 @@ static void codegen_header(void) {
       } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
         fnSymbols.add(fnSymbol);
       } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
-        if (dynamic_cast<ModuleSymbol*>(varSymbol->parentScope->astParent))
+        if (varSymbol->parentScope->parent == rootScope)
           varSymbols.add(varSymbol);
       }
     }

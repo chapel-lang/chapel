@@ -36,7 +36,7 @@ void flattenClasses(void) {
     ModuleSymbol* mod = ct->getModule();
     DefExpr *def = ct->symbol->defPoint;
     def->remove();
-    mod->stmts->insertAtTail(def);
+    mod->block->insertAtTail(def);
   }
 
   // Add this0 pointer usages when a symbol is not defined at the

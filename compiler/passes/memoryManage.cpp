@@ -138,7 +138,7 @@ buildFreeFunctions() {
             fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_GC_ISNEG, arg),
                                           new CallExpr(PRIMITIVE_INT_ERROR)));
           }
-          type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
+          type->defPoint->getModule()->block->insertAtTail(new DefExpr(fn));
           normalize(fn);
           freeMap.put(ct, fn);
           change = true;
@@ -200,7 +200,7 @@ buildTouchFunctions() {
                                         new CallExpr(PRIMITIVE_RETURN, gVoid)));
           fn->insertAtTail(new CallExpr(PRIMITIVE_GC_TOUCH, arg));
         }
-        type->defPoint->getModule()->stmts->insertAtTail(new DefExpr(fn));
+        type->defPoint->getModule()->block->insertAtTail(new DefExpr(fn));
         normalize(fn);
         touchMap.put(ct, fn);
       }

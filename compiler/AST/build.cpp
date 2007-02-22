@@ -95,13 +95,13 @@ static void createInitFn(ModuleSymbol* mod) {
     }
   }
 
-  for_alist(Expr, stmt, mod->stmts) {
+  for_alist(Expr, stmt, mod->block->body) {
     if (1 || !stmtIsGlob(stmt)) {
       stmt->remove();
       mod->initFn->insertAtTail(stmt);
     }
   }
-  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
+  mod->block->insertAtHead(new DefExpr(mod->initFn));
 }
 
 
@@ -109,7 +109,7 @@ ModuleSymbol* build_module(char* name, modType type, AList* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type);
   for_alist(Expr, stmt, stmts) {
     stmt->remove();
-    mod->stmts->insertAtTail(stmt);
+    mod->block->insertAtTail(stmt);
   }
   createInitFn(mod);
   return mod;

@@ -42,7 +42,7 @@ void normalize(void) {
         if ((dynamic_cast<VarSymbol*>(def->sym) && !def->sym->isCompilerTemp) ||
             dynamic_cast<TypeSymbol*>(def->sym) ||
             dynamic_cast<FnSymbol*>(def->sym))
-          mod->stmts->insertAtTail(def->remove());
+          mod->block->insertAtTail(def->remove());
     }
   }
 }
@@ -552,7 +552,7 @@ static void tag_global(FnSymbol* fn) {
       def->insertBefore(noop);
       fn->visiblePoint = noop;
       def->remove();
-      mod->stmts->insertAtTail(def);
+      mod->block->insertAtTail(def);
     }
   }
 }

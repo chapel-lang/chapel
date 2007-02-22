@@ -234,7 +234,7 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symbol))
       parentScope = fn->argScope;
     else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(symbol))
-      parentScope = mod->modScope;
+      parentScope = mod->block->blkScope;
     else if (ClassType* ct = dynamic_cast<ClassType*>(symbol->type))
       parentScope = ct->structScope;
     else
@@ -244,7 +244,7 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(type->symbol))
       parentScope = fn->argScope;
     else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(symbol))
-      parentScope = mod->modScope;
+      parentScope = mod->block->blkScope;
     else if (ClassType* ct = dynamic_cast<ClassType*>(type))
       parentScope = ct->structScope;
     else
@@ -293,7 +293,7 @@ void insert_help(BaseAST* ast,
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
         mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
-        parentScope = mod->modScope;
+        parentScope = mod->block->blkScope;
       } else {
         if (def_expr->sym && !dynamic_cast<UnresolvedSymbol*>(def_expr->sym)) {
           def_expr->parentScope->define(def_expr->sym);

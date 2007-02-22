@@ -266,7 +266,7 @@ thread_args() {
                 field->is_ref = true;
                 ctype->fields->insertAtTail(new DefExpr(field));
               }
-              mod->stmts->insertAtHead(new DefExpr(new_c));
+              mod->block->insertAtHead(new DefExpr(new_c));
               
               // create the class variable instance and allocate it
               VarSymbol *tempc = new VarSymbol( stringcat( "_args_for", 
@@ -296,7 +296,7 @@ thread_args() {
               DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
               ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
               wrap_fn->insertFormalAtTail( wrap_c);
-              mod->stmts->insertAtTail(new DefExpr(wrap_fn));
+              mod->block->insertAtTail(new DefExpr(wrap_fn));
               newb->insertAtTail( new CallExpr( wrap_fn, tempc));
               wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
 
@@ -313,7 +313,7 @@ thread_args() {
               wrap_fn->insertAtHead(new_cofn);     // add new call
               wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
               fcall_def->remove();                 // move orig. def
-              mod->stmts->insertAtTail(fcall_def); // to top-level
+              mod->block->insertAtTail(fcall_def); // to top-level
               normalize(wrap_fn);
             }
           }

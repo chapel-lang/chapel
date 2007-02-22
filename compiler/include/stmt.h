@@ -9,7 +9,6 @@
 
 
 extern bool printCppLineno;
-extern bool inUserModule;
 
 void codegenStmt(FILE* outfile, Expr* stmt);
 

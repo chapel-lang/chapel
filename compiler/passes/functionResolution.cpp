@@ -705,7 +705,7 @@ visibility_distance(SymScope* scope, FnSymbol* fn,
 
   if (scope->getModuleUses()) {
     forv_Vec(ModuleSymbol, module, *scope->getModuleUses()) {
-      int dd = visibility_distance(module->modScope, fn, d, alreadyVisited);
+      int dd = visibility_distance(module->block->blkScope, fn, d, alreadyVisited);
       if (dd > 0)
         return dd;
     }

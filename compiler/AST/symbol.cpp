@@ -1448,7 +1448,8 @@ void FnSymbol::codegenDef(FILE* outfile) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
       if (!dynamic_cast<TypeSymbol*>(def->sym))
-        if (def->sym->parentScope->astParent->astType != SYMBOL_MODULE)
+        if (def->sym->parentScope->astParent->getModule()->block !=
+            def->sym->parentScope->astParent)
           def->sym->codegenDef(outfile);
   }
   forv_Vec(BaseAST, ast, asts) {
@@ -1591,21 +1592,18 @@ void EnumSymbol::codegenDef(FILE* outfile) { }
 ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   Symbol(SYMBOL_MODULE, init_name),
   modtype(init_modtype),
-  stmts(new AList()),
-  initFn(NULL),
-  modScope(new SymScope(this, rootScope))
+  block(new BlockStmt()),
+  initFn(NULL)
 {
   rootScope->define(this);
   registerModule(this);
-  modScope->astParent = this;
-  stmts->parent = this;
+  block->blkScope = new SymScope(block, rootScope);
+  block->parentSymbol = this;
+  block->parentScope = rootScope;
 }
 
 
-ModuleSymbol::~ModuleSymbol() {
-  if (stmts)
-    delete stmts;
-}
+ModuleSymbol::~ModuleSymbol() { }
 
 
 void ModuleSymbol::verify() {
@@ -1613,8 +1611,6 @@ void ModuleSymbol::verify() {
   if (astType != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astType");
   }
-  if (stmts->parent != this)
-    INT_FATAL(this, "Bad AList::parent in ModuleSymbol");
 }
 
 
@@ -1625,31 +1621,17 @@ ModuleSymbol::copyInner(ASTMap* map) {
 }
 
 
-void ModuleSymbol::setModScope(SymScope* init_modScope) {
-  modScope = init_modScope;
-}
-
-
 void ModuleSymbol::codegenDef(FILE* outfile) {
-  inUserModule = (modtype == MOD_USER);
-  modScope->codegenFunctions(outfile);
+  block->blkScope->codegenFunctions(outfile);
 }
 
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
-}
-
-
-int ModuleSymbol::numUserModules(Vec<ModuleSymbol*>* moduleList) {
-  int numUserModules = 0;
-  forv_Vec(ModuleSymbol, mod, *moduleList) {
-    if (mod->modtype == MOD_USER) {
-      numUserModules++;
-    }
+  if (old_ast == block) {
+    block = dynamic_cast<BlockStmt*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
   }
-
-  return numUserModules;
 }
 
 

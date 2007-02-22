@@ -251,7 +251,7 @@ static void build_chpl_main(void) {
     if (userModules.n == 1) {
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
-      userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
+      userModules.v[0]->block->insertAtTail(new DefExpr(chpl_main));
       normalize(chpl_main);
     } else
       USR_FATAL("Code defines multiple modules but no main function.");

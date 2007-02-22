@@ -2,7 +2,7 @@
 
 void printProgram(void) {
   forv_Vec(ModuleSymbol, mod, userModules) {
-    mod->stmts->print(stdout, "\n");
+    mod->block->print(stdout);
     printf("\n");
   }
 }

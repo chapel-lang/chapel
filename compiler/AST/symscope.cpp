@@ -4,11 +4,6 @@
 #include "symscope.h"
 #include "files.h"
 
-#define OPERATOR_CHAR(_c) \
-  (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
-    (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
-   _c != '_'&& _c != '?' && _c != '$')                  \
-
 
 SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
   astParent(iastParent),
@@ -101,7 +96,8 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
   if (sym)
     return sym;
 
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent)) {
+  if (astParent && astParent->getModule()->block == astParent) {
+    ModuleSymbol* mod = astParent->getModule();
     sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited);
     if (sym)
       return sym;
@@ -110,7 +106,7 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
   Vec<ModuleSymbol*>* modUses = getModuleUses();
   if (modUses) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      sym = module->modScope->lookupLocal(name, alreadyVisited);
+      sym = module->block->blkScope->lookupLocal(name, alreadyVisited);
       if (sym)
         return sym;
     }
@@ -150,9 +146,7 @@ void SymScope::addModuleUse(ModuleSymbol* mod) {
 
 
 Vec<ModuleSymbol*>* SymScope::getModuleUses() {
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent))
-    return &mod->modUses;
-  else if (BlockStmt* block = dynamic_cast<BlockStmt*>(astParent))
+  if (BlockStmt* block = dynamic_cast<BlockStmt*>(astParent))
     return &block->modUses;
   return NULL;
 }
@@ -293,7 +287,7 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   Vec<ModuleSymbol*>* modUses = getModuleUses();
   if (modUses) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      module->modScope->getVisibleFunctions(allVisibleFunctions, name, true);
+      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }
   if (astParent) {
@@ -301,7 +295,8 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
         fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
-    if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent)) {
+    if (astParent->getModule()->block == astParent) {
+      ModuleSymbol* mod = astParent->getModule();
       mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }

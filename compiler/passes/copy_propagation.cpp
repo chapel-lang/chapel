@@ -153,9 +153,6 @@ void localCopyPropagation(FnSymbol* fn) {
 // never used anywhere.
 //
 void deadVariableElimination(FnSymbol* fn) {
-  bool is_global = false;
-  if (dynamic_cast<ModuleSymbol*>(fn->body->blkScope->astParent))
-    is_global = true;
   compute_sym_uses(fn);
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
@@ -165,8 +162,6 @@ void deadVariableElimination(FnSymbol* fn) {
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
         if (!def->parentSymbol)
-          continue;
-        if (is_global && !def->sym->isCompilerTemp)
           continue;
         if (!dynamic_cast<VarSymbol*>(def->sym)) // labels, types, ...?
           continue;

@@ -409,7 +409,7 @@ FnSymbol* BaseAST::getFunction() {
 
 Symbol* BaseAST::lookup(char* name) {
   if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(this))
-    return a->modScope->lookup(name);
+    return a->block->blkScope->lookup(name);
   return parentScope->lookup(name);
 }
 
@@ -519,7 +519,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case SYMBOL_UNRESOLVED:
     break;
   case SYMBOL_MODULE:
-    AST_ADD_LIST(ModuleSymbol, stmts);
+    AST_ADD_CHILD(ModuleSymbol, block);
     break;
   case SYMBOL_VAR:
     break;

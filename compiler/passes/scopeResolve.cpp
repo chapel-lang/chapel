@@ -98,7 +98,7 @@ void scopeResolve(Symbol* base) {
           (module = dynamic_cast<ModuleSymbol*>(sym1->var))   &&
           (sym2 = dynamic_cast<SymExpr*>(callExpr->get(2)))) {
         SymExpr *newSym =
-          new SymExpr(module->modScope->lookup(get_string(sym2)));
+          new SymExpr(module->block->blkScope->lookup(get_string(sym2)));
         callExpr->replace(newSym);
       }
     }

@@ -241,7 +241,7 @@ static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
   if (BlockStmt* a = dynamic_cast<BlockStmt*>(ast))
     scope = a->blkScope;
   else if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(ast))
-    scope = a->modScope;
+    scope = a->block->blkScope;
   else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
     scope = a->argScope;
   else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast))
@@ -567,7 +567,7 @@ void html_view() {
     fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, currentTraversal);
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
     fprintf(html_file, "<B>module %s</B>\n", mod->name);
-    for_alist(Expr, stmt, mod->stmts)
+    for_alist(Expr, stmt, mod->block->body)
       html_view_ast( html_file, uid, stmt);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
