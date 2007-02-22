@@ -22,8 +22,36 @@ name_matches_method(char* name, Type* type) {
     if (name_matches_method(name, pt))
       return true;
   }
+  if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
+    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
+    if (dynamic_cast<ClassType*>(outerType)) {
+      ClassType* outer = dynamic_cast<ClassType*>(ct->_this0->type);
+      if (name_matches_method(name, outer))
+        return true;
+    }
+  }
   return false;
 }
+
+
+/*** name_matches_method_local
+ ***   returns true iff function name matches a method name in class
+ ***   not including any classes this class is nested in
+ ***/
+static bool
+name_matches_method_local(char* name, Type* type) {
+  if (!strcmp(name, type->symbol->name))
+    return false;
+  forv_Vec(Symbol, method, type->methods) {
+    if (method && !strcmp(name, method->name))
+      return true;
+  }
+  forv_Vec(Type, pt, type->dispatchParents) {
+    if (name_matches_method(name, pt))
+      return true;
+  }
+  return false;
+} 
 
 
 static BlockStmt*
@@ -175,7 +203,48 @@ void scopeResolve(Symbol* base) {
                       dynamic_cast<SymExpr*>(call->get(1))->var == gMethodToken) {
                     symExpr->var = new UnresolvedSymbol(name);
                   } else {
-                    Expr* dot = new CallExpr(".", method->_this, new_StringSymbol(name));
+                    ClassType* ct = dynamic_cast<ClassType*>(type);
+                    int nestDepth = 0;
+                    if (name_matches_method(name, type)) {
+                      while (ct && !name_matches_method_local(name, ct)) {
+                        // count how many classes out from current depth that
+                        // this method is first defined in
+                        nestDepth += 1;
+                        ct = dynamic_cast<ClassType*>
+                          (ct->symbol->defPoint->parentSymbol->type);
+                      }
+                    } else {
+                      while (ct && !ct->structScope->lookupLocal(name)) {
+                        // count how many classes out from current depth that
+                        // this symbol is first defined in
+                        nestDepth += 1;
+                        ct = dynamic_cast<ClassType*>
+                          (ct->symbol->defPoint->parentSymbol->type);
+                      }
+                    }
+
+                    Expr *dot;
+                    for (int i=0; i<=nestDepth; i++) {
+                      // Apply implicit this pointers and outer this pointers
+                      if (i == 0) {
+                        if (i < nestDepth) {
+                          dot = new CallExpr(".",
+                                             method->_this,
+                                             new_StringSymbol("this0"));
+                        } else {
+                          dot = new CallExpr(".",
+                                             method->_this,
+                                             new_StringSymbol(name));
+                        }
+                      } else {
+                        if (i < nestDepth) {
+                          dot = new CallExpr(".",
+                                             dot, new_StringSymbol("this0"));
+                        } else {
+                          dot = new CallExpr(".", dot, new_StringSymbol(name));
+                        }
+                      }
+                    }
                     symExpr->replace(dot);
                     asts.add(dot);
                   }
