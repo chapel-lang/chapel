@@ -94039,3 +94039,19 @@ Modified files:
 	                         printProgram.cpp scopeResolve.cpp 
 	                         verify.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/07 15:16:07 -- diten
+
+Log message:
+	Add initial handling of references to outer class variables from inner classes.
+	Every nested class instance has a "this0" pointer which points to the
+	instance of the class it is nested in.  For every variable reference in the
+	inner class, implicitly add this.this0.this0... etc. until the symbol resolves.
+	Do the same for methods.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp 
+	chapel/compiler/passes/: scopeResolve.cpp 
+	chapel/make/: Makefile.gnu 
+
