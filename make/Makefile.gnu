@@ -44,7 +44,7 @@ GEN_CFLAGS =
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall #-Werror
+WARN_CXXFLAGS = -Wall -Werror
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
 
 
