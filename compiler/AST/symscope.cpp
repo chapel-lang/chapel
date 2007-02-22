@@ -28,15 +28,12 @@ SymScope::~SymScope() {
 void SymScope::define(Symbol* sym) {
   Symbol* tmp = table.get(sym->name);
   if (tmp) {
-    if (tmp == sym) {
-      return;
-      //INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-    }
+    if (tmp == sym)
+      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
     while (tmp->overload) {
       tmp = tmp->overload;
-      if (tmp == sym) {
+      if (tmp == sym)
         INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-      }
     }
     tmp->overload = sym;
     sym->setParentScope(tmp->parentScope);
