@@ -94055,3 +94055,21 @@ Modified files:
 	chapel/compiler/passes/: scopeResolve.cpp 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+02/22/07 15:31:41 -- deitz
+
+Log message:
+	Removed ::print and printProgram functionality so that we no longer
+	need to maintain this code.  Testing showed that it is dated.  The
+	view methods replace this functionality.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/passes/: Makefile.share 
+Removed files:
+	chapel/compiler/passes/: printProgram.cpp 
+
