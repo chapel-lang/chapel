@@ -94088,3 +94088,14 @@ Added files:
 	                                   test_nested2.future 
 	                                   test_nested2.good 
 
+---------------------------------------------------------------------------
+
+02/22/07 15:47:44 -- deitz
+
+Log message:
+	Reenabled -Werror under the assumption that disabling it was not meant
+	to be checked in.
+
+Modified files:
+	chapel/make/: Makefile.gnu 
+
