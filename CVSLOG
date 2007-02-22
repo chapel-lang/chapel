@@ -93963,3 +93963,14 @@ Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
 	                                      test_forbegin.good 
 
+---------------------------------------------------------------------------
+
+02/22/07 10:33:51 -- deitz
+
+Log message:
+	Reenabled check to make sure that we do not define the same symbol
+	twice in the symboltable.  I'm not sure when or why this was disabled.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp 
+
