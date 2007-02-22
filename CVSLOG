@@ -93974,3 +93974,35 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/07 11:59:23 -- deitz
+
+Log message:
+	Started cleanup of module-initFn-scopes-symboltable mess.  This
+	checkin goes a long way towards fixing the global use before def
+	futures, but falls short.
+	
+	Extended the initFn so that everything in a module, including types
+	and functions, are placed in the initFn, until normalize, at which
+	point types, functions, and global variables are removed from the
+	initFn.
+	
+	Removed the initFn kludge that sets its scope to the module's scope.
+	This improves the quality of generated code without extra cruft
+	because it allows the initFn to have local variables.
+	
+	Added a stopgap to scope resolution to avoid shadowing functions and
+	variables by methods of the same name.  Further improvements to the
+	symbol table should eliminate the need for this stopgap.
+	
+	Removed hack in verification to handle the initFn scope kludge which
+	sped up verification measurably.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symscope.cpp 
+	chapel/compiler/passes/: functionResolution.cpp memoryManage.cpp 
+	                         normalize.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp verify.cpp 
+	chapel/test/classes/deitz/: test_method_call2.good 
+
