@@ -84,6 +84,9 @@ void scopeResolve(Symbol* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+
     // Translate M.x where M is a ModuleSymbol into just x
     // where x is the symbol from module M.
     if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
@@ -133,6 +136,15 @@ void scopeResolve(Symbol* base) {
           continue;
 
         Symbol* sym = symExpr->lookup(name);
+
+        // sjd: stopgap to avoid shadowing variables or functions by methods
+        while (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+          if (fn->isMethod)
+            sym = sym->overload;
+          else
+            break;
+        }
+
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
         if (sym) {

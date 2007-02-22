@@ -36,6 +36,15 @@ void normalize(void) {
     normalize(mod);
   }
   normalized = true;
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    for_alist(Expr, expr, mod->initFn->body->body) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+        if ((dynamic_cast<VarSymbol*>(def->sym) && !def->sym->isCompilerTemp) ||
+            dynamic_cast<TypeSymbol*>(def->sym) ||
+            dynamic_cast<FnSymbol*>(def->sym))
+          mod->stmts->insertAtTail(def->remove());
+    }
+  }
 }
 
 void normalize(BaseAST* base) {
@@ -478,6 +487,7 @@ fix_def_expr(VarSymbol* var) {
     //
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->isTypeVariable = true;
+    typeTemp->isCompilerTemp = true;
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(
       new CallExpr(PRIMITIVE_MOVE, typeTemp,
@@ -553,7 +563,9 @@ static void fixup_array_formals(FnSymbol* fn) {
     return;
   fn->normalizedOnce = true;
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_top_asts(&asts, fn);
+  Vec<BaseAST*> all_asts;
+  collect_asts(&all_asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isNamed("_build_array_type")) {
@@ -581,7 +593,7 @@ static void fixup_array_formals(FnSymbol* fn) {
                             new CallExpr("==", call->get(2)->remove(),
                               new CallExpr(".", parent->sym, new_StringSymbol("eltType")))));
           if (def) {
-            forv_Vec(BaseAST, ast, asts) {
+            forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == def->sym)
                   sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("dom")));
@@ -589,7 +601,7 @@ static void fixup_array_formals(FnSymbol* fn) {
             }
           } else if (!sym || sym->var != gNil) {
             VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
-            forv_Vec(BaseAST, ast, asts) {
+            forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == parent->sym)
                   sym->var = tmp;
@@ -608,7 +620,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
           if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
             VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
-            forv_Vec(BaseAST, ast, asts) {
+            forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == parent->sym)
                   sym->var = tmp;

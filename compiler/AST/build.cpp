@@ -73,9 +73,7 @@ static void createInitFn(ModuleSymbol* mod) {
   currentFilename = mod->filename;
 
   mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
-  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
   mod->initFn->retType = dtVoid;
-  mod->initFn->body->blkScope = mod->modScope;
 
   if (strcmp(mod->name, "_compiler")) {
     // guard init function so it is not run more than once
@@ -98,11 +96,12 @@ static void createInitFn(ModuleSymbol* mod) {
   }
 
   for_alist(Expr, stmt, mod->stmts) {
-    if (!stmtIsGlob(stmt)) {
+    if (1 || !stmtIsGlob(stmt)) {
       stmt->remove();
       mod->initFn->insertAtTail(stmt);
     }
   }
+  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
 }
 
 

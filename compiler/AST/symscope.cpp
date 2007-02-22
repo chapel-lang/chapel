@@ -26,6 +26,12 @@ SymScope::~SymScope() {
 
 
 void SymScope::define(Symbol* sym) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (fn->global)
+      rootScope->addVisibleFunction(fn);
+    else
+      addVisibleFunction(fn);
+  }
   Symbol* tmp = table.get(sym->name);
   if (tmp) {
     if (tmp == sym)
@@ -41,13 +47,6 @@ void SymScope::define(Symbol* sym) {
     table.put(sym->name, sym);
     sym->setParentScope(this);
     symbols.add(sym);
-  }
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (fn->global) {
-      rootScope->addVisibleFunction(fn);
-    } else {
-      addVisibleFunction(fn);
-    }
   }
 }
 
@@ -98,8 +97,15 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
   alreadyVisited->set_add(this);
 
   sym = table.get(name);
+
   if (sym)
     return sym;
+
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent)) {
+    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited);
+    if (sym)
+      return sym;
+  }
 
   Vec<ModuleSymbol*>* modUses = getModuleUses();
   if (modUses) {
@@ -210,8 +216,6 @@ void SymScope::print(bool number, int indent) {
 
 
 void SymScope::codegen(FILE* outfile, char* separator) {
-  if (dynamic_cast<ModuleSymbol*>(astParent)) // because initFn has modScope
-    return;
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload)
       if (!dynamic_cast<TypeSymbol*>(tmp))
@@ -296,6 +300,9 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
         fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
+    }
+    if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(astParent)) {
+      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }
   if (parent)

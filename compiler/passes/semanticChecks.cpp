@@ -131,6 +131,7 @@ checkNormalized(void) {
     if (fn->defPoint->parentSymbol->astType == SYMBOL_FN)
       continue;
 
+    ModuleSymbol* mod = fn->getModule();
     Vec<char*> reported;
     Vec<BaseAST*> asts;
     Vec<Symbol*> defined;
@@ -147,7 +148,9 @@ checkNormalized(void) {
           if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
             continue;
         if (dynamic_cast<VarSymbol*>(sym->var))
-          if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
+          if (sym->var->defPoint &&
+              (sym->var->defPoint->parentSymbol == fn ||
+               (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn)))
             if (!defined.set_in(sym->var))
               if (sym->var != fn->_this)
                 USR_FATAL(sym, "'%s' used before defined", sym->var->name);

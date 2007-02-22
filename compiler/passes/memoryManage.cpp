@@ -334,16 +334,14 @@ void memoryManage(void) {
     }
 
     // Insert _free call on all local variables except the returned one
-    if (fn->getModule()->initFn != fn) {
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-          if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
-            if (!disableReferences(var)) // disable on_heap/is_ref
-              if (!var->isReference) // do not free aliases
-                if (FnSymbol* _free = freeMap.get(var->type))
-                  if (fn->getReturnSymbol() != var)
-                    fn->insertBeforeReturnAfterLabel(new CallExpr(_free, var));
-      }
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+          if (!disableReferences(var)) // disable on_heap/is_ref
+            if (!var->isReference) // do not free aliases
+              if (FnSymbol* _free = freeMap.get(var->type))
+                if (fn->getReturnSymbol() != var)
+                  fn->insertBeforeReturnAfterLabel(new CallExpr(_free, var));
     }
   }
   freeMap.clear();

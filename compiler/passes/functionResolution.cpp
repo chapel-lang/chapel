@@ -2441,7 +2441,13 @@ pruneResolvedTree() {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      // Remove unused global variables
+      if (dynamic_cast<VarSymbol*>(def->sym))
+        if (dynamic_cast<ModuleSymbol*>(def->parentSymbol))
+          if (def->sym->type == dtUnknown)
+            def->remove();
+    } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_NOOP)) {
         // Remove Noops
         call->remove();
