@@ -94195,3 +94195,39 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+02/23/07 13:40:01 -- deitz
+
+Log message:
+	Added domain methods setIndices(x) and getIndices() to set a domain
+	based on the indices 'x' and return the indices that define a domain.
+	Domain assignment is thus accomplished by getting the indices out of
+	one domain and passign them into the other domain via setIndices.
+	
+	The method setIndices should not yet be called directly since it does
+	not do a reallocation.  This would be a minor change to get working, I
+	believe.
+	
+	Note that the domain assignment error message has changed to complain
+	about the setIndices method.
+	
+	Added flag --default-dist, as suggested by Brad, to change the default
+	distribution that is associated with non-distributed domains.  By
+	default, it is SingleLocaleDistribution.
+	
+	This flag may help developers by allowing a set of array tests to be
+	run with the new distribution.  However, a few things also need to
+	happen to make this a possibility.  The distribution has to be in a
+	module that all of these tests can automatically use and that does not
+	necessarily require the tests to have a main function (if they don't).
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	chapel/test/arrays/deitz/: test_array_uint2.good 
+
