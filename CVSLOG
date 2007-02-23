@@ -94137,3 +94137,20 @@ Added files:
 	                                        test_nested_iterator.chpl 
 	                                        test_nested_iterator.good 
 
+---------------------------------------------------------------------------
+
+02/23/07 12:48:09 -- deitz
+
+Log message:
+	Fixed a bug in sequence inference in which a copied sequence would
+	alias an old one. In "var ss = s;" where ss and s are sequences, ss
+	was an alias of s rather than a copy of it.
+	
+	Added a test for this bug.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_copy.chpl 
+	                              test_seq_copy.good 
+
