@@ -94099,3 +94099,19 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+02/22/07 16:45:25 -- deitz
+
+Log message:
+	Simplified promotion wrapper build code so that it no longer needs to
+	call scope resolution.  All scope resolution is now done in the
+	scopeResolve pass.
+	
+	Also made a few arguments take constant character strings rather than
+	just character strings.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symbol.h 
+
