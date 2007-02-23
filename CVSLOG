@@ -94154,3 +94154,30 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_copy.chpl 
 	                              test_seq_copy.good 
 
+---------------------------------------------------------------------------
+
+02/23/07 12:48:34 -- deitz
+
+Log message:
+	Removed duplicated code from AST build functions build_reduce and
+	build_scan by removing build_scan and adding an optional third
+	argument to build_reduce that flags whether this should be a scan.
+	The only difference between these two functions was whether a call to
+	_reduce or _scan was inserted.
+	
+	Improved performance of reductions and scans be removing an
+	unnecessary "big" compiler temporary.  A big compiler temporary is a
+	copy of whatever it was assigned, rather than just a reference to it.
+	This is especially troubling regarding arrays and sequences.  I hope
+	to get to the point eventually where the compiler can identify all of
+	the places where big temporaries are inserted; I believe this can be
+	restricted to a single place in the compiler according to a unifying
+	strategy I have in mind for optimizing promotion, iterators, and
+	forall expressions.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+
