@@ -94231,3 +94231,24 @@ Modified files:
 	                          SingleLocaleAssociative.chpl 
 	chapel/test/arrays/deitz/: test_array_uint2.good 
 
+---------------------------------------------------------------------------
+
+02/23/07 14:33:22 -- diten
+
+Log message:
+	Add a test and a future for nested classes. nesting_with_inheritance checks
+	that the correct instance of a variable is chosen when an inner class
+	instance references a variable it inherited from a parent class which is also
+	defined in an outer class.
+	
+	deep_nest nests classes 9 levels deep and from the innermost calls methods
+	and references variables in outer classes to ensure the proper versions are
+	chosen.  Currently, a method call is not getting function resolved due to
+	this/outer pointers.
+
+Added files:
+	chapel/test/classes/diten/: deep_nest.chpl deep_nest.future 
+	                            deep_nest.good 
+	                            nesting_with_inheritance.chpl 
+	                            nesting_with_inheritance.good 
+
