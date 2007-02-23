@@ -589,7 +589,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
 }
 
 
-FnSymbol* build_reduce(Expr* red, Expr* seq) {
+FnSymbol* build_reduce(Expr* red, Expr* seq, bool scan) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(red)) {
     if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
       if (!strcmp(us->name, "max"))
@@ -598,35 +598,17 @@ FnSymbol* build_reduce(Expr* red, Expr* seq) {
         us->name = astr("_min");
     }
   }
-
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_reduce_fn", intstring(uid++)));
+  FnSymbol* fn = new FnSymbol(stringcat("_reduce_scan", intstring(uid++)));
   fn->addPragma("inline");
-  VarSymbol* tmp = new VarSymbol("_red_seq");
-  fn->insertAtTail(new DefExpr(tmp, seq));
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
+  fn->insertAtTail(new DefExpr(tmp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, seq));
   red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("_reduce", red, tmp)));
-  return fn;
-}
-
-
-FnSymbol* build_scan(Expr* scan, Expr* seq) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(scan)) {
-    if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
-      if (!strcmp(us->name, "max"))
-        us->name = astr("_max");
-      else if (!strcmp(us->name, "min"))
-        us->name = astr("_min");
-    }
-  }
-
-  static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_scan_fn", intstring(uid++)));
-  fn->addPragma("inline");
-  VarSymbol* tmp = new VarSymbol("_scan_seq");
-  fn->insertAtTail(new DefExpr(tmp, seq));
-  scan = new CallExpr(scan, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", scan, tmp)));
+  fn->insertAtTail(
+    new CallExpr(PRIMITIVE_RETURN,
+      new CallExpr(scan ? "_scan" : "_reduce", red, tmp)));
   return fn;
 }
 

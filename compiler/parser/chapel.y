@@ -1448,21 +1448,21 @@ reduction:
 | TBXOR TREDUCE expr
     { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3))); }
 |  expr TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan($1, $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce($1, $3, true))); }
 | TPLUS TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_sum"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_sum"), $3, true))); }
 | TSTAR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_prod"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_prod"), $3, true))); }
 | TAND TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_land"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_land"), $3, true))); }
 | TOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_lor"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_lor"), $3, true))); }
 | TBAND TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_band"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_band"), $3, true))); }
 | TBOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_bor"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bor"), $3, true))); }
 | TBXOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_bxor"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3, true))); }
 ;
 
 

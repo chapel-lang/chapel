@@ -271,8 +271,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
       (!strncmp("_let_fn", def->sym->name, 7)) ||
       (!strncmp("_if_fn", def->sym->name, 6)) ||
-      (!strncmp("_reduce_fn", def->sym->name, 10)) ||
-      (!strncmp("_scan_fn", def->sym->name, 8)) ||
+      (!strncmp("_reduce_scan", def->sym->name, 12)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
     Expr* stmt = def->getStmtExpr();
     BlockStmt* block = getBlock(stmt);
