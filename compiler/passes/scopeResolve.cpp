@@ -187,7 +187,7 @@ void scopeResolve(Symbol* base) {
             }
         }
 
-        // Apply 'this' in methods where necessary
+        // Apply 'this' and 'this0' in methods where necessary
         {
           Symbol* parent = symExpr->parentSymbol;
           while (!dynamic_cast<ModuleSymbol*>(parent)) {
@@ -206,6 +206,12 @@ void scopeResolve(Symbol* base) {
                     ClassType* ct = dynamic_cast<ClassType*>(type);
                     int nestDepth = 0;
                     if (name_matches_method(name, type)) {
+                      if (!dynamic_cast<CallExpr*>(symExpr->parentExpr)) {
+                        // If name_matches_method, and parent is not a
+                        // CallExpr, then this is a type specification
+                        // so don't give it this.this0...
+                        break;
+                      }
                       while (ct && !name_matches_method_local(name, ct)) {
                         // count how many classes out from current depth that
                         // this method is first defined in
