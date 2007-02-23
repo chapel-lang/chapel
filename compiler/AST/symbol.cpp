@@ -116,7 +116,7 @@ add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
 /*** Default Wrapper Cache ^^^ ***/
 
 
-Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
+Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   BaseAST(astType),
   name(canonicalize_string(init_name)),
   cname(name),
@@ -270,7 +270,7 @@ bool Symbol::isImmediate() {
 }
 
 
-UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
+UnresolvedSymbol::UnresolvedSymbol(const char* init_name) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 { }
 
@@ -827,16 +827,12 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
 
 
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
-                                      bool isSquare) {
+                                      bool square) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_promotion_wrap_", cname);
-  CallExpr* indicesCall = new CallExpr("_tuple"); // to be destructured in build
-  CallExpr* iterator;
-  if (isSquare)
-    iterator = new CallExpr("_build_domain");
-  else
-    iterator = new CallExpr("_build_tuple");
-  AList* wrapper_actuals = new AList();
+  CallExpr* indicesCall = new CallExpr("_tuple"); // destructured in build
+  CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
+  CallExpr* actualCall = new CallExpr(this);
   int i = 1;
   for_formals(formal, this) {
     Symbol* new_formal = formal->copy();
@@ -847,17 +843,20 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
       if (!ts)
         INT_FATAL(this, "error building promotion wrapper");
       new_formal->type = ts->type;
-      wrapper->insertFormalAtTail(new DefExpr(new_formal));
-      iterator->insertAtTail(new SymExpr(new_formal));
-      indicesCall->insertAtTail(new SymExpr(astr("_p_i_", intstring(i))));
-      wrapper_actuals->insertAtTail(new SymExpr(astr("_p_i_", intstring(i))));
+      wrapper->insertFormalAtTail(new_formal);
+      iterator->insertAtTail(new_formal);
+      VarSymbol* index = new VarSymbol(astr("_p_i_", istr(i)));
+      index->isCompilerTemp = true;
+      wrapper->insertAtTail(new DefExpr(index));
+      indicesCall->insertAtTail(index);
+      actualCall->insertAtTail(index);
     } else {
-      wrapper->insertFormalAtTail(new DefExpr(new_formal));
-      wrapper_actuals->insertAtTail(new SymExpr(new_formal));
+      wrapper->insertFormalAtTail(new_formal);
+      actualCall->insertAtTail(new_formal);
     }
     i++;
   }
-  CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
+
   if (isMethod)
     actualCall = make_method_call_partial(actualCall);
   BaseAST* indices = indicesCall;
@@ -875,7 +874,6 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   }
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
-  scopeResolve(wrapper);
   normalize(wrapper);
   return wrapper;
 }

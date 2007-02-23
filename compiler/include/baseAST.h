@@ -8,8 +8,9 @@ typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 
 extern void update_symbols(BaseAST* ast, ASTMap* map);
 
-char* canonicalize_string(char *s);
-char* astr(char* s1, char* s2 = NULL, char* s3 = NULL, char* s4 = NULL);
+char* canonicalize_string(const char *s);
+char* astr(const char* s1, const char* s2 = NULL,
+           const char* s3 = NULL, const char* s4 = NULL);
 char* istr(int i);
 
 class AList;

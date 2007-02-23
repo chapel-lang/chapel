@@ -49,7 +49,7 @@ class Symbol : public BaseAST {
   Vec<SymExpr*> uses;
   Vec<char*> pragmas;
 
-  Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
+  Symbol(astType_t astType, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
   virtual void verify(); 
   virtual void clean();
@@ -79,7 +79,7 @@ class Symbol : public BaseAST {
 
 class UnresolvedSymbol : public Symbol {
  public:
-  UnresolvedSymbol(char* init_name);
+  UnresolvedSymbol(const char* init_name);
   virtual void verify(); 
   COPY_DEF(UnresolvedSymbol);
   void codegen(FILE* outfile);

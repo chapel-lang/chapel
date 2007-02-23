@@ -11,8 +11,10 @@
 ChainHashMap<char*, StringHashFns, char*> chapelStringsTable;
 
 char*
-canonicalize_string(char *s) {
-  char* ss = chapelStringsTable.get(s);
+canonicalize_string(const char *s) {
+  char buffer[1024];
+  strcpy(buffer, s);
+  char* ss = chapelStringsTable.get(buffer);
   if (!ss) {
     ss = strdup(s);
     chapelStringsTable.put(ss, ss);
@@ -21,7 +23,7 @@ canonicalize_string(char *s) {
 }
 
 char*
-astr(char* s1, char* s2, char* s3, char* s4) {
+astr(const char* s1, const char* s2, const char* s3, const char* s4) {
   char s[1024];
   strcpy(s, s1);
   if (s2)

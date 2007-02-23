@@ -105,12 +105,12 @@ class CallExpr : public Expr {
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
-  CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+  CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(BaseAST* base, AList* args);
   CallExpr(PrimitiveOp *prim, AList* args);
   CallExpr(PrimitiveTag prim, AList* args);
-  CallExpr(char* name, AList* args);
+  CallExpr(const char* name, AList* args);
   ~CallExpr();
   virtual void verify(); 
   COPY_DEF(CallExpr);

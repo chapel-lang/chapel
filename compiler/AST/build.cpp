@@ -276,6 +276,8 @@ destructureIndices(BlockStmt* block,
   if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
     if (call->isNamed("_cast")) {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+        if (!dynamic_cast<UnresolvedSymbol*>(sym->var))
+          INT_FATAL(sym, "unresolved symbol expected");
         Expr* type = call->get(1);
         type->remove();
         block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init, type));
@@ -298,7 +300,10 @@ destructureIndices(BlockStmt* block,
       }
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(indices)) {
-    block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init));
+    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
+      block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init));
+    else
+      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
   }
 }
 
@@ -331,26 +336,8 @@ BlockStmt* build_for_block(BlockTag tag,
   destructureIndices(body, indices, new SymExpr(index));
 
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
-  /*
-  VarSymbol* cursor = new VarSymbol("_cursor");
-  cursor->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(cursor));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor")))));
-  */
   stmts->insertAtTail(new DefExpr(body->pre_loop));
-  /*
-  stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
-  stmts->insertAtTail(
-    new CallExpr(PRIMITIVE_MOVE, index,
-      new CallExpr(
-        new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
-        cursor)));
-  */
   stmts->insertAtTail(body);
-  /*
-  stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iteratorSym, new_StringSymbol("getNextCursor")), cursor)));
-  stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-  */
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }

@@ -426,7 +426,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 }
 
 
-CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
+CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
@@ -491,7 +491,7 @@ CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
   argList->parent = this;
 }
 
-CallExpr::CallExpr(char* name, AList* args) :
+CallExpr::CallExpr(const char* name, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList()),
