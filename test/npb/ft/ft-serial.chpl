@@ -201,7 +201,7 @@ def evolve(X1, X2, Twiddle) {
   }
 }
 
-var sums : [1..niter] complex; -- verification checksums
+var sums : [1..niter] complex; // verification checksums
 
 const
   vdata_s : [1..6] complex =
@@ -343,17 +343,17 @@ def checksum(i, X1) {
     writeln("T = ", i, "    Checksum = ", sums(i).re, " ", sums(i).im);
 }
 
---
--- Run problem once to ensure all data is touched
---
+//
+// Run problem once to ensure all data is touched
+//
 compute_index_map(Twiddle);
 compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);
 
---
--- Restart benchmark
---
+//
+// Restart benchmark
+//
 
 compute_index_map(Twiddle);
 compute_initial_conditions(U1);
