@@ -94181,3 +94181,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+02/23/07 13:39:23 -- diten
+
+Log message:
+	If class D is nested in class C, then from a method in class C "var d: D = D()"
+	was getting compiler time errors.  These were due to improperly treating the D
+	type specifier as a D constructor call while adding this/this0 pointers.
+	
+	Fix this by verifying that the parent is a CallExpr before adding the pointers.
+
+Modified files:
+	chapel/compiler/passes/: scopeResolve.cpp 
+
