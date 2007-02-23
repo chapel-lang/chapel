@@ -142,6 +142,12 @@ record seq {
   }
 }
 
+def _copy(s: seq) {
+  var ss: s.type;
+  ss = s;
+  return ss;
+}
+
 def =(s1: seq, s2: seq) {
   s1._delete();
   forall e in s2 do
