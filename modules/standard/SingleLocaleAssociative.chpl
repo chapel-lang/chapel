@@ -55,6 +55,13 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   var free_inds: _stack(int);
   var deleted_seen: int;
 
+  def getIndices()
+    return this; // stopgap measure given old implementation
+
+  def setIndices(b: SingleLocaleAssociativeDomain) {
+    oldAssignHelper(this, b);
+  }
+
   // compiler-internal routines
 
   def initialize() {
@@ -247,7 +254,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 }
 
 
-def =(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
+def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
   var indices = seq( int);
   var inds_count = 0;
   var inds_pos = 0;

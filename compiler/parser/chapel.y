@@ -1075,7 +1075,7 @@ composable_type:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = new CallExpr("SingleLocaleDistribution"); }
+    { $$ = new CallExpr(defaultDistribution); }
 | TDISTRIBUTED TLP expr TRP
     { $$ = $3; }
 ;

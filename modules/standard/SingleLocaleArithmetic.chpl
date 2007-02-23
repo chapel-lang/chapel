@@ -14,6 +14,12 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   type dim_type;
   var ranges : rank*_aseq(dim_type);
 
+  def getIndices() return ranges;
+
+  def setIndices(x: rank*_aseq(dim_type)) {
+    ranges = x;
+  }
+
   def buildExclusiveUpperDomain() {
     var x = SingleLocaleArithmeticDomain(rank, dim_type);
     for param i in 1..rank {

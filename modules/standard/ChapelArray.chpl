@@ -23,8 +23,9 @@ def _build_domain(x)
 
 def _build_domain(ranges: _aseq ...?rank) {
   type t = ranges(1).eltType;
-  var x = SingleLocaleArithmeticDomain(rank, t, ranges);
-  return _domain(x.type, x.getValue(x.getHeadCursor()).type, t, rank, x);
+  var d: domain(rank, t);
+  d.setIndices(ranges);
+  return d;
 }
 
 def _build_exclusive_upper_domain(x: _domain)
@@ -146,13 +147,20 @@ class _domain {
     for d in _value.subBlocks do
       yield d;
   }
+
+  def setIndices(x) {
+    _value.setIndices(x);
+  }
+
+  def getIndices()
+    return _value.getIndices();
 }
 
 def =(a: _domain, b: _domain) {
   if a == nil then return b; // stopgap: why? --sjd
   for e in a._arrs do
     e.reallocate(b);
-  a._value = b._value;
+  a._value.setIndices(b._value.getIndices());
   return a;
 }
 
