@@ -94252,3 +94252,16 @@ Added files:
 	                            nesting_with_inheritance.chpl 
 	                            nesting_with_inheritance.good 
 
+---------------------------------------------------------------------------
+
+02/26/07 12:21:03 -- bradc
+
+Log message:
+	Initial user code from Aniruddha Shet, part of Robert
+	Harrison's group at ORNL.  Does some simulated
+	array slice assignments similar to what one might
+	want in a coupled climate model.
+
+Added files:
+	chapel/test/users/shetag/: .cvsignore ccs.chpl ccs.good 
+
