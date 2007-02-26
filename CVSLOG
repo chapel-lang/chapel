@@ -94278,3 +94278,20 @@ Added files:
 	chapel/test/arrays/bradc/: constArray.chpl constArray.future 
 	                           constArray.good 
 
+---------------------------------------------------------------------------
+
+02/26/07 12:30:13 -- bradc
+
+Log message:
+	One more future showing that tuples of config vars
+	don't currently work and don't give a clear error
+	message if they're not meant to work.  (I think it'd
+	be nice to support them, but even if that's not the
+	general perception, a better error message is
+	in order).
+
+Added files:
+	chapel/test/execflags/bradc/: tupleConfig.chpl 
+	                              tupleConfig.future 
+	                              tupleConfig.good 
+
