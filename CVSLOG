@@ -94265,3 +94265,16 @@ Log message:
 Added files:
 	chapel/test/users/shetag/: .cvsignore ccs.chpl ccs.good 
 
+---------------------------------------------------------------------------
+
+02/26/07 12:24:54 -- bradc
+
+Log message:
+	A future showing that currently we permit a const
+	array to be assigned to.  This should eventually
+	become illegal.
+
+Added files:
+	chapel/test/arrays/bradc/: constArray.chpl constArray.future 
+	                           constArray.good 
+
