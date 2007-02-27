@@ -94460,3 +94460,27 @@ Added files:
 	                           sliceViaSingleton3d.future 
 	                           sliceViaSingleton3d.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 14:31:30 -- deitz
+
+Log message:
+	Unified forall expressions, predicated forall expressions, the special
+	array declaration syntax that looks like a forall expression, and
+	promotion with the new implementation of iterators.  The functions
+	that are used to implement these four language concepts are now
+	implemented as iterators.  This unifies the introduction of sequence
+	temporaries and should allow for their removal.  Their removal will
+	have an effect on the semantics of some corner cases, I think, but I
+	also think that we can define our semantics to allow their removal.
+	
+	This results in a major simplification to build_for_expr.
+	
+	Disabled inlining on promotion wrappers due to a reference counting
+	bug.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+
