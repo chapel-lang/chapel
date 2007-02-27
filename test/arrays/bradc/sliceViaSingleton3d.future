@@ -1,0 +1,6 @@
+array slicing
+
+This test is similar to sliceViaSingleton except that for
+3D slices with singletons it seems to result in a compile-time
+error (and an unclear one) rather than the incorrect runtime
+behavior.
