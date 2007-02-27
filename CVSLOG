@@ -94306,3 +94306,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+02/27/07 09:49:42 -- deitz
+
+Log message:
+	Refactored cleanup to fix cross-module issues.  Added a test that
+	showed a cross-module issue, but that is probably not the only one.
+	This issue shows that a subclass in a different module will not work
+	if the parent class has a field in it.  Added some comments to the
+	cleanup pass.
+
+Modified files:
+	chapel/compiler/include/: astutil.h passes.h 
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_inherit1.chpl 
+	                            test_inherit1.good 
+
