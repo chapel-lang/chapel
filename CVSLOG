@@ -94484,3 +94484,41 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+02/27/07 14:45:54 -- deitz
+
+Log message:
+	Added a test case of a code that would produce a different answer if
+	we inserted sequence temporaries for promotion.  In this code
+	
+	  var n: int;
+	
+	  def foo(i: int) {
+	    n = n + 1;
+	    writeln(i);
+	  }
+	
+	  def bar(i: int) return n + i;
+	
+	  foo(bar(1..10));
+	
+	the call to bar promotes it over the values one to ten.  If the result
+	of the promotion of bar is captured in a sequence at this point, then
+	it returns the values one to ten exactly.  That is what currently
+	happens and the .good file is defined as such.  If a sequence does not
+	capture the results of bar but rather the results are sent into foo to
+	promote it, then n will be changed and the results that bar produces
+	will be changed as its execution is interleaved with foo.
+	
+	I think this is how we should define the semantics of promotion and
+	forall expressions.  If we think of these as being possible in
+	parallel, then the semantics can be defined as potentially serial, in
+	an arbitrary order, or concurrently.  That would make the output
+	nondeterministic, but allows for parallelization and optimization.
+
+Added files:
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote_side_effect.chpl 
+	                                     test_scalar_promote_side_effect.good 
+
