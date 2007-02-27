@@ -11,7 +11,6 @@ class VarSymbol;
 class ArgSymbol;
 class CallExpr;
 
-void cleanup(Symbol* sym);
 void scopeResolve(Symbol* sym);
 void normalize(BaseAST* ast);
 

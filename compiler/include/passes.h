@@ -7,7 +7,6 @@ void check_parsed(void);
 void check_normalized(void);
 void check_resolved(void);
 void parallel1(void);
-void cleanup(void);
 void copy_propagation(void);
 void normalize(void);
 void resolve_analyzed(void);
