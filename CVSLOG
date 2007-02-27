@@ -94396,3 +94396,24 @@ Added files:
 Removed files:
 	chapel/test/trivial/diten/: class_domain_init.future 
 
+---------------------------------------------------------------------------
+
+02/27/07 12:00:04 -- deitz
+
+Log message:
+	Fixed the double allocation of arrays removing the three failures I
+	mentioned in my last checkin.
+	
+	Added new array type record called ArrayTypeInfo that is meant to
+	serve as runtime type information of an array.  The array type in
+	Chapel is complicated because the domain that is tied to the type has
+	runtime information associated with it that needs to be used to
+	declare an array of a given type.
+	
+	Work is still required to enable arrays of arrays in a sane way, but
+	this may be a start.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+
