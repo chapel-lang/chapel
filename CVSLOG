@@ -94295,3 +94295,14 @@ Added files:
 	                              tupleConfig.future 
 	                              tupleConfig.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 08:17:13 -- deitz
+
+Log message:
+	Removed code that inserted _to_seq functions for iterator classes when
+	iterators were transformed before function resolution.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
