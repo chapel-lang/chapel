@@ -1194,57 +1194,6 @@ resolveCall(CallExpr* call) {
     checkUnaryOp(call, &atypes, &aparams);
     checkBinaryOp(call, &atypes, &aparams);
 
-
-    // automatically replace calls with iterator arg with calls to _to_seq
-    // if (SymExpr *se = dynamic_cast<SymExpr*>(call->baseExpr)) {
-    // se->var
-    if (dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (!(call->isNamed( "_to_seq") ||
-            call->isNamed( "_copy") ||
-            call->isNamed( "=") ||
-            call->isNamed( "_cast") ||
-            call->isNamed( "_init") ||
-            call->isNamed( "_pass") ||
-            call->isNamed( "getNextCursor") ||
-            call->isNamed( "getHeadCursor") ||
-            call->isNamed( "getValue") ||
-            call->isNamed( "isValidCursor?") ||
-            (call->isResolved() &&
-             call->isResolved()->fnClass == FN_CONSTRUCTOR))) {
-        ASTMap subs;
-        for_actuals(actual, call) {
-          ClassType *ct = dynamic_cast<ClassType*>(actual->typeInfo());
-          if (ct && ct->isIterator) {
-            SymExpr* actualSym = dynamic_cast<SymExpr*>(actual);
-            if (!actualSym)
-              continue;
-            if (actual->prev && actual->prev->typeInfo() == dtMethodToken)
-              continue; // skip methods
-            if (actualSym->var->isTypeVariable)
-              continue; // skip types
-            if (actual->prev && actual->prev->typeInfo() == dtSetterToken)
-              continue; // skip setter token for recursive iterators
-                        // is this safe?
-            VarSymbol* tmp = new VarSymbol("_to_seq_tmp");
-            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            subs.put(actualSym->var, tmp);
-            CallExpr* toseq = new CallExpr("_to_seq", actualSym->var);
-            CallExpr* toseqmove = new CallExpr(PRIMITIVE_MOVE, tmp, toseq);
-            call->getStmtExpr()->insertBefore(toseqmove);
-            resolveCall(toseq);
-            resolveFns(toseq->isResolved());
-            resolveCall(toseqmove);
-          }
-        }
-
-        if (subs.n > 0) {
-          update_symbols( call, &subs);
-          resolveCall( call);
-          return;
-        }
-      }
-    }
-    
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
     FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
