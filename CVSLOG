@@ -94534,3 +94534,19 @@ Added files:
 	chapel/test/arrays/marybeth/: testinit.chpl testinit.future 
 	                              testinit.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 15:10:14 -- deitz
+
+Log message:
+	Added missing data file. Called file class constructor. Used pass by
+	name mechanism since the order of arguments specified did not match
+	the order of the fields.  Removed .future.
+
+Modified files:
+	chapel/test/arrays/marybeth/: testinit.chpl 
+Added files:
+	chapel/test/arrays/marybeth/: Adata.dat 
+Removed files:
+	chapel/test/arrays/marybeth/: testinit.future 
+
