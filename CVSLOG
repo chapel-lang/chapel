@@ -94324,3 +94324,75 @@ Added files:
 	chapel/test/classes/deitz/: test_inherit1.chpl 
 	                            test_inherit1.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 10:44:53 -- deitz
+
+Log message:
+	This major change lays the groundwork for supporting multiple types of
+	domains that interact.  It also causes three regressions due to double
+	allocation of arrays.  I'm working on this next but want to separate
+	out this work.  Expect:
+	
+	 [Error matching program output for memory/shannon/jacobi]
+	 [Error matching program output for memory/shannon/printMemTable]
+	 [Error matching program output for memory/shannon/printMemTable2]
+	
+	Changed the array and domain wrapper classes into records. This has
+	the advantage of removing an extra memory reference when accessing
+	arrays and domains and simplifies the code base since arrays and
+	domains associate automatic storage like records.
+	
+	Removed some special treatment of the _init function in normalization
+	in which temporaries were not inserted for its actual argument thus
+	enabling a brittle but important transformation in function
+	resolution.  Reworked the transformation in function resolution.
+	
+	Reworked the DefExpr transformation, simplifying it.  As a side
+	benefit, we now generate a much better error message for
+	classes/bradc/weirdinit.
+	
+	Moved the _arrs sequence of base arrays out of the domain wrapper and
+	into the domain base class. This is a better place for this array
+	since it can become accessible to user code and because of the array
+	and domain wrapper record change.  However, there is now a cycle
+	between arrays and domains since the domain classes keep a sequence of
+	all of the arrays declared over them. Futurized three memory leak
+	tests.
+	
+	Added a necessary method buildEmptyDomain() to the domain
+	interface. This method creates an empty domain of that domain type and
+	handles the case where a domain is not initialized in a less fragile
+	way without requiring special casing code. Previously, the _value
+	class was left nil instead of being produced empty.
+	
+	Specified _pass, _init, and _copy functions for the domain wrapper to
+	control the exact behavior of argument passing, variable declarations
+	with types, and variable declarations with initialization expressions.
+	
+	Reworked the _init function on the array wrapper which must never have
+	been used; it was a classic case of infinite recursion.
+	
+	With the addition of a field to BaseDomain, made all calls to subclass
+	domain constructors use pass by name because the _arrs field in
+	BaseDomain is the expected first argument to the constructor.
+	
+	These changes make arrays and domains as fields in classes
+	significantly more stable.  Removed .future for
+	trivial/diten/class_domain_init.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/classes/bradc/: weirdinit.good 
+Added files:
+	chapel/test/memory/deitz/: test_array_leak.future 
+	                           test_array_of_class_leak.future 
+	                           test_jacobi_leak.future 
+Removed files:
+	chapel/test/trivial/diten/: class_domain_init.future 
+
