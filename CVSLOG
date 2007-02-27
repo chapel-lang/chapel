@@ -94522,3 +94522,15 @@ Added files:
 	                                     test_scalar_promote_side_effect.chpl 
 	                                     test_scalar_promote_side_effect.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 14:52:32 -- marybeth
+
+Log message:
+	Future for test which attempts to initialize a 2-D array from
+	a file.
+
+Added files:
+	chapel/test/arrays/marybeth/: testinit.chpl testinit.future 
+	                              testinit.good 
+
