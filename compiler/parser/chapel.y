@@ -1342,6 +1342,7 @@ expr:
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->fnClass = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1352,6 +1353,7 @@ expr:
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->fnClass = FN_ITERATOR;
       forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, new CallExpr("_cond_test", $7)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }

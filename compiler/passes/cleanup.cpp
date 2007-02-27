@@ -405,6 +405,7 @@ void cleanup(void) {
             BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
             
             FnSymbol *forall_init = new FnSymbol( "_forallinit");
+            forall_init->fnClass = FN_ITERATOR;
             forall_init->insertAtTail( forblk);
             def->insertBefore( new DefExpr( forall_init));
             def->init->replace( new CallExpr( forall_init));

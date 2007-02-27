@@ -225,47 +225,17 @@ BlockStmt* build_serial_block(Expr* cond, BlockStmt* body) {
 }
 
 
-// builds body of for expression
+// builds body of for expression iterator
 BlockStmt*
-build_for_expr(BaseAST* indices,
-               Expr* iterator,
-               Expr* expr,
-               Expr* cond) {
-  BlockStmt* stmts = build_chpl_stmt();
-
-  VarSymbol* seq = new VarSymbol("_seq");
-  seq->isCompilerTemp = true;
-
-  VarSymbol* dummy = new VarSymbol("_type_dummy");
-  dummy->isCompilerTemp = true;
-  dummy->isTypeVariable = true;
-
-  ASTMap map;
-  BaseAST* typeindices = indices->copy(&map);
-  Expr* typeexpr = expr->copy(&map);
-
-  stmts->insertAtTail(new DefExpr(dummy));
-
-  stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
-                                                    typeindices,
-                                                    iterator->copy(),
-                                                    new BlockStmt(new CallExpr(PRIMITIVE_MOVE, dummy, typeexpr))), BLOCK_TYPE));
-
-  stmts->insertAtTail(new DefExpr(seq, new CallExpr("_construct_seq", dummy)));
-
-  Expr* append_stmt =
-      new CallExpr(
-        new CallExpr(".", seq, new_StringSymbol("_append_in_place")), expr);
-  stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
-                                                    indices,
-                                                    iterator,
-                                                    cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt))));
-  VarSymbol* rettmp = new VarSymbol("_ret_seq");
-  rettmp->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(rettmp));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rettmp, seq));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_RETURN, rettmp));
-  return stmts;
+build_for_expr(BaseAST* indices, Expr* iterator, Expr* expr, Expr* cond) {
+  Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
+  if (cond)
+    stmt = new CondStmt(cond, stmt);
+  stmt = new BlockStmt(build_for_block(BLOCK_FORALL,
+                                       indices,
+                                       iterator,
+                                       new BlockStmt(stmt)));
+  return build_chpl_stmt(stmt);
 }
 
 

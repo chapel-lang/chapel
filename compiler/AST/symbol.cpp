@@ -870,7 +870,9 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                          new BlockStmt(actualCall))));
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
+    wrapper->fnClass = FN_ITERATOR;
     wrapper->retRef = false;
+    wrapper->removePragma("inline");
   }
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
