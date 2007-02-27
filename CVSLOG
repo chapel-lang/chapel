@@ -94417,3 +94417,25 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: ChapelArray.chpl 
 
+---------------------------------------------------------------------------
+
+02/27/07 12:09:48 -- marybeth
+
+Log message:
+	Adding four test cases which use the same 10X10 test
+	matrix (magic square of dimension 10).
+	
+	nopivlu - LU without pivoting
+	pivlu - LU with pivoting
+	
+	nopivlublock - Block LU without pivoting
+	pivlublock - Block LU with pivoting
+
+Added files:
+	chapel/test/studies/lu/marybeth/: nopivlu.chpl nopivlu.good 
+	                                  pivlu.chpl pivlu.good 
+	                                  nopivlublock.chpl 
+	                                  nopivlublock.good 
+	                                  pivlublock.chpl 
+	                                  pivlublock.good 
+
