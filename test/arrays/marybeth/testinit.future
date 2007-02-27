@@ -1,7 +1,0 @@
-file i/o
-
-This test attempts to initialize an array from values in a
-data file.  The data is read one element at a time and assigned
-to a 2D array.
-
-The test compiles, but gets a seg fault upon execution.
