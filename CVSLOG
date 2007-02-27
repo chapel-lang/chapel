@@ -94550,3 +94550,21 @@ Added files:
 Removed files:
 	chapel/test/arrays/marybeth/: testinit.future 
 
+---------------------------------------------------------------------------
+
+02/27/07 15:54:33 -- deitz
+
+Log message:
+	Added a developer flag --warn-temporary that warns about sequence
+	temporaries being inserted into the generated code.  It is possible
+	that we can eventually change this to a compiler failure, but for now
+	sequence temporaries are inserted during compilation.  I'm not sure
+	that they are restricted solely to the place where I've added this
+	warning.  We can tighten up the compiler code to be more sure, but it
+	is not totally clear at this point.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: lowerIterators.cpp 
+
