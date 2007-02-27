@@ -58,6 +58,8 @@ propagateIterator(Symbol* sym,
     changeToSeq = true;
   }
   if (changeToSeq) {
+    if (fWarnTemporary)
+      USR_WARN(move, "sequence temporary inserted");
     if (!sym->type->append)
       INT_FATAL(move, "requires append function, sequence expected");
     VarSymbol* iterator = new VarSymbol("_toseq_iterator", ct);

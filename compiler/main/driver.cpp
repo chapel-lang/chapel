@@ -42,6 +42,7 @@ char chplhome[FILENAME_MAX] = ".";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
+bool fWarnTemporary = false;
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
@@ -102,6 +103,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"warn-promotion", ' ', "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
+ {"warn-temporary", ' ', "Warn about sequence temporaries", "F", &fWarnTemporary, NULL, NULL},
  {"default-dist", ' ', "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
  {0}
 };
