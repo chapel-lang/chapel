@@ -94439,3 +94439,24 @@ Added files:
 	                                  pivlublock.chpl 
 	                                  pivlublock.good 
 
+---------------------------------------------------------------------------
+
+02/27/07 13:51:35 -- bradc
+
+Log message:
+	Added a couple of tests motivated by Aniruddha Shet's
+	ccs.chpl code in which he noticed that array slicing
+	using degenerate dimensions didn't work -- one had to
+	use "i..i" rather than simply "i".  While this is
+	related to our discussion about having rank-dropping
+	slicing, his use of such ranges and these tests are
+	independent of that decision, I believe.
+
+Added files:
+	chapel/test/arrays/bradc/: sliceViaSingleton.chpl 
+	                           sliceViaSingleton.future 
+	                           sliceViaSingleton.good 
+	                           sliceViaSingleton3d.chpl 
+	                           sliceViaSingleton3d.future 
+	                           sliceViaSingleton3d.good 
+
