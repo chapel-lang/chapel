@@ -2366,6 +2366,27 @@ resolve() {
 
 
 //
+// remove arguments to calls; handle temporary normalization by
+// recursively removing temporaries.
+//
+static void
+removeActual(Expr* actual) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(actual)) {
+    if (sym->var->isCompilerTemp) {
+      forv_Vec(SymExpr, lhs, sym->var->uses) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(lhs->parentExpr)) {
+          if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE) &&
+              call->get(1) == lhs) {
+            call->remove();
+          }
+        }
+      }
+    }
+  }
+}
+
+
+//
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
 //
@@ -2387,9 +2408,14 @@ pruneResolvedTree() {
           ct->symbol->defPoint->remove();
   }
 
+  compute_sym_uses();
+
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    Expr* expr = dynamic_cast<Expr*>(ast);
+    if (!expr || !expr->parentSymbol)
+      continue;
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       // Remove unused global variables
       if (dynamic_cast<VarSymbol*>(def->sym))
@@ -2427,6 +2453,17 @@ pruneResolvedTree() {
           call->remove();
       } else if (call->isNamed("_init")) {
         // Special handling of array constructors via array pragma
+
+        if (ClassType* ct = dynamic_cast<ClassType*>(call->typeInfo())) {
+          if (!ct->symbol->hasPragma("array")) {
+            if (ct->defaultValue) {
+              removeActual(call->get(1));
+              call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
+            } else if (!ct->symbol->hasPragma("array"))
+              call->replace(call->get(1)->remove());
+          }
+        }
+        /*
         if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
           if (FnSymbol* fn = construct->isResolved()) {
             if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
@@ -2437,15 +2474,19 @@ pruneResolvedTree() {
               }
             }
           }
-        }
+        }*/
       } else if (FnSymbol* fn = call->isResolved()) {
         // Remove method and setter token actuals
         for (int i = fn->formals->length(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
-              formal->type == dtSetterToken ||
-              formal->isTypeVariable)
+              formal->type == dtSetterToken)
             call->get(i)->remove();
+
+          if (formal->isTypeVariable) {
+            //            removeActual(call->get(i));
+            call->get(i)->remove();
+          }
         }
       }
     } else if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {

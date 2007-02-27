@@ -1,9 +1,9 @@
 class SingleLocaleDistribution {
-  def buildDomain(param rank: int, type dimensional_index_type) {
-    return SingleLocaleArithmeticDomain(rank, dimensional_index_type);
+  def buildDomain(param rank: int, type dim_type) {
+    return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
   }
   def buildDomain(type ind_type) {
-    return SingleLocaleAssociativeDomain(ind_type);
+    return SingleLocaleAssociativeDomain(ind_type=ind_type);
   }
 }
 
@@ -21,7 +21,7 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def buildExclusiveUpperDomain() {
-    var x = SingleLocaleArithmeticDomain(rank, dim_type);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then
         halt("syntax [domain-specification) requires a stride of one");
@@ -98,20 +98,23 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def buildSparseDomain()
-    return SingleLocaleSparseDomain(rank, dim_type, adomain=this);
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, adomain=this);
 
   def buildSubdomain()
-    return SingleLocaleArithmeticDomain(rank, dim_type);
+    return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
+
+  def buildEmptyDomain()
+    return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
 
   def translate(dim: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
   def interior(dim: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
           (dim(i) < 0) && (this(i)._low-1-dim(i) > this(i)._high)) {
@@ -123,14 +126,14 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def exterior(dim: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
 
   def expand(dim: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -141,7 +144,7 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }  
 
   def expand(dim: int) {
-    var x = SingleLocaleArithmeticDomain(rank, int);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int);
     for i in 1..rank do
       x.ranges(i) = ranges(i)._expand(dim);
     return x;
@@ -155,14 +158,14 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def strideBy(dim : rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank, dim_type);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by dim(i);
     return x;
   }
 
   def strideBy(dim : int) {
-    var x = SingleLocaleArithmeticDomain(rank, dim_type);
+    var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by dim;
     return x;
@@ -175,7 +178,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   param rank : int;
   type dim_type;
 
-  var dom : SingleLocaleArithmeticDomain(rank, dim_type);
+  var dom : SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
   var off: rank*dim_type;
   var blk: rank*dim_type;
   var str: rank*int;
@@ -337,7 +340,7 @@ def _intersect(a: _aseq, b: _aseq) {
 }
 
 def _intersect(a: SingleLocaleArithmeticDomain, b: SingleLocaleArithmeticDomain) {
-  var c = SingleLocaleArithmeticDomain(a.rank, a.dim_type);
+  var c = SingleLocaleArithmeticDomain(rank=a.rank, dim_type=a.dim_type);
   for param i in 1..a.rank do
     c.ranges(i) = _intersect(a(i), b(i));
   return c;

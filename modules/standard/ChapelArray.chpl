@@ -18,8 +18,8 @@ def _build_sparse_domain_type(dom)
 def _build_array_type(dom, type eltType)
   return dom.buildArray(eltType);
 
-def _build_domain(x)
-  return x;
+def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
+  return x;                             // is * on arithmetic sequences?
 
 def _build_domain(ranges: _aseq ...?rank) {
   type t = ranges(1).eltType;
@@ -47,14 +47,20 @@ def _build_index_type(dom) {
 }
 
 pragma "domain"
-class _domain {
+record _domain {
   type _domain_type;
   type _index_type;
   type _dim_index_type;
   param rank : int;
   var _value : _domain_type;
-  var _arrs: seq(BaseArray);
   var _promotionType : _index_type;
+
+  def initialize() {
+    if _value == nil {
+      var x = buildEmptyDomain();
+      _value = x._value;
+    }
+  }
 
   def getHeadCursor()
     return _value.getHeadCursor();
@@ -73,8 +79,13 @@ class _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    _arrs #= x;
+    _value._arrs #= x;
     return _array(x.type, eltType, rank, x, this);
+  }
+
+  def buildEmptyDomain() {
+    var x = _value.buildEmptyDomain();
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
   def buildSparseDomain() {
@@ -157,11 +168,23 @@ class _domain {
 }
 
 def =(a: _domain, b: _domain) {
-  if a == nil then return b; // stopgap: why? --sjd
-  for e in a._arrs do
+//  if a == nil then return b; // stopgap: why? --sjd
+  for e in a._value._arrs do
     e.reallocate(b);
   a._value.setIndices(b._value.getIndices());
   return a;
+}
+
+def _pass(a: _domain)
+  return a;
+
+def _init(a: _domain)
+  return a.buildEmptyDomain();
+
+def _copy(a: _domain) {
+  var b: a.type;
+  b.setIndices(a.getIndices());
+  return b;
 }
 
 def _domain.writeThis(f: Writer) {
@@ -175,7 +198,7 @@ def by(a: _domain, b) {
 
 // this is a wrapper class for all arrays
 pragma "array"
-class _array {
+record _array {
   type _array_type;
   type eltType;
   param rank : int;
@@ -276,10 +299,8 @@ def _pass(a: _array) {
   return a;
 }
 
-def _init(a: _array) {
-  var b : [a.dom] a.eltType;
-  return b;
-}
+def _init(a: _array)
+  return a.dom.buildArray(a.eltType);
 
 def _array.writeThis(f: Writer) {
   f.write(_value);
@@ -301,4 +322,6 @@ class BaseArray {
   }
 }
 
-class BaseDomain { }
+class BaseDomain {
+  var _arrs: seq of BaseArray;
+}

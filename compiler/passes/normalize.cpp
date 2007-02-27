@@ -395,8 +395,8 @@ static void insert_call_temps(CallExpr* call) {
     if (parentCall->isPrimitive(PRIMITIVE_MOVE) ||
         parentCall->isPrimitive(PRIMITIVE_REF))
       return;
-    if (parentCall->isNamed("_init"))
-      call = parentCall;
+    //    if (parentCall->isNamed("_init"))
+    //      call = parentCall;
   }
 
   Expr* stmt = call->getStmtExpr();
@@ -486,17 +486,24 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-    typeTemp->isTypeVariable = true;
     typeTemp->isCompilerTemp = true;
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(
       new CallExpr(PRIMITIVE_MOVE, typeTemp,
         new CallExpr("_init", type->remove())));
-    if (init)
+    if (init) {
+      VarSymbol* initTemp = new VarSymbol("_tmp");
+      initTemp->isCompilerTemp = true;
+      initTemp->canReference = true;
+      initTemp->canParam = true;
+      stmt->insertBefore(new DefExpr(initTemp));
+      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, initTemp, init->remove()));
+      stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
       stmt->insertAfter(
-        new CallExpr(PRIMITIVE_MOVE, constTemp,
-          new CallExpr("=", constTemp, init->remove())));
-    stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+        new CallExpr(PRIMITIVE_MOVE, typeTemp,
+          new CallExpr("=", typeTemp, initTemp)));
+    } else
+      stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
 
   } else {
 
@@ -608,11 +615,11 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
             fn->insertAtHead(new CondStmt(
-                               new SymExpr(parent->sym),
-                                 new CallExpr(PRIMITIVE_MOVE, tmp,
-                                   new CallExpr(new CallExpr(".", parent->sym,
-                                     new_StringSymbol("view")),
-                                     call->get(1)->copy()))));
+              new CallExpr(".", parent->sym, new_StringSymbol("_value")),
+              new CallExpr(PRIMITIVE_MOVE, tmp,
+                new CallExpr(new CallExpr(".", parent->sym,
+                                          new_StringSymbol("view")),
+                             call->get(1)->copy()))));
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
@@ -627,11 +634,11 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
             fn->insertAtHead(new CondStmt(
-                               new SymExpr(parent->sym),
-                                 new CallExpr(PRIMITIVE_MOVE, tmp,
-                                   new CallExpr(new CallExpr(".", parent->sym,
-                                     new_StringSymbol("view")),
-                                     call->get(1)->copy()))));
+              new CallExpr(".", parent->sym, new_StringSymbol("_value")),
+              new CallExpr(PRIMITIVE_MOVE, tmp,
+                new CallExpr(new CallExpr(".", parent->sym,
+                                          new_StringSymbol("view")),
+                             call->get(1)->copy()))));
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }

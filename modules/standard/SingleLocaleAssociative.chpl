@@ -47,7 +47,7 @@ record _ind_data_t {
 
 class SingleLocaleAssociativeDomain: BaseDomain {
   type ind_type;
-  var _arrs: seq(BaseArray);    // WAW: unfortunately redundant list
+  var _arrs2: seq(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
   var table: _ddata(int);
@@ -59,8 +59,11 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     return this; // stopgap measure given old implementation
 
   def setIndices(b: SingleLocaleAssociativeDomain) {
-    oldAssignHelper(this, b);
+    this = oldAssignHelper(this, b);
   }
+
+  def buildEmptyDomain()
+    return SingleLocaleAssociativeDomain(ind_type=ind_type);
 
   // compiler-internal routines
 
@@ -117,7 +120,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         inds_pos += 1;
       }
 
-      for ia in _arrs {
+      for ia in _arrs2 {
         ia._resize( new_len/2, old_map);
       }
 
@@ -150,7 +153,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         }
       }
 
-      for ia in _arrs {
+      for ia in _arrs2 {
         ia._resize( new_len/2, old_map);
       }
 
@@ -193,7 +196,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def buildArray(type eltType) {
     var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
-    _arrs #= ia;
+    _arrs2 #= ia;
     return ia;
   }
 
@@ -232,7 +235,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       free_inds.push( table_i);
       table(ind_pos) = _DELETED;
 
-      for ia in _arrs do
+      for ia in _arrs2 do
         ia.purge( table_i);
     }
 
@@ -255,7 +258,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
 
 def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
-  var indices = seq( int);
+  var indices: seq(a.ind_type);
   var inds_count = 0;
   var inds_pos = 0;
   var total_inds = a.num_inds;
@@ -287,7 +290,7 @@ def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociative
     }
     inds_pos += 1;
   }
-  return a;  // WAW: YAH, "a" instead of "b" because we want to match keys, not do a deep copy (e.g., _arrs)
+  return a;  // WAW: YAH, "a" instead of "b" because we want to match keys, not do a deep copy (e.g., _arrs2)
 }
 
 
@@ -311,7 +314,7 @@ def SingleLocaleAssociativeDomain.writeThis(f: Writer) {
 class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type ind_type;
-  var dom : SingleLocaleAssociativeDomain(ind_type);
+  var dom : SingleLocaleAssociativeDomain(ind_type=ind_type);
   var data : _ddata(eltType);
 
   def initialize() {
