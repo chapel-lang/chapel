@@ -626,6 +626,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         } else {  //// DUPLICATED CODE ABOVE AND BELOW
           DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
           if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
+            call->baseExpr->replace(new SymExpr("_build_array"));
             VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {

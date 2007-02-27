@@ -15,7 +15,18 @@ def _build_subdomain_type(dom)
 def _build_sparse_domain_type(dom)
   return dom.buildSparseDomain();
 
+record _ArrayTypeInfo {
+  type eltType;
+  var dom: _domain;
+}
+
+def _init(a: _ArrayTypeInfo)
+  return a.dom.buildArray(a.eltType);
+
 def _build_array_type(dom, type eltType)
+  return _ArrayTypeInfo(eltType, dom);
+
+def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
 
 def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
