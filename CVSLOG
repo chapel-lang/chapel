@@ -94589,3 +94589,15 @@ Modified files:
 Added files:
 	chapel/test/studies/lu/marybeth/: Adata.dat 
 
+---------------------------------------------------------------------------
+
+02/28/07 08:48:24 -- deitz
+
+Log message:
+	Put the code to determine the element type for a reduction into a type
+	block so that it is used only to determine type information in
+	function resolution and is not code generated.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+
