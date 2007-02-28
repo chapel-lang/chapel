@@ -1,3 +1,32 @@
+//
+// lowerIterators
+//
+// This pass transforms each iterator into a function and a class. The
+// function is modified to return a new instance of this class rather
+// than a sequence. The class is created with methods that implement
+// the iterator interface so as to implement the semantics of the
+// iterator.  The transformation is illustrated in
+//
+//   test/functions/deitz/iterators/test_iterator_transform.chpl
+//
+// At this point in compilation, the function's return type was
+// "faked" to be a sequence. The pass thus attempts to propagate this
+// iterator class at the call sites. If it cannot, it inserts a
+// sequence temporary at the call site to capture a sequence out of
+// the iterator class. At present, a sequence temporary is inserted in
+// all but the most simple case: immediate iteration in a for loop.
+//
+// FUTURE CHANGE: (sjd) My current plan is to propagate the iterator
+//   class through functions that take the iterator argument as a
+//   sequence, clone these functions, and propagate the iterator
+//   within the functions. A temporary will be inserted only if either
+//   an access to a field that is part of a sequence is reached or the
+//   iterator class would be potentially iterated over multiple
+//   times. This second point would not require a temporary if it
+//   could be proven that the iterator has no side effects. In any
+//   event, there is a space-time tradeoff to consider.
+//
+
 #include "astutil.h"
 #include "expr.h"
 #include "optimizations.h"
@@ -7,18 +36,29 @@
 #include "symbol.h"
 #include "symscope.h"
 
+static VarSymbol* newTemp(FnSymbol* fn, Type* type, char* name = "_tmp") {
+  VarSymbol* var = new VarSymbol(name, type);
+  var->isCompilerTemp = true;
+  fn->insertAtHead(new DefExpr(var));
+  return var;
+}
+
+static CallExpr* newMove(Symbol* sym, BaseAST* ast) {
+  return new CallExpr(PRIMITIVE_MOVE, sym, ast);
+}
+
 //
 // change type of sequence cursors to type of iterator cursors
 //
 static void
-propagateCursor(ClassType* ct, Symbol* sym) {
+propagateCursorType(ClassType* ct, Symbol* sym) {
   forv_Vec(SymExpr, rhs, sym->uses) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(rhs->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (call->get(2) == rhs) {
           if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
             lhs->var->type = sym->type;
-            propagateCursor(ct, lhs->var);
+            propagateCursorType(ct, lhs->var);
           }
         }
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
@@ -32,90 +72,95 @@ propagateCursor(ClassType* ct, Symbol* sym) {
   }
 }
 
-static void
-propagateIterator(Symbol* sym,
-                  CallExpr* move,
-                  ClassType* ct,
-                  FnSymbol* getHeadCursor,
-                  FnSymbol* getNextCursor,
-                  FnSymbol* isValidCursor,
-                  FnSymbol* getValue) {
-  bool changeToSeq = false;
+static bool
+requiresSequenceTemporary(Symbol* sym) {
   forv_Vec(SymExpr, se, sym->uses) {
-    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-      if (parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se)
-        continue;
-      if (parent->isNamed("getHeadCursor") ||
+    CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+    if (!parent)
+      return true; // arrays/deitz/promotion/test_scalar_promote8.chpl
+                   // INT_FATAL(se, "unexpected case");
+    if (!((parent->isPrimitive(PRIMITIVE_MOVE) &&
+           parent->get(1) == se) ||
+          parent->isNamed("getHeadCursor") ||
           parent->isNamed("getNextCursor") ||
           parent->isNamed("isValidCursor?") ||
-          parent->isNamed("getValue"))
-        continue;
-      if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) &&
-          parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
-          parent->get(3) == se)
-        continue;
-    }
-    changeToSeq = true;
+          parent->isNamed("getValue") ||
+          (parent->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+           parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
+           parent->get(3) == se)))
+      return true;
   }
-  if (changeToSeq) {
-    if (fWarnTemporary)
-      USR_WARN(move, "sequence temporary inserted");
-    if (!sym->type->append)
-      INT_FATAL(move, "requires append function, sequence expected");
-    VarSymbol* iterator = new VarSymbol("_toseq_iterator", ct);
-    VarSymbol* cursor = new VarSymbol("_toseq_cursor", getHeadCursor->retType);
-    VarSymbol* cond = new VarSymbol("_toseq_cond", dtBool);
-    VarSymbol* value = new VarSymbol("_toseq_value", getValue->retType);
-    VarSymbol* seq = new VarSymbol("_toseq_temp", sym->type);
-    move->insertBefore(new DefExpr(iterator));
-    move->insertBefore(new DefExpr(cursor));
-    move->insertBefore(new DefExpr(cond));
-    move->insertBefore(new DefExpr(value));
-    move->insertBefore(new DefExpr(seq));
-    move->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, seq, seq->type->getField("_length"), new_IntSymbol(0)));
-    move->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym, seq));
-    move->get(1)->replace(new SymExpr(iterator));
-    BlockStmt* loop = new BlockStmt();
-    loop->blockTag = BLOCK_WHILE_DO;
-    loop->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, cond);
+  return false;
+}
 
-    loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, value, new CallExpr(getValue, iterator, cursor)));
-    loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, seq, new CallExpr(sym->type->append, seq, value)));
-    loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(getNextCursor, iterator, cursor)));
-    loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(isValidCursor, iterator, cursor)));
-    move->insertAfter(loop);
-    move->insertAfter(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(isValidCursor, iterator, cursor)));
-    move->insertAfter(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(getHeadCursor, iterator)));
-  } else {
-    sym->type = ct;
-    forv_Vec(SymExpr, se, sym->uses) {
-      if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-        if (parent->isNamed("getHeadCursor")) {
-          parent->baseExpr->replace(new SymExpr(getHeadCursor));
-          if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
-            if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
-              lhs->var->type = getHeadCursor->retType;
-              propagateCursor(ct, lhs->var);
-            }
+static void
+insertSequenceTemporary(Symbol* sym,
+                        CallExpr* move,
+                        ClassType* ct,
+                        FnSymbol* getHeadCursor,
+                        FnSymbol* getNextCursor,
+                        FnSymbol* isValidCursor,
+                        FnSymbol* getValue) {
+  if (fWarnTemporary)
+    USR_WARN(move, "sequence temporary inserted");
+  if (!sym->type->append)
+    INT_FATAL(move, "requires append function, sequence expected");
+  FnSymbol* fn = move->getFunction();
+  VarSymbol* iterator = newTemp(fn, ct, "_toseq_iterator");
+  VarSymbol* cursor = newTemp(fn, getHeadCursor->retType, "_toseq_cursor");
+  VarSymbol* cond = newTemp(fn, dtBool, "_toseq_cond");
+  VarSymbol* value = newTemp(fn, getValue->retType, "_toseq_value");
+  VarSymbol* seq = newTemp(fn, sym->type, "_toseq_temp");
+  move->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, seq, seq->type->getField("_length"), new_IntSymbol(0)));
+  move->insertAfter(newMove(sym, seq));
+  move->get(1)->replace(new SymExpr(iterator));
+  BlockStmt* loop = new BlockStmt();
+  loop->blockTag = BLOCK_WHILE_DO;
+  loop->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, cond);
+  loop->insertAtTail(newMove(value, new CallExpr(getValue, iterator, cursor)));
+  loop->insertAtTail(newMove(seq, new CallExpr(sym->type->append, seq, value)));
+  loop->insertAtTail(newMove(cursor, new CallExpr(getNextCursor, iterator, cursor)));
+  loop->insertAtTail(newMove(cond, new CallExpr(isValidCursor, iterator, cursor)));
+  move->insertAfter(loop);
+  move->insertAfter(newMove(cond, new CallExpr(isValidCursor, iterator, cursor)));
+  move->insertAfter(newMove(cursor, new CallExpr(getHeadCursor, iterator)));
+}
+
+static void
+propagateIteratorType(Symbol* sym,
+                      ClassType* ct,
+                      FnSymbol* getHeadCursor,
+                      FnSymbol* getNextCursor,
+                      FnSymbol* isValidCursor,
+                      FnSymbol* getValue) {
+  sym->type = ct;
+  forv_Vec(SymExpr, se, sym->uses) {
+    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+      if (parent->isNamed("getHeadCursor")) {
+        parent->baseExpr->replace(new SymExpr(getHeadCursor));
+        if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
+          if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
+            lhs->var->type = getHeadCursor->retType;
+            propagateCursorType(ct, lhs->var);
           }
-        } else if (parent->isNamed("getNextCursor")) {
-          parent->baseExpr->replace(new SymExpr(getNextCursor));
-          if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
-            if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
-              lhs->var->type = getNextCursor->retType;
-              propagateCursor(ct, lhs->var);
-            }
-          }
-        } else if (parent->isNamed("isValidCursor?")) {
-          parent->baseExpr->replace(new SymExpr(isValidCursor));
-        } else if (parent->isNamed("getValue")) {
-          parent->baseExpr->replace(new SymExpr(getValue));
-        } else if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) &&
-                   parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
-                   parent->get(3) == se) {
-          if (SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(2)))
-            lhs->var->type = sym->type;
         }
+      } else if (parent->isNamed("getNextCursor")) {
+        parent->baseExpr->replace(new SymExpr(getNextCursor));
+        if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
+          if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
+            lhs->var->type = getNextCursor->retType;
+            propagateCursorType(ct, lhs->var);
+          }
+        }
+      } else if (parent->isNamed("isValidCursor?")) {
+        parent->baseExpr->replace(new SymExpr(isValidCursor));
+      } else if (parent->isNamed("getValue")) {
+        parent->baseExpr->replace(new SymExpr(getValue));
+      } else if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                 parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
+                 parent->get(3) == se) {
+        if (SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(2)))
+          lhs->var->type = sym->type;
       }
     }
   }
@@ -127,19 +172,6 @@ buildEmptyMethod(char* name, ClassType* ct) {
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(fn->_this);
   return fn;
-}
-
-static VarSymbol*
-buildTemp(FnSymbol* fn, Type* type) {
-  VarSymbol* var = new VarSymbol("_tmp", type);
-  var->isCompilerTemp = true;
-  fn->insertAtHead(new DefExpr(var));
-  return var;
-}
-
-static void
-buildMove(FnSymbol* fn, Symbol* sym, CallExpr* call) {
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, sym, call));
 }
 
 static void
@@ -218,7 +250,7 @@ lowerIterator(FnSymbol* fn) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new_IntSymbol(i)));
+        call->insertBefore(newMove(cursor, new_IntSymbol(i)));
         call->insertBefore(new GotoStmt(goto_normal, end));
         Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
@@ -226,25 +258,23 @@ lowerIterator(FnSymbol* fn) {
         call->remove();
         i++;
       } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new_IntSymbol(0)));
+        call->insertBefore(newMove(cursor, new_IntSymbol(0)));
         call->remove(); // remove old return
       }
     }
   }
   getNextCursor->insertAtTail(new DefExpr(end));
-  t1 = new VarSymbol("tmp", getNextCursor->retType);
-  getNextCursor->insertAtTail(new DefExpr(t1));
-  getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, cursor));
+  t1 = newTemp(getNextCursor, getNextCursor->retType);
+  getNextCursor->insertAtTail(newMove(t1, cursor));
   getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
 
   // insert jump table at head of getNextCursor
   i = 2;
-  t1 = new VarSymbol("tmp", dtBool);
+  t1 = newTemp(getNextCursor, dtBool);
   forv_Vec(Symbol, label, labels) {
     getNextCursor->insertAtHead(new CondStmt(new SymExpr(t1), new GotoStmt(goto_normal, label)));
-    getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_EQUAL, cursor, new_IntSymbol(i++))));
+    getNextCursor->insertAtHead(newMove(t1, new CallExpr(PRIMITIVE_EQUAL, cursor, new_IntSymbol(i++))));
   }
-  getNextCursor->insertAtHead(new DefExpr(t1));
 
   fn->defPoint->insertBefore(new DefExpr(getNextCursor));
 
@@ -253,14 +283,13 @@ lowerIterator(FnSymbol* fn) {
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (dynamic_cast<ArgSymbol*>(local)) {
-      Symbol* newlocal = new VarSymbol(local->name, local->type);
-      getNextCursor->insertAtHead(new DefExpr(newlocal));
+      Symbol* newlocal = newTemp(getNextCursor, local->type, local->name);
       ASTMap map;
       map.put(local, newlocal);
       update_symbols(getNextCursor, &map);
       local = newlocal;
     }
-    getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
+    getNextCursor->insertAtHead(newMove(local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
     forv_Vec(SymExpr, se, local->uses) {
       if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
         if ((parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se) ||
@@ -275,32 +304,32 @@ lowerIterator(FnSymbol* fn) {
 
   // build getHeadCursor
   iterator = getHeadCursor->getFormal(1);
-  t1 = buildTemp(getHeadCursor, cursorType);
-  buildMove(getHeadCursor, t1, new CallExpr(getNextCursor, iterator, new_IntSymbol(1)));
+  t1 = newTemp(getHeadCursor, cursorType);
+  getHeadCursor->insertAtTail(newMove(t1, new CallExpr(getNextCursor, iterator, new_IntSymbol(1))));
   getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   fn->defPoint->insertBefore(new DefExpr(getHeadCursor));
 
   // build isValidCursor
   iterator = isValidCursor->getFormal(1);
   cursor = isValidCursor->getFormal(2);
-  t1 = buildTemp(isValidCursor, dtBool);
-  buildMove(isValidCursor, t1, new CallExpr(PRIMITIVE_NOTEQUAL, cursor, new_IntSymbol(0)));
+  t1 = newTemp(isValidCursor, dtBool);
+  isValidCursor->insertAtTail(newMove(t1, new CallExpr(PRIMITIVE_NOTEQUAL, cursor, new_IntSymbol(0))));
   isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   fn->defPoint->insertBefore(new DefExpr(isValidCursor));
 
   // build getValue
   iterator = getValue->getFormal(1);
   cursor = getValue->getFormal(2);
-  t1 = buildTemp(getValue, getValue->retType);
-  buildMove(getValue, t1, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, local2field.get(ret)));
+  t1 = newTemp(getValue, getValue->retType);
+  getValue->insertAtTail(newMove(t1, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, local2field.get(ret))));
   getValue->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   fn->defPoint->insertBefore(new DefExpr(getValue));
 
   // rebuild iterator function
   fn->defPoint->remove();
   fn->retType = ct;
-  t1 = buildTemp(fn, ct);
-  buildMove(fn, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, cts, new_StringSymbol("iterator class")));
+  t1 = newTemp(fn, ct);
+  fn->insertAtTail(newMove(t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, cts, new_StringSymbol("iterator class"))));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (dynamic_cast<ArgSymbol*>(local))
@@ -316,7 +345,10 @@ lowerIterator(FnSymbol* fn) {
       SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
       if (!se)
         INT_FATAL(call, "unexpected iterator call site");
-      propagateIterator(se->var, move, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+      if (requiresSequenceTemporary(se->var))
+        insertSequenceTemporary(se->var, move, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+      else
+        propagateIteratorType(se->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
     } else
       INT_FATAL(call, "unexpected iterator call site");
   }
