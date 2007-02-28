@@ -94601,3 +94601,20 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: build.cpp 
 
+---------------------------------------------------------------------------
+
+02/28/07 11:30:44 -- deitz
+
+Log message:
+	Refactored lowerIterators and added some comments, including an
+	overview and plan at the top.
+	
+	Added a test code to illustrate the iterator transformation.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_transform.chpl 
+	                                        test_iterator_transform.good 
+
