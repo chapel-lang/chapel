@@ -94568,3 +94568,24 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+02/27/07 17:41:27 -- marybeth
+
+Log message:
+	Changed the following tests so that the test matrix A is
+	read in from Adata.dat.
+	
+	nopivlu.chpl
+	pivlu.chpl
+	
+	nopivlublock.chpl
+	pivlublock.chpl
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: nopivlu.chpl pivlu.chpl 
+	                                  nopivlublock.chpl 
+	                                  pivlublock.chpl 
+Added files:
+	chapel/test/studies/lu/marybeth/: Adata.dat 
+
