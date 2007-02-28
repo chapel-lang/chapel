@@ -575,10 +575,21 @@ FnSymbol* build_reduce(Expr* red, Expr* seq, bool scan) {
   tmp->isCompilerTemp = true;
   fn->insertAtTail(new DefExpr(tmp));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, seq));
-  red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
+  VarSymbol* eltType = new VarSymbol("_tmp");
+  eltType->isCompilerTemp = true;
+  fn->insertAtTail(new DefExpr(eltType));
+  fn->insertAtTail(
+    new BlockStmt(
+      new CallExpr(PRIMITIVE_MOVE, eltType,
+        new CallExpr(
+          new CallExpr(".", tmp, new_StringSymbol("getValue")),
+          new CallExpr(
+            new CallExpr(".", tmp, new_StringSymbol("getHeadCursor"))))),
+      BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,
-      new CallExpr(scan ? "_scan" : "_reduce", red, tmp)));
+      new CallExpr(scan ? "_scan" : "_reduce",
+        new CallExpr(red, eltType), tmp)));
   return fn;
 }
 
