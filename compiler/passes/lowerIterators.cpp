@@ -23,8 +23,8 @@
 //   an access to a field that is part of a sequence is reached or the
 //   iterator class would be potentially iterated over multiple
 //   times. This second point would not require a temporary if it
-//   could be proven that the iterator has no side effects. In any
-//   event, there is a space-time tradeoff to consider.
+//   could be proven that the iterator is pure. In any event, there is
+//   a space-time tradeoff to consider.
 //
 
 #include "astutil.h"
