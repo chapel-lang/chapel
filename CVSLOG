@@ -94618,3 +94618,13 @@ Added files:
 	                                        test_iterator_transform.chpl 
 	                                        test_iterator_transform.good 
 
+---------------------------------------------------------------------------
+
+02/28/07 16:40:02 -- deitz
+
+Log message:
+	Small fix to comment of future plan.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
