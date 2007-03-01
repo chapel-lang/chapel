@@ -94628,3 +94628,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/07 12:21:42 -- marybeth
+
+Log message:
+	Adding a test program which implements an array stored in column major
+	order.  To use this type of array, the domain is declared with:
+	
+	distributed(CMODist())
+	
+	and the array is then declared with this domain.
+	
+	This program tests assignment, slicing and writing of this new
+	type of array.
+
+Added files:
+	chapel/test/arrays/marybeth/: CMO_array.chpl CMO_array.good 
+
