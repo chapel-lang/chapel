@@ -94646,3 +94646,20 @@ Log message:
 Added files:
 	chapel/test/arrays/marybeth/: CMO_array.chpl CMO_array.good 
 
+---------------------------------------------------------------------------
+
+03/02/07 10:00:33 -- deitz
+
+Log message:
+	Started working on eliminating sequence temporaries.  This checkin
+	goes a long way to get this working.  The propagation of iterator
+	types is now extended to clone and specialize functions.  The next
+	step is to clone and specialize classes that iterators are captured
+	in.  This is particularly important and maybe only important as far as
+	tuples are concerned because tuples are used to implement zipper
+	iteration which is encountered in the common case of assignment to
+	arrays.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
