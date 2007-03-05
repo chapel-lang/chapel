@@ -94663,3 +94663,89 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/05/07 10:49:41 -- deitz
+
+Log message:
+	Implemented scalar replacement of aggregates. It is off by default but
+	has been tested on the complete test suite and is effective at
+	eliminating tuples. However, it does run into two problems:
+	
+	First, if inlining is disabled, the generated code may fail to compile
+	because it appears that we would need to pass a reference by
+	reference, but only one level of referencing is currently
+	supported. To get this working will require improvements to reference
+	handling. This issue is seen in arrays/deitz/jacobi-no-inline.
+	
+	Second, if an array of tuples is created, or more precisely, if a
+	ddata of tuples is created, then we run into an issue because the
+	element of the ddata vector needs to continue to be a tuple. To get
+	this working will require a small extension to the ddata
+	primitives. This issue is seen in release/examples/genericStack2.
+	
+	Also, scalar replacement of aggregates initially seems to result in a
+	slow-down when applied to the 2D performance test, but I have not
+	looked into this. It should not necessarily be surprising as we pass
+	more arguments to functions and potentially create more globals,
+	etc. Performance can probably be improved but it remains unclear
+	whether this will buy us anything significant.
+	
+	Note that we should add an option to apply scalar replacement of
+	aggregates only to the array and domain wrappers which should both
+	contain only a single field. This would effectively eliminate these
+	wrappers.
+	
+	Why did I implement this now? In order to apply iterator propagation
+	in the zippered or tensored context, there were two ways to
+	proceed. First, iterators could be propagated into classes and the
+	classes cloned, my initial plan. Second, tuples of sequences could be
+	destructured before iterator propagation avoiding the need to take the
+	first approach. Scalar replacement is not yet done before iterator
+	propagation so this work does not yet have the desired effect.
+	
+	Added two flags
+	
+	  --scalar-replace-tuples
+	
+	   Apply scalar replacement of aggregates optimization to tuples. This
+	   effectively eliminates tuples in the generated code, replacing the
+	   records with the scalar component. This optimization is off by
+	   default.
+	
+	  --no-iterator-propagation
+	
+	   Disable propagation of iterator classes. This causes sequence
+	   temporaries to be inserted for every promotion, forall expression,
+	   and iterator invocation.
+	
+	Added two tests to check these flags.
+	
+	Note that I updated
+	
+	  compflags/bradc/help/userhelp
+	
+	I updated this test mindlessly. This test judges the appearance of the
+	help message which lists all the flags. I added two more flags with
+	longer names than would fit in the allocated spot. I don't believe
+	that all of the flag names we should use should be so short. The
+	longer names are more descriptive. I would suggest a refactoring where
+	there is a short list of the options followed by the options with
+	longer explanations in alphabetical order. The short list or the long
+	list or both can be categorized.
+
+Modified files:
+	chapel/compiler/include/: driver.h optimizations.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share lowerIterators.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/test/compflags/bradc/help/: userhelp.txt 
+Added files:
+	chapel/compiler/passes/: scalarReplace.cpp 
+	chapel/test/arrays/deitz/: jacobi-scalar-replace-tuples.chpl 
+	                           jacobi-scalar-replace-tuples.compopts 
+	                           jacobi-scalar-replace-tuples.good 
+	                           test_plus_seq_temps.chpl 
+	                           test_plus_seq_temps.compopts 
+	                           test_plus_seq_temps.good 
+
