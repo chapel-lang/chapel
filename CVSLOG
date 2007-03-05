@@ -94791,3 +94791,19 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+03/05/07 13:59:34 -- deitz
+
+Log message:
+	Moved the insertion of return temporaries into a single spot, during
+	the pruning of function resolution.  Removed the two instances of this
+	code, from scalarReplace and memoryManage.
+	
+	Made a minor simplification to cullOverReferences.
+
+Modified files:
+	chapel/compiler/passes/: cullOverReferences.cpp 
+	                         functionResolution.cpp memoryManage.cpp 
+	                         scalarReplace.cpp 
+
