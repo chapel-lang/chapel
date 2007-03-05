@@ -94807,3 +94807,13 @@ Modified files:
 	                         functionResolution.cpp memoryManage.cpp 
 	                         scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+03/05/07 15:06:00 -- bradc
+
+Log message:
+	Made a few edits based on Mary Beth's high-level feedback.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: .cvsignore prelimRelease.tex 
+
