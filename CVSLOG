@@ -94749,3 +94749,14 @@ Added files:
 	                           test_plus_seq_temps.compopts 
 	                           test_plus_seq_temps.good 
 
+---------------------------------------------------------------------------
+
+03/05/07 10:57:00 -- bradc
+
+Log message:
+	Start at first draft of report on Chapel preliminary
+	release.
+
+Added files:
+	chapel/doc/internal/prelimRelease/: .cvsignore prelimRelease.tex 
+
