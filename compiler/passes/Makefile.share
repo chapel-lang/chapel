@@ -14,6 +14,7 @@ PASSES_SRCS = \
         parallel.cpp \
         memoryManage.cpp \
         normalize.cpp \
+	scalarReplace.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp \
         verify.cpp

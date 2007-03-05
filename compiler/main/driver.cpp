@@ -33,6 +33,8 @@ bool developer = false;
 bool ignore_errors = false;
 int trace_level = 0;
 int fcg = 0;
+bool fScalarReplaceTuples = false;
+bool fDisableIteratorPropagation = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
 bool no_gc = false;
@@ -63,6 +65,8 @@ static ArgumentDescription arg_desc[] = {
  {"no-gc", ' ', "Disable memory management", "F", &no_gc, "CHPL_NO_GC", NULL},
  {"no-inline", ' ', "Do not inline functions" , "F", &no_inline, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
+ {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
+ {"no-iterator-propagation", ' ', "Disable propagation of iterators to avoid sequence temporaries", "F", &fDisableIteratorPropagation, "CHPL_DISABLE_ITERATOR_PROPAGATION", NULL},
 
  {"", ' ', "Code Generation", NULL, NULL, NULL, NULL},
  {"cg-cpp-lines", ' ', "Generate #line annotations", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},

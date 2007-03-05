@@ -412,7 +412,7 @@ lowerIterator(FnSymbol* fn) {
         if ((parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se) ||
             (!parent->primitive && actual_to_formal(se)->intent == INTENT_REF)) {
           SymExpr* newuse = new SymExpr(local);
-          parent->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
+          parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
           local->uses.add(newuse);
         }
       }
@@ -462,7 +462,7 @@ lowerIterator(FnSymbol* fn) {
       SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
       if (!se)
         INT_FATAL(call, "unexpected iterator call site");
-      if (requiresSequenceTemporary(se->var) != 1)
+      if (fDisableIteratorPropagation || requiresSequenceTemporary(se->var) != 1)
         insertSequenceTemporary(se->var, move, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
       else
         propagateIteratorType(se->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);

@@ -16,6 +16,8 @@ Optimization Control:
       --no-gc             false     ->true   Disable memory management
       --no-inline         false     ->true   Do not inline functions
       --unoptimized       false     ->true   Generate naive code (many temps)
+      --scalar-replace-tuples  false     ->true   Generate scalar components of tuples
+      --no-iterator-propagation  false     ->true   Disable propagation of iterators to avoid sequence temporaries
 
 Code Generation:
 ----------------

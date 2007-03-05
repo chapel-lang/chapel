@@ -1,4 +1,4 @@
-pragma "destructure" pragma "tuple" record _tuple {
+pragma "scalar replace tuples" pragma "tuple" record _tuple {
   param size : int;
 
   pragma "inline" pragma "tuple get" def this(param i : int)
@@ -125,6 +125,7 @@ pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(256)) & (x.
   return c;
 }
 
+pragma "scalar replace tuples"
 record _square_tuple {
   param size: int;
   var tuple;
