@@ -764,16 +764,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NOOP:
       break;
     case PRIMITIVE_MOVE:
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-        if (!strcmp("chpl_input_filename", sym->var->name) ||
-            !strcmp("chpl_input_lineno", sym->var->name))
-          return;
-      }
       if (get(1)->typeInfo() == dtVoid) {
         get(2)->codegen(outfile);
-        if (getStmtExpr() && getStmtExpr() == this)
-          fprintf(outfile, ";\n");
-        return;
+        break;
       } 
       get(1)->codegen(outfile);
       fprintf(outfile, " = ");
