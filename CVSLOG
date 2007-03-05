@@ -94760,3 +94760,14 @@ Log message:
 Added files:
 	chapel/doc/internal/prelimRelease/: .cvsignore prelimRelease.tex 
 
+---------------------------------------------------------------------------
+
+03/05/07 11:53:50 -- bradc
+
+Log message:
+	Finished pass on initial draft of preliminary
+	release report.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
+
