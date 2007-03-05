@@ -31,10 +31,9 @@ isReferenced(SymExpr* sym) {
       if (formal->defPoint->getFunction()->_this == formal)
         return true;
     }
+    if (call->isPrimitive(PRIMITIVE_RETURN) && sym->getFunction()->retRef)
+      return true;
   }
-  CallExpr* ret = dynamic_cast<CallExpr*>(sym->getStmtExpr());
-  if (ret && ret->isPrimitive(PRIMITIVE_RETURN) && sym->getFunction()->retRef)
-    return true;
   return false;
 }
 

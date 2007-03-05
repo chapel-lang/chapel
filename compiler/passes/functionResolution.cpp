@@ -2539,6 +2539,28 @@ pruneResolvedTree() {
       }
     }
   }
+
+  //
+  // Insert return temps for functions that return values if no
+  // variable captures the result.
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->parentSymbol) {
+        if (FnSymbol* fn = call->isResolved()) {
+          if (fn->retType != dtVoid) {
+            CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
+            if (!parent) { // no use
+              VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
+              DefExpr* def = new DefExpr(tmp);
+              call->insertBefore(def);
+              def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 

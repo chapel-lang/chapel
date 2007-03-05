@@ -160,24 +160,6 @@ void scalarReplace(ClassType* ct) {
 }
 
 void scalarReplace() {
-
-  // insert missing return temps (abstract this - copied from memoryManage)
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
-        if (fn->retType != dtVoid) {
-          CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
-          if (!parent) { // no move
-            VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
-            DefExpr* def = new DefExpr(tmp);
-            call->insertBefore(def);
-            def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
-          }
-        }
-      }
-    }
-  }
-
   if (fScalarReplaceTuples) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("scalar replace tuples")) {
