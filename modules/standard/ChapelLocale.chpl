@@ -15,4 +15,12 @@ def locale.writeThis(f: Writer) {
   f.write("LOCALE", id);
 }
 
-const Locale: [loc in LocaleDomain] locale = locale(id = loc);
+//
+// was:
+//   const Locale: [loc in LocaleDomain] locale = locale(id = loc);
+//
+// changed to avoid sequence temporary until iterator propagation can
+// handle this case
+//
+const Locale: [LocaleDomain] locale;
+[loc in LocaleDomain] Locale(loc) = locale(id = loc);
