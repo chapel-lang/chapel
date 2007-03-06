@@ -94850,3 +94850,35 @@ Modified files:
 	                         functionResolution.cpp 
 	                         scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/07 12:09:43 -- deitz
+
+Log message:
+	Refactored propagateIteratorType and requiresSequenceTemporary to take
+	a calling context rather than to attempt propagation at the call site.
+	This is particularly difficult in determining the requirement for a
+	sequence temporary without cloning the function.  The context is
+	currently a single call, but it should be extended to a stack so that
+	it can be unwound.
+	
+	Fixed a bug in the propagation of iterators in which all iterator
+	interface methods were treated as being over an iterator class, rather
+	than just those over a corresponding sequence type.
+	
+	Added inline pragmas to tuple constructors.
+	
+	Prototyped inlineCall(CallExpr*) in optimizations.h.
+	
+	Added code to scalar replace tuples of sequences and sequence nodes,
+	but disabled it.  By doing this scalar replacement before propagating
+	iterators, sequence temporaries are not always needed in zipper or
+	tensor contexts.  However, more work needs to be done to make this
+	work.
+
+Modified files:
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/passes/: cleanup.cpp inlineFunctions.cpp 
+	                         lowerIterators.cpp 
+	chapel/modules/standard/: ChapelSeq.chpl 
+
