@@ -94913,3 +94913,17 @@ Added files:
 	                                              test_iterator_temp4.future 
 	                                              test_iterator_temp4.good 
 
+---------------------------------------------------------------------------
+
+03/06/07 12:17:42 -- marybeth
+
+Log message:
+	Added a new version of the no pivot, blocked LU which defines
+	domains D11, D12, D21, D22 to correspond to the linear algebra
+	block definitions for the lu block algorithm.  I used these
+	domains where I could.  This is a long way from the version of
+	the algorithm that I envision, but it's a step in that direction.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: blocks.chpl blocks.good 
+
