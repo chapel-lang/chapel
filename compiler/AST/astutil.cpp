@@ -387,3 +387,56 @@ actual_to_formal(Expr *a) {
   INT_FATAL(a, "bad call to actual_to_formals");
   return NULL;
 }
+
+
+static void
+pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+  types.set_add(ts);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, ts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+      if (def->sym->type && !types.set_in(def->sym->type->symbol))
+        pruneVisit(def->sym->type->symbol, fns, types);
+  }
+}
+
+
+static void
+pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+  fns.set_add(fn);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (FnSymbol* next = call->isResolved())
+        if (!fns.set_in(next))
+          pruneVisit(next, fns, types);
+    } else if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (se->var->type && !types.set_in(se->var->type->symbol))
+        pruneVisit(se->var->type->symbol, fns, types);
+    }
+  }
+}
+
+
+void
+prune() {
+  Vec<FnSymbol*> fns;
+  Vec<TypeSymbol*> types;
+  pruneVisit(chpl_main, fns, types);
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (!fns.set_in(fn)) {
+      //      printf("removing %s\n", fn->cname);
+      fn->defPoint->remove();
+    }
+  }
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (!types.set_in(ts)) {
+      if (dynamic_cast<ClassType*>(ts->type)) {
+        //        printf("removing %s\n", ts->cname);
+        ts->defPoint->remove();
+      }
+    }
+  }
+}

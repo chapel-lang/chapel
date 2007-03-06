@@ -40,7 +40,7 @@ void buildDefaultFunctions(void) {
         for_fields(field, ct) {
           VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
           // if suppress for cobegin created arg classes
-          if (cfield && !cfield->is_ref) {
+          if (cfield && !cfield->is_ref && strcmp(field->name, "_promotionType")) {
             build_setter(ct, field);
             build_getter(ct, field);
           }
@@ -379,9 +379,10 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  for_fields(tmp, ct)
-    if (!tmp->isTypeVariable)
+  for_fields(tmp, ct) {
+    if (!tmp->isTypeVariable && strcmp(tmp->name, "_promotionType"))
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+  }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -420,8 +421,10 @@ static void build_record_copy_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  for_fields(tmp, ct)
-    call->insertAtTail(new CallExpr(".", arg, new_StringSymbol(tmp->name)));
+  for_fields(tmp, ct) {
+    if (strcmp("_promotionType", tmp->name))
+      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+  }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);

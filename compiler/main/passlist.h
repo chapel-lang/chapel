@@ -22,6 +22,7 @@ void normalize();
 void parallel1();
 void parallel2();
 void parse();
+void prune();
 void resolve();
 void scalarReplace();
 void scopeResolve();
@@ -59,12 +60,12 @@ PassInfo passlist[] = {
 
   // Optimizations
   RUN(inlineFunctions), // function inlining
-  RUN(scalarReplace),      // scalar replace all tuples
+  RUN(scalarReplace),   // scalar replace all tuples
   RUN(copyPropagation), // copy propagation and other low-level optimizations
-
+  RUN(prune),           // prune AST of dead functions and types
 
   // AST to C
-  RUN(memoryManage),    // insert memory frees, garbage collection
+  RUN(memoryManage),      // insert memory frees, garbage collection
   RUN(insertLineNumbers), // insert line numbers for error messages
   RUN(codegen),           // generate C code and build it
   LAST

@@ -19,6 +19,7 @@ extern bool no_bounds_checking;
 extern bool no_inline;
 extern bool no_gc;
 extern bool fScalarReplaceTuples;
+extern bool fDisableScalarReplaceArrayWrappers;
 extern bool fDisableIteratorPropagation;
 extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];

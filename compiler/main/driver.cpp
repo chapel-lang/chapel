@@ -34,6 +34,7 @@ bool ignore_errors = false;
 int trace_level = 0;
 int fcg = 0;
 bool fScalarReplaceTuples = false;
+bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableIteratorPropagation = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
@@ -109,6 +110,7 @@ static ArgumentDescription arg_desc[] = {
  {"warn-promotion", ' ', "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {"warn-temporary", ' ', "Warn about sequence temporaries", "F", &fWarnTemporary, NULL, NULL},
  {"default-dist", ' ', "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
+ {"no-scalar-replace-array-wrappers", ' ', "Generate explicit array wrappers", "F", &fDisableScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
  {0}
 };
 

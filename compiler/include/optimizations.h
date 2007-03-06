@@ -1,7 +1,7 @@
 #ifndef _OPTIMIZATIONS_H_
 #define _OPTIMIZATIONS_H_
 
-void scalarReplace(TypeSymbol* ts);
+void scalarReplace(ClassType* ct);
 void compressUnnecessaryScopes(FnSymbol* fn);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);

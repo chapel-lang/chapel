@@ -6,11 +6,31 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "optimizations.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
+
+void scalarReplace() {
+  if (fScalarReplaceTuples) {
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (ts->hasPragma("scalar replace tuples")) {
+        scalarReplace(dynamic_cast<ClassType*>(ts->type));
+      }
+    }
+  }
+  // note: disabled on inlining because scalar replace does not work
+  // with inlining, fix when intent_ref and references work
+  if (!fDisableScalarReplaceArrayWrappers && !no_inline) {
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (ts->hasPragma("domain") || ts->hasPragma("array")) {
+        scalarReplace(dynamic_cast<ClassType*>(ts->type));
+      }
+    }
+  }
+}
 
 void scalarReplace(ClassType* ct) {
   Map<Symbol*,Vec<Symbol*>*> sym2syms; // symbol to replacements map
@@ -42,12 +62,14 @@ void scalarReplace(ClassType* ct) {
       Symbol* ret = fn->getReturnSymbol();
       for_fields(field, ct) {
         Symbol* clone;
+        char* name = sym->name;
+        if (strcmp("_value", field->name))
+          name = astr(name, "_", field->name);
         if (def->sym == ret || arg)
           clone = new ArgSymbol((arg && !isThis) ? arg->intent : INTENT_REF,
-                                astr(sym->name, "_", field->name),
-                                field->type);
+                                name, field->type);
         else
-          clone = new VarSymbol(astr(sym->name, "_", field->name), field->type);
+          clone = new VarSymbol(name, field->type);
         if (sym->isReference)
           clone->isReference = true;
         syms->add(clone);
@@ -156,15 +178,5 @@ void scalarReplace(ClassType* ct) {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->retType == ct)
       fn->retType = dtVoid;
-  }
-}
-
-void scalarReplace() {
-  if (fScalarReplaceTuples) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
-      if (ts->hasPragma("scalar replace tuples")) {
-        scalarReplace(dynamic_cast<ClassType*>(ts->type));
-      }
-    }
   }
 }

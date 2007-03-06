@@ -2441,7 +2441,8 @@ pruneResolvedTree() {
             call->replace(new SymExpr(sym->type->defaultValue));
           else
             call->replace(new CallExpr(sym->type->defaultConstructor));
-        } else if (sym->isTypeVariable)
+        } else if (sym->isTypeVariable || sym->isParam() ||
+                   !strcmp(sym->name, "_promotionType"))
           call->remove();
         else
           call->get(2)->replace(new SymExpr(sym));
@@ -2527,14 +2528,14 @@ pruneResolvedTree() {
     }
   }
 
-  // Remove type fields
+  // Remove type fields, parameter fields, and _promotionType field
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         for_fields(field, ct) {
-          if (field->isTypeVariable) {
+          if (field->isTypeVariable || field->isParam() ||
+              !strcmp(field->name, "_promotionType"))
             field->defPoint->remove();
-          }
         }
       }
     }

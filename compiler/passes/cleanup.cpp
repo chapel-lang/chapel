@@ -100,6 +100,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 
   for_alist(Expr, expr, ct->inherits) {
     TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
+    expr->remove();
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
     ClassType* pt = dynamic_cast<ClassType*>(ts->type);
