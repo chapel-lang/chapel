@@ -2,6 +2,7 @@
 #define _OPTIMIZATIONS_H_
 
 void scalarReplace(ClassType* ct);
+void inlineCall(CallExpr* call);
 void compressUnnecessaryScopes(FnSymbol* fn);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);

@@ -217,8 +217,10 @@ static void build_constructor(ClassType* ct) {
   }
   fn->isCompilerTemp = true; // compiler inserted
 
-  if (ct->symbol->hasPragma("tuple"))
+  if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple");
+    fn->addPragma("inline");
+  }
 
   for_fields(tmp, ct) {
     if (!dynamic_cast<VarSymbol*>(tmp))

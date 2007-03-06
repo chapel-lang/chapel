@@ -36,8 +36,6 @@
 #include "symbol.h"
 #include "symscope.h"
 
-Vec<FnSymbol*> clones;
-
 static VarSymbol* newTemp(FnSymbol* fn, Type* type, char* name = "_tmp") {
   VarSymbol* var = new VarSymbol(name, type);
   var->isCompilerTemp = true;
@@ -76,18 +74,20 @@ propagateCursorType(ClassType* ct, Symbol* sym) {
 
 static void
 propagateIteratorType(Symbol* sym,
+                      ClassType* seqType,
                       ClassType* ct,
                       FnSymbol* getHeadCursor,
                       FnSymbol* getNextCursor,
                       FnSymbol* isValidCursor,
-                      FnSymbol* getValue) {
+                      FnSymbol* getValue,
+                      CallExpr* context = NULL) {
   sym->type = ct;
   forv_Vec(SymExpr, se, sym->uses) {
     CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
     if (!parent)
       INT_FATAL(se, "unexpected case");
 
-    if (parent->isNamed("getHeadCursor")) {
+    if (parent->isNamed("getHeadCursor") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(getHeadCursor));
       if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
         if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
@@ -98,7 +98,7 @@ propagateIteratorType(Symbol* sym,
       continue;
     }
 
-    if (parent->isNamed("getNextCursor")) {
+    if (parent->isNamed("getNextCursor") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(getNextCursor));
       if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
         if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
@@ -109,12 +109,12 @@ propagateIteratorType(Symbol* sym,
       continue;
     }
 
-    if (parent->isNamed("isValidCursor?")) {
+    if (parent->isNamed("isValidCursor?") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(isValidCursor));
       continue;
     }
 
-    if (parent->isNamed("getValue")) {
+    if (parent->isNamed("getValue") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(getValue));
       continue;
     }
@@ -136,15 +136,16 @@ propagateIteratorType(Symbol* sym,
         INT_FATAL("unexpected case");
       parent->remove();
       move->insertAtTail(parent->get(1));
-      propagateIteratorType(lhs->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+      propagateIteratorType(lhs->var, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, context);
       continue;
     }
 
-    if (parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(2) == se) {
+    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
+         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(2) == se) {
       SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(1));
       if (!lhs)
         INT_FATAL("unexpected case");
-      propagateIteratorType(lhs->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+      propagateIteratorType(lhs->var, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, context);
       continue;
     }
 
@@ -153,53 +154,47 @@ propagateIteratorType(Symbol* sym,
       FnSymbol* fn = parent->isResolved();
       ASTMap map;
       FnSymbol* clone = fn->copy(&map);
-      clones.set_add(clone);
       fn->defPoint->insertBefore(new DefExpr(clone));
       compute_sym_uses(clone);
       Symbol* arg = actual_to_formal(se);
       Symbol* cloneArg = dynamic_cast<Symbol*>(map.get(arg));
-      propagateIteratorType(cloneArg, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+      propagateIteratorType(cloneArg, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, parent);
       parent->baseExpr->replace(new SymExpr(clone));
-
-      if (clone->retType == ct) {
-        CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr);
-        if (!move)
-          continue;
-        SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
-        if (!lhs)
-          INT_FATAL("unexpected case");
-        propagateIteratorType(lhs->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
-      }
       continue;
     }
 
-    if (parent->isPrimitive(PRIMITIVE_RETURN) &&
-        clones.set_in(parent->getFunction())) {
+    if (parent->isPrimitive(PRIMITIVE_RETURN)) {
+      if (!context)
+        INT_FATAL("unexpected case");
       SymExpr* se = dynamic_cast<SymExpr*>(parent->get(1));
       if (!se)
         INT_FATAL("unexpected case");
       se->getFunction()->retType = ct;
+      CallExpr* move = dynamic_cast<CallExpr*>(context->parentExpr);
+      if (!move)
+        continue;
+      SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+      if (!lhs)
+        INT_FATAL("unexpected case");
+      propagateIteratorType(lhs->var, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, NULL);
       continue;
     }
   }
 }
 
-// returns 0 if a sequence temporary is required
-// returns 1 if no sequence temporary is required
-// returns 2 if no sequence temporary is required but the iterator
-//   needs to be propagated outside this function
-static int
-requiresSequenceTemporary(Symbol* sym) {
-  int result = 1;
+static bool
+requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, CallExpr* context = NULL) {
   forv_Vec(SymExpr, se, sym->uses) {
     CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
     if (!parent)
-      return 0; // want here: INT_FATAL(se, "unexpected case");
-                // see: arrays/deitz/promotion/test_scalar_promote8.chpl
-    if (parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se)
+      return true; // want here: INT_FATAL(se, "unexpected case");
+                   // see: arrays/deitz/promotion/test_scalar_promote8.chpl
+    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
+         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(1) == se)
       continue;
-    if (parent->isNamed("getHeadCursor") || parent->isNamed("getNextCursor") ||
-        parent->isNamed("isValidCursor?") || parent->isNamed("getValue"))
+    if ((parent->isNamed("getHeadCursor") || parent->isNamed("getNextCursor") ||
+         parent->isNamed("isValidCursor?") || parent->isNamed("getValue")) &&
+        parent->isResolved()->getFormal(1)->type == seqType)
       continue;
     if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) &&
         parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
@@ -212,42 +207,37 @@ requiresSequenceTemporary(Symbol* sym) {
       SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
       if (!lhs)
         INT_FATAL("unexpected case");
-      result = requiresSequenceTemporary(lhs->var);
-      if (result != 0)
+      if (!requiresSequenceTemporary(lhs->var, seqType, ct, context))
         continue;
     }
-    if (parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(2) == se) {
+    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
+         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(2) == se) {
       SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(1));
       if (!lhs)
         INT_FATAL("unexpected case");
-      result = requiresSequenceTemporary(lhs->var);
-      if (result != 0)
+      if (!requiresSequenceTemporary(lhs->var, seqType, ct, context))
         continue;
     }
     if (parent->isResolved() && !parent->isNamed("_copy") &&
         parent->isResolved()->fnClass != FN_ITERATOR) {
-      int innerResult = requiresSequenceTemporary(actual_to_formal(se));
-      if (innerResult == 2) {
-        CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr);
+      if (!requiresSequenceTemporary(actual_to_formal(se), seqType, ct, parent))
+        continue;
+    }
+    if (parent->isPrimitive(PRIMITIVE_RETURN)) {
+      if (context) {
+        CallExpr* move = dynamic_cast<CallExpr*>(context->parentExpr);
         if (!move)
           continue;
         SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
         if (!lhs)
           INT_FATAL("unexpected case");
-        result = requiresSequenceTemporary(lhs->var);
-        if (result != 0)
+        if (!requiresSequenceTemporary(lhs->var, seqType, ct, NULL))
           continue;
-      } else if (innerResult == 1) {
-        continue;
       }
     }
-    if (parent->isPrimitive(PRIMITIVE_RETURN)) {
-      result = 2;
-      continue;
-    }
-    return 0;
+    return true;
   }
-  return result;
+  return false;
 }
 
 static void
@@ -304,6 +294,10 @@ lowerIterator(FnSymbol* fn) {
   cts->addPragma("iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
+  ClassType* seqType = dynamic_cast<ClassType*>(fn->retType);
+  if (!seqType || !seqType->symbol->hasPragma("seq"))
+    INT_FATAL(fn, "unexpected non-sequence type");
+
   // make fields for all local variables and arguments
   // optimization note: only variables live at yield points are required
   Map<Symbol*,Symbol*> local2field;
@@ -350,7 +344,7 @@ lowerIterator(FnSymbol* fn) {
   FnSymbol* getValue = buildEmptyMethod("getValue", ct);
   getValue->copyPragmas(fn);
   getValue->retType =
-    dynamic_cast<Type*>(fn->retType->substitutions.v[0].value);
+    dynamic_cast<Type*>(seqType->substitutions.v[0].value);
   getValue->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
@@ -462,10 +456,10 @@ lowerIterator(FnSymbol* fn) {
       SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
       if (!se)
         INT_FATAL(call, "unexpected iterator call site");
-      if (fDisableIteratorPropagation || requiresSequenceTemporary(se->var) != 1)
+      if (fDisableIteratorPropagation || requiresSequenceTemporary(se->var, seqType, ct))
         insertSequenceTemporary(se->var, move, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
       else
-        propagateIteratorType(se->var, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
+        propagateIteratorType(se->var, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue);
     } else
       INT_FATAL(call, "unexpected iterator call site");
   }
@@ -481,6 +475,32 @@ void lowerIterators() {
         localCopyPropagation(fn);
         deadVariableElimination(fn);
         deadExpressionElimination(fn);
+      }
+    }
+  }
+  // disabled- must handle references in scalar replacement first and
+  // probably need INTENT_REF of references working too
+  if (false && !fDisableIteratorPropagation) {
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (ts->hasPragma("scalar replace tuples")) {
+        ClassType* ct = dynamic_cast<ClassType*>(ts->type);
+        bool seq = false;
+        for_fields(field, ct) {
+          if (field->type->symbol->hasPragma("seq") || field->type->symbol->hasPragma("seqNode"))
+            seq = true;
+        }
+        if (seq) {
+          forv_Vec(BaseAST, ast, gAsts) {
+            if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+              if (FnSymbol* fn = call->isResolved()) {
+                if (fn->retType == ct) {
+                  inlineCall(call);
+                }
+              }
+            }
+          }
+          scalarReplace(ct);
+        }
       }
     }
   }

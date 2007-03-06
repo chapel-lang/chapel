@@ -109,3 +109,9 @@ void inlineFunctions(void) {
     }
   }
 }
+
+
+void inlineCall(CallExpr* call) {
+  Vec<Expr*> stmts;
+  inline_call(call, &stmts);
+}
