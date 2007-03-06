@@ -94817,3 +94817,36 @@ Log message:
 Modified files:
 	chapel/doc/internal/prelimRelease/: .cvsignore prelimRelease.tex 
 
+---------------------------------------------------------------------------
+
+03/06/07 10:32:44 -- deitz
+
+Log message:
+	Removed the _promotionType field and parameter fields from classes and
+	records after function resolution.  This is similar to the removal of
+	type fields.  The _promotionType field is used only to control how
+	scalar promotion works.
+	
+	Made it so that by default scalar replacement is applied to the
+	default array and domain wrapper records thus eliminating them from
+	the generated code.  This ensures testing of scalar replacement.  Note
+	that currently if --no-inline is specified, this scalar replacement is
+	disabled.  (No noticeable performance effect on test_for2d, though I
+	see more tests timing out during execution when testing on the
+	servers.)
+	
+	Added a pass prune() that removes all dead types and functions from
+	the AST.  This is called now after the optimizations, including scalar
+	replacement, which makes some types dead.
+	
+	Added a flag --no-scalar-replace-array-wrappers to disable scalar
+	replacement on the array and domain wrapper records.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: driver.h optimizations.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	                         scalarReplace.cpp 
+
