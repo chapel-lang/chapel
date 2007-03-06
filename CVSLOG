@@ -94927,3 +94927,20 @@ Log message:
 Added files:
 	chapel/test/studies/lu/marybeth/: blocks.chpl blocks.good 
 
+---------------------------------------------------------------------------
+
+03/06/07 13:27:27 -- deitz
+
+Log message:
+	Extended iterator propagation so that the calling context is a stack
+	rather than simply a single call.  This extends its applicability as
+	illustrated in functions/deitz/iterators/temps/test_iterator_temp4.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+Removed files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp4.future 
+
