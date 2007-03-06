@@ -94944,3 +94944,14 @@ Removed files:
 	chapel/test/functions/deitz/iterators/temps/: 
 	                                              test_iterator_temp4.future 
 
+---------------------------------------------------------------------------
+
+03/06/07 14:59:21 -- bradc
+
+Log message:
+	Started taking second pass through this document.
+	More to do still.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
+
