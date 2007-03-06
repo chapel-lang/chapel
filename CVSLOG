@@ -94955,3 +94955,15 @@ Log message:
 Modified files:
 	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
 
+---------------------------------------------------------------------------
+
+03/06/07 15:56:04 -- deitz
+
+Log message:
+	Added a .future showing a bug with shallow domain copies.
+
+Added files:
+	chapel/test/arrays/deitz/: test_assign_copy.chpl 
+	                           test_assign_copy.future 
+	                           test_assign_copy.good 
+
