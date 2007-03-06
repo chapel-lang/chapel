@@ -94882,3 +94882,34 @@ Modified files:
 	                         lowerIterators.cpp 
 	chapel/modules/standard/: ChapelSeq.chpl 
 
+---------------------------------------------------------------------------
+
+03/06/07 12:11:15 -- deitz
+
+Log message:
+	Added a directory of tests that use the --warn-temporary flag to
+	ensure that the removal of sequence temporaries continues to work.
+	One .future requires that the context become a stack instead of a
+	single call as described in my last checkin.
+	
+	Changed the initialization of the Locale array in the standard modules
+	so that a warning is not issued for this code on every compilation.
+	Once iterator propagation applies to this case, we can change it back
+	if wanted.
+
+Modified files:
+	chapel/modules/standard/: ChapelLocale.chpl 
+Added files:
+	chapel/test/functions/deitz/iterators/temps/: .cvsignore 
+	                                              COMPOPTS 
+	                                              test_iterator_temp1.chpl 
+	                                              test_iterator_temp1.good 
+	                                              test_iterator_temp2.chpl 
+	                                              test_iterator_temp2.compopts 
+	                                              test_iterator_temp2.good 
+	                                              test_iterator_temp3.chpl 
+	                                              test_iterator_temp3.good 
+	                                              test_iterator_temp4.chpl 
+	                                              test_iterator_temp4.future 
+	                                              test_iterator_temp4.good 
+
