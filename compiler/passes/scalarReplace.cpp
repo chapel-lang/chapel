@@ -65,7 +65,7 @@ void scalarReplace(ClassType* ct) {
         char* name = sym->name;
         if (strcmp("_value", field->name))
           name = astr(name, "_", field->name);
-        if (def->sym == ret || arg)
+        if ((nfields > 1 && def->sym == ret) || arg)
           clone = new ArgSymbol((arg && !isThis) ? arg->intent : INTENT_REF,
                                 name, field->type);
         else
@@ -73,7 +73,7 @@ void scalarReplace(ClassType* ct) {
         if (sym->isReference)
           clone->isReference = true;
         syms->add(clone);
-        if (def->sym == ret)
+        if (nfields > 1 && def->sym == ret)
           fn->insertFormalAtTail(new DefExpr(clone));
         else
           def->insertBefore(new DefExpr(clone));
@@ -123,7 +123,10 @@ void scalarReplace(ClassType* ct) {
           se->remove();
         }
       } else if (call && call->isPrimitive(PRIMITIVE_RETURN)) {
-        se->replace(new SymExpr(gVoid));
+        if (nfields > 1)
+          se->replace(new SymExpr(gVoid));
+        else
+          se->replace(new SymExpr(syms->v[0]));
       } else {
         for (int id = 0; id < nfields; id++) {
           se->insertBefore(new SymExpr(syms->v[id]));
@@ -145,7 +148,7 @@ void scalarReplace(ClassType* ct) {
         bool isref = move->isPrimitive(PRIMITIVE_REF);
         if (CallExpr* call = dynamic_cast<CallExpr*>(move->argList->tail)) {
           if (FnSymbol* fn = call->isResolved()) {
-            if (fn->retType == ct) {
+            if (nfields > 1 && fn->retType == ct) {
               call->remove();
               for_actuals(actual, move) {
                 actual->remove();
@@ -176,7 +179,11 @@ void scalarReplace(ClassType* ct) {
   }
 
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->retType == ct)
-      fn->retType = dtVoid;
+    if (fn->retType == ct) {
+      if (nfields > 1)
+        fn->retType = dtVoid;
+      else
+        fn->retType = ct->getField(1)->type;
+    }
   }
 }

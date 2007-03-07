@@ -1278,7 +1278,7 @@ memberaccess_expr:
 | lvalue TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
 | lvalue TDOT TDOMAIN
-    { $$ = new CallExpr(".", $1, new_StringSymbol("dom")); }
+    { $$ = new CallExpr(".", $1, new_StringSymbol("_dom")); }
 ;
 
 

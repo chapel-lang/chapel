@@ -91,7 +91,7 @@ record _domain {
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
     _value._arrs #= x;
-    return _array(x.type, eltType, rank, x, this);
+    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
   def buildEmptyDomain() {
@@ -211,59 +211,67 @@ def by(a: _domain, b) {
 pragma "array"
 record _array {
   type _array_type;
+  type _domain_type;
+  type _index_type;
+  type _dim_index_type;
   type eltType;
   param rank : int;
   var _value : _array_type;
-  var dom : _domain;
   var _promotionType : eltType;
+
+  def _dom var {
+    var x : _domain(_domain_type, _index_type, _dim_index_type, rank);
+    x._value = _value.dom;
+    return x;
+  }
 
   def this(d: _domain) {
     var x = _value.slice(d._value);
-    return _array(x.type, eltType, rank, x, d);
+    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
-  def this(i: _aseq(dom._dim_index_type) ...rank) {
+  def this(i: _aseq(_dim_index_type) ...rank) {
     var d = [(...i)];
     return this(d);
   }
 
   def =this(d: _domain, val) {
-    var y = _array(_array_type, eltType, rank, dom=d);
+    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
   def =this(d: _domain, val: eltType) {
-    var y = _array(_array_type, eltType, rank, dom=d);
+    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def =this(i: _aseq(dom._dim_index_type) ...rank, val) where rank > 0 {
+  def =this(i: _aseq(_dim_index_type) ...rank, val) where rank > 0 {
     var d = [(...i)];
-    var y = _array(_array_type, eltType, rank, dom=d);
+    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def =this(i: _aseq(dom._dim_index_type) ...rank, val: eltType) where rank > 0 {
+  def =this(i: _aseq(_dim_index_type) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
-    var y = _array(_array_type, eltType, rank, dom=d);
+    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def this(i: dom._index_type)
+  def this(i: _index_type)
     return _value(i);
 
-  def this(i: dom._dim_index_type ...rank) where rank > 1
+  def this(i: _dim_index_type ...rank) where rank > 1
     return _value(i);
 
-  def =this(i: dom._index_type, val: eltType) {
+  def =this(i: _index_type, val: eltType) {
     _value(i) = val;
   }
 
-  def =this(i: dom._dim_index_type ...rank, val: eltType) where rank > 1 {
+  def =this(i: _dim_index_type ...rank, val: eltType) where rank > 1 {
     _value(i) = val;
   }
 
@@ -279,29 +287,29 @@ record _array {
   def isValidCursor?(c)
     return _value.isValidCursor?(c);
 
-  def numElements return dom.numIndices;
+  def numElements return _dom.numIndices; // assume dom name
 
   def view(d: _domain) {
     var x = _value.view(d._value);
-    return _array(x.type, eltType, rank, x, d);
+    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
   }
 }
 
 def =(a: _array, b) {
-  for (i,bb) in (a.dom,b) do
+  for (i,bb) in (a._dom,b) do
     a(i) = bb;
   return a;
 }
 
 def =(a: _array, b: a.eltType) {
-  for i in a.dom do
+  for i in a._dom do
     a(i) = b;
   return a;
 }
 
 def _copy(a: _array) {
   if a._value == nil then return a;
-  var b : [a.dom] a.eltType;
+  var b : [a._dom] a.eltType;
   b = a;
   return b;
 }
@@ -310,8 +318,9 @@ def _pass(a: _array) {
   return a;
 }
 
-def _init(a: _array)
-  return a.dom.buildArray(a.eltType);
+def _init(a: _array) {
+  return a._dom.buildArray(a.eltType);
+}
 
 def _array.writeThis(f: Writer) {
   f.write(_value);

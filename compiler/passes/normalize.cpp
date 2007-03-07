@@ -603,7 +603,7 @@ static void fixup_array_formals(FnSymbol* fn) {
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == def->sym)
-                  sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("dom")));
+                  sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("_dom")));
               }
             }
           } else if (!sym || sym->var != gNil) {
