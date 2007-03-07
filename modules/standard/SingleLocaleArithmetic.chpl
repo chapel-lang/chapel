@@ -276,7 +276,6 @@ class SingleLocaleArithmeticArray: BaseArray {
       var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);
-      dom = new.dom;
       off = new.off;
       blk = new.blk;
       str = new.str;
