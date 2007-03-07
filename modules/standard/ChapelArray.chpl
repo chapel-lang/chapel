@@ -193,7 +193,7 @@ def _init(a: _domain)
   return a.buildEmptyDomain();
 
 def _copy(a: _domain) {
-  var b: a.type;
+  var b: a.buildEmptyDomain();
   b.setIndices(a.getIndices());
   return b;
 }
