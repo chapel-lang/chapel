@@ -95051,3 +95051,15 @@ Modified files:
 Added files:
 	chapel/doc/internal/prelimRelease/: prelimRelease.pdf 
 
+---------------------------------------------------------------------------
+
+03/07/07 11:32:23 -- deitz
+
+Log message:
+	Fixed a bug in domain assignment where a domain could lose track of
+	the arrays that it was tracking.  This fixes the cross-platform
+	difficulties and valgrind errors with release/examples/genericStack2.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+
