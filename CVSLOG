@@ -94967,3 +94967,27 @@ Added files:
 	                           test_assign_copy.future 
 	                           test_assign_copy.good 
 
+---------------------------------------------------------------------------
+
+03/06/07 16:44:23 -- deitz
+
+Log message:
+	Removed some dead code from function resolution that used to handle
+	the _init function.  Only half of that specialization is still
+	necessary.
+	
+	Fixed the _copy function on domains so that domain copying is deep.
+	Thus in
+	
+	  var D1 = D2;
+	
+	D1 is not an alias of D2.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: test_assign_copy.future 
+
