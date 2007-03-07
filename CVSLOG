@@ -95035,3 +95035,19 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp scalarReplace.cpp 
 	chapel/modules/standard/: ChapelArray.chpl 
 
+---------------------------------------------------------------------------
+
+03/07/07 11:31:30 -- bradc
+
+Log message:
+	Incorporated changes based on (most of) Steve and Mary
+	Beth's comments.  I'm not planning to do much more with
+	this for MS2, barring any showstoppers that people note.
+	
+	Checking in the PDF version that I'll send to Keith.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: .cvsignore prelimRelease.tex 
+Added files:
+	chapel/doc/internal/prelimRelease/: prelimRelease.pdf 
+
