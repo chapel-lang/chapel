@@ -94991,3 +94991,13 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_assign_copy.future 
 
+---------------------------------------------------------------------------
+
+03/06/07 16:55:32 -- bradc
+
+Log message:
+	Finished second pass of this document.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
+
