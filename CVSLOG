@@ -95001,3 +95001,37 @@ Log message:
 Modified files:
 	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
 
+---------------------------------------------------------------------------
+
+03/07/07 09:55:31 -- deitz
+
+Log message:
+	Removed the domain wrapper field from the array wrapper.  The array
+	wrapper record now stores all the relevant type information to create
+	its own domain wrapper record on the domain that the wrapped array
+	points.  It does so via the parenthesesless method _dom which
+	conveniently replaces the field dom.  This is a clean substitution and
+	a nice use of a productivity feature.
+	
+	Specialized scalar replacement to take advantage of records with only
+	a single field.  They use the return mechanism instead of pass by
+	reference in this case.  Since with this change, the array and domain
+	wrapper records each contain a single field, this specialization of
+	scalar replacement succeeds.
+	
+	This fixes the regressions and time outs so there is an issue related
+	to the pass by reference scalar replacement approach, probably related
+	to passing references by reference, but I'll have to look into it
+	further.
+	
+	I'm seeing some platform-specific failures of
+	
+	  release/examples/genericStack2
+	
+	which I am looking into.  This fixes other problems so I'm checking in.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp scalarReplace.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+
