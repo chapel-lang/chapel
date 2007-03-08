@@ -95074,3 +95074,15 @@ Modified files:
 	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
 	                                    prelimRelease.pdf 
 
+---------------------------------------------------------------------------
+
+03/08/07 08:22:18 -- deitz
+
+Log message:
+	Changed references of A.dom to A.domain.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: blocks.chpl nopivlu.chpl 
+	                                  nopivlublock.chpl pivlu.chpl 
+	                                  pivlublock.chpl 
+
