@@ -95086,3 +95086,30 @@ Modified files:
 	                                  nopivlublock.chpl pivlu.chpl 
 	                                  pivlublock.chpl 
 
+---------------------------------------------------------------------------
+
+03/08/07 08:31:49 -- deitz
+
+Log message:
+	Cleaned up the code generation of _chpl_header.h.  Beautify is run on
+	it and typedefs are folded into the struct declaration except for
+	class references which need to come first.  The types, global
+	variables, and function prototypes are now generated in a sorted
+	order, rather than arbitrarily.  Comments are generated to divide the
+	file into its constituent parts:
+	
+	  Class Reference Types
+	  Enumerated Types
+	  Records and Unions (Hierarchically)
+	  Classes
+	  Function Prototypes
+	  Global Variables
+	
+	Removed the extra linefeed between the closing } of a then block and
+	the else keyword.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: codegen.cpp 
+
