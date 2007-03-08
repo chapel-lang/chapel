@@ -95145,3 +95145,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/07 12:22:43 -- deitz
+
+Log message:
+	Fixed paratest.server.pl to test subdirectories of parent directories
+	that have a NOTEST file in them.  This increases coverage of the
+	parallel testing script by 9 tests and three directories that it was
+	missing:
+	
+	  npb/cg/bradc
+	  npb/ft
+	  studies/lu/marybeth
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
