@@ -95135,3 +95135,13 @@ Modified files:
 	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
 	                                    prelimRelease.pdf 
 
+---------------------------------------------------------------------------
+
+03/08/07 12:17:24 -- deitz
+
+Log message:
+	Removed unnecessary use of compute_sym_uses in normalize.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
