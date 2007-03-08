@@ -95162,3 +95162,13 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+03/08/07 14:35:29 -- deitz
+
+Log message:
+	Updated Scope section with changes from today's meeting.
+
+Modified files:
+	chapel/spec/: Scope.tex 
+
