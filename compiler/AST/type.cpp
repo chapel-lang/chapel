@@ -417,7 +417,7 @@ void ClassType::codegenDef(FILE* outfile) {
 void ClassType::codegenPrototype(FILE* outfile) {
   if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
-            symbol->cname, symbol->cname, symbol->cname);
+            symbol->cname, symbol->cname);
 }
 
 
