@@ -95123,3 +95123,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/07 11:35:04 -- marybeth
+
+Log message:
+	Changed header to include proprietary notice and the title of the
+	paper on each page.
+
+Modified files:
+	chapel/doc/internal/prelimRelease/: prelimRelease.tex 
+	                                    prelimRelease.pdf 
+
