@@ -59,10 +59,10 @@ def initA(A,filename:string){
 // so that pivoting isn't needed.
 
 var Adat = file(filename,path='./',mode='r');
-var P, temp: [A.dom] real;
+var P, temp: [A.domain] real;
 
 Adat.open;
-for ij in A.dom {
+for ij in A.domain {
   Adat.read(A(ij));
 }
 Adat.close;
