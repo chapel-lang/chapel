@@ -253,12 +253,17 @@ sub nodes_free {
 # Return true if a *.chpl exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
+    local ($found);
+    $found = 0;
     foreach $fname (@fnames) {
+        if ($fname =~ /NOTEST$/) {
+            return 0;
+        }
         if ($fname =~ /\.chpl$/) {
-            return 1;
+            $found = 1;
         }
     }
-    return 0;
+    return $found;
 }
 
 
@@ -282,7 +287,6 @@ sub find_subdirs {
     foreach $filen (@cdir) {
 	next if ($filen =~ /$dirs_to_ignore/);
 	if (-d "$targetdir/$filen") {                 # if dir
-            next if (-e "$targetdir/$filen/NOTEST");  # ignore dirs with NOTEST
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
 	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
         }
