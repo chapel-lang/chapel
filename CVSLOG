@@ -95113,3 +95113,13 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/07 11:22:45 -- deitz
+
+Log message:
+	Removed extra parameter to fprintf.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
