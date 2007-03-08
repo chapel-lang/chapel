@@ -705,14 +705,17 @@ static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           DefExpr* def,
                                           int width) {
-  compute_sym_uses(fn);
   ASTMap map;
   FnSymbol* newfn = fn->copy(&map);
   DefExpr* newdef = dynamic_cast<DefExpr*>(map.get(def));
+  Symbol* newsym = newdef->sym;
   newdef->replace(new SymExpr(new_IntSymbol(width)));
-  forv_Vec(SymExpr, sym, def->sym->uses) {
-    SymExpr* newsym = dynamic_cast<SymExpr*>(map.get(sym));
-    newsym->var = new_IntSymbol(width);
+  Vec<BaseAST*> asts;
+  map.get_values(asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
+      if (se->var == newsym)
+        se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
   fixup_parameterized_primitive_formals(newfn);
