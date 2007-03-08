@@ -276,6 +276,8 @@ VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 PrimitiveType *immediate_type(Immediate *imm);
 
+int compareSymbol(const void* v1, const void* v2);
+
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 

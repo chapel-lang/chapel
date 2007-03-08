@@ -1755,3 +1755,23 @@ immediate_type(Immediate *imm) {
   }
   return NULL;
 }
+
+
+int
+compareSymbol(const void* v1, const void* v2) {
+  Symbol* s1 = *(Symbol**)v1;
+  Symbol* s2 = *(Symbol**)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modtype < m2->modtype)
+      return -1;
+    if (m1->modtype > m2->modtype)
+      return 1;
+    return strcmp(m1->cname, m2->cname);
+  }
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+  return result;
+}

@@ -146,18 +146,23 @@ static void codegen_header(void) {
     }
   }
 
+  qsort(varSymbols.v, varSymbols.n, sizeof(varSymbols.v[0]), compareSymbol);
+  qsort(typeSymbols.v, typeSymbols.n, sizeof(typeSymbols.v[0]), compareSymbol);
+  qsort(fnSymbols.v, fnSymbols.n, sizeof(fnSymbols.v[0]), compareSymbol);
+
   fileinfo header;
   openCFile(&header, "_chpl_header", "h");
   FILE* outfile = header.fptr;
 
   fprintf(outfile, "#include \"stdchpl.h\"\n");
-  fprintf(outfile, "\n");
+  fprintf(outfile, "\n/*** Class Reference Types ***/\n\n");
 
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     typeSymbol->codegenPrototype(outfile);
   }
 
   // codegen enumerated types
+  fprintf(outfile, "\n/*** Enumerated Types ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (dynamic_cast<EnumType*>(typeSymbol->type))
       typeSymbol->codegenDef(outfile);
@@ -181,16 +186,17 @@ static void codegen_header(void) {
 //   printf("%d\n", maxOrder);
 
   // codegen records/unions in topological order
-  Vec<ClassType*> keys;
-  order.get_keys(keys);
+  fprintf(outfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
   for (int i = 1; i <= maxOrder; i++) {
-    forv_Vec(ClassType, key, keys) {
-      if (order.get(key) == i)
-        key->symbol->codegenDef(outfile);
+    forv_Vec(TypeSymbol, ts, typeSymbols) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+        if (order.get(ct) == i)
+          ts->codegenDef(outfile);
     }
   }
 
   // codegen remaining types
+  fprintf(outfile, "/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSymbol->type))
       if (ct->classTag != CLASS_CLASS)
@@ -200,13 +206,17 @@ static void codegen_header(void) {
     typeSymbol->codegenDef(outfile);
   }
 
+  fprintf(outfile, "/*** Function Prototypes ***/\n\n");
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
     fnSymbol->codegenPrototype(outfile);
   }
+
+  fprintf(outfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
     varSymbol->codegenDef(outfile);
   }
   closeCFile(&header);
+  beautify(&header);
 }
 
 

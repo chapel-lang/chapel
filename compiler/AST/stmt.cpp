@@ -206,7 +206,10 @@ void BlockStmt::codegen(FILE* outfile) {
     loopInfo->get(1)->codegen(outfile);
     fprintf(outfile, ");\n");
   } else if (this != getFunction()->body) {
-    fprintf(outfile, "}\n");
+    fprintf(outfile, "}");
+    CondStmt* cond = dynamic_cast<CondStmt*>(parentExpr);
+    if (!cond || !(cond->thenStmt == this && cond->elseStmt))
+      fprintf(outfile, "\n");
   }
 }
 

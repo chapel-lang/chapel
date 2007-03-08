@@ -212,7 +212,7 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void EnumType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef enum {\n");
+  fprintf(outfile, "typedef enum {");
   bool first = true;
   for_alist(DefExpr, constant, constants) {
     if (!first) {
@@ -228,7 +228,7 @@ void EnumType::codegenDef(FILE* outfile) {
   }
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
-  fprintf(outfile, ";\n\n");
+  fprintf(outfile, ";\n");
 }
 
 
@@ -376,7 +376,7 @@ ClassType::isNominalType() {
 
 
 void ClassType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "struct __");
+  fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
@@ -406,17 +406,18 @@ void ClassType::codegenDef(FILE* outfile) {
   if (!printedSomething) {
     fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }
-  fprintf(outfile, "};\n\n");
+  fprintf(outfile, "} ");
+  if (classTag == CLASS_CLASS)
+    fprintf(outfile, "_");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";\n\n");
 }
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
   if (classTag == CLASS_CLASS)
-    fprintf(outfile, "typedef struct __%s _%s, *%s;\n",
+    fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname, symbol->cname);
-  else
-    fprintf(outfile, "typedef struct __%s %s;\n",
-            symbol->cname, symbol->cname);
 }
 
 
