@@ -95209,3 +95209,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/09/07 11:46:20 -- deitz
+
+Log message:
+	Added code to ensure that a sequence temporary is inserted during
+	iterator propagation if the iterator is propagated through a symbol
+	that is defined multiple times.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
