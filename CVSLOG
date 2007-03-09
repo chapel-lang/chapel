@@ -95199,3 +95199,13 @@ Added files:
 	chapel/test/functions/deitz/: test_inout_const.chpl 
 	                              test_inout_const.good 
 
+---------------------------------------------------------------------------
+
+03/09/07 11:26:26 -- deitz
+
+Log message:
+	Minor simplification due to defs/uses split.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
