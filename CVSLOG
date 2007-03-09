@@ -95172,3 +95172,30 @@ Log message:
 Modified files:
 	chapel/spec/: Scope.tex 
 
+---------------------------------------------------------------------------
+
+03/09/07 10:55:05 -- deitz
+
+Log message:
+	Made compute_sym_uses build up two vectors on symbols: uses and defs.
+	The defs vector contains uses of the symbol on the left-hand side of
+	MOVE and REF primitives and in a pass by reference context of a
+	function call.  The uses vector contains all the other uses and also
+	contains the uses in a pass by reference context of a function call.
+	
+	Fixed a bug in constant assignment detection.  Constants can no longer
+	be passed with INOUT or OUT intents.  Added a test of this check.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         cullOverReferences.cpp 
+	                         functionResolution.cpp 
+	                         lowerIterators.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/test/functions/deitz/: test_var_function1.good 
+Added files:
+	chapel/test/functions/deitz/: test_inout_const.chpl 
+	                              test_inout_const.good 
+
