@@ -95221,3 +95221,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/09/07 15:28:00 -- diten
+
+Log message:
+	Add a future showing weird behavior iterating over indefinite domains with
+	enum index types.  Also, it causes an abort that goes away with the
+	--no-scalar-replace-array-wrapper option.
+
+Added files:
+	chapel/test/types/enum/diten/: enumDom.chpl enumDom.future 
+	                               enumDom.good 
+
