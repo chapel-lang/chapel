@@ -153,38 +153,24 @@ void localCopyPropagation(FnSymbol* fn) {
 // never used anywhere.
 //
 void deadVariableElimination(FnSymbol* fn) {
-  compute_sym_uses(fn);
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
   bool change = true;
   while (change) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+    compute_sym_uses(fn);
     change = false;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (!def->parentSymbol)
-          continue;
-        if (!dynamic_cast<VarSymbol*>(def->sym)) // labels, types, ...?
-          continue;
-        if (!def->sym->isCompilerTemp && def->parentSymbol != fn) // nested types not pulled out
-          continue;
-        bool used = false;
-        forv_Vec(SymExpr, use, def->sym->uses) {
-          if (use->parentSymbol) {
-            CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
-            if (!move || !move->isPrimitive(PRIMITIVE_MOVE) || move->get(1) != use)
-              used = true;
-          }
-        }
-        if (!used) {
-          forv_Vec(SymExpr, use, def->sym->uses) {
-            if (use->parentSymbol) {
-              CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
-              Expr* rhs = move->get(2);
-              if (rhs->astType == EXPR_SYM)
-                move->remove();
-              else
-                move->replace(rhs->remove());
-            }
+        if (def->sym->astType != SYMBOL_VAR || def->parentSymbol != fn)
+          continue; // only variables, no fields of nested types
+        if (def->sym->uses.n == 0 && def->sym->defs.n <= 1) {
+          forv_Vec(SymExpr, se, def->sym->defs) {
+            CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+            Expr* rhs = call->get(2);
+            if (rhs->astType == EXPR_SYM)
+              call->remove();
+            else
+              call->replace(rhs->remove());
           }
           def->remove();
           change = true;

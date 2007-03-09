@@ -400,7 +400,7 @@ static void insert_call_temps(CallExpr* call) {
   }
 
   Expr* stmt = call->getStmtExpr();
-  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
+  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_VAR);
   tmp->isCompilerTemp = true;
   tmp->canReference = true;
   tmp->canParam = true;

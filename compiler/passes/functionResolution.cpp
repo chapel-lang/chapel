@@ -2353,13 +2353,10 @@ static void
 removeActual(Expr* actual) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(actual)) {
     if (sym->var->isCompilerTemp) {
-      forv_Vec(SymExpr, lhs, sym->var->uses) {
-        if (CallExpr* call = dynamic_cast<CallExpr*>(lhs->parentExpr)) {
-          if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE) &&
-              call->get(1) == lhs) {
+      forv_Vec(SymExpr, lhs, sym->var->defs) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(lhs->parentExpr))
+          if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE))
             call->remove();
-          }
-        }
       }
     }
   }

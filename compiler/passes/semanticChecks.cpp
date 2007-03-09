@@ -176,18 +176,9 @@ check_resolved_syms(Symbol* var) {
   if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var))
     if (vs->immediate)
       return;
-  int num_moves = 0;
-  CallExpr* move = 0;
-  forv_Vec(SymExpr*, sym, var->uses) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
-        num_moves++;
-        move = call;
-      }
-    }
-  }
-  if (num_moves > 1)
-    USR_FATAL_CONT(move, "Assigning to a constant expression");
+  if (var->defs.n > 1)
+    USR_FATAL_CONT(var->defs.v[var->defs.n-1],
+                   "Assigning to a constant expression");
 }
 
 

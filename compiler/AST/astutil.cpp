@@ -134,13 +134,27 @@ void compute_sym_uses(BaseAST* base) {
     collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      def_set.set_add(a);
-      a->sym->uses.clear();
+      if (a->sym->astType == SYMBOL_VAR || a->sym->astType == SYMBOL_ARG) {
+        def_set.set_add(a);
+        a->sym->uses.clear();
+        a->sym->defs.clear();
+      }
     }
   }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
       if (a->var->defPoint && def_set.set_in(a->var->defPoint)) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(a->parentExpr)) {
+          if ((call->isPrimitive(PRIMITIVE_MOVE) ||
+               call->isPrimitive(PRIMITIVE_REF)) &&
+              call->get(1) == a) {
+            a->var->defs.add(a);
+            continue;
+          } else if (call->isResolved()) {
+            if (actual_to_formal(a)->intent == INTENT_REF)
+              a->var->defs.add(a); // also use
+          }
+        }
         a->var->uses.add(a);
       }
     }

@@ -197,9 +197,6 @@ requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<Ca
     if (!parent)
       return true; // want here: INT_FATAL(se, "unexpected case");
                    // see: arrays/deitz/promotion/test_scalar_promote8.chpl
-    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
-         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(1) == se)
-      continue;
     if ((parent->isNamed("getHeadCursor") || parent->isNamed("getNextCursor") ||
          parent->isNamed("isValidCursor?") || parent->isNamed("getValue")) &&
         parent->isResolved()->getFormal(1)->type == seqType)
@@ -416,7 +413,7 @@ lowerIterator(FnSymbol* fn) {
       local = newlocal;
     }
     getNextCursor->insertAtHead(newMove(local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
-    forv_Vec(SymExpr, se, local->uses) {
+    forv_Vec(SymExpr, se, local->defs) {
       if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
         if ((parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se) ||
             (!parent->primitive && actual_to_formal(se)->intent == INTENT_REF)) {

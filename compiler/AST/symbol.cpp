@@ -157,6 +157,7 @@ void Symbol::verify() {
 void Symbol::clean() {
   BaseAST::clean();
   uses.clear();
+  defs.clear();
 }
 
 

@@ -54,11 +54,15 @@ void cullOverReferences() {
           if (var->isReference) {
             int refCount = 0;
             int writeCount = 0;
-            forv_Vec(SymExpr, sym, var->uses) {
+            forv_Vec(SymExpr, sym, var->defs) {
               if (isWritten(sym))
                 writeCount++;
+            }
+            forv_Vec(SymExpr, sym, var->uses) {
               if (isReferenced(sym))
                 refCount++;
+              if (isWritten(sym))
+                writeCount++;
             }
             if (FnSymbol* fn = def->getFunction()) {
               if (fn->getReturnSymbol() == var && !fn->retRef)
@@ -67,11 +71,10 @@ void cullOverReferences() {
             if (refCount == 0 && writeCount == 0) {
               change = true;
               var->isReference = false;
-              forv_Vec(SymExpr, sym, var->uses) {
+              forv_Vec(SymExpr, sym, var->defs) {
                 if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
                   if (call->isPrimitive(PRIMITIVE_REF))
-                    if (sym == call->get(1))
-                      call->primitive = primitives[PRIMITIVE_MOVE];
+                    call->primitive = primitives[PRIMITIVE_MOVE];
               }
             }
           }
