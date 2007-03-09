@@ -415,12 +415,9 @@ lowerIterator(FnSymbol* fn) {
     getNextCursor->insertAtHead(newMove(local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
     forv_Vec(SymExpr, se, local->defs) {
       if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-        if ((parent->isPrimitive(PRIMITIVE_MOVE) && parent->get(1) == se) ||
-            (!parent->primitive && actual_to_formal(se)->intent == INTENT_REF)) {
-          SymExpr* newuse = new SymExpr(local);
-          parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
-          local->uses.add(newuse);
-        }
+        SymExpr* newuse = new SymExpr(local);
+        parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
+        local->uses.add(newuse);
       }
     }
   }
