@@ -192,6 +192,8 @@ propagateIteratorType(Symbol* sym,
 
 static bool
 requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<CallExpr*>* context = NULL) {
+  if (sym->defs.n > 1)
+    return true;
   forv_Vec(SymExpr, se, sym->uses) {
     CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
     if (!parent)
