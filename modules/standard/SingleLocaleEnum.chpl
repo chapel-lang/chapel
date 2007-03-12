@@ -35,8 +35,8 @@ class SingleLocaleEnumDomain: BaseDomain {
     adomain.member?(ind);
   }
 
-  def numIndicies {
-    return adomain.numIndicies;
+  def numIndices {
+    return adomain.numIndices;
   }
 
   def buildEmptyDomain()
