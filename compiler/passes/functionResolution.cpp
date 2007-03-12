@@ -1892,6 +1892,27 @@ postFold(Expr* expr) {
           call->replace(result);
         }
       }
+    } else if (call->isPrimitive(PRIMITIVE_IS_ENUM)) {
+      // Replace the "isEnumType" primitive with true if the type is
+      // an enum, otherwise with false
+      bool is_enum = false;
+      CallExpr* c;
+      SymExpr* symExpr;
+      if ((c = dynamic_cast<CallExpr*>(call->get(1))) &&
+          (c->isPrimitive(PRIMITIVE_TYPEOF))) {
+        symExpr = dynamic_cast<SymExpr*>(c->get(1));
+      } else {
+        symExpr = dynamic_cast<SymExpr*>(call->get(1));
+      }
+      if (symExpr) {
+        if (Symbol* sym = dynamic_cast<Symbol*>(symExpr->var)) {
+          if (dynamic_cast<EnumType*>(sym->type)) {
+            is_enum = true;
+          }
+        }
+      }
+      SymExpr* result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(result);
     } else if (call->isPrimitive(PRIMITIVE_UNARY_MINUS)) {
       FOLD_CALL1(P_prim_minus);
     } else if (call->isPrimitive(PRIMITIVE_UNARY_PLUS)) {
@@ -2601,7 +2622,9 @@ instantiate(FnSymbol* fn, ASTMap* subs) {
   FnSymbol* ifn = fn->instantiate_generic(subs);
   if (!ifn->isGeneric && ifn->where) {
     resolveFormals(ifn);
-    resolveBody(ifn->where);
+    while (dynamic_cast<CallExpr*>(ifn->where->body->last())) {
+      resolveBody(ifn->where);
+    }
     SymExpr* symExpr = dynamic_cast<SymExpr*>(ifn->where->body->last());
     if (!symExpr)
       USR_FATAL(ifn->where, "Illegal where clause");

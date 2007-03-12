@@ -2,6 +2,11 @@ class SingleLocaleDistribution {
   def buildDomain(param rank: int, type dim_type) {
     return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
   }
+
+  def buildEnumDomain(type ind_type) {
+    return SingleLocaleEnumDomain(ind_type=ind_type);
+  }
+
   def buildDomain(type ind_type) {
     return SingleLocaleAssociativeDomain(ind_type=ind_type);
   }

@@ -8,6 +8,7 @@ use ChapelArray;
 use SingleLocaleArithmetic;
 use SingleLocaleAssociative;
 use SingleLocaleSparse;
+use SingleLocaleEnum;
 use ChapelUtil;
 
 use Types;

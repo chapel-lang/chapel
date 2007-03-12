@@ -299,6 +299,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_GC_FREE, "_refdown", returnInfoVoid);
   prim_def(PRIMITIVE_GC_ISPOS, "_refgzero", returnInfoBool);
   prim_def(PRIMITIVE_GC_ISNEG, "_reflzero", returnInfoBool);
+
+  prim_def(PRIMITIVE_IS_ENUM, "isEnumType", returnInfoBool);
+  prim_def(PRIMITIVE_ENUM_ENUM, "enumEnum", returnInfoVoid);
+
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
 
   prim_def("_config_has_value", returnInfoBool);

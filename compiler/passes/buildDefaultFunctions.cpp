@@ -20,6 +20,7 @@ static void build_record_inequality_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
+static void build_enum_enumerate_function(EnumType* et);
 
 static void buildDefaultReadFunction(ClassType* type);
 static void buildDefaultReadFunction(EnumType* type);
@@ -77,6 +78,7 @@ void buildDefaultFunctions(void) {
       if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
+        build_enum_enumerate_function(et);
       }
     }
   }
@@ -305,6 +307,39 @@ static void build_record_inequality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  normalize(fn);
+}
+
+static void build_enum_enumerate_function(EnumType* et) {
+  // Build a function that returns a sequence of the enum's values
+  // Each enum type has its own _enum_enumerate function.
+  FnSymbol* fn = new FnSymbol("_enum_enumerate");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg->isGeneric = false;
+  arg->isTypeVariable = true;
+  fn->insertFormalAtTail(arg);
+  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
+
+  et->symbol->defPoint->insertAfter(new DefExpr(fn));
+
+  DefExpr* constant = dynamic_cast<DefExpr*>(et->constants->first());
+  Expr* seqLiteral = new CallExpr("_construct_seq", constant->sym);
+
+  // Generate the sequence of enum values for the given enum type
+  for_alist(DefExpr, constant, et->constants) {
+    seqLiteral = new CallExpr(
+                   new CallExpr(
+                     ".",
+                     seqLiteral,
+                     new_StringSymbol("_append_in_place")),
+                   constant->sym);
+  }
+
+  // Move the sequence into a temp and return it
+  VarSymbol* temp = new VarSymbol("_tmp");
+  fn->insertAtHead(new DefExpr(temp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, seqLiteral));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, temp));
   normalize(fn);
 }
 

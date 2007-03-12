@@ -7,10 +7,6 @@ D.add(1.1);
 D.add(2.2);
 D.add(3.3);
 
-E.add(red);   // Shouldn't need to do this.
-E.add(green); // Shouldn't need to do this.
-E.add(blue);  // Shouldn't need to do this.
-
 var s = (/ 3, 4, 5 /);
 var a: [D] int = s;
 var b: [E] int = s;

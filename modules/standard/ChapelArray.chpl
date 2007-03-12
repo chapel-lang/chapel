@@ -3,11 +3,15 @@ def _build_domain_type(dist, param rank : int, type dimensional_index_type = int
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
 }
 
-def _build_domain_type(dist, type ind_type) {
-  var x = dist.buildDomain(ind_type);
-  return _domain(x.type, ind_type, ind_type, 1, x);
+def _build_domain_type(dist, type ind) where !__primitive("isEnumType", ind) {
+  var x = dist.buildDomain(ind);
+  return _domain(x.type, ind, ind, 1, x);
 }
 
+def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind) {
+  var x = dist.buildEnumDomain(ind);
+  return _domain(x.type, ind, ind, 1, x);
+}
 
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
