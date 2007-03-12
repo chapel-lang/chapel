@@ -126,6 +126,11 @@ def _copy(s: seq) {
   return ss;
 }
 
+pragma "seq pass"
+def _pass(s: seq) {
+  return _copy(s);
+}
+
 def =(s1: seq, s2: seq) {
   s1._delete();
   forall e in s2 do

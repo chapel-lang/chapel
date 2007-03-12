@@ -47,28 +47,116 @@ static CallExpr* newMove(Symbol* sym, BaseAST* ast) {
   return new CallExpr(PRIMITIVE_MOVE, sym, ast);
 }
 
-//
-// change type of sequence cursors to type of iterator cursors
-//
 static void
-propagateCursorType(ClassType* ct, Symbol* sym) {
-  forv_Vec(SymExpr, rhs, sym->uses) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(rhs->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (call->get(2) == rhs) {
-          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
-            lhs->var->type = sym->type;
-            propagateCursorType(ct, lhs->var);
-          }
-        }
-      } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-        if (call->get(3) == rhs && call->get(1)->typeInfo()->symbol->hasPragma("iterator class")) {
-          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(2))) {
-            lhs->var->type = sym->type;
-          }
+propagateIteratorType(Symbol* sym,
+                      ClassType* seqType,
+                      ClassType* ct,
+                      FnSymbol* getHeadCursor,
+                      FnSymbol* getNextCursor,
+                      FnSymbol* isValidCursor,
+                      FnSymbol* getValue,
+                      Vec<CallExpr*>* context = NULL);
+
+static void
+propagateIteratorTypeViaField(Symbol* base,
+                              Symbol* member,
+                              ClassType* newBaseType,
+                              Symbol* newMember,
+                              ClassType* seqType,
+                              ClassType* ct,
+                              FnSymbol* getHeadCursor,
+                              FnSymbol* getNextCursor,
+                              FnSymbol* isValidCursor,
+                              FnSymbol* getValue,
+                              Vec<CallExpr*>* context) {
+  ClassType* oldBaseType = dynamic_cast<ClassType*>(base->type);
+  base->type = newBaseType;
+  forv_Vec(SymExpr, se, base->uses) {
+    CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+    if (!parent)
+      INT_FATAL(se, "unexpected case");
+
+    if (parent->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
+      int f = 1;
+      for_fields(field, oldBaseType) {
+        if (field == parentMember->var)
+          break;
+        f++;
+      }
+      parentMember->var = newBaseType->getField(f);
+    }
+
+    if (parent->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
+      int f = 1;
+      for_fields(field, oldBaseType) {
+        if (field == parentMember->var)
+          break;
+        f++;
+      }
+      parentMember->var = newBaseType->getField(f);
+      if (parentMember->var != newMember)
+        continue;
+      if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
+        if (move->isPrimitive(PRIMITIVE_MOVE) ||
+            move->isPrimitive(PRIMITIVE_REF)) {
+          SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+          if (!lhs)
+            INT_FATAL("unexpected case");
+          propagateIteratorType(lhs->var, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, context);
+          continue;
         }
       }
     }
+
+    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
+         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(2) == se) {
+      SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(1));
+      if (!lhs)
+        INT_FATAL("unexpected case");
+      propagateIteratorTypeViaField(lhs->var, member, newBaseType, newMember, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, context);
+      continue;
+    }
+
+    if (parent->isResolved() && parent->isResolved()->fnClass != FN_ITERATOR) {
+      FnSymbol* fn = parent->isResolved();
+      ASTMap map;
+      FnSymbol* clone = fn->copy(&map);
+      fn->defPoint->insertBefore(new DefExpr(clone));
+      compute_sym_uses(clone);
+      Symbol* arg = actual_to_formal(se);
+      Symbol* cloneArg = dynamic_cast<Symbol*>(map.get(arg));
+      Vec<CallExpr*> newContext;
+      if (context)
+        newContext.copy(*context);
+      newContext.add(parent);
+      propagateIteratorTypeViaField(cloneArg, member, newBaseType, newMember, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, &newContext);
+      parent->baseExpr->replace(new SymExpr(clone));
+      continue;
+    }
+
+    if (parent->isPrimitive(PRIMITIVE_RETURN)) {
+      if (!context || context->n == 0)
+        INT_FATAL("unexpected case");
+      SymExpr* se = dynamic_cast<SymExpr*>(parent->get(1));
+      if (!se)
+        INT_FATAL("unexpected case");
+      se->getFunction()->retType = newBaseType;
+      CallExpr* move = dynamic_cast<CallExpr*>(context->v[context->n-1]->parentExpr);
+      if (!move)
+        continue;
+      SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+      if (!lhs)
+        INT_FATAL("unexpected case");
+      Vec<CallExpr*> newContext;
+      if (context)
+        newContext.copy(*context);
+      newContext.pop();
+      propagateIteratorTypeViaField(lhs->var, member, newBaseType, newMember, seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, &newContext);
+      continue;
+    }
+
   }
 }
 
@@ -80,7 +168,7 @@ propagateIteratorType(Symbol* sym,
                       FnSymbol* getNextCursor,
                       FnSymbol* isValidCursor,
                       FnSymbol* getValue,
-                      Vec<CallExpr*>* context = NULL) {
+                      Vec<CallExpr*>* context) {
   sym->type = ct;
   forv_Vec(SymExpr, se, sym->uses) {
     CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
@@ -89,23 +177,11 @@ propagateIteratorType(Symbol* sym,
 
     if (parent->isNamed("getHeadCursor") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(getHeadCursor));
-      if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
-          lhs->var->type = getHeadCursor->retType;
-          propagateCursorType(ct, lhs->var);
-        }
-      }
       continue;
     }
 
     if (parent->isNamed("getNextCursor") && parent->isResolved()->getFormal(1)->type == seqType) {
       parent->baseExpr->replace(new SymExpr(getNextCursor));
-      if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
-          lhs->var->type = getNextCursor->retType;
-          propagateCursorType(ct, lhs->var);
-        }
-      }
       continue;
     }
 
@@ -126,8 +202,19 @@ propagateIteratorType(Symbol* sym,
         lhs->var->type = sym->type;
       continue;
     }
-
-    if (parent->isNamed("_copy")) {
+    if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(3) == se) {
+      SymExpr* base = dynamic_cast<SymExpr*>(parent->get(1));
+      SymExpr* member = dynamic_cast<SymExpr*>(parent->get(2));
+      ASTMap map;
+      TypeSymbol* newBaseTypeSymbol = base->var->type->symbol->copy(&map);
+      base->var->type->symbol->defPoint->insertAfter(new DefExpr(newBaseTypeSymbol));
+      ClassType* newBaseType = dynamic_cast<ClassType*>(newBaseTypeSymbol->type);
+      Symbol* newMember = dynamic_cast<Symbol*>(map.get(member->var));
+      newMember->type = ct;
+      propagateIteratorTypeViaField(base->var, member->var, newBaseType, newMember,seqType, ct, getHeadCursor, getNextCursor, isValidCursor, getValue, context);
+      continue;
+    }
+    if (parent->isResolved() && parent->isResolved()->hasPragma("seq pass")) {
       CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr);
       if (!move)
         INT_FATAL("unexpected case");
@@ -149,7 +236,7 @@ propagateIteratorType(Symbol* sym,
       continue;
     }
 
-    if (parent->isResolved() && !parent->isNamed("_copy") &&
+    if (parent->isResolved() && !parent->isResolved()->hasPragma("seq pass") &&
         parent->isResolved()->fnClass != FN_ITERATOR) {
       FnSymbol* fn = parent->isResolved();
       ASTMap map;
@@ -191,7 +278,79 @@ propagateIteratorType(Symbol* sym,
 }
 
 static bool
-requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<CallExpr*>* context = NULL) {
+requiresSequenceTemporary(Symbol* sym,
+                          ClassType* seqType,
+                          ClassType* ct,
+                          Vec<CallExpr*>* context = NULL);
+
+static bool
+requiresSequenceTemporaryViaField(CallExpr* setCall, Symbol* base, Symbol* member, ClassType* seqType, ClassType* ct, Vec<CallExpr*>* context = NULL) {
+  if (base->defs.n > 1)
+    return true;
+  forv_Vec(SymExpr, se, base->uses) {
+    CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+    if (!parent)
+      return true;
+    if (parent == setCall)
+      continue;
+    if (parent->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
+      if (parentMember->var != member)
+        continue;
+    }
+    if (parent->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
+      if (parentMember->var != member)
+        continue;
+      if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
+        if (move->isPrimitive(PRIMITIVE_MOVE) ||
+            move->isPrimitive(PRIMITIVE_REF)) {
+          SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+          if (!lhs)
+            INT_FATAL("unexpected case");
+          if (!requiresSequenceTemporary(lhs->var, seqType, ct, context))
+            continue;
+        }
+      }
+    }
+    if ((parent->isPrimitive(PRIMITIVE_MOVE) ||
+         parent->isPrimitive(PRIMITIVE_REF)) && parent->get(2) == se) {
+      SymExpr* lhs = dynamic_cast<SymExpr*>(parent->get(1));
+      if (!lhs)
+        INT_FATAL("unexpected case");
+      if (!requiresSequenceTemporaryViaField(setCall, lhs->var, member, seqType, ct, context))
+        continue;
+    }
+    if (parent->isResolved() && parent->isResolved()->fnClass != FN_ITERATOR) {
+      Vec<CallExpr*> newContext;
+      if (context)
+        newContext.copy(*context);
+      newContext.add(parent);
+      if (!requiresSequenceTemporaryViaField(setCall, actual_to_formal(se), member, seqType, ct, &newContext))
+        continue;
+    }
+    if (parent->isPrimitive(PRIMITIVE_RETURN)) {
+      if (context && context->n > 0) {
+        CallExpr* move = dynamic_cast<CallExpr*>(context->v[context->n-1]->parentExpr);
+        if (!move)
+          continue;
+        SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+        if (!lhs)
+          INT_FATAL("unexpected case");
+        Vec<CallExpr*> newContext;
+        newContext.copy(*context);
+        newContext.pop();
+        if (!requiresSequenceTemporaryViaField(setCall, lhs->var, member, seqType, ct, &newContext))
+          continue;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+static bool
+requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<CallExpr*>* context) {
   if (sym->defs.n > 1)
     return true;
   forv_Vec(SymExpr, se, sym->uses) {
@@ -207,7 +366,13 @@ requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<Ca
         parent->get(1)->typeInfo()->symbol->hasPragma("iterator class") &&
         parent->get(3) == se)
       continue;
-    if (parent->isNamed("_copy")) {
+    if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(3) == se) {
+      SymExpr* base = dynamic_cast<SymExpr*>(parent->get(1));
+      SymExpr* member = dynamic_cast<SymExpr*>(parent->get(2));
+      if (!requiresSequenceTemporaryViaField(parent, base->var, member->var, seqType, ct, context))
+        continue;
+    }
+    if (parent->isResolved() && parent->isResolved()->hasPragma("seq pass")) {
       CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr);
       if (!move)
         INT_FATAL("unexpected case");
@@ -225,7 +390,7 @@ requiresSequenceTemporary(Symbol* sym, ClassType* seqType, ClassType* ct, Vec<Ca
       if (!requiresSequenceTemporary(lhs->var, seqType, ct, context))
         continue;
     }
-    if (parent->isResolved() && !parent->isNamed("_copy") &&
+    if (parent->isResolved() && !parent->isResolved()->hasPragma("seq pass") &&
         parent->isResolved()->fnClass != FN_ITERATOR) {
       Vec<CallExpr*> newContext;
       if (context)

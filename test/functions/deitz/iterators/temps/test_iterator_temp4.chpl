@@ -9,8 +9,7 @@ def goo(y)
   return y;
 
 def bar(y) {
-  var x = goo(y);
-  for i in x do
+  for i in goo(y) do
     writeln(i);
 }
 
