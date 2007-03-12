@@ -787,12 +787,19 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   update_symbols(wrapper->body, &copy_map);
   if (isMethod)
     call = make_method_call_partial(call);
-  if (returns_void(this))
+  if (returns_void(this)) {
     wrapper->insertAtTail(call);
-  else
+  } else if (fnClass != FN_ITERATOR) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  } else {
+    VarSymbol* index = new VarSymbol("_i");
+    index->isCompilerTemp = true;
+    wrapper->insertAtTail(new DefExpr(index));
+    wrapper->insertAtTail(build_for_expr(new SymExpr(index), call, new SymExpr(index)));
+    wrapper->fnClass = FN_ITERATOR;
+  }
   defPoint->insertAfter(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint);
+  reset_file_info(wrapper->defPoint, lineno, filename);
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
   return wrapper;
