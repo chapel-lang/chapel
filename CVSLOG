@@ -95406,3 +95406,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/12/07 15:07:28 -- deitz
+
+Log message:
+	Added test of C = A + B to ensure that a sequence temporary is not inserted.
+
+Added files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp5.chpl 
+	                                              test_iterator_temp5.good 
+
