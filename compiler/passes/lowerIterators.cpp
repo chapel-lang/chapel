@@ -654,32 +654,6 @@ void lowerIterators() {
       }
     }
   }
-  // disabled- must handle references in scalar replacement first and
-  // probably need INTENT_REF of references working too
-  if (false && !fDisableIteratorPropagation) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
-      if (ts->hasPragma("scalar replace tuples")) {
-        ClassType* ct = dynamic_cast<ClassType*>(ts->type);
-        bool seq = false;
-        for_fields(field, ct) {
-          if (field->type->symbol->hasPragma("seq") || field->type->symbol->hasPragma("seqNode"))
-            seq = true;
-        }
-        if (seq) {
-          forv_Vec(BaseAST, ast, gAsts) {
-            if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-              if (FnSymbol* fn = call->isResolved()) {
-                if (fn->retType == ct) {
-                  inlineCall(call);
-                }
-              }
-            }
-          }
-          scalarReplace(ct);
-        }
-      }
-    }
-  }
   compute_sym_uses();
   compute_call_sites();
   forv_Vec(FnSymbol, fn, gFns) {
