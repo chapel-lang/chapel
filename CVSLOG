@@ -95395,3 +95395,14 @@ Modified files:
 	chapel/test/functions/deitz/iterators/temps/: 
 	                                              test_iterator_temp4.chpl 
 
+---------------------------------------------------------------------------
+
+03/12/07 15:02:49 -- deitz
+
+Log message:
+	Removed dead code to scalar replace tuples before iterator propagation
+	since iterator propagation clones tuples now.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
