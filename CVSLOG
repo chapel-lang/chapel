@@ -95443,3 +95443,42 @@ Added files:
 	                                              test_iterator_temp7.future 
 	                                              test_iterator_temp7.good 
 
+---------------------------------------------------------------------------
+
+03/12/07 16:24:10 -- deitz
+
+Log message:
+	Made the default wrapper for an iterator into an iterator to avoid a
+	sequence temporary for invocations of an iterator with a default
+	value.  This work should be extended to coercion and order wrappers as
+	well.  Removed a .future.
+	
+	This removes the last sequence temporary from hpcc ra. For
+	
+	  release/examples/hpcc06/ra.chpl
+	
+	compiled with
+	
+	  --ccflags "-O3" --no-gc --no-bounds-checks
+	
+	you can now see it run in under 20 seconds:
+	
+	  Problem size = 16777216 (2**24)
+	  Bytes per array = 134217728
+	  Total memory required (GB) = 0.125
+	  Number of updates = 67108864
+	
+	  Number of errors is: 0
+	
+	  Validation: SUCCESS
+	  Execution time = 18.9979
+	  Performance (GUPS) = 0.00353244
+	
+	There is more optimization work to do but this is a huge leap forward!
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Removed files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp7.future 
+
