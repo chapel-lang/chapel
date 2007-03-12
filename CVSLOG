@@ -95418,3 +95418,28 @@ Added files:
 	                                              test_iterator_temp5.chpl 
 	                                              test_iterator_temp5.good 
 
+---------------------------------------------------------------------------
+
+03/12/07 15:14:17 -- deitz
+
+Log message:
+	Added two iterator temporary futures.
+	
+	Test 6 shows that a temporary is inserted for a double promotion or
+	more as in E = A + B + C.
+	
+	Test 7 shows that a temporary is inserted for an invocation of an
+	iterator that has a default value.
+	
+	Fixing these tests may remove the iterator temporaries from the hpcc
+	benchmarks.
+
+Added files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp6.chpl 
+	                                              test_iterator_temp6.future 
+	                                              test_iterator_temp6.good 
+	                                              test_iterator_temp7.chpl 
+	                                              test_iterator_temp7.future 
+	                                              test_iterator_temp7.good 
+
