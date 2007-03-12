@@ -95252,3 +95252,19 @@ Added files:
 	                                test_cgapb_loop.chpl 
 	                                test_cgapb_loop.good 
 
+---------------------------------------------------------------------------
+
+03/12/07 10:45:20 -- deitz
+
+Log message:
+	Reimplemented the sequence class to no longer use a linked list
+	implementation.  I did this to enable a simplified iterator
+	propagation optimization.  Before this change, the cursor of the
+	sequence was different than the cursor of the iterator class,
+	requiring that the cursor type of the iterator class be propagated
+	where necessary.  With this change, the cursor types are the same so
+	propagation of the cursor type will no longer be necessary.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+
