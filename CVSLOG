@@ -95234,3 +95234,21 @@ Added files:
 	chapel/test/types/enum/diten/: enumDom.chpl enumDom.future 
 	                               enumDom.good 
 
+---------------------------------------------------------------------------
+
+03/12/07 09:42:58 -- deitz
+
+Log message:
+	Added a new performance test suite cgapb which stands for "C gets A
+	plus B" where C, A, and B are 2D arrays.  The parameters are currently
+	set to 1024x1024 arrays.  There is one C version and two Chapel
+	versions.  The baseline Chapel version is succinct but requires
+	promotion.  The "_loop" Chapel version uses an explicit forall loop
+	with indexing.
+
+Added files:
+	chapel/test/performance/deitz/: test_cgapb.c test_cgapb.chpl 
+	                                test_cgapb.good 
+	                                test_cgapb_loop.chpl 
+	                                test_cgapb_loop.good 
+
