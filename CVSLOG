@@ -95296,3 +95296,13 @@ Modified files:
 Added files:
 	chapel/modules/standard/: SingleLocaleEnum.chpl 
 
+---------------------------------------------------------------------------
+
+03/12/07 13:57:27 -- diten
+
+Log message:
+	Fix a misspelling of "Indices".
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleEnum.chpl 
+
