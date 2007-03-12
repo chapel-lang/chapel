@@ -95306,3 +95306,92 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleEnum.chpl 
 
+---------------------------------------------------------------------------
+
+03/12/07 14:18:02 -- deitz
+
+Log message:
+	REGRESSION NOTE
+	
+	  arrays/deitz/promotion/test_scalar_promote_side_effect
+	
+	  Here the sequence temporary is eliminated but the promotion results
+	  in an iterator that READS a global variable and the iterator class
+	  is propagated into a function that WRITES to the global variable.
+	  We do not do any safety testing to ensure that iterator propagation
+	  can be applied.  There has also been some discussion as to what the
+	  semantics really should be.  This case is worth examining.
+	
+	PERFORMANCE HIGHLIGHT
+	
+	  Here are some initial results to the C=A+B test:
+	
+	  test_cgapb.c                               1.96 seconds
+	    -O3
+	  test_cgapb_loop.chpl (explicit indexing)  23.87 seconds
+	    --no-gc --no-bounds-checks --ccflags "-O3"
+	
+	  These times are consistent with my other performance test.  They
+	  show about an order of magnitude difference that can probably be
+	  isolated almost completely to the array access code with most of
+	  that being accounted for by the potential for strided arrays.
+	
+	  For test_cgapb.chpl (promotion), before this change, memory climbed
+	  too dramatically with the temporary sequence to use --no-gc.  With
+	  reference counting, the program timed out at over four minutes
+	  though did not run out of memory.  Also note that the explicit
+	  indexing version times out with reference counting as well.  After
+	  this change,
+	
+	  test_cgapb.chpl (promotion)               53.63 seconds
+	    --no-gc --no-bounds-checks --ccflags "-O3"
+	
+	  It is possible that overly complicated control flow accounts for the
+	  slowdown here.  I have several plans to eliminate the complication
+	  which I want to do regardless of whether it is the major culprit or
+	  not.
+	
+	Added support to clone a class or record if an iterator class is
+	captured into one of its fields as in the case of zipper iteration
+	where an iterator class is captured into a tuple record.  This
+	currently is only done one-deep meaning that zipper iteration of
+	zipper iteration will not yet work.
+	
+	Removed cursor propagation code since the cursor of an iterator class
+	is identical to the cursor of a sequence.
+	
+	Made the capture of iterator classes into variables as in
+	
+	  var x = foo();
+	
+	where foo is an iterator or
+	
+	  var x = A + B;
+	
+	where A and B are arrays always result in a sequence temporary since
+	otherwise the semantics of the program could be odd.  For example,
+	given code like
+	
+	  var T = A(APerm);
+	  A = T;
+	
+	requires that A(APerm) is captured into a temporary in order to give
+	the expected results since otherwise data dependencies would be
+	violated.
+	
+	Specialized the _pass function of sequences to not make a copy when
+	passing iterator classes via a pragma.  When scalar promotion results
+	in an array this specialization will not be necessary since arrays are
+	passed without making a copy in the usual case.
+	
+	Simplified the code in
+	functions/deitz/iterators/temps/test_iterator_temp4.chpl to not
+	capture an iterator in a variable since that now results in a
+	sequence temporary.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+	chapel/modules/standard/: ChapelSeq.chpl 
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp4.chpl 
+
