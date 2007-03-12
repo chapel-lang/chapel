@@ -1,37 +1,27 @@
-pragma "seqNode"
-pragma "special free seqNode"
-class _seqNode {
-  type eltType;
-
-  var _element : eltType;
-  var _next : _seqNode of eltType;
-}
-
 pragma "seq"
 record seq {
   type eltType;
-
-  var _length : int;
-  var _first : _seqNode of eltType;
-  var _last : _seqNode of eltType;
-
+  var _data: _ddata(eltType);
+  var _length: int;
+  var _capacity: int;
   var _promotionType : eltType;
+
+  def initialize() {
+    _capacity = 4;
+    _length = 0;
+    _data = _ddata(eltType, _capacity);
+    _data.init();
+  }
 
   def this(i : int) var {
     if i >= 0 {
       if i < 1 || i > length then
         halt("sequence index out of bounds: ", i);
-      var tmp = _first;
-      for j in 1..i-1 do
-        tmp = tmp._next;
-      return tmp._element;
+      return _data(i-1);
     } else {
       if -i > length then
         halt("sequence index out of bounds: ", -i);
-      var tmp = _first;
-      for j in 1..length+i do
-        tmp = tmp._next;
-      return tmp._element;
+      return _data(length+i);
     }
   }
 
@@ -44,16 +34,16 @@ record seq {
   }
 
   def getHeadCursor()
-    return _first;
+    return 0;
 
   def getNextCursor(c)
-    return c._next;
+    return c+1;
 
   def getValue(c)
-    return c._element;
+    return _data(c);
 
   def isValidCursor?(c)
-    return c != nil;
+    return c < length;
 
   def length : int
     return _length;
@@ -71,16 +61,22 @@ record seq {
   def _concat(s : seq)
     return this._copy()._concat_in_place(s);
 
+  def _grow() {
+    var d: _ddata(eltType);
+    d = _ddata(eltType, _capacity*2);
+    d.init();
+    for i in 0.._capacity-1 do
+      d(i) = _data(i);
+    _data = d;
+    _capacity = _capacity*2;
+  }
+
   def _append_in_place(e : eltType) {
-    var tmp = e;
-    var new = _seqNode(eltType, tmp);
-    if _length > 0 {
-      _last._next = new;
-      _last = new;
-    } else {
-      _first = new;
-      _last = new;
-    }
+    if _data == nil then // stopgap for sequence temporaries
+      initialize();
+    if _length == _capacity then
+      _grow();
+    _data(_length) = e;
     _length = _length + 1;
     return this;
   }
@@ -90,55 +86,36 @@ record seq {
   } 
 
   def _prepend_in_place(e : eltType) {
-    var tmp = e;
-    var new = _seqNode(eltType, tmp);
-    if _length > 0 {
-      new._next = _first;
-      _first = new;
-    } else {
-      _first = new;
-      _last = new;
-    }
+    if _length == _capacity then
+      _grow();
+    for i in 1.._length by -1 do
+      _data(i) = _data(i-1);
+    _data(0) = e;
     _length = _length + 1;
     return this;
   }
 
   def _concat_in_place(s : seq) {
-    if _length > 0 {
-      _last._next = s._first;
-      _last = s._last;
-      _length = _length + s._length;
-    } else {
-      _first = s._first;
-      _last = s._last;
-      _length = s._length;
-    }
+    for e in s do
+      _append_in_place(e);
     return this;
   }
 
   def _copy() {
     var new : seq of eltType;
-    var tmp = _first;
-    while tmp != nil {
-      new._append_in_place(tmp._element);
-      tmp = tmp._next;
-    }
+    for e in this do
+      new._append_in_place(e);
     return new;
   }
 
   def _delete() {
-    _first = nil;
-    _last = nil;
-    _length = 0;
+    initialize();
   }
 
   def _reverse() {
-    var new : seq of eltType;
-    var tmp = _first;
-    while (tmp != nil) {
-      new._prepend_in_place(tmp._element);
-      tmp  = tmp._next;    
-    }
+    var new: seq of eltType;
+    for e in this do
+      new._prepend_in_place(e);
     return new;     
   }
 }
@@ -177,13 +154,10 @@ def reverse(s : seq, dim : int = 1) {
 
 def seq.writeThis(f: Writer) {
   f.write("(/");
-  var tmp = _first;
-  while tmp != nil {
-    f.write(tmp._element);
-    tmp = tmp._next;
-    if tmp != nil {
+  for i in 0..length-1 {
+    f.write(_data(i));
+    if i != length-1 then
       f.write(", ");
-    }
   }
   f.write("/)");
 }
