@@ -95268,3 +95268,31 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelSeq.chpl 
 
+---------------------------------------------------------------------------
+
+03/12/07 12:43:55 -- diten
+
+Log message:
+	Add enumerated domains and arrays.  Enumerated domains and arrays are
+	currently implemented on top of indefinite domains/arrays.  Add a primitive
+	__primitive("isEnumType", t) which is true if t is an enum type or value.
+	Add default functions _enum_enumerate(type t) for each enum defined.  This
+	gives a sequence of all values in the enumeration.
+	
+	Still can't pass the test/npb/cg/bradc/cg-enumDomArr future due to a problem
+	where the enum type gets changed to int(8) in "for (i,j) in (a.domain,s) do"
+	where "a" has an enumerated domain.  If one instance of that for loop gets
+	changed to "for (j,i) in (s,a.domain) do" in a standard module, then this
+	test passes.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelStandard.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/types/enum/diten/: enumDom.chpl 
+Added files:
+	chapel/modules/standard/: SingleLocaleEnum.chpl 
+
