@@ -36,8 +36,7 @@ iterator makea() {
   const nonzerMax = 16,
         naMax = 150000;
   var v: [1..nonzerMax] real,    // BLC: insert domains? or grow as necessary?
-      iv: [1..nonzerMax] int,
-      nzloc: [1..nonzerMax] int;
+      iv: [1..nonzerMax] int;
   
   var size = 1.0;
   const ratio = rcond ** (1.0 / n);
@@ -47,15 +46,15 @@ iterator makea() {
   for iouter in 1..n {
     var nzv = nonzer;
 
-    sprnvc(n, nzv, v, iv, nzloc, randStr);
+    sprnvc(n, nzv, v, iv, randStr);
     vecset(n, v, iv, nzv, iouter, 0.50);
 
-    // BLC: replace with loop over iv or iv(1..nzv)?
+    // BLC: replace with zippered loop over iv or iv(1..nzv)?
     for ivelt in 1..nzv {
       const jcol = iv(ivelt),
             scale = size * v(ivelt);
 
-      // BLC: replace with loop over iv or iv(1..nzv)?
+      // BLC: replace with zippered loop over iv or iv(1..nzv)?
       for ivelt1 in 1..nzv {
         const irow = iv(ivelt1);
 
@@ -71,15 +70,14 @@ iterator makea() {
 }
 
 
-def sprnvc(n, nz, v, iv, nzloc, randStr) {
+def sprnvc(n, nz, v, iv, randStr) {
   const zeta = randStr.getFirst();
 
   const nn1 = log2(n);
 
   var indSpace: domain(int);
 
-  var nzv = 0,
-      nzrow = 0;
+  var nzv = 0;
 
   while (nzv < nz) {
     do {
@@ -87,8 +85,6 @@ def sprnvc(n, nz, v, iv, nzloc, randStr) {
             i = (randStr.getNext() * nn1):int + 1;
       if (i <= n && !indSpace.member?(i)) {
         indSpace += i;
-        nzrow += 1;
-        nzloc(nzrow) = i;
         nzv += 1;
         v(nzv) = vecelt;
         iv(nzv) = i;
