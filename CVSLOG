@@ -95602,3 +95602,23 @@ Added files:
 Removed files:
 	chapel/test/npb/cg/bradc/: cg-makea.notest 
 
+---------------------------------------------------------------------------
+
+03/13/07 15:04:18 -- bradc
+
+Log message:
+	Removed some dead variables that my previous change
+	eliminated the need for.
+	
+	Also, forgot to mention in the previous log message:
+	the last three versions of this code have all "worked"
+	(generated consistent answers, though maybe not the
+	official NAS data yet), though I only remembered to
+	remove the .notest file last time around.
+	
+	Sorry for the disjointed nature of these messages.
+	Still trying to listen to talks with half an ear.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+
