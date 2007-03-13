@@ -92,3 +92,81 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
 
   return (Z, rnorm);
 }
+
+
+iterator makea() {
+  const tran = 314159265.0,
+        amult = 1220703125.0,
+        zeta = randlc(tran, amult);
+
+  var mark: [1..naMax] uint(8);
+  
+  var size = 1.0,
+      ratio = rcond**(1.0/n),
+      nnza = 0;
+
+  for iouter in 1..n {
+    const nzv = nonzer;
+
+    sprnvc(n, nzv, v, iv, nzloc, mark);
+    vecset(n, v, iv, nzv, iouter, 0.50);
+
+    for ivelt in 1..nzv {
+      jcol = iv[ivelt];
+      scale = size * v[ivelt];
+      for ivelt1 in 1..nzv {
+        irow = iv[ivelt1];
+
+        yield ((irow, jcol), v[ivelt1]*scale);
+     }
+     size *= ratio;
+  }
+
+  for i in 1..n {
+    yield ((i, i), rcond - shift);
+  }
+}
+
+
+def sprnvc(n, nz, v, iv, nzloc, mark) {
+  const nn1 = lg2(n);
+
+  var nzv = 0,
+      nzrow = 0;
+
+  while (nzv < nz) {
+    do {
+      vecelt = randlc(tran, amult);
+      i = icnvrt(randlc(tran, amult), nn1) + 1;
+    } while (!(i <= n));
+    if (mark[i - 1] == 0) {
+      mark[i - 1] = 1;
+      nzrow += 1;
+      nzloc[nzrow = 1] = i;
+      nzv += 1;
+      v[nzv - 1] = vecelt;
+      iv[nzv - 1] = i;
+    }
+  }
+  {
+    int stop1 = nzrow;
+    for i in 1..stop1 do
+      mark[nzloc[i-1] - 1] = 0;
+  }
+}
+
+
+def vecset(n, v, iv, nzv, i, val) {
+  var set = false;
+  for k in 1..nzv {
+    if (iv[k - 1] == i) {
+      v[k - 1] = val;
+      set = true;
+    }
+  }
+  if (!set) {
+    nzv += 1;
+    v[nzv - 1] = val;
+    iv[nzv - 1] = i;
+  }
+}
