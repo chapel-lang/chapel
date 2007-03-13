@@ -33,9 +33,8 @@ def main() {
 
 
 iterator makea() {
-  const nonzerMax = 16;
-  var v: [1..nonzerMax] real,    // BLC: insert domains? or grow as necessary?
-      iv: [1..nonzerMax] int;
+  var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
+      iv: [1..nonzer+1] int;
   
   var size = 1.0;
   const ratio = rcond ** (1.0 / n);
