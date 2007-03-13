@@ -95482,3 +95482,18 @@ Removed files:
 	chapel/test/functions/deitz/iterators/temps/: 
 	                                              test_iterator_temp7.future 
 
+---------------------------------------------------------------------------
+
+03/13/07 10:43:17 -- deitz
+
+Log message:
+	Refactored lowerIterators to use a class to keep track of the lowered
+	iterator information (the functions and class). This is important to
+	separate the lowering of the iterator from its propagation. By
+	lowering all iterators first, there is a better chance of propagating
+	one iterator into another as in promotion of promotion. Updated
+	comments to reflect what still needs to be handled.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
