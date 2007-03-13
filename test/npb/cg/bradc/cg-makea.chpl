@@ -33,8 +33,7 @@ def main() {
 
 
 iterator makea() {
-  const nonzerMax = 16,
-        naMax = 150000;
+  const nonzerMax = 16;
   var v: [1..nonzerMax] real,    // BLC: insert domains? or grow as necessary?
       iv: [1..nonzerMax] int;
   
@@ -47,7 +46,7 @@ iterator makea() {
     var nzv = nonzer;
 
     sprnvc(n, nzv, v, iv, randStr);
-    vecset(n, v, iv, nzv, iouter, 0.50);
+    vecset(v, iv, nzv, iouter, 0.50);
 
     // BLC: replace with zippered loop over iv or iv(1..nzv)?
     for ivelt in 1..nzv {
@@ -75,26 +74,22 @@ def sprnvc(n, nz, v, iv, randStr) {
 
   const nn1 = log2(n);
 
-  var indSpace: domain(int);
+  var indices: domain(int);
 
-  var nzv = 0;
-
-  while (nzv < nz) {
+  for nzv in 1..nz {
+    var vecelt: real, i: int;
     do {
-      const vecelt = randStr.getNext(),
-            i = (randStr.getNext() * nn1):int + 1;
-      if (i <= n && !indSpace.member?(i)) {
-        indSpace += i;
-        nzv += 1;
-        v(nzv) = vecelt;
-        iv(nzv) = i;
-      }
-    } while (!(i <= n));
+      vecelt = randStr.getNext();
+      i = (randStr.getNext() * nn1):int + 1;
+    } while (i > n || indices.member?(i));
+    indices += i;
+    v(nzv) = vecelt;
+    iv(nzv) = i;
   }
 }
 
 
-def vecset(n, v, iv, inout nzv, i, val) {
+def vecset(v, iv, inout nzv, i, val) {
   var set = false;
   for k in 1..nzv {
     if (iv(k) == i) {
