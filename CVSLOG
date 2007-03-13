@@ -95546,3 +95546,40 @@ Log message:
 Modified files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl 
 
+---------------------------------------------------------------------------
+
+03/13/07 14:47:43 -- diten
+
+Log message:
+	Add a new option -set (short -s) that sets config param variables.  It is
+	used as "-s name=value" or "-s name".  The first form sets "name" to "value",
+	and the second form assumes "name" is of type bool and toggles its value.
+	
+	Setting a config param string with -s is not yet working.  Also, currently,
+	both config and non-config params of types more complicated than int fail to
+	compile if a type is explicitly given: "param r: real = 3.14;".
+	
+	Add test configparam.chpl which uses -s to set a few config param variables.
+	Add future configparam_nonint.chpl which shows the problem with explicitly
+	setting the type of param variables.
+	Add future configparam_string.chpl which shows a segmentation fault when
+	trying to set a config param string via -s.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/compflags/diten/: configparam.chpl 
+	                              configparam.compopts 
+	                              configparam.good 
+	                              configparam_nonint.chpl 
+	                              configparam_nonint.compopts 
+	                              configparam_nonint.future 
+	                              configparam_nonint.good 
+	                              configparam_string.chpl 
+	                              configparam_string.compopts 
+	                              configparam_string.future 
+	                              configparam_string.good 
+
