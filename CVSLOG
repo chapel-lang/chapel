@@ -95633,3 +95633,15 @@ Log message:
 Modified files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl 
 
+---------------------------------------------------------------------------
+
+03/13/07 15:31:44 -- bradc
+
+Log message:
+	Removed (outdated) magic number.  This is probably my
+	last change for today.  Should pay attention from here
+	on out.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+
