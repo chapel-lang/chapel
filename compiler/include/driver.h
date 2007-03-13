@@ -4,8 +4,11 @@
 #define _driver_H_
 
 #include <stdio.h>
+#include "map.h"
 
 extern FILE* html_index_file;
+
+extern Map<char*, char*> configParamMap;
 
 extern int instantiation_limit;
 

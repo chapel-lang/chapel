@@ -782,6 +782,17 @@ convert_string_to_immediate(char *str, Immediate *imm) {
       break;
     case NUM_KIND_UINT: {
       switch (imm->num_index) {
+        case INT_SIZE_1:
+          if (!strcmp(str, "false")) {
+            imm->v_bool = false;
+          } else if (!strcmp(str, "true")) {
+            imm->v_bool = true;
+          } else if (str[0] == '\0') {
+            imm->v_bool = !imm->v_bool;
+          } else {
+            INT_FATAL("Bad bool value");
+          }
+          break;
         case INT_SIZE_8: 
           if (str[0] != '\'')
             imm->v_uint8 = strtoul(str, 0, 10);

@@ -450,7 +450,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert code to initialize config variable from the command line
   //
-  if (var->varClass == VAR_CONFIG) {
+  if (var->varClass == VAR_CONFIG && var->consClass != VAR_PARAM) {
     Expr* noop = new CallExpr(PRIMITIVE_NOOP);
     ModuleSymbol* module = var->getModule();
     stmt->insertAfter(
@@ -467,6 +467,22 @@ fix_def_expr(VarSymbol* var) {
                          new_StringSymbol(var->name),
                          new_StringSymbol(module->name))))));
     stmt = noop; // insert regular definition code in then block
+  }
+  if (var->varClass == VAR_CONFIG && var->consClass == VAR_PARAM) {
+    if (char* value = configParamMap.get(canonicalize_string(var->name))) {
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(init)) {
+        if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(symExpr->var)) {
+          if (varSymbol->immediate) {
+            Immediate* imm = new Immediate();
+            imm->const_kind = varSymbol->immediate->const_kind;
+            imm->num_index = varSymbol->immediate->num_index;
+            convert_string_to_immediate(value, imm);
+            init->replace(new SymExpr(new_ImmediateSymbol(imm)));
+            init = var->defPoint->init;
+          }
+        }
+      }
+    }
   }
 
   if (type) {

@@ -20,6 +20,7 @@ static void printCopyrightAndExit(ArgumentState *arg_state, char *arg_unused);
 static void printLicenseAndExit(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
+static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
@@ -51,6 +52,8 @@ int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
 bool parallelPass = true;
+char configParamString[FILENAME_MAX] = "";
+Map<char*, char*> configParamMap;
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', "Compilation Traces", NULL, NULL, NULL, NULL},
@@ -84,6 +87,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"chplhome", ' ', "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', "Compile as developer", "F", &developer, "CHPL_DEVELOPER", NULL},
+ {"set", 's', "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, printVersionAndExit},
@@ -113,6 +117,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-scalar-replace-array-wrappers", ' ', "Generate explicit array wrappers", "F", &fDisableScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
  {0}
 };
+
 
 static ArgumentState arg_state = {
   0, 0,
@@ -200,6 +205,33 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
   clean_exit(status);
 }
+
+
+static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
+  // Expect arg_unused to b a string of either of these forms:
+  // 1. name=value -- set the config param "name" to "value"
+  // 2. name       -- set the boolean config param "name" to NOT("name")
+  //                  if name is not type bool, set it to 0.
+
+  char *name = stringcpy(arg_unused);
+  char *value;
+  value = strstr(name, "=");
+  if (value) {
+    *value = '\0';
+    value++;
+    if (value[0]) {
+      // arg_unused was name=value
+      configParamMap.put(canonicalize_string(name), value);
+    } else {
+      // arg_unused was name=  <blank>
+      USR_FATAL("Missing config param value");
+    }
+  } else {
+    // arg_unused was just name
+    configParamMap.put(canonicalize_string(name), "");
+  }
+}
+
 
 int
 main(int argc, char *argv[]) {
