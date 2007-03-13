@@ -95583,3 +95583,22 @@ Added files:
 	                              configparam_string.future 
 	                              configparam_string.good 
 
+---------------------------------------------------------------------------
+
+03/13/07 14:51:18 -- bradc
+
+Log message:
+	Nice mod to previous version in which I replaced a
+	large (150,000) element array that probably stores
+	~16 nonzero elements at a time with an enumerated
+	domain.  A sparse domain could also be used, once
+	implemented.  Given its use, I think either is
+	equally attractive.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-makea.good 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea.notest 
+
