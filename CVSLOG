@@ -95622,3 +95622,14 @@ Log message:
 Modified files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl 
 
+---------------------------------------------------------------------------
+
+03/13/07 15:24:48 -- bradc
+
+Log message:
+	More dead variable elimination and some simplification
+	to tangled control flow in sprnvc().
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+
