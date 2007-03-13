@@ -95515,3 +95515,18 @@ Added files:
 	                                              test_iterator_temp8.future 
 	                                              test_iterator_temp8.good 
 
+---------------------------------------------------------------------------
+
+03/13/07 11:50:27 -- bradc
+
+Log message:
+	Checking in some CG iterator code that was in-progress a few
+	weeks ago so that I can work on it on my laptop during the
+	snoozy hardware talks.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea.notest 
+	                           cg-makea2.chpl cg-makea2.notest 
+
