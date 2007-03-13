@@ -75,6 +75,17 @@ propagateIteratorType(Symbol* sym,
                       IteratorInfo* ii,
                       Vec<CallExpr*>* context = NULL);
 
+static int
+getFieldNum(ClassType* ct, Symbol* field) {
+  int f = 1;
+  for_fields(cf, ct) {
+    if (cf == field)
+      return f;
+    f++;
+  }
+  return 0;
+}
+
 static void
 propagateIteratorTypeViaField(Symbol* base,
                               Symbol* member,
@@ -91,23 +102,17 @@ propagateIteratorTypeViaField(Symbol* base,
 
     if (parent->isPrimitive(PRIMITIVE_SET_MEMBER)) {
       SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
-      int f = 1;
-      for_fields(field, oldBaseType) {
-        if (field == parentMember->var)
-          break;
-        f++;
-      }
+      int f = getFieldNum(oldBaseType, parentMember->var);
+      if (f == 0)
+        INT_FATAL(parent, "invalid member access in iterator propagation");
       parentMember->var = newBaseType->getField(f);
     }
 
     if (parent->isPrimitive(PRIMITIVE_GET_MEMBER)) {
       SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
-      int f = 1;
-      for_fields(field, oldBaseType) {
-        if (field == parentMember->var)
-          break;
-        f++;
-      }
+      int f = getFieldNum(oldBaseType, parentMember->var);
+      if (f == 0)
+        INT_FATAL(parent, "invalid member access in iterator propagation");
       parentMember->var = newBaseType->getField(f);
       if (parentMember->var != newMember)
         continue;
@@ -290,6 +295,7 @@ requiresSequenceTemporary(Symbol* sym,
 
 static bool
 requiresSequenceTemporaryViaField(CallExpr* setCall, Symbol* base, Symbol* member, IteratorInfo* ii, Vec<CallExpr*>* context = NULL) {
+  ClassType* oldBaseType = dynamic_cast<ClassType*>(base->type);
   if (base->defs.n > 1)
     return true;
   forv_Vec(SymExpr, se, base->uses) {
@@ -300,21 +306,25 @@ requiresSequenceTemporaryViaField(CallExpr* setCall, Symbol* base, Symbol* membe
       continue;
     if (parent->isPrimitive(PRIMITIVE_SET_MEMBER)) {
       SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
-      if (parentMember->var != member)
+      int f = getFieldNum(oldBaseType, parentMember->var);
+      if (f != 0 && parentMember->var != member)
         continue;
     }
     if (parent->isPrimitive(PRIMITIVE_GET_MEMBER)) {
       SymExpr* parentMember = dynamic_cast<SymExpr*>(parent->get(2));
-      if (parentMember->var != member)
+      int f = getFieldNum(oldBaseType, parentMember->var);
+      if (f != 0 && parentMember->var != member)
         continue;
-      if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
-        if (move->isPrimitive(PRIMITIVE_MOVE) ||
-            move->isPrimitive(PRIMITIVE_REF)) {
-          SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
-          if (!lhs)
-            INT_FATAL("unexpected case");
-          if (!requiresSequenceTemporary(lhs->var, ii, context))
-            continue;
+      if (f != 0) {
+        if (CallExpr* move = dynamic_cast<CallExpr*>(parent->parentExpr)) {
+          if (move->isPrimitive(PRIMITIVE_MOVE) ||
+              move->isPrimitive(PRIMITIVE_REF)) {
+            SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+            if (!lhs)
+              INT_FATAL("unexpected case");
+            if (!requiresSequenceTemporary(lhs->var, ii, context))
+              continue;
+          }
         }
       }
     }
