@@ -95530,3 +95530,19 @@ Added files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea.notest 
 	                           cg-makea2.chpl cg-makea2.notest 
 
+---------------------------------------------------------------------------
+
+03/13/07 14:39:12 -- bradc
+
+Log message:
+	This is a program I've been working on that tries to generate the CG
+	random matrix using iterators.
+	
+	Made some edits to this since my last checkin to get it compiling and
+	executing.  Haven't yet done a comparison against the NAS CG
+	implementation to see if it's generating the same random indices and
+	values, but it is running and generating random indices and values.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+
