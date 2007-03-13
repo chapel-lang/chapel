@@ -95497,3 +95497,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+03/13/07 11:50:20 -- deitz
+
+Log message:
+	Inserted a necessary guard against recursively cloning records since
+	iterator propagation does not recursively clone records yet. Added a
+	test that requires a record of a record to be cloned as a .future
+	since two temporary sequences are inserted currently.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+Added files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp8.chpl 
+	                                              test_iterator_temp8.future 
+	                                              test_iterator_temp8.good 
+
