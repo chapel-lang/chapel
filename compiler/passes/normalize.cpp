@@ -473,10 +473,13 @@ fix_def_expr(VarSymbol* var) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(init)) {
         if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(symExpr->var)) {
           if (varSymbol->immediate) {
-            Immediate* imm = new Immediate();
-            imm->const_kind = varSymbol->immediate->const_kind;
-            imm->num_index = varSymbol->immediate->num_index;
-            convert_string_to_immediate(value, imm);
+            Immediate* imm;
+            if (varSymbol->immediate->const_kind == CONST_KIND_STRING) {
+              imm = new Immediate(value);
+            } else {
+              imm = new Immediate(*varSymbol->immediate);
+              convert_string_to_immediate(value, imm);
+            }
             init->replace(new SymExpr(new_ImmediateSymbol(imm)));
             init = var->defPoint->init;
           }

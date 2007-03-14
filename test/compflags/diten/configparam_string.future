@@ -1,1 +1,0 @@
-Setting a config param string with -s causes segmentation fault. (diten)

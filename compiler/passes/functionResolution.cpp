@@ -1732,6 +1732,25 @@ preFold(Expr* expr) {
                 coerce_immediate(var->immediate, &coerce);
                 result = new SymExpr(new_ImmediateSymbol(&coerce));
                 call->replace(result);
+              } else {
+                // Check for and remove casts to the original type and size
+                VarSymbol* typevar = dynamic_cast<VarSymbol*>(dst->defaultValue);
+                if (!typevar || !typevar->immediate)
+                  INT_FATAL("unexpected case in cast_fold");
+                Immediate* dstImm = typevar->immediate;
+                Immediate* srcImm = var->immediate;
+
+                if ((is_real_type(src) && is_real_type(dst)) ||
+                    (is_imag_type(src) && is_imag_type(dst)) ||
+                    (is_complex_type(src) && is_complex_type(dst))) {
+                  if (dstImm->num_index == srcImm->num_index) {
+                    result = new SymExpr(new_ImmediateSymbol(srcImm));
+                    call->replace(result);
+                  }
+                } else if ((dst == dtString && src == dtString)) {
+                  result = new SymExpr(new_ImmediateSymbol(srcImm));
+                  call->replace(result);
+                }
               }
             }
           }

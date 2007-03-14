@@ -37,6 +37,7 @@ Miscellaneous Flags:
       --instantiate-max   256       int      Limit number of instantiations
       --chplhome          .         path     Over-ride $CHPL_HOME
       --devel             false     ->true   Compile as developer
+  -s, --set               (null)    string   Set config param value
 
 Compiler Information:
 ---------------------
