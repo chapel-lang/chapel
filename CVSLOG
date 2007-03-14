@@ -95738,3 +95738,14 @@ Modified files:
 	chapel/modules/standard/: Random.chpl 
 	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea.good 
 
+---------------------------------------------------------------------------
+
+03/14/07 16:41:32 -- bradc
+
+Log message:
+	Tiny change.  In preparing for MS2, I noticed that we did
+	not mention the STATUS file in the top-level README.
+
+Modified files:
+	./: README 
+
