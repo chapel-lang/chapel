@@ -95645,3 +95645,44 @@ Log message:
 Modified files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl 
 
+---------------------------------------------------------------------------
+
+03/14/07 10:25:24 -- deitz
+
+Log message:
+	Added an _init function for all enumerated types in
+	buildDefaultFunctions. This fixes a bug best illustrated in the new
+	test types/enum/deitz/test_enum7.chpl. Without this _init function,
+	the _init function for int(8) was selected by function resolution via
+	a coercion.
+	
+	Fixed a bug in expanding tuples via (...x) syntax within a tuple
+	construction as in ((...xs), x). This idiom allows a new tuple to be
+	constructed that contains the components of tuple xs and the new value
+	x creating a tuple of size one more than xs. Since the tuple
+	constructor call was generated in the parser before the expansion
+	tuple was expanded in function resolution, the parameter size of the
+	tuple was set incorrectly. This is now fixed during the tuple
+	expansion. This bug is best illustrated in the new test
+	domains/deitz/test_enum_domain1.chpl but would have shown up for any
+	attempt to zipper together three or more entities, something I reckon
+	has never been done before.
+	
+	Removed three .futures. Fixed arrays/bradc/enumarray2.chpl which
+	attempted to assign an arithmetic domain to an enumerated
+	domain. Removing this assignment fixes this test.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: SingleLocaleEnum.chpl 
+	chapel/test/arrays/bradc/: enumarray2.chpl 
+Added files:
+	chapel/test/domains/deitz/: test_enum_domain1.chpl 
+	                            test_enum_domain1.good 
+	chapel/test/types/enum/deitz/: test_enum7.chpl test_enum7.good 
+Removed files:
+	chapel/test/arrays/bradc/: enumarray2.future 
+	chapel/test/npb/cg/bradc/: cg-enumDomArr.future 
+	chapel/test/types/enum/diten/: enumDom.future 
+
