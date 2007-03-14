@@ -40,6 +40,7 @@ iterator makea() {
   const ratio = rcond ** (1.0 / n);
 
   var randStr = RandomStream(314159265);
+  randStr.getNext(); // BLC -- necessary?  Correct?
 
   for iouter in 1..n {
     var nzv = nonzer;
@@ -69,8 +70,6 @@ iterator makea() {
 
 
 def sprnvc(n, nz, v, iv, randStr) {
-  const zeta = randStr.getFirst();
-
   const nn1 = log2(n);
 
   var indices: domain(int);

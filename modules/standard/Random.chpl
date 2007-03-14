@@ -13,13 +13,28 @@ class RandomStream {
   const seed:int(64) = SeedGenerator.clockMS; 
   const arand = 1220703125.0;
 
+  var cursorVal: real;
+
   def initialize() {
     if (seed % 2 == 1) then
       seed += 1;
+    cursorVal = initrandlc(1);
   }
 
 
-  var numGenerated = 0;
+  def initrandlc(in n : int) : real {
+    var i : int, t : real, g : real;
+    var x  = seed:real;
+    t = arand;
+    while n != 0 do {
+      i = n / 2;
+      if 2 * i != n then
+        (x, g) = nextrandlc(x, t);
+      (t, g) = nextrandlc(t, t);
+      n = i;
+    }
+    return x;
+  }
 
   def nextrandlc(x : real, a: real = arand) {
     const
@@ -42,36 +57,23 @@ class RandomStream {
     return (x3, r46 * x3);
   }
 
-  def initrandlc(in n : int) : real {
-    var i : int, t : real, g : real;
-    var x  = seed:real;
-    t = arand;
-    while n != 0 do {
-      i = n / 2;
-      if 2 * i != n then
-        (x, g) = nextrandlc(x, t);
-      (t, g) = nextrandlc(t, t);
-      n = i;
-    }
-    return x;
+  def getNext() {
+    var retVal: real;
+
+    (cursorVal, retVal) = nextrandlc(cursorVal);
+    return retVal;
   }
 
   def fillRandom(x:[?D] real) {
-
-    var randlc_last_x: real = initrandlc(numGenerated+1);
     for i in D {
-      (randlc_last_x,x(i)) = nextrandlc(randlc_last_x);    
-      numGenerated += 1;
+      (cursorVal,x(i)) = nextrandlc(cursorVal);    
     }
   }
 
   def fillRandom(x:[?D] complex) {
-
-    var randlc_last_x: real = initrandlc(numGenerated+1);
     for i in D {
-      (randlc_last_x,x(i).re) = nextrandlc(randlc_last_x);    
-      (randlc_last_x,x(i).im) = nextrandlc(randlc_last_x);    
-      numGenerated += 2;
+      (cursorVal,x(i).re) = nextrandlc(cursorVal);    
+      (cursorVal,x(i).im) = nextrandlc(cursorVal);    
     }
   }
 }
