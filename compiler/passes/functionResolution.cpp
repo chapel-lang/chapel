@@ -1287,6 +1287,7 @@ resolveCall(CallExpr* call) {
     }
     if (size == 0)
       INT_FATAL(call, "Invalid tuple expand primitive");
+    CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
     CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
     call->getStmtExpr()->insertBefore(noop);
     for (int i = 1; i <= size; i++) {
@@ -1301,6 +1302,10 @@ resolveCall(CallExpr* call) {
     call->remove();
     noop->replace(call); // put call back in ast for function resolution
     makeNoop(call);
+    // increase tuple rank
+    if (parent && parent->isNamed("_construct__tuple")) {
+      parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->argList->length()-1)));
+    }
   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
     Type* t= call->get(1)->typeInfo();
     if (t == dtUnknown)

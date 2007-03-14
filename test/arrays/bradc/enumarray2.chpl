@@ -1,6 +1,6 @@
 enum classVals { S, W, A, B, C, D, O };
 
-var DClass: domain(classVals) = [S..O];
+var DClass: domain(classVals);
 
 var probSize: [DClass] int;
 

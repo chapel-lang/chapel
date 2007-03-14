@@ -21,6 +21,7 @@ static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
+static void build_enum_init_function(EnumType* et);
 
 static void buildDefaultReadFunction(ClassType* type);
 static void buildDefaultReadFunction(EnumType* type);
@@ -76,6 +77,7 @@ void buildDefaultFunctions(void) {
         }
       }
       if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+        build_enum_init_function(et);
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
         build_enum_enumerate_function(et);
@@ -381,6 +383,21 @@ static void build_enum_cast_function(EnumType* et) {
 
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   def = new DefExpr(fn);
+  et->symbol->defPoint->insertBefore(def);
+  reset_file_info(def, et->symbol->lineno, et->symbol->filename);
+  normalize(fn);
+}
+
+
+static void build_enum_init_function(EnumType* et) {
+  if (function_exists("_init", 1, et->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("_init");
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
+  fn->insertFormalAtTail(arg1);
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, dynamic_cast<DefExpr*>(et->constants->first())->sym));
+  DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   normalize(fn);

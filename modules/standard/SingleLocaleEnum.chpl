@@ -1,6 +1,5 @@
 class SingleLocaleEnumDomain: BaseDomain {
   type ind_type;
-  var _arrs2: seq(BaseArray);
   var adomain: SingleLocaleAssociativeDomain(ind_type=ind_type);
 
   def initialize() {
@@ -9,10 +8,10 @@ class SingleLocaleEnumDomain: BaseDomain {
       adomain.add(i);
   }
 
-  def getIndices() return this;
+  def getIndices() return adomain;
 
-  def setIndices(b: SingleLocaleEnumDomain) {
-    adomain.setIndices(b.adomain);
+  def setIndices(b: SingleLocaleAssociativeDomain) {
+    adomain.setIndices(b);
   }
 
   def getHeadCursor() {
@@ -44,7 +43,6 @@ class SingleLocaleEnumDomain: BaseDomain {
 
   def buildArray(type eltType) {
     var ia = SingleLocaleEnumArray(eltType, ind_type, dom=this);
-    _arrs2 #= ia;
     return ia;
   }
 }

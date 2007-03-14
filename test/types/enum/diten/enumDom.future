@@ -1,9 +1,0 @@
-deitz - Problem with iterator?
-
-The third for-loop should produce identical output to the fourth.  Instead,
-the enum values from the domain are converted to int(8).  This loss of
-type only appears to happen with enums.
-
-This also appears to show a problem in scalarReplace, it causes a compiler
-abort that goes away with --no-scalar-replace-array-wrappers.
-
