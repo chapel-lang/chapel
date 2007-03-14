@@ -95686,3 +95686,26 @@ Removed files:
 	chapel/test/npb/cg/bradc/: cg-enumDomArr.future 
 	chapel/test/types/enum/diten/: enumDom.future 
 
+---------------------------------------------------------------------------
+
+03/14/07 15:40:43 -- diten
+
+Log message:
+	Add support for config param string, real, and imag.  For string, special-case
+	it to use a different Immediate() constructor than the others. For the others,
+	remove casts where the result type and size are the same as the original type
+	and size.
+	
+	Update my simple config param test to test more types.
+	Update the userhelp test to reflect the new command line argumenti -s/-set.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.txt 
+	chapel/test/compflags/diten/: configparam.chpl 
+	                              configparam.compopts 
+	                              configparam.good 
+Removed files:
+	chapel/test/compflags/diten/: configparam_nonint.future 
+	                              configparam_string.future 
+
