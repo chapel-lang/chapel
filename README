@@ -67,6 +67,7 @@ For more detailed information about...      refer to...
   ...setting up your environment              ...doc/README.chplenv
   ...using the compiler                       ...doc/README.compiling
   ...executing Chapel programs                ...doc/README.executing
+  ...implementation status                    ...STATUS
   ...reporting bugs                           ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
