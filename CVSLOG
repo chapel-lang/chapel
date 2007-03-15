@@ -95797,3 +95797,28 @@ Added files:
 	                                 piVals1a.good piVals2.chpl 
 	                                 piVals2.good 
 
+---------------------------------------------------------------------------
+
+03/15/07 14:58:21 -- deitz
+
+Log message:
+	Disabled folding of casts to reals (except of course from reals of the
+	same size).
+	
+	Removed a .future.
+	
+	Changed the output to a test of the line
+	
+	  param x : real = 1;
+	
+	since coercion 1 to a real is no longer folded and thus x is assigned
+	a non-parameter value.  This gets the fairly good feedback:
+	
+	  error: Initializing parameter 'x' to value not known at compile time
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/deitz/: test_coerce_param.good 
+Removed files:
+	chapel/test/types/scalar/bradc/: piVals.future 
+
