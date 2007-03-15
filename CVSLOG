@@ -95749,3 +95749,15 @@ Log message:
 Modified files:
 	./: README 
 
+---------------------------------------------------------------------------
+
+03/15/07 10:16:54 -- deitz
+
+Log message:
+	Collapsed the tuple of integers orig into a single integer orig in the
+	SingleLocaleArithmeticArray class. This optimization results in a 1.7%
+	improvement to the test_for2d performance test.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+
