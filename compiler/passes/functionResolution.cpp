@@ -1721,7 +1721,7 @@ preFold(Expr* expr) {
             if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
               Type* src = var->type;
               Type* dst = sym->var->type;
-              if (!is_real_type(src) &&
+              if (!is_real_type(dst) && !is_real_type(src) &&
                   !is_imag_type(dst) && !is_imag_type(src) &&
                   !is_complex_type(dst) && !is_complex_type(src) &&
                   dst != dtString && src != dtString) {
