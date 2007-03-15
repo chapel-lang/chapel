@@ -187,7 +187,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   var off: rank*dim_type;
   var blk: rank*dim_type;
   var str: rank*int;
-  var orig: rank*dim_type;
+  var orig: dim_type;
   var size : dim_type;
   var data : _ddata(eltType);
   var noinit: bool = false;
@@ -209,11 +209,11 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param dim in 1..rank {
       off(dim) = dom(dim)._low;
       str(dim) = dom(dim)._stride;
-      orig(dim) = 0:dim_type;
     }
     blk(rank) = 1:dim_type;
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
+    orig = 0:dim_type;
     size = blk(1) * dom(1).length;
     data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
@@ -229,7 +229,8 @@ class SingleLocaleArithmeticArray: BaseArray {
           halt("array index out of bounds: ", ind);
     var sum : dim_type;
     for param i in 1..rank do
-      sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - orig(i);
+      sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type;
+    sum = sum - orig;
     return data(sum:int); // !!ahh
   }
 
@@ -246,7 +247,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.off(i) = d(i)._low;
       alias.blk(i) = blk(i) * (dom(i)._stride / str(i));
       alias.str(i) = d(i)._stride;
-      alias.orig(i) = orig(i) + (off(i) - dom(i)._low) * blk(i);
+      alias.orig = orig + (off(i) - dom(i)._low) * blk(i);
     }
     return alias;
   }
@@ -271,8 +272,8 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.off(i) = off(i);
       alias.blk(i) = blk(i);
       alias.str(i) = str(i);
-      alias.orig(i) = orig(i);
     }
+    alias.orig = orig;
     return alias;
   }
 
