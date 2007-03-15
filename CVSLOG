@@ -95761,3 +95761,39 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+03/15/07 11:13:03 -- bradc
+
+Log message:
+	A subtle and difficult to track down bug is shown in
+	piVals.chpl.  From the future:
+	
+	In the generated C code, this test emits a floating point
+	literal value for the initialization of x that does not
+	have sufficient precision -- the last several digits are
+	truncated.  This does not show up in general because our
+	default floating point output truncates the output similarly
+	and we have no way of adding more precision.  Thus, the error
+	only occurs when math is performed on the value that reveals
+	the missing precision, as demonstrated here by the subtraction
+	of the upper digits.
+	
+	The strange thing is seen in piVals1a.chpl, which demonstrates
+	that if a floating point parameter value of the appropriate
+	magnitude is used, the original code suddenly works.  My guess
+	is that this may be due to our hashing on literal values, but
+	that's only a guess.
+	
+	piVals2.chpl is meant to show that there is sufficient precision
+	to do the original operation.
+	
+	I hope that this is a bug and not some weird corner case in the
+	language semantics that I don't understand.
+
+Added files:
+	chapel/test/types/scalar/bradc/: piVals.chpl piVals.future 
+	                                 piVals.good piVals1a.chpl 
+	                                 piVals1a.good piVals2.chpl 
+	                                 piVals2.good 
+
