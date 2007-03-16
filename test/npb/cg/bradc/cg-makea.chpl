@@ -5,8 +5,7 @@ enum classVals {S, W, A, B, C, D, O};
 
 config const probClass = S;
 
-//const Class: domain(classVals) = [S..O];
-const Class: domain(1) = [S..O];
+const Class: domain(classVals);
 const probSizes:   [Class] int = (/ 1400, 7000, 14000, 75000, 150000, 150000, 1400 /),
       nonZeroes:   [Class] int = (/ 7, 8, 11, 13, 15, 21, 7 /),
       shifts:      [Class] int = (/ 10, 12, 20, 60, 110, 500, 10 /),
@@ -38,16 +37,6 @@ iterator makea() {
   
   var size = 1.0;
   const ratio = rcond ** (1.0 / n);
-
-/*  writeln("314159265 is: ", 314159265);
-  var x = 314159265;
-  writeln("x is: ", x);
-  var y = 314159265:real;
-  writeln("y is: ", y);
-  var z:real = 314159265;
-  writeln("z is: ", z);*/
-/*  var w = 314159265.0;
-  writeln("w is: ", w);*/
 
   var randStr = RandomStream(314159265);
 
@@ -90,7 +79,6 @@ def sprnvc(n, nz, v, iv, randStr) {
       vecelt = randStr.getNext();
       var vecloc = randStr.getNext(); 
       i = (vecloc * nn1):int + 1;
-//      writeln("Rands: ", vecelt, " ", vecloc, " ", i);
     } while (i > n || indices.member?(i));
     indices += i;
     v(nzv) = vecelt;

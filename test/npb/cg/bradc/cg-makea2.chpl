@@ -5,8 +5,7 @@ enum classVals {S, W, A, B, C, D, O};
 
 config const probClass = S;
 
-
-const Class: domain(1) = [S..O];
+const Class: domain(classVals);
 const probSizes:   [Class] int = (/ 1400, 7000, 14000, 75000, 150000, 150000, 1400 /),
       nonZeroes:   [Class] int = (/ 7, 8, 11, 13, 15, 21, 7 /),
       shifts:      [Class] int = (/ 10, 12, 20, 60, 110, 500, 10 /),
@@ -21,86 +20,83 @@ config const n = probSizes(probClass),
              shift = shifts(probClass);
 
 
-const nonzer_max = 16,
-      naMax = 150000;
-
-
 type elemType = real(64);
 
 
 def main() {
-  makea();
-//  for res in makea() {
-//    writeln("res is: ", res);
-//  }
+  const D = [1..n, 1..n];
+  var A: [D] real;
+  
+  for ((r,c), v) in makea() {
+    A(r,c) += v;
+  }
+  for i in 1..n {
+    for j in 1..n {
+      if (A(i,j) != 0.0) {
+        writeln("[", i, ", ", j, "]: ", A(i,j));
+      }
+    }
+  }
 }
 
 
-def makea() {
-  var v: [1..nonzer_max] real,
-      iv: [1..nonzer_max] int,
-      nzloc: [1..nonzer_max] int;
-  var mark: [1..naMax] uint(8);
+iterator makea() {
+  var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
+      iv: [1..nonzer+1] int;
   
-  var size = 1.0,
-      ratio = rcond ** (1.0 / n),
-      nnza = 0;
+  var size = 1.0;
+  const ratio = rcond ** (1.0 / n);
+
+  var randStr = RandomStream(314159265);
 
   for iouter in 1..n {
-    const nzv = nonzer;
+    var nzv = nonzer;
 
-    sprnvc(n, nzv, v, iv, nzloc, mark);
-    vecset(n, v, iv, nzv, iouter, 0.50);
+    sprnvc(n, nzv, v, iv, randStr);
+    vecset(v, iv, nzv, iouter, 0.50);
 
+    // BLC: replace with zippered loop over iv or iv(1..nzv)?
     for ivelt in 1..nzv {
       const jcol = iv(ivelt),
             scale = size * v(ivelt);
 
+      // BLC: replace with zippered loop over iv or iv(1..nzv)?
       for ivelt1 in 1..nzv {
         const irow = iv(ivelt1);
 
-        writeln("want to yield: ", irow, " ", jcol, " ", v(ivelt1)*scale);
+        yield ((irow, jcol), v(ivelt1)*scale);
       }
     }
     size *= ratio;
   }
 
   for i in 1..n {
-    writeln("want to yield: ", i, " ", i, " ", rcond - shift);
+    yield ((i, i), rcond - shift);
   }
 }
 
 
-def sprnvc(n, nz, v, iv, nzloc, mark) {
-  var randStr = RandomStream(314159265);
+def sprnvc(n, nz, v, iv, randStr) {
+  var nn1 = 1;
+  while (nn1 < n) do nn1 *= 2;
 
-  const zeta = randStr.getFirst();
+  var indices: domain(int);
 
-  const nn1 = log2(n);
-
-  var nzv = 0,
-      nzrow = 0;
-
-  while (nzv < nz) {
+  for nzv in 1..nz {
+    var vecelt: real, i: int;
     do {
-      const vecelt = randStr.getNext(),
-            i = (randStr.getNext() * nn1):int + 1;
-      if (i <= n && mark(i) == 0) {
-        mark(i) = 1;
-        nzrow += 1;
-        nzloc(nzrow) = i;
-        nzv += 1;
-        v(nzv) = vecelt;
-        iv(nzv) = i;
-      }
-    } while (!(i <= n));
+      vecelt = randStr.getNext();
+      var vecloc = randStr.getNext(); 
+      i = (vecloc * nn1):int + 1;
+    } while (i > n || indices.member?(i));
+    indices += i;
+    v(nzv) = vecelt;
+    iv(nzv) = i;
   }
-  for i in 1..nzrow do
-    mark(nzloc(i)) = 0;
 }
 
 
-def vecset(n, v, iv, inout nzv, i, val) {
+def vecset(v, iv, inout nzv, i, val) {
   var set = false;
   for k in 1..nzv {
     if (iv(k) == i) {
