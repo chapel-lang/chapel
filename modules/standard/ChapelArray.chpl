@@ -36,7 +36,7 @@ def _build_array(dom, type eltType)
 def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
   return x;                             // is * on arithmetic sequences?
 
-def _build_domain(ranges: _aseq ...?rank) {
+def _build_domain(ranges: range ...?rank) {
   type t = ranges(1).eltType;
   var d: domain(rank, t);
   d.setIndices(ranges);
@@ -234,7 +234,7 @@ record _array {
     return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
-  def this(i: _aseq(_dim_index_type) ...rank) {
+  def this(i: range(_dim_index_type,0) ...rank) {
     var d = [(...i)];
     return this(d);
   }
@@ -251,14 +251,14 @@ record _array {
     y = val;
   }
 
-  def =this(i: _aseq(_dim_index_type) ...rank, val) where rank > 0 {
+  def =this(i: range(_dim_index_type,0) ...rank, val) where rank > 0 {
     var d = [(...i)];
     var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def =this(i: _aseq(_dim_index_type) ...rank, val: eltType) where rank > 0 {
+  def =this(i: range(_dim_index_type,0) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
     var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);

@@ -314,56 +314,59 @@ class _bxor {                // bit-wise xor
 }
 
 
-def _aseq._translate(i : int) {
-  return _low+i.._high+i by _stride;
+//
+// syntactic bridge code for bounded ranges
+//
+def _build_range(param bt: int, low: int, high: int)
+  return range(int, bt, low, high);
+def _build_range(param bt: int, low: uint, high: uint)
+  return range(uint, bt, low, high);
+def _build_range(param bt: int, low: int(64), high: int(64))
+  return range(int(64), bt, low, high);
+def _build_range(param bt: int, low: uint(64), high: uint(64))
+  return range(uint(64), bt, low, high);
+def _build_range(param bt: int, low, high) {
+  compilerError("range bounds are not integral");
 }
 
-def _aseq._interior(i : int) {
-  var x = _low.._high by _stride;
-  if (i < 0) {
-    x = _low.._low-1-i by _stride;
-  } else if (i > 0) {
-    x = _high+1-i.._high by _stride;
-  }
-  return x;
+
+//
+// syntactic bridge code for unbounded ranges
+//
+def _build_range(param bt: int, bound: int)
+  return range(int, bt, bound, bound);
+def _build_range(param bt: int, bound: uint)
+  return range(uint, bt, bound, bound);
+def _build_range(param bt: int, bound: int(64))
+  return range(int(64), bt, bound, bound);
+def _build_range(param bt: int, bound: uint(64))
+  return range(uint(64), bt, bound, bound);
+def _build_range(param bt: int, bound) {
+  compilerError("range bound is not integral");
 }
 
-def _aseq._exterior(i : int) {
-  var x = _low.._high by _stride;
-  if (i < 0) {
-    x = _low+i.._low-1 by _stride;
-  } else if (i > 0) {
-    x = _high+1.._high+i by _stride;
-  }
-  return x;
-}
 
-def _aseq._expand(i : int) {
-  return _low-i.._high+i by _stride;
-}
-
-// Arithmetic sequence
-
-def _build_aseq(low: int, high: int) return _aseq(int, low, high);
-def _build_aseq(low: uint, high: uint) return _aseq(uint, low, high);
-def _build_aseq(low: int(64), high: int(64)) return _aseq(int(64), low, high);
-def _build_aseq(low: uint(64), high: uint(64)) return _aseq(uint(64), low, high);
-
-def _build_aseq(low, high) {
-  compilerError("arithmetic sequence bounds are not of integral type");
-}
-
-record _aseq {
-  type eltType;
-  var _low : eltType;
-  var _high : eltType;
-  var _stride : int = 1;
-
-  var _promotionType : eltType;
+//
+// range type implementation
+//
+//   paramterized by how it is bounded and by an integral element type
+//
+// boundedType: (0 = bounded, 1 or 2 = unbounded)
+//   0 = lower and upper bounds
+//   1 = lower bound only
+//   2 = upper bound only
+//
+record range {
+  type eltType;                 // element type
+  param boundedType: int;       // bounded or not
+  var _low : eltType = 1;       // lower bound
+  var _high : eltType = 0;      // upper bound
+  var _stride : int = 1;        // integer stride of range
+  var _promotionType : eltType; // enables promotion
 
   def low: eltType return _low;
   def high: eltType return _high;
-  def stride: eltType return _stride;
+  def stride: eltType return _stride; // should be :int ??
 
   def initialize() {
     if _low > _high {
@@ -373,11 +376,18 @@ record _aseq {
     }
   }
 
-  def getHeadCursor()
+  def getHeadCursor() {
+    if boundedType == 1 then
+      if _stride < 0 then
+        halt("error: unbounded range has negative stride and lower bound");
+    if boundedType == 2 then
+      if _stride > 0 then
+        halt("error: unbounded range has positive stride and upper bound");
     if _stride > 0 then
       return _low;
     else
       return _high;
+  }
 
   def getNextCursor(c)
     return c + _stride:eltType;
@@ -385,22 +395,29 @@ record _aseq {
   def getValue(c)
     return c;
 
-  def isValidCursor?(c)
-    return _low <= c && c <= _high;
+  def isValidCursor?(c) {
+    if boundedType == 0 then
+      return _low <= c && c <= _high;
+    else
+      return true;
+  }
 
-  def length
+  def length {
+    if boundedType != 0 then
+      compilerError("unable to determine length of unbounded range");
     return
       (if _stride > 0
         then (_high - _low + _stride:eltType) / _stride:eltType
         else (_low - _high + _stride:eltType) / _stride:eltType);
+  }
 }
 
-def by(s : _aseq, i : int) {
+def by(s : range, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
   if s._low == 1 && s._high == 0 then
-    return _aseq(s.eltType, s._low, s._high, s._stride);
-  var as = _aseq(s.eltType, s._low, s._high, s._stride * i);
+    return range(s.eltType, s.boundedType, s._low, s._high, s._stride);
+  var as = range(s.eltType, s.boundedType, s._low, s._high, s._stride * i);
   if as._stride < 0 then
     as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
   else
@@ -408,86 +425,120 @@ def by(s : _aseq, i : int) {
   return as;
 }
 
-def _in(s : _aseq, i : s.eltType)
+def _in(s : range, i : s.eltType) {
+  if s.boundedType != 0 then
+    compilerError("_in undefined on unbounded ranges");
   return i >= s._low && i <= s._high &&
     (i - s._low) % abs(s._stride):s.eltType == 0;
+}
 
 // really slow --- REWRITE
-def _in(s1: _aseq, s2: _aseq) {
+def _in(s1: range, s2: range) {
+  if (s1.boundedType != 0) | (s2.boundedType != 0) then
+    compilerError("_in undefined on unbounded ranges");
   for i in s2 do
     if !_in(s1, i) then
       return false;
   return true;
 }
 
-def _aseq.writeThis(f: Writer) {
-  f.write(_low, "..", _high);
-  if (_stride != 1) then
+def range.writeThis(f: Writer) {
+  if (boundedType == 0) | (boundedType == 1) then
+    f.write(_low);
+  f.write("..");
+  if (boundedType == 0) | (boundedType == 2) then
+    f.write(_high);
+  if _stride != 1 then
     f.write(" by ", _stride);
 }
 
-pragma "inline" def string.substring(s: _aseq)
+pragma "inline" def string.substring(s: range) {
+  if s.boundedType != 0 then
+    compilerError("substring indexing undefined on unbounded ranges");
   if s._stride != 1 then
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
     return __primitive("string_select", this, s._low, s._high);
-
-// indefinite arithmetic sequence
-
-def _build_iaseq(bound: int, param upper: int)
-  return _iaseq(int, upper, bound);
-def _build_iaseq(bound: uint, param upper: int)
-  return _iaseq(uint, upper, bound);
-def _build_iaseq(bound: int(64), param upper: int)
-  return _iaseq(int(64), upper, bound);
-def _build_iaseq(bound: uint(64), param upper: int)
-  return _iaseq(uint(64), upper, bound);
-
-def _build_iaseq(bound, upper) {
-  compilerError("arithmetic sequence bound is not of integral type");
 }
 
-record _iaseq {
-  type eltType;
-  param _upper: int; // 0 bound is lower bound, 1 bound is upper bound
-  var _bound: eltType;
-  var _stride : int = 1;
-  var _promotionType : eltType;
+def range._translate(i : int) {
+  if boundedType != 0 then
+    compilerError("translate is not supported on unbounded ranges");
+  return _low+i.._high+i by _stride;
+}
 
-  def getHeadCursor() {
-    if _upper == 1 && _stride > 0 then
-      halt("error: indefinite arithmetic sequence has positive stride and upper bound");
-    if _upper == 0 && _stride < 0 then
-      halt("error: indefinite arithmetic sequence has negative stride and lower bound");
-    return _bound;
+def range._interior(i : int) {
+  if boundedType != 0 then
+    compilerError("interior is not supported on unbounded ranges");
+  var x = _low.._high by _stride;
+  if (i < 0) {
+    x = _low.._low-1-i by _stride;
+  } else if (i > 0) {
+    x = _high+1-i.._high by _stride;
   }
+  return x;
+}
 
-  def getNextCursor(c)
-    return c + _stride:eltType;
-
-  def getValue(c)
-    return c;
-
-  def isValidCursor?(c)
-    return true;
-
-  def length {
-    halt("error: attempt to determine length of an indefinite arithmetic sequence");
-    return 0:eltType;
+def range._exterior(i : int) {
+  if boundedType != 0 then
+    compilerError("exterior is not supported on unbounded ranges");
+  var x = _low.._high by _stride;
+  if (i < 0) {
+    x = _low+i.._low-1 by _stride;
+  } else if (i > 0) {
+    x = _high+1.._high+i by _stride;
   }
+  return x;
 }
 
-def by(s : _iaseq, i : int) {
-  if i == 0 then
-    halt("illegal stride of 0");
-  return _iaseq(s.eltType, s._upper, s._bound, s._stride * i);
+def range._expand(i : int) {
+  if boundedType != 0 then
+    compilerError("expand is not supported on unbounded ranges");
+  return _low-i.._high+i by _stride;
 }
 
-def _iaseq.writeThis(f: Writer) {
-  if _upper then
-    f.write("..", _bound);
-  else
-    f.write(_bound, "..");
-  if (_stride != 1) then
-    f.write(" by ", _stride);
+
+def _intersect(a: range, b: range) {
+  if (a.boundedType != 0) | (b.boundedType != 0) then
+    compilerError("insersection not defined on unbounded ranges");
+  var g, x: int;
+  (g, x) = _extended_euclid(a._stride, b._stride);
+  var gg = g:a.eltType;
+  var xx = x:a.eltType;
+  var as = (a._stride):a.eltType;
+  if abs(a._low - b._low) % gg != 0 then
+    return 1..0:a.eltType;
+  var low = max(a._low, b._low);
+  var high = min(a._high, b._high);
+  var stride = a._stride * b._stride / g;
+  var alignment = a._low + (b._low - a._low) * xx * as / gg;
+  if alignment == 0 then
+    alignment = stride:a.eltType;
+  low = low + low % alignment;
+  return low..high by stride;
+}
+
+// Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
+// given two non-negative integers u and v
+// returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
+def _extended_euclid(u: int, v: int) {
+  var u1 = 1;
+  var u2 = 0;
+  var u3 = u;
+  var v1 = 0;
+  var v2 = 1;
+  var v3 = v;
+  while v3 != 0 {
+    var q = u3 / v3;
+    var t1 = u1 - v1 * q;
+    var t2 = u2 - v2 * q;
+    var t3 = u3 - v3 * q;
+    u1 = v1;
+    u2 = v2;
+    u3 = v3;
+    v1 = t1;
+    v2 = t2;
+    v3 = t3;
+  }
+  return (u3, u1);
 }

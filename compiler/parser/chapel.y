@@ -1374,11 +1374,11 @@ top_level_expr:
 | expr TCOLON type
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
-    { $$ = new CallExpr("_build_aseq", $1, $3); }
+    { $$ = new CallExpr("_build_range", new_IntSymbol(0), $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("_build_iaseq", $1, new_IntSymbol(0)); }
+    { $$ = new CallExpr("_build_range", new_IntSymbol(1), $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("_build_iaseq", $2, new_IntSymbol(1)); }
+    { $$ = new CallExpr("_build_range", new_IntSymbol(2), $2); }
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }

@@ -17,11 +17,11 @@ var Block = SingleLocaleDistribution();
 class SingleLocaleArithmeticDomain: BaseDomain {
   param rank : int;
   type dim_type;
-  var ranges : rank*_aseq(dim_type);
+  var ranges : rank*range(dim_type,0);
 
   def getIndices() return ranges;
 
-  def setIndices(x: rank*_aseq(dim_type)) {
+  def setIndices(x: rank*range(dim_type,0)) {
     ranges = x;
   }
 
@@ -326,52 +326,9 @@ def SingleLocaleArithmeticArray.writeThis(f: Writer) {
   }
 }
 
-def _intersect(a: _aseq, b: _aseq) {
-  var g, x: int;
-  (g, x) = _extended_euclid(a._stride, b._stride);
-  var gg = g:a.eltType;
-  var xx = x:a.eltType;
-  var as = (a._stride):a.eltType;
-  if abs(a._low - b._low) % gg != 0 then
-    return 1..0:a.eltType;
-  var low = max(a._low, b._low);
-  var high = min(a._high, b._high);
-  var stride = a._stride * b._stride / g;
-  var alignment = a._low + (b._low - a._low) * xx * as / gg;
-  if alignment == 0 then
-    alignment = stride:a.eltType;
-  low = low + low % alignment;
-  return low..high by stride;
-}
-
 def _intersect(a: SingleLocaleArithmeticDomain, b: SingleLocaleArithmeticDomain) {
   var c = SingleLocaleArithmeticDomain(rank=a.rank, dim_type=a.dim_type);
   for param i in 1..a.rank do
     c.ranges(i) = _intersect(a(i), b(i));
   return c;
-}
-
-// Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
-// given two non-negative integers u and v
-// returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
-def _extended_euclid(u: int, v: int) {
-  var u1 = 1;
-  var u2 = 0;
-  var u3 = u;
-  var v1 = 0;
-  var v2 = 1;
-  var v3 = v;
-  while v3 != 0 {
-    var q = u3 / v3;
-    var t1 = u1 - v1 * q;
-    var t2 = u2 - v2 * q;
-    var t3 = u3 - v3 * q;
-    u1 = v1;
-    u2 = v2;
-    u3 = v3;
-    v1 = t1;
-    v2 = t2;
-    v3 = t3;
-  }
-  return (u3, u1);
 }

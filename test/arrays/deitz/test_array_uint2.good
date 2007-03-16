@@ -1,1 +1,1 @@
-test_array_uint2.chpl:1: error: unresolved call ':domain(1,int).setIndices(:(_aseq(uint)))'
+test_array_uint2.chpl:1: error: unresolved call ':domain(1,int).setIndices(:(range(uint,0)))'
