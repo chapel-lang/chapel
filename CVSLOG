@@ -95893,3 +95893,27 @@ Modified files:
 	                                         stream-slice.chpl 
 	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
 
+---------------------------------------------------------------------------
+
+03/16/07 16:06:10 -- bradc
+
+Log message:
+	Started a new test -- cg-makea2.chpl -- which takes the
+	random indices and values computed by the iterator in
+	cg-makea.chpl and stores the values into a dense array.
+	Then prints out the nonzero values of the array for
+	comparison purposes with the NAS CG benchmark.  Currently
+	they are the same.  Next step is to see if performing the
+	CG computation on this dense array results in the correct
+	answer.
+	
+	Cleaned up cg-makea.chpl a bit in minor ways (removed
+	some commented out test code)
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea2.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-makea2.good 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea2.notest 
+
