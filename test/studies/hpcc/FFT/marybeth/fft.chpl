@@ -8,7 +8,7 @@ config const logN = 5;
 
 // pseudo-random input configs
 config const deterministic = false,
-             seed = 314159265;
+             seed = 314159266;
 
 // verification configs
 config const epsilon = 2.0 ** -51.0,

@@ -26,8 +26,8 @@ type elemType = real(64);
 
 def main() {
   writeln("Chapel sparsity pattern is:");
-  for res in makea() {
-    writeln(res);
+  for ((r,c), v) in makea() {
+    writeln(" ", r, " ", c, "  ", v);
   }
 }
 
@@ -39,8 +39,17 @@ iterator makea() {
   var size = 1.0;
   const ratio = rcond ** (1.0 / n);
 
+/*  writeln("314159265 is: ", 314159265);
+  var x = 314159265;
+  writeln("x is: ", x);
+  var y = 314159265:real;
+  writeln("y is: ", y);
+  var z:real = 314159265;
+  writeln("z is: ", z);*/
+/*  var w = 314159265.0;
+  writeln("w is: ", w);*/
+
   var randStr = RandomStream(314159265);
-  randStr.getNext(); // BLC -- necessary?  Correct?
 
   for iouter in 1..n {
     var nzv = nonzer;
@@ -70,7 +79,8 @@ iterator makea() {
 
 
 def sprnvc(n, nz, v, iv, randStr) {
-  const nn1 = log2(n);
+  var nn1 = 1;
+  while (nn1 < n) do nn1 *= 2;
 
   var indices: domain(int);
 
@@ -78,7 +88,9 @@ def sprnvc(n, nz, v, iv, randStr) {
     var vecelt: real, i: int;
     do {
       vecelt = randStr.getNext();
-      i = (randStr.getNext() * nn1):int + 1;
+      var vecloc = randStr.getNext(); 
+      i = (vecloc * nn1):int + 1;
+//      writeln("Rands: ", vecelt, " ", vecloc, " ", i);
     } while (i > n || indices.member?(i));
     indices += i;
     v(nzv) = vecelt;
