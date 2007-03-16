@@ -95822,3 +95822,32 @@ Modified files:
 Removed files:
 	chapel/test/types/scalar/bradc/: piVals.future 
 
+---------------------------------------------------------------------------
+
+03/16/07 10:24:15 -- deitz
+
+Log message:
+	Unified indefinite arithmetic sequences and arithmetic sequences into
+	a new record called 'range' and exposed to the user as such. This can
+	be renamed easily. The main work of this checkin is in the
+	unification.
+	
+	The range type is generic on an integral element type eltType and an
+	integer boundedType.  This integer should be changed to an enum if or
+	when we support parameter enums.  The values have the following
+	meaning:
+	
+	  0: bounded range with a low and a high
+	  1: unbounded range with only a low bound
+	  2: unbounded range with only a high bound
+	
+	Both eltType and boundedType need to be specified in the type though I
+	would like to made boundedType default to 0 but that didn't work yet.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/deitz/: test_array_uint2.good 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+
