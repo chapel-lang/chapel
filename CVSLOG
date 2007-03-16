@@ -95851,3 +95851,45 @@ Modified files:
 	chapel/test/arrays/deitz/: test_array_uint2.good 
 	chapel/test/arrays/marybeth/: CMO_array.chpl 
 
+---------------------------------------------------------------------------
+
+03/16/07 15:07:20 -- bradc
+
+Log message:
+	Next pass at cg-makea.chpl -- the iterator is now returning
+	the correct pattern of sparse indices and values for the
+	sparse matrix in CG.  In order to get this to work, I had
+	to rework the Random module so that it didn't round odd
+	seeds up to the next even seed value (the NPB doesn't do
+	this and relies on an odd seed).  Working with MB to try
+	and remember why we built that into the code.
+	
+	Turns out that our HPCC benchmark codes also all used
+	odd seeds, so changed these to the next larger even
+	seed in the studies/hpcc directory (to preserve the
+	output), and changed the output of the tests in the
+	release/ subdirectory (to keep the codes looking the
+	same to the end-user).
+	
+	In doing this, also cleaned up the Random module a bit to
+	make it use Chapel better as well as the fact that the
+	randlc functions were embedded in a class and could use
+	that to store state.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea.good 
+	chapel/test/release/examples/hpcc06/: fft-mta.good fft.good 
+	                                      stream-nopromote.good 
+	                                      stream.good 
+	chapel/test/studies/hpcc/FFT/: fft-candidate-2d.chpl 
+	                               fft-hpcc06-mta.chpl 
+	                               fft-hpcc06.chpl 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft.chpl 
+	chapel/test/studies/hpcc/STREAMS/: stream-hpcc06.chpl 
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-nopromote.chpl 
+	                                         stream-slice.chpl 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+
