@@ -96053,3 +96053,15 @@ Log message:
 Added files:
 	chapel/test/performance/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+03/19/07 11:53:53 -- deitz
+
+Log message:
+	Updated linux64 .good files for two tests.  These .good files look the
+	same as the standard .good file.  Perhaps they are unnecessary.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.linux64.good 
+	                             printFinalMemStat.linux64.good 
+
