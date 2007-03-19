@@ -96065,3 +96065,16 @@ Modified files:
 	chapel/test/memory/shannon/: memstatPrint.linux64.good 
 	                             printFinalMemStat.linux64.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 11:55:54 -- deitz
+
+Log message:
+	Removed linux64 .good files for these tests since they match the
+	regular .good files.  They did not match with reference counting
+	because the thread lock was bigger on linux64.
+
+Removed files:
+	chapel/test/memory/shannon/: memstatPrint.linux64.good 
+	                             printFinalMemStat.linux64.good 
+
