@@ -95,31 +95,33 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
 
 
 iterator makea() {
-  const tran = 314159265.0,
-        amult = 1220703125.0,
-        zeta = randlc(tran, amult);
-
-  var mark: [1..naMax] uint(8);
+  var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
+      iv: [1..nonzer+1] int;
   
-  var size = 1.0,
-      ratio = rcond**(1.0/n),
-      nnza = 0;
+  var size = 1.0;
+  const ratio = rcond ** (1.0 / n);
+
+  var randStr = RandomStream(314159265);
 
   for iouter in 1..n {
-    const nzv = nonzer;
+    var nzv = nonzer;
 
-    sprnvc(n, nzv, v, iv, nzloc, mark);
-    vecset(n, v, iv, nzv, iouter, 0.50);
+    sprnvc(n, nzv, v, iv, randStr);
+    vecset(v, iv, nzv, iouter, 0.50);
 
+    // BLC: replace with zippered loop over iv or iv(1..nzv)?
     for ivelt in 1..nzv {
-      jcol = iv[ivelt];
-      scale = size * v[ivelt];
-      for ivelt1 in 1..nzv {
-        irow = iv[ivelt1];
+      const jcol = iv(ivelt),
+            scale = size * v(ivelt);
 
-        yield ((irow, jcol), v[ivelt1]*scale);
-     }
-     size *= ratio;
+      // BLC: replace with zippered loop over iv or iv(1..nzv)?
+      for ivelt1 in 1..nzv {
+        const irow = iv(ivelt1);
+
+        yield ((irow, jcol), v(ivelt1)*scale);
+      }
+    }
+    size *= ratio;
   }
 
   for i in 1..n {
@@ -128,45 +130,37 @@ iterator makea() {
 }
 
 
-def sprnvc(n, nz, v, iv, nzloc, mark) {
-  const nn1 = lg2(n);
+def sprnvc(n, nz, v, iv, randStr) {
+  var nn1 = 1;
+  while (nn1 < n) do nn1 *= 2;
 
-  var nzv = 0,
-      nzrow = 0;
+  var indices: domain(int);
 
-  while (nzv < nz) {
+  for nzv in 1..nz {
+    var vecelt: real, i: int;
     do {
-      vecelt = randlc(tran, amult);
-      i = icnvrt(randlc(tran, amult), nn1) + 1;
-    } while (!(i <= n));
-    if (mark[i - 1] == 0) {
-      mark[i - 1] = 1;
-      nzrow += 1;
-      nzloc[nzrow = 1] = i;
-      nzv += 1;
-      v[nzv - 1] = vecelt;
-      iv[nzv - 1] = i;
-    }
-  }
-  {
-    int stop1 = nzrow;
-    for i in 1..stop1 do
-      mark[nzloc[i-1] - 1] = 0;
+      vecelt = randStr.getNext();
+      var vecloc = randStr.getNext(); 
+      i = (vecloc * nn1):int + 1;
+    } while (i > n || indices.member?(i));
+    indices += i;
+    v(nzv) = vecelt;
+    iv(nzv) = i;
   }
 }
 
 
-def vecset(n, v, iv, nzv, i, val) {
+def vecset(v, iv, inout nzv, i, val) {
   var set = false;
   for k in 1..nzv {
-    if (iv[k - 1] == i) {
-      v[k - 1] = val;
+    if (iv(k) == i) {
+      v(k) = val;
       set = true;
     }
   }
   if (!set) {
     nzv += 1;
-    v[nzv - 1] = val;
-    iv[nzv - 1] = i;
+    v(nzv) = val;
+    iv(nzv) = i;
   }
 }
