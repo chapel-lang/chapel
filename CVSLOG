@@ -96010,3 +96010,34 @@ Modified files:
 	chapel/runtime/include/: chplio.h config.h 
 	chapel/runtime/src/: config.c 
 
+---------------------------------------------------------------------------
+
+03/19/07 10:58:57 -- deitz
+
+Log message:
+	Changed --no-gc to --ref-count turning reference counting off by
+	default and enabled with this flag.
+	
+	Updated the bane of my regression testing existence
+	  compflags/bradc/help/userhelp.chpl.
+	
+	Added a few compopts files to the testing system to use --ref-count on
+	tests that require it thus continuing the testing of this
+	functionality.
+	
+	Updated a few memory tests since classes by default no longer have a
+	reference counter and lock field.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.txt 
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+Added files:
+	chapel/test/domains/indefinite/waynew/: memory1.compopts 
+	                                        memory2.compopts 
+	chapel/test/memory/deitz/: COMPOPTS 
+
