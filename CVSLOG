@@ -96133,3 +96133,14 @@ Added files:
 	                            test_default_param2.chpl 
 	                            test_default_param2.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 14:33:47 -- deitz
+
+Log message:
+	Added a test of a class with an enum parameter with a default.
+
+Added files:
+	chapel/test/classes/deitz/: test_default_param3.chpl 
+	                            test_default_param3.good 
+
