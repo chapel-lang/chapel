@@ -96078,3 +96078,40 @@ Removed files:
 	chapel/test/memory/shannon/: memstatPrint.linux64.good 
 	                             printFinalMemStat.linux64.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 13:22:15 -- bradc
+
+Log message:
+	Put check back into Random module, fixing it to ensure
+	that seed is odd rather than even as it was before.
+	Updated tests whose output had been generated using an
+	even seed to use an odd and added a test that uses an
+	even seed to make sure that the Random module changes
+	it to odd.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+	chapel/test/modules/standard/Random/marybeth/: test-Random.chpl 
+	                                               test-Random.good 
+	chapel/test/studies/hpcc/FFT/: fft-candidate-2d.chpl 
+	                               fft-candidate-2d.good 
+	                               fft-hpcc06-mta.chpl 
+	                               fft-hpcc06-mta.good 
+	                               fft-hpcc06.chpl fft-hpcc06.good 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft-test-even.good 
+	                                        fft.chpl fft.good 
+	chapel/test/studies/hpcc/STREAMS/: stream-hpcc06.chpl 
+	                                   stream-hpcc06.good 
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-nopromote.chpl 
+	                                         stream-nopromote.good 
+	                                         stream-slice.chpl 
+	                                         stream-slice.good 
+	chapel/test/studies/hpcc/STREAMS/marybeth/: stream.chpl 
+	                                            stream.good 
+Added files:
+	chapel/test/modules/standard/Random/bradc/: 
+	                                            test-Random-evenseed.chpl 
+	                                            test-Random-evenseed.good 
+
