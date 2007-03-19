@@ -245,7 +245,7 @@ insertGCInits(void) {
 
 
 void memoryManage(void) {
-  if (no_gc)
+  if (!fRefCount)
     return;
   insertMissingReturnTemps();
   buildFreeFunctions();

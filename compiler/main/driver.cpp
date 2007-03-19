@@ -39,7 +39,7 @@ bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableIteratorPropagation = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
-bool no_gc = false;
+bool fRefCount = false;
 bool no_inline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
@@ -66,7 +66,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', "Optimization Control", NULL, NULL, NULL, NULL},
  {"no-bounds-checks", ' ', "Disable bounds checking", "F", &no_bounds_checking, "CHPL_NO_BOUNDS_CHECKING", NULL},
- {"no-gc", ' ', "Disable memory management", "F", &no_gc, "CHPL_NO_GC", NULL},
+ {"ref-count", ' ', "Enabled reference counting", "F", &fRefCount, "CHPL_REF_COUNT", NULL},
  {"no-inline", ' ', "Do not inline functions" , "F", &no_inline, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
  {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
