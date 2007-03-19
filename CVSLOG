@@ -96041,3 +96041,15 @@ Added files:
 	                                        memory2.compopts 
 	chapel/test/memory/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+03/19/07 11:31:13 -- deitz
+
+Log message:
+	Added --no-bounds-checks and --ccflags "-O3" to the COMPOPTS file in
+	my performance test directory.  This should make them execute faster
+	and probably within the time limit of the testing system.
+
+Added files:
+	chapel/test/performance/deitz/: COMPOPTS 
+
