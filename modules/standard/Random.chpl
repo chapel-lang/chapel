@@ -1,3 +1,14 @@
+// This random number generator was written from the NPB
+// random number generator.  
+//
+// It's the linear congruential generator with
+//
+// m = 2^46 (the modulus)
+// a = 1220703125.0 (the multiplier)
+// c = 0 (the increment)
+//
+// It requires an odd integer for its seed.
+
 use Time;
 
 
