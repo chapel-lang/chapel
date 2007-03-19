@@ -96115,3 +96115,21 @@ Added files:
 	                                            test-Random-evenseed.chpl 
 	                                            test-Random-evenseed.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 14:13:45 -- deitz
+
+Log message:
+	Enabled support for parameters in classes and records that have
+	default/initialization values.  In this case, the parameter does not
+	need to be passed to the constructor.  This was a very easy change to
+	make.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_default_param.chpl 
+	                            test_default_param.good 
+	                            test_default_param2.chpl 
+	                            test_default_param2.good 
+
