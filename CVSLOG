@@ -95917,3 +95917,47 @@ Added files:
 Removed files:
 	chapel/test/npb/cg/bradc/: cg-makea2.notest 
 
+---------------------------------------------------------------------------
+
+03/19/07 09:15:44 -- diten
+
+Log message:
+	Configuration parameter support for enumerated types.
+	
+	In normalize, add a check for config parameters of enumerated type which loops
+	over the values of an enum type, checking if any match the value passed on
+	the command line.  If yes, set the parameter to that value.
+	
+	In function resolution, when folding _copy of immediate values, also fold
+	_copy calls of enumerated values.  When removing defPoints of immediate vars
+	and adding them to the paramMap, also remove defPoints of enums and add them
+	to the paramMap.
+	
+	In instantiate_tuple_get and instantiate_tuple_set, ensure that the VarSymbol
+	is not NULL before checking its immediate value.  If it is NULL, it is an
+	EnumSymbol, not a VarSymbol, so for now, just treat it like non-integral
+	values and return the unmodified function.
+	
+	Give the EnumSymbol class an isParam() function.  It always returns true since
+	EnumSymbols are always known at compile time.
+	
+	Also, move the code to remove type casts that cast something to its own type
+	into a function.  This code could be used in areas other than parameter
+	folding, and removing it makes the _call parameter folding code a lot cleaner
+	than it would have been if I left it there.
+	
+	Update my simple config param test to include enum checks.
+	Add test for a function with param formals with an enumerated type.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/compflags/diten/: configparam.chpl 
+	                              configparam.compopts 
+	                              configparam.good 
+Added files:
+	chapel/test/functions/diten/: enumparamfunc.chpl 
+	                              enumparamfunc.compopts 
+	                              enumparamfunc.good 
+
