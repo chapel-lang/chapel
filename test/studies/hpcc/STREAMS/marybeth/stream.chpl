@@ -47,7 +47,7 @@ var avgtime, sumtime, mintime, maxtime: real;
 var curGBs: real;
 
 // setting the seed for the random number generator
-param seed = 314159266;
+param seed = 314159265;
 
 def main() {
   var clock: Timer;

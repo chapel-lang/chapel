@@ -23,15 +23,21 @@ var SeedGenerator = SeedGeneratorClass();
 class RandomStream {
   const seed:int(64) = SeedGenerator.clockMS; 
   const arand = 1220703125.0;
+
+  // These are meant to be private; internal to class; not set by user
   const r23   = 0.5**23,
         t23   = 2.0**23,
         r46   = 0.5**46,
         t46   = 2.0**46;
+  var internalSeed:int(64);
 
   var cursorVal: real;
 
   def initialize() {
-    cursorVal = seed:real;
+    internalSeed = seed;
+    // ensure seed is odd
+    if (internalSeed % 2 == 0) then internalSeed += 1;
+    cursorVal = internalSeed:real;
     getNext();
   }
 
@@ -59,7 +65,7 @@ class RandomStream {
   // ability to retain state, but haven't
   // tried this routine yet
   def getNth(in n : int) {
-    var x  = seed:real,
+    var x  = internalSeed:real,
         t = arand;
     while (n != 0) {
       const i = n / 2;

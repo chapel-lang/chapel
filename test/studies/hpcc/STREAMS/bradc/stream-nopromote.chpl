@@ -15,7 +15,7 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.clockMS else 314159266;
+             seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
 
 config const printParams = true,
              printArrays = false,
