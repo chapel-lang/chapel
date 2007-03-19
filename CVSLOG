@@ -95994,3 +95994,19 @@ Added files:
 	chapel/compiler/AST/: iterator.cpp 
 	chapel/compiler/include/: iterator.h 
 
+---------------------------------------------------------------------------
+
+03/19/07 10:56:35 -- bradc
+
+Log message:
+	Removed some dead code from the runtime relating to how
+	scalars are formatted in I/O and how config vars/consts
+	are parsed from the command-line.  This has been dead
+	for some time, just noticed it.  There's likely more to
+	do here, but I was just grabbing at some low-hanging
+	fruit while working on CG.
+
+Modified files:
+	chapel/runtime/include/: chplio.h config.h 
+	chapel/runtime/src/: config.c 
+
