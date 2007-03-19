@@ -399,6 +399,12 @@ computeGenericSubs(ASTMap &subs,
     if (formal->intent == INTENT_PARAM) {
       if (formal_params->v[i] && formal_params->v[i]->isParam()) {
         subs.put(formal, formal_params->v[i]);
+      } else if (formal->defaultExpr) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(formal->defaultExpr)) {
+          if (se->var->isParam())
+            subs.put(formal, se->var);
+        } else
+          INT_FATAL(fn, "unable to handle default parameter");
       }
     } else if (formal->type->isGeneric) {
       if (formal_actuals->v[i]) {
