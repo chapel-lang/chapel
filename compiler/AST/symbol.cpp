@@ -3,6 +3,7 @@
 #include "bb.h"
 #include "build.h"
 #include "files.h"
+#include "iterator.h"
 #include "misc.h"
 #include "runtime.h"
 #include "stmt.h"
@@ -561,6 +562,7 @@ FnSymbol::FnSymbol(char* initName) :
   buildSetter(false),
   defSetGet(false),
   isParam(false),
+  iteratorInfo(NULL),
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
@@ -582,6 +584,8 @@ FnSymbol::FnSymbol(char* initName) :
 
 
 FnSymbol::~FnSymbol() {
+  if (iteratorInfo)
+    delete iteratorInfo;
   if (instantiatedTo)
     delete instantiatedTo;
   if (basicBlocks) {

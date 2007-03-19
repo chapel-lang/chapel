@@ -14,6 +14,7 @@ class BlockStmt;
 class SymScope;
 class Immediate;
 class BasicBlock;
+class IteratorInfo;
 
 enum fnType {
   FN_FUNCTION,
@@ -167,7 +168,7 @@ class FnSymbol : public Symbol {
   bool buildSetter;
   bool defSetGet;
   bool isParam;
-
+  IteratorInfo* iteratorInfo;
   SymScope* argScope;
   bool isSetter;
   bool isGeneric;
