@@ -991,7 +991,7 @@ instantiate_tuple(FnSymbol* fn) {
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
   VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
-  if (var->immediate->const_kind != NUM_KIND_INT)
+  if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
@@ -1003,7 +1003,7 @@ instantiate_tuple_get(FnSymbol* fn) {
 FnSymbol*
 instantiate_tuple_set(FnSymbol* fn) {
   VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
-  if (var->immediate->const_kind != NUM_KIND_INT)
+  if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();
   char* name = stringcat("x", intstring(index));
@@ -1506,6 +1506,7 @@ EnumSymbol::copyInner(ASTMap* map) {
   return new EnumSymbol(name);
 }
 
+bool EnumSymbol::isParam(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
 

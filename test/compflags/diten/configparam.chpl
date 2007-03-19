@@ -1,3 +1,5 @@
+enum color {red, green, blue};
+
 config param abool1 = false;
 config param abool2: bool = false;
 config param aint1 = 3;
@@ -6,10 +8,12 @@ config param areal1 = 3.14;
 config param areal2: real = 3.14;
 config param astring1 = "hi";
 config param astring2: string = "hi";
-config param aimag1 = 3.4i;
-config param aimag2: imag = 3.4i;
 //config param acomplex1 = 3.14+2.72i;
 //config param acomplex2: complex = 3.14+2.72i;
+config param aimag1 = 3.4i;
+config param aimag2: imag = 3.4i;
+config param acolor1 = blue;
+config param acolor2: color = blue;
 
 def main() {
   writeln(abool1);
@@ -29,5 +33,8 @@ def main() {
 
   writeln(aimag1);
   writeln(aimag2);
+
+  writeln(acolor1);
+  writeln(acolor2);
 }
 

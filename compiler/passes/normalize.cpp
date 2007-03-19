@@ -483,6 +483,16 @@ fix_def_expr(VarSymbol* var) {
             init->replace(new SymExpr(new_ImmediateSymbol(imm)));
             init = var->defPoint->init;
           }
+        } else if (EnumSymbol* sym = dynamic_cast<EnumSymbol*>(symExpr->var)) {
+          if (EnumType* et = dynamic_cast<EnumType*>(sym->type)) {
+            for_alist(DefExpr, constant, et->constants) {
+              if (!strcmp(constant->sym->name, value)) {
+                init->replace(new SymExpr(constant->sym));
+                init = var->defPoint->init;
+                break;
+              }
+            }
+          }
         }
       }
     }

@@ -15,6 +15,7 @@ static char* _this;
 static char* _assign;
 
 Map<Symbol*,Symbol*> paramMap;
+static Expr* dropUnnecessaryCast(CallExpr* call);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
@@ -1574,6 +1575,48 @@ static Expr* fold_cond_stmt(CondStmt* if_stmt) {
   return result;
 }
 
+static Expr* dropUnnecessaryCast(CallExpr* call) {
+  // Check for and remove casts to the original type and size
+  Expr* result = call;
+  if (!call->isNamed("_cast"))
+    INT_FATAL("dropUnnecessaryCasts called on non _cast call");
+
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+        Type* src = var->type;
+        Type* dst = sym->var->type;
+
+        if ((is_int_type(src) && is_int_type(dst)) ||
+            (is_uint_type(src) && is_uint_type(dst)) ||
+            (is_real_type(src) && is_real_type(dst)) ||
+            (is_imag_type(src) && is_imag_type(dst)) ||
+            (is_complex_type(src) && is_complex_type(dst))) {
+          if (get_width(src) == get_width(dst)) {
+            result = new SymExpr(var);
+            call->replace(result);
+          }
+        } else if (dst == dtString && src == dtString) {
+          result = new SymExpr(var);
+          call->replace(result);
+        }
+      }
+    } else if (EnumSymbol* e = dynamic_cast<EnumSymbol*>(sym->var)) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+        EnumType* src = dynamic_cast<EnumType*>(e->type);
+        EnumType* dst = dynamic_cast<EnumType*>(sym->var->type);
+        if (dst) {
+          if (!strcmp(src->symbol->name, dst->symbol->name)) {
+            result = new SymExpr(e);
+            call->replace(result);
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -1711,44 +1754,37 @@ preFold(Expr* expr) {
               result = new SymExpr(var);
               call->replace(result);
             }
+          } else {
+            if (EnumSymbol* var = dynamic_cast<EnumSymbol*>(symExpr->var)) {
+              // Treat enum values as immediates
+              result = new SymExpr(var);
+              call->replace(result);
+            }
           }
         }
       }
     } else if (call->isNamed("_cast")) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-          if (var->immediate) {
-            if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-              Type* src = var->type;
-              Type* dst = sym->var->type;
-              if (!is_real_type(dst) && !is_real_type(src) &&
-                  !is_imag_type(dst) && !is_imag_type(src) &&
-                  !is_complex_type(dst) && !is_complex_type(src) &&
-                  dst != dtString && src != dtString) {
-                VarSymbol* typevar = dynamic_cast<VarSymbol*>(dst->defaultValue);
-                if (!typevar || !typevar->immediate)
-                  INT_FATAL("unexpected case in cast_fold");
-                Immediate coerce = *typevar->immediate;
-                coerce_immediate(var->immediate, &coerce);
-                result = new SymExpr(new_ImmediateSymbol(&coerce));
-                call->replace(result);
-              } else {
-                // Check for and remove casts to the original type and size
-                VarSymbol* typevar = dynamic_cast<VarSymbol*>(dst->defaultValue);
-                if (!typevar || !typevar->immediate)
-                  INT_FATAL("unexpected case in cast_fold");
-                Immediate* dstImm = typevar->immediate;
-                Immediate* srcImm = var->immediate;
+      result = dropUnnecessaryCast(call);
+      if (result == call) {
+        // The cast was not dropped.  Remove integer casts on immediate values.
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
+          if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+            if (var->immediate) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+                Type* src = var->type;
+                Type* dst = sym->var->type;
+                if (!is_real_type(dst) && !is_real_type(src) &&
+                    !is_imag_type(dst) && !is_imag_type(src) &&
+                    !is_complex_type(dst) && !is_complex_type(src) &&
+                    dst != dtString && src != dtString) {
+                  VarSymbol* typevar = 
+                    dynamic_cast<VarSymbol*>(dst->defaultValue);
+                  if (!typevar || !typevar->immediate)
+                    INT_FATAL("unexpected case in cast_fold");
 
-                if ((is_real_type(src) && is_real_type(dst)) ||
-                    (is_imag_type(src) && is_imag_type(dst)) ||
-                    (is_complex_type(src) && is_complex_type(dst))) {
-                  if (dstImm->num_index == srcImm->num_index) {
-                    result = new SymExpr(new_ImmediateSymbol(srcImm));
-                    call->replace(result);
-                  }
-                } else if ((dst == dtString && src == dtString)) {
-                  result = new SymExpr(new_ImmediateSymbol(srcImm));
+                  Immediate coerce = *typevar->immediate;
+                  coerce_immediate(var->immediate, &coerce);
+                  result = new SymExpr(new_ImmediateSymbol(&coerce));
                   call->replace(result);
                 }
               }
@@ -1871,7 +1907,12 @@ postFold(Expr* expr) {
                 makeNoop(call);
                 set = true;
               }
-            }
+            } else if (EnumSymbol* rhsv = dynamic_cast<EnumSymbol*>(rhs->var)) {
+              paramMap.put(lhs->var, rhsv);
+              lhs->var->defPoint->remove();
+              makeNoop(call);
+              set = true;
+            } 
           }
           if (!set && lhs->var->isParam())
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);

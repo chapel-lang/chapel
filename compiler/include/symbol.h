@@ -235,6 +235,7 @@ class EnumSymbol : public Symbol {
   virtual void verify(); 
   COPY_DEF(EnumSymbol);
   void codegenDef(FILE* outfile);
+  bool isParam(void);
 };
 
 
