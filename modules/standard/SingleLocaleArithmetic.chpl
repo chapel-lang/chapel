@@ -17,11 +17,11 @@ var Block = SingleLocaleDistribution();
 class SingleLocaleArithmeticDomain: BaseDomain {
   param rank : int;
   type dim_type;
-  var ranges : rank*range(dim_type,0);
+  var ranges : rank*range(dim_type);
 
   def getIndices() return ranges;
 
-  def setIndices(x: rank*range(dim_type,0)) {
+  def setIndices(x: rank*range(dim_type)) {
     ranges = x;
   }
 

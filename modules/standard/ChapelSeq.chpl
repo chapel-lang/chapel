@@ -357,8 +357,8 @@ def _build_range(param bt: int, bound) {
 //   2 = upper bound only
 //
 record range {
-  type eltType;                 // element type
-  param boundedType: int;       // bounded or not
+  type eltType = int;           // element type
+  param boundedType: int = 0;   // bounded or not
   var _low : eltType = 1;       // lower bound
   var _high : eltType = 0;      // upper bound
   var _stride : int = 1;        // integer stride of range
