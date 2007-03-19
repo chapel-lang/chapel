@@ -95961,3 +95961,14 @@ Added files:
 	                              enumparamfunc.compopts 
 	                              enumparamfunc.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 09:20:16 -- marybeth
+
+Log message:
+	Added comments to the Random module to better document
+	the type of generator that is implemented.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+
