@@ -96159,3 +96159,23 @@ Modified files:
 Added files:
 	chapel/test/types/seq/deitz/: test_range.chpl test_range.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 16:28:03 -- bradc
+
+Log message:
+	First working version of NAS CG in Chapel (verified
+	for Class S only).  This implementation uses a dense
+	domain/array to store the sparse matrix, so results
+	in unnecessary memory overhead and lots and lots of
+	multiplications by 0.0, blowing execution time out
+	of the water.  But it serves as a good model for what
+	the sparse will look like once the sparse domains and
+	arrays are supported.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-dense.execopts 
+	                           cg-dense.good 
+
