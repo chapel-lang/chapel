@@ -96144,3 +96144,18 @@ Added files:
 	chapel/test/classes/deitz/: test_default_param3.chpl 
 	                            test_default_param3.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 14:52:50 -- deitz
+
+Log message:
+	Added defaults to the generic fields of the range type to make it a
+	range over int and with boundedType equal to 0 by default.  Added a
+	test of the range type.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_range.chpl test_range.good 
+
