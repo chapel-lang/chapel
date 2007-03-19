@@ -95972,3 +95972,25 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Random.chpl 
 
+---------------------------------------------------------------------------
+
+03/19/07 10:27:22 -- deitz
+
+Log message:
+	Added files iterator.cpp and iterator.h to contain functions on
+	iterators and to hold the IteratorInfo class that connects an iterator
+	to the functions and class that implement it.
+	
+	Moved lowerIterator function to iterator.cpp.  This function takes an
+	iterator and converts it to a function that returns an iterator class
+	that supports functions which implement the iterator interface over
+	this class.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: lowerIterators.cpp 
+Added files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: iterator.h 
+
