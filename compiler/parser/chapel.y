@@ -1170,8 +1170,7 @@ opt_formal_type:
   opt_type
 | TCOLON TQUESTION identifier
     {
-      TypeSymbol* new_symbol = new TypeSymbol($3, new UserType(new SymExpr(gNil))); // gNil is a place holder to be fixed in cleanup
-      $$ = new DefExpr(new_symbol, NULL, NULL);
+      $$ = new DefExpr(new VarSymbol($3));
     }
 ;
 

@@ -782,7 +782,19 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
 static void
 fixup_query_formals(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType)) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(formal->defPoint->exprType)) {
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, fn);
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (se->var == def->sym) {
+            se->replace(new CallExpr(PRIMITIVE_TYPEOF, formal));
+          }
+        }
+      }
+      formal->defPoint->exprType->remove();
+      formal->type = dtAny;
+    } else if (CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType)) {
       // clone query primitive types
       if (DefExpr* def = dynamic_cast<DefExpr*>(call->get(1))) {
         if (call->isNamed("int") || call->isNamed("uint")) {

@@ -470,17 +470,6 @@ void cleanup(void) {
         flatten_primary_methods(fn);
         add_this_formal_to_method(fn);
         change_cast_in_where(fn);
-      } else if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-        if (DefExpr* tdef = dynamic_cast<DefExpr*>(def->exprType)) {
-          if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(tdef->sym)) {
-            if (UserType* ut = dynamic_cast<UserType*>(ts->type)) {
-              if (dynamic_cast<SymExpr*>(ut->typeExpr)) {
-                ut->typeExpr->replace(new CallExpr(PRIMITIVE_TYPEOF, arg));
-                arg->type = dtAny;
-              }
-            }
-          }
-        }
       }
     }
   }

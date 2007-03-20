@@ -101,14 +101,11 @@ checkParsed(void) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
       } else if (dynamic_cast<VarSymbol*>(def->sym))
-        if (dynamic_cast<FnSymbol*>(def->parentSymbol) ||
-            dynamic_cast<ModuleSymbol*>(def->parentSymbol))
-          if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
-            if (!dynamic_cast<CallExpr*>(def->parentExpr) &&
-                !dynamic_cast<NamedExpr*>(def->parentExpr))
-              USR_FATAL_CONT(def->sym,
-                             "Variable '%s' is not initialized or has no type",
-                             def->sym->name);
+        if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
+          if (dynamic_cast<BlockStmt*>(def->parentExpr))
+            USR_FATAL_CONT(def->sym,
+                           "Variable '%s' is not initialized or has no type",
+                           def->sym->name);
     }
 
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
