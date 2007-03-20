@@ -6,6 +6,7 @@ enum classVals {S, W, A, B, C, D};
 
 
 const Class: domain(classVals);
+
 const probSizes:   [Class] int = (/ 1400, 7000, 14000, 75000, 150000, 150000 /),
       nonZeroes:   [Class] int = (/ 7, 8, 11, 13, 15, 21 /),
       shifts:      [Class] int = (/ 10, 12, 20, 60, 110, 500 /),
@@ -30,21 +31,19 @@ config const numTrials = 1,
 
 
 def main() {
-  const MatrixSpace = [1..n, 1..n];
-  var A: [MatrixSpace] elemType;
-  // WANT the above to be:
-  //     const DenseSpace = [1..n, 1..n];
-  //     var MatrixSpace: sparse subdomain(DenseSpace) dist(CSR);
-  //     var A: [SparseMatSpace] elemType;
+  const DenseSpace = [1..n, 1..n];
+
+  var MatrixSpace: sparse subdomain(DenseSpace);
+
+  var A: [SparseMatSpace] elemType;
 
   for (ind, v) in makea(elemType, n, nonzer, rcond, shift) {
+    MatrixSpace += ind;
     A(ind) += v;
   }
-  // WANT the body of the above to be:
-  //     MatrixSpace += ind;
-  //     A(ind) += v;
 
   const VectorSpace = [1..n];
+
   var X: [VectorSpace] elemType,
       zeta = 0.0;
 
@@ -87,15 +86,11 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
   var Z: [VectDom] elemType = 0.0,
       R = X,
       P = R;
+
   var rho = + reduce R**2;
- 
+
   for cgit in 1..cgitmax {
-    // WANT (a partial reduction):
-    //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
-    // INSTEAD OF:
-    const Q: [VectDom] elemType;
-    [i in MatDom(1)] Q(i) = + reduce [j in MatDom(2)] (A(i,j) * P(j));
-    //
+    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
 
     const alpha = rho / + reduce (P*Q);
     Z += alpha*P;
@@ -106,11 +101,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
     const beta = rho / rho0;
     P = R + beta*P;
   }
-  // WANT (a partial reduction):
-  //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
-  // INSTEAD OF:
-  [i in MatDom(1)] R(i) = + reduce [j in MatDom(2)] (A(i,j) * Z(j));
-  //
+  R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
 
   const rnorm = sqrt(+ reduce ((X-R)**2));
 
