@@ -96196,3 +96196,26 @@ Modified files:
 	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-dense.execopts 
 	                           cg-dense.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 17:09:17 -- bradc
+
+Log message:
+	Improved our syntax error messages so that (a) they no
+	longer mention yytext (an internal variable name), and
+	so that they are more similar to our other error
+	messages.  Note that this error message is currently
+	special-cased because it refers to the yyfilename and
+	lineno (and is the only one which does).  If anyone
+	has thoughts about unifying it more, let me know.
+	
+	Thus, a syntax error currently ends up looking like:
+	
+	filename.chpl:lineno syntax error: near 'sourcetoken'
+
+Modified files:
+	chapel/compiler/parser/: yy.cpp 
+	chapel/test/classes/deitz/: test_badclass1.good 
+	chapel/test/parsing/shannon/: invalidToken.good 
+	chapel/test/trivial/bradc/: defaultinit2.good 
+
