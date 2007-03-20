@@ -4,8 +4,7 @@
 
 
 void yyerror(const char *str) {
-  fprintf(stderr, "%s:%d ERROR: %s\n", yyfilename, chplLineno, str);
-  fprintf(stderr, "yytext is: %s\n", yytext);
+  fprintf(stderr, "%s:%d %s: near '%s'\n", yyfilename, chplLineno, str, yytext);
   exit(1);
 }
 

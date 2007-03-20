@@ -1,2 +1,1 @@
-invalidToken.chpl:3 ERROR: syntax error
-yytext is: one
+invalidToken.chpl:3 syntax error: near 'one'
