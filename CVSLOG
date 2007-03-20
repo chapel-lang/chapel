@@ -96263,3 +96263,53 @@ Log message:
 Added files:
 	chapel/test/studies/lu/marybeth/: blocks-wish.mb 
 
+---------------------------------------------------------------------------
+
+03/20/07 12:06:24 -- deitz
+
+Log message:
+	Added support for using a query type or parameter nested inside a type
+	in a formal argument's type specification.  This is only supported at
+	one level deep.  This supports the following code with the following
+	transformations given a class C parameterized by a type t and a type
+	tt (as in Class C { type t; type tt; ... }):
+	
+	  def foo(c: C(?u)) { var x: u; ... }
+	=>
+	  def foo(c: C) { var x: c.t; ... }
+	
+	  def foo(c: C(tt=?u)) { var x: u; ... }
+	=>
+	  def foo(c: C) { var x: c.tt; ... }
+	
+	  def foo(c: C(int, ?u) { var x: y; ... }
+	=>
+	  def foo(c: C) where c.t == int { var x: c.tt; ... }
+	
+	The Generics chapter of the specification needs to be updated with
+	these semantics.  The semantic interaction with variable length
+	argument lists is forthcoming.  Deeper nesting semantics seems like it
+	should be straightforward.  Query types or parameters cannot be used
+	except in the specification of a formal argument's type.  The
+	interaction with subclasses needs to be defined.
+	
+	Our current path of language definition is likely to eventually
+	require a healthy dose of limitations and restrictions leading to
+	non-orthogonalities that are hopefully outweighed by simplicity and
+	practical considerations.
+	
+	Added four test cases.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_query_field1.chpl 
+	                                         test_query_field1.good 
+	                                         test_query_field2.chpl 
+	                                         test_query_field2.good 
+	                                         test_query_field3.chpl 
+	                                         test_query_field3.good 
+	                                         test_query_field4.chpl 
+	                                         test_query_field4.good 
+
