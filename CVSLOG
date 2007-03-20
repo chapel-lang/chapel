@@ -96313,3 +96313,19 @@ Added files:
 	                                         test_query_field4.chpl 
 	                                         test_query_field4.good 
 
+---------------------------------------------------------------------------
+
+03/20/07 13:51:24 -- deitz
+
+Log message:
+	Moved handling of top-level query types to the same place that nested
+	query types and parameters are handled.
+	
+	Simplified code in the parser, code to check the AST after parsing,
+	and removed some code in cleanup.  Added a block of code in normalize.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+
