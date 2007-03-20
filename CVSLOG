@@ -96252,3 +96252,14 @@ Added files:
 Removed files:
 	chapel/test/npb/cg/bradc/: cg-makea.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 21:31:02 -- marybeth
+
+Log message:
+	Checking in block LU algorithm that demonstrates some
+	desired functionality.  This is for discussion purposes.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: blocks-wish.mb 
+
