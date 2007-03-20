@@ -1,5 +1,7 @@
 use Random;
 
+type elemType = real(64);
+
 enum classVals {S, W, A, B, C, D};
 
 
@@ -10,18 +12,16 @@ const probSizes:   [Class] int = (/ 1400, 7000, 14000, 75000, 150000, 150000 /),
       nonZeroes:   [Class] int = (/ 7, 8, 11, 13, 15, 21 /),
       shifts:      [Class] int = (/ 10, 12, 20, 60, 110, 500 /),
       numIters:    [Class] int = (/ 15, 15, 15, 75, 75, 100 /),
-      verifyZetas: [Class] real = (/ 8.5971775078648, 10.362595087124,
-                                    17.130235054029,  22.712745482631,
-                                    28.973605592845,  52.5145321058 /);
+      verifyZetas: [Class] elemType = (/ 8.5971775078648, 10.362595087124,
+                                        17.130235054029,  22.712745482631,
+                                        28.973605592845,  52.5145321058 /);
 
 config const n = probSizes(probClass),
-             rcond = 0.1,
              nonzer = nonZeroes(probClass),
              shift = shifts(probClass),
              niter = numIters(probClass),
-             zetaVerifyValue = verifyZetas(probClass);
-
-type elemType = real(64);
+             zetaVerifyValue = verifyZetas(probClass),
+             rcond = 0.1;
 
 config const numTrials = 1,
              verbose = true,
@@ -32,10 +32,17 @@ config const numTrials = 1,
 def main() {
   const MatrixSpace = [1..n, 1..n];
   var A: [MatrixSpace] elemType;
+  // WANT the above to be:
+  //     const DenseSpace = [1..n, 1..n];
+  //     var MatrixSpace: sparse subdomain(DenseSpace) dist(CSR);
+  //     var A: [SparseMatSpace] elemType;
 
-  for ((r,c), v) in makea() {
-    A(r,c) += v;
+  for (ind, v) in makea() {
+    A(ind) += v;
   }
+  // WANT the body of the above to be:
+  //     MatrixSpace += ind;
+  //     A(ind) += v;
 
   const VectorSpace = [1..n];
   var X: [VectorSpace] elemType,
@@ -49,22 +56,18 @@ def main() {
     for it in 1..niter {
       const (Z, rnorm) = conjGrad(A, X);
 
-      const normTemp1 = + reduce (X*Z);
-      const normTemp2 = 1.0 / sqrt(+ reduce(Z*Z));
-      if debug then writeln("normTemp2 is: ", normTemp2);
-      zeta = shift + 1.0 / normTemp1;
+      zeta = shift + 1.0 / + reduce (X*Z);
 
-      if (verbose) then
-        writeln(it, " ", rnorm, " ", zeta);
+      if verbose then writeln(it, " ", rnorm, " ", zeta);
 
-      X = normTemp2*Z;
+      X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }
 
     const runtime = getCurrentTime() - startTime;
 
     if printTiming then writeln("Execution time = ", runtime);
 
-    if (zetaVerifyValue != 0.0) {  // BLC: aww, have to compare against 0.0
+    if (zetaVerifyValue != 0.0) {
       const epsilon = 1.0e-10;
       if (abs(zeta - zetaVerifyValue) <= epsilon) {
         writeln("Verification successful");
@@ -81,18 +84,16 @@ def main() {
 def conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
-  var Z: [VectDom] real = 0.0,
+  var Z: [VectDom] elemType = 0.0,
       R = X,
       P = R;
   var rho = + reduce R**2;
  
-  if debug then writeln("P is: ", P);
-
   for cgit in 1..cgitmax {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     // INSTEAD OF:
-    const Q: [VectDom] real;
+    const Q: [VectDom] elemType;
     [i in MatDom(1)] Q(i) = + reduce [j in MatDom(2)] (A(i,j) * P(j));
     //
 
@@ -100,9 +101,9 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
     Z += alpha*P;
     R -= alpha*Q;
 
-    var rho0 = rho;
+    const rho0 = rho;
     rho = + reduce R**2;
-    var beta = rho / rho0;
+    const beta = rho / rho0;
     P = R + beta*P;
   }
   // WANT (a partial reduction):
@@ -111,20 +112,14 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
   [i in MatDom(1)] R(i) = + reduce [j in MatDom(2)] (A(i,j) * Z(j));
   //
 
-  if debug then writeln("X is: ", X);
-  if debug then writeln("R is: ", R);
-
   const rnorm = sqrt(+ reduce ((X-R)**2));
-  if debug then writeln("rnorm is: ", rnorm);
-
-  if debug then writeln("Z is: ", Z);
 
   return (Z, rnorm);
 }
 
 
 iterator makea() {
-  var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
+  var v: [1..nonzer+1] elemType,  // BLC: insert domains? or grow as necessary?
       iv: [1..nonzer+1] int;
   
   var size = 1.0;
@@ -166,7 +161,8 @@ def sprnvc(n, nz, v, iv, randStr) {
   var indices: domain(int);
 
   for nzv in 1..nz {
-    var vecelt: real, i: int;
+    var vecelt: elemType, 
+        i: int;
     do {
       vecelt = randStr.getNext();
       var vecloc = randStr.getNext(); 
