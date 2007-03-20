@@ -28,7 +28,7 @@ static void fix_def_expr(VarSymbol* var);
 static void tag_global(FnSymbol* fn);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
-static void fixup_parameterized_primitive_formals(FnSymbol* fn);
+static void fixup_query_formals(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -58,7 +58,7 @@ void normalize(BaseAST* base) {
       currentFilename = fn->filename;
       fixup_array_formals(fn);
       clone_parameterized_primitive_methods(fn);
-      fixup_parameterized_primitive_formals(fn);
+      fixup_query_formals(fn);
       change_method_into_constructor(fn);
     }
   }
@@ -70,7 +70,7 @@ void normalize(BaseAST* base) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
       fixup_array_formals(fn);
-      fixup_parameterized_primitive_formals(fn);
+      fixup_query_formals(fn);
       if (fn->buildSetter)
         build_lvalue_function(fn);
     }
@@ -747,17 +747,43 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
         se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
-  fixup_parameterized_primitive_formals(newfn);
+  fixup_query_formals(newfn);
 }
 
 static void
-fixup_parameterized_primitive_formals(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn);
+replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
+                   Vec<BaseAST*>& asts) {
+  if (!arg->isTypeVariable && arg->intent != INTENT_PARAM)
+    USR_FATAL(def, "query variable is not type or parameter");
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->argList->length() != 1)
-        continue;
+    if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (se->var == def->sym) {
+        se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
+      }
+    }
+  }
+}
+
+static void
+add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
+  if (!arg->isTypeVariable && arg->intent != INTENT_PARAM)
+    USR_FATAL(expr, "type actual is not type or parameter");
+  FnSymbol* fn = formal->defPoint->getFunction();
+  if (!fn->where) {
+    fn->where = new BlockStmt(new SymExpr(gTrue));
+    insert_help(fn->where, NULL, fn, fn->argScope);
+  }
+  Expr* where = fn->where->body->only();
+  where->replace(new CallExpr("&", where->copy(),
+                   new CallExpr("==", expr->copy(),
+                     new CallExpr(".", formal, new_StringSymbol(arg->name)))));
+}
+
+static void
+fixup_query_formals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType)) {
+      // clone query primitive types
       if (DefExpr* def = dynamic_cast<DefExpr*>(call->get(1))) {
         if (call->isNamed("int") || call->isNamed("uint")) {
           for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
@@ -765,19 +791,76 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtInt[i]));
           fn->defPoint->remove();
+          return;
         } else if (call->isNamed("real") || call->isNamed("imag")) {
           for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
             if (dtReal[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtReal[i]));
           fn->defPoint->remove();
+          return;
         } else if (call->isNamed("complex")) {
           for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
             if (dtComplex[i])
               clone_for_parameterized_primitive_formals(fn, def,
                                                         get_width(dtComplex[i]));
           fn->defPoint->remove();
+          return;
         }
+      }
+      bool queried = false;
+      for_actuals(actual, call) {
+        if (dynamic_cast<DefExpr*>(actual))
+          queried = true;
+        if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual))
+          if (dynamic_cast<DefExpr*>(named->actual))
+            queried = true;
+      }
+      if (queried) {
+        Vec<BaseAST*> asts;
+        collect_asts(&asts, fn);
+        SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+        if (!base)
+          USR_FATAL(base, "illegal queried type expression");
+        TypeSymbol* ts = dynamic_cast<TypeSymbol*>(base->var);
+        if (!ts)
+          USR_FATAL(base, "illegal queried type expression");
+        Vec<ArgSymbol*> args;
+        for_formals(arg, ts->type->defaultConstructor) {
+          args.add(arg);
+        }
+        for_actuals(actual, call) {
+          if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
+            for (int i = 0; i < args.n; i++) {
+              if (!strcmp(named->name, args.v[i]->name)) {
+                if (DefExpr* def = dynamic_cast<DefExpr*>(named->actual)) {
+                  replace_query_uses(formal, def, args.v[i], asts);
+                } else {
+                  add_to_where_clause(formal, named->actual, args.v[i]);
+                }
+                args.v[i] = NULL;
+                break;
+              }
+            }
+          }
+        }
+        for_actuals(actual, call) {
+          if (!dynamic_cast<NamedExpr*>(actual)) {
+            for (int i = 0; i < args.n; i++) {
+              if (args.v[i]) {
+                if (DefExpr* def = dynamic_cast<DefExpr*>(actual)) {
+                  replace_query_uses(formal, def, args.v[i], asts);
+                } else {
+                  add_to_where_clause(formal, actual, args.v[i]);
+                }
+                args.v[i] = NULL;
+                break;
+              }
+            }
+          }
+        }
+        formal->defPoint->exprType->remove();
+        formal->type = ts->type;
       }
     }
   }

@@ -226,8 +226,8 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
 %type <pexpr> literal seq_expr where distributed_expr
 %type <pexpr> variable_expr top_level_expr
-%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
-%type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls
+%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
+%type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
 
@@ -1038,20 +1038,28 @@ variable_type:
 ;
 
 
+type_expr:
+  expr_list_item
+| TQUESTION identifier
+    { $$ = new DefExpr(new VarSymbol($2)); }
+| identifier TASSIGN TQUESTION identifier
+    { $$ = new NamedExpr($1, new DefExpr(new VarSymbol($4))); }
+;
+
+
+type_expr_ls:
+  /* nothing */
+    { $$ = new AList(); }
+| type_expr
+    { $$ = new AList($1); }
+| type_expr_ls TCOMMA type_expr
+    { $1->insertAtTail($3); }
+;
+
+
 parenop_type:
-  composable_type TLP expr_ls TRP
+  composable_type TLP type_expr_ls TRP
     { $$ = new CallExpr($1, $3); }
-| composable_type TLP TQUESTION identifier TRP
-    {
-      CallExpr* call = new CallExpr($1, new DefExpr(new VarSymbol($4)));
-      if (!(call->isNamed("int") ||
-            call->isNamed("uint") ||
-            call->isNamed("real") ||
-            call->isNamed("imag") ||
-            call->isNamed("complex")))
-        USR_FATAL(call, "nested queries not supported on non-primitive types");
-      $$ = call;
-    }
 ;
 
 
