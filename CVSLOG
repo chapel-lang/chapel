@@ -96179,3 +96179,20 @@ Added files:
 	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-dense.execopts 
 	                           cg-dense.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 17:04:58 -- bradc
+
+Log message:
+	Took a brief clean-up pass over the CG code.
+	
+	I forgot to mention that the one big open question
+	that this raises other than implementing sparse
+	domains and arrays is how we should express
+	partial reductions in the language (and then get
+	them implemented).
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-dense.execopts 
+	                           cg-dense.good 
+
