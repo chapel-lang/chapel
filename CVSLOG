@@ -96219,3 +96219,36 @@ Modified files:
 	chapel/test/parsing/shannon/: invalidToken.good 
 	chapel/test/trivial/bradc/: defaultinit2.good 
 
+---------------------------------------------------------------------------
+
+03/19/07 18:25:11 -- bradc
+
+Log message:
+	Broke the makea() iterator and support code into its own
+	module to modularize it, allow it to be reused, and give
+	the ability to swap different generators into the benchmark.
+	This file is called cg-makea.chpl.  The previous test called
+	cg-makea.chpl is now called cg-makea1.chpl.
+	
+	Rewrote cg-dense.chpl to make use of this module.
+	
+	Added files:
+	  cg-ideal.chpl -- an idealized version of cg-dense.chpl that
+	                   uses sparse domains and arrays and partial
+	                   reductions
+	  cg-commented.chpl -- a commented version of the above
+	  cg-makea-commented.chpl -- a commented version of cg-makea
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-makea.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-commented.chpl cg-commented.notest 
+	                           cg-dense.compopts cg-ideal.chpl 
+	                           cg-ideal.notest 
+	                           cg-makea-commented.chpl 
+	                           cg-makea-commented.notest 
+	                           cg-makea.notest cg-makea1.chpl 
+	                           cg-makea1.good cg-makea1.out 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea.good 
+
