@@ -96449,3 +96449,24 @@ Added files:
 	                                         test_query_field7.chpl 
 	                                         test_query_field7.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 12:04:30 -- diten
+
+Log message:
+	Parameter folding of relational operators on enum types.
+	
+	Added a generic type "enumerated" which matches all enum types.  Added param
+	functions to do the relational operations over type "enumerated".
+	
+	Added test "paramenums" showing parameter enums being folded over relational
+	operators.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+Added files:
+	chapel/test/types/enum/diten/: paramenums.chpl paramenums.good 
+
