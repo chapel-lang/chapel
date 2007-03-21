@@ -96357,3 +96357,20 @@ Removed files:
 	chapel/test/types/type_variables/deitz/functions/: 
 	                                                   test_foo7.future 
 
+---------------------------------------------------------------------------
+
+03/21/07 10:57:47 -- bradc
+
+Log message:
+	A few cosmetic changes to CG.  Moved a config var that
+	is specific to makea into cg-makea.chpl.  Fixed a typo
+	in codes that are not being tested, but filed for future
+	reference that Mary Beth caught.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: .cvsignore cg-commented.chpl 
+	                           cg-dense.chpl cg-ideal.chpl 
+	                           cg-makea-commented.chpl cg-makea.chpl 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea1.out 
+
