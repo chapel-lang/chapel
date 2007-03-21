@@ -96599,3 +96599,19 @@ Log message:
 Added files:
 	chapel/test/studies/lu/marybeth/: blocks-wish2.mb 
 
+---------------------------------------------------------------------------
+
+03/21/07 16:46:19 -- deitz
+
+Log message:
+	Made stridable parameter of range have default false.  Use
+	
+	  range(stridable=true)
+	
+	for ranges that can be strided, or use "by 1" on literals.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+
