@@ -96374,3 +96374,78 @@ Modified files:
 Removed files:
 	chapel/test/npb/cg/bradc/: cg-makea1.out 
 
+---------------------------------------------------------------------------
+
+03/21/07 11:41:38 -- deitz
+
+Log message:
+	Added support for query types and nested query types and parameters
+	within the context of a variable-length argument's type specification.
+	
+	A query variable of a variable-length argument must be indexed into as
+	if it is a tuple in order to get a specific instance.  It is currently
+	illegal to access the query variable as a whole.
+	
+	Some examples should clarify and the spec should be updated with the
+	new semantics:
+	
+	  def foo(x: ?t ...?k) { var y: t(2); ...
+	=>
+	  def foo(x ...?k) { var y: x(2).type; ...
+	
+	Given a class C parameterized by a type t and a type tt:
+	
+	  def foo(c: C(int, ?u) ...?k) { var y: u(1); ...
+	=>
+	  def foo(c: C ...?k) where AND_EXPAND(c, t, int) { var y: c(1).tt; ...
+	
+	The AND_EXPAND primitive is explained below.  Assuming k == 2:
+	
+	  def foo(c1: C, c2: C) where (c1.t == int) &
+	                              (c2.t == int) { var y: c1.tt; ...
+	
+	Note that the type of the c arguments is always generic even if "C" is
+	not generic in the sense that all of the parameters or types have
+	default values.
+	
+	  writeln(x);
+	    var y: t(2);
+	    writeln(y);
+	  }
+	
+	Added a new primitive PRIMITIVE_TUPLE_AND_EXPAND that takes three
+	arguments: the formal argument, the field accessed from this formal
+	argument, and an expression it is to be compared against using '=='.
+	This primitive is expanded during function resolution based on the
+	size of the tuple in a similar way to PRIMITIVE_TUPLE_EXPAND.  The
+	expansion is transformed as follows:
+	
+	  PRIMITIVE_TUPLE_AND_EXPAND x t int
+	=>
+	  (x(1).t == int) & (x(2).t == int) & (x(3).t == int) & ...
+	
+	Added parameter method _isIntegralType(type t) to determine whether a
+	type is an integral type.  Used this to avoid "initializing" ranges
+	that are instantiated over non-integral types.  This happens because
+	we specify ranges based on the dimensional index types of an array
+	wrapper.  If it is an array wrapper of an associative array with a
+	non-integral type, then the type of the formal argument is
+	instantiated to determine if the function is called and this leads to
+	errors for non-integral associative arrays even though that method
+	should never be ultimately selected.
+	
+	Added three tests.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: ChapelBase.chpl ChapelSeq.chpl 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_query_field5.chpl 
+	                                         test_query_field5.good 
+	                                         test_query_field6.chpl 
+	                                         test_query_field6.good 
+	                                         test_query_field7.chpl 
+	                                         test_query_field7.good 
+
