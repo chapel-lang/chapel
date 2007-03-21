@@ -37,14 +37,18 @@ class RandomStream {
     internalSeed = seed;
     // ensure seed is odd
     if (internalSeed % 2 == 0) then internalSeed += 1;
-    cursorVal = internalSeed:real;
+    initCursorVal();
     getNext();
   }
 
-  def randlc(inout x) {
-    var t1 = r23 * arand;
+  def initCursorVal() {
+    cursorVal = internalSeed:real;
+  }
+
+  def randlc(inout x, a = arand) {
+    var t1 = r23 * a;
     const a1 = floor(t1),
-          a2 = arand - t23 * a1;
+          a2 = a - t23 * a1;
     t1 = r23 * x;
     const x1 = floor(t1),
           x2 = x - t23 * x1;
@@ -59,43 +63,35 @@ class RandomStream {
     return r46 * x3;
   }
 
-  // NOTE: this routine is current untested.
-  // reworked things a bit to simplify the
-  // interface, take advantage of class
-  // ability to retain state, but haven't
-  // tried this routine yet
-  def getNth(in n : int) {
-    var x  = internalSeed:real,
-        t = arand;
-    while (n != 0) {
-      const i = n / 2;
-      if (2 * i != n) then
-        nextrandlc(x);
-      nextrandlc(t);
-      n = i;
-    }
-    return x;
-  }
-
-
-  def nextrandlc() {
+  def getNext() {
     return randlc(cursorVal);
   }
 
-  def getNext() {
-    return nextrandlc();
+  def getNth(in n : int) {
+    var t = arand;
+    initCursorVal();
+    var retval = arand;
+    while (n != 0) {
+      const i = n / 2;
+      if (2 * i != n) then
+        randlc(cursorVal, t);
+      retval = randlc(t, t);
+      n = i;
+    }
+    return getNext();
   }
+
 
   def fillRandom(x:[?D] real) {
     for i in D {
-      x(i) = nextrandlc();
+      x(i) = getNext();
     }
   }
 
   def fillRandom(x:[?D] complex) {
     for i in D {
-      x(i).re = nextrandlc();
-      x(i).im = nextrandlc();
+      x(i).re = getNext();
+      x(i).im = getNext();
     }
   }
 }
