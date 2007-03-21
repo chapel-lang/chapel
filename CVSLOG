@@ -96329,3 +96329,20 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 	                         semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+03/20/07 17:54:22 -- bradc
+
+Log message:
+	Some additional scrubbing of the Random module,
+	including fixing its getNth() routine which had
+	not previously been working or tested.  Added a
+	test to ensure that it continues working.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+Added files:
+	chapel/test/modules/standard/Random/bradc/: .cvsignore 
+	                                            testGetNth.chpl 
+	                                            testGetNth.good 
+
