@@ -96505,3 +96505,18 @@ Added files:
 	                                homogTupleArr.future 
 	                                homogTupleArr.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 14:59:29 -- bradc
+
+Log message:
+	As soon as I committed the previous test, realized that
+	I should've made a similar test for heterogeneous tuples.
+	This one works much better, except for the one case that
+	mixes arrays, homog tuples and het tuples.
+
+Added files:
+	chapel/test/types/tuple/bradc/: hetTupleArr.chpl 
+	                                hetTupleArr.future 
+	                                hetTupleArr.good 
+
