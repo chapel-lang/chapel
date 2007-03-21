@@ -2188,7 +2188,7 @@ resolveBody(Expr* body) {
         CallExpr* from;
         for (int i = callStack.n-1; i >= 0; i--) {
           from = callStack.v[i];
-          if (from->lineno > 0)
+          if (from->lineno > 0 && from->getModule()->modtype != MOD_STANDARD)
             break;
         }
         char* str = "";

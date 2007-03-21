@@ -21,7 +21,11 @@ class SingleLocaleArithmeticDomain: BaseDomain {
 
   def getIndices() return ranges;
 
-  def setIndices(x: rank*range(dim_type)) {
+  def setIndices(x) {
+    if ranges.size != x.size then
+      compilerError("rank mismatch in domain assignment");
+    if ranges(1).eltType != x(1).eltType then
+      compilerError("index type mismatch in domain assignment");
     ranges = x;
   }
 

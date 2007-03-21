@@ -318,13 +318,13 @@ class _bxor {                // bit-wise xor
 // syntactic bridge code for bounded ranges
 //
 def _build_range(param bt: int, low: int, high: int)
-  return range(int, bt, low, high);
+  return range(int, bt, false, low, high);
 def _build_range(param bt: int, low: uint, high: uint)
-  return range(uint, bt, low, high);
+  return range(uint, bt, false, low, high);
 def _build_range(param bt: int, low: int(64), high: int(64))
-  return range(int(64), bt, low, high);
+  return range(int(64), bt, false, low, high);
 def _build_range(param bt: int, low: uint(64), high: uint(64))
-  return range(uint(64), bt, low, high);
+  return range(uint(64), bt, false, low, high);
 def _build_range(param bt: int, low, high) {
   compilerError("range bounds are not integral");
 }
@@ -334,13 +334,13 @@ def _build_range(param bt: int, low, high) {
 // syntactic bridge code for unbounded ranges
 //
 def _build_range(param bt: int, bound: int)
-  return range(int, bt, bound, bound);
+  return range(int, bt, false, bound, bound);
 def _build_range(param bt: int, bound: uint)
-  return range(uint, bt, bound, bound);
+  return range(uint, bt, false, bound, bound);
 def _build_range(param bt: int, bound: int(64))
-  return range(int(64), bt, bound, bound);
+  return range(int(64), bt, false, bound, bound);
 def _build_range(param bt: int, bound: uint(64))
-  return range(uint(64), bt, bound, bound);
+  return range(uint(64), bt, false, bound, bound);
 def _build_range(param bt: int, bound) {
   compilerError("range bound is not integral");
 }
@@ -357,12 +357,13 @@ def _build_range(param bt: int, bound) {
 //   2 = upper bound only
 //
 record range {
-  type eltType = int;           // element type
-  param boundedType: int = 0;   // bounded or not
-  var _low : eltType = 1;       // lower bound
-  var _high : eltType = 0;      // upper bound
-  var _stride : int = 1;        // integer stride of range
-  var _promotionType : eltType; // enables promotion
+  type eltType = int;             // element type
+  param boundedType: int = 0;     // bounded or not
+  param stridable: bool = true;   // range is never strided?
+  var _low : eltType = 1;         // lower bound
+  var _high : eltType = 0;        // upper bound
+  var _stride : int = 1;          // integer stride of range
+  var _promotionType : eltType;   // enables promotion
 
   def low: eltType return _low;
   def high: eltType return _high;
@@ -379,30 +380,36 @@ record range {
     }
   }
 
-  def getHeadCursor() {
-    if boundedType == 1 then
-      if _stride < 0 then
-        halt("error: unbounded range has negative stride and lower bound");
-    if boundedType == 2 then
+  pragma "inline" def getHeadCursor() {
+    if stridable {
       if _stride > 0 then
-        halt("error: unbounded range has positive stride and upper bound");
-    if _stride > 0 then
+        return _low;
+      else
+        return _high;
+    } else {
       return _low;
-    else
-      return _high;
+    }
   }
 
-  def getNextCursor(c)
-    return c + _stride:eltType;
+  pragma "inline" def getNextCursor(c) {
+    if stridable then
+      return c + _stride:eltType;
+    else
+      return c + 1;
+  }
 
-  def getValue(c)
+  pragma "inline" def getValue(c)
     return c;
 
-  def isValidCursor?(c) {
-    if boundedType == 0 then
-      return _low <= c && c <= _high;
-    else
+  pragma "inline" def isValidCursor?(c) {
+    if boundedType == 0 {
+      if stridable then
+        return _low <= c && c <= _high;
+      else
+        return c <= _high;
+    } else {
       return true;
+    }
   }
 
   def length {
@@ -419,12 +426,18 @@ def by(s : range, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
   if s._low == 1 && s._high == 0 then
-    return range(s.eltType, s.boundedType, s._low, s._high, s._stride);
-  var as = range(s.eltType, s.boundedType, s._low, s._high, s._stride * i);
+    return range(s.eltType, s.boundedType, true, s._low, s._high, s._stride);
+  var as = range(s.eltType, s.boundedType, true, s._low, s._high, s._stride * i);
   if as._stride < 0 then
     as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
   else
     as._high = as._high - (as._high - as._low) % (as._stride):as.eltType;
+  if as.boundedType == 1 then
+    if as._stride < 0 then
+      halt("error: unbounded range has negative stride and lower bound");
+  if as.boundedType == 2 then
+    if as._stride > 0 then
+      halt("error: unbounded range has positive stride and upper bound");
   return as;
 }
 
@@ -510,7 +523,7 @@ def _intersect(a: range, b: range) {
   var xx = x:a.eltType;
   var as = (a._stride):a.eltType;
   if abs(a._low - b._low) % gg != 0 then
-    return 1..0:a.eltType;
+    return 1..0:a.eltType by 1;
   var low = max(a._low, b._low);
   var high = min(a._high, b._high);
   var stride = a._stride * b._stride / g;
