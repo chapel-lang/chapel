@@ -96346,3 +96346,14 @@ Added files:
 	                                            testGetNth.chpl 
 	                                            testGetNth.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 09:07:36 -- deitz
+
+Log message:
+	Removed .future of nested query type in formal argument type.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo7.future 
+
