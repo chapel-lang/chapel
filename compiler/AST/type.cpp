@@ -581,6 +581,8 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
   dtSetterToken = createPrimitiveType ("_ST", "_ST");
   CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_st");
+  dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
+  dtEnumerated->isGeneric = true;
 }
 
 
@@ -623,6 +625,11 @@ bool is_complex_type(Type *t) {
     t == dtComplex[COMPLEX_SIZE_64] ||
     t == dtComplex[COMPLEX_SIZE_128] ||
     t == dtComplex[COMPLEX_SIZE_256];
+}
+
+
+bool is_enum_type(Type *t) {
+  return dynamic_cast<EnumType*>(t);
 }
 
 

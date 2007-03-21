@@ -149,6 +149,7 @@ class PrimitiveType : public Type {
 TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtIntegral;
 TYPE_EXTERN Type* dtNumeric;
+TYPE_EXTERN Type* dtEnumerated;
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;
@@ -179,6 +180,7 @@ bool is_uint_type(Type*);
 bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
+bool is_enum_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
 

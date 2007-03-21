@@ -16,6 +16,8 @@ static char* _assign;
 
 Map<Symbol*,Symbol*> paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
+static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
+static long long get_immediate_integral_value(Immediate *imm);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
@@ -182,6 +184,8 @@ canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtAny)
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
+    return true;
+  if (formalType == dtEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric && (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) || is_real_type(actualType) || is_complex_type(actualType)))
     return true;
@@ -1900,6 +1904,130 @@ preFold(Expr* expr) {
   return result;
 }
 
+static long long get_immediate_integral_value(Immediate *imm) {
+  long long value;
+  switch (imm->const_kind) {
+    default: INT_FATAL("non-integer immediate");
+    case NUM_KIND_INT:
+      switch (imm->num_index) {
+        default: INT_FATAL("Bad immediate size");
+        case INT_SIZE_1:
+          value = imm->v_bool;
+          break;
+        case INT_SIZE_8:
+          value = imm->v_int8;
+          break;
+        case INT_SIZE_16:
+          value = imm->v_int16;
+          break;
+        case INT_SIZE_32:
+          value = imm->v_int32;
+          break;
+        case INT_SIZE_64:
+          value = imm->v_int64;
+          break;
+      }
+      break;
+    case NUM_KIND_UINT:
+      switch (imm->num_index) {
+        default: INT_FATAL("Bad immediate size");
+        case INT_SIZE_1:
+          value = imm->v_bool;
+          break;
+        case INT_SIZE_8:
+          value = imm->v_uint8;
+          break;
+        case INT_SIZE_16:
+          value = imm->v_uint16;
+          break;
+        case INT_SIZE_32:
+          value = imm->v_uint32;
+          break;
+        case INT_SIZE_64:
+          value = imm->v_uint64;
+          break;
+      }
+      break;
+  }
+  return value;
+}
+
+static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
+  long long val1, val2, count = 0;
+  // ^^^ This is an assumption that "long long" on the compiler host is at
+  // least as big as "int" on the target.  This is not guaranteed to be true.
+  EnumType *type1, *type2;
+
+  type1 = dynamic_cast<EnumType*>(e1->type);
+  type2 = dynamic_cast<EnumType*>(e2->type);
+  assert(type1 && type2);
+
+  // Loop over the enum values to find the int value of e1
+  for_alist(DefExpr, constant, type1->constants) {
+    bool hasImmediate = false;
+    if (SymExpr* init = dynamic_cast<SymExpr*>(constant->init)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(init->var)) {
+        if (var->immediate) {
+          count = get_immediate_integral_value(var->immediate);
+          hasImmediate = true;
+        }
+      }
+    }
+    if (!hasImmediate) {
+      count++;
+    }
+    if (constant->sym == e1) {
+      val1 = count;
+      break;
+    }
+  }
+  // Loop over the enum values to find the int value of e2
+  count = 0;
+  for_alist(DefExpr, constant, type2->constants) {
+    bool hasImmediate = false;
+    if (SymExpr* init = dynamic_cast<SymExpr*>(constant->init)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(init->var)) {
+        if (var->immediate) {
+          count = get_immediate_integral_value(var->immediate);
+          hasImmediate = true;
+        }
+      }
+    }
+    if (!hasImmediate) {
+      count++;
+    }
+    if (constant->sym == e2) {
+      val2 = count;
+      break;
+    }
+  }
+
+  // All operators on enum types result in a bool
+  imm->const_kind = NUM_KIND_UINT;
+  imm->num_index = INT_SIZE_1;
+  switch (op) {
+    default: INT_FATAL("fold constant op not supported"); break;
+    case P_prim_equal:
+      imm->v_bool = val1 == val2;
+      break;
+    case P_prim_notequal:
+      imm->v_bool = val1 != val2;
+      break;
+    case P_prim_less:
+      imm->v_bool = val1 < val2;
+      break;
+    case P_prim_lessorequal:
+      imm->v_bool = val1 <= val2;
+      break;
+    case P_prim_greater:
+      imm->v_bool = val1 > val2;
+      break;
+    case P_prim_greaterorequal:
+      imm->v_bool = val1 >= val2;
+      break;
+  }
+}
+
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {            \
     if (VarSymbol* lhs = dynamic_cast<VarSymbol*>(sym->var)) {          \
@@ -1925,6 +2053,15 @@ preFold(Expr* expr) {
               call->replace(result);                                    \
             }                                                           \
           }                                                             \
+        }                                                               \
+      }                                                                 \
+    } else if (EnumSymbol* lhs = dynamic_cast<EnumSymbol*>(sym->var)) { \
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {        \
+        if (EnumSymbol* rhs = dynamic_cast<EnumSymbol*>(sym->var)) {    \
+          Immediate imm;                                                \
+          foldEnumOp(prim, lhs, rhs, &imm);                             \
+          result = new SymExpr(new_ImmediateSymbol(&imm));              \
+          call->replace(result);                                        \
         }                                                               \
       }                                                                 \
     }                                                                   \
