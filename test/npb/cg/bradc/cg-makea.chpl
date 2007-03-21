@@ -2,7 +2,9 @@ module CGMakeA {
 
   use Random;
 
-  iterator makea(type elemType, n, nonzer, rcond, shift) {
+  config const rcond = 0.1;
+
+  iterator makea(type elemType, n, nonzer, shift) {
     var v: [1..nonzer+1] elemType, // BLC: insert domains? or grow as necessary?
         iv: [1..nonzer+1] int;
 

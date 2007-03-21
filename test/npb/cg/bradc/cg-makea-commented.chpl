@@ -10,12 +10,17 @@ module CGMakeA {
   //
   use Random;
 
+  //
+  // configurable rcond for the random matrix
+  //
+  config const rcond = 0.1;
+
   // 
   // Here's the iterator, parameterized by the type of element to be
   // produced, the problem size, an indication of the number of
   // nonzeroes to compute, and r condition and shift factors
   //
-  iterator makea(type elemType, n, nonzer, rcond, shift) {
+  iterator makea(type elemType, n, nonzer, shift) {
     //
     // temporary storage space for the computation
     //

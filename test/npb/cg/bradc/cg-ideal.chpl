@@ -21,8 +21,7 @@ config const n = probSizes(probClass),
              nonzer = nonZeroes(probClass),
              shift = shifts(probClass),
              niter = numIters(probClass),
-             zetaVerifyValue = verifyZetas(probClass),
-             rcond = 0.1;
+             zetaVerifyValue = verifyZetas(probClass);
 
 config const numTrials = 1,
              verbose = true,
@@ -35,9 +34,9 @@ def main() {
 
   var MatrixSpace: sparse subdomain(DenseSpace);
 
-  var A: [SparseMatSpace] elemType;
+  var A: [MatrixSpace] elemType;
 
-  for (ind, v) in makea(elemType, n, nonzer, rcond, shift) {
+  for (ind, v) in makea(elemType, n, nonzer, shift) {
     MatrixSpace += ind;
     A(ind) += v;
   }

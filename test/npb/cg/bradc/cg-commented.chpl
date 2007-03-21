@@ -42,8 +42,7 @@ config const n = probSizes(probClass),
              nonzer = nonZeroes(probClass),
              shift = shifts(probClass),
              niter = numIters(probClass),
-             zetaVerifyValue = verifyZetas(probClass),
-             rcond = 0.1;
+             zetaVerifyValue = verifyZetas(probClass);
 
 //
 // some experimental parameters
@@ -71,7 +70,7 @@ def main() {
   //
   // the sparse matrix itself
   //
-  var A: [SparseMatSpace] elemType;
+  var A: [MatrixSpace] elemType;
 
   //
   // makea() is an iterator that yields a series of (row,col) indices
@@ -82,7 +81,7 @@ def main() {
   // array reallocations required, but I use it here because I think
   // it's the most instructive way to write it
   //
-  for (ind, v) in makea(elemType, n, nonzer, rcond, shift) {
+  for (ind, v) in makea(elemType, n, nonzer, shift) {
     MatrixSpace += ind;
     A(ind) += v;
   }
