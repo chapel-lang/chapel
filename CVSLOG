@@ -96485,3 +96485,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/07 14:52:14 -- bradc
+
+Log message:
+	A future showing that homogeneous tuple syntax is a bit
+	feisty -- moreso than I (or Steve) were predicting over
+	lunch.  In particular, tuples of tuples don't seem to be
+	supported, and arrays of tuples don't seem to work well
+	either.
+	
+	We may decide that some of these forms are illegal which
+	is fine -- this test just captures some of the forms that
+	I was experimenting with.
+
+Added files:
+	chapel/test/types/tuple/bradc/: homogTupleArr.chpl 
+	                                homogTupleArr.future 
+	                                homogTupleArr.good 
+
