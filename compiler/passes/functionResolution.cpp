@@ -17,7 +17,6 @@ static char* _assign;
 Map<Symbol*,Symbol*> paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
-static long long get_immediate_integral_value(Immediate *imm);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
@@ -1904,57 +1903,9 @@ preFold(Expr* expr) {
   return result;
 }
 
-static long long get_immediate_integral_value(Immediate *imm) {
-  long long value;
-  switch (imm->const_kind) {
-    default: INT_FATAL("non-integer immediate");
-    case NUM_KIND_INT:
-      switch (imm->num_index) {
-        default: INT_FATAL("Bad immediate size");
-        case INT_SIZE_1:
-          value = imm->v_bool;
-          break;
-        case INT_SIZE_8:
-          value = imm->v_int8;
-          break;
-        case INT_SIZE_16:
-          value = imm->v_int16;
-          break;
-        case INT_SIZE_32:
-          value = imm->v_int32;
-          break;
-        case INT_SIZE_64:
-          value = imm->v_int64;
-          break;
-      }
-      break;
-    case NUM_KIND_UINT:
-      switch (imm->num_index) {
-        default: INT_FATAL("Bad immediate size");
-        case INT_SIZE_1:
-          value = imm->v_bool;
-          break;
-        case INT_SIZE_8:
-          value = imm->v_uint8;
-          break;
-        case INT_SIZE_16:
-          value = imm->v_uint16;
-          break;
-        case INT_SIZE_32:
-          value = imm->v_uint32;
-          break;
-        case INT_SIZE_64:
-          value = imm->v_uint64;
-          break;
-      }
-      break;
-  }
-  return value;
-}
-
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
-  long long val1, val2, count = 0;
-  // ^^^ This is an assumption that "long long" on the compiler host is at
+  long val1, val2, count = -1;
+  // ^^^ This is an assumption that "long" on the compiler host is at
   // least as big as "int" on the target.  This is not guaranteed to be true.
   EnumType *type1, *type2;
 
@@ -1964,16 +1915,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
 
   // Loop over the enum values to find the int value of e1
   for_alist(DefExpr, constant, type1->constants) {
-    bool hasImmediate = false;
-    if (SymExpr* init = dynamic_cast<SymExpr*>(constant->init)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(init->var)) {
-        if (var->immediate) {
-          count = get_immediate_integral_value(var->immediate);
-          hasImmediate = true;
-        }
-      }
-    }
-    if (!hasImmediate) {
+    if (!get_int(constant->init, &count)) {
       count++;
     }
     if (constant->sym == e1) {
@@ -1982,18 +1924,9 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
     }
   }
   // Loop over the enum values to find the int value of e2
-  count = 0;
+  count = -1;
   for_alist(DefExpr, constant, type2->constants) {
-    bool hasImmediate = false;
-    if (SymExpr* init = dynamic_cast<SymExpr*>(constant->init)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(init->var)) {
-        if (var->immediate) {
-          count = get_immediate_integral_value(var->immediate);
-          hasImmediate = true;
-        }
-      }
-    }
-    if (!hasImmediate) {
+    if (!get_int(constant->init, &count)) {
       count++;
     }
     if (constant->sym == e2) {
