@@ -1300,6 +1300,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_TYPEOF:
     case PRIMITIVE_USE:
     case PRIMITIVE_TUPLE_EXPAND:
+    case PRIMITIVE_TUPLE_AND_EXPAND:
     case PRIMITIVE_ERROR:
     case PRIMITIVE_WHEN:
     case PRIMITIVE_LOOP_PARAM:

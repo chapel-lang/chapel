@@ -276,6 +276,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
+  prim_def(PRIMITIVE_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 
   prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid, true);
   prim_def(PRIMITIVE_ARRAY_FREE, "array_free", returnInfoVoid, true);

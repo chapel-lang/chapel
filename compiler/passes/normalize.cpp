@@ -758,7 +758,16 @@ replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
       if (se->var == def->sym) {
-        se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
+        if (formal->variableExpr) {
+          CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+          if (!parent || parent->argList->length() != 1)
+            USR_FATAL(se, "illegal access to query type or parameter");
+          se->replace(new SymExpr(formal));
+          parent->replace(se);
+          se->replace(new CallExpr(".", parent, new_StringSymbol(arg->name)));
+        } else {
+          se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
+        }
       }
     }
   }
@@ -774,9 +783,14 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
     insert_help(fn->where, NULL, fn, fn->argScope);
   }
   Expr* where = fn->where->body->only();
-  where->replace(new CallExpr("&", where->copy(),
-                   new CallExpr("==", expr->copy(),
-                     new CallExpr(".", formal, new_StringSymbol(arg->name)))));
+  Expr* clause;
+  if (formal->variableExpr)
+    clause = new CallExpr(PRIMITIVE_TUPLE_AND_EXPAND, formal,
+                          new_StringSymbol(arg->name), expr->copy());
+  else
+    clause = new CallExpr("==", expr->copy(),
+               new CallExpr(".", formal, new_StringSymbol(arg->name)));
+  where->replace(new CallExpr("&", where->copy(), clause));
 }
 
 static void

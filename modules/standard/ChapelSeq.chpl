@@ -369,10 +369,13 @@ record range {
   def stride: eltType return _stride; // should be :int ??
 
   def initialize() {
-    if _low > _high {
-      _low = 1:eltType;
-      _high = 0:eltType;
-      _stride = 1;
+    if _isIntegralType(eltType) { // due to array wrapper method
+                                  // formal argument type
+      if _low > _high {
+        _low = 1:eltType;
+        _high = 0:eltType;
+        _stride = 1;
+      }
     }
   }
 

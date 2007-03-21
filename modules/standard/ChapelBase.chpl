@@ -714,6 +714,10 @@ def _isPrimitiveType(type t) param return
   (t == complex(64)) | (t == complex(128)) | (t == complex(256)) |
   (t == string);
 
+def _isIntegralType(type t) param return
+  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
+  (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64));
+
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 

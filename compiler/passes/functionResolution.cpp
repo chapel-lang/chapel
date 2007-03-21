@@ -492,7 +492,16 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           arg->defPoint->remove();
           ASTMap update;
           update.put(arg, var);
-          update_symbols(fn, &update);
+          update_symbols(fn->body, &update);
+          if (fn->where) {
+            VarSymbol* var = new VarSymbol(arg->name);
+            fn->where->insertAtHead(
+              new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
+            fn->where->insertAtHead(new DefExpr(var));
+            ASTMap update;
+            update.put(arg, var);
+            update_symbols(fn->where, &update);
+          }
         }
       }
     } else if (!fn->isGeneric && arg->variableExpr)
@@ -1280,6 +1289,53 @@ resolveCall(CallExpr* call) {
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
+  } else if (call->isPrimitive(PRIMITIVE_TUPLE_AND_EXPAND)) {
+    SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+    Symbol* var = dynamic_cast<Symbol*>(sym->var);
+    int size = 0;
+    for (int i = 0; i < var->type->substitutions.n; i++) {
+      if (var->type->substitutions.v[i].key) {
+        if (!strcmp("size", dynamic_cast<Symbol*>(var->type->substitutions.v[i].key)->name)) {
+          size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[i].value)->immediate->int_value();
+          break;
+        }
+      }
+    }
+    if (size == 0)
+      INT_FATAL(call, "Invalid tuple expand primitive");
+    CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
+    call->getStmtExpr()->insertBefore(noop);
+    VarSymbol* tmp = gTrue;
+    for (int i = 1; i <= size; i++) {
+      VarSymbol* tmp1 = new VarSymbol("_expand_temp1");
+      tmp1->canParam = true;
+      VarSymbol* tmp2 = new VarSymbol("_expand_temp2");
+      tmp2->canParam = true;
+      VarSymbol* tmp3 = new VarSymbol("_expand_temp3");
+      tmp3->canParam = true;
+      VarSymbol* tmp4 = new VarSymbol("_expand_temp4");
+      tmp4->canParam = true;
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp2));
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp3));
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp4));
+      call->getStmtExpr()->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, tmp1,
+          new CallExpr(sym->copy(), new_IntSymbol(i))));
+      call->getStmtExpr()->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, tmp2,
+          new CallExpr(get_string(call->get(2)), gMethodToken, tmp1)));
+      call->getStmtExpr()->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, tmp3,
+          new CallExpr("==", tmp2, call->get(3)->copy())));
+      call->getStmtExpr()->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, tmp4,
+          new CallExpr("&", tmp3, tmp)));
+      tmp = tmp4;
+    }
+    call->replace(new SymExpr(tmp));
+    noop->replace(call); // put call back in ast for function resolution
+    makeNoop(call);
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
     Symbol* var = dynamic_cast<Symbol*>(sym->var);
