@@ -96538,3 +96538,53 @@ Added files:
 	                                         test_generic_vararg.chpl 
 	                                         test_generic_vararg.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 15:20:57 -- deitz
+
+Log message:
+	Added a parameter stridable to ranges.  This parameter is true by
+	default but is made false for literal ranges without strides.  I think
+	I should change this to false by default and make it true only if "by"
+	is used on the range.  This is in keeping with my proposal for domains
+	in which stridable would be false by default.  Thus to declare a
+	variable range using type inference that could eventually be assigned
+	a stride, the user would have to write
+	
+	  var r = 1..n by 1
+	
+	Specialized functionality on ranges to the case where there is no
+	stride.  For a simple test case like
+	
+	  for i in 1..n do
+	    writeln(i);
+	
+	this decreases the relevant generated LOC from 52 to 14 when inlining
+	the iterator methods on range.  Why?  Because for strided ranges, we
+	have to handle the case where the stride is negative and start
+	traversing from high and going down to low.
+	
+	Added an inline pragma to the iterator methods on range.
+	
+	Made compiler error messages that are printed out using the
+	compilerError mechanism show line numbers that are in user code.
+	Improved the quality of the error message for domain assignment
+	between domains that have different index types.
+	
+	Important note: Adding stridable to the type of ranges has an impact.
+	The following is now illegal because the return type cannot be
+	inferred.  The two returned ranges have stridable set differently.
+	
+	  def foo(stride_by_two: bool) {
+	    if stride_by_two then
+	      return 1..10 by 2;
+	    else
+	      return 1..10;
+	  }
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/deitz/: test_array_uint2.good 
+
