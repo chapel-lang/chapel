@@ -96520,3 +96520,21 @@ Added files:
 	                                hetTupleArr.future 
 	                                hetTupleArr.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 15:08:12 -- deitz
+
+Log message:
+	Fixed a bug in function resolution in which a variable-length argument
+	that is also generic would never be expanded if the variable-length
+	expression involved any non-trivial expression.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_generic_vararg.chpl 
+	                                         test_generic_vararg.good 
+
