@@ -432,11 +432,16 @@ static FnSymbol*
 expandVarArgs(FnSymbol* fn, int numActuals) {
   bool genericArg = false;
   for_formals(arg, fn) {
-    if (arg->type->isGeneric)
-      genericArg = true;
     if (!genericArg && arg->variableExpr &&
         !dynamic_cast<DefExpr*>(arg->variableExpr))
       resolve_type_expr(arg->variableExpr);
+
+    //
+    // set genericArg to true if a generic argument appears before the
+    // argument with the variable expression
+    //
+    if (arg->type->isGeneric)
+      genericArg = true;
 
     // handle unspecified variable number of arguments
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
