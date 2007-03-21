@@ -96588,3 +96588,14 @@ Modified files:
 	                          SingleLocaleArithmetic.chpl 
 	chapel/test/arrays/deitz/: test_array_uint2.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 16:27:29 -- marybeth
+
+Log message:
+	Second attempt at desired block LU with no pivoting.  It's much closer
+	to the desired implementation.  This is for discussion purposes.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: blocks-wish2.mb 
+
