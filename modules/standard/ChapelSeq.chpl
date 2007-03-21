@@ -359,7 +359,7 @@ def _build_range(param bt: int, bound) {
 record range {
   type eltType = int;             // element type
   param boundedType: int = 0;     // bounded or not
-  param stridable: bool = true;   // range is never strided?
+  param stridable: bool = false;  // range can be strided
   var _low : eltType = 1;         // lower bound
   var _high : eltType = 0;        // upper bound
   var _stride : int = 1;          // integer stride of range

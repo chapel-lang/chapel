@@ -17,7 +17,7 @@ var Block = SingleLocaleDistribution();
 class SingleLocaleArithmeticDomain: BaseDomain {
   param rank : int;
   type dim_type;
-  var ranges : rank*range(dim_type);
+  var ranges : rank*range(dim_type,0,true);
 
   def getIndices() return ranges;
 

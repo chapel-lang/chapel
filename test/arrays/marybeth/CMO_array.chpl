@@ -7,11 +7,11 @@ class CMODist {
 class CMODomain: BaseDomain {
   param rank : int;
   type dim_type;
-  var ranges : rank*range(dim_type,0);
+  var ranges : rank*range(dim_type,0,true);
 
   def getIndices() return ranges;
 
-  def setIndices(x: rank*range(dim_type,0)) {
+  def setIndices(x: rank*range(dim_type,0,true)) {
     ranges = x;
   }
 
