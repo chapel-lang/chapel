@@ -1,0 +1,8 @@
+homogeneous tuple syntax
+
+Homogeneous tuple syntax doesn't seem to be working as I (or, I think
+Steve) had expected.  I think this has been a known fragility in the
+parser for some time now.  This test demonstrates some of it.
+
+Not all of these forms may be correct.  Just trying to establish which
+are and which aren't.
