@@ -96470,3 +96470,18 @@ Modified files:
 Added files:
 	chapel/test/types/enum/diten/: paramenums.chpl paramenums.good 
 
+---------------------------------------------------------------------------
+
+03/21/07 13:27:43 -- diten
+
+Log message:
+	Clean up my new code for relational operator folding over enum values with a
+	few suggestions from Steve.  Use get_int() from expr.cpp instead of writing my
+	own nearly identical version of it.
+	
+	Fix an off-by-one bug in the values of enums without initialization expressions
+	when doing this folding.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
