@@ -1,0 +1,1 @@
+retLitFromVarFn.chpl:6: error: can't return a literal from a var function
