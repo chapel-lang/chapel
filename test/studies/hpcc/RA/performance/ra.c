@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
   indexMask = m-1;
 
   printConfiguration();
-  elemType T[m];
+  elemType * const __restrict T = (elemType*)malloc(m*sizeof(elemType));
   
   double startTime = getCurrentTime();
   indexType i;
