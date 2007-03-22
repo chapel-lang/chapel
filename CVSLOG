@@ -96713,3 +96713,19 @@ Added files:
 	                                       fakeSpsArr2.chpl 
 	                                       fakeSpsArr2.good 
 
+---------------------------------------------------------------------------
+
+03/22/07 10:45:04 -- deitz
+
+Log message:
+	Added a runtime check to halt if a non-stridable range is assigned a
+	non-unit stride.  Added a test to check this halt.  Fixed a test to
+	avoid it.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+	chapel/test/types/seq/deitz/: test_aseq2.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_error_stride_range.chpl 
+	                           test_error_stride_range.good 
+
