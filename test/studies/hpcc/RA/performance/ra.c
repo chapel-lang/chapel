@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 
 typedef unsigned long long randType;
 typedef randType elemType;
@@ -29,10 +31,21 @@ indexType indexMask;
 randType m2[64];
 int randWidth = 64;
 
+// copied from Chapel runtime
+double _now_time(void) {
+  struct tm * now;
+  struct timezone tz;
+  struct timeval t;
+  gettimeofday(&t, &tz);
+  now = localtime(&t.tv_sec);
+  return (double)(now->tm_hour)*3600.0e+6 +
+    (double)(now->tm_min)*60.0e+6 +
+    (double)(now->tm_sec)*1.0e+6 +
+    (double)(t.tv_usec);
+}
+
 double getCurrentTime(void) {
-  static double time = 1.0;
-  time += 1.0;
-  return time;
+  return _now_time() / 1.0e+6;
 }
 
 void getNextRandom(randType* x) {
@@ -161,9 +174,6 @@ void printResults(int successful, double execTime) {
   if (printStats) {
     printf("Execution time = %lg\n", execTime);
     printf("Performance (GUPS) =  %lg\n", (double)N_U / execTime * 1.0e-9);
-    printf("*****************************************************\n");
-    printf("WARNING: getCurrentTime() still needs implementing!!!\n");
-    printf("*****************************************************\n");
   }
 }
 
