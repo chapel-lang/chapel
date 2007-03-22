@@ -1,0 +1,5 @@
+generic types (deitz)
+
+On line 36 of this file, I refer to a generic record type,
+sps33, which has a default type field set to "int".  This
+test doesn't work unless I explicitly supply a type field.
