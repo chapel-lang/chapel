@@ -96729,3 +96729,15 @@ Added files:
 	chapel/test/arrays/deitz/: test_error_stride_range.chpl 
 	                           test_error_stride_range.good 
 
+---------------------------------------------------------------------------
+
+03/22/07 12:20:24 -- deitz
+
+Log message:
+	Added a working test that shows the correct behaviour with resolving a
+	method without parentheses over a method with parentheses.
+
+Added files:
+	chapel/test/classes/deitz/: test_method_noparens_precedence.chpl 
+	                            test_method_noparens_precedence.good 
+
