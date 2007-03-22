@@ -96615,3 +96615,101 @@ Modified files:
 	                          SingleLocaleArithmetic.chpl 
 	chapel/test/arrays/marybeth/: CMO_array.chpl 
 
+---------------------------------------------------------------------------
+
+03/21/07 17:07:43 -- bradc
+
+Log message:
+	This is a series of tests, some of which work,
+	some of which are futures, that explore stencil
+	operations like the ones Richard Barrett is
+	working on.  They also formed good practice for
+	me to see what's involved in implementing sparse
+	arrays.
+	
+	There is one future here that reveals a bug
+	rather than an unimplemented feature --
+	arrayOfSpsArray-workaround-generictype.chpl
+	Steve should take a look at this, ideally.
+	
+	arrayOfArray.chpl : this is the basic stencil
+	  we'd like to have work.  It uses arrays of
+	  arrays, though so doesn't work today.
+	
+	arrayOfArray2.chpl : this is a variation that
+	  uses domain promotion rather than a forall
+	  expression to express the inner loop reduction.
+	
+	arrayOfArray-workaround.chpl : this is a
+	  workaround that uses a 3*(3*real) tuple to
+	  implement the 3x3 array elements.  It's a
+	  bit ugly because our indices are -1..1 and
+	  the tuples are indexed using 1..3, so we have
+	  to adjust by 2.
+	
+	arrayOfArray-workaround2.chpl : this is a
+	  workaround that implements a 3x3 array by
+	  creating a record that contains a 3x3 array.
+	  The fact that this works makes it seem as
+	  though arrays of arrays must be close to
+	  working (?).
+	
+	arrayOfSpsArray.chpl : the 3x3 arrays that
+	  Richard's group are looking at are 0.0 along
+	  their diagonals, so this version uses a
+	  sparse 3x3 array to express that (may be a
+	  bad idea performance-wise, but worth getting
+	  working).
+	
+	arrayOfSpsArray2.chpl : same as arrayOfArray2.chpl,
+	  but for the sparse case.
+	
+	fakeSpsArr.chpl : a record that implements a
+	  sparse array-like thing, using this() var
+	  functions.
+	
+	fakeSpsArr2.chpl : a variation on the above
+	  in which I use this() and =this() functions
+	  to protect against assigning to the IRV,
+	  which should not be legal.
+	
+	arrayOfSpsArray-workaround.chpl : a workaround
+	  of arrayOfSpsArray.chpl which uses the fake
+	  sparse array structure of fakeSpsArr.chpl
+	  above to implement the inner arrays.
+	
+	arrayOfSpsArray-workaround-generictype.chpl :
+	  a variation on the above which shows that
+	  if a generic record whose type parameter has
+	  a default type is used as an array element,
+	  the type must be explicitly specified, which
+	  I suspect is not what we want.
+
+Added files:
+	chapel/test/arrays/bradc/workarounds/: .cvsignore 
+	                                       arrayOfArray-workaround.chpl 
+	                                       arrayOfArray-workaround.good 
+	                                       arrayOfArray-workaround2.chpl 
+	                                       arrayOfArray-workaround2.good 
+	                                       arrayOfArray.chpl 
+	                                       arrayOfArray.future 
+	                                       arrayOfArray.good 
+	                                       arrayOfArray2.chpl 
+	                                       arrayOfArray2.future 
+	                                       arrayOfArray2.good 
+	                                       arrayOfSpsArray-workaround-generictype.chpl 
+	                                       arrayOfSpsArray-workaround-generictype.future 
+	                                       arrayOfSpsArray-workaround-generictype.good 
+	                                       arrayOfSpsArray-workaround.chpl 
+	                                       arrayOfSpsArray-workaround.good 
+	                                       arrayOfSpsArray.chpl 
+	                                       arrayOfSpsArray.future 
+	                                       arrayOfSpsArray.good 
+	                                       arrayOfSpsArray2.chpl 
+	                                       arrayOfSpsArray2.future 
+	                                       arrayOfSpsArray2.good 
+	                                       fakeSpsArr.chpl 
+	                                       fakeSpsArr.good 
+	                                       fakeSpsArr2.chpl 
+	                                       fakeSpsArr2.good 
+
