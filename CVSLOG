@@ -96862,3 +96862,26 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/performance/: ra.c 
 
+---------------------------------------------------------------------------
+
+03/22/07 16:57:12 -- deitz
+
+Log message:
+	Added timing to the C version of RA that Brad wrote.
+	
+	For n=24, the C version uses 25.5% of my machine's memory which is
+	identical to the Chapel versions (where sequentialVerify is true).
+	
+	Using -O3 for C
+	Using --ccflags "-O3" --no-bounds-checks for Chapel
+	
+	C                               9.52 seconds  0.0070 gups
+	Chapel                         18.94 seconds  0.0035 gups
+	Chapel (non-stridable array)   15.62 seconds  0.0043 gups
+	
+	The non-stridable array optimization is not yet checked in.  This
+	optimization has a bigger payoff on my 2D kernel loop.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/performance/: ra.c 
+
