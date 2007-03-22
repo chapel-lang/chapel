@@ -365,6 +365,13 @@ record range {
   var _stride : int = 1;          // integer stride of range
   var _promotionType : eltType;   // enables promotion
 
+  def =_stride(val: int) {
+    if !stridable then
+      if val != 1 then
+        halt("non-stridable range assigned non-unit stride");
+    _stride = val;
+  }
+
   def low: eltType return _low;
   def high: eltType return _high;
   def stride: eltType return _stride; // should be :int ??
@@ -375,7 +382,8 @@ record range {
       if _low > _high {
         _low = 1:eltType;
         _high = 0:eltType;
-        _stride = 1;
+        if stridable then
+          _stride = 1;
       }
     }
   }

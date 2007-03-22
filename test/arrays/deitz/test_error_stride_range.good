@@ -1,0 +1,6 @@
+1
+2
+3
+4
+5
+test_error_stride_range.chpl:4: error: halt reached - non-stridable range assigned non-unit stride

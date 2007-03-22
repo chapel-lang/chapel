@@ -1,4 +1,4 @@
-var s = 1..10;
+var s = 1..10 by 1;
 writeln("10 = ", s.length);
 s = 1..10 by 2;
 writeln("5 = ", s.length);
