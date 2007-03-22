@@ -96848,3 +96848,17 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/performance/: .cvsignore ra.c 
 
+---------------------------------------------------------------------------
+
+03/22/07 16:40:41 -- bradc
+
+Log message:
+	Fixed the core dump Steve was seeing due to the fact
+	that I'd allocated the C table using a static array
+	(on the stack) rather than a dynamically-allocated
+	one.  This version now works and gets the same
+	result as Chapel for --n=20.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/performance/: ra.c 
+
