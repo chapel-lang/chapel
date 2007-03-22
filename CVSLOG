@@ -96819,3 +96819,32 @@ Added files:
 	                                        topLevelIteratorNoParens.future 
 	                                        topLevelIteratorNoParens.good 
 
+---------------------------------------------------------------------------
+
+03/22/07 15:41:51 -- bradc
+
+Log message:
+	Checking in a C implementation of HPCC RA, based on
+	our Chapel implementation.  It seems to get the
+	same numerical results as the Chapel version (verified
+	on n=1..10).
+	
+	*** NOTE: I didn't implement the timing routines for
+	this code.  That still needs to be done.  Ideally,
+	the same routines we use for Chapel could be used,
+	but I was too lazy to hook those in (thought it would
+	be more "above-the-board if Steve did it :).
+	
+	To execute, supply a single command line argument that
+	gives the log_2 of the problem size (equivalent to
+	--n=...) in the Chapel version.
+	
+	Use the following -D options during compilation to change
+	default printing:
+	  -DprintParams=0 to turn off printing the problem size
+	  -DprintArrays=1 to turn on the printing of arrays
+	  -DprintStats=0 to turn off the printing of timing/GUPS
+
+Added files:
+	chapel/test/studies/hpcc/RA/performance/: .cvsignore ra.c 
+
