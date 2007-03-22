@@ -96741,3 +96741,81 @@ Added files:
 	chapel/test/classes/deitz/: test_method_noparens_precedence.chpl 
 	                            test_method_noparens_precedence.good 
 
+---------------------------------------------------------------------------
+
+03/22/07 13:37:18 -- bradc
+
+Log message:
+	Checking in a slew of futures from my work on the
+	stencil codes and idioms yesterday.  Most of these
+	are pretty low priority.  About half are semantic
+	questions or open issues in the form of placeholder
+	tests while the other half are cases where I think
+	we could do a better job of helping the user
+	through semantic checks or better error messages.
+	
+	topLevelFnNoParens.chpl
+	topLevelIteratorNoParens.chpl : these are meant to
+	  reopen the question about whether we should support
+	  top-level functions and iterators without parens
+	  as we do for class methods.  It seems orthogonal
+	  and useful to me, and I can't currently come up
+	  with an argument against it.  These tests are
+	  meant to keep a placeholder for this question,
+	  either to enable support for it, or to log a
+	  rationale paragraph in the spec explaining why not.
+	
+	weirdMessage.chpl : this is just a test in which the
+	  error message was very surprising to me, and worth
+	  filing to see if it could be improved or clarified
+	  (for my sake if not the user's).
+	
+	setterReturns.chpl
+	setterReturns2.chpl : these functions define setter
+	  functions that return values.  There isn't any
+	  point in having a setter function return a value,
+	  and arguably it should be an error.  I think it
+	  should be an error or warning in order to help
+	  people (like me) who are converting var functions
+	  into setters to remember that setters don't return
+	  values, they take the RHS value in as an argument.
+	  (the error message probably should not say this, but
+	  getting an error would've put me on a productive
+	  path much more quickly than emailing Steve and
+	  looking through standard module code did.
+	
+	retLitFromVarFn.chpl
+	retLocFromVarFn.chpl : these two tests try to return
+	  things from a var fn that I don't think make sense
+	  to.  One currently results in a very confusing
+	  error message, the other "works" but may take awhile
+	  for a user to debug.  Throwing an error message
+	  would help in both cases, assuming others agree
+	  with their illegality.
+
+Added files:
+	chapel/test/functions/bradc/: topLevelFnNoParens.chpl 
+	                              topLevelFnNoParens.future 
+	                              topLevelFnNoParens.good 
+	                              weirdMessage.chpl 
+	                              weirdMessage.future 
+	                              weirdMessage.good 
+	chapel/test/functions/bradc/setterFns/: .cvsignore 
+	                                        setterReturns.chpl 
+	                                        setterReturns.future 
+	                                        setterReturns.good 
+	                                        setterReturns2.chpl 
+	                                        setterReturns2.future 
+	                                        setterReturns2.good 
+	chapel/test/functions/bradc/varFns/: .cvsignore 
+	                                     retLitFromVarFn.chpl 
+	                                     retLitFromVarFn.future 
+	                                     retLitFromVarFn.good 
+	                                     retLocFromVarFn.chpl 
+	                                     retLocFromVarFn.future 
+	                                     retLocFromVarFn.good 
+	chapel/test/functions/iterators/bradc/: 
+	                                        topLevelIteratorNoParens.chpl 
+	                                        topLevelIteratorNoParens.future 
+	                                        topLevelIteratorNoParens.good 
+
