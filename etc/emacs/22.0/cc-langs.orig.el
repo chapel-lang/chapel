@@ -560,8 +560,7 @@ submatch surrounds the directive name."
 	       '(">>>="))
   c++  (append (c-lang-const c-assignment-operators)
 	       '("and_eq" "or_eq" "xor_eq"))
-  idl  nil
-  chpl '("=" "+=" "-=" "*=" "/=" "**=" "%=" "&=" "|=" "^=" "&&=" "||=" "#=" "<<=" ">>="))
+  idl  nil)
 
 (c-lang-defconst c-operators
   "List describing all operators, along with their precedence and
@@ -1076,8 +1075,7 @@ the appropriate place for that."
   pike '(;; this_program isn't really a keyword, but it's practically
 	 ;; used as a builtin type.
 	 "array" "float" "function" "int" "mapping" "mixed" "multiset"
-	 "object" "program" "string" "this_program" "void")
-  chpl '("bool" "complex" "domain" "imag" "int" "locale" "range" "real" "string" "uint"))
+	 "object" "program" "string" "this_program" "void"))
 
 (c-lang-defconst c-primitive-type-key
   ;; An adorned regexp that matches `c-primitive-type-kwds'.
@@ -1119,8 +1117,7 @@ not the type face."
   t    nil
   c    '("const" "restrict" "volatile")
   c++  '("const" "volatile" "throw")
-  objc '("const" "volatile")
-  chpl '("const" "config" "def" "module" "param" "type" "use" "var"))
+  objc '("const" "volatile"))
 
 (c-lang-defconst c-opt-type-modifier-key
   ;; Adorned regexp matching `c-type-modifier-kwds', or nil in
@@ -1164,8 +1161,7 @@ following identifier as a type; the keyword must also be present on
 	 "storagehome" "storagetype"
 	 ;; In CORBA CIDL:
 	 "catalog" "executor" "manages" "segment")
-  pike '("class")
-  chpl '("class" "record" "union"))
+  pike '("class"))
 
 (c-lang-defconst c-class-key
   ;; Regexp matching the start of a class.
@@ -1219,8 +1215,7 @@ If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
 `c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
 will be handled."
   t    '("typedef")
-  (java awk) nil
-  chpl '("type"))
+  (java awk) nil)
 
 (c-lang-defconst c-typeless-decl-kwds
   "Keywords introducing declarations where the identifier (declarator)
@@ -1240,8 +1235,7 @@ will be handled."
 	 ;; Note that "manages" here clashes with its presence on
 	 ;; `c-type-list-kwds' for IDL.
 	 "executor" "facet" "manages" "segment")
-  pike '("constant")
-  chpl '("const" "def" "module" "param" "type" "var"))
+  pike '("constant"))
 
 (c-lang-defconst c-modifier-kwds
   "Keywords that can prefix normal declarations of identifiers
@@ -1333,8 +1327,7 @@ The keywords on list are assumed to also be present on one of the
 `*-decl-kwds' lists."
   t        nil
   (c objc) '("struct" "union" "enum" "typedef")
-  c++      '("class" "struct" "union" "enum" "typedef")
-  chpl     '("class" "record" "union"))
+  c++      '("class" "struct" "union" "enum" "typedef"))
 
 (c-lang-defconst c-opt-block-decls-with-vars-key
   ;; Regexp matching the `c-block-decls-with-vars' keywords, or nil in
@@ -1405,8 +1398,7 @@ or variable identifier (that's being defined)."
   idl  '("import" "module"
 	 ;; In CORBA CIDL:
 	 "composition")
-  pike '("import")
-  chpl '("use"))
+  pike '("import"))
 
 (c-lang-defconst c-colon-type-list-kwds
   "Keywords that may be followed (not necessarily directly) by a colon
@@ -1497,7 +1489,6 @@ identifiers that follows the type in a normal declaration."
   t    '("do" "else")
   c++  '("do" "else" "try")
   java '("do" "else" "finally" "try")
-  chpl '("do" "else" "then")
   idl  nil)
 
 (c-lang-defconst c-block-stmt-1-key
@@ -1513,8 +1504,7 @@ identifiers that follows the type in a normal declaration."
   java '("for" "if" "switch" "while" "catch" "synchronized")
   idl  nil
   pike '("for" "if" "switch" "while" "foreach")
-  awk  '("for" "if" "while")
-  chpl '("for" "forall" "if" "select" "while"))
+  awk  '("for" "if" "while"))
 
 (c-lang-defconst c-block-stmt-2-key
   ;; Regexp matching the start of any statement followed by a paren sexp
@@ -1542,8 +1532,7 @@ identifiers that follows the type in a normal declaration."
   pike '("break" "continue" "return")
   awk  '(;; Not sure about "delete", "exit", "getline", etc. ; ACM 2002/5/30
 	 "break" "continue" "return" "delete" "exit" "getline" "next"
-	 "nextfile" "print" "printf")
-  chpl '("break" "continue" "return" "yield"))
+	 "nextfile" "print" "printf"))
 
 (c-lang-defconst c-simple-stmt-key
   ;; Adorned regexp matching `c-simple-stmt-kwds'.
@@ -1576,7 +1565,6 @@ nevertheless contains a list separated with ';' and not ','."
 (c-lang-defconst c-label-kwds
   "Keywords introducing labels in blocks."
   t '("case" "default")
-  chpl '("otherwise" "when")
   awk nil)
 
 (c-lang-defconst c-before-label-kwds
@@ -1599,8 +1587,7 @@ nevertheless contains a list separated with ';' and not ','."
 	    "false" "true")		; Defined in C99.
   objc    '("nil" "Nil")
   idl     '("TRUE" "FALSE")
-  pike    '("UNDEFINED") ;; Not a keyword, but practically works as one.
-  chpl    '("false" "nil" "true"))
+  pike    '("UNDEFINED")) ;; Not a keyword, but practically works as one.
 
 (c-lang-defconst c-primary-expr-kwds
   "Keywords besides constants and operators that start primary expressions."
@@ -1608,8 +1595,7 @@ nevertheless contains a list separated with ';' and not ','."
   c++  '("operator" "this")
   objc '("super" "self")
   java '("this")
-  pike '("this")
-  chpl '("this")) ;; Not really a keyword, but practically works as one.
+  pike '("this")) ;; Not really a keyword, but practically works as one.
 
 (c-lang-defconst c-expr-kwds
   ;; Keywords that can occur anywhere in expressions.  Built from
@@ -1723,8 +1709,7 @@ Note that Java specific rules are currently applied to tell this from
   idl  '("truncatable"
 	 ;; In CORBA CIDL: (These are declaration keywords that never
 	 ;; can start a declaration.)
-	 "entity" "process" "service" "session" "storage")
-  chpl '("distributed" "in" "on" "reduce"))
+	 "entity" "process" "service" "session" "storage"))
 
 
 ;;; Constants built from keywords.
