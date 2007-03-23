@@ -96933,3 +96933,28 @@ Added files:
 	chapel/etc/emacs/22.0/: .cvsignore cc-defs.el cc-fonts.el 
 	                        cc-langs.el cc-menus.el cc-mode.el 
 
+---------------------------------------------------------------------------
+
+03/23/07 15:06:47 -- bradc
+
+Log message:
+	Further improvements to emacs mode for Chapel.
+	
+	Also started a second attempt at an emacs mode
+	starting from the pascal.el file to see if our
+	declaration style would work better there.  It
+	did, but I broke enough stuff along the way
+	that it isn't so good yet.  Called this version
+	chapel-mode for contrast, and deserves a bit
+	more work, but perhaps not today.
+	
+	Also checking in the original source files that
+	I started from for comparison's sake.
+
+Modified files:
+	chapel/etc/emacs/22.0/: .cvsignore cc-langs.el 
+Added files:
+	chapel/etc/emacs/22.0/: cc-defs.orig.el cc-fonts.orig.el 
+	                        cc-langs.orig.el cc-menus.orig.el 
+	                        cc-mode.orig.el chapel.el pascal.orig.el 
+
