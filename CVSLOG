@@ -96958,3 +96958,25 @@ Added files:
 	                        cc-langs.orig.el cc-menus.orig.el 
 	                        cc-mode.orig.el chapel.el pascal.orig.el 
 
+---------------------------------------------------------------------------
+
+03/23/07 16:11:08 -- marybeth
+
+Log message:
+	Desired version of Block LU with pivoting.  An iterator, array views,
+	maxIndex reduction, a swap operator and subdomains (or domain slices?)
+	are used to express the algorithm cleanly.
+	
+	For pivoting, I swapped the entire rows during the LU factorization
+	of A11.  For an optimal parallel version, you probably want to group
+	these swaps and apply them across the entire rows all at once, after
+	the factorization of A11 is complete.
+	
+	Also, in this checkin, I fixed the desired version for Block LU without
+	pivoting.  (I added a var declaration for Block and Unfact.)
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: blocks-wish2.mb 
+Added files:
+	chapel/test/studies/lu/marybeth/: pivblock-wish.mb 
+
