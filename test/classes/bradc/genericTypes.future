@@ -1,0 +1,6 @@
+generic types/error message
+
+Seems like this test ought to work, but it doesn't seem 
+to be.  The error message isn't very good either (doesn't
+point to a location because the type symbol in question
+is dtAny?).
