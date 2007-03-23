@@ -96885,3 +96885,51 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/performance/: ra.c 
 
+---------------------------------------------------------------------------
+
+03/23/07 10:13:43 -- bradc
+
+Log message:
+	First pass at getting an emacs 22.0 font-lock + mode
+	for Chapel.  Lots of work yet remains, but getting
+	some coloring should be better than nothing.  The
+	approach I'm taking here (mimicking C/C++) may be
+	inherently broken as well since our declaration
+	syntax is so different -- things may need to be done
+	more from scratch.  But I think we can get at least
+	as far with this approach as we did last time.
+	
+	More edits to come.  This is just a placeholder,
+	but one that should be somewhat helpful.
+	
+	Dropping the following lines into your .emacs mode
+	ought to bring up Chapel mode automatically when
+	loading a Chapel file if your CHPL_HOME envvar is
+	set.
+	
+	; PREPEND CHPL etc/emacs/major.minor to emacs load path
+	(setq chpl-home (getenv "CHPL_HOME"))
+	(if (string= chpl-home nil)
+	    nil
+	  (setq load-path (cons (concat chpl-home
+	                                "/etc/emacs/"
+	                                (number-to-string emacs-major-version)
+	                                "."
+	                                (number-to-string emacs-minor-version))
+	                        load-path))
+	  )
+	
+	; make entering chpl-mode load the cc-mode file
+	(autoload 'chpl-mode "cc-mode" "Chpl enhanced cc-mode" t)
+	
+	; turn on font coloring by default
+	(global-font-lock-mode t)
+	
+	; make loading files with .chpl extension enter us into chpl-mode
+	(setq auto-mode-alist (cons '("\\.chpl$" . chpl-mode)
+	                            auto-mode-alist))
+
+Added files:
+	chapel/etc/emacs/22.0/: .cvsignore cc-defs.el cc-fonts.el 
+	                        cc-langs.el cc-menus.el cc-mode.el 
+
