@@ -9,10 +9,12 @@ param blk = 5;
 const A1D = [1..n];
 const A2D = [A1D,A1D]; 
 var A: [A2D] real;
-
+var piv: [A1D] int;
 var Block, Unfact: domain(1);
+var ind1, ind2, ind: int;
 
 initA(A,'Adata.dat');
+[i in A1D] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);
@@ -20,9 +22,37 @@ writeln(A);
 for (Block,Unfact) in blockedA(A1D,blk) {
   
   A11 -> A(Block,Block);
+  if (Unfact != [0]) {
+    A21 -> A(Unfact,Block);
+    A12 -> A(Block,Unfact);
+    A22 -> A(Unfact,Unfact);
+  }
 
-// LU factorization of A11.
+// LU factorization of A11 and A21.
   for k in Block {
+    if (Unfact != [0]) {
+      ind1 = maxIndex reduce abs(A11(Block(k..),k));
+      ind2 = maxIndex reduce abs(A21(Unfact,k));
+      ind = if (abs(A11(ind1,k)) >= abs(A21(ind2,k)) then ind1 else ind2;
+      if (ind != k) {
+        piv(k) <-> piv(ind);
+        if (ind == ind1) {
+          A11(k,..) <-> A11(ind,..);
+          A12(k,..) <-> A12(ind,..);
+        } 
+        else {
+          A11(k,..) <-> A21(ind,..);
+          A12(k,..) <-> A22(ind,..);
+        }
+      }
+    } 
+    else {
+      ind = maxIndex reduce abs(A11(Block(k..),k));
+      if (ind != k) {
+        piv(k) <-> piv(ind);
+        A11(k,..) <-> A11(ind,..);
+      }
+    }
     if (A11(k,k) != 0.0) {
       forall i in Block(k+1..) {
         A11(i,k) = A11(i,k)/A11(k,k);
@@ -30,17 +60,9 @@ for (Block,Unfact) in blockedA(A1D,blk) {
       forall (i,j) in [Block(k+1..),Block(k+1..)] {
         A11(i,j) -= A11(i,k)*A11(k,j);
       }
-    }
+    } 
     else halt("zero pivot encountered");
-  }
-
-  if (Unfact != [0]) {
-    A21 -> A(Unfact,Block);
-    A12 -> A(Block,Unfact);
-    A22 -> A(Unfact,Unfact);
-
-// Update of A21.  
-    for k in Block {
+    if Unfact != [0] {
       forall i in Unfact {
         A21(i,k) = A21(i,k)/A11(k,k);
       }
@@ -48,6 +70,10 @@ for (Block,Unfact) in blockedA(A1D,blk) {
         A21(i,j) -= A21(i,k)*A11(k,j);
       }
     }
+  }
+
+  if Unfact != [0] {
+
 // Update of A12.
     forall j in Unfact {
       for k in Block {
