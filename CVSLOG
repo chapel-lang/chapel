@@ -96980,3 +96980,19 @@ Modified files:
 Added files:
 	chapel/test/studies/lu/marybeth/: pivblock-wish.mb 
 
+---------------------------------------------------------------------------
+
+03/23/07 16:19:03 -- bradc
+
+Log message:
+	A generic class test that seems like it ought to work,
+	but isn't.  This uses behavior that I'd hoped to use
+	in the sparse domain implementation.  I might be missing
+	something obvious.  The error message isn't very helpful
+	in that it doesn't point to anything in the user code.
+
+Added files:
+	chapel/test/classes/bradc/: genericTypes.chpl 
+	                            genericTypes.future 
+	                            genericTypes.good 
+
