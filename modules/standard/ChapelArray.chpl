@@ -16,8 +16,10 @@ def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind) {
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
 
-def _build_sparse_domain_type(dom)
-  return dom.buildSparseDomain();
+def _build_sparse_subdomain_type(dist, parentDom) {
+  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type);
+  return _domain(x.type, x.getValue(x.getHeadCursor()).type, parentDom._dim_index_type, parentDom.rank, x);
+}
 
 record _ArrayTypeInfo {
   type eltType;

@@ -1139,8 +1139,12 @@ type:
     { $$ = new CallExpr("_build_subdomain_type", $3); }
 | TDOMAIN
     { $$ = new SymExpr("_domain"); }
-| TSPARSE TDOMAIN TLP expr_ls TRP
-    { $$ = new CallExpr("_build_sparse_domain_type", $4); }
+| TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
+    {
+      CallExpr* call = new CallExpr("_build_sparse_subdomain_type", $6);
+      call->insertAtTail($4);
+      $$ = call;
+    }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
 | TSINGLE type

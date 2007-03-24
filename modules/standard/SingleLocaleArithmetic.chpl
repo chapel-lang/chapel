@@ -10,6 +10,10 @@ class SingleLocaleDistribution {
   def buildDomain(type ind_type) {
     return SingleLocaleAssociativeDomain(ind_type=ind_type);
   }
+
+  def buildSparseDomain(param rank: int, type dim_type) {
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
+  }
 }
 
 var Block = SingleLocaleDistribution();
