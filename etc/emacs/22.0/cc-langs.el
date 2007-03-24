@@ -1077,7 +1077,7 @@ the appropriate place for that."
 	 ;; used as a builtin type.
 	 "array" "float" "function" "int" "mapping" "mixed" "multiset"
 	 "object" "program" "string" "this_program" "void")
-  chpl '("bool" "complex" "domain" "imag" "int" "locale" "range" "real" "string" "uint"))
+  chpl '("bool" "complex" "domain" "imag" "int" "locale" "range" "real" "string" "subdomain" "uint"))
 
 (c-lang-defconst c-primitive-type-key
   ;; An adorned regexp that matches `c-primitive-type-kwds'.
