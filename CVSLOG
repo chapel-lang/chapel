@@ -97018,3 +97018,37 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+03/23/07 17:18:12 -- bradc
+
+Log message:
+	Initial (bad) implementation of sparse domain/array.
+	Supports addition of indices and indexing of array.
+	Currently can't hold more than 30 nonzero values.
+	
+	Uses a (naive) tuple of sequences to store the indices
+	in something approximating unsorted coordinate format.
+	The array currently has its data stored using a 30
+	element array, hence the limitation.
+	
+	Made it so that sparse arrays currently have to
+	be subdomains of a parent domain that specifies
+	their bounding boxes (in the parser).
+	
+	Added a test that creates a sparse domain to describe
+	a diagonal array, initializes it, and prints out the
+	array (manually).
+	
+	Next stop: try to implement coordinate storage or
+	CSR more realistically.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/sparse/deitz/: test_sparse1.chpl test_sparse1.good 
+Added files:
+	chapel/test/sparse/bradc/: sparseArray.chpl sparseArray.good 
+
