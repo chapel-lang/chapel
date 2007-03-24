@@ -96996,3 +96996,15 @@ Added files:
 	                            genericTypes.future 
 	                            genericTypes.good 
 
+---------------------------------------------------------------------------
+
+03/23/07 17:14:17 -- bradc
+
+Log message:
+	Small improvement to my syntax error fix of the
+	other day so that we don't print out the "near"
+	clause if yytext is empty.
+
+Modified files:
+	chapel/compiler/parser/: yy.cpp 
+
