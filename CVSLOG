@@ -97008,3 +97008,13 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: yy.cpp 
 
+---------------------------------------------------------------------------
+
+03/23/07 17:14:45 -- bradc
+
+Log message:
+	Added subdomain to type list for emacs mode.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
