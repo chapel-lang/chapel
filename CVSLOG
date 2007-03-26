@@ -97052,3 +97052,26 @@ Modified files:
 Added files:
 	chapel/test/sparse/bradc/: sparseArray.chpl sparseArray.good 
 
+---------------------------------------------------------------------------
+
+03/26/07 11:07:30 -- deitz
+
+Log message:
+	Fixed a bug with using a generic class or record with default values
+	on all of its generic fields in general.  Previously a fix was
+	special-cased for appearances of these types at the top-level of a
+	type expression or within a cast.
+	
+	Added a most basic test of this case.
+	
+	Also removed a .future of a not-so-basic test of this case.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_generics1.chpl 
+	                            test_generics1.good 
+Removed files:
+	chapel/test/arrays/bradc/workarounds/: 
+	                                       arrayOfSpsArray-workaround-generictype.future 
+
