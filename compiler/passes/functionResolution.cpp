@@ -1166,11 +1166,13 @@ resolveCall(CallExpr* call) {
     // special case cast of class w/ type variables that is not generic
     //   i.e. type variables are type definitions (have default types)
     //
-    if (call->isNamed("_cast")) {
-      if (SymExpr* te = dynamic_cast<SymExpr*>(call->get(1))) {
+    for_actuals(actual, call) {
+      if (NamedExpr* ne = dynamic_cast<NamedExpr*>(actual))
+        actual = ne->actual;
+      if (SymExpr* te = dynamic_cast<SymExpr*>(actual)) {
         if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(te->var)) {
           if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
-            if (ct->classTag == CLASS_CLASS && ct->isGeneric) {
+            if (ct->isGeneric) {
               CallExpr* cc = new CallExpr(ct->defaultConstructor->name);
               te->replace(cc);
               resolveCall(cc);
