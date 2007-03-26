@@ -97075,3 +97075,84 @@ Removed files:
 	chapel/test/arrays/bradc/workarounds/: 
 	                                       arrayOfSpsArray-workaround-generictype.future 
 
+---------------------------------------------------------------------------
+
+03/26/07 11:32:56 -- deitz
+
+Log message:
+	Regressed
+	
+	  types/seq/deitz/test_seq_class5
+	
+	I understand the issue with this test, believe there needs to be a way
+	to make it work, but also believe that the change will be non-trivial.
+	Since this is a large change, I'm checking in separately now.
+	
+	Added a stridable parameter to the built-in implementation of
+	arithmetic domains and arrays, as well as sparse arithmetic domains
+	and arrays (questionable now that sparse arithmetic domains do not use
+	or define the reference to their arithmetic domain and array).
+	
+	A domain of type domain(2) can never be strided, similar to the
+	semantics of the standard range type.  The comparable domain type that
+	can be strided must be specified as domain(2,stridable=true).
+	
+	A literal arithmetic domain is stridable if any of the ranges used to
+	define it are stridable and otherwise is not stridable.  This is
+	computed during compilation using the recursive parameter function
+	_any_stridable.
+	
+	The stridable parameter improves array access speed significantly.
+	This initial checkin shows a speedup of 3.9 on the test_for2d kernel
+	over the code without this change:
+	
+	  C compiler flags:       -O3
+	  Chapel compiler flags:  --no-bounds-checks --ccflags "-O3"
+	
+	  test_for2d.c     0.39 seconds
+	  test_for2d.chpl  4.64
+	  test_for2d.chpl  1.19
+	
+	Changed the way array arguments work.  All array arguments now result
+	in generic code meaning that it is specialized based on the call site.
+	Though not specified yet, a where clause should be used to restrict
+	the actual arguments to match in rank and element type if we feel that
+	is desirable.
+	
+	Changed the way field types are set during function resolution.  They
+	are now set when the constructor is resolved based on
+	PRIMITIVE_SET_MEMBER rather than when the formal argument types to a
+	constructor are resolved.  This is necessary to deal with array fields
+	where the default expression is set to nil and does not reflect the
+	actual type of the field.  This change resulted in the regression
+	above.  Of concern, only that single test failed.
+	
+	Made the renaming of array and domain types more robust by looking for
+	the name of a field rather than a position.  It previously assumed the
+	eltType field was first and the dom field was fourth.
+	
+	Changed a few tests that did things like
+	
+	  var d: domain(1) = [1..n by 2];
+	
+	to
+	
+	  var d = [1..n by 2];
+	
+	Alternatively, this could have been
+	
+	  var d: domain(1,stridable=true) = [1..n by 2];
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/arrays/bradc/: twoDasTwoOneDs.good 
+	chapel/test/arrays/deitz/stride/: test_stride1.chpl 
+	                                  test_stride2.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+	chapel/test/domains/bradc/: bydomain.chpl 
+	chapel/test/domains/shannon/: by4Dtuple.chpl 
+
