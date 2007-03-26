@@ -97156,3 +97156,27 @@ Modified files:
 	chapel/test/domains/bradc/: bydomain.chpl 
 	chapel/test/domains/shannon/: by4Dtuple.chpl 
 
+---------------------------------------------------------------------------
+
+03/26/07 11:44:10 -- deitz
+
+Log message:
+	Made a trivial change to log this correction to a comment in my
+	previous checkin:
+	
+	Instead of writing
+	
+	  var d: domain(1,stridable=true) = [1..n by 2];
+	
+	the way this works is
+	
+	  var d: domain(1) distributed(SingleLocaleDistribution(stridable=true))
+	       = [1..n by 2];
+	
+	This is because stridable is not part of all arithmetic domains but
+	rather is part of this particular distribution.  Perhaps it should be
+	part of all arithmetic domains though.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+
