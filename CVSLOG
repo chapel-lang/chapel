@@ -97180,3 +97180,23 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelArray.chpl 
 
+---------------------------------------------------------------------------
+
+03/26/07 15:28:03 -- bradc
+
+Log message:
+	Fixed an indentation problem in emacs Chapel mode
+	with Steve's help.  I believe that since our for,
+	forall, and if statements don't require parens
+	to surround their controlling expressions putting
+	them in the same definition area as the same
+	concepts in C, C++, Java results in tabbing problems.
+	So, put them in my miscellaneous grab-bag keywords
+	list instead.  This seems to fix the indentation
+	problem.
+	
+	Also added "where" to the grabbag.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
