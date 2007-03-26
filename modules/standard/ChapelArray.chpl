@@ -16,8 +16,10 @@ def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind) {
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
 
+// sjd: note that sparse domain is not pointing to bounding domain anymore
+//      as of BLC change of 3/23/07
 def _build_sparse_subdomain_type(dist, parentDom) {
-  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type);
+  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value.stridable);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, parentDom._dim_index_type, parentDom.rank, x);
 }
 
@@ -38,9 +40,23 @@ def _build_array(dom, type eltType)
 def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
   return x;                             // is * on arithmetic sequences?
 
+//
+// computes && reduction over stridable of ranges
+//
+def _any_stridable(ranges, param dim: int = 1) param {
+  if ranges(dim).stridable == true then
+    return true;
+  else if ranges.size > dim then
+    return _any_stridable(ranges, dim+1);
+  else
+    return false;
+}
+
 def _build_domain(ranges: range(?eltType,0,?stridable) ...?rank) {
   type t = ranges(1).eltType;
-  var d: domain(rank, t);
+  param domain_stridable = _any_stridable(ranges);
+  var d: domain(rank, t)
+           distributed (SingleLocaleDistribution(stridable=domain_stridable));
   d.setIndices(ranges);
   return d;
 }
@@ -97,7 +113,7 @@ record _domain {
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
     _value._arrs #= x;
-    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
   def buildEmptyDomain() {
@@ -217,7 +233,6 @@ def by(a: _domain, b) {
 pragma "array"
 record _array {
   type _array_type;
-  type _domain_type;
   type _index_type;
   type _dim_index_type;
   type eltType;
@@ -226,14 +241,14 @@ record _array {
   var _promotionType : eltType;
 
   def _dom var {
-    var x : _domain(_domain_type, _index_type, _dim_index_type, rank);
+    var x : _domain(_value.dom.type, _index_type, _dim_index_type, rank);
     x._value = _value.dom;
     return x;
   }
 
   def this(d: _domain) {
     var x = _value.slice(d._value);
-    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
   def this(i: range(_dim_index_type,0,?stridable) ...rank) {
@@ -242,27 +257,27 @@ record _array {
   }
 
   def =this(d: _domain, val) {
-    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
+    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
   def =this(d: _domain, val: eltType) {
-    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
+    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
   def =this(i: range(_dim_index_type,0,?stridable) ...rank, val) where rank > 0 {
     var d = [(...i)];
-    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
+    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
   def =this(i: range(_dim_index_type,0,?stridable) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
-    var y = _array(_array_type, _domain_type, _index_type, _dim_index_type, eltType, rank);
+    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
@@ -297,7 +312,7 @@ record _array {
 
   def view(d: _domain) {
     var x = _value.view(d._value);
-    return _array(x.type, _domain_type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 }
 

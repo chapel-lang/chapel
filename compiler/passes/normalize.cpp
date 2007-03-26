@@ -644,18 +644,19 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
             fn->insertAtHead(new CondStmt(
-              new CallExpr(".", parent->sym, new_StringSymbol("_value")),
+              new CallExpr("!=", dtNil->symbol, parent->sym),
               new CallExpr(PRIMITIVE_MOVE, tmp,
                 new CallExpr(new CallExpr(".", parent->sym,
                                           new_StringSymbol("view")),
-                             call->get(1)->copy()))));
-            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
+                             call->get(1)->copy())),
+              new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
+            //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
         } else {  //// DUPLICATED CODE ABOVE AND BELOW
           DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
           if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
-            call->baseExpr->replace(new SymExpr("_build_array"));
+            parent->exprType->replace(new SymExpr(chpl_array));
             VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
@@ -664,12 +665,13 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
             fn->insertAtHead(new CondStmt(
-              new CallExpr(".", parent->sym, new_StringSymbol("_value")),
+              new CallExpr("!=", dtNil->symbol, parent->sym),
               new CallExpr(PRIMITIVE_MOVE, tmp,
                 new CallExpr(new CallExpr(".", parent->sym,
                                           new_StringSymbol("view")),
-                             call->get(1)->copy()))));
-            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
+                             call->get(1)->copy())),
+              new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
+            //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
         }

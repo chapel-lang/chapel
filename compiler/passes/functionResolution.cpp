@@ -123,8 +123,6 @@ resolveFormals(FnSymbol* fn) {
     }
     if (fn->retExprType)
       resolveSpecifiedReturnType(fn);
-    if (fn->fnClass == FN_CONSTRUCTOR)
-      setFieldTypes(fn);
   }
 }
 
@@ -416,7 +414,8 @@ computeGenericSubs(ASTMap &subs,
         }
       } else if (formal->defaultExpr) {
         Type* defaultType = resolve_type_expr(formal->defaultExpr);
-        if (canInstantiate(defaultType, formal->type)) {
+        if (canInstantiate(defaultType, formal->type) ||
+            defaultType == gNil->type) { // constructor default
           subs.put(formal, defaultType);
         }
       }
@@ -1410,6 +1409,10 @@ resolveCall(CallExpr* call) {
         Type* t = call->get(3)->typeInfo();
         if (t == dtUnknown)
           INT_FATAL(call, "Unable to resolve field type");
+        if (t == dtNil && field->type == dtUnknown)
+          USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+        if (field->type == dtUnknown)
+          field->type = t;
         if (t != field->type && t != dtNil && t != dtObject)
           USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
         found = true;
@@ -2243,6 +2246,9 @@ resolveFns(FnSymbol* fn) {
 
   resolveBody(fn->body);
 
+  if (fn->fnClass == FN_CONSTRUCTOR)
+    setFieldTypes(fn);
+
   Symbol* ret = fn->getReturnSymbol();
   Type* retType = ret->type;
 
@@ -2765,8 +2771,8 @@ is_array_type(Type* type) {
 static void
 fixTypeNames(ClassType* ct) {
   if (is_array_type(ct)) {
-    char* domain_type = ct->getField(4)->type->symbol->name;
-    char* elt_type = ct->getField(1)->type->symbol->name;
+    char* domain_type = ct->getField("dom")->type->symbol->name;
+    char* elt_type = ct->getField("eltType")->type->symbol->name;
     ct->symbol->defPoint->parentScope->undefine(ct->symbol);
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
     ct->symbol->defPoint->parentScope->define(ct->symbol);
@@ -2791,32 +2797,32 @@ setFieldTypes(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
   if (!ct)
     INT_FATAL(fn, "Constructor has no class type");
-  for_formals(formal, fn) {
-    Type* t = formal->type;
-    if (t == dtUnknown && formal->defPoint->exprType)
-      t = formal->defPoint->exprType->typeInfo();
-    if (t == dtUnknown)
-      INT_FATAL(formal, "Unable to resolve field type");
-    if (t == dtNil)
-      USR_FATAL(formal, "unable to determine type of field from nil");
-    bool found = false;
-    if (!strcmp(formal->name, "_mt")) {
-      continue;
-    }
-    if (!strcmp(formal->name, "this")) {
-      continue;
-    }
-    for_fields(field, ct) {
-      if (!strcmp(field->name, formal->name)) {
-        field->type = t;
-        found = true;
-        if (!strcmp(field->name, "_promotionType"))
-          ct->scalarPromotionType = t;
-      }
-    }
-    if (!found)
-      INT_FATAL(formal, "Unable to find field in constructor");
+  //  for_formals(formal, fn) {
+//     Type* t = formal->type;
+//     if (t == dtUnknown && formal->defPoint->exprType)
+//       t = formal->defPoint->exprType->typeInfo();
+//     if (t == dtUnknown)
+//       INT_FATAL(formal, "Unable to resolve field type");
+//     if (t == dtNil)
+//       USR_FATAL(formal, "unable to determine type of field from nil");
+//     bool found = false;
+//     if (!strcmp(formal->name, "_mt")) {
+//       continue;
+//     }
+//     if (!strcmp(formal->name, "this")) {
+//       continue;
+//     }
+  for_fields(field, ct) {
+    //    if (!strcmp(field->name, formal->name)) {
+      //        field->type = t;
+      //        found = true;
+      if (!strcmp(field->name, "_promotionType"))
+        ct->scalarPromotionType = field->type;
+      //    }
   }
+    //    if (!found)
+    //      INT_FATAL(formal, "Unable to find field in constructor");
+    //  }
   fixTypeNames(ct);
 }
 

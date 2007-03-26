@@ -1,8 +1,9 @@
 class SingleLocaleSparseDomain: BaseDomain {
   param rank : int;
   type dim_type;
+  param stridable: bool;
   //  type ind_type = rank*dim_type;
-  var adomain : SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type);
+  var adomain : SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
   //  var inds: seq(rank*dim_type);
   var inds: rank*seq(dim_type);
   var numinds = 0;
@@ -11,10 +12,10 @@ class SingleLocaleSparseDomain: BaseDomain {
   def setIndices(x);
 
   def buildArray(type eltType)
-    return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
+    return SingleLocaleSparseArray(eltType, rank, dim_type, stridable, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, adomain=adomain);
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, stridable=stridable, adomain=adomain);
 
   def getHeadCursor() {
     var c: rank*dim_type;
@@ -41,11 +42,11 @@ class SingleLocaleSparseArray: BaseArray {
   type eltType;
   param rank : int;
   type dim_type;
+  param stridable: bool;
 
+  var dom : SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, stridable=stridable);
   var data: [1..30] eltType;
   var irv: eltType;
-
-  var dom : SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
 
   def this(ind: dim_type ... 1) var where rank == 1
     return this(ind);

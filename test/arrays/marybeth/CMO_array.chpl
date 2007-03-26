@@ -11,7 +11,7 @@ class CMODomain: BaseDomain {
 
   def getIndices() return ranges;
 
-  def setIndices(x: rank*range(dim_type,0,true)) {
+  def setIndices(x) {
     ranges = x;
   }
 

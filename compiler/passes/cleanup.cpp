@@ -273,7 +273,7 @@ static void build_constructor(ClassType* ct) {
           fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                         new_StringSymbol(field->name), tmp));
           fn->insertAtTail(new CondStmt(
-            new CallExpr(".", formal, new_StringSymbol("_value")),
+            new CallExpr("!=", dtNil->symbol, formal),
             new CallExpr("=",
               new CallExpr(".",
                            fn->_this,
