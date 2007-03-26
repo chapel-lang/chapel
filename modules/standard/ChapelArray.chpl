@@ -1,4 +1,5 @@
-def _build_domain_type(dist, param rank : int, type dimensional_index_type = int) {
+def _build_domain_type(dist, param rank : int,
+                       type dimensional_index_type = int) {
   var x = dist.buildDomain(rank, dimensional_index_type);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
 }
