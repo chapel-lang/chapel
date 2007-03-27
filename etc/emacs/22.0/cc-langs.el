@@ -1333,8 +1333,7 @@ The keywords on list are assumed to also be present on one of the
 `*-decl-kwds' lists."
   t        nil
   (c objc) '("struct" "union" "enum" "typedef")
-  c++      '("class" "struct" "union" "enum" "typedef")
-  chpl     '("class" "record" "union"))
+  c++      '("class" "struct" "union" "enum" "typedef"))
 
 (c-lang-defconst c-opt-block-decls-with-vars-key
   ;; Regexp matching the `c-block-decls-with-vars' keywords, or nil in
