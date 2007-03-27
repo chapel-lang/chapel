@@ -97200,3 +97200,16 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+03/27/07 16:51:31 -- bradc
+
+Log message:
+	Another fix to the emacs mode requested by Steve.
+	This should fix the issue where Chapel classes need
+	not end with semicolons as in C++, so indentation
+	following a class/record should be correct.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
