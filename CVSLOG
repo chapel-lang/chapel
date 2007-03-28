@@ -97412,3 +97412,18 @@ Added files:
 	chapel/make/: Makefile.mta 
 	chapel/runtime/include/mta/: chplsys.h stdint.h 
 
+---------------------------------------------------------------------------
+
+03/28/07 13:14:38 -- bradc
+
+Log message:
+	Added a "ranlib" step to our runtime library build
+	Makefile, which causes a warning to go away on the
+	MTA, and seems to work fine on other platforms.  If
+	this causes problems on some platform, we can define
+	RANLIB to be something like "echo" on that platform.
+
+Modified files:
+	chapel/make/: Makefile.generic Makefile.gnu Makefile.mta 
+	chapel/runtime/src/: Makefile 
+
