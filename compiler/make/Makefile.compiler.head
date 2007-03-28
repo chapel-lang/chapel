@@ -12,6 +12,11 @@ DEBUG=1
 CHAPEL_ROOT = $(COMPILER_ROOT)/..
 CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 
+# if we are cross compiling, set PLATFORM manually
+ifdef CHPL_CROSS_PLATFORM
+PLATFORM = $(CHPL_CROSS_PLATFORM)
+endif
+
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include

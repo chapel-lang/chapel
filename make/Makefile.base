@@ -9,7 +9,9 @@ MAKEFLAGS = --no-print-directory
 #
 # determine what platform we're running on
 #
+ifndef PLATFORM
 include $(CHAPEL_ROOT)/make/Makefile.platform
+endif
 
 
 #
@@ -23,6 +25,8 @@ include $(CHAPEL_ROOT)/make/Makefile.platform
 
 default: all
 
+printplatform:
+	@echo $(PLATFORM)
 
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,

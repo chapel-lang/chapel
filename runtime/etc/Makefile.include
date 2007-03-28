@@ -1,4 +1,4 @@
-PLATFORM = `$(CHAPEL_ROOT)/util/platform`
+PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)
 CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(PLATFORM)
 include $(CHAPEL_ROOT)/make/Makefile.base
