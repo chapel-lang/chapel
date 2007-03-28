@@ -27,8 +27,8 @@ clean: FORCE
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
-	rm -rf bin/$(PLATFORM)
-	rm -rf lib/$(PLATFORM)
+	rm -rf bin/$(CHPL_MAKE_PLATFORM)
+	rm -rf lib/$(CHPL_MAKE_PLATFORM)
 	-rmdir bin > /dev/null 2>&1
 	-rmdir lib > /dev/null 2>&1
 
