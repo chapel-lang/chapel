@@ -97348,3 +97348,67 @@ Removed files:
 	chapel/test/types/seq/deitz/: test_seq_class5.chpl 
 	                              test_seq_class5.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 11:21:49 -- bradc
+
+Log message:
+	Added some initial support for building Chapel
+	for the MTA including initial support for
+	cross-compilation:
+	
+	Cross Compiling
+	---------------
+	To build the compiler to run on one platform
+	(say the linux64 front-end to an MTA), but
+	have the runtime and compiler-generated code
+	get built for another, set an additional
+	variable CHPL_CROSS_PLATFORM which specifies
+	the platform from which you'll be cross-
+	compiling.  For example, on linux-ion, you
+	would set:
+	
+	setenv CHPL_PLATFORM mta
+	setenv CHPL_CROSS_PLATFORM linux64
+	
+	You will also likely want to make your path
+	refer to the cross-compiler version of the
+	chpl compiler:
+	
+	set path = ($CHPL_HOME/bin/$CHPL_CROSS_PLATFORM $path)
+	
+	MTA-specific changes
+	--------------------
+	Added initial MTA Makefile settings file as well
+	as some mta-specific runtime header files (e.g.,
+	the MTA does not yet support stdint.h so I've set
+	up some of the features we rely on from it in a
+	spoofed file there.  More will need to be added,
+	I'm sure).
+	
+	Changed some Makefile.include syntax to be more
+	MTA-compatible (though we're using gmake ?!) and
+	consistent with how we invoke the util/platform
+	script in Makefile.platform.
+	
+	Misc
+	----
+	Added a "printplatform" target to Makefile.base
+	so that from within any other directory that
+	supports a Makefile, you can do "make printplatform"
+	to see what that directory and its Makefile think
+	the platform is.  When cross-compiling, for example,
+	"make printplatform" in the compiler directory
+	should print your cross-compiling platform whereas
+	the runtime and generated code directories should
+	print the target platform.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/make/: Makefile.base 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/src/: .cvsignore 
+Added files:
+	chapel/make/: Makefile.mta 
+	chapel/runtime/include/mta/: chplsys.h stdint.h 
+
