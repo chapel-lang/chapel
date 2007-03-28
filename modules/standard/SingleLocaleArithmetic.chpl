@@ -13,8 +13,8 @@ class SingleLocaleDistribution {
     return SingleLocaleAssociativeDomain(ind_type=ind_type);
   }
 
-  def buildSparseDomain(param rank: int, type dim_type, param stridable: bool) {
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, stridable=stridable);
+  def buildSparseDomain(param rank:int, type dim_type, parentDom: BaseDomain) {
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, parentDom=parentDom);
   }
 }
 
@@ -76,6 +76,13 @@ class SingleLocaleArithmeticDomain: BaseDomain {
     return c(1) != ranges(1)._high+1;
   }
 
+  def member?(ind: rank*dim_type) {
+    for param i in 1..rank do
+      if !_in(ranges(i), ind(i)) then
+        return false;
+    return true;
+  }
+
   def this(dim : int)
     return ranges(dim);
 
@@ -112,9 +119,6 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   def buildArray(type eltType) {
     return SingleLocaleArithmeticArray(eltType, rank, dim_type, stridable, dom=this);
   }
-
-  def buildSparseDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, stridable=stridable, adomain=this);
 
   def buildSubdomain()
     return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
@@ -235,10 +239,9 @@ class SingleLocaleArithmeticArray: BaseArray {
     return this(ind);
 
   def this(ind : rank*dim_type) var {
-    if boundsChecking
-      for param i in 1..rank do
-        if !_in(dom(i), ind(i)) then
-          halt("array index out of bounds: ", ind);
+    if boundsChecking then
+      if !dom.member?(ind) then
+        halt("array index out of bounds: ", ind);
     var sum : dim_type;
     if stridable {
       for param i in 1..rank do

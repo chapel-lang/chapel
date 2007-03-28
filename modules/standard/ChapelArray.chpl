@@ -17,10 +17,8 @@ def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind) {
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
 
-// sjd: note that sparse domain is not pointing to bounding domain anymore
-//      as of BLC change of 3/23/07
 def _build_sparse_subdomain_type(dist, parentDom) {
-  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value.stridable);
+  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value);
   return _domain(x.type, x.getValue(x.getHeadCursor()).type, parentDom._dim_index_type, parentDom.rank, x);
 }
 
@@ -119,11 +117,6 @@ record _domain {
 
   def buildEmptyDomain() {
     var x = _value.buildEmptyDomain();
-    return _domain(x.type, _index_type, _dim_index_type, rank, x);
-  }
-
-  def buildSparseDomain() {
-    var x = _value.buildSparseDomain();
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
@@ -366,4 +359,9 @@ class BaseArray {
 
 class BaseDomain {
   var _arrs: seq of BaseArray;
+
+  def member?(ind) : bool {
+    halt("membership test not supported for this domain type");
+    return false;
+  }
 }
