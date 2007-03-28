@@ -97315,3 +97315,22 @@ Added files:
 	chapel/test/compflags/bradc/badflagdash/: .cvsignore 
 	chapel/test/modules/standard/memory/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/28/07 10:45:00 -- deitz
+
+Log message:
+	Added a new field "origOff" to the SingleLocaleArithmeticArray class
+	to store a precomputed combination of the off tuple and the orig value
+	to reduce the number of fields accessed and the number of subtractions
+	in an array access of non-stridable arrays.
+	
+	The performance impact is insignificant at least on test_for2d:
+	
+	c -O3                             : 0.40
+	chpl before -O3 --no-bounds-checks: 1.20
+	chpl after  -O3 --no-bounds-checks: 1.19
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+
