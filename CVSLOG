@@ -97427,3 +97427,34 @@ Modified files:
 	chapel/make/: Makefile.generic Makefile.gnu Makefile.mta 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+03/28/07 14:54:06 -- bradc
+
+Log message:
+	This check-in renames the Makefile variable PLATFORM
+	to be CHPL_MAKE_PLATFORM to avoid conflicting with
+	environment variables of the same name.  In particular,
+	environment variables become Makefile variables if they
+	are not explicitly set, so our Makefiles were fragile
+	in their use of this variable name considering that we
+	weren't interested in inheriting a value from the
+	environment, just chose a simple name.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: Makefile Makefile.include 
+	chapel/compiler/adt/: Makefile Makefile.include 
+	chapel/compiler/backend/: Makefile Makefile.include 
+	chapel/compiler/ifa/: Makefile Makefile.include 
+	chapel/compiler/ifa/make_prims/: Makefile 
+	chapel/compiler/main/: Makefile Makefile.include 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	chapel/compiler/parser/: Makefile Makefile.include 
+	chapel/compiler/passes/: Makefile Makefile.include 
+	chapel/compiler/util/: Makefile Makefile.include 
+	chapel/make/: Makefile Makefile.base Makefile.platform 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/src/: Makefile 
+
