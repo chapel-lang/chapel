@@ -97334,3 +97334,17 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+03/28/07 10:47:07 -- deitz
+
+Log message:
+	Removed a test that has been regressing due to the odd _copy function
+	on sequences.  Since sequences are on their way out and this test
+	cannot be reproduced using normal classes and records, there is no
+	reason to keep it around.
+
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq_class5.chpl 
+	                              test_seq_class5.good 
+
