@@ -97274,3 +97274,15 @@ Added files:
 	chapel/test/sparse/bradc/: outOfBounds.chpl outOfBounds.good 
 	                           sparseArray2.chpl sparseArray2.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 09:49:12 -- bradc
+
+Log message:
+	Commiting original versions of old emacs lisp
+	files that I had sitting around for reference.
+
+Added files:
+	chapel/etc/emacs/21.4/: cc-langs.orig.el cc-menus.orig.el 
+	                        cc-mode.orig.el font-lock.orig.el 
+
