@@ -97286,3 +97286,21 @@ Added files:
 	chapel/etc/emacs/21.4/: cc-langs.orig.el cc-menus.orig.el 
 	                        cc-mode.orig.el font-lock.orig.el 
 
+---------------------------------------------------------------------------
+
+03/28/07 09:57:48 -- bradc
+
+Log message:
+	A variation on Steve's test_method_noparens_precedence.chpl
+	test demonstrating that parenthesis-less methods shadow
+	parenthesis-ful methods even if they are a better match.
+	I think there was general agreement to generate an error
+	in this case, but this is an interesting enough test for
+	future reference (whatever we decide) that it seemed worth
+	filing away.
+
+Added files:
+	chapel/test/classes/bradc/: 
+	                            test_method_noparens_precedence_mismatch.chpl 
+	                            test_method_noparens_precedence_mismatch.good 
+
