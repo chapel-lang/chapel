@@ -204,6 +204,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   var blk: rank*dim_type;
   var str: rank*int;
   var orig: dim_type;
+  var origOff: dim_type;
   var size : dim_type;
   var data : _ddata(eltType);
   var noinit: bool = false;
@@ -220,6 +221,12 @@ class SingleLocaleArithmeticArray: BaseArray {
   def isValidCursor?(c)
     return dom.isValidCursor?(c);
 
+  def computeOrigOff() {
+    origOff = orig;
+    for i in 1..rank do
+      origOff = origOff + blk(i) * off(i);
+  }
+
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
@@ -230,6 +237,7 @@ class SingleLocaleArithmeticArray: BaseArray {
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
     orig = 0:dim_type;
+    computeOrigOff();
     size = blk(1) * dom(1).length;
     data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
@@ -246,11 +254,12 @@ class SingleLocaleArithmeticArray: BaseArray {
     if stridable {
       for param i in 1..rank do
         sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type;
+      sum = sum - orig;
     } else {
       for param i in 1..rank do
-        sum = sum + (ind(i) - off(i)) * blk(i);
+        sum = sum + ind(i) * blk(i);
+      sum = sum - origOff;
     }
-    sum = sum - orig;
     return data(sum:int); // !!ahh
   }
 
@@ -269,6 +278,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.str(i) = d(i)._stride;
       alias.orig = orig + (off(i) - dom(i)._low) * blk(i);
     }
+    alias.computeOrigOff();
     return alias;
   }
 
@@ -294,6 +304,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.str(i) = str(i);
     }
     alias.orig = orig;
+    alias.computeOrigOff();
     return alias;
   }
 
@@ -306,6 +317,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       blk = new.blk;
       str = new.str;
       orig = new.orig;
+      origOff = new.origOff;
       size = new.size;
       data = new.data;
     } else {
