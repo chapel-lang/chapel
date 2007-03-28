@@ -97304,3 +97304,14 @@ Added files:
 	                            test_method_noparens_precedence_mismatch.chpl 
 	                            test_method_noparens_precedence_mismatch.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 10:05:54 -- bradc
+
+Log message:
+	A few stray .cvsignore files.
+
+Added files:
+	chapel/test/compflags/bradc/badflagdash/: .cvsignore 
+	chapel/test/modules/standard/memory/: .cvsignore 
+
