@@ -97213,3 +97213,28 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+03/27/07 17:38:58 -- bradc
+
+Log message:
+	This is a checkin to log a confusing compiler message
+	I got while working last night, captured in
+	weirdParamInit3.chpl.  It's not clear to me whether
+	the code ought to be legal or not.  weirdParamInit.chpl
+	and weirdParamInit2.chpl imply that perhaps it ought to
+	be, but even if it isn't, the error message could be
+	improved to be (a) clearer, and (b) point to the line
+	where the problem is occurring.  More details and
+	thought in the .future.x
+
+Added files:
+	chapel/test/classes/bradc/paramInClass/: .cvsignore 
+	                                         weirdParamInit.chpl 
+	                                         weirdParamInit.good 
+	                                         weirdParamInit2.chpl 
+	                                         weirdParamInit2.good 
+	                                         weirdParamInit3.chpl 
+	                                         weirdParamInit3.future 
+	                                         weirdParamInit3.good 
+
