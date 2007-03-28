@@ -97238,3 +97238,39 @@ Added files:
 	                                         weirdParamInit3.future 
 	                                         weirdParamInit3.good 
 
+---------------------------------------------------------------------------
+
+03/27/07 17:46:20 -- bradc
+
+Log message:
+	Haven't fully tested, but this change works on
+	the sparse/ and array/ test directories, and
+	I couldn't resist being the only person to
+	check in developer code on a weekday for the
+	first time in who knows how long...
+	
+	This change adds a notion of out-of-boundness
+	to sparse arrays such that if a sparse array
+	is accessed out-of-bounds an error occurs (if
+	bounds checking is turned on); if it is accessed
+	in-bounds and at a represented element the array
+	element is returned; and otherwise the IRV or
+	"zero" value is returned.  Added two tests to
+	check this behavior.
+	
+	In doing this change, added a member?() check
+	to the SingleLocaleArithmetic domain and to
+	the BaseDomain class so that the SparseDomain
+	could store a pointer to its parent (for
+	whom we don't want to assume any particular
+	implementation/distribution) and query whether
+	something was in or out of bounds for it.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+Added files:
+	chapel/test/sparse/bradc/: outOfBounds.chpl outOfBounds.good 
+	                           sparseArray2.chpl sparseArray2.good 
+
