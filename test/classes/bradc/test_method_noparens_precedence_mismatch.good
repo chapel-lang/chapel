@@ -1,0 +1,1 @@
+test_method_noparens_precedence_mismatch.chpl:11: error: unresolved access of '(int,int,int)' by '(3.2)'
