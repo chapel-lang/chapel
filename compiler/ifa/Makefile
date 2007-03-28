@@ -7,7 +7,7 @@ COMPILER_SUBDIR = ifa
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 
-IFA_OBJDIR = $(PLATFORM)
+IFA_OBJDIR = $(CHPL_MAKE_PLATFORM)
 include Makefile.share
 
 
@@ -17,7 +17,7 @@ TARGETS = $(IFA_OBJS)
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 
-MAKE_PRIMS = ./make_prims/$(PLATFORM)/make_prims$(EXE_SUFFIX)
+MAKE_PRIMS = ./make_prims/$(CHPL_MAKE_PLATFORM)/make_prims$(EXE_SUFFIX)
 
 #
 # standard footer

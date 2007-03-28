@@ -6,7 +6,7 @@ COMPILER_SUBDIR = AST
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-AST_OBJDIR = $(PLATFORM)
+AST_OBJDIR = $(CHPL_MAKE_PLATFORM)
 include Makefile.share
 
 TARGETS = $(AST_OBJS)

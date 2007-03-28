@@ -1,8 +1,9 @@
 #
-# PLATFORM stuff
+# CHPL_MAKE_PLATFORM stuff
 #
 #
-# PLATFORM is simply the one-word description we'll use for all
-# platforms that we run on.
+# CHPL_MAKE_PLATFORM is simply the one-word description we'll use for
+# all platforms that we run on.  The long name is being used to avoid
+# PLATFORM which is sometimes set by shell environments.
 #
-PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)
+CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)

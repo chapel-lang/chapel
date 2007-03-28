@@ -6,7 +6,7 @@ COMPILER_SUBDIR = adt
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-ADT_OBJDIR = $(PLATFORM)
+ADT_OBJDIR = $(CHPL_MAKE_PLATFORM)
 include Makefile.share
 
 TARGETS = $(ADT_OBJS)

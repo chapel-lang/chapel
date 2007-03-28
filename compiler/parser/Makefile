@@ -6,7 +6,7 @@ COMPILER_SUBDIR = parser
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-PARSER_OBJDIR = $(PLATFORM)
+PARSER_OBJDIR = $(CHPL_MAKE_PLATFORM)
 include Makefile.share
 
 TARGETS = $(PARSER_OBJS)
@@ -47,11 +47,11 @@ modulefinder.tab.h modulefinder.tab.c: modulefinder.y
 	@if [ `grep "conflicts:" modulefinder.output | wc -l` -ne 0 ]; then echo "PROBLEM: modulefinder.y contains conflicts"; exit 1; fi;
 
 MODULEFINDER_OBJS = \
-	$(PLATFORM)/modulefinder.o \
-	$(PLATFORM)/modulefinder.tab.o \
-	$(PLATFORM)/modulefinder.lex.yy.o \
-	$(PLATFORM)/processTokens.moduleFinder.o \
-	$(PLATFORM)/yy.o
+	$(CHPL_MAKE_PLATFORM)/modulefinder.o \
+	$(CHPL_MAKE_PLATFORM)/modulefinder.tab.o \
+	$(CHPL_MAKE_PLATFORM)/modulefinder.lex.yy.o \
+	$(CHPL_MAKE_PLATFORM)/processTokens.moduleFinder.o \
+	$(CHPL_MAKE_PLATFORM)/yy.o
 
 modulefinder: modulefinder.tab.h $(MODULEFINDER_OBJS)
 	g++ -o $@ $(MODULEFINDER_OBJS) $(LIBS)
@@ -66,21 +66,21 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 
 # no-error required here for bison 1.875 (not 1.875d)
-$(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+$(CHPL_MAKE_PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) -Wno-error -o $@ $<
 
-$(PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+$(CHPL_MAKE_PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<
 
 # no-error required here for flex 2.5.33
-$(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
+$(CHPL_MAKE_PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) -Wno-error -o $@ $<
 
-$(PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
+$(CHPL_MAKE_PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ $<
 
-$(PLATFORM)/processTokens.moduleFinder.o: $(PLATFORM)/processTokens.o
+$(CHPL_MAKE_PLATFORM)/processTokens.moduleFinder.o: $(CHPL_MAKE_PLATFORM)/processTokens.o
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ processTokens.cpp
 
-$(PLATFORM)/yy.o: yy.cpp $(PLATFORM_DIR)
+$(CHPL_MAKE_PLATFORM)/yy.o: yy.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<

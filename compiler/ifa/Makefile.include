@@ -1,4 +1,4 @@
-IFA_OBJDIR = $(COMPILER_ROOT)/ifa/$(PLATFORM)
+IFA_OBJDIR = $(COMPILER_ROOT)/ifa/$(CHPL_MAKE_PLATFORM)
 
 ALL_SRCS += ifa/*.h ifa/*.cpp
 

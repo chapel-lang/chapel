@@ -2,7 +2,7 @@ CHAPEL_ROOT = ../..
 DEBUG = 1
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-RUNTIME_CFLAGS += -I../include/$(PLATFORM) -I../include
+RUNTIME_CFLAGS += -I../include/$(CHPL_MAKE_PLATFORM) -I../include
 
 CHPL_RT_SRCS = \
 	arg.c \
@@ -16,11 +16,11 @@ CHPL_RT_SRCS = \
 	config.c \
 	error.c \
 
-CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(PLATFORM)/%.o)
-CHPL_RT_DIR = ../../lib/$(PLATFORM)
+CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(CHPL_MAKE_PLATFORM)/%.o)
+CHPL_RT_DIR = ../../lib/$(CHPL_MAKE_PLATFORM)
 CHPL_RT_LIB = $(CHPL_RT_DIR)/libchpl.a
 
-CVS_DEPENDS = ./$(PLATFORM)/Makefile.cvs.depend
+CVS_DEPENDS = ./$(CHPL_MAKE_PLATFORM)/Makefile.cvs.depend
 
 TARGETS = $(CHPL_RT_LIB) $(CHPL_RT_DIR)/main.o
 CVS_SRCS = $(CHPL_RT_SRCS) main.c
@@ -31,21 +31,21 @@ all: $(CHPL_RT_DIR) $(TARGETS)
 	@if [ `grep "chplrt.h" $(CVS_SRCS) | wc -l` -ne `ls $(CVS_SRCS) | wc -l` ]; then echo "PROBLEM:  There's a runtime source file that does not include 'chplrt.h'."; exit 1; fi
 
 clean:
-	rm -f ./$(PLATFORM)/*.o $(TARGETS)
+	rm -f ./$(CHPL_MAKE_PLATFORM)/*.o $(TARGETS)
 
 cleandeps:
 	rm -f $(CVS_DEPENDS)
 
 clobber: clean
 	rm -f *~
-	rm -rf ./$(PLATFORM)
+	rm -rf ./$(CHPL_MAKE_PLATFORM)
 
 depend: $(PLATFORM_DIR)
 	@echo Updating dependences...
 	@rm -f $(CVS_DEPENDS).tmp
 	@echo > $(CVS_DEPENDS).tmp
 	@for file in $(CVS_SRCS); do \
-	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
+	  $(ECHO) -n $(CHPL_MAKE_PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
 	  $(CMAKEDEPEND) $(RUNTIME_CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
         done	
 	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
@@ -55,14 +55,14 @@ $(CHPL_RT_LIB): $(CHPL_RT_OBJS)
 	$(RANLIB) $@
 	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o ../TAGS $(CHPL_RT_SRCS) ../include/*.h) || echo "etags not available"
 
-$(CHPL_RT_DIR)/main.o: $(PLATFORM)/main.o
+$(CHPL_RT_DIR)/main.o: $(CHPL_MAKE_PLATFORM)/main.o
 	cp $< $@
 
 $(CHPL_RT_DIR):
 	mkdir -p $@
 
 
-$(PLATFORM)/%.o: %.c $(PLATFORM_DIR)
+$(CHPL_MAKE_PLATFORM)/%.o: %.c $(PLATFORM_DIR)
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
 

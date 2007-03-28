@@ -9,7 +9,7 @@ MAKEFLAGS = --no-print-directory
 #
 # determine what platform we're running on
 #
-ifndef PLATFORM
+ifndef CHPL_MAKE_PLATFORM
 include $(CHAPEL_ROOT)/make/Makefile.platform
 endif
 
@@ -26,25 +26,25 @@ endif
 default: all
 
 printplatform:
-	@echo $(PLATFORM)
+	@echo "CHPL_MAKE_PLATFORM   = $(CHPL_MAKE_PLATFORM)"
 
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,
 # depending on how CHPLDEVTMP is set
 #
-PLATFORM_DIR = ./$(PLATFORM)/.timestamp
+PLATFORM_DIR = ./$(CHPL_MAKE_PLATFORM)/.timestamp
 
 ifndef CHPLDEVTMP
 $(PLATFORM_DIR):
-	@echo making $(PLATFORM) subdirectory to store platform-specific files
-	@-mkdir $(PLATFORM) > /dev/null 2>&1
+	@echo making $(CHPL_MAKE_PLATFORM) subdirectory to store platform-specific files
+	@-mkdir $(CHPL_MAKE_PLATFORM) > /dev/null 2>&1
 	@-touch $(PLATFORM_DIR)
 else
 $(PLATFORM_DIR):
-	@echo linking $(PLATFORM) subdirectory to store platform-specific files
-	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM)
-	rm -f $(PLATFORM)
-	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(PLATFORM) .
+	@echo linking $(CHPL_MAKE_PLATFORM) subdirectory to store platform-specific files
+	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM)
+	rm -f $(CHPL_MAKE_PLATFORM)
+	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
 	@-touch $(PLATFORM_DIR)
 endif
 
@@ -65,11 +65,11 @@ ECHO = echo
 EXE_SUFFIX = 
 
 $(CHAPEL_ROOT)/make/Makefile.%:
-	@echo "WARNING: The Chapel group hasn't compiled for platform $(PLATFORM) before."
+	@echo "WARNING: The Chapel group hasn't compiled for platform $(CHPL_MAKE_PLATFORM) before."
 	@echo -n "Does this platform use the gnu toolsuite? (y/n) "
 	@read GNUTOOLS && if [ "$$GNUTOOLS" == "y" ]; then cp $(CHAPEL_ROOT)/make/Makefile.generic.gnu $@; else cp $(CHAPEL_ROOT)/make/Makefile.generic $@; fi;
 	@echo "*************************************************************************"
-	@echo "Creating $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)..."
+	@echo "Creating $(CHAPEL_ROOT)/make/Makefile.$(CHPL_MAKE_PLATFORM)..."
 	@echo "-------------------------------------------------------------------------"
 	@echo "NOTE: You may need to customize this file in order to build successfully."
 	@echo "      Please send any questions and/or edits to chapel_info@cray.com"
@@ -79,5 +79,5 @@ $(CHAPEL_ROOT)/make/Makefile.%:
 #
 # include platform-specific settings
 #
--include $(CHAPEL_ROOT)/make/Makefile.$(PLATFORM)
+-include $(CHAPEL_ROOT)/make/Makefile.$(CHPL_MAKE_PLATFORM)
 

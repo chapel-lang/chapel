@@ -34,9 +34,9 @@ echocompilerdir:
 #
 
 %.depend: %.cpp $(PLATFORM_DIR)
-	@$(MAKEDEPEND) -MT '$(PLATFORM)/$*.o' $(COMP_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
+	@$(MAKEDEPEND) -MT '$(CHPL_MAKE_PLATFORM)/$*.o' $(COMP_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
 
-$(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
+$(CHPL_MAKE_PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
 FORCE:
