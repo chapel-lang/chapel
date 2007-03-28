@@ -97473,3 +97473,21 @@ Removed files:
 	chapel/third-party/: Makefile 
 	chapel/third-party/boehmgc/: Makefile 
 
+---------------------------------------------------------------------------
+
+03/28/07 15:37:42 -- bradc
+
+Log message:
+	Filing two tests of declaring an array within a class.
+	If the array is uninitialized, the test works as
+	expected.  If the array is initialized, the class
+	constructor cannot be resolved.
+
+Added files:
+	chapel/test/classes/bradc/arrayInClass/: .cvsignore 
+	                                         genericArray.chpl 
+	                                         genericArray.good 
+	                                         genericArrayWithInit.chpl 
+	                                         genericArrayWithInit.future 
+	                                         genericArrayWithInit.good 
+
