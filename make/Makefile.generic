@@ -6,6 +6,8 @@ CXX = cc
 CMAKEDEPEND = $(CC) -MM -MG
 MAKEDEPEND = $(CXX) -MM -MG
 
+RANLIB = ranlib
+
 ifdef DEBUG
 CFLAGS += -g
 endif

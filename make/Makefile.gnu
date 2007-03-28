@@ -10,6 +10,7 @@ CC = gcc
 MAKEDEPEND = $(CXX) -MM -MG
 CMAKEDEPEND = $(CC) -MM -MG
 
+RANLIB = ranlib
 
 #
 # General Flags
