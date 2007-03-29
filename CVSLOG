@@ -97504,3 +97504,37 @@ Added files:
 	                                            printType.future 
 	                                            printType.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 17:30:55 -- bradc
+
+Log message:
+	A series of tests that might indicate some of the
+	challenges that might lie ahead of us with stridable
+	as a parameter in a range -- creating an abstract base
+	class that has a tuple of ranges that supports some
+	sort of bbox() or getRange() (or similar equivalent of
+	our current this() function on domains) may be difficult
+	to do due to the requirements on return types of
+	overloaded methods.  Ran afoul of this when trying to
+	have the sparse domain query its parent domain's
+	bounding box/ranges.  If I'm missing something obvious,
+	would be glad to hear it.
+
+Added files:
+	chapel/test/classes/bradc/overloadMethods/: .cvsignore 
+	                                            v1NoReturnValue.chpl 
+	                                            v1NoReturnValue.good 
+	                                            v2NoReturnValueButType.chpl 
+	                                            v2NoReturnValueButType.good 
+	                                            v3aoneClassReturnMatch.chpl 
+	                                            v3aoneClassReturnMatch.good 
+	                                            v3oneClassReturnMatch.chpl 
+	                                            v3oneClassReturnMatch.good 
+	                                            v4oneClassReturnNoMatch.chpl 
+	                                            v4oneClassReturnNoMatch.future 
+	                                            v4oneClassReturnNoMatch.good 
+	                                            v5bothReturnTypes.chpl 
+	                                            v5bothReturnTypes.future 
+	                                            v5bothReturnTypes.good 
+
