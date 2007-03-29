@@ -97569,3 +97569,15 @@ Added files:
 	chapel/test/studies/lu/marybeth/: blocks-wish3.mb 
 	                                  pivblock-wish2.mb 
 
+---------------------------------------------------------------------------
+
+03/29/07 11:47:06 -- bradc
+
+Log message:
+	A quick test to ensure that we're not a multiple
+	dispatch language for purposes of my sanity.  :)
+
+Added files:
+	chapel/test/classes/bradc/: dynDispatchOnArg.chpl 
+	                            dynDispatchOnArg.good 
+
