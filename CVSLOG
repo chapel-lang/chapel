@@ -97491,3 +97491,16 @@ Added files:
 	                                         genericArrayWithInit.future 
 	                                         genericArrayWithInit.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 17:24:29 -- bradc
+
+Log message:
+	An intriguing error.  Something about this code causes
+	the compiler to access an alist out of bounds.
+
+Added files:
+	chapel/test/classes/bradc/overloadMethods/: printType.chpl 
+	                                            printType.future 
+	                                            printType.good 
+
