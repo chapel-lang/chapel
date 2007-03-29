@@ -97538,3 +97538,34 @@ Added files:
 	                                            v5bothReturnTypes.future 
 	                                            v5bothReturnTypes.good 
 
+---------------------------------------------------------------------------
+
+03/28/07 19:09:26 -- marybeth
+
+Log message:
+	I made changes to the pivoting and non-pivoting block LU versions
+	as was discussed in the library meeting yesterday.  I recorded the
+	changes in the comments of the code.
+	
+	- I improved the names of the subdomains and the iterator.
+	- I cleaned up the algorithm, taking out tests for hi+1 > n and
+	for empty domains, assuming that subdomains with indices out
+	of range of the original domain are empty (and don't give an
+	error).  I made sure that if certain domains were empty, the
+	loops were written in such a way that they would not execute
+	and the algorithm would fall out.
+	- I changed the views into A for the case with pivoting, during
+	the first factorization steps of the algorithm.  I use A1 and A2
+	during the factorization of the active block columns of A (A1).  After
+	that is complete, then A12 and A22 are used to complete the computations
+	for the A2 block.
+	- I removed the declarations of the subdomains.
+	- I changed the declaration of the pivot array to be an index of A1D.
+	- I changed the swap operator to <==>.
+	
+	I did not yet add tasks to swap rows of A2 while A1 is being factored.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: blocks-wish3.mb 
+	                                  pivblock-wish2.mb 
+
