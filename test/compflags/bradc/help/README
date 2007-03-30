@@ -1,19 +1,6 @@
 Whenever the output of --help changes from the user's
-perspective, the userhelp.txt file must be updated to
-reflect the new contents of the help message, minus
-the two lines that reflect the compiler's version
-number.  The best way to do this is to do:
-
-         start_test -onetest compflags/bradc/help/userhelp.chpl
-
-from the top of the test directory, then to take the
-userhelp.comp.out.tmp file, remove the first two lines, 
-and copy the rest into userhelp.txt.
-
-If we decided that the help message should not print
-out the compiler version, we could remove the need
-to update a .txt file rather than the .good file
-directly.
+perspective, the userhelp.good file must be updated to
+reflect the new contents of the help message.
 
 Why do we have this test?  (1) because we care about
 how help looks to the user, and (2) because the test

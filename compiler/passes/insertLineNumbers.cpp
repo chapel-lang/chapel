@@ -30,8 +30,11 @@ static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 static void
 insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
-  if (fn->getModule()->modtype == MOD_USER && !fn->isCompilerTemp) {
+  ModuleSymbol* mod = fn->getModule();
+  if ((mod->modtype == MOD_USER && !fn->isCompilerTemp) ||
+      (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
+    // or developer flag is on and the call is not the halt() call
     call->insertAtTail(new_IntSymbol(call->lineno));
     call->insertAtTail(new_StringSymbol(call->filename));
   } else if (linenoMap.get(fn)) {

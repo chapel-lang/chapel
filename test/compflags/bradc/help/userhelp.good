@@ -16,8 +16,7 @@ Optimization Control:
       --ref-count         false     ->true   Enabled reference counting
       --no-inline         false     ->true   Do not inline functions
       --unoptimized       false     ->true   Generate naive code (many temps)
-      --scalar-replace-tuples  false     ->true   Generate scalar components of tuples
-      --no-iterator-propagation  false     ->true   Disable propagation of iterators to avoid sequence temporaries
+      --scalar-replace-tuples false     ->true   Generate scalar components of tuples
 
 Code Generation:
 ----------------
@@ -36,7 +35,7 @@ Miscellaneous Flags:
 --------------------
       --instantiate-max   256       int      Limit number of instantiations
       --chplhome          .         path     Over-ride $CHPL_HOME
-      --devel             false     ->true   Compile as developer
+      --[no-]devel        false     ->true   Compile as developer
   -s, --set               (null)    string   Set config param value
 
 Compiler Information:

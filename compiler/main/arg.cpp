@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "chpl.h"
 
 static char *SPACES = "                                                                               ";
-static char *arg_types_keys = (char *)"IPSDfF+TL";
+static char *arg_types_keys = (char *)"IPSDfF+TLN";
 static char *arg_types_desc[] = {
   (char *)"int     ",
   (char *)"path    ",
@@ -44,6 +44,7 @@ static char *arg_types_desc[] = {
   (char *)"incr    ",
   (char *)"toggle  ",
   (char *)"int64   ",
+  (char *)"->true  ",
   (char *)"        "
 };
 
@@ -69,8 +70,8 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   ArgumentDescription *desc = arg_state->desc;
   if (desc[i].type) {
     char type = desc[i].type[0];
-    if (type=='F'||type=='f')
-      *(bool *)desc[i].location = type=='F' ? true : false;
+    if (type=='F'||type=='f'||type=='N')
+      *(bool *)desc[i].location = type!='f' ? true : false;
     else if (type=='T')
       *(int *)desc[i].location = !*(int *)desc[i].location;
     else if (type == '+') 
@@ -127,7 +128,8 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
         case '+': (*(int *)desc[i].location)++; break;
         case 'f': 
         case 'F': 
-          *(bool *)desc[i].location = type=='F'?1:0; break;
+        case 'N':
+          *(bool *)desc[i].location = type!='f'?1:0; break;
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
         case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
@@ -153,7 +155,8 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
             len = end - ((*argv) + 2);
           else
             len = strlen((*argv) + 2);
-          if (len == (int)strlen(desc[i].name) &&
+          int flaglen = (int)strlen(desc[i].name);
+          if (len == flaglen &&
               !strncmp(desc[i].name,(*argv)+2, len))
           {
             char* currentFlag = _dupstr(*argv);
@@ -163,6 +166,18 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
               *argv = end;
             process_arg(arg_state, i, &argv, currentFlag);
             break;
+          } else if (desc[i].type && desc[i].type[0] == 'N' &&
+                     len == flaglen+3 &&
+                     !strncmp("no-", (*argv)+2, 3) &&
+                     !strncmp(desc[i].name,(*argv)+5,len-3)) {
+            char* currentFlag = _dupstr(*argv);
+            if (!end)
+              *argv += strlen(*argv) - 1;
+            else
+              *argv = end;
+            desc[i].type = "f";
+            process_arg(arg_state, i, &argv, currentFlag);
+            desc[i].type = "N";
           }
         }
       } else {
@@ -226,13 +241,15 @@ usage(ArgumentState *arg_state, char *arg_unused) {
         continue;
       }
     }
-    fprintf(stderr,"  %c%c%c %s%s%s  ", 
+    int isNoFlag = (desc[i].type && desc[i].type[0] == 'N') ? 5 : 0;
+    fprintf(stderr,"  %c%c%c %s%s%s%s ", 
             desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
             (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
             (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
+            (isNoFlag) ? "[no-]" : "",
             desc[i].name,
-            (strlen(desc[i].name) + 63 < 79) ?
-            &SPACES[strlen(desc[i].name)+63] : "");
+            (strlen(desc[i].name) + isNoFlag + 62 < 79) ?
+            &SPACES[strlen(desc[i].name) + isNoFlag + 62] : "");
     switch(desc[i].type?desc[i].type[0]:0) {
       case 0: fprintf(stderr, "         "); break;
       case 'L':
@@ -265,7 +282,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
       case 'I':
         fprintf(stderr, "%-9d", *(int *)desc[i].location);
         break;
-      case 'T': case 'f': case 'F':
+    case 'T': case 'f': case 'F': case 'N':
         fprintf(stderr, "%-9s", *(bool *)desc[i].location?"true ":"false");
         break;
     }

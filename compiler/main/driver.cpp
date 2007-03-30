@@ -83,7 +83,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', "Miscellaneous Flags", NULL, NULL, NULL, NULL},
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"chplhome", ' ', "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
- {"devel", ' ', "Compile as developer", "F", &developer, "CHPL_DEVELOPER", NULL},
+ {"devel", ' ', "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},
  {"set", 's', "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},
@@ -154,7 +154,6 @@ static void printVersionAndExit(ArgumentState* arg_state, char* arg_unused) {
 }
 
 static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused) {
-  printVersion(arg_state);
   usage(arg_state, arg_unused);
   clean_exit(0);
 }
