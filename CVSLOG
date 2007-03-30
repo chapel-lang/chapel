@@ -97695,3 +97695,24 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: README fft-mta.chpl 
 
+---------------------------------------------------------------------------
+
+03/30/07 12:26:30 -- diten
+
+Log message:
+	Make the line numbers for the formals for default constructors match the
+	line numbers for the fields they initialize.  Make the line numbers for the
+	VarSymbols created for default wrappers be the same as the numbers for the
+	formals of the function getting wrapped.  This makes for more descriptive error
+	messages when class field initialization fails, for example.
+	
+	Add a simple test for this.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/classes/diten/: error_default_field_init.chpl 
+	                            error_default_field_init.good 
+	                            error_default_field_init.prediff 
+
