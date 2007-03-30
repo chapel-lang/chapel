@@ -134,5 +134,13 @@ void flattenFunctions(void) {
     Vec<Symbol*>* uses = args_map.get(fn);
     addVarsToFormals(fn, uses);
   }
+
+  //
+  // remove types from functions
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ts->defPoint->parentSymbol))
+      fn->defPoint->insertBefore(ts->defPoint->remove());
+  }
 }
 

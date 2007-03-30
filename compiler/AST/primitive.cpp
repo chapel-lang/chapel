@@ -98,6 +98,12 @@ returnInfoMove(CallExpr* call) {
   return t1;
 }
 
+static Type*
+returnInfoICType(CallExpr* call) {
+  ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+  return ct->scalarPromotionType; // this is the element type
+}
+
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
 returnInfoNumericUp(CallExpr* call) {
@@ -303,6 +309,8 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_IS_ENUM, "isEnumType", returnInfoBool);
   prim_def(PRIMITIVE_ENUM_ENUM, "enumEnum", returnInfoVoid);
+
+  prim_def(PRIMITIVE_GET_IC_TYPE, "get_ic_type", returnInfoICType);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
 

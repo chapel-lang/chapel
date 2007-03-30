@@ -12,6 +12,7 @@ public:
   IteratorInfo();
 };
 
+void prototypeIteratorInfo(FnSymbol* fn);
 void lowerIterator(FnSymbol* fn);
 
 #endif

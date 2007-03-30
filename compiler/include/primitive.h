@@ -108,6 +108,8 @@ enum PrimitiveTag {
   PRIMITIVE_IS_ENUM,   // True if type passed is an enum
   PRIMITIVE_ENUM_ENUM, // Return a sequence of the enum's values
 
+  PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
+
   PRIMITIVE_INT_ERROR,
 
   NUM_KNOWN_PRIMS

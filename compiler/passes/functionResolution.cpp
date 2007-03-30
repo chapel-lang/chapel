@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "iterator.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -95,13 +96,8 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
   if (fn->retType != dtUnknown) {
     fn->retExprType->remove();
-    if (fn->fnClass == FN_ITERATOR) {
-      CallExpr* seq = new CallExpr("_construct_seq", fn->retType->symbol);
-      fn->insertBeforeReturn(seq);
-      resolveCall(seq);
-      fn->retType = seq->typeInfo();
-      seq->remove();
-    }
+    if (fn->fnClass == FN_ITERATOR)
+      prototypeIteratorInfo(fn);
   }
 }
 
@@ -185,6 +181,8 @@ canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric && (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) || is_real_type(actualType) || is_complex_type(actualType)))
+    return true;
+  if (formalType == dtIterator && actualType->symbol->hasPragma("iterator class"))
     return true;
   if (actualType == formalType)
     return true;
@@ -2242,6 +2240,9 @@ resolveFns(FnSymbol* fn) {
     return;
   resolvedFns.set_add(fn);
 
+  if (fn->hasPragma("auto ii"))
+    return;
+
   insertFormalTemps(fn);
 
   resolveBody(fn->body);
@@ -2296,19 +2297,16 @@ resolveFns(FnSymbol* fn) {
   }
 
   ret->type = retType;
-  fn->retType = retType;
-  if (retTypes.n == 0 && fn->retType == dtUnknown)
-    fn->retType = ret->type = dtVoid;
-  else if (retType == dtUnknown)
-    INT_FATAL(fn, "Unable to resolve return type");
-
-  if (fn->fnClass == FN_ITERATOR) {
-    CallExpr* seq = new CallExpr("_construct_seq", fn->retType->symbol);
-    fn->insertBeforeReturn(seq);
-    resolveCall(seq);
-    fn->retType = seq->typeInfo();
-    seq->remove();
+  if (!fn->iteratorInfo) {
+    fn->retType = retType;
+    if (retTypes.n == 0 && fn->retType == dtUnknown)
+      fn->retType = ret->type = dtVoid;
+    else if (retType == dtUnknown)
+      INT_FATAL(fn, "Unable to resolve return type");
   }
+
+  if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo)
+    prototypeIteratorInfo(fn);
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {

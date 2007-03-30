@@ -1296,6 +1296,7 @@ void CallExpr::codegen(FILE* outfile) {
         INT_FATAL("illegal dynamic cast encountered in codegen");
       break;
     }
+    case PRIMITIVE_GET_IC_TYPE:
     case PRIMITIVE_ISSUBTYPE:
     case PRIMITIVE_TYPEOF:
     case PRIMITIVE_USE:

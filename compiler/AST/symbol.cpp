@@ -607,7 +607,7 @@ void FnSymbol::verify() {
   if (astType != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astType");
   }
-  if (normalized) {
+  if (normalized && !hasPragma("auto ii")) {
     CallExpr* last = dynamic_cast<CallExpr*>(body->body->last());
     if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");

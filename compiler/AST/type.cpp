@@ -577,6 +577,8 @@ void initPrimitiveTypes(void) {
   dtIntegral->isGeneric = true;
   dtNumeric = createPrimitiveType ("numeric", "numeric");
   dtNumeric->isGeneric = true;
+  dtIterator = createPrimitiveType("_iteratorClass", "_iteratorClass");
+  dtIterator->isGeneric = true;
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
   dtSetterToken = createPrimitiveType ("_ST", "_ST");

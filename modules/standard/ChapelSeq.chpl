@@ -566,3 +566,28 @@ def _extended_euclid(u: int, v: int) {
   }
   return (u3, u1);
 }
+
+//
+// print out iterators like sequence literals
+//
+def _iteratorClass.writeThis(f: Writer) {
+  f.write("(/");
+  var first: bool = true;
+  for e in this {
+    if !first then
+      f.write(", ");
+    f.write(e);
+    first = false;
+  }
+  f.write("/)");
+}
+
+def _pass(ic: _iteratorClass)
+  return ic;
+
+def _copy(ic: _iteratorClass) {
+  var s: seq(__primitive("get_ic_type", ic));
+  for e in ic do
+    s._append_in_place(e);
+  return s;
+}
