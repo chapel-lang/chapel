@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"
 #include "chplrt.h"
@@ -308,7 +309,7 @@ void printConfigVarTable(void) {
       }
     }
   }
-  exit(0);
+  _chpl_exit(0);
 }
 
 

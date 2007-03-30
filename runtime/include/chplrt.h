@@ -29,5 +29,6 @@ _real64 _now_time(void);
 #define calloc  dont_use_calloc_use_chpl_calloc_instead
 #define free    dont_use_free_use_chpl_free_instead
 #define realloc dont_use_realloc_use_chpl_realloc_instead
+#define exit    dont_use_exit_use_chpl_exit_instead
 
 #endif

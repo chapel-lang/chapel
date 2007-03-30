@@ -7,6 +7,7 @@ RUNTIME_CFLAGS += -I../include/$(CHPL_MAKE_PLATFORM) -I../include
 CHPL_RT_SRCS = \
 	arg.c \
         chplcast.c \
+	chplexit.c \
 	chplio.c \
 	chplmem.c \
 	chplmem_tests.c \
@@ -15,6 +16,7 @@ CHPL_RT_SRCS = \
 	chpltypes.c \
 	config.c \
 	error.c \
+	gdb.c
 
 CHPL_RT_OBJS = $(CHPL_RT_SRCS:%.c=$(CHPL_MAKE_PLATFORM)/%.o)
 CHPL_RT_DIR = ../../lib/$(CHPL_MAKE_PLATFORM)

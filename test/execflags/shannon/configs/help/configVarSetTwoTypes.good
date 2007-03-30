@@ -2,6 +2,7 @@
 FLAGS:
 ======
   -h, --help            -- print this message
+  --gdb                 -- run program in gdb
 
 CONFIG VAR FLAGS:
 =================

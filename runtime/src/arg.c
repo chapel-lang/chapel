@@ -7,6 +7,7 @@
 #include "config.h"
 #include "chplrt.h"
 #include "error.h"
+#include "gdb.h"
 
 
 
@@ -43,6 +44,7 @@ void printHelpTable(void) {
 
   static flagType flagList[] = {
     {"-h, --help", "print this message", 'g'},
+    {"--gdb", "run program in gdb", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
     {"-f<filename>", "read in a file of config var assignments", 'c'},
@@ -197,6 +199,8 @@ static int parseMemFlag(char* memFlag) {
 
 void parseArgs(int argc, char* argv[]) {
   int i;
+
+  checkForGDBArg(argc, argv);
   
   for (i = 1; i < argc; i++) {
     int argLength = 0;
