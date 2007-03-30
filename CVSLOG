@@ -97668,3 +97668,16 @@ Removed files:
 	chapel/test/functions/deitz/iterators/temps/: COMPOPTS 
 	                                              test_iterator_temp2.compopts 
 
+---------------------------------------------------------------------------
+
+03/30/07 11:38:12 -- deitz
+
+Log message:
+	Removed one user temp from the fft benchmark, but this code will
+	require some form of garbage collection to run fast in order to handle
+	excess array alias classes (via slices) and domain classes via domain
+	creations in inner loops.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+
