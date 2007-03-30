@@ -97581,3 +97581,90 @@ Added files:
 	chapel/test/classes/bradc/: dynDispatchOnArg.chpl 
 	                            dynDispatchOnArg.good 
 
+---------------------------------------------------------------------------
+
+03/30/07 10:52:27 -- deitz
+
+Log message:
+	Removed all temporary sequences.  This impacts the semantics of the
+	language in important ways:
+	
+	1. Iterators, forall expressions, and promoted functions that are not
+	   pure (side effects, read globals) are not evaluated fully until
+	   they are iterated over.  This change impacts
+	     arrays/deitz/promotion/test_scalar_promote_side_effect
+	     functions/deitz/test_forallexpr2
+	   I updated the .good, but if promotion or forall expressions result
+	   in parallel execution, these tests are non-deterministic.
+	
+	2. Iterators, forall expressions, and promoted functions do not return
+	   sequences unless the result is captured into a variable in the
+	   Chapel program.  This means that, for example, # cannot be applied
+	   to an iterator.  Nor can an iterator be indexed into.  On the plus
+	   side, I can make iterators return arrays with a trivial change.
+	   This change impacts
+	     [Error matching compiler output for spec/marybeth/seq3]
+	     [Error matching compiler output for spec/marybeth/seq4]
+	     [Error matching compiler output for types/seq/deitz/test_seq10]
+	   Since we are in a good position to remove sequences entirely, these
+	   tests should probably be removed.  Removed my test and alerted MB
+	   to the issue.
+	
+	The major change in this checkin is the removal of the iterator
+	propagation optimization.  Instead, iterator classes are prototyped in
+	function resolution and propagated via instantiation at this point.
+	Iterators do not actually result in sequences unless the result is
+	captured into a variable via the _copy function.
+	
+	Removed the --warn-temporary flag since sequence temporaries are no
+	longer inserted, except by the Chapel programmer.  Removed the
+	--no-iterator-propagation flag since this optimization no longer
+	exists.
+	
+	Factored lowerIterator, which changes an iterator into a class and
+	methods, into two functions.  The function prototypeIteratorInfo is
+	now used during function resolution to prototype the class and methods
+	though the actual bodies of the class and methods are not created
+	until the lowerIterators pass in using the lowerIterator function.
+	
+	Added primitive PRIMITIVE_GET_IC_TYPE to return the element type of an
+	iterator class.  This is used in the definition of the _copy function
+	of iterator classes in order to determine the element type of the
+	sequence (or array eventually) that the iterator is changed into when
+	it is captured into a variable.
+	
+	Added a built-in generic type _iteratorClass that can be used to
+	define functions that work on iterators (or promotions or forall
+	expressions).  Used this generic to define a write function over
+	iterators, which prints it out like a sequence, a _pass function, and
+	a _copy function.  The _pass function has no effect so that iterators
+	or promotions can be passed into other functions and/or nested.  The
+	scalar promotion type of an iterator class is set to the return type
+	of the iterator function.  The _copy function results in an actual
+	sequence so that iterators can be captured into Chapel variables.
+	
+	Extended flattenFunctions to also flatten types defined in functions.
+	
+	This checkin greatly improves the performance of the stream benchmark
+	though it is still slower than the no-promotion version.  The fft
+	benchmark requires more work but I have some guesses.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp iterator.cpp primitive.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: driver.h iterator.h primitive.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         lowerIterators.cpp 
+	chapel/modules/standard/: ChapelSeq.chpl 
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote_side_effect.good 
+	chapel/test/functions/deitz/: test_forallexpr2.good 
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp2.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_plus_seq_temps.compopts 
+	chapel/test/functions/deitz/iterators/temps/: COMPOPTS 
+	                                              test_iterator_temp2.compopts 
+
