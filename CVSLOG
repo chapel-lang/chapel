@@ -97716,3 +97716,19 @@ Added files:
 	                            error_default_field_init.good 
 	                            error_default_field_init.prediff 
 
+---------------------------------------------------------------------------
+
+03/30/07 12:41:22 -- marybeth
+
+Log message:
+	Rewrote sorting routine that was implemented with sequences.
+	It's now implemented with a 1D array.
+	
+	Note:  writeln(x(order)) still outputs a sequence literal.
+	
+	Adding sort.chpl, sort.good.  Removing seq3.chpl, seq3.good,
+	seq4.chpl, seq4.good.
+
+Added files:
+	chapel/test/spec/marybeth/: sort.chpl sort.good 
+
