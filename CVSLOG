@@ -97744,3 +97744,45 @@ Removed files:
 	chapel/test/spec/marybeth/: seq3.chpl seq3.good seq4.chpl 
 	                            seq4.good 
 
+---------------------------------------------------------------------------
+
+03/30/07 13:01:56 -- bradc
+
+Log message:
+	Caused runtime error messages to print out internal
+	module filenames/locations when the --devel flag is
+	turned on.  Otherwise, the user filename/line number
+	is printed as before.
+	
+	Also, added a --no-devel flag to support the ability
+	to override a developer environment variable without
+	unsetting it (decided not to make --devel a toggle
+	for fear that it would result in confusing behavior).
+	
+	Changed the --help message to not print out the
+	compiler version information in order to make
+	the userhelp.chpl test work in a more traditional
+	way where the userhelp.good file should be updated
+	rather than the userhelp.txt file.
+	
+	Turned out to be troublesome to have two flags (--devel
+	and --no-devel) change the same variable with our
+	current argument-parsing scheme, so created a new
+	flag type "N" (for "No-" flag) which is similar to the
+	"F" flag except that it supports both positive and
+	negative variations.  Thus, creating "devel" as an "N"
+	flag causes "--devel" to work like an "F" flag and
+	"--no-devel" to work like the "f" version of the flag.
+	(Could imagine adding an "n" flag that reverses this
+	sense, much as "F" and "f" are opposites, but didn't
+	do this now).
+
+Modified files:
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/compiler/passes/: insertLineNumbers.cpp 
+	chapel/test/compflags/bradc/help/: .cvsignore README 
+Added files:
+	chapel/test/compflags/bradc/help/: userhelp.good 
+Removed files:
+	chapel/test/compflags/bradc/help/: userhelp.prediff userhelp.txt 
+
