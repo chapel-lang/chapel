@@ -803,7 +803,18 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     wrapper->fnClass = FN_ITERATOR;
   }
   defPoint->insertAfter(new DefExpr(wrapper));
+
   reset_file_info(wrapper->defPoint, lineno, filename);
+
+  // Make the line numbers match the numbers from the formals they map to
+  for_formals(formal, this) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(copy_map.get(formal))) {
+      sym->defPoint->lineno = formal->lineno;
+      sym->defPoint->filename = formal->filename;
+      sym->lineno = formal->lineno;
+      sym->filename = formal->filename;
+    }
+  }
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
   return wrapper;

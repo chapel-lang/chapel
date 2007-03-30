@@ -222,6 +222,7 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("inline");
   }
 
+  ASTMap field2formal;
   for_fields(tmp, ct) {
     if (!dynamic_cast<VarSymbol*>(tmp))
       continue;
@@ -240,6 +241,7 @@ static void build_constructor(ClassType* ct) {
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
+    field2formal.put(tmp, arg);
     arg->isTypeVariable = tmp->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
@@ -247,6 +249,17 @@ static void build_constructor(ClassType* ct) {
   }
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
+
+  // Make the line numbers for the formals point to the fields they
+  // map to, not the first line of the class definition.
+  for_fields(field, ct) {
+    if (Symbol* formal = dynamic_cast<Symbol*>(field2formal.get(field))) {
+      formal->lineno = field->lineno;
+      formal->defPoint->lineno = field->defPoint->lineno;
+      formal->filename = field->filename;
+      formal->defPoint->filename = field->defPoint->filename;
+    }
+  }
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   fn->_this = new VarSymbol("this", ct);
