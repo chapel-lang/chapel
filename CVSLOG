@@ -97732,3 +97732,15 @@ Log message:
 Added files:
 	chapel/test/spec/marybeth/: sort.chpl sort.good 
 
+---------------------------------------------------------------------------
+
+03/30/07 12:44:30 -- marybeth
+
+Log message:
+	Last commit did not remove any files.
+	Removing seq3.chpl, seq3.good, seq4.chpl, seq4.good.
+
+Removed files:
+	chapel/test/spec/marybeth/: seq3.chpl seq3.good seq4.chpl 
+	                            seq4.good 
+
