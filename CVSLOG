@@ -97786,3 +97786,71 @@ Added files:
 Removed files:
 	chapel/test/compflags/bradc/help/: userhelp.prediff userhelp.txt 
 
+---------------------------------------------------------------------------
+
+03/30/07 15:31:33 -- bradc
+
+Log message:
+	Added support for a --gdb flag on the compiler-generated
+	executable, much as we support for the compiler itself.
+	Obviously, Steve's various "view" functions aren't supported
+	here since they don't make sense, but otherwise things
+	should be more or less identical to how they work within
+	the compiler.  Please let me know if you find any obvious
+	bugs.  The point of this (as with the compiler flag) is
+	to support the ability to quickly start debugging a particular
+	run without having to explicitly specify a bunch of
+	command-line flags within the gdb session.
+	
+	Note that while Steve's view commands don't make sense
+	within this context, we could generate some other commands
+	that would be very nice, such as mapping functions from
+	Chapel identifier names to C names and vice-versa, as
+	a means of helping the user work with our generated
+	code a bit easier.
+	
+	In making this change, created a single _chpl_exit()
+	exit point for Chapel programs to (a) cleanup state
+	on the way out of the program, and (b) provide a
+	location to set a gdb breakpoint in case of non-zero
+	exit.  Also made errors return a non-zero exit code,
+	which seems appropriate.
+	
+	Due to the above change, made sub_test not complain if
+	a test returns a non-zero exit code.  I hope this is
+	reasonable...  I couldn't think of why this would be
+	a concern.
+	
+	Added a test of using the --gdb flag on the generated
+	executable, similar to the one we have for the compiler
+	--gdb flag.
+	
+	Also, adding in some missing .cvsignore files in the
+	test directories.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/runtime/include/: chplrt.h 
+	chapel/runtime/src/: Makefile arg.c config.c error.c 
+	chapel/test/Bin/: sub_test 
+	chapel/test/execflags/shannon/: help.good 
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.good 
+	                                             configVarHelp.good 
+	                                             configVarModStrings1.good 
+	                                             configVarModStrings2.good 
+	                                             configVarSetOver.good 
+	                                             configVarSetTwoTypes.good 
+	                                             configVarTwoModules.good 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.good 
+Added files:
+	chapel/runtime/include/: chplexit.h gdb.h 
+	chapel/runtime/src/: chplexit.c gdb.c 
+	chapel/test/execflags/bradc/gdbddash/: .cvsignore EXECOPTS 
+	                                       PREDIFF declint.chpl 
+	                                       declint.good 
+	                                       declint.stdin 
+	chapel/test/modules/standard/machine/: .cvsignore 
+	chapel/test/sparse/bradc/: .cvsignore 
+	chapel/test/spec/marybeth/: .cvsignore 
+
