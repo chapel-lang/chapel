@@ -97681,3 +97681,17 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+03/30/07 11:57:40 -- bradc
+
+Log message:
+	Propagated Steve's fft.chpl change to fft-mta.chpl
+	and updated the README file (which is designed to
+	track changes in the code since we wrote the HPCC
+	paper for those using the paper to understand the
+	code).
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README fft-mta.chpl 
+
