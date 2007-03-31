@@ -15,8 +15,10 @@ IteratorInfo::IteratorInfo() :
 
 
 static FnSymbol*
-buildEmptyMethod(char* name, ClassType* ct) {
+buildEmptyIteratorMethod(char* name, ClassType* ct) {
   FnSymbol* fn = new FnSymbol(name);
+  fn->copyPragmas(fn);
+  fn->addPragma("auto ii");
   fn->global = true;
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -33,7 +35,7 @@ static VarSymbol* newTemp(FnSymbol* fn, Type* type, char* name = "_tmp") {
 }
 
 
-void prototypeIteratorInfo(FnSymbol* fn) {
+void prototypeIteratorClass(FnSymbol* fn) {
   currentLineno = fn->lineno;
   currentFilename = fn->filename;
 
@@ -46,28 +48,20 @@ void prototypeIteratorInfo(FnSymbol* fn) {
   fn->defPoint->insertBefore(new DefExpr(cts));
 
   Type* cursorType = dtInt[INT_SIZE_32];
-  ii->getHeadCursor = buildEmptyMethod("getHeadCursor", ii->classType);
-  ii->getHeadCursor->copyPragmas(fn);
-  ii->getHeadCursor->addPragma("auto ii");
+  ii->getHeadCursor = buildEmptyIteratorMethod("getHeadCursor", ii->classType);
   ii->getHeadCursor->retType = cursorType;
 
-  ii->getNextCursor = buildEmptyMethod("getNextCursor", ii->classType);
-  ii->getNextCursor->copyPragmas(fn);
-  ii->getNextCursor->addPragma("auto ii");
+  ii->getNextCursor = buildEmptyIteratorMethod("getNextCursor", ii->classType);
   ii->getNextCursor->retType = cursorType;
   ii->getNextCursor->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
-  ii->isValidCursor = buildEmptyMethod("isValidCursor?", ii->classType);
-  ii->isValidCursor->copyPragmas(fn);
-  ii->isValidCursor->addPragma("auto ii");
+  ii->isValidCursor = buildEmptyIteratorMethod("isValidCursor?", ii->classType);
   ii->isValidCursor->retType = dtBool;
   ii->isValidCursor->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
-  ii->getValue = buildEmptyMethod("getValue", ii->classType);
-  ii->getValue->copyPragmas(fn);
-  ii->getValue->addPragma("auto ii");
+  ii->getValue = buildEmptyIteratorMethod("getValue", ii->classType);
   ii->getValue->retType = fn->retType;
   ii->getValue->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
@@ -83,41 +77,14 @@ void prototypeIteratorInfo(FnSymbol* fn) {
 }
 
 
-void lowerIterator(FnSymbol* fn) {
+static void
+buildGetNextCursor(FnSymbol* fn,
+                   Vec<BaseAST*>& asts,
+                   Map<Symbol*,Symbol*>& local2field,
+                   Vec<Symbol*>& locals) {
   IteratorInfo* ii = fn->iteratorInfo;
-
-  currentLineno = fn->lineno;
-  currentFilename = fn->filename;
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
-
-  // make fields for all local variables and arguments
-  // optimization note: only variables live at yield points are required
-  Map<Symbol*,Symbol*> local2field;
-  Vec<Symbol*> locals;
-  int i = 0;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<ArgSymbol*>(def->sym) || dynamic_cast<VarSymbol*>(def->sym)) {
-        if (def->sym->isReference) // references are short-lived and
-                                   // should never need to be stored
-                                   // in an iterator class
-          continue;
-        Symbol* local = def->sym;
-        Symbol* field =
-          new VarSymbol(astr("_", istr(i++), "_", local->name), local->type);
-        local2field.put(local, field);
-        locals.add(local);
-        ii->classType->fields->insertAtTail(new DefExpr(field));
-      }
-    }
-  }
-  Symbol* ret = fn->getReturnSymbol();
-
-  Type* cursorType = dtInt[INT_SIZE_32];
   Symbol *iterator, *cursor, *t1;
 
-  // build getNextCursor
   Vec<Symbol*> labels;
   iterator = ii->getNextCursor->getFormal(1);
   cursor = ii->getNextCursor->getFormal(2);
@@ -126,7 +93,7 @@ void lowerIterator(FnSymbol* fn) {
   Symbol* end = new LabelSymbol("_end");
 
   // change yields to labels and gotos
-  i = 2; // 1 = not started, 0 = finished
+  int i = 2; // 1 = not started, 0 = finished
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
@@ -176,31 +143,84 @@ void lowerIterator(FnSymbol* fn) {
       }
     }
   }
+}
 
-  // build getHeadCursor
+
+static void
+buildGetHeadCursor(FnSymbol* fn) {
+  IteratorInfo* ii = fn->iteratorInfo;
+  Symbol *iterator, *t1;
   iterator = ii->getHeadCursor->getFormal(1);
-  t1 = newTemp(ii->getHeadCursor, cursorType);
+  t1 = newTemp(ii->getHeadCursor, ii->getHeadCursor->retType);
   ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(ii->getNextCursor, iterator, new_IntSymbol(1))));
   ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+}
 
-  // build isValidCursor
-  iterator = ii->isValidCursor->getFormal(1);
+
+static void
+buildIsValidCursor(FnSymbol* fn) {
+  IteratorInfo* ii = fn->iteratorInfo;
+  Symbol *cursor, *t1;
   cursor = ii->isValidCursor->getFormal(2);
   t1 = newTemp(ii->isValidCursor, dtBool);
   ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_NOTEQUAL, cursor, new_IntSymbol(0))));
   ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+}
 
-  // build getValue
+
+static void
+buildGetValue(FnSymbol* fn, Symbol* value) {
+  IteratorInfo* ii = fn->iteratorInfo;
+  Symbol *iterator, *t1;
   iterator = ii->getValue->getFormal(1);
-  cursor = ii->getValue->getFormal(2);
   t1 = newTemp(ii->getValue, ii->getValue->retType);
-  ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, local2field.get(ret))));
+  ii->getValue->insertAtTail(
+    new CallExpr(PRIMITIVE_MOVE, t1,
+      new CallExpr(PRIMITIVE_GET_MEMBER, iterator, value)));
   ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+}
+
+
+void lowerIterator(FnSymbol* fn) {
+  IteratorInfo* ii = fn->iteratorInfo;
+
+  currentLineno = fn->lineno;
+  currentFilename = fn->filename;
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, fn);
+
+  // make fields for all local variables and arguments
+  // optimization note: only variables live at yield points are required
+  Map<Symbol*,Symbol*> local2field;
+  Vec<Symbol*> locals;
+  int i = 0;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (dynamic_cast<ArgSymbol*>(def->sym) || dynamic_cast<VarSymbol*>(def->sym)) {
+        if (def->sym->isReference) // references are short-lived and
+                                   // should never need to be stored
+                                   // in an iterator class (hopefully)
+          continue;
+        Symbol* local = def->sym;
+        Symbol* field =
+          new VarSymbol(astr("_", istr(i++), "_", local->name), local->type);
+        local2field.put(local, field);
+        locals.add(local);
+        ii->classType->fields->insertAtTail(new DefExpr(field));
+      }
+    }
+  }
+
+  Symbol* value = local2field.get(fn->getReturnSymbol());
+  buildGetNextCursor(fn, asts, local2field, locals);
+  buildGetHeadCursor(fn);
+  buildIsValidCursor(fn);
+  buildGetValue(fn, value);
 
   // rebuild iterator function
   fn->defPoint->remove();
   fn->retType = ii->classType;
-  t1 = newTemp(fn, ii->classType);
+  Symbol* t1 = newTemp(fn, ii->classType);
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->classType->symbol, new_StringSymbol("iterator class"))));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
@@ -208,7 +228,6 @@ void lowerIterator(FnSymbol* fn) {
       fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, field, local));
   }
   fn->addPragma("first member sets");
-
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
 }

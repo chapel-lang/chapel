@@ -97,7 +97,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   if (fn->retType != dtUnknown) {
     fn->retExprType->remove();
     if (fn->fnClass == FN_ITERATOR)
-      prototypeIteratorInfo(fn);
+      prototypeIteratorClass(fn);
   }
 }
 
@@ -2306,7 +2306,7 @@ resolveFns(FnSymbol* fn) {
   }
 
   if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo)
-    prototypeIteratorInfo(fn);
+    prototypeIteratorClass(fn);
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
