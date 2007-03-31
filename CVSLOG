@@ -97854,3 +97854,16 @@ Added files:
 	chapel/test/sparse/bradc/: .cvsignore 
 	chapel/test/spec/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/30/07 17:11:10 -- deitz
+
+Log message:
+	Refactored code to build the iterator class in preparation to
+	specialize and optimize a common case.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: iterator.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
