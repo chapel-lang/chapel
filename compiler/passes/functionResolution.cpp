@@ -2526,7 +2526,8 @@ resolve() {
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
-      calls.add(call);
+      if (call->parentSymbol)
+        calls.add(call);
   }
   forv_Vec(CallExpr, call, calls) {
     if (FnSymbol* key = call->isResolved()) {
