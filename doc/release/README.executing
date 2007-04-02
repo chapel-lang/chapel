@@ -81,3 +81,19 @@ The flags are as follows:
 
   --memthreshold=<n>    : for use with the --memtrace flag; only print
                           events for objects larger than 'n' bytes
+
+
+--------------
+Running in gdb
+--------------
+
+The compiler-generated executable also has a --gdb flag that can be
+used to launch the program within a gdb session.  The utility of this
+feature depends somewhat on your familiarity with the Chapel generated
+code.  However, if your program is crashing or running into a runtime
+error, you can often determine where that is taking place, especially
+if compiling with the --cg-cpp-lines flag.  Over time, we hope to
+improve our ability to debug the generated C code for a Chapel
+program.  If you find yourself debugging the generated code a lot and
+have requests for better support, please let us know so that we can
+prioritize accordingly.
