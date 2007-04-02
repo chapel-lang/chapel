@@ -98050,3 +98050,17 @@ Log message:
 Modified files:
 	chapel/test/: cat_futures cat_goods cat_tests 
 
+---------------------------------------------------------------------------
+
+04/02/07 14:20:59 -- bradc
+
+Log message:
+	Fixed range issue mentioned in my previous checkin
+	where the stride of a degenerate range was fixed
+	to be 1.  Changed this so that the stride is
+	maintained even if a range is degenerate.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+	chapel/test/types/seq/bradc/: degenseq.good 
+
