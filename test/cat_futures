@@ -1,4 +1,4 @@
-#!/opt/cpkg/v3/all/bin/perl
+#!/usr/bin/perl
 
 @fnames = `find \* | grep \'\\\.future\$\'`;
 
