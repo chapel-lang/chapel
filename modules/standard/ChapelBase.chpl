@@ -406,7 +406,7 @@ pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 // More primitive funs
 //
 pragma "inline" def exit(status: int) {
-  __primitive("exit", status);
+  __primitive("_chpl_exit", status);
 }
 
 pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
