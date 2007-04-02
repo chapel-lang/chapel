@@ -98064,3 +98064,14 @@ Modified files:
 	chapel/modules/standard/: ChapelSeq.chpl 
 	chapel/test/types/seq/bradc/: degenseq.good 
 
+---------------------------------------------------------------------------
+
+04/02/07 14:23:33 -- bradc
+
+Log message:
+	Added a brief description of the --gdb flag in the user
+	documentation.
+
+Modified files:
+	chapel/doc/release/: README.executing 
+
