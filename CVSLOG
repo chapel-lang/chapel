@@ -97976,3 +97976,35 @@ Log message:
 Added files:
 	chapel/test/npb/cg/bradc/: cg-makea1-sparse.future 
 
+---------------------------------------------------------------------------
+
+04/02/07 13:18:14 -- bradc
+
+Log message:
+	Change the way we munge overloaded names in the generated
+	code from:
+	
+	     _<id>_<chapel_name>
+	
+	to:
+	
+	     _<chapel_name>_<id>
+	
+	which makes it easier to view values when debugging the
+	generated code in gdb.  In particular, you can do:
+	
+	          (gdb) p myvar
+	
+	and if myvar isn't found (implying it's been renamed),
+	you can do:
+	
+	          (gdb) p _myvar_<TAB>
+	
+	and TAB completion will complete the variable name if
+	there's only one visible in the current scope; otherwise,
+	it will list the candidates (and you will need to inspect
+	the generated code to determine which you want).
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
