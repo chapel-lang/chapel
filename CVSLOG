@@ -98097,3 +98097,29 @@ Added files:
 	                                         weirdParamInit4.future 
 	                                         weirdParamInit4.good 
 
+---------------------------------------------------------------------------
+
+04/02/07 14:59:24 -- bradc
+
+Log message:
+	Minor changes to the sparse domain/array implementation
+	to support dense iteration, allowing the first sparse
+	CG to compile and run.  This is still suboptimal in
+	that the partial reduction is being expressed using
+	dense loops over the sparse matrix bounding box implying
+	that the same O(N**2) flops are being executed as in
+	cg-dense.chpl.  A sparse matrix representation is used,
+	but the computation is still dense.
+	
+	This checkin also retains the limitations of the previous
+	-- sparse domain may not be changed once sparse array
+	is assigned (or values will get messed up), and bounding
+	box of sparse domain has some assumptions built into it.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/npb/cg/bradc/: .cvsignore 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-sparse.chpl cg-sparse.compopts 
+	                           cg-sparse.execopts cg-sparse.good 
+
