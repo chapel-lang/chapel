@@ -97867,3 +97867,14 @@ Modified files:
 	chapel/compiler/include/: iterator.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+04/02/07 08:54:32 -- diten
+
+Log message:
+	Change the call to primitive "exit" to "_chpl_exit".  This corrects the
+	undefined primitive errors seen in recent testing.
+
+Modified files:
+	chapel/modules/standard/: ChapelBase.chpl 
+
