@@ -376,18 +376,6 @@ record range {
   def high: eltType return _high;
   def stride: eltType return _stride; // should be :int ??
 
-  def initialize() {
-    if _isIntegralType(eltType) { // due to array wrapper method
-                                  // formal argument type
-      if _low > _high {
-        //        _low = 1:eltType;
-        //        _high = 0:eltType;
-        if stridable then
-          _stride = 1;
-      }
-    }
-  }
-
   pragma "inline" def getHeadCursor() {
     if stridable {
       if _stride > 0 then
@@ -433,9 +421,9 @@ record range {
 def by(s : range, i : int) {
   if i == 0 then
     halt("illegal stride of 0");
-  if s._low == 1 && s._high == 0 then
-    return range(s.eltType, s.boundedType, true, s._low, s._high, s._stride);
   var as = range(s.eltType, s.boundedType, true, s._low, s._high, s._stride * i);
+  if s._low > s._high then return as;
+
   if as._stride < 0 then
     as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
   else
