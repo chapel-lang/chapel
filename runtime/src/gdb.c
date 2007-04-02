@@ -99,9 +99,12 @@ void removeGDBFile() {
 
 
 static void runInGDB(int argc, char* argv[]) {
+  char* command;
+  int status;
+
   createGDBFile(argc, argv);
-  char* command = _glom_strings(4, "gdb -q ", argv[0]," -x ", gdbfilename);
-  int status = mysystem(command, "running gdb", 0);
+  command = _glom_strings(4, "gdb -q ", argv[0]," -x ", gdbfilename);
+  status = mysystem(command, "running gdb", 0);
 
   _chpl_exit(status);
 }
