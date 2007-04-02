@@ -309,6 +309,8 @@ foreach chplsrc ($testsrc)
 
             if ( $execstatus == 222) then
                echo "$futuretest""[Error: Timed out executing program $localdir/$execfile]"
+               rm -f $binfile
+               continue
             endif
 
 	    if ( "$catfiles" != "") then

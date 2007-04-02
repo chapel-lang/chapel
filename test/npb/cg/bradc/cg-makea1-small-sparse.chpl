@@ -24,8 +24,29 @@ type elemType = real(64);
 
 
 def main() {
-  writeln("Chapel sparsity pattern is:");
-  for ((r,c), v) in makea(elemType, n, nonzer, shift) {
-    writeln(" ", r, " ", c, "  ", v);
+  const DenseSpace = [1..n, 1..n];
+
+  // This version builds the domain first
+
+  var MatrixSpace: sparse subdomain(DenseSpace);
+
+  for ind in genAInds(elemType, n, nonzer, shift) {
+    MatrixSpace += ind;
+  }
+
+  // and then the array
+
+  var A: [MatrixSpace] elemType;
+
+  for (ind, v) in makea(elemType, n, nonzer, shift) {
+    A(ind) += v;
+  }
+
+  for i in 1..n {
+    for j in 1..n {
+      if (A(i,j) != 0.0) {
+        writeln("[", i, ", ", j, "]: ", A(i,j));
+      }
+    }
   }
 }

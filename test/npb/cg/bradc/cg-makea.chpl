@@ -40,6 +40,13 @@ module CGMakeA {
   }
 
 
+  iterator genAInds(type elemType, n, nonzer, shift) {
+    for (ind, val) in makea(elemType, n, nonzer, shift) {
+      yield ind;
+    }
+  }
+
+
   def sprnvc(type elemType, n, nz, v, iv, randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;

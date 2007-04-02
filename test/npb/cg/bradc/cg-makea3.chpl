@@ -24,8 +24,23 @@ type elemType = real(64);
 
 
 def main() {
-  writeln("Chapel sparsity pattern is:");
+  const D = [1..n, 1..n];
+  var A: [D] real;
+
+  // This is doing nothing interesting; just want to make sure that
+  // the makea() iterator works the second time around
+  for ind in genAInds(elemType, n, nonzer, shift) {
+    A(ind) = 0.0;
+  }
+  
   for ((r,c), v) in makea(elemType, n, nonzer, shift) {
-    writeln(" ", r, " ", c, "  ", v);
+    A(r,c) += v;
+  }
+  for i in 1..n {
+    for j in 1..n {
+      if (A(i,j) != 0.0) {
+        writeln("[", i, ", ", j, "]: ", A(i,j));
+      }
+    }
   }
 }
