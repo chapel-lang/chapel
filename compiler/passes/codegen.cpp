@@ -131,7 +131,7 @@ static void codegen_header(void) {
           !dynamic_cast<UnresolvedSymbol*>(sym) &&
           !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
           cnames.get(sym->cname))
-        sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
+        sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
 
       cnames.put(sym->cname, 1);
     
