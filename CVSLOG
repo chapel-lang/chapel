@@ -97952,3 +97952,16 @@ Added files:
 	                           sparseArray4.chpl sparseArray4.future 
 	                           sparseArray4.good 
 
+---------------------------------------------------------------------------
+
+04/02/07 10:20:40 -- bradc
+
+Log message:
+	Fixed a C++-ism (declaring variables after
+	executable code has been specified) in the
+	--gdb code I checked in last week.  This
+	was breaking the cygwin compile.
+
+Modified files:
+	chapel/runtime/src/: gdb.c 
+
