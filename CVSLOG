@@ -98123,3 +98123,18 @@ Added files:
 	chapel/test/npb/cg/bradc/: cg-sparse.chpl cg-sparse.compopts 
 	                           cg-sparse.execopts cg-sparse.good 
 
+---------------------------------------------------------------------------
+
+04/02/07 15:49:12 -- bradc
+
+Log message:
+	A test demonstrating a compiler seg fault that I ran
+	into (and haven't yet found a way to work around)
+	when adding a bbox() query to the domain class
+	hierarchy.
+
+Added files:
+	chapel/test/classes/bradc/overloadMethods/: virtualIsHalt.chpl 
+	                                            virtualIsHalt.future 
+	                                            virtualIsHalt.good 
+
