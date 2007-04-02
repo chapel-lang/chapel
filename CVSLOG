@@ -98138,3 +98138,13 @@ Added files:
 	                                            virtualIsHalt.future 
 	                                            virtualIsHalt.good 
 
+---------------------------------------------------------------------------
+
+04/02/07 16:49:23 -- deitz
+
+Log message:
+	Removed invalid sequence test that I meant to remove last week.
+
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq10.good test_seq10.chpl 
+
