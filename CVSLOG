@@ -98075,3 +98075,25 @@ Log message:
 Modified files:
 	chapel/doc/release/: README.executing 
 
+---------------------------------------------------------------------------
+
+04/02/07 14:57:04 -- bradc
+
+Log message:
+	Updated weirdParamInit3.future to capture David's observation
+	from last week's developer meeting, and added a second case
+	that doesn't initialize D.c to see if that has any effect.
+	Both of these tests raise semantic questions about the language
+	for me which might be clearer to others -- basically related
+	to how generic D is with respect to its c field -- the degree
+	to which declaring c to be a C or initializing it with a C
+	binds its genericity for all D instances vs. ones that use
+	that default initializer.
+
+Modified files:
+	chapel/test/classes/bradc/paramInClass/: weirdParamInit3.future 
+Added files:
+	chapel/test/classes/bradc/paramInClass/: weirdParamInit4.chpl 
+	                                         weirdParamInit4.future 
+	                                         weirdParamInit4.good 
+
