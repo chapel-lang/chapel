@@ -7,6 +7,12 @@ class SingleLocaleSparseDomain: BaseDomain {
 
   // const rowRange = parentDom.bbox(1); // this is what I want
   const rowRange = -1..2000;
+
+  // I'd like both of these things to go away over time
+  var actualColRange = max(int)..min(int);
+  var actualRowRange = max(int)..min(int);
+
+
   const rowDom = [rowRange.low..rowRange.high+1];
   var nnzDom = [1..nnz];
 
@@ -26,7 +32,7 @@ class SingleLocaleSparseDomain: BaseDomain {
     return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, parentDom=parentDom);
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
 
   def getHeadCursor() {
     var c: rank*dim_type;
@@ -40,19 +46,35 @@ class SingleLocaleSparseDomain: BaseDomain {
       return c;
   }
 
+  def this(dim : int) {
+    if (dim == 1) {
+      return actualRowRange; // BLC: return parentDom.this(dim)?
+    } else {
+      return actualColRange;
+    }
+  }
+
   def rowStop(row) {
     return rowStart(row+1)-1;
   }
 
   def find(ind: rank*dim_type) {
     const (row, col) = ind;
+
+    // BLC: seems like if I ran this backward the common case of
+    // inserting in sorted order would run more quickly
+
+    // search indices in this row
     for i in rowStart(row)..rowStop(row) {
       if (colIdx(i) == col) {
+        // hit -- found index
         return (true, i);
       } else if (colIdx(i) > col) {
+        // miss -- found index greater than the one we're looking for
         return (false, i);
       }
     }
+    // miss -- fell off end of row
     return (false, rowStop(row)+1);
   }
 
@@ -81,13 +103,27 @@ class SingleLocaleSparseDomain: BaseDomain {
 
     const (row,col) = ind;
 
+    // expand col range
+    if (col < actualColRange.low) {
+      actualColRange = col..actualColRange.high;
+    }
+    if (col > actualColRange.high) {
+      actualColRange = actualColRange.low..col;
+    }
+    if (row < actualRowRange.low) {
+      actualRowRange = row..actualRowRange.high;
+    }
+    if (row > actualRowRange.high) {
+      actualRowRange = actualRowRange.low..row;
+    }
+
     // shift column indices and array data up
     for i in [insertPt+1..nnz) by -1 {
       colIdx(i+1) = colIdx(i);
       // need to shift arrays as well
       /*
       for a in _arrs {
-        const arr = a:SingleLocaleSparseArray(a.eltType;
+        const arr = a:SingleLocaleSparseArray(?et, ?rank, ?dt);
         arr.data(i+1) = arr.data(i);
       }
       */
