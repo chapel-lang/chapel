@@ -98008,3 +98008,34 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/02/07 13:27:55 -- bradc
+
+Log message:
+	Changed ranges so that sequences initialized to be
+	degenerate retain their degenerate bounds rather
+	than pegging them to 1..0.  This seems important
+	now that the range is a user-level concept, as
+	demonstrated in the new test below, degenRange.chpl,
+	in which the user uses a range to store bounding
+	box information.  If the bounds are set to 1..0,
+	this doesn't achieve the desired effect.  As it
+	turns out, we don't seem to rely on the 1..0 bounds
+	anywhere in the code.
+	
+	We do rely on the stride being set to 1 for
+	degenerate arrays at initialization time, so
+	I left that logic in, though I'm not convinced
+	it's right.  Want to look at that in a separate
+	check-in, though.  (In particular, taking it
+	out breaks the degenseq.chpl test below.
+
+Modified files:
+	chapel/modules/standard/: ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/types/seq/bradc/: degenseq.good 
+Added files:
+	chapel/test/types/range/bradc/: .cvsignore degenRange.chpl 
+	                                degenRange.good 
+
