@@ -98148,3 +98148,16 @@ Log message:
 Removed files:
 	chapel/test/types/seq/deitz/: test_seq10.good test_seq10.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/07 16:52:35 -- deitz
+
+Log message:
+	Fixed a bug in the dynamic dispatch construction code in which calls
+	that are no longer in the AST were not ignored.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/classes/bradc/overloadMethods/: virtualIsHalt.future 
+
