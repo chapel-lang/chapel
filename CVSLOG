@@ -97888,3 +97888,67 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+04/02/07 10:13:14 -- bradc
+
+Log message:
+	Improved the default sparse domain/array format to use
+	CRS (Compressed Row Storage).  This removes the 30
+	nonzeroes limitation from the previous version.  However,
+	there are still some limitations and workarounds:  (1) I
+	don't query the parent domain's row range as I should, but
+	instead hardcode it to be -1..2000, implying that (a) 2002
+	rows are represented for every sparse domain, and (b) if a
+	row outside this range is specified, an out-of-bounds error
+	will occur;  (2) I'm currently not reallocating the sparse
+	arrays for a domain when a new index is added to it
+	properly.  This means that if the domain is created before
+	the sparse array's elements are defined, things will work;
+	if the sparse array's elements are defined and then the
+	domain is modified they won't.
+	
+	Added a bunch of tests showing that this format can be used
+	to express the sparse domain and array from NAS CG, as well
+	as some simple standalone tests.  Also added some futures
+	showing the need to reallocate arrays more intelligently.
+	
+	Fixed a problem with my last checkin to sub_test, in which
+	a timeout would show up as two errors rather than one, due
+	to the fact that I forgot to break out of the loop upon
+	timing out.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/Bin/: sub_test 
+	chapel/test/npb/cg/bradc/: cg-makea.chpl cg-makea1.chpl 
+	                           cg-makea2.chpl 
+	chapel/test/sparse/bradc/: .cvsignore 
+Added files:
+	chapel/test/npb/cg/bradc/: README cg-makea1-small-sparse.chpl 
+	                           cg-makea1-small-sparse.compopts 
+	                           cg-makea1-small-sparse.execopts 
+	                           cg-makea1-small-sparse.good 
+	                           cg-makea1-small.chpl 
+	                           cg-makea1-small.compopts 
+	                           cg-makea1-small.execopts 
+	                           cg-makea1-small.good 
+	                           cg-makea1-sparse.chpl 
+	                           cg-makea1-sparse.compopts 
+	                           cg-makea1-sparse.good 
+	                           cg-makea1.compopts 
+	                           cg-makea2-small-sparse.chpl 
+	                           cg-makea2-small-sparse.compopts 
+	                           cg-makea2-small-sparse.execopts 
+	                           cg-makea2-small-sparse.future 
+	                           cg-makea2-small-sparse.good 
+	                           cg-makea2-sparse.chpl 
+	                           cg-makea2-sparse.compopts 
+	                           cg-makea2-sparse.future 
+	                           cg-makea2-sparse.good 
+	                           cg-makea2.compopts cg-makea3.chpl 
+	                           cg-makea3.compopts cg-makea3.good 
+	chapel/test/sparse/bradc/: sparseArray3.chpl sparseArray3.good 
+	                           sparseArray4.chpl sparseArray4.future 
+	                           sparseArray4.good 
+
