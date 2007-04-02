@@ -73,7 +73,8 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   }
 
   def isValidCursor?(c) {
-    return c(1) != ranges(1)._high+1;
+    //        return c(1) != ranges(1)._high+1;
+    return ranges(1).isValidCursor?(c(1));
   }
 
   def member?(ind: rank*dim_type) {
@@ -85,6 +86,11 @@ class SingleLocaleArithmeticDomain: BaseDomain {
 
   def this(dim : int)
     return ranges(dim);
+
+  /*
+  def bbox(dim : int)
+    return ranges(dim);
+  */
 
   def numIndices {
     var sum = 1:dim_type;

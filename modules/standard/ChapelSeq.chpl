@@ -380,8 +380,8 @@ record range {
     if _isIntegralType(eltType) { // due to array wrapper method
                                   // formal argument type
       if _low > _high {
-        _low = 1:eltType;
-        _high = 0:eltType;
+        //        _low = 1:eltType;
+        //        _high = 0:eltType;
         if stridable then
           _stride = 1;
       }
