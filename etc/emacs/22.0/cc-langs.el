@@ -1724,7 +1724,7 @@ Note that Java specific rules are currently applied to tell this from
 	 ;; In CORBA CIDL: (These are declaration keywords that never
 	 ;; can start a declaration.)
 	 "entity" "process" "service" "session" "storage")
-  chpl '("distributed" "for" "forall" "if" "in" "on" "reduce" "where"))
+  chpl '("distributed" "for" "forall" "if" "in" "on" "reduce" "sparse" "where"))
 
 
 ;;; Constants built from keywords.
