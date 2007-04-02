@@ -97878,3 +97878,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelBase.chpl 
 
+---------------------------------------------------------------------------
+
+04/02/07 10:04:20 -- bradc
+
+Log message:
+	Added sparse keyword to emacs mode.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
