@@ -98338,3 +98338,17 @@ Added files:
 	                                        dispatchNil.future 
 	                                        dispatchNil.good 
 
+---------------------------------------------------------------------------
+
+04/03/07 16:13:56 -- deitz
+
+Log message:
+	Fixed a bug in which copy propagation propagated the nil value to the
+	dynamic dispatch GETCID primitive resulting in invalid C.  The GETCID
+	primitive now generates 0 when its first argument is nil.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+Removed files:
+	chapel/test/classes/bradc/dispatchNil/: dispatchNil.future 
+
