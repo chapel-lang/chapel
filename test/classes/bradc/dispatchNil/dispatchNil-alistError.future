@@ -1,0 +1,8 @@
+dynamic dispatch
+
+This code results in an alist being indexed out
+of bounds error.  From what I can tell (comparing
+to dispatchNil.chpl), it seems to be due to the
+type inference involved in defining or calling
+baz().
+
