@@ -98270,3 +98270,49 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/07 12:27:05 -- deitz
+
+Log message:
+	Changed the boundedType field of the range type to an enumerated type
+	called BoundedRangeType with values bounded, boundedLow, and
+	boundedHigh.
+	
+	Located the BoundedRangeType in the base module to support the
+	--nostdincs flag.
+	
+	It appears that a parameter integer cannot be coerced to a parameter
+	enumerated type so
+	
+	  range(int,0)
+	
+	is no longer valid.  It must be
+	
+	  range(int,bounded)
+	
+	Updated tests.
+	
+	Note.  Enumerated types in Java define the constant symbols in the
+	scope of the enumeration type.  This has some advantages as far as the
+	name space is concerned.  To access a constant, the programmer writes:
+	
+	  BoundedRangeType.bounded
+	
+	Without making this change, we could also take the approach of nesting
+	BoundedRangeType in the range type and defining some (static?)
+	constants with the names that we want the user to access.  For
+	example, they could then specify range.bounded instead of bounded.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelSeq.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+	chapel/test/classes/bradc/overloadMethods/: v1NoReturnValue.chpl 
+	                                            v2NoReturnValueButType.chpl 
+	                                            v3aoneClassReturnMatch.chpl 
+	                                            v3oneClassReturnMatch.chpl 
+	                                            virtualIsHalt.chpl 
+
