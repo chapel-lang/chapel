@@ -98205,3 +98205,68 @@ Modified files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.solitary.wc.cray.com.good 
 
+---------------------------------------------------------------------------
+
+04/03/07 11:33:47 -- deitz
+
+Log message:
+	Specialized the iterator interface methods for iterators that have a
+	stylized form consisting of a single for loop with a yield statement
+	in that loop.
+	
+	The function isSingleLoopIterator determines whether an iterator has
+	this form by checking the following conditions:
+	
+	  1. There is exactly one for-loop and no other loops.
+	  2. The single for-loop is top-level to the function.
+	  3. There is exactly one yield.
+	  4. The single yield is top-level to the for-loop.
+	  5. There are no goto statements.
+	
+	The single loop iterator has the following form:
+	
+	  iterator foo() {
+	    BLOCK I
+	    for loop {
+	      BLOCK II
+	      yield statement
+	      BLOCK III
+	    }
+	    BLOCK IV
+	  }
+	
+	The getHeadCursor and getNextCursor methods are specialized to
+	simplify the control flow that would be created using the general
+	transformation.  The getHeadCursor method contains blocks I, II, and
+	IV where II and IV are guarded in a conditional.  The getNextCursor
+	method contains blocks III, II, and IV where II and IV are guarded in
+	a conditional.
+	
+	Performance Results
+	-------------------
+	
+	RA (Problem size = 2**25)
+	C                         22.013
+	CHPL before this change   33.432  51.9% overhead
+	CHPL                      25.849  17.4% overhead
+	
+	RA (Problem size = 2**20)
+	C                          0.490
+	CHPL before this change    0.774  58.0% overhead
+	CHPL                       0.617  25.9% overhead
+	
+	STREAM (Problem size = 11051520)
+	CHPL no promotion version  1.526
+	CHPL before this change    8.058  428% overhead
+	CHPL                       7.819  412% overhead
+	
+	These tests show the expected gain on RA.  This optimization does not
+	help STREAM nearly as much.  That will require different changes.
+	
+	We don't yet have a C version of STREAM to test against.  My guess,
+	based on the test_for2d performance issue, is that even the no
+	promotion version shows some significant overhead.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
