@@ -1,3 +1,6 @@
+// range enumeration
+enum BoundedRangeType { bounded, boundedLow, boundedHigh };
+
 //
 // assignment on primitive types
 //

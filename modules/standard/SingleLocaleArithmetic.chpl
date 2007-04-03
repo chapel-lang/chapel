@@ -24,7 +24,7 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   param rank : int;
   type dim_type;
   param stridable: bool;
-  var ranges : rank*range(dim_type,0,stridable);
+  var ranges : rank*range(dim_type,bounded,stridable);
 
   def getIndices() return ranges;
 

@@ -317,15 +317,15 @@ class _bxor {                // bit-wise xor
 //
 // syntactic bridge code for bounded ranges
 //
-def _build_range(param bt: int, low: int, high: int)
+def _build_range(param bt: BoundedRangeType, low: int, high: int)
   return range(int, bt, false, low, high);
-def _build_range(param bt: int, low: uint, high: uint)
+def _build_range(param bt: BoundedRangeType, low: uint, high: uint)
   return range(uint, bt, false, low, high);
-def _build_range(param bt: int, low: int(64), high: int(64))
+def _build_range(param bt: BoundedRangeType, low: int(64), high: int(64))
   return range(int(64), bt, false, low, high);
-def _build_range(param bt: int, low: uint(64), high: uint(64))
+def _build_range(param bt: BoundedRangeType, low: uint(64), high: uint(64))
   return range(uint(64), bt, false, low, high);
-def _build_range(param bt: int, low, high) {
+def _build_range(param bt: BoundedRangeType, low, high) {
   compilerError("range bounds are not integral");
 }
 
@@ -333,15 +333,15 @@ def _build_range(param bt: int, low, high) {
 //
 // syntactic bridge code for unbounded ranges
 //
-def _build_range(param bt: int, bound: int)
+def _build_range(param bt: BoundedRangeType, bound: int)
   return range(int, bt, false, bound, bound);
-def _build_range(param bt: int, bound: uint)
+def _build_range(param bt: BoundedRangeType, bound: uint)
   return range(uint, bt, false, bound, bound);
-def _build_range(param bt: int, bound: int(64))
+def _build_range(param bt: BoundedRangeType, bound: int(64))
   return range(int(64), bt, false, bound, bound);
-def _build_range(param bt: int, bound: uint(64))
+def _build_range(param bt: BoundedRangeType, bound: uint(64))
   return range(uint(64), bt, false, bound, bound);
-def _build_range(param bt: int, bound) {
+def _build_range(param bt: BoundedRangeType, bound) {
   compilerError("range bound is not integral");
 }
 
@@ -351,19 +351,14 @@ def _build_range(param bt: int, bound) {
 //
 //   paramterized by how it is bounded and by an integral element type
 //
-// boundedType: (0 = bounded, 1 or 2 = unbounded)
-//   0 = lower and upper bounds
-//   1 = lower bound only
-//   2 = upper bound only
-//
 record range {
-  type eltType = int;             // element type
-  param boundedType: int = 0;     // bounded or not
-  param stridable: bool = false;  // range can be strided
-  var _low : eltType = 1;         // lower bound
-  var _high : eltType = 0;        // upper bound
-  var _stride : int = 1;          // integer stride of range
-  var _promotionType : eltType;   // enables promotion
+  type eltType = int;                            // element type
+  param boundedType: BoundedRangeType = bounded; // bounded or not
+  param stridable: bool = false;                 // range can be strided
+  var _low : eltType = 1;                        // lower bound
+  var _high : eltType = 0;                       // upper bound
+  var _stride : int = 1;                         // integer stride of range
+  var _promotionType : eltType;                  // enables promotion
 
   def =_stride(val: int) {
     if !stridable then
@@ -398,7 +393,7 @@ record range {
     return c;
 
   pragma "inline" def isValidCursor?(c) {
-    if boundedType == 0 {
+    if boundedType == bounded {
       if stridable then
         return _low <= c && c <= _high;
       else
@@ -409,7 +404,7 @@ record range {
   }
 
   def length {
-    if boundedType != 0 then
+    if boundedType != bounded then
       compilerError("unable to determine length of unbounded range");
     return
       (if _stride > 0
@@ -428,17 +423,17 @@ def by(s : range, i : int) {
     as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
   else
     as._high = as._high - (as._high - as._low) % (as._stride):as.eltType;
-  if as.boundedType == 1 then
+  if as.boundedType == boundedLow then
     if as._stride < 0 then
       halt("error: unbounded range has negative stride and lower bound");
-  if as.boundedType == 2 then
+  if as.boundedType == boundedHigh then
     if as._stride > 0 then
       halt("error: unbounded range has positive stride and upper bound");
   return as;
 }
 
 def _in(s : range, i : s.eltType) {
-  if s.boundedType != 0 then
+  if s.boundedType != bounded then
     compilerError("_in undefined on unbounded ranges");
   return i >= s._low && i <= s._high &&
     (i - s._low) % abs(s._stride):s.eltType == 0;
@@ -446,7 +441,7 @@ def _in(s : range, i : s.eltType) {
 
 // really slow --- REWRITE
 def _in(s1: range, s2: range) {
-  if (s1.boundedType != 0) | (s2.boundedType != 0) then
+  if (s1.boundedType != bounded) | (s2.boundedType != bounded) then
     compilerError("_in undefined on unbounded ranges");
   for i in s2 do
     if !_in(s1, i) then
@@ -455,17 +450,17 @@ def _in(s1: range, s2: range) {
 }
 
 def range.writeThis(f: Writer) {
-  if (boundedType == 0) | (boundedType == 1) then
+  if (boundedType == bounded) | (boundedType == boundedLow) then
     f.write(_low);
   f.write("..");
-  if (boundedType == 0) | (boundedType == 2) then
+  if (boundedType == bounded) | (boundedType == boundedHigh) then
     f.write(_high);
   if _stride != 1 then
     f.write(" by ", _stride);
 }
 
 pragma "inline" def string.substring(s: range) {
-  if s.boundedType != 0 then
+  if s.boundedType != bounded then
     compilerError("substring indexing undefined on unbounded ranges");
   if s._stride != 1 then
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
@@ -474,13 +469,13 @@ pragma "inline" def string.substring(s: range) {
 }
 
 def range._translate(i : int) {
-  if boundedType != 0 then
+  if boundedType != bounded then
     compilerError("translate is not supported on unbounded ranges");
   return _low+i.._high+i by _stride;
 }
 
 def range._interior(i : int) {
-  if boundedType != 0 then
+  if boundedType != bounded then
     compilerError("interior is not supported on unbounded ranges");
   var x = _low.._high by _stride;
   if (i < 0) {
@@ -492,7 +487,7 @@ def range._interior(i : int) {
 }
 
 def range._exterior(i : int) {
-  if boundedType != 0 then
+  if boundedType != bounded then
     compilerError("exterior is not supported on unbounded ranges");
   var x = _low.._high by _stride;
   if (i < 0) {
@@ -504,14 +499,14 @@ def range._exterior(i : int) {
 }
 
 def range._expand(i : int) {
-  if boundedType != 0 then
+  if boundedType != bounded then
     compilerError("expand is not supported on unbounded ranges");
   return _low-i.._high+i by _stride;
 }
 
 
 def _intersect(a: range, b: range) {
-  if (a.boundedType != 0) | (b.boundedType != 0) then
+  if (a.boundedType != bounded) | (b.boundedType != bounded) then
     compilerError("insersection not defined on unbounded ranges");
   var g, x: int;
   (g, x) = _extended_euclid(a._stride, b._stride);

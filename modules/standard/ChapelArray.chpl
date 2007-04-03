@@ -51,7 +51,7 @@ def _any_stridable(ranges, param dim: int = 1) param {
     return false;
 }
 
-def _build_domain(ranges: range(?eltType,0,?stridable) ...?rank) {
+def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   type t = ranges(1).eltType;
   param domain_stridable = _any_stridable(ranges);
   var d: domain(rank, t)
@@ -245,7 +245,7 @@ record _array {
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
-  def this(i: range(_dim_index_type,0,?stridable) ...rank) {
+  def this(i: range(_dim_index_type,bounded,?stridable) ...rank) {
     var d = [(...i)];
     return this(d);
   }
@@ -262,14 +262,14 @@ record _array {
     y = val;
   }
 
-  def =this(i: range(_dim_index_type,0,?stridable) ...rank, val) where rank > 0 {
+  def =this(i: range(_dim_index_type,bounded,?stridable) ...rank, val) where rank > 0 {
     var d = [(...i)];
     var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def =this(i: range(_dim_index_type,0,?stridable) ...rank, val: eltType) where rank > 0 {
+  def =this(i: range(_dim_index_type,bounded,?stridable) ...rank, val: eltType) where rank > 0 {
     var d = [(...i)];
     var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
