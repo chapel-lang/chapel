@@ -98316,3 +98316,25 @@ Modified files:
 	                                            v3oneClassReturnMatch.chpl 
 	                                            virtualIsHalt.chpl 
 
+---------------------------------------------------------------------------
+
+04/03/07 13:59:01 -- bradc
+
+Log message:
+	Next two compiler errors I ran into in doing dynamic
+	dispatch.  dispatchNil.chpl shows a case where
+	dynamic dispatch codegen's a method call on nil
+	rather than reporting an error or avoiding generating
+	this code.  The second case shows an alist-out-of-bounds
+	internal error, apparently due to type inference in a
+	dynamic dispatch case.
+
+Added files:
+	chapel/test/classes/bradc/dispatchNil/: .cvsignore 
+	                                        dispatchNil-alistError.chpl 
+	                                        dispatchNil-alistError.future 
+	                                        dispatchNil-alistError.good 
+	                                        dispatchNil.chpl 
+	                                        dispatchNil.future 
+	                                        dispatchNil.good 
+
