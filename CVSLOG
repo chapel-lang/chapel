@@ -98161,3 +98161,33 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/overloadMethods/: virtualIsHalt.future 
 
+---------------------------------------------------------------------------
+
+04/02/07 17:34:14 -- bradc
+
+Log message:
+	Fixed a bug in the sparse implementation in which
+	an off-by-one error could cause extra (redundant)
+	indices from being stored in the sparse domain.
+	
+	Added a test that counts the number of indices
+	in a sparse domain to prevent against this kind
+	of error slipping in unnoticed in the future.
+	
+	Made the sparse implementation a bit more
+	efficient by searching a row for a particular
+	index from top-to-bottom rather than bottom-to-top
+	to optimize for the case when indices are being
+	added in sorted order.
+	
+	Should consider doing a binary rather than linear
+	search to improve this further.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-makea1-small-sparse-countInds.chpl 
+	                           cg-makea1-small-sparse-countInds.compopts 
+	                           cg-makea1-small-sparse-countInds.execopts 
+	                           cg-makea1-small-sparse-countInds.good 
+
