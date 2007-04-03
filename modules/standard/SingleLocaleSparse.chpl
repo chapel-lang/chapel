@@ -25,6 +25,8 @@ class SingleLocaleSparseDomain: BaseDomain {
     for i in rowDom do rowStart(i) = 1;
   }
 
+  def numIndices return nnz;
+
   def getIndices() return 0;
   def setIndices(x);
 
@@ -61,21 +63,18 @@ class SingleLocaleSparseDomain: BaseDomain {
   def find(ind: rank*dim_type) {
     const (row, col) = ind;
 
-    // BLC: seems like if I ran this backward the common case of
-    // inserting in sorted order would run more quickly
-
     // search indices in this row
-    for i in rowStart(row)..rowStop(row) {
+    for i in rowStart(row)..rowStop(row) by -1 {
       if (colIdx(i) == col) {
         // hit -- found index
         return (true, i);
-      } else if (colIdx(i) > col) {
+      } else if (colIdx(i) < col) {
         // miss -- found index greater than the one we're looking for
-        return (false, i);
+        return (false, i+1);
       }
     }
     // miss -- fell off end of row
-    return (false, rowStop(row)+1);
+    return (false, rowStart(row));
   }
 
   def member?(ind: rank*dim_type) {
@@ -118,7 +117,7 @@ class SingleLocaleSparseDomain: BaseDomain {
     }
 
     // shift column indices and array data up
-    for i in [insertPt+1..nnz) by -1 {
+    for i in [insertPt..nnz) by -1 {
       colIdx(i+1) = colIdx(i);
       // need to shift arrays as well
       /*
