@@ -98191,3 +98191,17 @@ Added files:
 	                           cg-makea1-small-sparse-countInds.execopts 
 	                           cg-makea1-small-sparse-countInds.good 
 
+---------------------------------------------------------------------------
+
+04/03/07 09:46:07 -- bradc
+
+Log message:
+	My OS upgrade must have freed up some memory for the
+	user to use, causing the countMemory test's output
+	to change.  This should fix the two linux regressions
+	we saw on my test run last night.
+
+Modified files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.solitary.wc.cray.com.good 
+
