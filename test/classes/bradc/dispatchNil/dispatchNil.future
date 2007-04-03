@@ -1,8 +1,0 @@
-dynamic dispatch
-
-It seems that in certain cases (I'm not quite
-sure what they are), we codegen a dispatch on
-the literal variable "nil", which causes the C
-compiler to complain.  We should catch this
-before the C compilation, or generate code
-that doesn't contain the error.

@@ -1004,6 +1004,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "->_cid = %d", get(1)->typeInfo()->id);
       break;
     case PRIMITIVE_GETCID:
+      if (get(1)->typeInfo() == dtNil) {
+        fprintf(outfile, "(0)");
+        break;
+      }
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
       fprintf(outfile, "->_cid == ");
