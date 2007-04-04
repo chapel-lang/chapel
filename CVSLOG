@@ -98515,3 +98515,21 @@ Added files:
 	chapel/test/arrays/deitz/: test_illegal_rank_change.chpl 
 	                           test_illegal_rank_change.good 
 
+---------------------------------------------------------------------------
+
+04/04/07 15:51:00 -- bradc
+
+Log message:
+	Made a fix to the sparse array implementation --
+	previously I was using a var this function, which
+	meant that the IRV could be over-written if the
+	user tried to write to an index not in the sparse
+	index set.  Broke this into a this() and =this()
+	function where the this() function returns the
+	IRV and the =this() function calls halt().
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+Added files:
+	chapel/test/sparse/bradc/: assignIRV.chpl assignIRV.good 
+
