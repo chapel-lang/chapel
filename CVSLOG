@@ -98498,3 +98498,20 @@ Added files:
 	                                              test_iterator_temp9.chpl 
 	                                              test_iterator_temp9.good 
 
+---------------------------------------------------------------------------
+
+04/04/07 13:38:54 -- deitz
+
+Log message:
+	Simplified the SingleLocaleArithmeticArray slice method to use tuple
+	assignment.
+	
+	Made implicit rank change from an actual to a formal into a compiler
+	error.  Added a test case.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_illegal_rank_change.chpl 
+	                           test_illegal_rank_change.good 
+
