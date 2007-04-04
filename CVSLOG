@@ -98352,3 +98352,19 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/dispatchNil/: dispatchNil.future 
 
+---------------------------------------------------------------------------
+
+04/03/07 17:14:23 -- deitz
+
+Log message:
+	Fixed a bug in the code to clone functions with formal arguments that
+	are parameterized primitive types (e.g., int(?k)) in which an
+	assumption was made that a type expression call had at least one
+	argument.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/classes/bradc/dispatchNil/: 
+	                                        dispatchNil-alistError.future 
+
