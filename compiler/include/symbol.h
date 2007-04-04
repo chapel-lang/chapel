@@ -41,6 +41,7 @@ class Symbol : public BaseAST {
   Type* type;
   DefExpr* defPoint; // Point of definition
   Symbol* overload;
+  bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
   bool isTypeVariable;
   bool isReference;    // is a reference

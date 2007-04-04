@@ -437,6 +437,26 @@ fix_def_expr(VarSymbol* var) {
     return; // already fixed
 
   //
+  // handle var ... : ... => ...;
+  //
+  if (var->isUserAlias) {
+    CallExpr* partial;
+    VarSymbol* arrTemp = new VarSymbol("_arrTmp");
+    arrTemp->isCompilerTemp = true;
+    stmt->insertBefore(new DefExpr(arrTemp));
+    stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, arrTemp, init->remove()));
+    if (!type) {
+      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, arrTemp));
+    } else {
+      partial = new CallExpr("view", gMethodToken, arrTemp);
+      partial->partialTag = true;
+      partial->methodTag = true;
+      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(partial, type->remove())));
+    }
+    return;
+  }
+
+  //
   // insert temporary for constants to assist constant checking
   //
   if (var->consClass == VAR_CONST) {

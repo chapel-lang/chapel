@@ -153,6 +153,8 @@ Is this "while x"(i); or "while x(i)";?
 %token INTLITERAL REALLITERAL IMAGLITERAL
 %token <pch> STRINGLITERAL
 
+%token TALIAS
+
 %token TASSIGN
 %token TASSIGNBAND
 %token TASSIGNBOR
@@ -225,7 +227,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
 %type <pexpr> literal seq_expr where distributed_expr
-%type <pexpr> variable_expr top_level_expr
+%type <pexpr> variable_expr top_level_expr alias_expr
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
 %type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
 %type <pdefexpr> formal enum_item
@@ -967,6 +969,12 @@ var_decl_stmt_inner:
       VarSymbol* var = new VarSymbol($1);
       $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
     }
+| identifier opt_type alias_expr
+    {
+      VarSymbol* var = new VarSymbol($1);
+      $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
+      var->isUserAlias = true;
+    }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
       VarSymbol* tmp = new VarSymbol("_tuple_tmp");
@@ -1151,6 +1159,12 @@ type:
     { $$ = new CallExpr( "_singlevar", $2); }
 | TSYNC type
     { $$ = new CallExpr( "_syncvar", $2); }
+;
+
+
+alias_expr:
+  TALIAS expr
+    { $$ = $2; }
 ;
 
 
