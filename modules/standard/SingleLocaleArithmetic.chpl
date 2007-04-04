@@ -274,7 +274,7 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def view(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
-      halt("array rank change not supported");
+      compilerError("illegal implicit rank change");
     for param i in 1..rank do
       if d(i).length != dom(i).length then
         halt("extent in dimension ", i, " does not match actual");
@@ -307,11 +307,9 @@ class SingleLocaleArithmeticArray: BaseArray {
     var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, d, noinit=true);
     alias.data = data;
     alias.size = size;
-    for param i in 1..rank {
-      alias.off(i) = off(i);
-      alias.blk(i) = blk(i);
-      alias.str(i) = str(i);
-    }
+    alias.off = off;
+    alias.blk = blk;
+    alias.str = str;
     alias.orig = orig;
     alias.computeOrigOff();
     return alias;
