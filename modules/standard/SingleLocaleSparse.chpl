@@ -145,7 +145,7 @@ class SingleLocaleSparseArray: BaseArray {
   //  def this(ind: dim_type ... 1) var where rank == 1
   //    return this(ind);
 
-  def this(ind: rank*dim_type) var {
+  def this(ind: rank*dim_type) {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member?(ind)) then
@@ -154,6 +154,21 @@ class SingleLocaleSparseArray: BaseArray {
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
     return if (found) then data(loc) else irv;
+  }
+
+
+  def =this(ind: rank*dim_type, val:eltType) {
+    // make sure we're in the dense bounding box
+    if boundsChecking then
+      if !((dom.parentDom).member?(ind)) then
+        halt("array index out of bounds: ", ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
+    if found then
+      data(loc) = val;
+    else
+      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
   }
 }
 
