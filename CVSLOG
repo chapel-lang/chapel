@@ -98486,3 +98486,15 @@ Removed files:
 	                                              test_iterator_temp6.future 
 	                                              test_iterator_temp8.future 
 
+---------------------------------------------------------------------------
+
+04/04/07 09:51:00 -- deitz
+
+Log message:
+	Added another test I had in my directory.
+
+Added files:
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp9.chpl 
+	                                              test_iterator_temp9.good 
+
