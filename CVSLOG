@@ -98368,3 +98368,68 @@ Removed files:
 	chapel/test/classes/bradc/dispatchNil/: 
 	                                        dispatchNil-alistError.future 
 
+---------------------------------------------------------------------------
+
+04/03/07 17:40:20 -- bradc
+
+Log message:
+	This check-in has four nice changes, very orthogonal:
+	
+	1a) It introduces a BaseArithmeticDomain class between
+	    the BaseDomain class and the SingleLocaleArithmetic
+	    and SingleLocaleSparse domain classes.  Currently
+	    it is not used much, but we expect it will be moreso
+	    as time goes on.
+	
+	1b) It fixes one of the simplifying assumptions in my
+	    sparse domain implementation in which I'd hard-coded
+	    the set of rows to be -1..2000.  Now the set of
+	    rows is taken from the parent domain.  So if you're
+	    creating a sparse domain over a parent domain with
+	    rows -5..5 the sparse domain will have those same
+	    11 rows.
+	
+	1c) It adds a bbox() method to the arithmetic domain
+	    hierarhcy which takes an integer and returns a
+	    non-strided range defining the bounding box for
+	    that dimension.  I don't like this name, interface,
+	    etc., but found myself struggling a lot with
+	    the "stridable" parameter with such a routine, so
+	    found that bounding boxes could be interpreted
+	    as never being strided to avoid the issue for now.
+	    Will try to refine this in future versions,
+	    probably by parameterizing the BaseArithmeticDomain
+	    to be strided or not (which Steve predicts will
+	    cause problems).
+	
+	2) Fixed an issue in the array._dom method which
+	   builds a new domain wrapper for a pre-existing
+	   domain so that it no longer would call the
+	   buildEmptyDomain() method but would simply
+	   wrap the existing domain guts in the default
+	   constructor (rather than as a separate assignment
+	   afterwards).
+	
+	3) Fixed a bug in which printing out an empty array
+	   resulted in an out-of-bounds error in its write()
+	   function.  Fixed this in a fairly dumb way by
+	   checking the number of indices before printing
+	   anything.  Restructuring the loop should also do
+	   it and probably more efficiently, but I took the
+	   shortcut to avoid the effort.  I/O is slow by nature
+	   anyway.  Added a test of this.
+	
+	4) Fixed a minor bug in Sparse domains that showed up
+	   when the correct number of rows was supported, in
+	   which we didn't update quite enough of the rowStart
+	   entries -- off by one.  Domain slicing would've
+	   helped here.  :)
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+Added files:
+	chapel/test/arrays/bradc/io/: .cvsignore writeEmpty.chpl 
+	                              writeEmpty.good 
+
