@@ -812,28 +812,30 @@ fixup_query_formals(FnSymbol* fn) {
       formal->type = dtAny;
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType)) {
       // clone query primitive types
-      if (DefExpr* def = dynamic_cast<DefExpr*>(call->get(1))) {
-        if (call->isNamed("int") || call->isNamed("uint")) {
-          for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
-            if (dtInt[i])
-              clone_for_parameterized_primitive_formals(fn, def,
-                                                        get_width(dtInt[i]));
-          fn->defPoint->remove();
-          return;
-        } else if (call->isNamed("real") || call->isNamed("imag")) {
-          for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
-            if (dtReal[i])
-              clone_for_parameterized_primitive_formals(fn, def,
-                                                        get_width(dtReal[i]));
-          fn->defPoint->remove();
-          return;
-        } else if (call->isNamed("complex")) {
-          for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
-            if (dtComplex[i])
-              clone_for_parameterized_primitive_formals(fn, def,
-                                                        get_width(dtComplex[i]));
-          fn->defPoint->remove();
-          return;
+      if (call->argList->length() == 1) {
+        if (DefExpr* def = dynamic_cast<DefExpr*>(call->get(1))) {
+          if (call->isNamed("int") || call->isNamed("uint")) {
+            for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
+              if (dtInt[i])
+                clone_for_parameterized_primitive_formals(fn, def,
+                                                          get_width(dtInt[i]));
+            fn->defPoint->remove();
+            return;
+          } else if (call->isNamed("real") || call->isNamed("imag")) {
+            for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
+              if (dtReal[i])
+                clone_for_parameterized_primitive_formals(fn, def,
+                                                          get_width(dtReal[i]));
+            fn->defPoint->remove();
+            return;
+          } else if (call->isNamed("complex")) {
+            for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
+              if (dtComplex[i])
+                clone_for_parameterized_primitive_formals(fn, def,
+                                                          get_width(dtComplex[i]));
+            fn->defPoint->remove();
+            return;
+          }
         }
       }
       bool queried = false;
