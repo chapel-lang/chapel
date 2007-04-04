@@ -98433,3 +98433,30 @@ Added files:
 	chapel/test/arrays/bradc/io/: .cvsignore writeEmpty.chpl 
 	                              writeEmpty.good 
 
+---------------------------------------------------------------------------
+
+04/04/07 09:33:58 -- deitz
+
+Log message:
+	Added initial support for a 'view' operator of arrays.  This supports
+	the following idioms where A is an array:
+	
+	  var AA => A;             // AA is an alias of A
+	  var AA => A[2..4, 2..4]; // AA is an alias of the slice of A
+	
+	Currently there is no way to reindex the alias of the array.  The view
+	operator can only be used in a variable declaration context.
+	
+	Added Symbol::isUserAlias to mark such aliases in the compiler.
+	Specialized handling of these variables in fix_def_expr to ensure that
+	they are aliases.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_alias1.chpl test_alias1.good 
+	                           test_alias2.chpl test_alias2.good 
+
