@@ -115,6 +115,11 @@ record _domain {
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
+  // buildEmptyDomain is meant to return an uninitialized domain for
+  // the given domain type. For example, it should return the same
+  // sort of thing that var D: domain(2) dist(yourDist); would result
+  // in if you didn't initialize it.  It should be a static method and
+  // not refer to any fields that aren't types and params.
   def buildEmptyDomain() {
     var x = _value.buildEmptyDomain();
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
@@ -235,8 +240,8 @@ record _array {
   var _promotionType : eltType;
 
   def _dom var {
-    var x : _domain(_value.dom.type, _index_type, _dim_index_type, rank);
-    x._value = _value.dom;
+    var x : _domain(_value.dom.type, _index_type, _dim_index_type, rank, _value.dom);
+    //    x._value = _value.dom;
     return x;
   }
 
@@ -363,5 +368,13 @@ class BaseDomain {
   def member?(ind) : bool {
     halt("membership test not supported for this domain type");
     return false;
+  }
+}
+
+
+class BaseArithmeticDomain : BaseDomain {
+  def bbox(dim:int) {
+    halt("bbox not supported for this domain type");
+    return 1..0;
   }
 }

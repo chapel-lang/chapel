@@ -1,16 +1,14 @@
-class SingleLocaleSparseDomain: BaseDomain {
+class SingleLocaleSparseDomain: BaseArithmeticDomain {
   param rank : int;
   type dim_type;
-  var parentDom: BaseDomain;  // want this to be BaseArithmeticDomain
+  var parentDom: BaseArithmeticDomain;
   //  type ind_type = rank*dim_type;
   var nnz = 0;
 
-  // const rowRange = parentDom.bbox(1); // this is what I want
-  const rowRange = -1..2000;
+  var rowRange = parentDom.bbox(1);
 
   // I'd like both of these things to go away over time
   var actualColRange = max(int)..min(int);
-  var actualRowRange = max(int)..min(int);
 
 
   const rowDom = [rowRange.low..rowRange.high+1];
@@ -34,7 +32,8 @@ class SingleLocaleSparseDomain: BaseDomain {
     return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
+                                    parentDom = BaseArithmeticDomain());
 
   def getHeadCursor() {
     var c: rank*dim_type;
@@ -50,7 +49,7 @@ class SingleLocaleSparseDomain: BaseDomain {
 
   def this(dim : int) {
     if (dim == 1) {
-      return actualRowRange; // BLC: return parentDom.this(dim)?
+      return rowRange;
     } else {
       return actualColRange;
     }
@@ -109,12 +108,6 @@ class SingleLocaleSparseDomain: BaseDomain {
     if (col > actualColRange.high) {
       actualColRange = actualColRange.low..col;
     }
-    if (row < actualRowRange.low) {
-      actualRowRange = row..actualRowRange.high;
-    }
-    if (row > actualRowRange.high) {
-      actualRowRange = actualRowRange.low..row;
-    }
 
     // shift column indices and array data up
     for i in [insertPt..nnz) by -1 {
@@ -131,7 +124,7 @@ class SingleLocaleSparseDomain: BaseDomain {
     colIdx(insertPt) = col;
 
     // bump the rowStart counts
-    for r in row+1..rowRange.high {  // want rowDom[row+1..]
+    for r in row+1..rowDom.high {  // want rowDom[row+1..]
       rowStart(r) += 1;
     }
 

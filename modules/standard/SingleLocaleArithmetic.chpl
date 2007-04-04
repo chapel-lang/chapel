@@ -2,7 +2,8 @@ class SingleLocaleDistribution {
   param stridable: bool = false;
 
   def buildDomain(param rank: int, type dim_type) {
-    return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
+    return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, 
+                                        stridable=stridable);
   }
 
   def buildEnumDomain(type ind_type) {
@@ -13,14 +14,16 @@ class SingleLocaleDistribution {
     return SingleLocaleAssociativeDomain(ind_type=ind_type);
   }
 
-  def buildSparseDomain(param rank:int, type dim_type, parentDom: BaseDomain) {
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, parentDom=parentDom);
+  def buildSparseDomain(param rank:int, type dim_type, 
+                        parentDom: BaseArithmeticDomain) {
+    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
+                                    parentDom=parentDom);
   }
 }
 
 var Block = SingleLocaleDistribution();
 
-class SingleLocaleArithmeticDomain: BaseDomain {
+class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   param rank : int;
   type dim_type;
   param stridable: bool;
@@ -87,10 +90,10 @@ class SingleLocaleArithmeticDomain: BaseDomain {
   def this(dim : int)
     return ranges(dim);
 
-  /*
-  def bbox(dim : int)
-    return ranges(dim);
-  */
+  def bbox(dim: int) {
+    const r: range(dim_type,bounded,false) = ranges(dim);
+    return r;
+  }
 
   def numIndices {
     var sum = 1:dim_type;
@@ -340,6 +343,7 @@ def SingleLocaleArithmeticDomain.writeThis(f: Writer) {
 }
 
 def SingleLocaleArithmeticArray.writeThis(f: Writer) {
+  if dom.numIndices == 0 then return;
   var i : rank*dim_type;
   for dim in 1..rank do
     i(dim) = dom(dim)._low;
