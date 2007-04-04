@@ -98473,3 +98473,16 @@ Added files:
 	                                         test_query_field9.chpl 
 	                                         test_query_field9.good 
 
+---------------------------------------------------------------------------
+
+04/04/07 09:49:45 -- deitz
+
+Log message:
+	Removed .future files for three working tests.
+
+Removed files:
+	chapel/test/classes/bradc/overloadMethods/: printType.future 
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp6.future 
+	                                              test_iterator_temp8.future 
+
