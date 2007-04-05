@@ -98533,3 +98533,41 @@ Modified files:
 Added files:
 	chapel/test/sparse/bradc/: assignIRV.chpl assignIRV.good 
 
+---------------------------------------------------------------------------
+
+04/05/07 14:10:21 -- bradc
+
+Log message:
+	Added the first sparse version of CG which builds the
+	sparse domain and array within the testing system's
+	default timeout.  It does this by adding a new iterator
+	to the cg-makea.chpl module that (a) creates the random
+	indices adding them to a sparse domain to eliminate
+	duplicates, (b) copies the indices out of the domain and
+	into an array, (c) sorting the array, and (d) yielding
+	the elements of the array.  By yielding the array
+	elements in order, the insertion-sort-like step of
+	adding random indices to a CRS storage structure is
+	avoided, causing something that runs in time closer to
+	linear time.
+	
+	Added a new standard module -- Sort -- which defines
+	InsertionSort and QuickSort routines accepting a
+	generic 1D array whose elements support < and >
+	operators.
+	
+	Some minor changes to the Sparse domain to avoid an
+	unnecessary range variable and to expose nnz to the
+	user as a means of preallocating some the O(nnz)
+	arrays and avoid relying on recursive doubling.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+Added files:
+	chapel/modules/standard/: Sort.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea1-sparse-sort.chpl 
+	                           cg-makea1-sparse-sort.compopts 
+	                           cg-makea1-sparse-sort.good 
+
