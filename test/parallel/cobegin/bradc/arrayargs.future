@@ -1,0 +1,5 @@
+cobegin
+
+Cobegins with certain types of array slice arguments
+don't seem to be working properly.  I'm not sure why --
+it causes a C compile error.
