@@ -98587,3 +98587,13 @@ Added files:
 	                                     arrayargs.future 
 	                                     arrayargs.good 
 
+---------------------------------------------------------------------------
+
+04/05/07 14:18:59 -- bradc
+
+Log message:
+	Added begin and cobegin to emacs Chapel mode.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
