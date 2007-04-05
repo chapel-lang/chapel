@@ -2,17 +2,15 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
   param rank : int;
   type dim_type;
   var parentDom: BaseArithmeticDomain;
+  var nnz = 0;  // intention is that user might specify this to avoid reallocs
   //  type ind_type = rank*dim_type;
-  var nnz = 0;
 
   var rowRange = parentDom.bbox(1);
-
-  // I'd like both of these things to go away over time
-  var actualColRange = max(int)..min(int);
-
+  var colRange = parentDom.bbox(2);
 
   const rowDom = [rowRange.low..rowRange.high+1];
-  var nnzDom = [1..nnz];
+  var nnzDomSize = nnz;
+  var nnzDom = [1..nnzDomSize];
 
   var rowStart: [rowDom] dim_type;      // would like index(nnzDom)
   var colIdx: [nnzDom] dim_type;        // would like index(parentDom.bbox(1))
@@ -21,6 +19,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     if (rank != 2) then
       compilerError("Only 2D sparse domains are supported presently");
     for i in rowDom do rowStart(i) = 1;
+    nnz = 0;
   }
 
   def numIndices return nnz;
@@ -51,7 +50,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     if (dim == 1) {
       return rowRange;
     } else {
-      return actualColRange;
+      return colRange;
     }
   }
 
@@ -92,7 +91,6 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     nnz += 1;
 
     // double nnzDom if we've outgrown it
-    var nnzDomSize = nnzDom.numIndices;
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
 
@@ -100,14 +98,6 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     }
 
     const (row,col) = ind;
-
-    // expand col range
-    if (col < actualColRange.low) {
-      actualColRange = col..actualColRange.high;
-    }
-    if (col > actualColRange.high) {
-      actualColRange = actualColRange.low..col;
-    }
 
     // shift column indices and array data up
     for i in [insertPt..nnz) by -1 {

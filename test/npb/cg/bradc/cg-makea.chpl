@@ -1,3 +1,5 @@
+use Sort;
+
 module CGMakeA {
 
   use Random;
@@ -44,6 +46,33 @@ module CGMakeA {
     for (ind, val) in makea(elemType, n, nonzer, shift) {
       yield ind;
     }
+  }
+
+  iterator genAIndsSorted(type elemType, n, nonzer, shift) {
+    // build associative domain of indices
+    var Inds: domain(index(2));
+    for i in genAInds(elemType, n, nonzer, shift) {
+      Inds += i;
+    }
+    //  writeln("Inds is: ", Inds);
+
+    // copy into arithmetic domain/array
+    var IndArr: [1..Inds.numIndices] index(2);
+    for (i,j) in (Inds, 1..) {
+      IndArr[j] = i;
+    }
+    //  writeln("IndArr is: ", IndArr);
+
+    // sort indices
+    QuickSort(IndArr);
+
+    //  writeln("After sort, IndArr is: ", IndArr);
+    
+    for i in IndArr {
+      yield i;
+    }
+
+    // TODO: should "free" local domains/arrays here by making degenerate
   }
 
 

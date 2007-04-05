@@ -39,6 +39,7 @@ static void parseStandardModules(void) {
     parseStandardModule("BitOps.chpl");
     parseStandardModule("Memory.chpl");
     parseStandardModule("Schedules.chpl");
+    parseStandardModule("Sort.chpl");
   }
 }
 
