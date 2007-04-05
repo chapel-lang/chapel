@@ -98571,3 +98571,19 @@ Added files:
 	                           cg-makea1-sparse-sort.compopts 
 	                           cg-makea1-sparse-sort.good 
 
+---------------------------------------------------------------------------
+
+04/05/07 14:18:34 -- bradc
+
+Log message:
+	Filing a bug in which a cobegin that contains function
+	calls whose arguments are array slices results in a C
+	compile-time error.
+
+Modified files:
+	chapel/test/parallel/cobegin/bradc/: .cvsignore 
+Added files:
+	chapel/test/parallel/cobegin/bradc/: arrayargs.chpl 
+	                                     arrayargs.future 
+	                                     arrayargs.good 
+
