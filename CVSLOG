@@ -98597,3 +98597,54 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+04/06/07 14:00:14 -- deitz
+
+Log message:
+	This change fixes a bug with composing slicing and viewing.  Recall
+	that slicing is accomplished by indexing into an array with a domain.
+	Slicing results in a slection of a subset of the elements in the array
+	but does not change the indices of any particular element.  Viewing is
+	accomplished by passing an array to a function that expects an array
+	over a different index set.  Viewing changes the mapping from indices
+	to elements but results in an array with the same shape as the
+	original array.  Eventually aliasing will be extended to allow for
+	reindexing.
+	
+	Removed the scalar field orig from the arithmetic array and replaced
+	it with a tuple field adj.  Basic indexing into an arithmetic array is
+	thus accomplished using the following formula for each dimension:
+	
+	  (((index - off) * blk) / str) + adj
+	
+	Given an array with dimensional values for off, blk, str, and adj, and
+	a reference to a domain given by L..H by S, then viewing the array
+	over a new domain given by NL..NH by NS results in a new array
+	descriptor given by
+	
+	  new off = NL
+	  new blk = blk * S / str
+	  new str = NS
+	  new adj = adj
+	
+	and striding the array over a new domain given by NL..NH by NS results
+	in a new array descriptor given by
+	
+	  new off = NL
+	  new blk = blk
+	  new str = str
+	  new adj = adj + blk * (off - NL) / str
+	
+	Renamed origOff to factoredOffs as this optimization in the
+	non-stridable case factors out the offsets.  It should also factor the
+	adjustments in as well.
+	
+	Thanks is dues to Brad who helped in determining the above formulae.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_view_slice.chpl 
+	                           test_view_slice.good 
+
