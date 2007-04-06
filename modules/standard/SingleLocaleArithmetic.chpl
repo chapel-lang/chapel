@@ -271,7 +271,7 @@ class SingleLocaleArithmeticArray: BaseArray {
     return data(sum:int); // !!ahh
   }
 
-  def view(d: SingleLocaleArithmeticDomain) {
+  def reindex(d: SingleLocaleArithmeticDomain) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do

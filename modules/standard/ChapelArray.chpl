@@ -309,8 +309,8 @@ record _array {
 
   def numElements return _dom.numIndices; // assume dom name
 
-  def view(d: _domain) {
-    var x = _value.view(d._value);
+  def reindex(d: _domain) {
+    var x = _value.reindex(d._value);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 }

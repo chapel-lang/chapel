@@ -448,7 +448,7 @@ fix_def_expr(VarSymbol* var) {
     if (!type) {
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, arrTemp));
     } else {
-      partial = new CallExpr("view", gMethodToken, arrTemp);
+      partial = new CallExpr("reindex", gMethodToken, arrTemp);
       partial->partialTag = true;
       partial->methodTag = true;
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(partial, type->remove())));
@@ -656,7 +656,7 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
           } else if (!sym || sym->var != gNil) {
-            VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
+            VarSymbol* tmp = new VarSymbol(stringcat("_reindex_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == parent->sym)
@@ -667,7 +667,7 @@ static void fixup_array_formals(FnSymbol* fn) {
               new CallExpr("!=", dtNil->symbol, parent->sym),
               new CallExpr(PRIMITIVE_MOVE, tmp,
                 new CallExpr(new CallExpr(".", parent->sym,
-                                          new_StringSymbol("view")),
+                                          new_StringSymbol("reindex")),
                              call->get(1)->copy())),
               new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
             //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
@@ -677,7 +677,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
           if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
             parent->exprType->replace(new SymExpr(chpl_array));
-            VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
+            VarSymbol* tmp = new VarSymbol(stringcat("_reindex_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == parent->sym)
@@ -688,7 +688,7 @@ static void fixup_array_formals(FnSymbol* fn) {
               new CallExpr("!=", dtNil->symbol, parent->sym),
               new CallExpr(PRIMITIVE_MOVE, tmp,
                 new CallExpr(new CallExpr(".", parent->sym,
-                                          new_StringSymbol("view")),
+                                          new_StringSymbol("reindex")),
                              call->get(1)->copy())),
               new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
             //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
