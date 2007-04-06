@@ -98661,3 +98661,16 @@ Modified files:
 	chapel/modules/standard/: ChapelArray.chpl 
 	                          SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+04/06/07 14:42:04 -- diten
+
+Log message:
+	Add an initial version of the NAS integer sort benchmark.  It uses a slightly
+	modified version of Brad's QuickSort routine.  The required size specified by
+	the benchmark spec (2**23) is too large, so as well as the two classes
+	specified by the spec, also add a third with the more managable 2**17 size.
+
+Added files:
+	chapel/test/npb/is/diten/: is.chpl is.good 
+
