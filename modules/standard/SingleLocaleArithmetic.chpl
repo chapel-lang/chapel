@@ -212,8 +212,8 @@ class SingleLocaleArithmeticArray: BaseArray {
   var off: rank*dim_type;
   var blk: rank*dim_type;
   var str: rank*int;
-  var orig: dim_type;
-  var origOff: dim_type;
+  var adj: rank*dim_type;
+  var factoredOffs: dim_type;
   var size : dim_type;
   var data : _ddata(eltType);
   var noinit: bool = false;
@@ -230,10 +230,10 @@ class SingleLocaleArithmeticArray: BaseArray {
   def isValidCursor?(c)
     return dom.isValidCursor?(c);
 
-  def computeOrigOff() {
-    origOff = orig;
+  def computeFactoredOffs() {
+    factoredOffs = 0:dim_type;
     for i in 1..rank do
-      origOff = origOff + blk(i) * off(i);
+      factoredOffs = factoredOffs + blk(i) * off(i);
   }
 
   def initialize() {
@@ -241,12 +241,12 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param dim in 1..rank {
       off(dim) = dom(dim)._low;
       str(dim) = dom(dim)._stride;
+      adj(dim) = 0:dim_type;
     }
     blk(rank) = 1:dim_type;
     for dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom(dim+1).length;
-    orig = 0:dim_type;
-    computeOrigOff();
+    computeFactoredOffs();
     size = blk(1) * dom(1).length;
     data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
@@ -262,12 +262,11 @@ class SingleLocaleArithmeticArray: BaseArray {
     var sum : dim_type;
     if stridable {
       for param i in 1..rank do
-        sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type;
-      sum = sum - orig;
+        sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - adj(i);
     } else {
       for param i in 1..rank do
-        sum = sum + ind(i) * blk(i);
-      sum = sum - origOff;
+        sum = sum + ind(i) * blk(i) - adj(i);
+      sum = sum - factoredOffs;
     }
     return data(sum:int); // !!ahh
   }
@@ -283,11 +282,11 @@ class SingleLocaleArithmeticArray: BaseArray {
     alias.size = size;
     for param i in 1..rank {
       alias.off(i) = d(i)._low;
-      alias.blk(i) = blk(i) * (dom(i)._stride / str(i));
+      alias.blk(i) = blk(i) * dom(i)._stride / str(i);
       alias.str(i) = d(i)._stride;
-      alias.orig = orig + (off(i) - dom(i)._low) * blk(i);
+      alias.adj(i) = adj(i);
     }
-    alias.computeOrigOff();
+    alias.computeFactoredOffs();
     return alias;
   }
 
@@ -307,11 +306,13 @@ class SingleLocaleArithmeticArray: BaseArray {
     var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, d, noinit=true);
     alias.data = data;
     alias.size = size;
-    alias.off = off;
     alias.blk = blk;
     alias.str = str;
-    alias.orig = orig;
-    alias.computeOrigOff();
+    for param i in 1..rank {
+      alias.adj(i) = adj(i) + blk(i) * (off(i) - d(i)._low) / str(i);
+      alias.off(i) = d(i)._low;
+    }
+    alias.computeFactoredOffs();
     return alias;
   }
 
@@ -323,8 +324,8 @@ class SingleLocaleArithmeticArray: BaseArray {
       off = new.off;
       blk = new.blk;
       str = new.str;
-      orig = new.orig;
-      origOff = new.origOff;
+      adj = new.adj;
+      factoredOffs = new.factoredOffs;
       size = new.size;
       data = new.data;
     } else {
