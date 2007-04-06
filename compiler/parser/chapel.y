@@ -220,7 +220,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type opt_formal_type array_type opt_elt_type top_level_type
-%type <pexpr> type anon_record_type tuple_type type_binding_expr
+%type <pexpr> type anon_record_type tuple_type type_binding_expr opt_domain
 %type <pexpr> composable_type variable_type parenop_type memberaccess_type
 %type <ptype> class_tag
 
@@ -969,7 +969,7 @@ var_decl_stmt_inner:
       VarSymbol* var = new VarSymbol($1);
       $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
     }
-| identifier opt_type alias_expr
+| identifier opt_domain alias_expr
     {
       VarSymbol* var = new VarSymbol($1);
       $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
@@ -1173,6 +1173,14 @@ opt_init_expr:
     { $$ = NULL; }
 | TASSIGN expr
     { $$ = $2; }
+;
+
+
+opt_domain:
+  /* nothing */
+    { $$ = NULL; }
+| TCOLON TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("_build_domain", $3); }
 ;
 
 
