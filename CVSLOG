@@ -98648,3 +98648,16 @@ Added files:
 	chapel/test/arrays/deitz/: test_view_slice.chpl 
 	                           test_view_slice.good 
 
+---------------------------------------------------------------------------
+
+04/06/07 14:30:39 -- deitz
+
+Log message:
+	Renamed the method 'view' to 'reindex' since this more clearly
+	suggests the meaning of this method.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+
