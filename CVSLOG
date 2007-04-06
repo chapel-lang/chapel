@@ -98674,3 +98674,24 @@ Log message:
 Added files:
 	chapel/test/npb/is/diten/: is.chpl is.good 
 
+---------------------------------------------------------------------------
+
+04/06/07 15:42:41 -- deitz
+
+Log message:
+	Added support for reindexing when creating aliases.  Simply put the
+	domain that you want to index the alias through between the : and the
+	=> operators.  For example, use
+	
+	  var AA : [1..5, 1..5] => A[4..9, 4..9];
+	
+	to reindex the slice of A with the new indices starting at 1.
+	
+	Added two test cases.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/arrays/deitz/: test_alias3.chpl test_alias3.good 
+	                           test_alias4.chpl test_alias4.good 
+
