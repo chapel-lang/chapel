@@ -98813,3 +98813,27 @@ Log message:
 Modified files:
 	chapel/test/modules/diten/: quickSort.chpl 
 
+---------------------------------------------------------------------------
+
+04/09/07 16:06:36 -- bradc
+
+Log message:
+	Fixed the bug in Quicksort that David identified -- the
+	partitioning step entered an infinite loop when the low,
+	high, and pivot values were all equal.  While a one-line
+	fix sufficed to solve the problem, I took this opportunity
+	to add median-of-three pivoting, and make my approach more
+	identical to the code in my textbook (I'd avoided it due
+	to the lack of a pre-increment operator last time around,
+	but this bug made it clear how and why to address that).
+	
+	Added a test that sorts an array of all-equal values to
+	flag this issue even more directly than David's test does.
+
+Modified files:
+	chapel/modules/standard/: Sort.chpl 
+Added files:
+	chapel/test/modules/standard/Sort/bradc/: .cvsignore 
+	                                          quickSort-constArr.chpl 
+	                                          quickSort-constArr.good 
+
