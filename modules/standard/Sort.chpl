@@ -30,22 +30,42 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
         hi = Dom.high,
         mid = lo + (hi-lo+1)/2;
 
-  // base case
+  // base case -- use insertion sort
   if (hi - lo < 10) {
     InsertionSort(Data);
     return;
   }
 
-  // find pivot
+  // find pivot using median-of-3 method
+  if (Data(mid) < Data(lo)) {
+    //    Data(mid) <=> Data(lo);
+    const tmp = Data(lo);
+    Data(lo) = Data(mid);
+    Data(mid) = tmp;
+  }
+  if (Data(hi) < Data(lo)) {
+    // Data(hi) <=> Data(lo)
+    const tmp = Data(lo);
+    Data(lo) = Data(hi);
+    Data(hi) = tmp;
+  }
+  if (Data(hi) < Data(mid)) {
+    // Data(hi) <=> Data(mid)
+    const tmp = Data(mid);
+    Data(mid) = Data(hi);
+    Data(hi) = tmp;
+  }
+  // Data(mid) <=> Data(hi-1);
   const pivotVal = Data(mid);
-  Data(mid) = Data(hi);
-  Data(hi) = pivotVal;
+  Data(mid) = Data(hi-1);
+  Data(hi-1) = pivotVal;
+  // end median-of-3 partitioning
 
   var loptr = lo, 
       hiptr = hi-1;
   while (loptr < hiptr) {
-    while (Data(loptr) < pivotVal) { loptr += 1; }
-    while (Data(hiptr) > pivotVal && hiptr > loptr) { hiptr -= 1; }
+    do { loptr += 1; } while (Data(loptr) < pivotVal);
+    do { hiptr -= 1; } while (pivotVal < Data(hiptr));
     if (loptr < hiptr) {
       // Data(loptr) <=> Data(hiptr);
       const tmp = Data(loptr);
@@ -53,8 +73,9 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
       Data(hiptr) = tmp;
     }
   }
-  // Data(loptr) <=> Data(hi);
-  Data(hi) = Data(loptr);
+
+  // Data(loptr) <=> Data(hi-1);  ?
+  Data(hi-1) = Data(loptr);
   Data(loptr) = pivotVal;
 
   //  cobegin {
