@@ -98791,3 +98791,14 @@ Log message:
 Added files:
 	chapel/test/npb/ft/: ft-serial.compopts 
 
+---------------------------------------------------------------------------
+
+04/09/07 13:09:23 -- diten
+
+Log message:
+	Add a test of the QuickSort function in the Sort module.  For some input arrays
+	it is getting into an "infinite" loop.
+
+Added files:
+	chapel/test/modules/diten/: quickSort.chpl quickSort.good 
+
