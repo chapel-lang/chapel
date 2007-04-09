@@ -263,7 +263,8 @@ buildSingleLoopMethods(FnSymbol* fn,
   Symbol* headIterator = ii->getHeadCursor->getFormal(1);
   Symbol* headCursor = newTemp(ii->getHeadCursor, ii->getHeadCursor->retType);
   Symbol* nextIterator = ii->getNextCursor->getFormal(1);
-  Symbol* nextCursor = ii->getNextCursor->getFormal(2);
+  Symbol* nextCursor = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
+  ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, nextCursor, ii->getNextCursor->getFormal(2)));
 
   ASTMap headCopyMap; // copy map of iterator to getHeadCursor; note:
                       // there is no map for getNextCursor since the
@@ -381,6 +382,12 @@ buildSingleLoopMethods(FnSymbol* fn,
 
   buildIsValidCursor(fn);
   buildGetValue(fn, value);
+
+//   ii->getHeadCursor->addPragma("inline");
+//   ii->getNextCursor->addPragma("inline");
+//   ii->isValidCursor->addPragma("inline");
+//   ii->getValue->addPragma("inline");
+//   fn->addPragma("inline");
 }
 
 

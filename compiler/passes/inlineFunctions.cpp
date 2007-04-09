@@ -43,6 +43,9 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
   if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(call, "Cannot inline function, function is not normalized");
   Expr* return_value = return_stmt->get(1);
+  SymExpr* se = dynamic_cast<SymExpr*>(return_value);
+  if (!se || se->var->astType == SYMBOL_ARG)
+    INT_FATAL(fn, "inlined function cannot return an argument symbol");
   return_stmt->remove();
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn_body);
