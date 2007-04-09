@@ -98695,3 +98695,67 @@ Added files:
 	chapel/test/arrays/deitz/: test_alias3.chpl test_alias3.good 
 	                           test_alias4.chpl test_alias4.good 
 
+---------------------------------------------------------------------------
+
+04/09/07 11:33:00 -- bradc
+
+Log message:
+	This check-in gets the CG benchmark working in a
+	reasonable amount of time (~20 seconds when compiled
+	with --ccflags=-O3) for the first time.  It still is
+	not asymptotically correct because it still uses a
+	random access to get at the array, which requires a
+	binary search over the elements within a row.
+	
+	The changes involved include:
+	
+	* adding a standard Search module to support things
+	  like linear and binary searches on 1D arrays.  The
+	  current interface is a bit crufty -- I wanted to
+	  be able to pass in an array slice to be searched
+	  like A[lo..hi], however, this resulted in us running
+	  out of memory building array slice wrappers given
+	  the number of binary searches required for CG.  GC
+	  may be an answer to this, but it would also be great
+	  if we could optimize the deallocation of these short-
+	  lived wrappers to avoid fragmenting the heap too much.
+	
+	* added a very rough draft "per-dimension" iterator to
+	  the array wraper class in order to support sparse
+	  iteration, which is a function of the dimension being
+	  indexed.  The current interface is somewhat hard-coded
+	  for either 2D, or possible for assuming that dimensions
+	  are traversed in order, but I'm not sure we want to make
+	  either assumption.  On the other hand, I still don't
+	  have great insight into how to do a per-dimension
+	  iterator interface well.
+	
+	* implemented the multidimensional iterator for the sparse
+	  domain for the first time, though this isn't actually
+	  used in the CG benchmark.  I did add/modify a few more
+	  tests to use it.  It is far more awkward to write as the
+	  4 iterator methods than it would be to write as an
+	  iterator -- incentive to switch over, if we're in a position
+	  to do so.  I sketched out the way we'd like to write the
+	  iterator in a comment.
+	
+	* Updated CG sparse tests to run full S problem size,
+	  and to compile with the --ccflags=-O3 flag.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+	                           cg-makea1-sparse-sort.chpl 
+	                           cg-makea1-sparse-sort.compopts 
+	                           cg-sparse.chpl cg-sparse.compopts 
+	                           cg-sparse.execopts cg-sparse.good 
+Added files:
+	chapel/modules/standard/: Search.chpl 
+	chapel/test/npb/cg/bradc/: cg-sparse-dimiter.chpl 
+	                           cg-sparse-dimiter.compopts 
+	                           cg-sparse-dimiter.execopts 
+	                           cg-sparse-dimiter.good 
+	chapel/test/sparse/bradc/: sparseArray5.chpl sparseArray5.good 
+
