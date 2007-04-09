@@ -98802,3 +98802,14 @@ Log message:
 Added files:
 	chapel/test/modules/diten/: quickSort.chpl quickSort.good 
 
+---------------------------------------------------------------------------
+
+04/09/07 14:38:46 -- diten
+
+Log message:
+	Make the seed to the RandomStream class in my QuickSort test be set to
+	something that causes the "infinite" loop failure instead of the current time.
+
+Modified files:
+	chapel/test/modules/diten/: quickSort.chpl 
+
