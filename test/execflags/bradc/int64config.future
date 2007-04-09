@@ -1,0 +1,4 @@
+int(64) configs
+
+Found that config vars declared as 64-bit ints
+only support 32-bit initializers.
