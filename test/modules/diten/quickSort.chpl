@@ -4,11 +4,12 @@ use Sort;
 use Random;
 
 config const size = 4096;
+config const seed = 27;
 
 def main() {
   var A: [1..size] int;
   var rands: [1..size] real;
-  var randomStream = RandomStream();
+  var randomStream = RandomStream(seed);
 
   // Fill A with random int values in [0, 99999]
   randomStream.fillRandom(rands);
