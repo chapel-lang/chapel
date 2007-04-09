@@ -98759,3 +98759,22 @@ Added files:
 	                           cg-sparse-dimiter.good 
 	chapel/test/sparse/bradc/: sparseArray5.chpl sparseArray5.good 
 
+---------------------------------------------------------------------------
+
+04/09/07 11:52:56 -- deitz
+
+Log message:
+	Added an internal error check to inlining to ensure that an argument
+	symbol is not returned by a function being inlined.  Without this
+	check, an error that is difficult to track down shows up later.
+	
+	Fixed the single forall iterator getNextCursor function to return a
+	temporary variable rather than an argument symbol.
+	
+	Added (commented out) inline pragmas to the single forall iterator
+	methods.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/passes/: inlineFunctions.cpp 
+
