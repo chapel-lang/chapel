@@ -98778,3 +98778,16 @@ Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 	chapel/compiler/passes/: inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+04/09/07 11:58:53 -- bradc
+
+Log message:
+	Adding a --ccflags=-O3 flag to the ft-serial.chpl
+	test in hopes of avoiding the timeout problem on
+	SunOS' nightly regressions (seemed to get us under
+	the timeout when running manually now).
+
+Added files:
+	chapel/test/npb/ft/: ft-serial.compopts 
+
