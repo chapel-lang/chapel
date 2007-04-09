@@ -1,1 +1,1 @@
-cg-makea.chpl
+cg-makea.chpl --ccflags=-O3

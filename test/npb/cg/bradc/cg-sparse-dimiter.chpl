@@ -1,3 +1,6 @@
+// This version ran in...
+//   618.233 with default arguments, linear search for sparse domain this()
+//    62.169 with --cflags=-O3 arguments, linear search
 use CGMakeA;
 
 type elemType = real(64);
@@ -29,7 +32,7 @@ config const numTrials = 1,
 
 
 def main() {
-  // build the sparse domain first
+  // build the sparse array first
   const DenseSpace = [1..n, 1..n];
   var MatrixSpace: sparse subdomain(DenseSpace); // dist(CSR);
 
@@ -37,12 +40,16 @@ def main() {
     MatrixSpace += ind;
   }
 
+  writeln("Done setting up domain");
+
   // and then the array
   var A: [MatrixSpace] elemType;
 
   for (ind, v) in makea(elemType, n, nonzer, shift) {
     A(ind) += v;
   }
+
+  writeln("Done setting up array");
 
   const VectorSpace = [1..n];
   var X: [VectorSpace] elemType,

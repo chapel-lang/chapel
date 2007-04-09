@@ -40,6 +40,7 @@ static void parseStandardModules(void) {
     parseStandardModule("Memory.chpl");
     parseStandardModule("Schedules.chpl");
     parseStandardModule("Sort.chpl");
+    parseStandardModule("Search.chpl");
   }
 }
 

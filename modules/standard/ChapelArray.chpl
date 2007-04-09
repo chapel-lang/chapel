@@ -19,7 +19,10 @@ def _build_subdomain_type(dom)
 
 def _build_sparse_subdomain_type(dist, parentDom) {
   var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value);
-  return _domain(x.type, x.getValue(x.getHeadCursor()).type, parentDom._dim_index_type, parentDom.rank, x);
+  // This index(2) is lame/incorrect, but the technique of using the
+  // iterator to find out the index type is lame too -- all of which
+  // could be fixed if we could have tuple types within classes.
+  return _domain(x.type, index(2), parentDom._dim_index_type, parentDom.rank, x);
 }
 
 record _ArrayTypeInfo {
@@ -108,6 +111,10 @@ record _domain {
 
   def this(dim : int)
     return _value(dim);
+
+  iterator dimIter(param dim, ind) {
+    for i in _value.dimIter(dim, ind) do yield i;
+  }
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);

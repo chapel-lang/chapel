@@ -1,3 +1,5 @@
+use Search;
+
 class SingleLocaleSparseDomain: BaseArithmeticDomain {
   param rank : int;
   type dim_type;
@@ -34,16 +36,47 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
                                     parentDom = BaseArithmeticDomain());
 
+  // really, really would like to replace the following with a true
+  // iterator like:
+  //
+  // iterator this() {
+  //   for i in 1..nnz {
+  //     while (rowStart(cursorRow+1) < i) {
+  //       cursorRow += 1;
+  //     }
+  //     yield (cursorRow, colIdx(i));
+  //   }
+  // }
+  var cursorRow: index(rowDom);
+  var cursorColInd: index(nnzDom);
+
   def getHeadCursor() {
-    var c: rank*dim_type;
-    return c;
+    cursorRow = rowRange.low;
+    cursorColInd = 1;
+    //    writeln("rowStart = ", rowStart);
+    while (rowStart(cursorRow+1) <= cursorColInd) {
+      cursorRow += 1;
+    }
+    return (cursorRow, colIdx(cursorColInd));
+  }
+
+  def getNextCursor(c) {
+    cursorColInd += 1;
+    if (cursorColInd <= nnz) {
+      while (rowStart(cursorRow+1) <= cursorColInd) {
+        cursorRow += 1;
+      }
+      return (cursorRow, colIdx(cursorColInd));
+    }
+    return (-1,-1);
   }
 
   def getValue(c) {
-    if rank == 1 then
-      return c(1);
-    else
-      return c;
+    return c;
+  }
+
+  def isValidCursor?(c) {
+    return cursorColInd <= nnz;
   }
 
   def this(dim : int) {
@@ -61,18 +94,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
   def find(ind: rank*dim_type) {
     const (row, col) = ind;
 
-    // search indices in this row
-    for i in rowStart(row)..rowStop(row) by -1 {
-      if (colIdx(i) == col) {
-        // hit -- found index
-        return (true, i);
-      } else if (colIdx(i) < col) {
-        // miss -- found index greater than the one we're looking for
-        return (false, i+1);
-      }
-    }
-    // miss -- fell off end of row
-    return (false, rowStart(row));
+    return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
   def member?(ind: rank*dim_type) {
@@ -119,6 +141,14 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     }
 
     // still need to re-allocate the arrays
+  }
+
+  iterator dimIter(param dim, ind) {
+    if (dim != 2) {
+      compilerError("dimIter(1, ...) not supported on CRS domains");
+    }
+    for c in colIdx[rowStart(ind)..rowStop(ind)] do
+      yield c;
   }
 }
 

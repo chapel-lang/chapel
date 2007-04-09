@@ -23,28 +23,6 @@ config const n = probSizes(probClass),
 type elemType = real(64);
 
 
-def <(x:2*int, y:2*int) {
-  if (x(1) < y(1)) {
-    return true;
-  } else if (x(1) > y(1)) {
-    return false;
-  } else {
-    return (x(2) < y(2));
-  }
-}
-
-
-def >(x:2*int, y:2*int) {
-  if (x(1) > y(1)) {
-    return true;
-  } else if (x(1) < y(1)) {
-    return false;
-  } else {
-    return (x(2) > y(2));
-  }
-}
-
-
 def main() {
   const DenseSpace = [1..n, 1..n];
 
@@ -60,11 +38,6 @@ def main() {
     A(ind) += v;
   }
 
-  for i in 1..n {
-    for j in 1..n {
-      if (A(i,j) != 0.0) {
-        writeln("[", i, ", ", j, "]: ", A(i,j));
-      }
-    }
-  }
+  for (i,j) in MatrixSpace do
+    writeln("[", i, ", ", j, "]: ", A(i,j));
 }
