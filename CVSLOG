@@ -98837,3 +98837,28 @@ Added files:
 	                                          quickSort-constArr.chpl 
 	                                          quickSort-constArr.good 
 
+---------------------------------------------------------------------------
+
+04/09/07 16:25:51 -- bradc
+
+Log message:
+	A pair of config var tests that I ran into while
+	debugging David's quicksort tests.  One shows
+	that config vars of size int(64) get squeezed
+	through a 32-bit int at some point, losing sigfigs
+	(maybe we knew this; I forgot).  The other asks
+	for range-checking of config var values since it
+	seems like a reasonable place to eat that overhead
+	and avoid confusion (would've saved me some time
+	anyway).
+
+Added files:
+	chapel/test/execflags/bradc/: int32configBad.chpl 
+	                              int32configBad.execopts 
+	                              int32configBad.future 
+	                              int32configBad.good 
+	                              int64config.chpl 
+	                              int64config.execopts 
+	                              int64config.future 
+	                              int64config.good 
+
