@@ -8,7 +8,7 @@ class D: C {
 
 var s: seq of C;
 
-s #= D(1, 2);
-s #= C(3);
+s._append_in_place(D(1, 2));
+s._append_in_place(C(3));
 
 writeln(s);

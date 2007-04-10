@@ -29,7 +29,7 @@ def insertionSort(x) {
 
   for i in x.domain {
     var val = x(i);
-    order #= i;
+    order._append_in_place(i);
     var ind = i-1;
     if (ind > 0) then
     while ((ind > 0) && (x(order(ind)) > val)) {

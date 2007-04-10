@@ -34,7 +34,6 @@ BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride
 BlockStmt* build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);

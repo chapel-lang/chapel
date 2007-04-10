@@ -31,8 +31,3 @@ writeln(y);
 y ||= true;
 writeln(y);
 
-var s = (/1, 2, 3/);
-s #= 4;
-writeln(s);
-s #= (/5, 6/);
-writeln(s);

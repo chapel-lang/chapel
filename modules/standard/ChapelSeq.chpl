@@ -138,15 +138,15 @@ def =(s1: seq, s2: seq) {
   return s1;
 }
 
-def #(s1:seq, s2) where s1.type == s2.type {
+def _seqcat(s1:seq, s2) where s1.type == s2.type {
   return s1._concat(s2);
 }
 
-def #(s:seq, e) where e.type:s.eltType {
+def _seqcat(s:seq, e) where e.type:s.eltType {
   return s._append(e);
 }
 
-def #(e, s:seq) where e.type:s.eltType {
+def _seqcat(e, s:seq) where e.type:s.eltType {
   return s._prepend(e);
 }
 
@@ -187,7 +187,7 @@ def _to_seq( i) {
   // var s: seq (i.getValue(i.getNextCursor(i.getHeadCursor()))).type;
   var s: seq (i.getElemType());
   for x in i {
-    s #= x;
+    s._append_in_place(x);
   }
   return s;
 }

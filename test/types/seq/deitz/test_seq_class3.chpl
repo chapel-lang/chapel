@@ -6,6 +6,6 @@ var s: seq of C;
 
 writeln(s);
 
-s #= C(2);
+s._append_in_place(C(2));
 
 writeln(s);

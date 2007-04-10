@@ -5,14 +5,14 @@ record R {
 
 var s : seq of R;
 
-s = s # R(1, 2);
+s = _seqcat(s, R(1, 2));
 
 writeln(s);
 
-s = R(3, 4) # s;
+s = _seqcat(R(3, 4), s);
 
 writeln(s);
 
-s = s # s;
+s = _seqcat(s, s);
 
 writeln(s);

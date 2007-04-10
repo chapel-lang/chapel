@@ -118,7 +118,7 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    _value._arrs #= x;
+    _value._arrs._append_in_place(x);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 

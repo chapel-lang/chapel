@@ -8,6 +8,6 @@ def foo(s) {
 var t: seq(int) = (/ 1, 2, 3 /);
 var a = foo(t);
 writeln("a is: ", a);
-t = t # 4;
+t = _seqcat(t, 4);
 writeln("t is: ", t);
 writeln("a is: ", a);

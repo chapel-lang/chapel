@@ -9,6 +9,6 @@ var s : seq of C = (/ c1, c2 /);
 
 writeln(s);
 
-s = s # (/ c1, c2 /);
+s = _seqcat(s, (/ c1, c2 /));
 
 writeln(s);

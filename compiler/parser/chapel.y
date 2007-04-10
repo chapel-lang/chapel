@@ -167,7 +167,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TASSIGNMOD
 %token TASSIGNMULTIPLY
 %token TASSIGNPLUS
-%token TASSIGNSEQCAT
 %token TASSIGNSR
 %token TASSIGNSL
 
@@ -247,7 +246,6 @@ Is this "while x"(i); or "while x(i)";?
 %left TIN
 %left TDOTDOT
 %right TSTARTUPLE
-%left TSEQCAT
 %left TOR
 %left TAND
 %right TNOT
@@ -539,10 +537,6 @@ assign_stmt:
     {
       $$ = buildLogicalOrAssignment($1, $3);
     }
-| lvalue TASSIGNSEQCAT expr TSEMI
-    {
-      $$ = build_seqcat_assign_chpl_stmt($1, $3);
-    }
 | lvalue TASSIGNSR expr TSEMI
     {
       $$ = build_op_assign_chpl_stmt(">>", $1, $3);
@@ -788,8 +782,6 @@ fname:
   { $$ = "**"; } 
 | TNOT
   { $$ = "!"; }
-| TSEQCAT
-  { $$ = "#"; } 
 | TBY
   { $$ = "by"; } 
   ;
@@ -1459,8 +1451,6 @@ top_level_expr:
     { $$ = buildLogicalOr($1, $3); }
 | expr TEXP expr
     { $$ = new CallExpr("**", $1, $3); }
-| expr TSEQCAT expr
-    { $$ = new CallExpr("#", $1, $3); }
 | expr TBY expr
     { $$ = new CallExpr("by", $1, $3); }
 ;

@@ -100,7 +100,7 @@ def _seq_to_tuple(s: seq, param i: int) {
 def _tuple_to_seq(t: _tuple) {
   var s = (/ t(1) /);
   for param j in 2..t.size do
-    s #= t(j);
+    s._append_in_place(t(j));
   return s;
 }
 

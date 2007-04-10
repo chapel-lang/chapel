@@ -106,7 +106,6 @@ yield           processToken(TYIELD);
 "^="            processToken(TASSIGNBXOR);
 "&&="           processToken(TASSIGNLAND);
 "||="           processToken(TASSIGNLOR);
-"#="            processToken(TASSIGNSEQCAT);
 "<<="           processToken(TASSIGNSL);
 ">>="           processToken(TASSIGNSR);
 
@@ -141,8 +140,6 @@ yield           processToken(TYIELD);
 "%"             processToken(TMOD);
 
 "**"            processToken(TEXP);
-
-"#"             processToken(TSEQCAT);
 
 "!:"            processToken(TNOTCOLON);
 ":"             processToken(TCOLON);

@@ -196,7 +196,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def buildArray(type eltType) {
     var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
-    _arrs2 #= ia;
+    _arrs2._append_in_place(ia);
     return ia;
   }
 
@@ -265,7 +265,7 @@ def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociative
   while inds_count<total_inds {
     var ind = a.inds( inds_pos);
     if (ind.valid) {
-      indices #= ind.data;
+      indices._append_in_place(ind.data);
       inds_count += 1;
     }
     inds_pos += 1;

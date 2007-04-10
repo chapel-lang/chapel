@@ -44,8 +44,8 @@ def main () {
   var b : bclass(bool) = bclass(bool);
 
   var c: contain = contain();
-  c.objs #= b;
-  c.objs #= a;
+  c.objs._append_in_place(b);
+  c.objs._append_in_place(a);
   c.xxx();
 }
 

@@ -410,18 +410,6 @@ BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
 
 
 BlockStmt*
-build_seqcat_assign_chpl_stmt(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
-  VarSymbol* tmp = new VarSymbol("_ltmp");
-  tmp->isCompilerTemp = true;
-  stmt->insertAtTail(new DefExpr(tmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, lhs));
-  stmt->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("#", tmp, rhs)));
-  return stmt;
-}
-
-
-BlockStmt*
 build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = build_chpl_stmt();
 
