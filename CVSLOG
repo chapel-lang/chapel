@@ -98908,3 +98908,35 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+04/10/07 11:10:03 -- deitz
+
+Log message:
+	Removed support for # and #= from the compiler.  Replaced uses with a
+	new function _seqcat and _append_in_place.  To remove sequences, I
+	will probably leave an internal _seq record for testing and phase-out
+	purposes.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
+	                          ChapelTuple.chpl 
+	                          SingleLocaleAssociative.chpl 
+	chapel/test/classes/deitz/: test_inherit1.chpl 
+	chapel/test/classes/waynew/: dyndis2.chpl 
+	chapel/test/spec/marybeth/: seq.chpl 
+	chapel/test/trivial/deitz/: test_assignop.chpl 
+	                            test_assignop.good 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/seq/bradc/: emptySeq2a.chpl hashEquals.chpl 
+	                              returnSeq2.chpl 
+	chapel/test/types/seq/deitz/: test_seq4.chpl test_seq5.chpl 
+	                              test_seq6.chpl test_seq7.chpl 
+	                              test_seq_class2.chpl 
+	                              test_seq_class3.chpl 
+	                              test_seq_class4.chpl 
+	                              test_seq_record2.chpl 
+
