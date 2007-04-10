@@ -99047,3 +99047,36 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: emptySeq.chpl emptySeq.good 
 
+---------------------------------------------------------------------------
+
+04/10/07 16:41:55 -- bradc
+
+Log message:
+	Fixed an issue in the Random number module in which I'd
+	initialized the random stream in an off-by-one manner,
+	causing results of NPB benchmarks to differ from the
+	reference versions.
+	
+	Updated output of tests that reflect the values generated
+	using Random streams.
+
+Modified files:
+	chapel/modules/standard/: Random.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+	chapel/test/modules/standard/Random/bradc/: 
+	                                            test-Random-evenseed.good 
+	                                            testGetNth.good 
+	chapel/test/modules/standard/Random/marybeth/: test-Random.good 
+	chapel/test/release/examples/hpcc06/: fft-mta.good fft.good 
+	                                      stream-nopromote.good 
+	                                      stream.good 
+	chapel/test/studies/hpcc/FFT/: fft-candidate-2d.good 
+	                               fft-hpcc06-mta.good 
+	                               fft-hpcc06.good 
+	chapel/test/studies/hpcc/FFT/bradc/: fft.good 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.good 
+	                                        fft.good 
+	chapel/test/studies/hpcc/STREAMS/: stream-hpcc06.good 
+	chapel/test/studies/hpcc/STREAMS/bradc/: stream-nopromote.good 
+	                                         stream-slice.good 
+
