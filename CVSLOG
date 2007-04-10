@@ -98940,3 +98940,110 @@ Modified files:
 	                              test_seq_class4.chpl 
 	                              test_seq_record2.chpl 
 
+---------------------------------------------------------------------------
+
+04/10/07 16:17:45 -- deitz
+
+Log message:
+	Removed support for sequence literals.  To build an internal sequence
+	class, use the _seq function with variable number of arguments.  This
+	will eventually be changed to a list class in a library that we test.
+	
+	Added support for assigning tuples to arrays.  This replaces the
+	sequence literal syntax.  The rank of the tuple must match the rank of
+	the array.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelSeq.chpl 
+	                          ChapelTuple.chpl 
+	chapel/test/arrays/bradc/workarounds/: arrayOfSpsArray.chpl 
+	                                       arrayOfSpsArray2.chpl 
+	chapel/test/arrays/deitz/: jacobi5.chpl test_array_cast.chpl 
+	                           test_no_elt_type.chpl 
+	                           test_tuple_of_array.chpl 
+	chapel/test/arrays/deitz/part1/: test_array_arg3.chpl 
+	chapel/test/arrays/deitz/part2/: test_array_init_seq.chpl 
+	                                 test_array_init_with_seq.chpl 
+	chapel/test/arrays/deitz/promotion/: test_scalar_promote1.chpl 
+	                                     test_scalar_promote10.chpl 
+	                                     test_scalar_promote3.chpl 
+	                                     test_scalar_promote4.chpl 
+	                                     test_scalar_promote5.chpl 
+	                                     test_scalar_promote6.chpl 
+	                                     test_scalar_promote7.chpl 
+	                                     test_scalar_promote8.chpl 
+	chapel/test/classes/bradc/records/: assignRecord2.chpl 
+	chapel/test/classes/deitz/dispatch/: test_dd5.chpl 
+	chapel/test/functions/deitz/: test_promotion_generic.chpl 
+	chapel/test/memory/deitz/: test_seq_leak.chpl 
+	chapel/test/no_infer/: test_seq1.chpl 
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/cg/bradc/: cg-arithDomArr.chpl cg-commented.chpl 
+	                           cg-dense.chpl cg-enumDomArr.chpl 
+	                           cg-ideal.chpl 
+	                           cg-makea1-small-sparse-countInds.chpl 
+	                           cg-makea1-small-sparse.chpl 
+	                           cg-makea1-small.chpl 
+	                           cg-makea1-sparse-sort.chpl 
+	                           cg-makea1-sparse.chpl cg-makea1.chpl 
+	                           cg-makea2-small-sparse.chpl 
+	                           cg-makea2-sparse.chpl cg-makea2.chpl 
+	                           cg-makea3.chpl cg-sparse-dimiter.chpl 
+	                           cg-sparse.chpl cg.chpl 
+	chapel/test/npb/ft/: ft-serial.chpl 
+	chapel/test/npb/is/diten/: is.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl mg-compilable.chpl 
+	                     mg-compilable2.chpl 
+	chapel/test/ssca/ssca2/: ssca2.blc-hack.chpl ssca2.origpar.chpl 
+	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.chpl 
+	                                   jacobi-play2-brad.chpl 
+	chapel/test/studies/jacobi/deitz/: jacobi2.chpl 
+	chapel/test/studies/jacobi/jplevyak/: jacobi-jp-broken-1.chpl 
+	                                      jacobi-jp-broken-2.chpl 
+	                                      jacobi-jp-notes.chpl 
+	                                      jacobi-jp-working.chpl 
+	                                      jacobi-jp1.chpl 
+	                                      jacobi-jp2.chpl 
+	                                      jacobi-jp3.chpl 
+	                                      jacobi-jp4.chpl 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.chpl 
+	                                  seq_index2.chpl 
+	                                  seq_reverse.chpl 
+	chapel/test/types/enum/diten/: enumDom.chpl 
+	chapel/test/types/seq/bradc/: hashEquals.chpl length.chpl 
+	                              length.modify.chpl promoteSeq.chpl 
+	                              recordSeq.chpl returnSeq.chpl 
+	                              returnSeq2.chpl 
+	chapel/test/types/seq/deitz/: test_reduce1.chpl test_seq1.chpl 
+	                              test_seq1a.chpl test_seq1b.chpl 
+	                              test_seq1c.chpl test_seq1d.chpl 
+	                              test_seq2.chpl test_seq3.chpl 
+	                              test_seq4.chpl test_seq5.chpl 
+	                              test_seq6.chpl test_seq7.chpl 
+	                              test_seq8.chpl test_seq8b.chpl 
+	                              test_seq9.chpl test_seq_arg.chpl 
+	                              test_seq_class1.chpl 
+	                              test_seq_class2.chpl 
+	                              test_seq_copy.chpl 
+	                              test_seq_htuple1.chpl 
+	                              test_seq_htuple2.chpl 
+	                              test_seq_index1.chpl 
+	                              test_seq_index2.chpl 
+	                              test_seq_index3.chpl 
+	                              test_seq_of_seq.chpl 
+	                              test_seq_of_seq2.chpl 
+	                              test_seq_record1.chpl 
+	                              test_seq_reverse1.chpl 
+	                              test_seq_reverseindex1.chpl 
+	                              test_seq_tuple.chpl 
+	                              test_seq_tuple2.chpl 
+	chapel/test/types/seq/deitz/tuples/: seq2tuple1.chpl 
+	chapel/test/types/tuple/deitz/: test_iterate.chpl 
+	chapel/test/types/tuple/shannon/: sequenceInTuple.chpl 
+	chapel/test/types/type_variables/deitz/part5/: where-3.chpl 
+	chapel/test/types/type_variables/deitz/part6/: test_myseq2.chpl 
+Removed files:
+	chapel/test/types/seq/bradc/: emptySeq.chpl emptySeq.good 
+
