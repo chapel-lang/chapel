@@ -1341,45 +1341,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
   codegenHeader(outfile);
 
-  if (!strcmp("_free", name) &&
-      getFormal(1)->type->symbol->hasPragma("special free seqNode")) {
-    CallExpr* call = dynamic_cast<CallExpr*>(body->body->head->next->next->next->next);
-    fprintf(outfile,
-            "{\n"
-            "  %s tmp; %s next;\n"
-            "  if ((*a) == NULL) return;\n"
-            "  (*a)->_ref_count--;\n"
-            "  if ((*a)->_ref_count > 0) return;\n",
-            getFormal(1)->type->symbol->cname,
-            getFormal(1)->type->symbol->cname);
-    if (FnSymbol* fn = call->isResolved())
-      if (fn != this)
-        fprintf(outfile,
-                "      %s(&((*a)->_element), 0, 0);\n",
-                fn->cname);
-    fprintf(outfile,
-            "  tmp = (*a)->_next;\n"
-            "  while (tmp != NULL) {\n"
-            "    next = tmp->_next;\n"
-            "    tmp->_ref_count--;\n"
-            "    if (tmp->_ref_count == 0) {\n");
-    if (FnSymbol* fn = call->isResolved())
-      if (fn != this)
-        fprintf(outfile,
-                "      %s(&(tmp->_element), 0, 0);\n",
-                fn->cname);
-    fprintf(outfile,
-            "      _chpl_free(tmp, 0, 0);\n"
-            "    } else {\n"
-            "      break;\n"
-            "    }\n"
-            "    tmp = next;\n"
-            "  }\n"
-            "  _chpl_free((*a), 0, 0); (*a) = NULL;\n"
-            "}\n\n");
-    return;
-  }
-
   fprintf(outfile, " {\n");
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, body);

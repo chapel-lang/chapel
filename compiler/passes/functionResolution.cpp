@@ -1383,7 +1383,7 @@ resolveCall(CallExpr* call) {
     if (t->scalarPromotionType) {
       // ignore for now to handle translation of A op= B of arrays
       // should be an error in general
-      //   can't cast to an array type or a sequence type, ...
+      //   can't cast to an array type ...
       Expr* castee = call->get(2);
       castee->remove();
       call->replace(castee);
@@ -2323,16 +2323,6 @@ resolveFns(FnSymbol* fn) {
             resolveFns(fct->defaultConstructor);
           }
         }
-      }
-      if (ct->symbol->hasPragma("seq")) {
-        CallExpr* call = new CallExpr("_append_in_place", gMethodToken, fn->_this, ct->getField(5));
-        fn->insertAtTail(call);
-        resolveCall(call);
-        call->remove();
-        ct->append = call->isResolved();
-        if (!ct->append)
-          INT_FATAL("unable to capture append method");
-        resolveFns(ct->append);
       }
     }
   }
