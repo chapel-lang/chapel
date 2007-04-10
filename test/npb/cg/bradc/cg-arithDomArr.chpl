@@ -5,11 +5,11 @@ config var probClass = S;
 
 
 const Class: domain(1) = [S..O];
-const probSizes:   [Class] int = _seq( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
-      nonZeroes:   [Class] int = _seq( 7, 8, 11, 13, 15, 21, 7 ),
-      shifts:      [Class] int = _seq( 10, 12, 20, 60, 110, 500, 10 ),
-      numIters:    [Class] int = _seq( 15, 15, 15, 75, 75, 100, 15 ),
-      verifyZetas: [Class] real = _seq( 8.5971775078648, 10.362595087124,
+const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
+      nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21, 7 ),
+      shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500, 10 ),
+      numIters:    [Class] int = ( 15, 15, 15, 75, 75, 100, 15 ),
+      verifyZetas: [Class] real = ( 8.5971775078648, 10.362595087124,
                                     17.130235054029, 22.712745482631,
                                     28.973605592845, 52.5145321058, 0.0 );
 
