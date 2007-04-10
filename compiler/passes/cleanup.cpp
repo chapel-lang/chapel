@@ -45,28 +45,6 @@ process_import_expr(CallExpr* call) {
 }
 
 //
-// Changes casts to integer literals into calls to _seq_to_tuple;
-// change casts to "seq" into calls to _tuple_to_seq.
-//
-static void
-specialize_casts(CallExpr* call) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-      if (var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
-        Expr* arg1 = call->get(2);
-        Expr* arg2 = call->get(1);
-        call->replace(new CallExpr("_seq_to_tuple", arg1->remove(), arg2->remove()));
-      }
-    }
-    if (!strcmp("seq", sym->var->name)) {
-      Expr* arg1 = call->get(2);
-      call->get(1)->remove();
-      call->replace(new CallExpr("_tuple_to_seq", arg1->remove()));
-    }
-  }
-}
-
-//
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
 // record hierarchies.
@@ -470,9 +448,7 @@ void cleanup(void) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isNamed("_cast"))
-        specialize_casts(call);
-      else if (call->isNamed("_tuple"))
+      if (call->isNamed("_tuple"))
         destructure_tuple(call);
     } else if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
