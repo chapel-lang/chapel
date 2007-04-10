@@ -141,7 +141,7 @@ _bool _chpl_get_serial(void) {
   _bool *p;
   p = (_bool*) pthread_getspecific(_chpl_serial);
   if (NULL == p) {
-    printInternalError("serial state not created");
+    _printInternalError("serial state not created");
   }
   return *p;
 }

@@ -3,7 +3,7 @@
 
 #include "chpltypes.h"
 
-void printError(char* message, _int32 lineno, _string filename);
-void printInternalError(char* message);
+void _printError(char* message, _int32 lineno, _string filename);
+void _printInternalError(char* message);
 
 #endif

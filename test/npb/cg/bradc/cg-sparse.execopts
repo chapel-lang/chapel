@@ -1,1 +1,1 @@
---printTiming=false
+--printTiming=false --verbose=false --printError=false

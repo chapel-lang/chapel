@@ -677,7 +677,7 @@ def readFF( sv:_singlevar) {
 // Functions on _file primitive type, the C file pointer type
 //
 pragma "inline" def _handleRuntimeError(s: string) {
-  __primitive("printError", s);
+  __primitive("_printError", s);
 }
 
 pragma "inline" def _get_errno() return __primitive("get_errno");

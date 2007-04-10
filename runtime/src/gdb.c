@@ -13,9 +13,9 @@ static int mysystem(const char* command, char* description, int ignorestatus) {
   int status = system(command);
 
   if (status == -1) {
-    printError("system() fork failed", gdbArgNo, "(command-line)");
+    _printError("system() fork failed", gdbArgNo, "(command-line)");
   } else if (status != 0 && !ignorestatus) {
-    printError(description, gdbArgNo, "(command-line)");
+    _printError(description, gdbArgNo, "(command-line)");
   }
 
   return status;
@@ -31,7 +31,7 @@ static FILE* openfile(char* outfilename, char* mode) {
     char* errormsg = _glom_strings(4, errorstr, outfilename, ": ", 
                                    strerror(errno));
 
-    printError(errormsg, gdbArgNo, "(command-line)");
+    _printError(errormsg, gdbArgNo, "(command-line)");
   }
 
   return outfile;
@@ -43,7 +43,7 @@ static void closefile(FILE* thefile) {
     char* errorstr = "closing file: ";
     char* errormsg = _glom_strings(2, errorstr, strerror(errno));
 
-    printError(errormsg, gdbArgNo, "(command-line)");
+    _printError(errormsg, gdbArgNo, "(command-line)");
   }
 }
 

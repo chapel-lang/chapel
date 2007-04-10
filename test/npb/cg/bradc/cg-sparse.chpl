@@ -1,3 +1,7 @@
+// This version ran in...
+//   618.233 with default arguments, linear search for sparse domain this()
+//    62.169 with --cflags=-O3, linear search
+//    25.4556 with --cflags=-O3, binary search
 use CGMakeA;
 
 type elemType = real(64);
@@ -25,7 +29,8 @@ config const n = probSizes(probClass),
 config const numTrials = 1,
              verbose = true,
              debug = false,
-             printTiming = true;
+             printTiming = true,
+             printError = true;
 
 
 def main() {
@@ -71,8 +76,12 @@ def main() {
       const epsilon = 1.0e-10;
       if (abs(zeta - zetaVerifyValue) <= epsilon) {
         writeln("Verification successful");
+        writeln("Zeta is: ", zeta);
+        if printError then writeln("Error is: ", zeta - zetaVerifyValue);
       } else {
         writeln("Verification failed");
+        writeln("Zeta is: ", zeta);
+        writeln("The correct zeta is: ", zetaVerifyValue);
       }
     } else {
       writeln("No verification performed");

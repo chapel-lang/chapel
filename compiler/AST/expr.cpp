@@ -1361,7 +1361,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ENUM_ENUM:
     break;
     case PRIMITIVE_INT_ERROR:
-      fprintf(outfile, "printInternalError(\"compiler generated error\")");
+      fprintf(outfile, "_printInternalError(\"compiler generated error\")");
       break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");

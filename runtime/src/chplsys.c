@@ -10,7 +10,7 @@
 
 _uint64 _bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
-  printInternalError("sorry- bytesPerLocale not supported on this platform");
+  _printInternalError("sorry- bytesPerLocale not supported on this platform");
   return 0;
 #else
   _uint64 numPages = sysconf(_SC_PHYS_PAGES);
