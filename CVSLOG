@@ -99130,3 +99130,26 @@ Removed files:
 	                                     tuple2seq1.chpl 
 	                                     tuple2seq1.good 
 
+---------------------------------------------------------------------------
+
+04/10/07 16:59:26 -- bradc
+
+Log message:
+	Removed _seq() exprs in my tests where a tuple
+	expression suffices.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-arithDomArr.chpl cg-commented.chpl 
+	                           cg-dense.chpl cg-enumDomArr.chpl 
+	                           cg-ideal.chpl 
+	                           cg-makea1-small-sparse-countInds.chpl 
+	                           cg-makea1-small-sparse.chpl 
+	                           cg-makea1-small.chpl 
+	                           cg-makea1-sparse-sort.chpl 
+	                           cg-makea1-sparse.chpl cg-makea1.chpl 
+	                           cg-makea2-small-sparse.chpl 
+	                           cg-makea2-sparse.chpl cg-makea2.chpl 
+	                           cg-makea3.chpl cg-sparse.chpl cg.chpl 
+	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.chpl 
+	                                   jacobi-play2-brad.chpl 
+
