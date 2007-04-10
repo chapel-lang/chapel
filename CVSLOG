@@ -98862,3 +98862,23 @@ Added files:
 	                              int64config.future 
 	                              int64config.good 
 
+---------------------------------------------------------------------------
+
+04/10/07 08:56:35 -- diten
+
+Log message:
+	Add an atoi64 function to the runtime so 64 bit config vars can be correctly
+	read in. Make the _string_to_int64 and _string_to_uint64 macros used for string
+	to 64 bit integer casts be calls to atoi64 instead of atoi.
+	
+	C standard libraries don't define any 64 bit atoi type functions, so if we want
+	to do this (and I think we do), we have to define our own.
+	
+	This fixes Brad's int64config.chpl test, so remove that .future.  The atoi
+	function doesn't do error checking, so my atoi64 doesn't either.  This means
+	int32configBad.chpl still incorrectly accepts out of range values.
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h chplcast.h 
+	chapel/runtime/src/: chpltypes.c 
+
