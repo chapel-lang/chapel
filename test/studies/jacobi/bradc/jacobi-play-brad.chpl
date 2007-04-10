@@ -8,9 +8,9 @@ const BigD: superdomain(2) = D.resize((-1,-1), (1, 1));
 
 param StencilD: domain(2) = [-1..1, -1..1];
 
-param weights: [StencilD] real = (/ (/ 0.00, 0.25, 0.00 /),
-                                     (/ 0.25, 0.00, 0.25 /),
-                                     (/ 0.00, 0.25, 0.00 /) /);
+param weights: [StencilD] real = _seq( _seq( 0.00, 0.25, 0.00 ),
+                                     _seq( 0.25, 0.00, 0.25 ),
+                                     _seq( 0.00, 0.25, 0.00 ) );
 
 const south = (1,0);
 

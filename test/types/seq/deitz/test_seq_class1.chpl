@@ -5,6 +5,6 @@ class C {
 
 var c : C = C(1, 2.3);
 
-var s : seq of C = (/ c /);
+var s : seq of C = _seq( c );
 
 writeln(s);

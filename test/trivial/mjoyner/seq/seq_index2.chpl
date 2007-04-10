@@ -1,7 +1,7 @@
 /* testing the funality of indexing into multiple types of sequences */
 def main() {
-  var sequ1 : seq of string = (/ "hard", "working" /); 
-  var sequ2 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);
+  var sequ1 : seq of string = _seq( "hard", "working" ); 
+  var sequ2 : seq of int =  _seq( 1, 2, 3, 4, 5, 6, 7 );
   
   /* element access of multiple types of sequences */ 
   var index_string : string = sequ1(2);

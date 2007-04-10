@@ -464,14 +464,14 @@ def cutClusters(G, cutBoxSize, alpha) {
 
     def cluster(v, root) {
       atomic {
-        if (owner[v] != root) return (//);
+        if (owner[v] != root) return _seq_seq();
         owner[v] = 0;
       }
-      return (/ v /) # [w in AdjD(v, *)] cluster(v, root);
+      return _seq( v ) # [w in AdjD(v, *)] cluster(v, root);
     }
 
     var setG : seq of index of VertexD = VertexD;
-    var roots: Set = (/ /);
+    var roots: Set = _seq( );
     while (setG.length > 0) {
       var adjMin = min(adjCounts(setG));
       var active = [v in setG] if adjCounts(v) == adjMin then v;
@@ -483,7 +483,7 @@ def cutClusters(G, cutBoxSize, alpha) {
           if c == CLAIMED {
             var cmax = 0;
             var imax = 0;
-            var frontier = (/ ( CLAIMED, v) /);
+            var frontier = _seq( ( CLAIMED, v) );
             for i in 1..cutBoxSize {
               var next = flat [(c,x) in frontier] if c == CLAIMED
                            [w in AdjD(x,*)]

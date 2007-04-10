@@ -25,13 +25,13 @@ class myseq {
   }
 
   def print() {
-    write("Sequence (length = ", length, ") (/");
+    write("Sequence (length = ", length, ") _seq(");
     var tmp = first;
     while tmp != nil {
       write(tmp.element, " ");
       tmp = tmp.next;
     }
-    writeln("/)");
+    writeln(")");
   }
 }
 

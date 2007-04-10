@@ -1,4 +1,4 @@
-var s : seq of int = (/ 3, 1, 4, 1, 5, 9 /);
+var s : seq of int = _seq( 3, 1, 4, 1, 5, 9 );
 
 writeln(s);
 

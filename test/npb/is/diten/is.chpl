@@ -9,9 +9,9 @@ config const printTime = false;
 
 const Class: domain(probClass);
 
-const probSizes: [Class] int = (/ 2**23, 2**25, 2**17 /),
-      Bmaxs:     [Class] int = (/ 2**19, 2**21, 2**19 /),
-      Imaxs:     [Class] int = (/ 10, 10, 1 /);
+const probSizes: [Class] int = _seq( 2**23, 2**25, 2**17 ),
+      Bmaxs:     [Class] int = _seq( 2**19, 2**21, 2**19 ),
+      Imaxs:     [Class] int = _seq( 10, 10, 1 );
 
 config const probSize = probSizes(probClass);
 const Bmax = Bmaxs(probClass);

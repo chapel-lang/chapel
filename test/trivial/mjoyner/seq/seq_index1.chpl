@@ -1,8 +1,8 @@
 /* testing the funality of indexing into sequences */
 def main() {
-  var sequ1 : seq of int = (/ 5 /); 
-  var sequ2 : seq of int = (/ 4, 18 /);
-  var sequ4 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);
+  var sequ1 : seq of int = _seq( 5 ); 
+  var sequ2 : seq of int = _seq( 4, 18 );
+  var sequ4 : seq of int =  _seq( 1, 2, 3, 4, 5, 6, 7 );
   
   /* 1 element sequences */ 
   var index_int : int = sequ1(1);

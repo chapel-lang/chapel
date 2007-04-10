@@ -22,13 +22,13 @@ const Class: domain(classVals);
 //
 // Problem parameters for each of the problem sizes
 //
-const probSizes:   [Class] int = (/ 1400, 7000, 14000, 75000, 150000, 150000 /),
-      nonZeroes:   [Class] int = (/ 7, 8, 11, 13, 15, 21 /),
-      shifts:      [Class] int = (/ 10, 12, 20, 60, 110, 500 /),
-      numIters:    [Class] int = (/ 15, 15, 15, 75, 75, 100 /),
-      verifyZetas: [Class] elemType = (/ 8.5971775078648, 10.362595087124,
+const probSizes:   [Class] int = _seq( 1400, 7000, 14000, 75000, 150000, 150000 ),
+      nonZeroes:   [Class] int = _seq( 7, 8, 11, 13, 15, 21 ),
+      shifts:      [Class] int = _seq( 10, 12, 20, 60, 110, 500 ),
+      numIters:    [Class] int = _seq( 15, 15, 15, 75, 75, 100 ),
+      verifyZetas: [Class] elemType = _seq( 8.5971775078648, 10.362595087124,
                                         17.130235054029,  22.712745482631,
-                                        28.973605592845,  52.5145321058 /);
+                                        28.973605592845,  52.5145321058 );
 
 //
 // the problem class for this run (S by default, override on command-line)

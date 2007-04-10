@@ -1,4 +1,4 @@
-var s : seq of string = (/ "three", "one", "four" /);
+var s : seq of string = _seq( "three", "one", "four" );
 
 writeln(s);
 

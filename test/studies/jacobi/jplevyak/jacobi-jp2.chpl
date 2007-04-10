@@ -9,7 +9,7 @@ var X = [0..m+1, 0..n+1];
 var t[X] = 0.0;
 [i in D] t(i) = a(i);
 t[m+1, ..] = 1.0; // bottom
-var stencil = (/ (-1,-1), (1, -1), (-1, 1), (1, 1) /);
+var stencil = _seq( (-1,-1), (1, -1), (-1, 1), (1, 1) );
 
 while (1) {
   var tt = t;

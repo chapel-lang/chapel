@@ -5,7 +5,7 @@ def foo(s) {
   return s;
 }
 
-var t: seq(int) = (/ 1, 2, 3 /);
+var t: seq(int) = _seq( 1, 2, 3 );
 var a = foo(t);
 writeln("a is: ", a);
 t = _seqcat(t, 4);

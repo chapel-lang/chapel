@@ -8,7 +8,7 @@ class D: C {
   def foo() { writeln("D: ", this); }
 }
 
-var s: seq of C = (/ C(1), D(2,3), C(4), D(5,6) /);
+var s: seq of C = _seq( C(1), D(2,3), C(4), D(5,6) );
 
 writeln(s);
 

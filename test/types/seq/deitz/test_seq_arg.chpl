@@ -6,5 +6,5 @@ def foo(s : seq of int) {
   writeln("foo called on a sequence of ints: ", s);
 }
 
-foo((/"one", "two", "three"/));
-foo((/1, 2, 3/));
+foo(_seq("one", "two", "three"));
+foo(_seq(1, 2, 3));

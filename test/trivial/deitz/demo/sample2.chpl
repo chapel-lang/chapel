@@ -5,10 +5,10 @@ var encoded = phrase.substring(1..n by 2) + phrase.substring(2..n by 2);
 
 var decoder : seq of int;
 for i:int in 1..n/2 do
-  decoder = _seqcat(decoder, (/ i, n/2 + n % 2 + i /));
+  decoder = _seqcat(decoder, _seq( i, n/2 + n % 2 + i ));
 if n % 2 == 1 { 
   var tmp : int = n / 2 + 1;
-  decoder = _seqcat(decoder, (/ tmp /));
+  decoder = _seqcat(decoder, _seq( tmp ));
 }
 var decoded : string;
 for i:int in decoder do

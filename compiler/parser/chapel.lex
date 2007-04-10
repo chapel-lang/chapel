@@ -148,8 +148,6 @@ yield           processToken(TYIELD);
 "."             processToken(TDOT);
 "("             processToken(TLP);
 ")"             processToken(TRP);
-"(/"            processToken(TSEQBEGIN);
-"/)"            processToken(TSEQEND);
 "["             processToken(TLSBR);
 "]"             processToken(TRSBR);
 "{"             processToken(TLCBR);

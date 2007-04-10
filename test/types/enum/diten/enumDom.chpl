@@ -7,7 +7,7 @@ D.add(1.1);
 D.add(2.2);
 D.add(3.3);
 
-var s = (/ 3, 4, 5 /);
+var s = _seq( 3, 4, 5 );
 var a: [D] int = s;
 var b: [E] int = s;
 

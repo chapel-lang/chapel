@@ -1,3 +1,3 @@
-var s = (/ "a", "b", "c", "d" /);
+var s = _seq( "a", "b", "c", "d" );
 
-writeln(s((/2,3,1,4/)));
+writeln(s(_seq(2,3,1,4)));

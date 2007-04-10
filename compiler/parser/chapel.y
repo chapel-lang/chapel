@@ -180,7 +180,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TLCBR TRCBR
 %token TLP TRP
 %token TLSBR TRSBR
-%token TSEQBEGIN TSEQEND
 
 %token TSEMI
 
@@ -225,7 +224,7 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
-%type <pexpr> literal seq_expr where distributed_expr
+%type <pexpr> literal where distributed_expr
 %type <pexpr> variable_expr top_level_expr alias_expr
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
 %type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
@@ -1334,24 +1333,6 @@ lvalue:
 ;
 
 
-seq_expr:
-  TSEQBEGIN expr_ls TSEQEND
-    {
-      if ($2->length() == 0)
-        USR_FATAL("Invalid empty sequence literal '(//)'");
-      Expr* seqLiteral = new CallExpr("seq", $2->first()->copy());
-      for_alist(Expr, element, $2) {
-        element->remove();
-        seqLiteral =
-          new CallExpr(
-            new CallExpr(".", seqLiteral, new_StringSymbol("_append_in_place")),
-            element);
-      }
-      $$ = seqLiteral;
-    }
-;
-
-
 opt_expr:
   /* nothing */
     { $$ = new SymExpr(gVoid); }
@@ -1404,7 +1385,6 @@ top_level_expr:
     { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedLow"), $1); }
 | TDOTDOT expr
     { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedHigh"), $2); }
-| seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS

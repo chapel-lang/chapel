@@ -8,7 +8,7 @@ writeln("initial = ", a);
 var X = [0..m+1, 0..n+1];
 var t : [X] real = 0.0;
 [i in 0..n+1] t(m+1, i) = 1.0; // bottom
-var stencil = (/ (-1,-1), (1, -1), (-1, 1), (1, 1) /);
+var stencil = _seq( (-1,-1), (1, -1), (-1, 1), (1, 1) );
 
 //label again;
 do {

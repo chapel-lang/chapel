@@ -328,6 +328,23 @@ def =(a: _array, b) {
   return a;
 }
 
+iterator _tupleIterate(param rank: int, b: _tuple) {
+  if rank == 1 {
+    for param i in 1..b.size do
+      yield b(i);
+  } else {
+    for param i in 1..b.size do
+      for bb in _tupleIterate(rank-1, b(i)) do
+        yield bb;
+  }
+}
+
+def =(a: _array, b: _tuple) {
+  for (i,bb) in (a._dom,_tupleIterate(a.rank,b)) do
+    a(i) = bb;
+  return a;
+}
+
 def =(a: _array, b: a.eltType) {
   for i in a._dom do
     a(i) = b;

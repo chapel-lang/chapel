@@ -138,6 +138,13 @@ def =(s1: seq, s2: seq) {
   return s1;
 }
 
+def _seq(x ...?k) {
+  var s: seq of x(1).type;
+  for param i in 1..k do
+    s._append_in_place(x(i));
+  return s;
+}
+
 def _seqcat(s1:seq, s2) where s1.type == s2.type {
   return s1._concat(s2);
 }

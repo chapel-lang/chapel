@@ -5,4 +5,4 @@ class C {
 
 var c = C();
 
-writeln(c.foo((/1, 2, 3/), (/4, 5, 6/)));
+writeln(c.foo(_seq(1, 2, 3), _seq(4, 5, 6)));

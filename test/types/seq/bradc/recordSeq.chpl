@@ -10,6 +10,6 @@ newrecord.y = 2.3;
 
 writeln("newrecord is: ", newrecord);
 
-var myseq: seq(myrecord) = (/ newrecord /);
+var myseq: seq(myrecord) = _seq( newrecord );
 
 writeln("myseq is: ", myseq);

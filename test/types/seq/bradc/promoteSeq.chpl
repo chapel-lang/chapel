@@ -1,4 +1,4 @@
-var s: seq(int) = (/ 0, 1, 2, 3, 4 /);
+var s: seq(int) = _seq( 0, 1, 2, 3, 4 );
 var D: domain(1) = [-2..2];
 
 var b = (s == 1);

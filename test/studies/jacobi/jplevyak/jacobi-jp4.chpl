@@ -4,7 +4,7 @@ var D = [1..n, 1..n];
 var t = [D.expand(1)] 0.0;
 t[n+1,..] = 1.0;
 
-const stencil = (/(-1, -1), (-1, 1), (1, -1), (1, 1)/);
+const stencil = _seq((-1, -1), (-1, 1), (1, -1), (1, 1));
 
 def jacobi(t) {
   var tt = t;

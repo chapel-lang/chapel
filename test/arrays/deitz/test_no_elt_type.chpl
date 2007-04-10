@@ -12,8 +12,8 @@ def bar2(A: [2..4] real) {
     writeln((i, A(i)));
 }
 
-var A: [1..3] real = (/1.0, 2.0, 3.0/);
-var B: [1..3] int = (/1, 2, 3/);
+var A: [1..3] real = (1.0, 2.0, 3.0);
+var B: [1..3] int = (1, 2, 3);
 
 foo(A);
 foo(B);

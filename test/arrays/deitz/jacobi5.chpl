@@ -4,7 +4,7 @@ def +(x : 2*int, y : 2*int)
 config const n = 5;
 config const epsilon = 0.00001;
 
-const stencil = (/(-1, 0), (1, 0), (0, -1), (0, 1)/);
+const stencil = _seq((-1, 0), (1, 0), (0, -1), (0, 1));
 
 const D = [1..n, 1..n];
 const BigD = D.expand(1);

@@ -26,15 +26,15 @@ enum classVals {S, W, A, B, C, D, O};
 //   checksum: the expected result, if the default characteristics are used
 
 /* HACK arrays do not compile yet
-const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
-const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
-const checksum: [S..O] real  = (/0.0000530770700573,
+const probSize: [S..O] int = _seq(32, 64, 256, 256, 512, 1024, 256);
+const iterations: [S..O] int = _seq(4, 40, 4, 20, 20, 50, 4);
+const checksum: [S..O] real  = _seq(0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
                                   0.00000180056440132,
                                   0.000000570674826298,
                                   0.000000000158327506043,
-                                  0.0/);
+                                  0.0);
 implement these as funs for the time being: */
 
 def probSize(c: classVals) {
@@ -457,9 +457,9 @@ def norm2u3(R) {
 
 def initCValues(Class): coeff {
   if (Class == A || Class == S || Class == W) {
-    return (/-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0/);
+    return _seq(-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
-    return (/-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0/);
+    return _seq(-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
   }
 }
 

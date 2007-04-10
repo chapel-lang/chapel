@@ -1,8 +1,8 @@
 /* test to show sequence reverse is working */
 def main() {
-  var seq1 : seq of int = (/ 5 /); 
-  var sequ2 : seq of int = (/ 4, 18 /);
-  var seq3 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);  
+  var seq1 : seq of int = _seq( 5 ); 
+  var sequ2 : seq of int = _seq( 4, 18 );
+  var seq3 : seq of int =  _seq( 1, 2, 3, 4, 5, 6, 7 );  
 
 
   /* reverse the sequences */

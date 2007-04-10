@@ -58,13 +58,13 @@ def generateDirectedEdges(start, stop) {
     }
 --    edges #= edgeTuple(start, stop, weight);
 -- rewritten:
---    edges = edges # (/ edgeTuple(start, stop, weight) /);
+--    edges = edges # _seq( edgeTuple(start, stop, weight) );
 -- rewritten:
     var newEdge: edgeTuple = edgeTuple();
     newEdge.start = start;
     newEdge.stop = stop;
     newEdge.weight = weight;
---    edges = edges # (/ newEdge /);
+--    edges = edges # _seq( newEdge );
 -- rewritten:
 --    edges = edges # newEdge;
 -- rewritten:
