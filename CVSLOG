@@ -98892,3 +98892,19 @@ Log message:
 Removed files:
 	chapel/test/execflags/bradc/: int64config.future 
 
+---------------------------------------------------------------------------
+
+04/10/07 09:56:17 -- deitz
+
+Log message:
+	Removed code to capture the "append" function of sequences which used
+	to be used to insert temporary sequences.
+	
+	Removed code to improve the performance of freeing sequence nodes
+	since we no longer have sequence nodes.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
