@@ -99114,3 +99114,19 @@ Removed files:
 	                           cg-sparse-dimiter.execopts 
 	                           cg-sparse-dimiter.good 
 
+---------------------------------------------------------------------------
+
+04/10/07 16:52:09 -- deitz
+
+Log message:
+	Removed support for casting sequences to tuples and tuples to sequences.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/types/type_variables/deitz/part6/: test_myseq2.chpl 
+Removed files:
+	chapel/test/types/seq/deitz/tuples/: seq2tuple1.chpl 
+	                                     seq2tuple1.good 
+	                                     tuple2seq1.chpl 
+	                                     tuple2seq1.good 
+
