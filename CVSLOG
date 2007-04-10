@@ -98882,3 +98882,13 @@ Modified files:
 	chapel/runtime/include/: chpltypes.h chplcast.h 
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+04/10/07 09:00:36 -- diten
+
+Log message:
+	Actually remove int64config.future mentioned in my last commit.
+
+Removed files:
+	chapel/test/execflags/bradc/: int64config.future 
+
