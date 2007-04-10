@@ -38,7 +38,6 @@ class RandomStream {
     // ensure seed is odd
     if (internalSeed % 2 == 0) then internalSeed += 1;
     initCursorVal();
-    getNext();
   }
 
   def initCursorVal() {
@@ -67,7 +66,9 @@ class RandomStream {
     return randlc(cursorVal);
   }
 
+  // n is assumed to be 1..
   def getNth(in n : int) {
+    n -= 1;
     var t = arand;
     initCursorVal();
     var retval = arand;
