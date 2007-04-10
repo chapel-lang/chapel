@@ -99080,3 +99080,37 @@ Modified files:
 	chapel/test/studies/hpcc/STREAMS/bradc/: stream-nopromote.good 
 	                                         stream-slice.good 
 
+---------------------------------------------------------------------------
+
+04/10/07 16:44:16 -- bradc
+
+Log message:
+	Fixing up CG benchmarks so that they are more portable
+	across platforms w.r.t. floating point precision.  In
+	particular, added print of final zeta value as a checksum,
+	and a config var to control the printing of error values.
+	This makes the output somewhat more conformant to the
+	reference version of the benchmark.
+	
+	Removed cg-sparse-dimiter.chpl which had become
+	redundant.
+	
+	In naming my variable printError, found it clashed with
+	an internal-only symbol in the runtime, so changed the
+	printError and printInternalError functions to include
+	an initial underscore.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+	chapel/runtime/include/: error.h 
+	chapel/runtime/src/: arg.c chplio.c chplmem.c chplsys.c 
+	                     chplthreads.c config.c error.c gdb.c 
+	chapel/test/npb/cg/bradc/: cg-sparse.chpl cg-sparse.execopts 
+	                           cg-sparse.good 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-sparse-dimiter.chpl 
+	                           cg-sparse-dimiter.compopts 
+	                           cg-sparse-dimiter.execopts 
+	                           cg-sparse-dimiter.good 
+
