@@ -99181,3 +99181,20 @@ Modified files:
 	chapel/compiler/main/: runtime.cpp 
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+04/11/07 10:11:39 -- marybeth
+
+Log message:
+	Filing a future for this type of assignment statement:
+	
+	 x += 1;
+	
+	where x is a sync var.  This gets a compiler error, complaining
+	that there is an unresolved call to readFE.
+
+Added files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin3.chpl 
+	                                      test_forbegin3.future 
+	                                      test_forbegin3.good 
+
