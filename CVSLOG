@@ -99198,3 +99198,17 @@ Added files:
 	                                      test_forbegin3.future 
 	                                      test_forbegin3.good 
 
+---------------------------------------------------------------------------
+
+04/11/07 10:51:41 -- diten
+
+Log message:
+	Change calls to atoi for string to integer casts into calls to strtoull. This
+	way, there is enough precision to handle 64 bit casts in most cases.
+	
+	Remove the atoi64 function added previously to handle this.
+
+Modified files:
+	chapel/runtime/include/: chplcast.h chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+
