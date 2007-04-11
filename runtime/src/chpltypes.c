@@ -113,32 +113,6 @@ object2int( _chpl_object o) {
 }
 
 
-_int64
-atoi64(_string x) {
-  int sign = 1;
-  _int64 i = 0;
-  /* Skip leading space */
-  while (*x == '\t' || *x == ' ') x++;
-
-  /* Handle a leading sign character */
-  if (*x == '-') {
-    sign = -1;
-    x++;
-  } else if (*x == '+') {
-    x++;
-  }
-
-  /* Skip leading zeros */
-  while (*x == '0') x++;
-   
-  while ((*x >= '0') && (*x <= '9')) {
-    i = i * 10 + (*x - '0');
-    x++;
-  }
-  return sign * i;
-}
-
-
 _complex64 
 _chpl_complex64( _real32 r, _real32 i) {
   _complex64 ret_c = {r, i};

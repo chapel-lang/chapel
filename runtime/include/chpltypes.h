@@ -85,7 +85,6 @@ _int64 string_length(_string x);
 
 _int64 real2int( _real64 f);       // return the raw bytes of the float
 _int64 object2int( _chpl_object o);  // return the ptr
-_int64 atoi64(_string x);  // String to int64
 
 
 // Construction and assignment of complex numbers
