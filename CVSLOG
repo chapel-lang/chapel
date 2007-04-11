@@ -99166,3 +99166,18 @@ Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
 	                                      test_forbegin2.chpl 
 
+---------------------------------------------------------------------------
+
+04/11/07 09:49:45 -- deitz
+
+Log message:
+	Removed assorted minor sequence references in compiler.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp iterator.cpp 
+	                      primitive.cpp 
+	chapel/compiler/include/: build.h iterator.h primitive.h 
+	                          runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+
