@@ -10,12 +10,10 @@ extern ModuleSymbol* baseModule;
 extern ModuleSymbol* closureModule;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
-extern ModuleSymbol* seqModule;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* compilerModule;
 extern ModuleSymbol* domainModule;
 
-extern TypeSymbol* chpl_seq;
 extern TypeSymbol* chpl_array;
 extern Type* dtWriter;
 

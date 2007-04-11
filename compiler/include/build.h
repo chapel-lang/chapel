@@ -38,7 +38,7 @@ BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);
 BlockStmt* build_type_select(AList* s, BlockStmt* whenstmts);
-FnSymbol* build_reduce(Expr* red, Expr *seq, bool scan=false);
+FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);
 
 void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,

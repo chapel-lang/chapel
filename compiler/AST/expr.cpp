@@ -1358,7 +1358,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "->_ref_count < 0)");
       break;
     case PRIMITIVE_IS_ENUM: // FALLTHRU
-    case PRIMITIVE_ENUM_ENUM:
     break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");

@@ -106,7 +106,6 @@ enum PrimitiveTag {
   PRIMITIVE_GC_ISNEG, // check reference count is less than zero
  
   PRIMITIVE_IS_ENUM,   // True if type passed is an enum
-  PRIMITIVE_ENUM_ENUM, // Return a sequence of the enum's values
 
   PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
 

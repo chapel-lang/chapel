@@ -547,7 +547,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
 }
 
 
-FnSymbol* build_reduce(Expr* red, Expr* seq, bool scan) {
+FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(red)) {
     if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
       if (!strcmp(us->name, "max"))
@@ -562,7 +562,7 @@ FnSymbol* build_reduce(Expr* red, Expr* seq, bool scan) {
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   fn->insertAtTail(new DefExpr(tmp));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, seq));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, data));
   VarSymbol* eltType = new VarSymbol("_tmp");
   eltType->isCompilerTemp = true;
   fn->insertAtTail(new DefExpr(eltType));

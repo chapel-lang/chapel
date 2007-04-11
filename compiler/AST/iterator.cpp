@@ -5,7 +5,6 @@
 
 
 IteratorInfo::IteratorInfo() :
-  seqType(NULL),
   classType(NULL),
   getHeadCursor(NULL),
   getNextCursor(NULL),

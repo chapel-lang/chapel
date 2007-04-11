@@ -3,7 +3,6 @@
 
 class IteratorInfo {
 public:
-  ClassType* seqType;
   ClassType* classType;
   FnSymbol* getHeadCursor;
   FnSymbol* getNextCursor;

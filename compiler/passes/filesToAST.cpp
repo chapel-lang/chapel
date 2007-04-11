@@ -23,7 +23,7 @@ static void parseStandardModules(void) {
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
     tupleModule = parseStandardModule("ChapelTuple.chpl");
-    seqModule = parseStandardModule("ChapelSeq.chpl");
+    parseStandardModule("ChapelSeq.chpl");
     domainModule = parseStandardModule("ChapelArray.chpl");
     parseStandardModule("ChapelUtil.chpl");
     parseStandardModule("SingleLocaleArithmetic.chpl");
@@ -58,7 +58,6 @@ void parse(void) {
   finishCountingTokens();
 
   if (!fnostdincs) {
-    chpl_seq = seqModule->lookupType("seq");
     chpl_array = domainModule->lookupType("_array");
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");
