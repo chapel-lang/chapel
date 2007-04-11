@@ -99212,3 +99212,18 @@ Modified files:
 	chapel/runtime/include/: chplcast.h chpltypes.h 
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+04/11/07 11:57:38 -- diten
+
+Log message:
+	Write the rank function in a way more closely resembling the C reference code,
+	but without buckets.  Add the partial verification step and the rest of the
+	problem classes that were missing.  Rename is.chpl and is.good to
+	is_no_buckets.chpl and is_no_buckets.good.
+
+Added files:
+	chapel/test/npb/is/diten/: is_no_buckets.chpl is_no_buckets.good 
+Removed files:
+	chapel/test/npb/is/diten/: is.chpl is.good 
+
