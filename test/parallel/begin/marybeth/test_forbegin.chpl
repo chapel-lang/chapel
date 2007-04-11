@@ -1,7 +1,8 @@
 use Time;
 
 var j: sync int;
-var done: single bool;
+var count: sync int = 0;
+var done = false;
 
 var a,b: [1..3] int;
 a = 0;
@@ -12,11 +13,15 @@ for i in 1..3 {
   begin {
     a(i) = j;
     b(i) = k;
-    if (i == 3) then done = true;
+    var tmp = readFE(count);
+    writeXF(count,tmp+1);
   }
 }
 
-if (done) {
-writeln(a);
-writeln(b);
+while !done {
+  if (readXX(count) == 3) {
+    writeln(a);
+    writeln(b);
+    done = true;
+  }
 }
