@@ -99153,3 +99153,16 @@ Modified files:
 	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.chpl 
 	                                   jacobi-play2-brad.chpl 
 
+---------------------------------------------------------------------------
+
+04/10/07 17:53:17 -- marybeth
+
+Log message:
+	I changed the two test_forbegin tests so that each thread updates
+	a counter after assigning to a and b arrays.  Once that counter gets
+	to three, a and b are output.
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin.chpl 
+	                                      test_forbegin2.chpl 
+
