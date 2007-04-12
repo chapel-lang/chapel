@@ -9,9 +9,9 @@ config const printTime = false;
 
 const Class: domain(probClass);
 
-const probSizes: [Class] int = _seq( 2**16, 2**20, 2**23, 2**25, 2**27 ),
-      Bmaxs:     [Class] int = _seq( 2**11, 2**16, 2**19, 2**21, 2**23 ),
-      Imaxs:     [Class] int = _seq( 10, 10, 10, 10, 10 );
+const probSizes: [Class] int = ( 2**16, 2**20, 2**23, 2**25, 2**27 ),
+      Bmaxs:     [Class] int = ( 2**11, 2**16, 2**19, 2**21, 2**23 ),
+      Imaxs:     [Class] int = ( 10, 10, 10, 10, 10 );
 
 config const probSize = probSizes(probClass);
 config const Bmax = Bmaxs(probClass);
@@ -21,16 +21,16 @@ const D: domain(1) = [0..probSize);
 const E: domain(1) = [0..Bmax);
 
 // The following should be replaced by two enumerated domain arrays of arrays
-const S_testIndexArray: [0..4] int = _seq( 48427,17148,23627,62548,4431 );
-const S_testRankArray: [0..4] int = _seq( 0,18,346,64917,65463 );
-const W_testIndexArray: [0..4] int = _seq( 357773,934767,875723,898999,404505 );
-const W_testRankArray: [0..4] int = _seq( 1249,11698,1039987,1043896,1048018 );
-const A_testIndexArray: [0..4] int = _seq( 2112377,662041,5336171,3642833,4250760 );
-const A_testRankArray: [0..4] int = _seq( 104,17523,123928,8288932,8388264 );
-const B_testIndexArray: [0..4] int = _seq( 41869,812306,5102857,18232239,26860214 );
-const B_testRankArray: [0..4] int = _seq( 33422937,10244,59149,33135281,99 );
-const C_testIndexArray: [0..4] int = _seq( 44172927,72999161,74326391,129606274,21736814 );
-const C_testRankArray: [0..4] int = _seq( 61147,882988,266290,133997595,133525895 );
+const S_testIndexArray: [0..4] int = ( 48427,17148,23627,62548,4431 );
+const S_testRankArray: [0..4] int = ( 0,18,346,64917,65463 );
+const W_testIndexArray: [0..4] int = ( 357773,934767,875723,898999,404505 );
+const W_testRankArray: [0..4] int = ( 1249,11698,1039987,1043896,1048018 );
+const A_testIndexArray: [0..4] int = ( 2112377,662041,5336171,3642833,4250760 );
+const A_testRankArray: [0..4] int = ( 104,17523,123928,8288932,8388264 );
+const B_testIndexArray: [0..4] int = ( 41869,812306,5102857,18232239,26860214 );
+const B_testRankArray: [0..4] int = ( 33422937,10244,59149,33135281,99 );
+const C_testIndexArray: [0..4] int = ( 44172927,72999161,74326391,129606274,21736814 );
+const C_testRankArray: [0..4] int = ( 61147,882988,266290,133997595,133525895 );
 
 var testIndexArray: [0..4] int;
 var testRankArray: [0..4] int;
