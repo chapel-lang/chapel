@@ -99227,3 +99227,15 @@ Added files:
 Removed files:
 	chapel/test/npb/is/diten/: is.chpl is.good 
 
+---------------------------------------------------------------------------
+
+04/12/07 11:06:09 -- deitz
+
+Log message:
+	Made .future test use += on syncs as intended.
+	
+	This is only an issue because += has alternative semantics on domains.
+
+Modified files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin3.chpl 
+
