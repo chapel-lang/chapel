@@ -99239,3 +99239,13 @@ Log message:
 Modified files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin3.chpl 
 
+---------------------------------------------------------------------------
+
+04/12/07 14:31:12 -- deitz
+
+Log message:
+	Updated test to use tuple rather than sequence to initialize array.
+
+Modified files:
+	chapel/test/npb/is/diten/: is_no_buckets.chpl 
+
