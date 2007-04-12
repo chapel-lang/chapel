@@ -13,7 +13,7 @@ for i in 1..3 {
   begin {
     a(i) = j;
     b(i) = k;
-    count = count + 1;
+    count += 1;
   }
 }
 
