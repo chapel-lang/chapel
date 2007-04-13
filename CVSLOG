@@ -99543,3 +99543,15 @@ Log message:
 Modified files:
 	chapel/spec/: Variables.tex Types.tex 
 
+---------------------------------------------------------------------------
+
+04/13/07 12:05:59 -- deitz
+
+Log message:
+	Filed Aniruddha Shet bug as future.
+
+Added files:
+	chapel/test/arrays/deitz/: test_special_init_bug.chpl 
+	                           test_special_init_bug.future 
+	                           test_special_init_bug.good 
+
