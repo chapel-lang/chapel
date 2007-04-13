@@ -99249,3 +99249,36 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is_no_buckets.chpl 
 
+---------------------------------------------------------------------------
+
+04/12/07 17:44:44 -- marybeth
+
+Log message:
+	Changed the output of fft2d and fft-test-even so that the error is
+	not printed.  This will eliminate the future for fft2d and not cause
+	problems passing these tests on multiple platforms where the error
+	can vary.
+	
+	This is not a fix just so that these tests can pass.  After careful
+	examination of these tests, I realized that maxerr was being
+	computed by scaling the infinity norm of the difference between Z and z,
+	and then multiplying it by 2^(51) (which has 16 digits).  Since maxerr is
+	typically 10^(-2) on all platforms tested, that indicates that 18 digits of
+	Z and z match.  That is more than you can expect with 64 bit floating
+	point arithmetic.  You should see differences between architectures at
+	this point.
+	
+	It is a config parameter whether or not to print the error.  I set
+	this parameter to be false in the .execopts file for both tests.  Now,
+	the tests do not print anything but a success or failure message, along
+	with the size of the problem tested.
+
+Modified files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.chpl fft2d.good 
+	                                        fft2d.execopts 
+	                                        fft-test-even.chpl 
+	                                        fft-test-even.good 
+	                                        fft-test-even.execopts 
+Removed files:
+	chapel/test/studies/hpcc/FFT/marybeth/: fft2d.future 
+
