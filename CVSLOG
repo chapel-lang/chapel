@@ -99647,3 +99647,20 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+04/13/07 16:07:11 -- bradc
+
+Log message:
+	Fixed seg fault when using --print-code-size
+	flag on SunOS.  Turned out to be a buffer
+	overflow problem that valgrind on linux
+	didn't catch, perhaps due to a different
+	memory layout.  This fixes the bug that
+	was causing the problem and puts in internal
+	error checks to avoid something else causing
+	a similar problem in this code in the future.
+
+Modified files:
+	chapel/compiler/parser/: countTokens.cpp 
+
