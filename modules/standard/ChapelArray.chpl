@@ -437,13 +437,12 @@ def _copy(ic: _iteratorClass) {
 // print out iterators
 //
 def _iteratorClass.writeThis(f: Writer) {
-  f.write("(/");
   var first: bool = true;
   for e in this {
     if !first then
-      f.write(", ");
+      f.write(" ");
+    else
+      first = false;
     f.write(e);
-    first = false;
   }
-  f.write("/)");
 }
