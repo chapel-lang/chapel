@@ -99614,3 +99614,26 @@ Log message:
 Modified files:
 	chapel/test/classes/deitz/dispatch/: test_dd5.good 
 
+---------------------------------------------------------------------------
+
+04/13/07 15:35:53 -- deitz
+
+Log message:
+	Fixed a bug in iterators in which the iterator class would not be
+	updated if a field of a record was changed possibly via a method.
+	
+	This change simplifies the logic in building iterators by storing back
+	all fields into the iterator class regardless of whether the field was
+	changed or not.  This fix devastates performance resulting in a
+	slowdown of 48% on RA at size 2**20.  Improvement is possible, but
+	correctness trumps performance.
+	
+	Added a test case to guard this bug.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_tuple_in_iterator.chpl 
+	                                        test_tuple_in_iterator.good 
+
