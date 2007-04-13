@@ -99555,3 +99555,16 @@ Added files:
 	                           test_special_init_bug.future 
 	                           test_special_init_bug.good 
 
+---------------------------------------------------------------------------
+
+04/13/07 14:06:53 -- diten
+
+Log message:
+	Realized that I was using forall loops in places that shouldn't be executed in
+	parallel.  Changed them to regular for loops.  Also, inserted an atomic
+	statement in a forall loop where a value is decremented then used as an array
+	index.
+
+Modified files:
+	chapel/test/npb/is/diten/: is_no_buckets.chpl 
+
