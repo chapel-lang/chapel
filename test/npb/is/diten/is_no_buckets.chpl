@@ -122,7 +122,8 @@ def rank(iteration: int) {
 
   ranks = 0;
   ranks(keyArray) += 1;
-  for (i,j) in (0..Bmax-2, 1..Bmax-1) do ranks(j) += ranks(i);
+
+  ranks = + scan ranks;
 
   partialVerification(iteration);
 }
