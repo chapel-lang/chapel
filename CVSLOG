@@ -99604,3 +99604,13 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is_no_buckets.chpl 
 
+---------------------------------------------------------------------------
+
+04/13/07 15:19:39 -- deitz
+
+Log message:
+	Updated .good I forgot to change with list (seq) output change.
+
+Modified files:
+	chapel/test/classes/deitz/dispatch/: test_dd5.good 
+
