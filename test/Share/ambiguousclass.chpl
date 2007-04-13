@@ -9,7 +9,7 @@ class myotherclass {
 }
 
 def foo(a) {
-  writeln("a is: (", a.x, ", ", a.y, ") -- b is: (", b.x, ", ", b.y, ")");
+  writeln("a is: (", a.x, ", ", a.y, ") // b is: (", b.x, ", ", b.y, ")");
 }
 
 var class1: myclass;

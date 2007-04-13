@@ -43,7 +43,7 @@ class Edges {
   var cliqueSizes : [Cliques] int; 
   var VsInClique : [Cliques] (first:int, last:int);
   var numEdgesPlaced  : int;
-  var Edges : domain(1); -- 1..numEdgesPlaced
+  var Edges : domain(1); // 1..numEdgesPlaced
   var edges : [Edges] record { 
                         with EndPoints;
                         var weight :Weight;
@@ -54,11 +54,11 @@ class Edges {
 
 class Graph {
   with Numbers; 
-  var VertexD  : domain(1);  -- 1..totVertices
-  var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
+  var VertexD  : domain(1);  // 1..totVertices
+  var ParEdgeD : domain(1) ; // 1..maxParallelEdge
 
-  -- separate int and string subgraps that
-  -- share the above two domains
+  // separate int and string subgraps that
+  // share the above two domains
   var intg = Subgraph(wtype=int,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
@@ -76,9 +76,9 @@ class Subgraph {
   type wtype;
   var VertexD : domain(1);
   var ParEdgeD : domain(1); 
-  -- sparse matrix index by directed vertex pairs
+  // sparse matrix index by directed vertex pairs
   var AdjD  : domain sparse (VertexD * VertexD) = nil;
-  -- holds count of edges between vertex pairs
+  // holds count of edges between vertex pairs
   var weights : [AdjD] seq of wtype;
 
   constructor EndPoints.EndPoints ( (s,e) : index(AdjD)) {
@@ -90,27 +90,27 @@ class Subgraph {
 
 
 def main() {
-  -- Scalable Data Generator parameters.
-  -- Total number of vertices in directed multigraph.
+  // Scalable Data Generator parameters.
+  // Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
-  --  Maximum allowed clique size in directed multigraph.
+  //  Maximum allowed clique size in directed multigraph.
   config var MAX_CLIQUE_SIZE    =   10; 
-  -- Max num of parallel edges allowed between two vertices. 
+  // Max num of parallel edges allowed between two vertices. 
   config var MAX_PARAL_EDGES    =    8; 
-  -- Percentage of int (vs. char string) edge weights.
+  // Percentage of int (vs. char string) edge weights.
   config var PERC_INT_WEIGHTS   =  0.6; 
-  -- Max allowed int value in any int edge weight.
+  // Max allowed int value in any int edge weight.
   config var MAX_INT_WEIGHT     =  255;
-  -- Initial probability of a link between two cliques.
+  // Initial probability of a link between two cliques.
   config var PROB_INTERCL_EDGES =  0.5; 
-  -- Kernel parameters.
-  -- Kernel 3: Num of edges in each dim 
-  -- in directed subgraph. Valid range: 2 and up, 
-  -- though at some point it will recover entire graph.
+  // Kernel parameters.
+  // Kernel 3: Num of edges in each dim 
+  // in directed subgraph. Valid range: 2 and up, 
+  // though at some point it will recover entire graph.
   config var SUBGR_EDGE_LENGTH  =    3; 
-  -- Kernel 4: Clustering search box size.
+  // Kernel 4: Clustering search box size.
   config var MAX_CLUSTER_SIZE   =   14; 
-  -- Kernel 4: cluster search region within MAX_CLUSTER_SIZE.
+  // Kernel 4: cluster search region within MAX_CLUSTER_SIZE.
   config var ALPHA              =  0.5; 
 
   writeln('\mHPCS SSCA #2 Graph Analysis Executable Specification:');
@@ -128,10 +128,10 @@ def main() {
   var G : Graph;
   if ENABLE_K1 {
     writeln('\nKernel 1 - computeGraph() beginning execution...\n');
-    var startTime = clock;             -- Start performance timing.
+    var startTime = clock;             // Start performance timing.
     G = computeGraph( edges, TOT_VERTICES, MAX_PARAL_EDGES, MAX_INT_WEIGHT );
     writeln('\n\tcomputeGraph() completed execution.\n');
-    dispEllapsedTime( startTime );      -- End performance timing.
+    dispEllapsedTime( startTime );      // End performance timing.
     if ENABLE_VERIF then
       verifComputeGraph( edges, G );
   }
@@ -140,12 +140,12 @@ def main() {
 
   if ENABLE_K2 {
     writeln('\nKernel 2 - sortWeights() beginning execution...\n');
-    var startTime = clock; -- Start performance timing.
+    var startTime = clock; // Start performance timing.
     
     (startSetInt, maxIntWeight, startSetStr) = sortWeights( G, SOUGHT_STRING );
 
     writeln('\n\tsortWeights() completed execution.\n');
-    dispEllapsedTime( startTime ); -- End performance timing.
+    dispEllapsedTime( startTime ); // End performance timing.
     
     if ENABLE_VERIF then
       verifSortWeights(edges, startSetInt, maxIntWeight,
@@ -155,14 +155,14 @@ def main() {
   var subGraphs;
   if ENABLE_K3 {
     writeln('\nKernel 3 - findSubGraphs() beginning execution...\n');
-    var startTime = clock; -- Start performance timing.
+    var startTime = clock; // Start performance timing.
     
     subGraphs = findSubGraphs( G, SUBGR_EDGE_LENGTH, 
                                startSetInt, 
                                startSetStr );
     writeln('\n\tfindSubGraphs() completed execution.\n');
     
-    dispEllapsedTime( startTime ); -- End performance timing.
+    dispEllapsedTime( startTime ); // End performance timing.
     
     if ENABLE_VERIF then
       verifFindSubGraphs( G, subGraphs, startSetInt, startSetStr, 
@@ -174,15 +174,15 @@ def main() {
     
     if ENABLE_VERIF then
       verPrCutClusters( G );
-    var startTime = clock; --  Start performance timing.
+    var startTime = clock; //  Start performance timing.
     
-    -- Find clusters in the graph.
+    // Find clusters in the graph.
     var (cutG, intVertexRemap, strVertexRemap) 
           = cutClusters( G, MAX_CLUSTER_SIZE, ALPHA );
     
     writeln('\n\tcutClusters() completed execution.\n');
     
-    dispEllapsedTime( startTime ); -- End performance timing.
+    dispEllapsedTime( startTime ); // End performance timing.
     
     if ENABLE_VERIF then
       verifCutClusters( cutG, intVertexRemap, strVertexRemap );
@@ -203,45 +203,45 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
   use fedges;
   maxIntWeight = maxIntWeightP;
 
-  -- Estimate number of cliques needed and pad by 50%.
+  // Estimate number of cliques needed and pad by 50%.
   var estTotCliques = 
         ceil( (1.5*totVertices) / ((1.0 + maxCliqueSize) / 2 ));
   Cliques = 1..estTotCliques;
 
-  -- Generate random clique sizes.
+  // Generate random clique sizes.
   cliqueSizes = 
     ceil(maxCliqueSize*random_numbers.generate(estTotCliques));
 
-  -- Sum up vertices in each clique.
+  // Sum up vertices in each clique.
   VsInCliques.last = sum scan cliqueSizes;
 
-  -- Find where this is greater than totVertices.
+  // Find where this is greater than totVertices.
   var totCliques = binsearch(VsInCliquess.last, totVertices);
 
-  -- Truncate cliques to get the right number 
+  // Truncate cliques to get the right number 
   Cliques = 1..totCliques;
 
-  -- Fix the size of the last clique.  
+  // Fix the size of the last clique.  
   cliqueSizes(totCliques) = totVertices - VsInCliques(totCliques-1).last;
 
-  -- Compute new start and end vertices in cliques.
+  // Compute new start and end vertices in cliques.
   VsInCliques.last(totCliques)  = totVertices;
   VsInCliques.first = 1 # VsInCliques(1..totCliques-1).last + 1;
 
 
-  -- create the edges within the cliques
+  // create the edges within the cliques
   var AdjDomain : domain [i in Cliques] * (2) =  
                     let k = cliqueSize(i) in (1..k, 1..k);
 
-  -- fill matrix with random numbers
+  // fill matrix with random numbers
   var cliqueAdjMatrix: [AdjDomain] = 
     reshape(let n = AdjDomain.extent; 
                 in ceil(maxParalEdges*random_numbers.generate(n)));
 
-  -- zero out the diagonals 
+  // zero out the diagonals 
   [c in Cliques][i in 1..cliqueSize(c)] cliqueAdjMaxtrix(c,i,i) = 0;
 
-  -- build cumulative sum of edge counts by clique and level
+  // build cumulative sum of edge counts by clique and level
   var edgeDomain : domain Cliques * (1..maxParalEdges);
   var edgeCounts: [(c,i) in edgeDomain] =  
         sum ([m in cliqueAdjMatrix(c)] m >=i);
@@ -249,10 +249,10 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   numEdgesPlacedInCliques = edgeStarts(edgeDomain.last);
 
-  -- Initialize vertex arrays.
+  // Initialize vertex arrays.
   var intraEdges : [1..numEdgesPlacedInCliques] EndPpoints;
 
-  -- now build tine intra-clique edges
+  // now build tine intra-clique edges
   forall (c,m) in edgeDomain {
     var first = VsInClique(c).first;
     intraEdges[edgeStarts(c,m)..] = 
@@ -261,17 +261,17 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
          then (start=i+first, end=j+first));
   }
 
-  -- connect the cliques
-  -- build a map from vertex number to the clique it is in
+  // connect the cliques
+  // build a map from vertex number to the clique it is in
   var toClique: [1..totalVertices];
   forall c in Cliques do
     toClique(VsInClique(c).first..VsInClique(c).last) = c;
 
-  -- the probability of an edge between two cliques
-  -- which is related to distance.
+  // the probability of an edge between two cliques
+  // which is related to distance.
   var log2Dist = ceil(log(totVertices,2))-1;
 
-  -- foreach probability level, there are 'up' and 'down' edges
+  // foreach probability level, there are 'up' and 'down' edges
   var bitsDomain : domain(1..totalVertices, 1..log2Dist, -1..1 by 2);
   var bits : [bitsDomain] boole;
   forall ((ix, d, dir), r) in (bitsDomain ,
@@ -292,7 +292,7 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
       interEdges(offset(ix,d,dir)) = (start=ix, end=jx);
     }
 
-  -- Compute the final number of edges.
+  // Compute the final number of edges.
   numEdgesPlaced = numPlacedInCliques + numPlacedOutside;
   Edges = 1..numEdgesPlaced;
 
@@ -399,7 +399,7 @@ def Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   }
 
   var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
-  -- Loop over vertex pairs in the int starting set.
+  // Loop over vertex pairs in the int starting set.
   cobegin {
     forall (i,v) in (1.., startSetIntVPairs) {
       subgraphs(i) = copy(this);
@@ -429,27 +429,27 @@ def cutClusters(G, cutBoxSize, alpha) {
     type Seq : seq of index of VertexD = nil;
 
     var setG : Set = VertexD;
-    var setClusters : Seq;     -- set of nodes in clusters.
-    var setN2 : Seq;           -- set of cut nodes between clusters.
+    var setClusters : Seq;     // set of nodes in clusters.
+    var setN2 : Seq;           // set of cut nodes between clusters.
 
     while (setG.length > 0) {
-      var setIter :Seq;   -- candidate verticies in cluster
-      var iCut = 0;       -- index of best cutting point so far
-      var iAdj :Set;      -- snapshot of setAdj at iCut
+      var setIter :Seq;   // candidate verticies in cluster
+      var iCut = 0;       // index of best cutting point so far
+      var iAdj :Set;      // snapshot of setAdj at iCut
 
       {
-        var setAdj :Set;    -- vertices adjacent to nodes in setIetr
+        var setAdj :Set;    // vertices adjacent to nodes in setIetr
         var vMin = setG(minloc(adjCounts(setG)));
-        var cnCut = totVertices+1;   -- minimum contour number so far.
+        var cnCut = totVertices+1;   // minimum contour number so far.
         for i in 1..cutBoxSize {
-          setIter #= vMin;         -- add vMin to the iterating set.
+          setIter #= vMin;         // add vMin to the iterating set.
     
-          -- Find the sets of vertices that are adjacent to vMin.
-          -- Form setAdj by excluding the already accounted for vertices.
+          // Find the sets of vertices that are adjacent to vMin.
+          // Form setAdj by excluding the already accounted for vertices.
           setAdj += AdjD(vMin,*) # AdjD(*,vMin);
           setAdj -= setIter # setN2;
 
-          -- Evaluate this vertex as a cutting point.
+          // Evaluate this vertex as a cutting point.
           var cn = setAdj.extent;
           if i >= startSearch && cnCut >= cn {
             cnCut = cn;
@@ -457,13 +457,13 @@ def cutClusters(G, cutBoxSize, alpha) {
             iAdj = setAdj;
           }
           if (cn == 0) then
-            break;            -- The cluster is complete.
+            break;            // The cluster is complete.
 
-          -- Pick the next vertex to be processed from among the adjacent 
-          -- vertices, the one which minimizes the adjacency count.
+          // Pick the next vertex to be processed from among the adjacent 
+          // vertices, the one which minimizes the adjacency count.
           var count: [ setAdj ] ;
           forall v in setAdj {
-            -- Find the sets of vertices that are adjacent to v.
+            // Find the sets of vertices that are adjacent to v.
             var vAdj like setAdj = setAdj # AdjD(v,*) # AdjD(*,v);
             vAdj -= setIter # setN2;
             count(v) = vAdj.extent;
@@ -471,8 +471,8 @@ def cutClusters(G, cutBoxSize, alpha) {
           vMin = minloc(count);
         }
 
-        if iCut == 0 {                      -- If no cutting point,
-          iCut = cutBoxSize;              -- use the entire cutBox.
+        if iCut == 0 {                      // If no cutting point,
+          iCut = cutBoxSize;              // use the entire cutBox.
           iAdj = setAdj;
         }
       }

@@ -79,7 +79,7 @@ def randomString(strlen: int) {
 def generateDirectedEdges(v1, v2) {
   var edges: list(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
-  forall parEdge in 1..numParallelEdges { -- TODO: could drop "parEdge"
+  forall parEdge in 1..numParallelEdges { // TODO: could drop "parEdge"
     var weight: weightType;
     if (coinFlip(percentIntWeights)) {
       weight.intWeight = randomInt(maxIntWeight);
@@ -94,8 +94,8 @@ def generateDirectedEdges(v1, v2) {
 
 def generateEdges(v1, v2) {
   var edges: list(edgeTuple);
-  var forward = true,   -- generate forward edges?
-      backward = true;  -- generate backward edges?
+  var forward = true,   // generate forward edges?
+      backward = true;  // generate backward edges?
 
   if (coinFlip(probUnidirectional)) {
     if (coinFlip()) {
@@ -119,7 +119,7 @@ def generateEdgeList() {
   var clique: [Vertices] int;
   var numCliques = 0;
 
-  forall g in 1..numCliqueGenerators { -- TODO: could drop "g"
+  forall g in 1..numCliqueGenerators { // TODO: could drop "g"
     while (numVerticesTaken != totVertices) {
       var cliqueSize: int;
       var vertexOffset: int;
@@ -132,7 +132,7 @@ def generateEdgeList() {
         numCliques += 1;
         myCliqueNum = numCliques;
       }
-      -- generate intraclique edges
+      // generate intraclique edges
       forall v1 in 1..cliqueSize {
         clique(v1) = myCliqueNum;
         forall v2 in v1+1..cliqueSize {
@@ -142,10 +142,10 @@ def generateEdgeList() {
     }
   }
 
-  -- generate interclique edges
-  -- the following uses the basic exponential distribution from
-  -- the pseudocode in the written spec rather than the
-  -- distribution of the executable specification
+  // generate interclique edges
+  // the following uses the basic exponential distribution from
+  // the pseudocode in the written spec rather than the
+  // distribution of the executable specification
   forall v1 in Vertices {
     var d = 2;
     var p = probIntercliqueEdges;
@@ -161,8 +161,8 @@ def generateEdgeList() {
     }
   }
 
-  -- TODO: at this point, I think we're required to randomly shuffle
-  -- the vertex numbers and edge tuples
+  // TODO: at this point, I think we're required to randomly shuffle
+  // the vertex numbers and edge tuples
 
   return edgeTuples;
 }

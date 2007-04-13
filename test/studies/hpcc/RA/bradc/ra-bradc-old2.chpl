@@ -44,7 +44,7 @@ def randomAccessUpdate() {
   // [i in ranDom] Ran(i) = HPCCstarts((numUpdates/numRandoms) * i);
   // BLC: resulting in the following unfortunate cast:
   // BLC: Getting the ambiguity declared is priority #1 for me 
-  //      -- I've made this mistake too many times now
+  //      // I've made this mistake too many times now
   [i in ranDom] Ran(i) = HPCCstarts(((numUpdates:int/numRandoms) * i));
 
   if debug then writeln("Ran is: ", Ran);

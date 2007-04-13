@@ -49,7 +49,7 @@ def randomFloat(maxval: real = 1.0) {
 def generateDirectedEdges(start, stop) {
   var edges: list(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
-  forall parEdge in 1..numParallelEdges { -- could drop "parEdge"
+  forall parEdge in 1..numParallelEdges { // could drop "parEdge"
     var weight: weightType;
     if (randomFloat() < percentIntWeights) {
       weight.intWeight = randomInt(maxIntWeight);
@@ -76,8 +76,8 @@ def generateDirectedEdges(start, stop) {
 
 def generateEdges(start, stop) {
   var edges: list(edgeTuple);
-  var forward = true,   -- generate forward edges?
-      backward = true;  -- generate backward edges?
+  var forward = true,   // generate forward edges?
+      backward = true;  // generate backward edges?
 
   if (randomFloat() < probUnidirectional) {
     if (randomFloat() < 0.5) {
@@ -101,7 +101,7 @@ def generateEdgeList() {
   var edgeTuples: list(edgeTuple);
   var numVerticesRemaining = totVertices;
 
-  forall g in 1..numCliqueGenerators { -- could drop "g"
+  forall g in 1..numCliqueGenerators { // could drop "g"
     while (numVerticesRemaining != totVertices) {
       var cliqueSize: int;
       atomic {

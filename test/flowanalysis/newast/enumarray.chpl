@@ -13,7 +13,7 @@ probSize(D) = 678;
 probSize(O) = 901;
 
 writeln("probSize(S) = ", probSize(S));
-for i in DClass {   -- vvvv  BLC: can I get rid of this cast?
+for i in DClass {   // vvvv  BLC: can I get rid of this cast?
   writeln("probSize(", i:classVals, ") = ", probSize(i):"%3d");
 }
 writeln("probSize = ", probSize:"%.3d");
