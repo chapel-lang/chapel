@@ -110,9 +110,6 @@ buildGetNextCursor(FnSymbol* fn,
     }
   }
   ii->getNextCursor->insertAtTail(new DefExpr(end));
-  t1 = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
-  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, cursor));
-  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
 
   // insert jump table at head of getNextCursor
   i = 2;
@@ -134,14 +131,13 @@ buildGetNextCursor(FnSymbol* fn,
       local = newlocal;
     }
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
-    forv_Vec(SymExpr, se, local->defs) {
-      if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-        SymExpr* newuse = new SymExpr(local);
-        parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
-        local->uses.add(newuse);
-      }
-    }
+    SymExpr* newuse = new SymExpr(local);
+    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
+    local->uses.add(newuse);
   }
+  t1 = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
+  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, cursor));
+  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
 }
 
 
@@ -342,8 +338,6 @@ buildSingleLoopMethods(FnSymbol* fn,
   Expr* nextCond = loop->loopInfo->get(1)->remove();
   ii->getHeadCursor->insertAtTail(new CondStmt(headCond, headThen, headElse));
   ii->getNextCursor->insertAtTail(new CondStmt(nextCond, nextThen, nextElse));
-  ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCursor));
-  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, nextCursor));
 
   // load local variables from fields at return points and update
   // fields when local variables change
@@ -366,18 +360,12 @@ buildSingleLoopMethods(FnSymbol* fn,
     }
     ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, headCopyMap.get(local), new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, nextIterator, field)));
-    forv_Vec(SymExpr, se, local->defs) {
-      if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
-        parent->getStmtExpr()->insertAfter(
-          new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field,
-            new SymExpr(local)));
-      if ((se = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
-        if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
-          parent->getStmtExpr()->insertAfter(
-            new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field,
-              new SymExpr(dynamic_cast<Symbol*>(headCopyMap.get(local)))));
-    }
+    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field, dynamic_cast<Symbol*>(headCopyMap.get(local))));
+    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, new SymExpr(local)));
   }
+
+  ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCursor));
+  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, nextCursor));
 
   buildIsValidCursor(fn);
   buildGetValue(fn, value);
