@@ -16,6 +16,7 @@ config const epsilon = 2.0 ** -51.0,
 
 // boolean configs
 config const printTiming = true;
+config const printError = true;
 
 def main() {
   // compute problem size
@@ -29,7 +30,7 @@ def main() {
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) distributed(block) = [0..N);
+  const ProblemDom: domain(1) distributed(Block) = [0..N);
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 
@@ -76,7 +77,7 @@ def computeTwiddles(W) {
 def bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
   const reverse = log2(n);
-  var V: [WD] W.elt_type;  // BLC: rename this field?
+  var V: [WD] W.eltType;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
   var P: [i in WD] index(WD) = i;
   bitReverse(P);
@@ -208,7 +209,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
   maxerr = maxerr / logN / epsilon;
 
   write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
-  writeln(", error = ", maxerr);
+  if (printError) then writeln(", error = ", maxerr);
   writeln();
   writeln("N      = ", N);
   if (printTiming) {

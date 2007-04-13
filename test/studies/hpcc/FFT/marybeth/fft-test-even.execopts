@@ -1,2 +1,2 @@
--sprintTiming=false -sdeterministic=true
+-sprintTiming=false -sprintError=false -sdeterministic=true
 

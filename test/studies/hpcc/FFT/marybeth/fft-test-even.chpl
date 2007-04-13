@@ -16,6 +16,7 @@ config const epsilon = 2.0 ** -51.0,
 
 // boolean configs
 config const printTiming = true;
+config const printError = true;
 
 def main() {
   // compute problem size
@@ -168,10 +169,11 @@ def verifyResults(z, Z, execTime, Twiddles) {
   maxerr = maxerr / logN / epsilon;
 
   write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
-  writeln(", error = ", maxerr);
+  if (printError) then writeln(", error = ", maxerr);
   writeln();
   writeln("N      = ", N);
   if (printTiming) {
+    writeln(", error = ", maxerr);
     writeln("Time   = ", execTime);
     const gflop = 5.0 * N * logN / 1000000000.0;
     writeln("GFlops = ", gflop / execTime);
