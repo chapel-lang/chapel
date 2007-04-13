@@ -54,7 +54,7 @@ def main() {
   writeln(" Iterations:   ", Imax, "\n");
 
   // Generate Keys
-  [i in D] {
+  for i in D {
     randomStream.fillRandom(tempreals);
     keyArray(i) = (max * (+ reduce tempreals)):int;
   }
@@ -66,7 +66,7 @@ def main() {
   if (probClass != S) then writeln("   iteration");
 
   time.start();
-  [i in 1..Imax] {
+  for i in 1..Imax {
     if (probClass != S) then writeln("        ", i);
     rank(i);
   }
@@ -119,9 +119,10 @@ def setupPartialVerify() {
 def rank(iteration: int) {
   keyArray(iteration) = iteration;
   keyArray(iteration+Imax) = Bmax - iteration;
+
   ranks = 0;
-  [i in D] ranks(keyArray(i)) += 1;
-  [i in 0..Bmax-2] ranks(i+1) += ranks(i);
+  ranks(keyArray) += 1;
+  for (i,j) in (0..Bmax-2, 1..Bmax-1) do ranks(j) += ranks(i);
 
   partialVerification(iteration);
 }
@@ -222,10 +223,12 @@ def partialVerification(iteration: int) {
 
 def fullVerify() {
   var failures = 0;
-  [i in D] buffer(i) = keyArray(i);
+  buffer = keyArray;
   [i in D] {
-    ranks(buffer(i)) -= 1;
-    keyArray(ranks(buffer(i))) = buffer(i);
+    atomic {
+      ranks(buffer(i)) -= 1;
+      keyArray(ranks(buffer(i))) = buffer(i);
+    }
   }
 
   [i in 0..D.numIndices-2]
