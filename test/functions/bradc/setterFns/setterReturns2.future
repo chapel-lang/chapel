@@ -1,4 +1,4 @@
-error messages/semantics
+error messages
 
 I'd like to have the compiler throw an error when
 setters declare return types and/or try to return
