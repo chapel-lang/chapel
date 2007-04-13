@@ -99423,3 +99423,76 @@ Removed files:
 	chapel/test/types/type_variables/deitz/part5/: where-3.chpl 
 	                                               where-3.good 
 
+---------------------------------------------------------------------------
+
+04/13/07 10:52:55 -- deitz
+
+Log message:
+	Removed (/ and /) when printing out lists and iterators directly.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl List.chpl 
+	chapel/test/arrays/deitz/: array_forall_expr.good 
+	chapel/test/arrays/deitz/domains/: test_domain2.good 
+	                                   test_domain3.good 
+	chapel/test/arrays/deitz/promotion/: test_scalar_promote3.good 
+	                                     test_scalar_promote4.good 
+	                                     test_scalar_promote5.good 
+	                                     test_scalar_promote6.good 
+	                                     test_scalar_promote7.good 
+	                                     test_scalar_promote9.good 
+	chapel/test/arrays/marybeth/: CMO_array.good 
+	chapel/test/classes/bradc/records/: assignRecord2.good 
+	chapel/test/classes/deitz/: test_inherit1.good 
+	chapel/test/classes/deitz/infer/: infer_field2.good 
+	                                  infer_field2a.good 
+	                                  infer_field2b.good 
+	                                  infer_field2c.good 
+	chapel/test/domains/deitz/: test_domain_promote2.good 
+	chapel/test/functions/deitz/: test_forallexpr1.good 
+	                              test_forallexpr2.good 
+	                              test_iterator1.good 
+	                              test_promotion_generic.good 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.good 
+	                                        test_instantiate_iterator2.good 
+	                                        test_instantiate_iterator2a.good 
+	                                        test_instantiate_iterator3.good 
+	                                        test_instantiate_iterator3a.good 
+	                                        test_iterator_side_effect3.good 
+	chapel/test/functions/waynew/: iterator6.good iterator7.good 
+	                               iterator8.good 
+	chapel/test/reductions/deitz/: test_scan1.good 
+	chapel/test/spec/marybeth/: sort.good 
+	chapel/test/trivial/deitz/: test_predicate.good 
+	chapel/test/trivial/deitz/demo/: sample2.good 
+	chapel/test/types/seq/bradc/: emptySeq2.good emptySeq2a.good 
+	                              hashEquals.good length.good 
+	                              recordSeq.good returnSeq.good 
+	                              returnSeq2.good 
+	chapel/test/types/seq/deitz/: test_aseq4.good 
+	                              test_promote_aseq.good 
+	                              test_reduce1.good test_seq1.good 
+	                              test_seq1a.good test_seq1b.good 
+	                              test_seq1c.good test_seq1d.good 
+	                              test_seq2.good test_seq3.good 
+	                              test_seq4.good test_seq5.good 
+	                              test_seq6.good test_seq7.good 
+	                              test_seq8.good test_seq8b.good 
+	                              test_seq9.good test_seq_arg.good 
+	                              test_seq_class1.good 
+	                              test_seq_class2.good 
+	                              test_seq_class3.good 
+	                              test_seq_class4.good 
+	                              test_seq_htuple1.good 
+	                              test_seq_htuple2.good 
+	                              test_seq_of_seq.good 
+	                              test_seq_of_seq2.good 
+	                              test_seq_record1.good 
+	                              test_seq_record2.good 
+	                              test_seq_return1.good 
+	                              test_seq_tuple.good 
+	                              test_seq_tuple2.good 
+	                              test_seq_tuple3.good 
+	chapel/test/types/tuple/shannon/: sequenceInTuple.good 
+
