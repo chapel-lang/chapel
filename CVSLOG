@@ -99512,3 +99512,24 @@ Modified files:
 Removed files:
 	chapel/test/distributions/bradc/foundations/: blockdist1.future 
 
+---------------------------------------------------------------------------
+
+04/13/07 12:01:19 -- deitz
+
+Log message:
+	Updated -- comments to //.
+
+Modified files:
+	chapel/test/Share/: ambiguousclass.chpl domain-3.chpl 
+	                    module-1.chpl module-2-error.chpl 
+	chapel/test/compflags/bradc/onebadfile/: badfile.chpl 
+	chapel/test/flowanalysis/newast/: enumarray.chpl 
+	chapel/test/ssca/ssca2/: ssca2.blc-hack.chpl ssca2.blc.chpl 
+	                         ssca2.blc.init.chpl ssca2.chpl 
+	                         ssca2.orig.chpl ssca2.origpar.chpl 
+	                         ssca2.parses.chpl 
+	                         ssca2.typedarrays.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-old1.chpl 
+	                                    ra-bradc-old2.chpl 
+	chapel/test/studies/jacobi/deitz/: jacobi.chpl 
+
