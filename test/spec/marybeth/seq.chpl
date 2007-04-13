@@ -16,7 +16,7 @@ def main() {
  
   [i in D] y(i) = x(i):real;
 
-  var order: seq of int = insertionSort(x);
+  var order: list of int = insertionSort(x);
 
   writeln(order);
   writeln(x(order));
@@ -25,11 +25,11 @@ def main() {
 }
 
 def insertionSort(x) {
-  var order: seq of int;
+  var order: list of int;
 
   for i in x.domain {
     var val = x(i);
-    order._append_in_place(i);
+    order.append(i);
     var ind = i-1;
     if (ind > 0) then
     while ((ind > 0) && (x(order(ind)) > val)) {

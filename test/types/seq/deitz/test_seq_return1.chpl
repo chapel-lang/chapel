@@ -1,8 +1,8 @@
 def f() {
-  var s : seq of int;
+  var s : list of int;
   var i : int;
   while i < 10 {
-    s._append_in_place(i*4);
+    s.append(i*4);
     i += 1;
   }
   return s;

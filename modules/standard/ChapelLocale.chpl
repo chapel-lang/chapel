@@ -19,8 +19,7 @@ def locale.writeThis(f: Writer) {
 // was:
 //   const Locale: [loc in LocaleDomain] locale = locale(id = loc);
 //
-// changed to avoid sequence temporary until iterator propagation can
-// handle this case
+// sjd: can be changed back now
 //
 const Locale: [LocaleDomain] locale;
 [loc in LocaleDomain] Locale(loc) = locale(id = loc);

@@ -1,5 +1,5 @@
-var s : seq of int;
+var s : list of int;
 
-s = _seq( 3, 1, 4, 1, 5, 9 );
+s = makeList( 3, 1, 4, 1, 5, 9 );
 
 writeln(s);

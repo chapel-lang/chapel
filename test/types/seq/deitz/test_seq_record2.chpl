@@ -3,16 +3,12 @@ record R {
   var y : int;
 }
 
-var s : seq of R;
+var s : list of R;
 
-s = _seqcat(s, R(1, 2));
-
-writeln(s);
-
-s = _seqcat(R(3, 4), s);
+s.append(R(1, 2));
 
 writeln(s);
 
-s = _seqcat(s, s);
+s.prepend(R(3, 4));
 
 writeln(s);

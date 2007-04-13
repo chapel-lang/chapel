@@ -1,4 +1,4 @@
-var s1 : seq of int = _seq( 2, 3, 4, 5 );
-var s2 : seq of string = _seq( "hot", "dog" );
+var s1 : list of int = makeList( 2, 3, 4, 5 );
+var s2 : list of string = makeList( "hot", "dog" );
 
 writeln(s1, s2);

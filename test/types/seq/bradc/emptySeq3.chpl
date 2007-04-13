@@ -1,3 +1,3 @@
-var s: seq(int) = nil;
+var s: list(int) = nil;
 
 writeln("s is: ", s);

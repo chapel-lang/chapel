@@ -5,4 +5,6 @@ class C {
 
 var c = C();
 
-writeln(c.foo(_seq(1, 2, 3), _seq(4, 5, 6)));
+var a1: [1..3] int = (1, 2, 3);
+var a2: [1..3] int = (4, 5, 6);
+writeln(c.foo(a1, a2));

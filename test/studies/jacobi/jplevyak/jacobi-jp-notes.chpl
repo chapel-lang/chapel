@@ -11,7 +11,7 @@ var t : [X] real = 0.0;
 // would have like to use: t(m+1, ..) = 1.0; // bottom
 // also failed: t(m+1, 0..n+1) = 1.0; // bottom
 [i in 0..n+1] t(m+1, i) = 1.0; // bottom
-var stencil = _seq( (-1,-1), (1, -1), (-1, 1), (1, 1) );
+var stencil = makeList( (-1,-1), (1, -1), (-1, 1), (1, 1) );
 label again;
 [i in D] t(i) = a(i);
 // does this just make a referece? : var tt = t;

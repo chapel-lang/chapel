@@ -1,3 +1,3 @@
-var s : seq of string = _seq( "this", "is", "a", "sequence", "of", "strings" );
+var s : list of string = makeList( "this", "is", "a", "sequence", "of", "strings" );
 
 writeln(s);

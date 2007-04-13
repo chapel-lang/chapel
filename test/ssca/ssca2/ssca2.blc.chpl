@@ -28,8 +28,8 @@ var AdjSpace: domain(EdgeSpace) = EdgeSpace;
 var edge: index(Edges);
 
 record multiedge {
-  var intWeights: seq(int);
-  var strWeights: seq(string);
+  var intWeights: list(int);
+  var strWeights: list(string);
 };
 
 var Edges: [AdjSpace] multiedge;
@@ -75,7 +75,7 @@ def randomString(strlen: int) {
 
 
 def generateDirectedEdges(v1, v2) {
-  var edges: seq(edgeTuple);
+  var edges: list(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { -- TODO: could drop "parEdge"
     var weight: weightType;
@@ -91,7 +91,7 @@ def generateDirectedEdges(v1, v2) {
 
 
 def generateEdges(v1, v2) {
-  var edges: seq(edgeTuple);
+  var edges: list(edgeTuple);
   var forward = true,   -- generate forward edges?
       backward = true;  -- generate backward edges?
 
@@ -112,7 +112,7 @@ def generateEdges(v1, v2) {
 
 
 def generateEdgeList() {
-  var edgeTuples: seq(edgeTuple);
+  var edgeTuples: list(edgeTuple);
   var numVerticesTaken = 0;
   var clique: [Vertices] int;
   var numCliques = 0;
@@ -166,7 +166,7 @@ def generateEdgeList() {
 }
 
 
-def kernel1(edgeTuples: seq(edgeTuple)) {
+def kernel1(edgeTuples: list(edgeTuple)) {
   forall t in edgeTuples {
     var newEdge: edge = (t.source, t.sink);
     AdjSpace += newEdge;
@@ -214,7 +214,7 @@ def kernel3(startEdges, subGraphEdgeLength: int) {
     frontier += sv2;
     var subgraph = SubGraph(V = frontier, E = startEdge);
     for dist in 1..startEdges {
-      var newEdges: seq(edge);
+      var newEdges: list(edge);
       forall v1 in frontier {
         forall v2 in AdjDom(v1, *) {
           newEdges #= (v1, v2);

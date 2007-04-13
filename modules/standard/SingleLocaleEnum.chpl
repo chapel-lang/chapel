@@ -4,8 +4,9 @@ class SingleLocaleEnumDomain: BaseDomain {
 
   def initialize() {
     adomain = SingleLocaleAssociativeDomain(ind_type=ind_type);
-    for i in _enum_enumerate(ind_type) do
-      adomain.add(i);
+    var enumTuple = _enum_enumerate(ind_type);
+    for param i in 1..enumTuple.size do
+      adomain.add(enumTuple(i));
   }
 
   def getIndices() return adomain;

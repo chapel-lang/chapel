@@ -1,3 +1,5 @@
+use List;
+
 def _build_domain_type(dist, param rank : int,
                        type dimensional_index_type = int) {
   var x = dist.buildDomain(rank, dimensional_index_type);
@@ -40,7 +42,7 @@ def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
 
 def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
-  return x;                             // is * on arithmetic sequences?
+  return x;                             // is * on ranges?
 
 //
 // computes && reduction over stridable of ranges
@@ -118,7 +120,7 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    _value._arrs._append_in_place(x);
+    _value._arrs.append(x);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
@@ -387,7 +389,7 @@ class BaseArray {
 }
 
 class BaseDomain {
-  var _arrs: seq of BaseArray;
+  var _arrs: list of BaseArray;
 
   def member?(ind) : bool {
     halt("membership test not supported for this domain type");
@@ -401,4 +403,47 @@ class BaseArithmeticDomain : BaseDomain {
     halt("bbox not supported for this domain type");
     return 1..0;
   }
+}
+
+
+def _pass(ic: _iteratorClass)
+  return ic;
+
+def _copy(ic: _iteratorClass) {
+  var capacity = 4, size = 0;
+  var data = _ddata(__primitive("get_ic_type", ic), capacity);
+  data.init();
+
+  for e in ic {
+    if size == capacity {
+      capacity = capacity * 2;
+      var tmp = _ddata(__primitive("get_ic_type", ic), capacity);
+      tmp.init();
+      for i in 0..size-1 do
+        tmp(i) = data(i);
+      data = tmp;
+    }
+    data(size) = e;
+    size = size + 1;
+  }
+
+  var A: [1..size] __primitive("get_ic_type", ic);
+  for i in 0..size-1 do
+    A(i+1) = data(i);
+  return A;
+}
+
+//
+// print out iterators
+//
+def _iteratorClass.writeThis(f: Writer) {
+  f.write("(/");
+  var first: bool = true;
+  for e in this {
+    if !first then
+      f.write(", ");
+    f.write(e);
+    first = false;
+  }
+  f.write("/)");
 }

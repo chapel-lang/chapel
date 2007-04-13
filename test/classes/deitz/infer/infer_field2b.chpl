@@ -34,9 +34,9 @@ label _1
 def foo() {
   var c = C();
   c = next_foo(c);
-  var s : seq of c.result;
+  var s : list of c.result;
   while c != nil {
-    s._append_in_place(c.result);
+    s.append(c.result);
     c = next_foo(c);
   }
   return s;

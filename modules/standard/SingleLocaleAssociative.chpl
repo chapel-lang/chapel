@@ -1,3 +1,5 @@
+use List;
+
 param _MIN_SIZE = 0;
 param _MAX_SIZE = 26;
 
@@ -47,7 +49,7 @@ record _ind_data_t {
 
 class SingleLocaleAssociativeDomain: BaseDomain {
   type ind_type;
-  var _arrs2: seq(BaseArray);    // WAW: unfortunately redundant list
+  var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
   var table: _ddata(int);
@@ -196,7 +198,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def buildArray(type eltType) {
     var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
-    _arrs2._append_in_place(ia);
+    _arrs2.append(ia);
     return ia;
   }
 
@@ -258,14 +260,14 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
 
 def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
-  var indices: seq(a.ind_type);
+  var indices: list(a.ind_type);
   var inds_count = 0;
   var inds_pos = 0;
   var total_inds = a.num_inds;
   while inds_count<total_inds {
     var ind = a.inds( inds_pos);
     if (ind.valid) {
-      indices._append_in_place(ind.data);
+      indices.append(ind.data);
       inds_count += 1;
     }
     inds_pos += 1;

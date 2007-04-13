@@ -5,6 +5,6 @@ class C {
 
 var c : C = C(1, 2.3);
 
-var s : seq of C = _seq( c );
+var s : list of C = makeList( c );
 
 writeln(s);

@@ -2,10 +2,10 @@ class C {
   var x: int;
 }
 
-var s: seq of C;
+var s: list of C;
 
 writeln(s);
 
-s._append_in_place(C(2));
+s.append(C(2));
 
 writeln(s);

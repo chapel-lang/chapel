@@ -31,9 +31,9 @@ enum classVals {S, W, A, B, C, D, O};
 //   iterations: the number of iterations to run
 //   checksum: the expected result, if the default characteristics are used
 
-const probSize: [S..O] int = _seq(32, 64, 256, 256, 512, 1024, 256),
-      iterations: [S..O] int = _seq(4, 40, 4, 20, 20, 50, 4),
-      checksum: [S..O] real  = _seq(0.0000530770700573,
+const probSize: [S..O] int = (32, 64, 256, 256, 512, 1024, 256),
+      iterations: [S..O] int = (4, 40, 4, 20, 20, 50, 4),
+      checksum: [S..O] real  = (0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
                                   0.00000180056440132,
@@ -392,11 +392,11 @@ def norm2u3(R) {
 
 // initCValues() sets the c values for the psinv() stencil
 
-def initCValues(Class): coeff {
+def initCValues(Class) {
   if (Class == A || Class == S || Class == W) {
-    return _seq(-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
+    return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
-    return _seq(-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
+    return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
   }
 }
 

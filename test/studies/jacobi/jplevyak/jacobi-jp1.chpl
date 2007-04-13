@@ -8,7 +8,7 @@ writeln("initial = ", a);
 var X = [0..m+1, 0..n+1];
 var t[X] = 0.0;
 t[m+1, ..] = 1.0; // bottom
-var stencil = _seq( (-1,-1), (1, -1), (-1, 1), (1, 1) );
+var stencil = makeList( (-1,-1), (1, -1), (-1, 1), (1, 1) );
 
 var again = 1;
 while (again) {

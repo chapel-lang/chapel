@@ -5,6 +5,6 @@ record R {
 
 var r : R = R(1, 2.3);
 
-var s : seq of R = _seq( r );
+var s : list of R = makeList( r );
 
 writeln(s);

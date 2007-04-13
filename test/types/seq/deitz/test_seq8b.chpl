@@ -1,4 +1,4 @@
-var s : seq of string = _seq( "three", "one", "four" );
+var s : list of string = makeList( "three", "one", "four" );
 
 writeln(s);
 

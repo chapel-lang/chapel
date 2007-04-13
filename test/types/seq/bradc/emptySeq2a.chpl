@@ -1,5 +1,5 @@
-var s: seq(int);
+var s: list(int);
 
-s = _seqcat(s, 1);
+s.append(1);
 
 writeln("s is: ", s);

@@ -6,9 +6,9 @@ class D: C {
   var y: int;
 }
 
-var s: seq of C;
+var s: list of C;
 
-s._append_in_place(D(1, 2));
-s._append_in_place(C(3));
+s.append(D(1, 2));
+s.append(C(3));
 
 writeln(s);

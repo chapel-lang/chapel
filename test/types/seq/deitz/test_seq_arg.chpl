@@ -1,10 +1,10 @@
-def foo(s : seq of string) {
+def foo(s : list of string) {
   writeln("foo called on a sequence of strings: ", s);
 }
 
-def foo(s : seq of int) {
+def foo(s : list of int) {
   writeln("foo called on a sequence of ints: ", s);
 }
 
-foo(_seq("one", "two", "three"));
-foo(_seq(1, 2, 3));
+foo(makeList("one", "two", "three"));
+foo(makeList(1, 2, 3));

@@ -23,7 +23,8 @@ static void parseStandardModules(void) {
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
     tupleModule = parseStandardModule("ChapelTuple.chpl");
-    parseStandardModule("ChapelSeq.chpl");
+    parseStandardModule("ChapelReduce.chpl");
+    parseStandardModule("ChapelRange.chpl");
     domainModule = parseStandardModule("ChapelArray.chpl");
     parseStandardModule("ChapelUtil.chpl");
     parseStandardModule("SingleLocaleArithmetic.chpl");
@@ -34,6 +35,7 @@ static void parseStandardModules(void) {
     parseStandardModule("Types.chpl");
     parseStandardModule("Math.chpl");
 
+    parseStandardModule("List.chpl");
     parseStandardModule("Time.chpl");
     parseStandardModule("Random.chpl");
     parseStandardModule("BitOps.chpl");

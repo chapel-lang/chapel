@@ -90,20 +90,6 @@ def _tuple.writeThis(f: Writer) {
   f.write(")");
 }
 
-def _seq_to_tuple(s: seq, param i: int) {
-  var t: i*s.eltType;
-  for param j in 1..i do
-    t(j) = s(j);
-  return t;
-}
-
-def _tuple_to_seq(t: _tuple) {
-  var s = _seq(t(1));
-  for param j in 2..t.size do
-    s._append_in_place(t(j));
-  return s;
-}
-
 pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(64)) & (x.size == 2) {
   var c: complex(64);
   c.re = x(1);

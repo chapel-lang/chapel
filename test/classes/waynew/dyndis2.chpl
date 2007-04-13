@@ -28,7 +28,7 @@ class bclass: base {
 }
 
 class contain {
-  var objs: seq(base);
+  var objs: list(base);
 
   def xxx() {
     var something: somedata(int);
@@ -44,8 +44,8 @@ def main () {
   var b : bclass(bool) = bclass(bool);
 
   var c: contain = contain();
-  c.objs._append_in_place(b);
-  c.objs._append_in_place(a);
+  c.objs.append(b);
+  c.objs.append(a);
   c.xxx();
 }
 

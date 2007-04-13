@@ -62,8 +62,7 @@ void buildDefaultFunctions(void) {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
           if (!(ct->symbol->hasPragma("domain") ||
-                ct->symbol->hasPragma("array") ||
-                ct->symbol->hasPragma("seq"))) {
+                ct->symbol->hasPragma("array"))) {
             build_record_equality_function(ct);
             build_record_inequality_function(ct);
           }
@@ -313,7 +312,7 @@ static void build_record_inequality_function(ClassType* ct) {
 }
 
 static void build_enum_enumerate_function(EnumType* et) {
-  // Build a function that returns a sequence of the enum's values
+  // Build a function that returns a tuple of the enum's values
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
@@ -324,24 +323,14 @@ static void build_enum_enumerate_function(EnumType* et) {
 
   et->symbol->defPoint->insertAfter(new DefExpr(fn));
 
-  DefExpr* constant = dynamic_cast<DefExpr*>(et->constants->first());
-  Expr* seqLiteral = new CallExpr("_construct_seq", constant->sym);
-
-  // Generate the sequence of enum values for the given enum type
+  // Generate the tuple of enum values for the given enum type
+  CallExpr* call = new CallExpr("_construct__tuple");
   for_alist(DefExpr, constant, et->constants) {
-    seqLiteral = new CallExpr(
-                   new CallExpr(
-                     ".",
-                     seqLiteral,
-                     new_StringSymbol("_append_in_place")),
-                   constant->sym);
+    call->insertAtTail(constant->sym);
   }
+  call->insertAtHead(new_IntSymbol(call->argList->length()));
 
-  // Move the sequence into a temp and return it
-  VarSymbol* temp = new VarSymbol("_tmp");
-  fn->insertAtHead(new DefExpr(temp));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, seqLiteral));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, temp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   normalize(fn);
 }
 

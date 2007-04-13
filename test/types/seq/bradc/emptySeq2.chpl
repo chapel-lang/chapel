@@ -1,3 +1,3 @@
-var s: seq(int);
+var s: list(int);
 
 writeln("s is: ", s);
