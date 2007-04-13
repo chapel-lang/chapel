@@ -99593,3 +99593,14 @@ Modified files:
 Added files:
 	chapel/spec/: NOTES 
 
+---------------------------------------------------------------------------
+
+04/13/07 15:04:33 -- diten
+
+Log message:
+	It was suggested that I use a scan to do the addition of the ranks array
+	elements.  This does exactly what I needed, so use a scan.
+
+Modified files:
+	chapel/test/npb/is/diten/: is_no_buckets.chpl 
+
