@@ -99637,3 +99637,13 @@ Added files:
 	                                        test_tuple_in_iterator.chpl 
 	                                        test_tuple_in_iterator.good 
 
+---------------------------------------------------------------------------
+
+04/13/07 15:49:38 -- bradc
+
+Log message:
+	Adding single and sync to emacs coloring mode.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
