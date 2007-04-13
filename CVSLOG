@@ -99568,3 +99568,28 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is_no_buckets.chpl 
 
+---------------------------------------------------------------------------
+
+04/13/07 14:47:05 -- marybeth
+
+Log message:
+	Added the openissue environment in spec.tex.
+	
+	Added a NOTES file that documents the five sections within the
+	spec and their intended uses:
+	
+	  example
+	  status
+	  note
+	  rationale
+	  openissue
+	
+	The NOTES file also gives some guidelines for reviewing and
+	updating the spec.  These guidelines are the summary of a
+	discussion from a spec review meeting earlier this year.
+
+Modified files:
+	chapel/spec/: spec.tex 
+Added files:
+	chapel/spec/: NOTES 
+
