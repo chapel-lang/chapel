@@ -201,7 +201,7 @@ integer size.
 Real literals are designated by the following syntax:
 \begin{syntax}
 real-literal:
-  digits[OPT] . digit digits[OPT] exponent-part[OPT]
+  digits[OPT] . digits exponent-part[OPT]
 
 exponent-part:
   `e' sign[OPT] digits
@@ -242,8 +242,8 @@ The following codes represent the same complex literal:
 String literals are designated by the following syntax:
 \begin{syntax}
 string-literal:
-  " characters "
-  ' characters '
+  " characters[OPT] "
+  ' characters[OPT] '
 
 characters:
   character
@@ -311,7 +311,7 @@ defined in~\rsec{Unions}.
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
-is homogeneous.  Tuples are defines in~\rsec{Tuples}.
+is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
 \subsection{Sequence Types}
 \label{Sequence_Types}

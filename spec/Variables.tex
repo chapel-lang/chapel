@@ -14,7 +14,7 @@ by its type.
 Variables are declared with the following syntax:
 \begin{syntax}
 variable-declaration-statement:
-  `config'[OPT] variable-kind variable-declaration ;
+  `config'[OPT] variable-kind variable-declaration-list ;
 
 variable-kind: one of
   `param' `const' `var'
@@ -54,8 +54,8 @@ variables (\chpl{var}).  Parameters are compile-time constants whereas
 constants are runtime constants.  Both levels of constants are
 discussed in~\rsec{Constants}.
 
-Multiple variables can be defined in the same variable declaration
-list.  All variables defined in the same \sntx{identifier-list} are
+Multiple variables can be defined in the same \sntx{variable-declaration-list}.
+All variables defined in the same \sntx{identifier-list} are
 defined to have the same type and initialization expression.
 
 The \sntx{type-part} of a variable declaration specifies the type of
