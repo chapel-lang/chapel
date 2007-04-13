@@ -99533,3 +99533,13 @@ Modified files:
 	                                    ra-bradc-old2.chpl 
 	chapel/test/studies/jacobi/deitz/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+04/13/07 12:03:39 -- diten
+
+Log message:
+	Make a few minor spec typo fixes and syntax diagram corrections.
+
+Modified files:
+	chapel/spec/: Variables.tex Types.tex 
+
