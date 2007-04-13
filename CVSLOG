@@ -99496,3 +99496,19 @@ Modified files:
 	                              test_seq_tuple3.good 
 	chapel/test/types/tuple/shannon/: sequenceInTuple.good 
 
+---------------------------------------------------------------------------
+
+04/13/07 11:51:00 -- deitz
+
+Log message:
+	Changed test that used old-style comments and removed .future.
+	
+	Updated two .futures as error message futures, not semantic futures.
+
+Modified files:
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	chapel/test/functions/bradc/setterFns/: setterReturns.future 
+	                                        setterReturns2.future 
+Removed files:
+	chapel/test/distributions/bradc/foundations/: blockdist1.future 
+
