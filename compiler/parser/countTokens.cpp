@@ -158,6 +158,9 @@ void countToken(char* text) {
   if (countTokens) {
     if (printTokens) {
       sprintf(line, "%s %s", line, text);
+      if (strlen(line) > 4096) {
+        INT_FATAL("line length overflow");
+      } 
     }
     lineTokens++;
     fileTokens++;
@@ -188,9 +191,9 @@ void countNewline(void) {
         printf("    | ");
       }
       printf("%s\n", line);
-      clearLine();
     }
   }
+  clearLine();
 }
 
 
@@ -207,6 +210,9 @@ void countSingleLineComment(char* comment) {
       comment = "";
     }
     sprintf(line, "%s -- %s", line, comment);
+    if (strlen(line) > 4096) {
+      INT_FATAL("line length overflow: %s", line);
+    }
   }
 }
 
@@ -214,5 +220,8 @@ void countSingleLineComment(char* comment) {
 void countMultiLineComment(char* comment) {
   if (printTokens) {
     sprintf(line, "%s /* %s */", line, comment);
+    if (strlen(line) > 4096) {
+      INT_FATAL("line length overflow");
+    }
   }
 }
