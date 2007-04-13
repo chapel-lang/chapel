@@ -1,0 +1,41 @@
+There are five environments for use in the spec:
+
+- example    
+  Example Chapel programs, along with explanation text
+  should be contained in the example environment.
+
+- status
+  If a feature is not fully implemented, it is helpful
+  to write a status note that is contained in the
+  status environment.
+
+- note
+  To make a note to future implementors of Chapel, or those
+  who are interested in how Chapel is implemented, use the note
+  environment.  
+
+- rationale
+  To provide more explanation about a feature, use the rationale
+  section.   
+
+- openissue
+  Unresolved issues can be noted in the openissue environment.
+
+Guidelines for updating the spec:
+
+- There should be example programs for every language concept.
+
+- In explaining a feature, try to address both the compiler
+  developers and programmers of the language.  Explain the syntax of
+  the feature and any implementation details.  Also explain the
+  impact of the feature and how it is used when programming.
+
+- Try to keep the sections of a chapter relatively consistent
+  with each other.  Start out a chapter or section with a summary
+  paragraph.  This paragraph could:
+
+  -  compare and/or contrast Chapel with other languages in the areas
+     covered by the chapter or section
+  -  give insights into how the compiler uses the feature(s) in that 
+     chapter or section
+  -  state the organization and flow of the chapter or section
