@@ -43,4 +43,6 @@ extern bool fWarnPromotion;
 
 extern bool parallelPass;
 
+extern bool debugCCode, optimizeCCode;
+
 #endif

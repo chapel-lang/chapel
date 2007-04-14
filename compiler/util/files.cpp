@@ -13,7 +13,7 @@
 
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
-char ccflags[256] = "-g";
+char ccflags[256] = "";
 bool ccwarnings = false;
 
 static char* tmpdirname = NULL;
@@ -306,11 +306,17 @@ codegen_makefile(fileinfo* mainfile) {
   // default -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
-  fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s", ccflags);
+  fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
   if (ccwarnings) {
     fprintf(makefile.fptr, " $(WARN_CFLAGS)");
   }
-  fprintf(makefile.fptr, "\n");
+  if (debugCCode) {
+    fprintf(makefile.fptr, " $(DEBUG_CFLAGS)");
+  }
+  if (optimizeCCode) {
+    fprintf(makefile.fptr, " $(OPT_CFLAGS)");
+  }
+  fprintf(makefile.fptr, " %s\n", ccflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);

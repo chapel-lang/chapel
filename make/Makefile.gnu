@@ -10,6 +10,9 @@ CC = gcc
 MAKEDEPEND = $(CXX) -MM -MG
 CMAKEDEPEND = $(CC) -MM -MG
 
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+
 RANLIB = ranlib
 
 #
@@ -22,11 +25,11 @@ LDFLAGS += -fprofile-arcs
 endif
 
 ifdef DEBUG
-CFLAGS += -g
+CFLAGS += $(DEBUG_CFLAGS)
 endif
 
 ifdef OPTIMIZE
-CFLAGS += -O2
+CFLAGS += $(OPT_CFLAGS)
 endif
 
 ifdef PROFILE

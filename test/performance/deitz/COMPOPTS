@@ -1,1 +1,1 @@
---ccflags "-O3" --no-bounds-checks
+-O --no-bounds-checks

@@ -20,23 +20,25 @@ Optimization Control:
 
 Code Generation:
 ----------------
-      --cg-cpp-lines      false     ->true   Generate #line annotations
-      --savec             (null)    path     Save generated C code
+      --savec                       path     Save generated C code in directory
+  -g, --[no-]debug        false     ->true   Allow debugging of generated C code
+  -O, --[no-]optimize     false     ->true   Optimize generated C code
+      --[no-]cg-cpp-lines false     ->true   Generate #line annotations
   -p, --parallel          true      toggle   Toggle threaded code generation
 
 Linker Control:
 ---------------
   -o, --output            a.out     path     Name output executable
-  -L, --lib-search-path   (null)    path     C library search path
-  -l, --lib-linkage       (null)    path     C library linkage
-      --ccflags           -g        string   Back-end C compiler flags
+  -L, --lib-search-path             path     C library search path
+  -l, --lib-linkage                 path     C library linkage
+      --ccflags                     string   Back-end C compiler flags
 
 Miscellaneous Flags:
 --------------------
       --instantiate-max   256       int      Limit number of instantiations
       --chplhome          .         path     Over-ride $CHPL_HOME
       --[no-]devel        false     ->true   Compile as developer
-  -s, --set               (null)    string   Set config param value
+  -s, --set                         string   Set config param value
 
 Compiler Information:
 ---------------------

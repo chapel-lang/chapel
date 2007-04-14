@@ -273,7 +273,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
             fprintf(stderr, "%-7s..", (char*)desc[i].location);
           }
         } else
-          fprintf(stderr, "(null)   ");
+          fprintf(stderr, "         ");
         break;
       case 'D':
         fprintf(stderr, "%-9.3e", *(double*)desc[i].location);

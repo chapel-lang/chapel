@@ -14,6 +14,7 @@
 #include "primitive.h"
 
 
+static void setChapelDebug(ArgumentState* arg_state, char* arg_unused);
 static void printVersionAndExit(ArgumentState *arg_state, char *arg_unused);
 static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused);
 static void printCopyrightAndExit(ArgumentState *arg_state, char *arg_unused);
@@ -52,6 +53,8 @@ int instantiation_limit = 256;
 bool parallelPass = true;
 char configParamString[FILENAME_MAX] = "";
 Map<char*, char*> configParamMap;
+bool debugCCode = false;
+bool optimizeCCode = false;
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', "Compilation Traces", NULL, NULL, NULL, NULL},
@@ -70,8 +73,10 @@ static ArgumentDescription arg_desc[] = {
  {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
 
  {"", ' ', "Code Generation", NULL, NULL, NULL, NULL},
- {"cg-cpp-lines", ' ', "Generate #line annotations", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
- {"savec", ' ', "Save generated C code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"savec", ' ', "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"debug", 'g', "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
+ {"optimize", 'O', "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
+ {"cg-cpp-lines", ' ', "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"parallel", 'p', "Toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
 
  {"", ' ', "Linker Control", NULL, NULL, NULL, NULL},
@@ -146,6 +151,10 @@ static void printVersion(ArgumentState* arg_state) {
   get_version(ver);
   fprintf(stderr, "%s Version %s\n", arg_state->program_name, ver);  
   printCopyright();
+}
+
+static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
+  printCppLineno = true;
 }
 
 static void printVersionAndExit(ArgumentState* arg_state, char* arg_unused) {

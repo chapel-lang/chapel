@@ -2,6 +2,9 @@ CC = cc
 CXX = cc
 CMAKEDEPEND = cc -M
 
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = 
+
 CFLAGS = 
 
 COMP_CFLAGS = $(CFLAGS)

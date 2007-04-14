@@ -6,6 +6,9 @@ CXX = cc
 CMAKEDEPEND = $(CC) -MM -MG
 MAKEDEPEND = $(CXX) -MM -MG
 
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O
+
 RANLIB = ranlib
 
 ifdef DEBUG
