@@ -99664,3 +99664,48 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: countTokens.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/07 17:04:58 -- bradc
+
+Log message:
+	Added top-level debug/optimization flags to the compiler:
+	
+	  -g : adds debugging support for generated C code
+	  -O : adds optimization support for generated C code
+	
+	Currently these flags only affect the generated C code
+	and do not affect other optimizations/transformations
+	that the compiler performs.  We may want to do this
+	eventually, but for now it seemed like it would be
+	easier to keep them decoupled.
+	
+	In particular, -g causes --cg-cpp-lines to be flipped
+	on by default (it can now be flipped back off via the
+	--no-cg-cpp-lines flag) and compiles the generated C
+	code using -g (or, more generally, whatever
+	DEBUG_CFLAGS the platform-specific Makefile defines).
+	
+	Similarly, -O compiles the generated C code using -O
+	(or, more generally, whatever OPT_CFLAGS the platform-
+	specific Makefile defines.
+	
+	Previously, we were setting the --ccflags command to
+	"-g" by default.  This is no longer the case, so if
+	you liked that default, you should setenv CHPL_DEBUG
+	to true.
+	
+	Also, changed our tests that currently used
+	--ccflags=-O3 to simply use -O for simplicity.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/make/: Makefile.generic Makefile.gnu Makefile.mta 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/test/npb/cg/bradc/: cg-makea1-sparse-sort.compopts 
+	                           cg-sparse.compopts 
+	chapel/test/npb/ft/: ft-serial.compopts 
+	chapel/test/performance/deitz/: COMPOPTS 
+
