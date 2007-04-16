@@ -490,7 +490,7 @@ void _chpl_free(void* memAlloc, _int32 lineno, _string filename) {
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     char* description, _int32 lineno, _string filename) {
   size_t newChunk = number * size;
-  memTableEntry* memEntry;
+  memTableEntry* memEntry = NULL;
   void* moreMemAlloc;
   if (!newChunk) {
     _chpl_free(memAlloc, lineno, filename);

@@ -5,7 +5,8 @@
 
 #undef exit
 
-static void gdbShouldBreakHere(void) {
+// must be non-static to avoid dead-code elim. when compiling -O3
+void gdbShouldBreakHere(void) {
 }
 
 static void cleanup_for_exit(void) {

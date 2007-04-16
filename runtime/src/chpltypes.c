@@ -103,7 +103,13 @@ string_length(_string x) {
 
 _int64 
 real2int( _real64 f) {
-  return *(_uint64*)(&f);
+  union {
+    _real64 r;
+    _uint64 u;
+  } foo;
+  foo.r = f;
+  _uint64 realAsInt = foo.u;
+  return realAsInt;
 }
 
 

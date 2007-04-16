@@ -1,5 +1,11 @@
 CHAPEL_ROOT = ../..
-DEBUG = 1
+
+ifdef CHPL_DEVELOPER
+DEBUG=1
+else
+OPTIMIZE=1
+endif
+
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 RUNTIME_CFLAGS += -I../include/$(CHPL_MAKE_PLATFORM) -I../include

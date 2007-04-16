@@ -15,7 +15,8 @@ void cleanup_for_exit(void) {
   stopCatchingSignals();
 }
 
-static void gdbShouldBreakHere() {
+// must be non-static to avoid dead-code elim. when compiling -O3
+void gdbShouldBreakHere(void) {
 }
 
 char *

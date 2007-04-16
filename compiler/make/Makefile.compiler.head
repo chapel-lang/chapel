@@ -1,8 +1,11 @@
 #
 # settings for the build
 #
+ifdef CHPL_DEVELOPER
 DEBUG=1
-#OPTIMIZE=1
+else
+OPTIMIZE=1
+endif
 #PROFILE=1
 
 #

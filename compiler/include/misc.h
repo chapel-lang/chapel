@@ -12,6 +12,8 @@ class Var;
 
 void clean_exit(int status);
 
+void gdbShouldBreakHere(void);  // must be exposed to avoid dead-code alim.
+
 int show_error(char *str, d_loc_t &loc, ...);
 int show_error(char *str, IFAAST *a, ...);
 int show_error(char *str, Var *v, ...);
