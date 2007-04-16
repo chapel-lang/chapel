@@ -99709,3 +99709,15 @@ Modified files:
 	chapel/test/npb/ft/: ft-serial.compopts 
 	chapel/test/performance/deitz/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+04/16/07 07:46:15 -- diten
+
+Log message:
+	Add a compiler flag --copy-collect that is false by default.  This way I can
+	work on this without interrupting any other work.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
