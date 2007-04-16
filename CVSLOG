@@ -99785,3 +99785,46 @@ Modified files:
 Removed files:
 	chapel/test/functions/waynew/: iterator1.chpl iterator1.good 
 
+---------------------------------------------------------------------------
+
+04/16/07 15:15:45 -- bradc
+
+Log message:
+	Changes to make the compiler and runtime compile
+	and execute properly when compiled -O3.  These
+	include:
+	
+	- making the gdbBreakHere functions non-static
+	  so that they won't be optimized away during
+	  compilation.
+	
+	- removing an unsafe pointer cast used for our
+	  associative arrays that caused the code to
+	  be incorrect when optimized -- replacing this
+	  with a union fixed the problem
+	
+	- adding an initialization in the runtime.
+	
+	Also, made the Makefiles so that if CHPL_DEVELOPER
+	isn't set, the compiler and runtime will be
+	compiled -O3 by default.  My next step is to make
+	sure that the nightly regression tests compile -O3
+	to simulate the user experience.
+	
+	As a developer, you can also request that things
+	be built -O3 by doing:
+	
+	   make OPTIMIZE=1
+	
+	on your Makefile command lines.  You may also want
+	to disable debugging via:
+	
+	   make DEBUG=0 OPTIMIZE=1
+
+Modified files:
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/compiler/util/: misc.cpp 
+	chapel/runtime/include/: chplexit.h 
+	chapel/runtime/src/: Makefile chplexit.c chplmem.c chpltypes.c 
+
