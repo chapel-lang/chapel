@@ -99732,3 +99732,19 @@ Log message:
 Removed files:
 	chapel/test/trivial/bradc/: formatoutput.future 
 
+---------------------------------------------------------------------------
+
+04/16/07 11:02:56 -- bradc
+
+Log message:
+	Added a bunch of variable initializations (mostly setting
+	pointers to NULL) that eliminate warnings when compiling
+	with -O3.  Working toward better support for building
+	the compiler -O3 for use by nightly regressions and
+	optionally testing on the chap0x servers.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp scopeResolve.cpp 
+
