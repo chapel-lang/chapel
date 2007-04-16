@@ -101,15 +101,16 @@ string_length(_string x) {
 }
 
 
-_int64 
-real2int( _real64 f) {
-  union {
+_int64 real2int( _real64 f) {
+  // need to use a union here rather than a pointer cast to avoid gcc
+  // warnings when compiling -O3
+  union {     
     _real64 r;
     _uint64 u;
-  } foo;
-  foo.r = f;
-  _uint64 realAsInt = foo.u;
-  return realAsInt;
+  } converter;
+
+  converter.r = f;
+  return converter.u;
 }
 
 
