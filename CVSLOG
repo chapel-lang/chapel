@@ -99838,3 +99838,15 @@ Log message:
 Modified files:
 	chapel/spec/: Iterators.tex 
 
+---------------------------------------------------------------------------
+
+04/16/07 16:01:26 -- bradc
+
+Log message:
+	Removed a C++-style declaration which followed a code segment.
+	Also added a comment and named things a bit better in my rewrite
+	of Wayne's real-to-int cast.
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+
