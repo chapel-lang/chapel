@@ -99871,3 +99871,17 @@ Modified files:
 	chapel/make/: Makefile.base Makefile.generic Makefile.gnu 
 	              Makefile.mta 
 
+---------------------------------------------------------------------------
+
+04/16/07 16:10:01 -- bradc
+
+Log message:
+	Changed nightly regression testing switch so that it would
+	turn off DEBUG and turn on OPTIMIZE to try and simulate the
+	user experience.  If called with CHPL_DEVELOPER set to true
+	(which my cron jobs do), it will still use all the -Wall
+	style flags to make sure problems don't leak into our code.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
