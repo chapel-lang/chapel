@@ -99748,3 +99748,40 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         functionResolution.cpp scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+04/16/07 13:29:32 -- deitz
+
+Log message:
+	Removed support for the structural interface methods getHeadCursor,
+	getNextCursor, isValidCursor?, and getValue that allow a class or
+	record to be iterated over.  Now use the default iterator named,
+	currently though I'm not especially tied to it, "ault".  This is as in
+	"def ault".
+	
+	Reworked all structural interface methods to be specified as an ault
+	iterator.
+	
+	Added an internal _getIterator function that returns the ault iterator
+	or an iterator class itself.
+	
+	Note that tuples and zipper iteration is implemented explicitly via
+	the structural interface methods currently.
+	
+	Removed a test that makes use of this structural interface.  Updated
+	another that illustrates our internal iterator transform.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelRange.chpl ChapelTuple.chpl 
+	                          List.chpl SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleEnum.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_transform.chpl 
+Removed files:
+	chapel/test/functions/waynew/: iterator1.chpl iterator1.good 
+
