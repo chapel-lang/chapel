@@ -99828,3 +99828,13 @@ Modified files:
 	chapel/runtime/include/: chplexit.h 
 	chapel/runtime/src/: Makefile chplexit.c chplmem.c chpltypes.c 
 
+---------------------------------------------------------------------------
+
+04/16/07 15:49:08 -- deitz
+
+Log message:
+	Removed references to the structural iterator interface in the spec.
+
+Modified files:
+	chapel/spec/: Iterators.tex 
+
