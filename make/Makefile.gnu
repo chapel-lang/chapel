@@ -10,32 +10,23 @@ CC = gcc
 MAKEDEPEND = $(CXX) -MM -MG
 CMAKEDEPEND = $(CC) -MM -MG
 
-DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O3
-
 RANLIB = ranlib
+
 
 #
 # General Flags
 #
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+PROFILE_CFLAGS = -pg
+PROFILE_LFLAGS = -pg
 
 ifdef CHPL_GCOV
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-ifdef DEBUG
-CFLAGS += $(DEBUG_CFLAGS)
-endif
-
-ifdef OPTIMIZE
-CFLAGS += $(OPT_CFLAGS)
-endif
-
-ifdef PROFILE
-CFLAGS += -pg
-LDFLAGS += -pg
-endif
 
 #
 # Flags for compiler, runtime, and generated code
