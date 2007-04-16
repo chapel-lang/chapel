@@ -99850,3 +99850,24 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+04/16/07 16:03:22 -- bradc
+
+Log message:
+	Refactored Makefiles a bit...
+	
+	(1) made it so that setting DEBUG=0 on the command line
+	    works as advertised in my last Makefile-oriented
+	    check-in.  Turns out I had overlooked a mistake
+	    somehow.
+	
+	(2) made it so that Makefile.base sets CFLAGS based on
+	    OPTIMIZE and DEBUG rather than the platform-specific
+	    Makefiles in order to avoid repeating logic
+	    unnecessarily.
+
+Modified files:
+	chapel/make/: Makefile.base Makefile.generic Makefile.gnu 
+	              Makefile.mta 
+
