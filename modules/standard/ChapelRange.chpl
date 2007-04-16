@@ -55,35 +55,19 @@ record range {
   def high: eltType return _high;
   def stride: eltType return _stride; // should be :int ??
 
-  pragma "inline" def getHeadCursor() {
+  iterator ault() {
     if stridable {
-      if _stride > 0 then
-        return _low;
-      else
-        return _high;
+      var i = if _stride > 0 then _low else _high;
+      while boundedType != bounded || (_low <= i && i <= _high) {
+        yield i;
+        i = i + _stride:eltType;
+      }
     } else {
-      return _low;
-    }
-  }
-
-  pragma "inline" def getNextCursor(c) {
-    if stridable then
-      return c + _stride:eltType;
-    else
-      return c + 1;
-  }
-
-  pragma "inline" def getValue(c)
-    return c;
-
-  pragma "inline" def isValidCursor?(c) {
-    if boundedType == bounded {
-      if stridable then
-        return _low <= c && c <= _high;
-      else
-        return c <= _high;
-    } else {
-      return true;
+      var i = _low;
+      while boundedType != bounded || (i <= _high) {
+        yield i;
+        i = i + 1;
+      }
     }
   }
 

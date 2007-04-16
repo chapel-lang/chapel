@@ -761,6 +761,13 @@ def _compound_cast(type lt, type rt, x) where _isPrimitiveType(lt)
 def _compound_cast(type lt, type rt, x) where !_isPrimitiveType(lt)
   return x;
 
+// handle default iterators
+pragma "inline" def _getIterator(ic: _iteratorClass)
+  return ic;
+
+pragma "inline" def _getIterator(x)
+  return x.ault();
+
   // note: need to verify that rhs can be assigned to lhs; checking
   // that rt:lt is not sufficient to handle parameter coercions
 

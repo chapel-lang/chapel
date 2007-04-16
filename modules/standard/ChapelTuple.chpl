@@ -116,25 +116,27 @@ record _square_tuple {
   param size: int;
   var tuple;
 
-  def getHeadCursor()
-    return tuple.getHeadCursor();
-
-  def getNextCursor(c) {
-    for param i in 1..size {
-      c(size-i+1) = tuple(size-i+1).getNextCursor(c(size-i+1));
-      if tuple(size-i+1).isValidCursor?(c(size-i+1)) then
-        return c;
-      else if i < size then
-        c(size-i+1) = tuple(size-i+1).getHeadCursor();
+  iterator ault_help(param dim: int) {
+    if dim == size - 1 {
+      for i in tuple(dim) do
+        for j in tuple(size) do
+          yield (i, j);
+    } else {
+      for i in tuple(dim) do
+        for j in ault_help(dim+1) do
+          yield (i, (...j));
     }
-    return c;
   }
 
-  def getValue(c)
-    return tuple.getValue(c);
-
-  def isValidCursor?(c)
-    return tuple.isValidCursor?(c);
+  iterator ault() {
+    if size == 1 {
+      for i in tuple(1) do
+        yield i;
+    } else {
+      for i in ault_help(1) do
+        yield i;
+    }
+  }
 }
 
 def _build_domain(x ...?size) where size > 1
@@ -146,3 +148,14 @@ def _build_tuple(x ...?size) {
   else
     return x;
 }
+
+pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
+  if i == t.size-1 {
+    return (_getIterator(t(i)), _getIterator(t(t.size)));
+  } else {
+    return (_getIterator(t(i)), (..._getIteratorTupleHelp(t, i+1)));
+  }
+}
+
+pragma "inline" def _getIterator(t: _tuple)
+  return _getIteratorTupleHelp(t, 1);

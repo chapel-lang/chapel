@@ -47,6 +47,17 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
   //     yield (cursorRow, colIdx(i));
   //   }
   // }
+
+  iterator ault() {
+    var cursorRow = rowRange.low;
+    for i in 1..nnz {
+      while (rowStart(cursorRow+1) <= i) {
+        cursorRow += 1;
+      }
+      yield (cursorRow, colIdx(i));
+    }
+  }
+  /*
   var cursorRow: index(rowDom);
   var cursorColInd: index(nnzDom);
 
@@ -78,7 +89,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
   def isValidCursor?(c) {
     return cursorColInd <= nnz;
   }
-
+  */
   def this(dim : int) {
     if (dim == 1) {
       return rowRange;

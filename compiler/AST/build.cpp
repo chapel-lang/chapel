@@ -287,6 +287,8 @@ BlockStmt* build_for_block(BlockTag tag,
   BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
 
+  iterator = new CallExpr("_getIterator", iterator);
+
   VarSymbol* iteratorSym = new VarSymbol("_iterator");
   iteratorSym->isCompilerTemp = true;
   stmts->insertAtTail(new DefExpr(iteratorSym));
@@ -570,9 +572,9 @@ FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
     new BlockStmt(
       new CallExpr(PRIMITIVE_MOVE, eltType,
         new CallExpr(
-          new CallExpr(".", tmp, new_StringSymbol("getValue")),
+          new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getValue")),
           new CallExpr(
-            new CallExpr(".", tmp, new_StringSymbol("getHeadCursor"))))),
+            new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getHeadCursor"))))),
       BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,

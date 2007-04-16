@@ -78,22 +78,10 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     deleted_seen = _EMPTY;
   }
 
-  def getHeadCursor() {
-    return 0;
+  iterator ault() {
+    for i in 0..num_inds-1 do
+      yield inds(i).data;
   }
-
-  def getNextCursor(c) {
-    return c + 1;
-  }
-
-  def getValue(c) {
-    return inds(c).data;
-  }
-
-  def isValidCursor?(c) {
-    return c < num_inds;
-  }
-
 
   // internal routines
 
@@ -341,17 +329,10 @@ class SingleLocaleAssociativeArray: BaseArray {
   def this(ind : ind_type) var : eltType
     return data(dom._get_index(ind));
 
-  def getHeadCursor()
-    return 0;
-
-  def getNextCursor(c)
-    return c + 1;
-
-  def getValue(c)
-    return data(c);
-
-  def isValidCursor?(c)
-    return c < dom.num_inds;
+  iterator ault() {
+    for i in 0..dom.num_inds-1 do
+      yield data(i);
+  }
 
   // WAW: hack due to domain-array interface. The array is not reallocated
   // here. Values of indices not in the new domain are reset. The 

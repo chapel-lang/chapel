@@ -3,7 +3,12 @@ use List;
 def _build_domain_type(dist, param rank : int,
                        type dimensional_index_type = int) {
   var x = dist.buildDomain(rank, dimensional_index_type);
-  return _domain(x.type, x.getValue(x.getHeadCursor()).type, dimensional_index_type, rank, x);
+  if rank > 1 {
+    type index_type = rank*dimensional_index_type;
+    return _domain(x.type, index_type, dimensional_index_type, rank, x);
+  } else {
+    return _domain(x.type, dimensional_index_type, dimensional_index_type, rank, x);
+  }
 }
 
 def _build_domain_type(dist, type ind) where !__primitive("isEnumType", ind) {
@@ -99,17 +104,10 @@ record _domain {
     }
   }
 
-  def getHeadCursor()
-    return _value.getHeadCursor();
-
-  def getNextCursor(c)
-    return _value.getNextCursor(c);
-
-  def getValue(c)
-    return _value.getValue(c);
-
-  def isValidCursor?(c)
-    return _value.isValidCursor?(c);
+  iterator ault() {
+    for i in _value.ault() do
+      yield i;
+  }
 
   def this(dim : int)
     return _value(dim);
@@ -304,17 +302,10 @@ record _array {
     _value(i) = val;
   }
 
-  def getHeadCursor()
-    return _value.getHeadCursor();
-
-  def getNextCursor(c)
-    return _value.getNextCursor(c);
-
-  def getValue(c)
-    return _value.getValue(c);
-
-  def isValidCursor?(c)
-    return _value.isValidCursor?(c);
+  iterator ault() {
+    for i in _value.ault() do
+      yield i;
+  }
 
   def numElements return _dom.numIndices; // assume dom name
 

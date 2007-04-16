@@ -28,34 +28,26 @@ class CMODomain: BaseDomain {
     return x;
   }
 
-  def getHeadCursor() {
-    var c : rank*dim_type;
-    for param i in 1..rank do
-      c(i) = ranges(i).getHeadCursor();
-    return c;
-  }
-
-  def getNextCursor(c) {
-    for param i in 1..rank {
-      c(rank-i+1) = ranges(rank-i+1).getNextCursor(c(rank-i+1));
-      if ranges(rank-i+1).isValidCursor?(c(rank-i+1)) then
-        return c;
-      else
-        c(rank-i+1) = ranges(rank-i+1).getHeadCursor();
+  iterator ault_help(param dim: int) {
+    if dim == rank - 1 {
+      for i in ranges(dim) do
+        for j in ranges(rank) do
+          yield (i, j);
+    } else {
+      for i in ranges(dim) do
+        for j in ault_help(dim+1) do
+          yield (i, (...j));
     }
-    c(1) = ranges(1)._high+1;
-    return c;
   }
 
-  def getValue(c) {
-    if rank == 1 then
-      return c(1);
-    else
-      return c;
-  }
-
-  def isValidCursor?(c) {
-    return c(1) != ranges(1)._high+1;
+  iterator ault() {
+    if rank == 1 {
+      for i in ranges(1) do
+        yield i;
+    } else {
+      for i in ault_help(1) do
+        yield i;
+    }
   }
 
   def this(dim : int)
@@ -189,6 +181,11 @@ class CMOArray:BaseArray {
     size = blk(rank) * dom(rank).length;
     D1 = [0:dim_type..size:dim_type);
     data = 0:eltType;
+  }
+
+  iterator ault() {
+    for i in dom do
+      yield this(i);
   }
 
   def getHeadCursor()

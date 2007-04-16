@@ -46,5 +46,9 @@ label L2
   def getValue(c: int) return result;
 }
 
-for i in goo(10) do
-  writeln(i);
+var ic = goo(10);
+var c = ic.getHeadCursor();
+while (ic.isValidCursor?(c)) {
+  writeln(ic.getValue(c));
+  c = ic.getNextCursor(c);
+}

@@ -15,20 +15,9 @@ class SingleLocaleEnumDomain: BaseDomain {
     adomain.setIndices(b);
   }
 
-  def getHeadCursor() {
-    return adomain.getHeadCursor();
-  }
-
-  def getNextCursor(c) {
-    return adomain.getNextCursor(c);
-  }
-
-  def getValue(c) {
-    return adomain.getValue(c);
-  }
-
-  def isValidCursor?(c) {
-    return adomain.isValidCursor?(c);
+  iterator ault() {
+    for i in adomain do
+      yield i;
   }
 
   def member?(ind: ind_type) {
@@ -66,18 +55,10 @@ class SingleLocaleEnumArray: BaseArray {
   def this(ind : dim_type) var : eltType
     return anarray(ind);
 
-  def getHeadCursor() {
-    return anarray.getHeadCursor();
+  iterator ault() {
+    for e in anarray do
+      yield e;
   }
-
-  def getNextCursor(c)
-    return anarray.getNextCursor(c);
-
-  def getValue(c)
-    return anarray.data(c);
-
-  def isValidCursor?(c)
-    return anarray.isValidCursor?(c);
 
   def numElements {
     return anarray.numElements;

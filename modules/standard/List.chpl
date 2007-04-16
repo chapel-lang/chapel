@@ -10,17 +10,13 @@ record list {
   var last: listNode(eltType);
   var length: int;
 
-  def getHeadCursor()
-    return first;
-
-  def getNextCursor(c: listNode(eltType))
-    return c.next;
-
-  def isValidCursor?(c: listNode(eltType))
-    return c != nil;
-
-  def getValue(c: listNode(eltType))
-    return c.data;
+  iterator ault() {
+    var tmp = first;
+    while tmp != nil {
+      yield tmp.data;
+      tmp = tmp.next;
+    }
+  }
 
   def append(e : eltType) {
     if last {
