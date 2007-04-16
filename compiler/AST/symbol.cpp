@@ -1075,7 +1075,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   if (ct->fields->length() < 0) {
     ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
-    CallExpr *call;
+    CallExpr *call = NULL;
     bool first = true;
     for (int i=1; i<ct->fields->length(); i++) {
       CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 

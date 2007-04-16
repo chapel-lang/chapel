@@ -512,7 +512,7 @@ static void build_record_hash_function(ClassType *ct) {
   if (ct->fields->length() == 0) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0)));
   } else {
-    CallExpr *call;
+    CallExpr *call = NULL;
     bool first = true;
     for_fields(field, ct) {
       CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 

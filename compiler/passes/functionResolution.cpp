@@ -1708,7 +1708,7 @@ preFold(Expr* expr) {
                   } else {
                     size = (int)var->immediate->uint_value();
                   }
-                  TypeSymbol* tsize;
+                  TypeSymbol* tsize = NULL;
                   if (type == dtInt[INT_SIZE_32]->symbol) {
                     switch (size) {
                     case 8: tsize = dtInt[INT_SIZE_8]->symbol; break;
@@ -1912,7 +1912,7 @@ preFold(Expr* expr) {
 }
 
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
-  long val1, val2, count = -1;
+  long val1 = -1, val2 = -1, count = -1;
   // ^^^ This is an assumption that "long" on the compiler host is at
   // least as big as "int" on the target.  This is not guaranteed to be true.
   EnumType *type1, *type2;
@@ -2188,7 +2188,7 @@ resolveBody(Expr* body) {
     expr = preFold(expr);
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
-        CallExpr* from;
+        CallExpr* from = NULL;
         for (int i = callStack.n-1; i >= 0; i--) {
           from = callStack.v[i];
           if (from->lineno > 0 && from->getModule()->modtype != MOD_STANDARD)

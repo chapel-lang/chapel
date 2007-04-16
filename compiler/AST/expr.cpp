@@ -1531,7 +1531,7 @@ get_string(Expr *e, char **s) {
 
 char*
 get_string(Expr* e) {
-  char* s;
+  char* s = NULL;
   if (!get_string(e, &s))
     INT_FATAL(e, "string literal expression expected");
   return s;

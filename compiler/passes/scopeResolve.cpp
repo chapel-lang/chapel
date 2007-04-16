@@ -229,7 +229,7 @@ void scopeResolve(Symbol* base) {
                       }
                     }
 
-                    Expr *dot;
+                    Expr *dot = NULL;
                     for (int i=0; i<=nestDepth; i++) {
                       // Apply implicit this pointers and outer this pointers
                       if (i == 0) {

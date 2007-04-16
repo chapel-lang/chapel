@@ -35,7 +35,7 @@ BlockStmt* build_chpl_stmt(AList* stmts) {
 
 
 BlockStmt* build_chpl_stmt(BaseAST* ast) {
-  BlockStmt* block;
+  BlockStmt* block = NULL;
   if (!ast)
     block = new BlockStmt();
   else if (Expr* a = dynamic_cast<Expr*>(ast))
@@ -498,7 +498,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
 
 BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   static int uid = 1;
-  FnSymbol* fn;
+  FnSymbol* fn = NULL;
   BlockStmt* stmts = build_chpl_stmt();
   bool has_otherwise = false;
 
