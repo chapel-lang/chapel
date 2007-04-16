@@ -212,9 +212,8 @@ if ($platform eq "cygwin") {
 # build stuff
 #
 
-mysystem("cd $chapeldir && $make third-party", "making third-party", 1, 1);
-mysystem("cd $chapeldir && $make compiler", "making chapel compiler", 1, 1);
-mysystem("cd $chapeldir && $make runtime", "making chapel runtime", 1, 1);
+mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 1, 1);
+mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 1, 1);
 #if ($valgrind == 1) {
 #    mysystem("cd $chapeldir && $make nogc", "making no-GC version", 1, 1);
 #}
