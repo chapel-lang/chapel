@@ -40,7 +40,7 @@ extern bool ignore_errors;
 extern int squelch_header_errors;
 
 extern bool fWarnPromotion;
-
+extern bool copyCollect;
 extern bool parallelPass;
 
 extern bool debugCCode, optimizeCCode;
