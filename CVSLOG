@@ -99721,3 +99721,14 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+04/16/07 10:52:20 -- bradc
+
+Log message:
+	Removing future for working test (answer to
+	question posed in future is now "arrays").
+
+Removed files:
+	chapel/test/trivial/bradc/: formatoutput.future 
+
