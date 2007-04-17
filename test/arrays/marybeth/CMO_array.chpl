@@ -188,18 +188,6 @@ class CMOArray:BaseArray {
       yield this(i);
   }
 
-  def getHeadCursor()
-    return dom.getHeadCursor();
-
-  def getNextCursor(c)
-    return dom.getNextCursor(c);
-
-  def getValue(c)
-    return this(dom.getValue(c));
-
-  def isValidCursor?(c)
-    return dom.isValidCursor?(c);
-
   def this(ind: dim_type ...1) var where rank == 1
     return this(ind);
 

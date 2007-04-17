@@ -31,15 +31,15 @@ record Stack {
   // pop method: remove an item from the top of the stack
   // note: it is a runtime error if the stack is empty
   def pop() {
-    if isEmpty? then
+    if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
     top = top.next;
     return oldTop.item;
   }
 
-  // isEmpty? method: true if the stack is empty; otherwise false
-  def isEmpty? return top == nil;
+  // isEmpty method: true if the stack is empty; otherwise false
+  def isEmpty return top == nil;
 }
 
 // Test: Push three strings onto a stack and then pop them off.
@@ -57,5 +57,5 @@ var D: domain(2) = [1..4, 1..4];
 var stack2: Stack(index(D));
 for i in D do
   stack2.push(i);
-while !stack2.isEmpty? do
+while !stack2.isEmpty do
   writeln(stack2.pop());

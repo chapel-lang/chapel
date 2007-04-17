@@ -108,7 +108,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
-  def member?(ind: rank*dim_type) {
+  def member(ind: rank*dim_type) {
     const (found, loc) = find(ind);
     return found;
   }
@@ -179,7 +179,7 @@ class SingleLocaleSparseArray: BaseArray {
   def this(ind: rank*dim_type) {
     // make sure we're in the dense bounding box
     if boundsChecking then
-      if !((dom.parentDom).member?(ind)) then
+      if !((dom.parentDom).member(ind)) then
         halt("array index out of bounds: ", ind);
 
     // lookup the index and return the data or IRV
@@ -191,7 +191,7 @@ class SingleLocaleSparseArray: BaseArray {
   def =this(ind: rank*dim_type, val:eltType) {
     // make sure we're in the dense bounding box
     if boundsChecking then
-      if !((dom.parentDom).member?(ind)) then
+      if !((dom.parentDom).member(ind)) then
         halt("array index out of bounds: ", ind);
 
     // lookup the index and return the data or IRV

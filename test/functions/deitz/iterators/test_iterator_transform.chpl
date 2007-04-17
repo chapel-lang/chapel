@@ -42,13 +42,13 @@ label L2
     return 0;
   }
   def getHeadCursor() return getNextCursor(1);
-  def isValidCursor?(c: int) return c != 0;
+  def isValidCursor(c: int) return c != 0;
   def getValue(c: int) return result;
 }
 
 var ic = goo(10);
 var c = ic.getHeadCursor();
-while (ic.isValidCursor?(c)) {
+while (ic.isValidCursor(c)) {
   writeln(ic.getValue(c));
   c = ic.getNextCursor(c);
 }

@@ -55,7 +55,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
   ii->getNextCursor->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
-  ii->isValidCursor = buildEmptyIteratorMethod("isValidCursor?", ii->classType);
+  ii->isValidCursor = buildEmptyIteratorMethod("isValidCursor", ii->classType);
   ii->isValidCursor->retType = dtBool;
   ii->isValidCursor->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));

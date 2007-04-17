@@ -42,10 +42,6 @@ class _stack {
     top = 0;
   }
 
-  def empty? {
-    return top != 0;
-  }
-
   def length {
     return top;
   }

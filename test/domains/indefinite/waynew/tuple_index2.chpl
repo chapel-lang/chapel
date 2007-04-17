@@ -15,7 +15,7 @@ d.add( (1,0));
 d.add( (0,1));
 
 def check( t: twod_t) {
-  writeln( t, " member = ", d.member?( t));
+  writeln( t, " member = ", d.member( t));
 }
 
 check( (0,0));

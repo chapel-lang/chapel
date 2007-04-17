@@ -71,7 +71,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     }
   }
 
-  def member?(ind: rank*dim_type) {
+  def member(ind: rank*dim_type) {
     for param i in 1..rank do
       if !_in(ranges(i), ind(i)) then
         return false;
@@ -241,7 +241,7 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def this(ind : rank*dim_type) var {
     if boundsChecking then
-      if !dom.member?(ind) then
+      if !dom.member(ind) then
         halt("array index out of bounds: ", ind);
     var sum : dim_type;
     if stridable {

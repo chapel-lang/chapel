@@ -236,7 +236,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
 
-  def member?( ind: ind_type) {
+  def member( ind: ind_type) {
     var ind_pos = table(_map(ind));
     return (ind_pos!=_EMPTY && ind_pos!=_DELETED);
   }
@@ -262,7 +262,7 @@ def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociative
   }
 
   for ind in indices {
-    if (!b.member?(ind)) {
+    if (!b.member(ind)) {
       a.remove( ind);
     }
   }
@@ -273,7 +273,7 @@ def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociative
   while inds_count<total_inds {
     var ind = b.inds( inds_pos);
     if (ind.valid) {
-      if (!a.member?(ind.data)) {
+      if (!a.member(ind.data)) {
         a.add( ind.data);
       }
       inds_count += 1;

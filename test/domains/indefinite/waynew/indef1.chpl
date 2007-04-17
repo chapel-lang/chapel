@@ -6,7 +6,7 @@ intd.add(4);
 intd.add(5);
 
 def icheck( i:int) {
-  writeln( "member?(", i, ") = ", intd.member?( i));
+  writeln( "member(", i, ") = ", intd.member( i));
 }
 
 icheck(0);
@@ -29,7 +29,7 @@ stringd.add( "greet");
 stringd.add( "meat");
 
 def scheck( s:string) {
-  writeln( "member?(", s, ") = ", stringd.member?( s));
+  writeln( "member(", s, ") = ", stringd.member( s));
 }
 
 scheck( "meet");

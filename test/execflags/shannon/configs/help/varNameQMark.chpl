@@ -1,7 +1,7 @@
-config var s?econd: int = 1;
-config var last?: int = 2;
-config var mu?ltip?le: int = 3;
+config var second: int = 1;
+config var last: int = 2;
+config var multiple: int = 3;
 
-writeln("s?econd = ", s?econd);
-writeln("last? = ", last?);
-writeln("mu?ltip?le = ", mu?ltip?le);
+writeln("second = ", second);
+writeln("last = ", last);
+writeln("multiple = ", multiple);

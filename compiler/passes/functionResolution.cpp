@@ -1599,7 +1599,7 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* cond = new VarSymbol("_cond");
   cond->isCompilerTemp = true;
   block->insertBefore(new DefExpr(cond));
-  CallExpr* partial = new CallExpr("isValidCursor?", gMethodToken, iterator);
+  CallExpr* partial = new CallExpr("isValidCursor", gMethodToken, iterator);
   partial->partialTag = true;
   block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
 
@@ -1612,7 +1612,7 @@ expand_for_loop(CallExpr* call) {
   partial->partialTag = true;
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(partial, cursor)));
 
-  partial = new CallExpr("isValidCursor?", gMethodToken, iterator);
+  partial = new CallExpr("isValidCursor", gMethodToken, iterator);
   partial->partialTag = true;
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
 

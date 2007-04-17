@@ -51,9 +51,9 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
     return _getValueHelp(2, vt, c);
   }
 
-  def isValidCursor?(c) {
+  def isValidCursor(c) {
     for param i in 1..size do
-      if !this(i).isValidCursor?(c(i)) then
+      if !this(i).isValidCursor(c(i)) then
         return false;
     return true;
   }

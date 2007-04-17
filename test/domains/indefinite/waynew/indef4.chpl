@@ -4,7 +4,7 @@ param SIZE = 100000;
 var idomain: domain(uint);
 
 def icheck( i) {
-  writeln( "member?(", i, ") = ", idomain.member?( i));
+  writeln( "member(", i, ") = ", idomain.member( i));
 }
 
 for i in 1..ITERATIONS {

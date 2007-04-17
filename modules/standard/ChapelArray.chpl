@@ -152,8 +152,8 @@ record _domain {
   def low return _value.low;
   def high return _value.high;
 
-  def member?(i) {
-    return _value.member?(i);
+  def member(i) {
+    return _value.member(i);
   }
 
   def expand(i: int ...rank)
@@ -382,7 +382,7 @@ class BaseArray {
 class BaseDomain {
   var _arrs: list of BaseArray;
 
-  def member?(ind) : bool {
+  def member(ind) : bool {
     halt("membership test not supported for this domain type");
     return false;
   }

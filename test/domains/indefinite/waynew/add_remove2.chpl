@@ -26,5 +26,5 @@ intd.add((4,4));
 icheck(4);
 
 def icheck( i:int) {
-  writeln( "member?(", (i,i), ") = ", intd.member?( (i,i)));
+  writeln( "member(", (i,i), ") = ", intd.member( (i,i)));
 }

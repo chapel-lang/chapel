@@ -20,8 +20,8 @@ class SingleLocaleEnumDomain: BaseDomain {
       yield i;
   }
 
-  def member?(ind: ind_type) {
-    adomain.member?(ind);
+  def member(ind: ind_type) {
+    adomain.member(ind);
   }
 
   def numIndices {

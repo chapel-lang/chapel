@@ -50,7 +50,7 @@ class ll {
     return e;
   }
 
-  def contains?(e)  {
+  def contains(e)  {
     var mylist = list;
     while mylist != nil do
       if e == mylist.element then

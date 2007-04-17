@@ -19,6 +19,6 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
-     s?econd: int (configured to 111)
-       last?: int (configured to 222)
-  mu?ltip?le: int (configured to 333)
+    second: int (configured to 111)
+      last: int (configured to 222)
+  multiple: int (configured to 333)
