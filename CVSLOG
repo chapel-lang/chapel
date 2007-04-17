@@ -100012,3 +100012,26 @@ Modified files:
 	chapel/modules/standard/: ChapelArray.chpl 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+04/17/07 14:55:23 -- bradc
+
+Log message:
+	Adding two C versions of the STREAM Triad benchmark.
+	- stream-index.c uses C indexing into the 1D arrays.
+	- stream-walker.c uses a pointer to wak through the
+	  arrays
+	
+	IMPORTANT NOTE: Currently neither of the vectors are
+	set up using the same random numbers as in the Chapel
+	benchmark, they are merely initialized to constant
+	values.  This should not affect performance, but
+	should probably be done for consistency.  I knew I
+	wasn't going to get that done in this sitting, so am
+	checking in what I have.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/performance/: .cvsignore 
+	                                               stream-index.c 
+	                                               stream-walker.c 
+
