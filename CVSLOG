@@ -99937,3 +99937,16 @@ Removed files:
 	chapel/test/trivial/deitz/: test_function_question_mark.chpl 
 	                            test_function_question_mark.good 
 
+---------------------------------------------------------------------------
+
+04/17/07 09:34:57 -- bradc
+
+Log message:
+	Fixed final uninitialized variable warning that comes
+	up when compiling -O3 only with older versions of g++.
+	Fixed the regression tests to use the module version as
+	well (were previously using the /usr/bin version).
+
+Modified files:
+	chapel/compiler/ifa/: num.h 
+
