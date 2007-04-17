@@ -100035,3 +100035,46 @@ Added files:
 	                                               stream-index.c 
 	                                               stream-walker.c 
 
+---------------------------------------------------------------------------
+
+04/17/07 14:59:41 -- diten
+
+Log message:
+	Overload the binary operators +,-,/,*,**,%,&,|,^,>>,<<,<=,>=,<,>,!=,== and
+	unary operators +,-,~,! over tuples.  This defines 3 versions of each overloaded
+	binary operator:
+	
+	1. tuple1 op tuple2 where tuple1.size == tuple2.size
+	This returns a possibly heterogenous tuple where the type of each element i is
+	the type of "tuple1(i) op tuple2(i)" if this type is defined.
+	
+	!= and == are exceptions, these return a single truth value. It would probably
+	be better to either define all of the comparison operators to return a single
+	value, or define all to return tuples.
+	
+	2. tuple op scalar
+	Applies tuple(i) op scalar for each element in the tuple.  Again, the result
+	can be heterogenous.
+	
+	3. scalar op tuple
+	Applies scalar op tuple(i) for each element.
+	
+	Add some tests checking these operators.
+	
+	There are 6 known new failures.
+
+Modified files:
+	chapel/modules/standard/: ChapelTuple.chpl 
+Added files:
+	chapel/test/types/tuple/diten/: onetuple.chpl onetuple.good 
+	                                tupleArithOperators.chpl 
+	                                tupleArithOperators.good 
+	                                tupleBitOps.chpl 
+	                                tupleBitOps.good 
+	                                tupleComparisons.chpl 
+	                                tupleComparisons.good 
+	                                tupleNestedOps.chpl 
+	                                tupleNestedOps.good 
+	                                tuplePlusString.chpl 
+	                                tuplePlusString.good 
+
