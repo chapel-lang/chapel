@@ -99991,3 +99991,24 @@ Added files:
 	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
 	                                  pivlublock-alias.good 
 
+---------------------------------------------------------------------------
+
+04/17/07 14:52:57 -- deitz
+
+Log message:
+	Added a flag
+	
+	  --no-single-loop-iterator-opt
+	
+	to disable the specialization of iterators that are composed of a
+	single for loop.
+	
+	Added an inline pragma to the _pass function for iterator classes.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
