@@ -100078,3 +100078,21 @@ Added files:
 	                                tuplePlusString.chpl 
 	                                tuplePlusString.good 
 
+---------------------------------------------------------------------------
+
+04/17/07 16:15:29 -- bradc
+
+Log message:
+	Removed explicit overloads of tuple addition that were
+	inserted as workarounds until it was supported in the
+	implementation.
+
+Modified files:
+	chapel/test/arrays/bradc/workarounds/: 
+	                                       arrayOfArray-workaround.chpl 
+	                                       arrayOfArray-workaround2.chpl 
+	                                       arrayOfSpsArray-workaround-generictype.chpl 
+	                                       arrayOfSpsArray-workaround.chpl 
+	chapel/test/studies/jacobi/bradc/: jacobi-simple-compiles.chpl 
+	chapel/test/users/rbarrett/: diffuse2d-v3-blc.chpl 
+
