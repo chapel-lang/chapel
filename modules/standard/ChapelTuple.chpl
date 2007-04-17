@@ -111,6 +111,608 @@ pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(256)) & (x.
   return c;
 }
 
+pragma "inline" def +(a: _tuple) {
+  return a;
+}
+
+pragma "inline" def -(a: _tuple) {
+  for param i in 1..a.size do
+    a(i) = -a(i);
+  return a;
+}
+
+pragma "inline" def +(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) + b, a(a.size) + b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) + b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) + b;
+  else
+    return help(1);
+}
+
+pragma "inline" def +(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a + b(i), a + b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a + b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a + b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def +(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) + b(i), a(a.size) + b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) + b(i), (...rest));
+    }
+  }
+  if (a.size == 1)
+    return a(1)+b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def -(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) - b, a(a.size) - b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) - b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) - b;
+  else
+    return help(1);
+}
+
+pragma "inline" def -(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a - b(i), a - b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a - b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a - b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def -(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) - b(i), a(a.size) - b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) - b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) - b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def *(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) * b, a(a.size) * b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) * b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) * b;
+  else
+    return help(1);
+}
+
+pragma "inline" def *(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a * b(i), a * b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a * b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a * b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def *(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) * b(i), a(a.size) * b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) * b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) * b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def /(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) / b, a(a.size) / b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) / b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) / b;
+  else
+    return help(1);
+}
+
+pragma "inline" def /(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a / b(i), a / b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a / b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a / b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def /(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) / b(i), a(a.size) / b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) / b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) / b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def %(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) % b, a(a.size) % b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) % b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) % b;
+  else
+    return help(1);
+}
+
+pragma "inline" def %(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a % b(i), a % b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a % b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a % b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def %(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) % b(i), a(a.size) % b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) % b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) % b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def **(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) ** b, a(a.size) ** b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) ** b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) ** b;
+  else
+    return help(1);
+}
+
+pragma "inline" def **(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a ** b(i), a ** b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a ** b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a ** b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def **(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) ** b(i), a(a.size) ** b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) ** b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) ** b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def ~(a: _tuple) {
+  for param i in 1..a.size do
+    a(i) = ~a(i);
+  return a;
+}
+
+pragma "inline" def &(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) & b, a(a.size) & b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) & b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) & b;
+  else
+    return help(1);
+}
+
+pragma "inline" def &(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a & b(i), a & b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a & b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a & b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def &(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) & b(i), a(a.size) & b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) & b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) & b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def |(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) | b, a(a.size) | b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) | b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) | b;
+  else
+    return help(1);
+}
+
+pragma "inline" def |(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a | b(i), a | b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a | b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a | b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def |(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) | b(i), a(a.size) | b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) | b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) | b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def ^(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) ^ b, a(a.size) ^ b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) ^ b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) ^ b;
+  else
+    return help(1);
+}
+
+pragma "inline" def ^(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a ^ b(i), a ^ b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a ^ b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a ^ b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def ^(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) ^ b(i), a(a.size) ^ b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) ^ b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) ^ b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def <<(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) << b, a(a.size) << b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) << b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) << b;
+  else
+    return help(1);
+}
+
+pragma "inline" def <<(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a << b(i), a << b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a << b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a << b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def <<(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) << b(i), a(a.size) << b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) << b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) << b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def >>(a: _tuple, b) {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) >> b, a(a.size) >> b);
+    } else {
+      var rest = help(i+1);
+      return (a(i) >> b, (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) >> b;
+  else
+    return help(1);
+}
+
+pragma "inline" def >>(a, b: _tuple) {
+  pragma "inline" def help(param i: int) {
+    if i == b.size-1 {
+      return (a >> b(i), a >> b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a >> b(i), (...rest));
+    }
+  }
+  if b.size == 1 then
+    return a >> b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def >>(a: _tuple, b: _tuple) where a.size == b.size {
+  pragma "inline" def help(param i: int) {
+    if i == a.size-1 {
+      return (a(i) >> b(i), a(a.size) >> b(b.size));
+    } else {
+      var rest = help(i+1);
+      return (a(i) >> b(i), (...rest));
+    }
+  }
+  if a.size == 1 then
+    return a(1) >> b(1);
+  else
+    return help(1);
+}
+
+pragma "inline" def !(a: _tuple) {
+  var b: a.size * bool;
+  for param i in 1..a.size do
+    b(i) = !a(i);
+  return b;
+}
+
+pragma "inline" def >(a: _tuple, b) {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) > b;
+  return result;
+}
+
+pragma "inline" def >(a, b: _tuple) {
+  var result: b.size * bool;
+  for param i in 1..b.size do
+    result(i) = a > b(i);
+  return result;
+}
+
+pragma "inline" def >(a: _tuple, b: _tuple) where a.size == b.size {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) > b(i);
+  return result;
+}
+
+pragma "inline" def >=(a: _tuple, b) {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) >= b;
+  return result;
+}
+
+pragma "inline" def >=(a, b: _tuple) {
+  var result: b.size * bool;
+  for param i in 1..b.size do
+    result(i) = a >= b(i);
+  return result;
+}
+
+pragma "inline" def >=(a: _tuple, b: _tuple) where a.size == b.size {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) >= b(i);
+  return result;
+}
+
+pragma "inline" def <(a: _tuple, b) {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) < b;
+  return result;
+}
+
+pragma "inline" def <(a, b: _tuple) {
+  var result: b.size * bool;
+  for param i in 1..b.size do
+    result(i) = a < b(i);
+  return result;
+}
+
+pragma "inline" def <(a: _tuple, b: _tuple) where a.size == b.size {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) < b(i);
+  return result;
+}
+
+pragma "inline" def <=(a: _tuple, b) {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) <= b;
+  return result;
+}
+
+pragma "inline" def <=(a, b: _tuple) {
+  var result: b.size * bool;
+  for param i in 1..b.size do
+    result(i) = a <= b(i);
+  return result;
+}
+
+pragma "inline" def <=(a: _tuple, b: _tuple) where a.size == b.size {
+  var result: a.size * bool;
+  for param i in 1..a.size do
+    result(i) = a(i) <= b(i);
+  return result;
+}
+
 pragma "scalar replace tuples"
 record _square_tuple {
   param size: int;

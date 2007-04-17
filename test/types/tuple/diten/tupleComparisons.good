@@ -1,0 +1,27 @@
+Equal
+true
+false
+false
+false
+
+Not equal
+false
+true
+true
+true
+
+Greater than or equal
+(true, true, true)
+(true, true, true)
+
+Greater than
+(false, false, false)
+(false, true, false)
+
+Less than or equal
+(true, true, true)
+(true, false, true)
+
+Less than
+(false, false, false)
+(false, false, false)
