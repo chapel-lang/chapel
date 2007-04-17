@@ -99885,3 +99885,55 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/16/07 17:01:14 -- deitz
+
+Log message:
+	Removed support for ? in identifiers.
+	
+	Updated spec, changing member? to member and true? to isTrue.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp iterator.cpp 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelTuple.chpl ChapelUtil.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleEnum.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/spec/: Domains_and_Arrays.tex Expressions.tex 
+	              Lexical_Structure.tex 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+	chapel/test/domains/indefinite/waynew/: add_remove.chpl 
+	                                        add_remove.good 
+	                                        add_remove2.chpl 
+	                                        add_remove2.good 
+	                                        indef1.chpl indef1.good 
+	                                        indef2.chpl indef2.good 
+	                                        indef4.chpl indef4.good 
+	                                        memory2.chpl 
+	                                        tuple_index.chpl 
+	                                        tuple_index2.chpl 
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.chpl 
+	                                             configVar-Dash.execopts 
+	                                             configVar-Dash.good 
+	                                             varNameEnumQM.chpl 
+	                                             varNameEnumQM.execopts 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.chpl 
+	                                             varNameQMark.execopts 
+	                                             varNameQMark.good 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_transform.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea-commented.chpl cg-makea.chpl 
+	                           cg.chpl 
+	chapel/test/release/examples/: genericStack.chpl 
+	                               genericStack2.chpl 
+	chapel/test/trivial/diten/: linked_list.chpl 
+Removed files:
+	chapel/test/trivial/deitz/: test_function_question_mark.chpl 
+	                            test_function_question_mark.good 
+
