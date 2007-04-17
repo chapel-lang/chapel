@@ -99,7 +99,7 @@ class Immediate { public:
 
 inline int64
 Immediate::int_value( void) {
-  int64 val;
+  int64 val = 0;
   switch (num_index) {
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
@@ -114,7 +114,7 @@ Immediate::int_value( void) {
 
 inline uint64
 Immediate::uint_value( void) {
-  uint64 val;
+  uint64 val = 0;
   switch (num_index) {
   case INT_SIZE_1 : val = v_bool;  break;
   case INT_SIZE_8 : val = v_uint8;  break;
