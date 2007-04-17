@@ -100096,3 +100096,25 @@ Modified files:
 	chapel/test/studies/jacobi/bradc/: jacobi-simple-compiles.chpl 
 	chapel/test/users/rbarrett/: diffuse2d-v3-blc.chpl 
 
+---------------------------------------------------------------------------
+
+04/17/07 16:52:24 -- bradc
+
+Log message:
+	Re-added the valgrind.suppressions file for the
+	Chapel compiler since the OS upgrade seems to
+	have caused getpwuid() to result in a valgrind
+	error on every compile and IS has been slow to
+	respond to my request for help on this issue.
+	
+	Re-enabled the use of this supressions file
+	when using the test system.  This should allow
+	us to distinguish between real and spurious
+	valgrind errors the next time we run valgrind
+	regressions.
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+Added files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
