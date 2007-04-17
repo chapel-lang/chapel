@@ -99969,3 +99969,25 @@ Added files:
 	chapel/test/studies/lu/marybeth/: nopivlublock-alias.chpl 
 	                                  nopivlublock-alias.good 
 
+---------------------------------------------------------------------------
+
+04/17/07 13:26:41 -- marybeth
+
+Log message:
+	The test, pivlublock-alias.chpl is a modification to
+	the pivoting block LU so that array aliases are used.
+	There are a few modifications that are needed to make this
+	test compile and run.  A1D is a range and not a 1D domain.
+	The output of the iterator, IterateByBlocks are three ranges
+	rather than three subdomains. Temporary variables, slice1 and slice2,
+	are needed to represent indefinite subdomains.  Swap operators
+	(or swap routines) are not implemented yet and the swapping of rows
+	is coded inline with the algorithm.  The maxIndex reduction is not
+	implemented yet either and is inlined in the code.
+	
+	This test successfully uses the array alias operator.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
+	                                  pivlublock-alias.good 
+
