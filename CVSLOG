@@ -99950,3 +99950,22 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: num.h 
 
+---------------------------------------------------------------------------
+
+04/17/07 11:02:08 -- marybeth
+
+Log message:
+	The test, nopivlublock-alias.chpl is a modification to
+	the non-pivoting block LU so that array aliases are used.
+	There are a few modifications that are needed to make this
+	test compile and run:  A1D is a range and not a 1D domain,
+	the output of the iterator, IterateByBlocks are two ranges
+	rather than two subdomains and a temporary variable, slice,
+	is needed to represent the indefinite subdomain CurrentBlockInds(k+1..).
+	
+	This test successfully uses the array alias operator.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: nopivlublock-alias.chpl 
+	                                  nopivlublock-alias.good 
+
