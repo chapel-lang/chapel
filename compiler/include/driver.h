@@ -23,6 +23,7 @@ extern bool no_inline;
 extern bool fRefCount;
 extern bool fScalarReplaceTuples;
 extern bool fDisableScalarReplaceArrayWrappers;
+extern bool fDisableSingleLoopIteratorOpt;
 extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
 

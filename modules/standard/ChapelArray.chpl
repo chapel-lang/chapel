@@ -397,7 +397,7 @@ class BaseArithmeticDomain : BaseDomain {
 }
 
 
-def _pass(ic: _iteratorClass)
+pragma "inline" def _pass(ic: _iteratorClass)
   return ic;
 
 def _copy(ic: _iteratorClass) {

@@ -37,6 +37,7 @@ int trace_level = 0;
 int fcg = 0;
 bool fScalarReplaceTuples = false;
 bool fDisableScalarReplaceArrayWrappers = false;
+bool fDisableSingleLoopIteratorOpt = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
 bool fRefCount = false;
@@ -72,6 +73,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-inline", ' ', "Do not inline functions" , "F", &no_inline, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
  {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
+ {"no-single-loop-iterator-opt", ' ', "Disable the optimization of iterators composed of a single loop", "F", &fDisableSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
 
  {"", ' ', "Code Generation", NULL, NULL, NULL, NULL},
  {"savec", ' ', "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},

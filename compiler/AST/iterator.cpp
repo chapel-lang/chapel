@@ -409,7 +409,8 @@ void lowerIterator(FnSymbol* fn) {
   }
 
   Symbol* value = local2field.get(fn->getReturnSymbol());
-  if (CallExpr* yield = isSingleLoopIterator(fn, asts)) {
+  CallExpr* yield = isSingleLoopIterator(fn, asts);
+  if (!fDisableSingleLoopIteratorOpt && yield) {
     buildSingleLoopMethods(fn, asts, local2field, locals, value, yield);
   } else {
     buildGetNextCursor(fn, asts, local2field, locals);
