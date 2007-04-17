@@ -461,16 +461,3 @@ def CheckAnswer ( ProblemSpace2d, newGrid, iteration ) {
 /* End diffuse2d.c                                                                                        */
 /* ====================================================================================================== */
 
-def +(x:2*int, y:2*int) {
-  var res:2*int;
-  for param i in 1..2 do
-    res(i) = x(i) + y(i);
-  return res;
-}
-
-def +(x:3*int, y:3*int) {
-  var res:3*int;
-  for param i in 1..3 do
-    res(i) = x(i) + y(i);
-  return res;
-}

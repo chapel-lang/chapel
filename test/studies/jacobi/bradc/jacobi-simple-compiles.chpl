@@ -35,8 +35,3 @@ def main() {
 
   writeln("Final A is: \n", A[D]);
 }
-
-def +(x:(int, int), y:(int, int)) {
-  return (x(1) + y(1), x(2) + y(2));
-}
-

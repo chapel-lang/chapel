@@ -33,9 +33,3 @@ forall ij in ProbDom do
   B(ij) = (+ reduce [off in StencDom] W(ij)(off)*A(ij+off)) / 6;
 
 writeln("B is:\n", B, "\n");
-
-// + on 2-tuples
-def +(x:2*int, y:2*int) {
-  return (x(1)+y(1), x(2)+y(2));
-}
-

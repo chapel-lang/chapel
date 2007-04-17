@@ -20,10 +20,6 @@ forall (i,j) in ProbDom {
 
 writeln("A is:\n", A, "\n");
 
-def +(x:2*int, y:2*int) {
-  return (x(1)+y(1), x(2)+y(2));
-}
-
 forall ij in ProbDom do
   B(ij) = (+ reduce [(x,y) in StencDom] W(ij)(x+2)(y+2)*A(ij+(x,y))) / 6;
 
