@@ -100282,3 +100282,15 @@ Modified files:
 Added files:
 	chapel/test/execflags/bradc/gdbddash/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+04/18/07 14:34:35 -- bradc
+
+Log message:
+	Adding another suppression to the valgrind suppressions
+	file to see if it fixes the problems I was seeing in
+	the regression system.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
