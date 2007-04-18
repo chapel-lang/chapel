@@ -18,7 +18,7 @@ param n = 10;
 param blk = 5;
 
 var A1D = 1..n;
-var slice1, slice2: range;
+var slice0, slice1, slice2: range;
 const A2D = [A1D,A1D]; 
 var A: [A2D] real;
 var piv: [A1D] int;
@@ -42,18 +42,13 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
 // LU factorization of A1 
   for k in CurrentBlockInds {
 //  temporaries used instead of subdomains with indefinite ranges.
+    slice0 = k..UnfactoredInds.high;
     slice1 = k+1..UnfactoredInds.high;
     slice2 = k+1..CurrentBlockInds.high;
 
-//  ind = maxIndex reduce (A1(UnfactoredInds,k));
-    var maxAk = abs(A1(k,k));
-    ind = k;
-    for i in slice1 {
-      if (abs(A1(i,k)) > maxAk) {
-        ind = i;
-        maxAk = abs(A1(i,k));    
-      }
-    }
+//  ind = maxIndex reduce (A1(UnfactoredInds(k..),k));
+    (_, (ind,_)) = maxloc reduce (abs(A(slice0,k..k)), [slice0,k..k]);
+
     if (ind != k) {
 //      piv(k) <==> piv(ind);
 //      A(k,..) <==> A(ind,..);
