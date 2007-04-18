@@ -4,6 +4,14 @@
 #include "iterator.h"
 
 
+bool isRecordType(Type* t) {
+  ClassType* ct = dynamic_cast<ClassType*>(t);
+  if (ct && ct->classTag == CLASS_RECORD)
+    return true;
+  return false;
+}
+
+
 IteratorInfo::IteratorInfo() :
   classType(NULL),
   getHeadCursor(NULL),
@@ -42,7 +50,10 @@ void prototypeIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo = ii;
 
   ii->classType = new ClassType(CLASS_CLASS);
-  TypeSymbol* cts = new TypeSymbol(astr("_ic_", fn->name), ii->classType);
+  char* className = astr("_ic_", fn->name);
+  if (fn->_this)
+    className = astr(className, "_", fn->_this->type->symbol->cname);
+  TypeSymbol* cts = new TypeSymbol(className, ii->classType);
   cts->addPragma("iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
@@ -131,9 +142,19 @@ buildGetNextCursor(FnSymbol* fn,
       local = newlocal;
     }
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
-    SymExpr* newuse = new SymExpr(local);
-    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
-    local->uses.add(newuse);
+    if (isRecordType(local->type)) {
+      SymExpr* newuse = new SymExpr(local);
+      ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
+      local->uses.add(newuse);
+    } else {
+      forv_Vec(SymExpr, se, local->defs) {
+        if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+          SymExpr* newuse = new SymExpr(local);
+          parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
+          local->uses.add(newuse);
+        }
+      }
+    }
   }
   t1 = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
   ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, cursor));
@@ -198,7 +219,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(call->parentExpr)) {
-          if (block->loopInfo && block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR)) {
+          if (block->loopInfo &&
+              (block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
+               block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO))) {
             singleYield = call;
           } else {
             return NULL;
@@ -211,7 +234,8 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
       if (block->loopInfo) {
         if (singleFor) {
           return NULL;
-        } else if (block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) &&
+        } else if ((block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
+                    block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {
@@ -342,8 +366,10 @@ buildSingleLoopMethods(FnSymbol* fn,
   // load local variables from fields at return points and update
   // fields when local variables change
   forv_Vec(Symbol, local, locals) {
+    bool loadInGetHeadCursor = false;
     Symbol* field = local2field.get(local);
     if (dynamic_cast<ArgSymbol*>(local)) {
+      loadInGetHeadCursor = true;
       Symbol* newlocal = newTemp(ii->getNextCursor, local->type, local->name);
       ASTMap map;
       map.put(local, newlocal);
@@ -358,10 +384,25 @@ buildSingleLoopMethods(FnSymbol* fn,
       local = newlocal;
       headCopyMap.put(newlocal, newlocal2);
     }
-    ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, headCopyMap.get(local), new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
+    if (loadInGetHeadCursor)
+      ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, headCopyMap.get(local), new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, nextIterator, field)));
-    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field, dynamic_cast<Symbol*>(headCopyMap.get(local))));
-    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, new SymExpr(local)));
+    if (isRecordType(local->type)) {
+      ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field, dynamic_cast<Symbol*>(headCopyMap.get(local))));
+      ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, new SymExpr(local)));
+    } else {
+      forv_Vec(SymExpr, se, local->defs) {
+        if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
+          parent->getStmtExpr()->insertAfter(
+            new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field,
+              new SymExpr(local)));
+        if ((se = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
+            parent->getStmtExpr()->insertAfter(
+              new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field,
+                new SymExpr(dynamic_cast<Symbol*>(headCopyMap.get(local)))));
+      }
+    }
   }
 
   ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCursor));
@@ -370,11 +411,11 @@ buildSingleLoopMethods(FnSymbol* fn,
   buildIsValidCursor(fn);
   buildGetValue(fn, value);
 
-//   ii->getHeadCursor->addPragma("inline");
-//   ii->getNextCursor->addPragma("inline");
-//   ii->isValidCursor->addPragma("inline");
-//   ii->getValue->addPragma("inline");
-//   fn->addPragma("inline");
+  ii->getHeadCursor->addPragma("inline");
+  ii->getNextCursor->addPragma("inline");
+  ii->isValidCursor->addPragma("inline");
+  ii->getValue->addPragma("inline");
+  fn->addPragma("inline");
 }
 
 

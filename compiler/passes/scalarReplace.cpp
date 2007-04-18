@@ -13,7 +13,134 @@
 #include "symbol.h"
 #include "symscope.h"
 
+static void
+scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
+  Map<Symbol*,int> field2id; // field to number map
+  int nfields = 0;           // number of fields
+
+  //
+  // compute field ordering numbers
+  //
+  for_fields(field, ct) {
+    field2id.put(field, nfields++);
+  }
+
+  //
+  // replace symbol definitions of structural type with multiple
+  // symbol definitions of structural field types
+  //
+  Vec<Symbol*> syms;
+  for_fields(field, ct) {
+    Symbol* clone = new VarSymbol(sym->name, field->type);
+    syms.add(clone);
+    sym->defPoint->insertBefore(new DefExpr(clone));
+  }
+  sym->defPoint->remove();
+
+  //
+  // expand uses of symbols of structural type with multiple symbols
+  // structural field types
+  //
+  forv_Vec(SymExpr, se, sym->uses) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
+      if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
+        int id = field2id.get(member->var);
+        SymExpr* use = new SymExpr(syms.v[id]);
+        call->replace(use);
+        syms.v[id]->uses.add(use);
+      } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+        SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
+        int id = field2id.get(member->var);
+        call->primitive = primitives[PRIMITIVE_MOVE];
+        call->get(2)->remove();
+        call->get(1)->remove();
+        SymExpr* def = new SymExpr(syms.v[id]);
+        call->insertAtHead(def);
+        syms.v[id]->defs.add(def);
+      }
+    }
+  }
+}
+
+static bool
+scalarReplaceClassVars(ClassType* ct) {
+  bool change = false;
+  // find symbols of 
+  Vec<DefExpr*> defs;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (def->sym->type == ct && def->sym != ct->symbol) {
+        defs.add(def);
+      }
+    }
+  }
+  forv_Vec(DefExpr, def, defs) {
+    if (!def->parentSymbol || dynamic_cast<ArgSymbol*>(def->sym))
+      continue;
+    if (def->sym->defs.n == 1) {
+      forv_Vec(SymExpr, se, def->sym->defs) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
+          if (call->isPrimitive(PRIMITIVE_MOVE)) {
+            if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+              forv_Vec(SymExpr, se, def->sym->uses) {
+                se->var = rhs->var;
+                rhs->var->uses.add(se);
+              }
+              call->remove();
+              def->remove();
+            }
+          }
+        }
+      }
+    }
+  }
+  forv_Vec(DefExpr, def, defs) {
+    if (!def->parentSymbol || dynamic_cast<ArgSymbol*>(def->sym))
+      continue;
+    if (def->sym->defs.n == 1) {
+      forv_Vec(SymExpr, se, def->sym->defs) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
+          if (call->isPrimitive(PRIMITIVE_MOVE)) {
+            if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
+              if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
+                bool replace = true;
+                forv_Vec(SymExpr, se, def->sym->uses) {
+                  if (se->parentSymbol) {
+                    CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+                    if (!call ||
+                        !(call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+                          call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
+                        !(call->get(1) == se))
+                      replace = false;
+                  }
+                }
+                if (replace) {
+                  call->remove();
+                  scalarReplaceClassVar(ct, def->sym);
+                  change = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return change;
+}
+
 void scalarReplace() {
+  bool change = true;
+  while (change) {
+    compute_sym_uses();
+    change = false;
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (ts->hasPragma("iterator class") && ts->defPoint->parentSymbol) {
+        change |= scalarReplaceClassVars(dynamic_cast<ClassType*>(ts->type));
+      }
+    }
+  }
   if (fScalarReplaceTuples) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("scalar replace tuples")) {

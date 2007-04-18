@@ -56,17 +56,33 @@ record range {
   def stride: eltType return _stride; // should be :int ??
 
   iterator ault() {
-    if stridable {
-      var i = if _stride > 0 then _low else _high;
-      while boundedType != bounded || (_low <= i && i <= _high) {
-        yield i;
-        i = i + _stride:eltType;
+    if boundedType != bounded {
+      if stridable {
+        var i = if _stride > 0 then _low else _high;
+        while true {
+          yield i;
+          i = i + _stride:eltType;
+        }
+      } else {
+        var i = _low;
+        while true {
+          yield i;
+          i = i + 1;
+        }
       }
     } else {
-      var i = _low;
-      while boundedType != bounded || (i <= _high) {
-        yield i;
-        i = i + 1;
+      if stridable {
+        var i = if _stride > 0 then _low else _high;
+        while _low <= i && i <= _high {
+          yield i;
+          i = i + _stride:eltType;
+        }
+      } else {
+        var i = _low;
+        while i <= _high {
+          yield i;
+          i = i + 1;
+        }
       }
     }
   }
