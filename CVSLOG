@@ -100349,3 +100349,21 @@ Modified files:
 	chapel/compiler/passes/: scalarReplace.cpp 
 	chapel/modules/standard/: ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+04/18/07 16:51:22 -- deitz
+
+Log message:
+	Fixed a bug in function resolution in which non-generic functions were
+	not more specific than generic functions except for generic functions
+	over "any" type (type left off).
+	
+	Removed a .future.
+	
+	This fixes the three outstanding regressions.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/types/tuple/diten/: tupleOverloadedPlus.future 
+
