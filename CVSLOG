@@ -100149,3 +100149,14 @@ Added files:
 	                                tupleOverloadedPlus.future 
 	                                tupleOverloadedPlus.good 
 
+---------------------------------------------------------------------------
+
+04/18/07 11:09:21 -- bradc
+
+Log message:
+	Added "register" to the list of reserved C words
+	that need mangling.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
