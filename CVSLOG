@@ -100135,3 +100135,17 @@ Added files:
 	                              test_arrayops.future 
 	                              test_arrayops.good 
 
+---------------------------------------------------------------------------
+
+04/18/07 07:34:05 -- diten
+
+Log message:
+	Add a future where a call to + on tuples is flagged as ambiguous when it should
+	resolve to the + defined in the test.  Strangely, removing the line declaring
+	the unused array of records "C" results in choosing the correct version of +.
+
+Added files:
+	chapel/test/types/tuple/diten/: tupleOverloadedPlus.chpl 
+	                                tupleOverloadedPlus.future 
+	                                tupleOverloadedPlus.good 
+
