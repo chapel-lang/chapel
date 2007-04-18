@@ -1,0 +1,4 @@
+conditional expression in array initializer
+
+Using a conditional expression in an array initializer causes
+a seg fault.
