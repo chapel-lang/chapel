@@ -86,6 +86,7 @@ static void codegen_header(void) {
 
   chpl_main->addPragma("rename _chpl_main");
 
+  // reserved C words that require renaming to compile
   cnames.put("abs", 1);
   cnames.put("exit", 1);
   cnames.put("_init", 1);
@@ -108,6 +109,7 @@ static void codegen_header(void) {
   cnames.put("fprintf", 1);
   cnames.put("clone", 1);
   cnames.put("new", 1);
+  cnames.put("register", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
