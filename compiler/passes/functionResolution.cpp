@@ -796,29 +796,37 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
               else if (!require_scalar_promotion1 && require_scalar_promotion2)
                 as_good = false;
               else {
-                if (arg->instantiatedFrom==dtAny &&
-                    arg2->instantiatedFrom!=dtAny) {
+                if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
                   better = true;
-                } else if (arg->instantiatedFrom!=dtAny &&
-                           arg2->instantiatedFrom==dtAny) {
+                } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
                   as_good = false;
                 } else {
-                  if (actual_types->v[k] == arg2->type &&
-                      actual_types->v[k] != arg->type) {
+                  if (arg->instantiatedFrom==dtAny &&
+                      arg2->instantiatedFrom!=dtAny) {
                     better = true;
-                  } else if (actual_types->v[k] == arg->type &&
-                             actual_types->v[k] != arg2->type) {
+                  } else if (arg->instantiatedFrom!=dtAny &&
+                             arg2->instantiatedFrom==dtAny) {
                     as_good = false;
-                  } else if (moreSpecific(best, arg2->type, arg->type) && 
-                      arg2->type != arg->type) {
-                    better = true;
-                  } else if (moreSpecific(best, arg->type, arg2->type) &&
-                      arg2->type != arg->type) {
-                    as_good = false;
-                  } else if (is_int_type(arg2->type) && is_uint_type(arg->type)) {
-                    better = true;
-                  } else if (is_int_type(arg->type) && is_uint_type(arg2->type)) {
-                    as_good = false;
+                  } else {
+                    if (actual_types->v[k] == arg2->type &&
+                        actual_types->v[k] != arg->type) {
+                      better = true;
+                    } else if (actual_types->v[k] == arg->type &&
+                               actual_types->v[k] != arg2->type) {
+                      as_good = false;
+                    } else if (moreSpecific(best, arg2->type, arg->type) && 
+                               arg2->type != arg->type) {
+                      better = true;
+                    } else if (moreSpecific(best, arg->type, arg2->type) &&
+                               arg2->type != arg->type) {
+                      as_good = false;
+                    } else if (is_int_type(arg2->type) &&
+                               is_uint_type(arg->type)) {
+                      better = true;
+                    } else if (is_int_type(arg->type) &&
+                               is_uint_type(arg2->type)) {
+                      as_good = false;
+                    }
                   }
                 }
               }

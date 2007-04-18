@@ -1,5 +1,0 @@
-Function resolution problem
-
-The tuple + should resolve to the one defined in this test.  It is being 
-flagged as ambiguous.  Also, this passes if line 2, the declaration of the
-(unused) "C" array of records is removed.
