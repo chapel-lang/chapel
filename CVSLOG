@@ -100198,3 +100198,19 @@ Added files:
 	                           shareIterator-blc.good syncarr.chpl 
 	                           syncarr.future syncarr.good 
 
+---------------------------------------------------------------------------
+
+04/18/07 11:34:14 -- marybeth
+
+Log message:
+	Took out checks for degenerate range in nopivlublock-alias and
+	pivlublock-alias tests.  These routines had been written with a
+	test on the bounds of the range, slice, in one particular part of
+	the routine.  It had been getting out of bounds errors without
+	this test.  With an update to latest version of compiler, the errors
+	I saw yesterday are no longer there.  The checks are no longer needed.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
+	                                  nopivlublock-alias.chpl 
+
