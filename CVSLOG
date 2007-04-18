@@ -100294,3 +100294,58 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+04/18/07 15:32:40 -- deitz
+
+Log message:
+	Optimized the bug fix of iterators (04/13/07 15:35:53) to only store
+	back fields that are records since records are the only entities that
+	can change within normal function calls or not at definition points.
+	
+	Extended the single loop iterator optimization to handle while..do
+	loops as well as for loops.
+	
+	Removed an unnecessary load of a field from the iterator class in the
+	getHeadCursor method.  It is not necessary to load since it has not
+	been initialized yet.
+	
+	Enabled inlining of the iterator methods for iterator classes that are
+	single loop iterators.
+	
+	Improved the default iterator for ranges so that the boundedType is
+	folded.
+	
+	Added a specialized scalar replacement optimization that works on both
+	classes and records and is currently applied to iterator classes if
+	possible.  The code is contained in scalarReplaceClassVars.  This
+	optimization works in two parts:
+	
+	First, all variables of the class type that have exactly one
+	definition that is a simple copy of another variable of the class type
+	are replaced by the copied variable.
+	
+	Second, all variables of the class type that have exactly one
+	definition that is a new allocation of the class type and that are
+	only used as the base expression in GET_MEMBER and SET_MEMBER
+	primitive calls, are "scalar replaced" by the fields of the class.
+	
+	Performance Results
+	-------------------
+	
+	RA (Problem size = 2**25)
+	C    21.421
+	CHPL 23.460   9.5% overhead
+	
+	RA (Problem size = 2**20)
+	C     0.479
+	CHPL  0.544  13.6% overhead
+	
+	These results mark a point in time where serial RA in Chapel shows an
+	overhead of less than 10% over C.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/passes/: scalarReplace.cpp 
+	chapel/modules/standard/: ChapelRange.chpl 
+
