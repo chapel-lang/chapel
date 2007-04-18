@@ -100224,3 +100224,25 @@ Log message:
 Modified files:
 	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
 
+---------------------------------------------------------------------------
+
+04/18/07 13:16:56 -- bradc
+
+Log message:
+	Checking in some codes that Aniruddha wrote to start and
+	do a producer/consumer computation of the Fock matrix.
+	fock-1.chpl is a sequential version that works.
+	fock-1-begin.chpl is a version that Aniruddha tried that
+	  used a begin to spawn off a number of consumer tasks.
+	  It turns out it has some races, so is not tested, but
+	  captured here for reference.
+	fock-1-begin-blc.chpl is my rewrite which eliminates the
+	  races and gets the same result as the original code.
+
+Added files:
+	chapel/test/users/shetag/fock/: .cvsignore fock-1-begin-blc.chpl 
+	                                fock-1-begin-blc.good 
+	                                fock-1-begin.chpl 
+	                                fock-1-begin.notest fock-1.chpl 
+	                                fock-1.good 
+
