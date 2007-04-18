@@ -72,7 +72,6 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
       }
 //  This conditional test is needed.  Otherwise the array
 //  access goes out of bounds.
-      if (slice2.high >= slice2.low) then
       forall (i,j) in [slice1,slice2] {
         A1(i,j) -= A1(i,k)*A1(k,j);
       }

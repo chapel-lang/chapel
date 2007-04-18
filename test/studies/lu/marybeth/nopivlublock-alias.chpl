@@ -48,10 +48,6 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
       forall i in TrailingBlockInds {
         A21(i,k) = A21(i,k)/A11(k,k);
       }
-//    need to check if slice is not a degenerate range.
-//    this test is only needed for the loop below and not
-//    the loops above
-      if (slice.high >= slice.low) then
       forall (i,j) in [TrailingBlockInds, slice] {
         A21(i,j) -= A21(i,k)*A11(k,j);
       }
