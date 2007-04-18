@@ -100262,3 +100262,23 @@ Log message:
 Modified files:
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+04/18/07 14:30:20 -- bradc
+
+Log message:
+	A couple of changes to the gdb tests to deal with a
+	message that comes up on the Suns when things are
+	compiled without "-g" saying "no debugging symbols
+	found."  For the compiler --gdb test, I just
+	grepped this message away along with some other
+	messages we grep away.  For the executable --gdb
+	test, I switched the test to compile with -g, which
+	seems like a good thing to do for a test of the
+	debugger anyway.
+
+Modified files:
+	chapel/test/compflags/bradc/gdbddash/: PREDIFF 
+Added files:
+	chapel/test/execflags/bradc/gdbddash/: COMPOPTS 
+
