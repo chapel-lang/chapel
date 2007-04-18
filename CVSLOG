@@ -100118,3 +100118,20 @@ Modified files:
 Added files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+04/17/07 17:01:59 -- marybeth
+
+Log message:
+	Adding a test that fails to compile in which abs(A) is sent as a parameter
+	to a function that takes an array for its input.  That function call
+	does not get resolved, giving an error that an array type was expected
+	by the function.
+	
+	It seems that abs(A) should be an array, so this is a bug.
+
+Added files:
+	chapel/test/arrays/marybeth/: test_arrayops.chpl 
+	                              test_arrayops.future 
+	                              test_arrayops.good 
+
