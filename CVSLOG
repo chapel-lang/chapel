@@ -100160,3 +100160,41 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+04/18/07 11:12:01 -- bradc
+
+Log message:
+	Adding a bunch of tests to the users/shetag directory
+	to track current conversations/requests with Aniruddha:
+	
+	* condarr.chpl : initializing an array with a conditional
+	  expr
+	* condarr-blc.chpl : my workaround, which works
+	* shareIterator-blc*.chpl : some examples of writing an
+	  iterator to be shared between two tasks
+	  - : the first version I got working with the current
+	      compiler
+	  -release : a version attempted for the release compiler
+	      which deadlocks for that compiler for reasons unknown.
+	      Works with current compiler.
+	  -register : uses a routine called register()
+	* syncarr.chpl : using an array of sync vars
+
+Modified files:
+	chapel/test/users/shetag/: .cvsignore 
+Added files:
+	chapel/test/users/shetag/: condarr-blc2.chpl condarr-blc2.good 
+	                           condarr.chpl condarr.future 
+	                           condarr.good 
+	                           shareIterator-blc-register.chpl 
+	                           shareIterator-blc-register.execopts 
+	                           shareIterator-blc-register.good 
+	                           shareIterator-blc-release.chpl 
+	                           shareIterator-blc-release.execopts 
+	                           shareIterator-blc-release.good 
+	                           shareIterator-blc.chpl 
+	                           shareIterator-blc.execopts 
+	                           shareIterator-blc.good syncarr.chpl 
+	                           syncarr.future syncarr.good 
+
