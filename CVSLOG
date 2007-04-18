@@ -100214,3 +100214,13 @@ Modified files:
 	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
 	                                  nopivlublock-alias.chpl 
 
+---------------------------------------------------------------------------
+
+04/18/07 12:34:52 -- marybeth
+
+Log message:
+	Modification to pivlublock-alias.chpl to use maxloc reduce.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: pivlublock-alias.chpl 
+
