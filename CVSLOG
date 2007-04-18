@@ -100246,3 +100246,19 @@ Added files:
 	                                fock-1-begin.notest fock-1.chpl 
 	                                fock-1.good 
 
+---------------------------------------------------------------------------
+
+04/18/07 13:22:55 -- bradc
+
+Log message:
+	Checking in a temporary version of sub_test to help me
+	determine why valgrind tests within a nightly regression
+	test run are not being suppressed properly.  This will
+	generate some extraneous output that can cause things
+	to fail, but only when using the -valgrind flag (which
+	isn't working very well right now on desktop systems
+	anyway).
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+
