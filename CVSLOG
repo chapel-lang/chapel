@@ -100367,3 +100367,22 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/diten/: tupleOverloadedPlus.future 
 
+---------------------------------------------------------------------------
+
+04/18/07 17:04:35 -- marybeth
+
+Log message:
+	Adding blockLU test.  This test contains:
+	
+	- a blockLU routine which implements block LU with pivoting
+	- a test of blockLU on the matrix A (initialized by an input file)
+	- the input file and block size are now config const and config var
+	
+	This test uses a new data file by default:  Amagic10.dat.
+	This is the same matrix that is in Adata.dat, but with n and blk
+	at the start of the file.
+
+Added files:
+	chapel/test/studies/lu/marybeth/: blockLU.chpl blockLU.good 
+	                                  Amagic10.dat 
+
