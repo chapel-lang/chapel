@@ -100386,3 +100386,15 @@ Added files:
 	chapel/test/studies/lu/marybeth/: blockLU.chpl blockLU.good 
 	                                  Amagic10.dat 
 
+---------------------------------------------------------------------------
+
+04/19/07 11:08:11 -- bradc
+
+Log message:
+	Removing semantic future that was waiting to see whether
+	we supported tuple addition or not.  Once David implemented
+	it, it started working.
+
+Removed files:
+	chapel/test/studies/jacobi/bradc/: jacobi-simple-brad.future 
+
