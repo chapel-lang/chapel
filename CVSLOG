@@ -100410,3 +100410,25 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/07 15:41:43 -- diten
+
+Log message:
+	Change the behavior of the tuple comparison operators.  Now, when acting on
+	n-tuple arguments, instead of returning an n-tuple of bools, return a single
+	bool.  The comparison is similar to the normal definition of string comparison.
+	
+	For the "scalar op n-tuple" operations, treat the scalar as an n-tuple of
+	repeated values.
+	
+	Also, change the where clauses "where a.size == b.size" into the function under
+	an if statement with a compilerError.  This way, for size mis-matches there is
+	a descriptive error instead of the couldn't resolve call error.
+	
+	Update my test for tuple comparisons to reflect this behavior.
+
+Modified files:
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/test/types/tuple/diten/: tupleComparisons.good 
+
