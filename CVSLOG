@@ -100432,3 +100432,25 @@ Modified files:
 	chapel/modules/standard/: ChapelTuple.chpl 
 	chapel/test/types/tuple/diten/: tupleComparisons.good 
 
+---------------------------------------------------------------------------
+
+04/19/07 16:13:37 -- marybeth
+
+Log message:
+	Checking in two tests that compare the two ranges in a 2D domain.
+	The first test, test_compare_range does not compile.  Checking for
+	the equality of two ranges or computing the min of two ranges
+	does not compile.
+	
+	The second test, test_compare_range2 compiles and runs successfully.
+	It replaces the equality test and min computation with code that will
+	compile - comparing the .low and .high fields of a range and comparing
+	the .length fields of the range to determine the min range.
+
+Added files:
+	chapel/test/domains/marybeth/: test_compare_range2.chpl 
+	                               test_compare_range2.good 
+	                               test_compare_range.chpl 
+	                               test_compare_range.future 
+	                               test_compare_range.good 
+
