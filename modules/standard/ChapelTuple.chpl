@@ -151,7 +151,7 @@ pragma "inline" def +(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def +(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def +(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) + b(i), a(a.size) + b(b.size));
@@ -160,6 +160,10 @@ pragma "inline" def +(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) + b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if (a.size == 1)
     return a(1)+b(1);
   else
@@ -196,7 +200,7 @@ pragma "inline" def -(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def -(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def -(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) - b(i), a(a.size) - b(b.size));
@@ -205,6 +209,10 @@ pragma "inline" def -(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) - b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) - b(1);
   else
@@ -241,7 +249,7 @@ pragma "inline" def *(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def *(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def *(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) * b(i), a(a.size) * b(b.size));
@@ -250,6 +258,10 @@ pragma "inline" def *(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) * b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) * b(1);
   else
@@ -286,7 +298,7 @@ pragma "inline" def /(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def /(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def /(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) / b(i), a(a.size) / b(b.size));
@@ -295,6 +307,10 @@ pragma "inline" def /(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) / b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) / b(1);
   else
@@ -331,7 +347,7 @@ pragma "inline" def %(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def %(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def %(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) % b(i), a(a.size) % b(b.size));
@@ -340,6 +356,10 @@ pragma "inline" def %(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) % b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) % b(1);
   else
@@ -376,7 +396,7 @@ pragma "inline" def **(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def **(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def **(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) ** b(i), a(a.size) ** b(b.size));
@@ -385,6 +405,10 @@ pragma "inline" def **(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) ** b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) ** b(1);
   else
@@ -427,7 +451,7 @@ pragma "inline" def &(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def &(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def &(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) & b(i), a(a.size) & b(b.size));
@@ -436,6 +460,10 @@ pragma "inline" def &(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) & b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) & b(1);
   else
@@ -472,7 +500,7 @@ pragma "inline" def |(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def |(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def |(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) | b(i), a(a.size) | b(b.size));
@@ -481,6 +509,10 @@ pragma "inline" def |(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) | b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) | b(1);
   else
@@ -517,7 +549,7 @@ pragma "inline" def ^(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def ^(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def ^(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) ^ b(i), a(a.size) ^ b(b.size));
@@ -526,6 +558,10 @@ pragma "inline" def ^(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) ^ b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) ^ b(1);
   else
@@ -562,7 +598,7 @@ pragma "inline" def <<(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def <<(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def <<(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) << b(i), a(a.size) << b(b.size));
@@ -571,6 +607,10 @@ pragma "inline" def <<(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) << b(i), (...rest));
     }
   }
+
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) << b(1);
   else
@@ -607,7 +647,7 @@ pragma "inline" def >>(a, b: _tuple) {
     return help(1);
 }
 
-pragma "inline" def >>(a: _tuple, b: _tuple) where a.size == b.size {
+pragma "inline" def >>(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size-1 {
       return (a(i) >> b(i), a(a.size) >> b(b.size));
@@ -616,6 +656,9 @@ pragma "inline" def >>(a: _tuple, b: _tuple) where a.size == b.size {
       return (a(i) >> b(i), (...rest));
     }
   }
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   if a.size == 1 then
     return a(1) >> b(1);
   else
@@ -630,87 +673,123 @@ pragma "inline" def !(a: _tuple) {
 }
 
 pragma "inline" def >(a: _tuple, b) {
-  var result: a.size * bool;
   for param i in 1..a.size do
-    result(i) = a(i) > b;
-  return result;
+    if a(i) > b then
+      return true;
+    else if a(i) < b then
+      return false;
+  return false;
 }
 
 pragma "inline" def >(a, b: _tuple) {
-  var result: b.size * bool;
   for param i in 1..b.size do
-    result(i) = a > b(i);
-  return result;
+    if a > b(i) then
+      return true;
+    else if a < b(i) then
+      return false;
+  return false;
 }
 
-pragma "inline" def >(a: _tuple, b: _tuple) where a.size == b.size {
-  var result: a.size * bool;
+pragma "inline" def >(a: _tuple, b: _tuple) {
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   for param i in 1..a.size do
-    result(i) = a(i) > b(i);
-  return result;
+    if a(i) > b(i) then
+      return true;
+    else if a(i) < b(i) then
+      return false;
+  return false;
 }
 
 pragma "inline" def >=(a: _tuple, b) {
-  var result: a.size * bool;
   for param i in 1..a.size do
-    result(i) = a(i) >= b;
-  return result;
+    if a(i) > b then
+      return true;
+    else if a(i) < b then
+      return false;
+  return true;
 }
 
 pragma "inline" def >=(a, b: _tuple) {
-  var result: b.size * bool;
   for param i in 1..b.size do
-    result(i) = a >= b(i);
-  return result;
+    if a > b(i) then
+      return true;
+    else if a < b(i) then
+      return false;
+  return true;
 }
 
-pragma "inline" def >=(a: _tuple, b: _tuple) where a.size == b.size {
-  var result: a.size * bool;
+pragma "inline" def >=(a: _tuple, b: _tuple) {
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   for param i in 1..a.size do
-    result(i) = a(i) >= b(i);
-  return result;
+    if a(i) > b(i) then
+      return true;
+    else if a(i) < b(i) then
+      return false;
+  return true;
 }
 
 pragma "inline" def <(a: _tuple, b) {
-  var result: a.size * bool;
   for param i in 1..a.size do
-    result(i) = a(i) < b;
-  return result;
+    if a(i) < b then
+      return true;
+    else if a(i) > b then
+      return false;
+  return false;
 }
 
 pragma "inline" def <(a, b: _tuple) {
-  var result: b.size * bool;
   for param i in 1..b.size do
-    result(i) = a < b(i);
-  return result;
+    if a < b(i) then
+      return true;
+    else if a > b(i) then
+      return false;
+  return false;
 }
 
-pragma "inline" def <(a: _tuple, b: _tuple) where a.size == b.size {
-  var result: a.size * bool;
+pragma "inline" def <(a: _tuple, b: _tuple) {
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   for param i in 1..a.size do
-    result(i) = a(i) < b(i);
-  return result;
+    if a(i) < b(i) then
+      return true;
+    else if a(i) > b(i) then
+      return false;
+  return false;
 }
 
 pragma "inline" def <=(a: _tuple, b) {
-  var result: a.size * bool;
   for param i in 1..a.size do
-    result(i) = a(i) <= b;
-  return result;
+    if a(i) < b(i) then
+      return true;
+    else if a(i) > b(i) then
+      return false;
+  return true;
 }
 
 pragma "inline" def <=(a, b: _tuple) {
-  var result: b.size * bool;
   for param i in 1..b.size do
-    result(i) = a <= b(i);
-  return result;
+    if a < b(i) then
+      return true;
+    else if a > b(i) then
+      return false;
+  return true;
 }
 
-pragma "inline" def <=(a: _tuple, b: _tuple) where a.size == b.size {
-  var result: a.size * bool;
+pragma "inline" def <=(a: _tuple, b: _tuple) {
+  if (a.size != b.size) then
+    compilerError("Tuples must have the same size");
+
   for param i in 1..a.size do
-    result(i) = a(i) <= b(i);
-  return result;
+    if a(i) < b(i) then
+      return true;
+    else if a(i) > b(i) then
+      return false;
+  return true;
 }
 
 pragma "scalar replace tuples"

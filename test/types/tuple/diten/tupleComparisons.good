@@ -11,17 +11,17 @@ true
 true
 
 Greater than or equal
-(true, true, true)
-(true, true, true)
+true
+true
 
 Greater than
-(false, false, false)
-(false, true, false)
+false
+true
 
 Less than or equal
-(true, true, true)
-(true, false, true)
+true
+false
 
 Less than
-(false, false, false)
-(false, false, false)
+false
+false
