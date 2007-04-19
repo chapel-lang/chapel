@@ -437,3 +437,22 @@ def _iteratorClass.writeThis(f: Writer) {
     f.write(e);
   }
 }
+
+//
+// Swap operators for arrays and domains
+//
+pragma "inline" def _chpl_swap(x: [?D1], y:[?D2]) {
+  for (i,j) in (D1, D2) do
+    x(i) <=> y(i);
+}
+
+
+/*  This might be preferable for domains, but it doesn't work because
+    domains apparently can't be modified once sent into a function!? 
+
+pragma "inline" def _chpl_swap(x: domain, y: domain) {
+  const t = y;
+  y = x;
+  x = y;
+}
+*/

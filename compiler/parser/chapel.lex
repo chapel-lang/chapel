@@ -111,6 +111,8 @@ yield           processToken(TYIELD);
 
 "=>"            processToken(TALIAS);
 
+"<=>"           processToken(TSWAP);
+
 ".."            processToken(TDOTDOT);
 "..."           processToken(TDOTDOTDOT);
 

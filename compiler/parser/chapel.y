@@ -156,6 +156,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TALIAS
 
 %token TASSIGN
+%token TSWAP
 %token TASSIGNBAND
 %token TASSIGNBOR
 %token TASSIGNBXOR
@@ -543,6 +544,10 @@ assign_stmt:
 | lvalue TASSIGNSL expr TSEMI
     {
       $$ = build_op_assign_chpl_stmt("<<", $1, $3);
+    }
+| lvalue TSWAP expr TSEMI
+    {
+      $$ = build_chpl_stmt(new CallExpr("_chpl_swap", $1, $3));
     }
 ;
 

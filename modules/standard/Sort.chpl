@@ -37,25 +37,9 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   }
 
   // find pivot using median-of-3 method
-  if (Data(mid) < Data(lo)) {
-    //    Data(mid) <=> Data(lo);
-    const tmp = Data(lo);
-    Data(lo) = Data(mid);
-    Data(mid) = tmp;
-  }
-  if (Data(hi) < Data(lo)) {
-    // Data(hi) <=> Data(lo)
-    const tmp = Data(lo);
-    Data(lo) = Data(hi);
-    Data(hi) = tmp;
-  }
-  if (Data(hi) < Data(mid)) {
-    // Data(hi) <=> Data(mid)
-    const tmp = Data(mid);
-    Data(mid) = Data(hi);
-    Data(hi) = tmp;
-  }
-  // Data(mid) <=> Data(hi-1);
+  if (Data(mid) < Data(lo)) then Data(mid) <=> Data(lo);
+  if (Data(hi) < Data(lo)) then Data(hi) <=> Data(lo);
+  if (Data(hi) < Data(mid)) then Data(hi) <=> Data(mid);
   const pivotVal = Data(mid);
   Data(mid) = Data(hi-1);
   Data(hi-1) = pivotVal;
@@ -67,14 +51,10 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
     do { loptr += 1; } while (Data(loptr) < pivotVal);
     do { hiptr -= 1; } while (pivotVal < Data(hiptr));
     if (loptr < hiptr) {
-      // Data(loptr) <=> Data(hiptr);
-      const tmp = Data(loptr);
-      Data(loptr) = Data(hiptr);
-      Data(hiptr) = tmp;
+      Data(loptr) <=> Data(hiptr);
     }
   }
 
-  // Data(loptr) <=> Data(hi-1);  ?
   Data(hi-1) = Data(loptr);
   Data(loptr) = pivotVal;
 

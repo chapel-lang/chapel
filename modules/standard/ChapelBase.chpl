@@ -783,3 +783,12 @@ pragma "inline" def _chpl_memtest_mallocOutOfMemory() { __primitive("_chpl_memte
 pragma "inline" def _chpl_memtest_reallocOutOfMemory() { __primitive("_chpl_memtest_reallocOutOfMemory"); }
 
 pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }
+
+//
+// Default swap operator for most types
+//
+pragma "inline" def _chpl_swap(inout x, inout y) {
+  const t = y;
+  y = x;
+  x = t;
+}

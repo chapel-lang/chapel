@@ -1,5 +1,4 @@
 // NEEDS:
-// * swap assignment operator (<=> ?)
 // * Triangular domain/matrix implementation
 // * flattening slices
 // * tensor-product multiplication
@@ -22,13 +21,9 @@ def lutx(A: [1..?n, 1..n]) {
 
       // swap pivot row
       if (m != k) {
-        const TempRow = A[m,..];       // would like swap assignment here
-        A[m,..] = A[k,..];
-        A[k,..] = TempRow;
+        A[m,..] <=> A[k,..];
 
-        const tempPerm = p(m);          // and here
-        p(m) = p(k);
-        p(k) = tempPerm;
+        p(m) <=> p(k);
       }
 
       // Compute multipliers
