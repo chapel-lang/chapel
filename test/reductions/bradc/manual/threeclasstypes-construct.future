@@ -1,3 +1,14 @@
+constructors/error messages
+
+The question here was whether to allow assignment of types within a
+user-supplied constructor.  The answer was "no", but that a similar
+effect could be achieved using type parameters to the constructors
+with default values.  Not quite as nice, but maybe a step in the right
+direction.  This test needs a better error message (the current one
+isn't clear and says nothing about the line in question and).  I'm
+adding a second test for the other variation.
+
+
 semantic
 
 We don't currently support constructors and this does a slightly weird

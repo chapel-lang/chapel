@@ -15,10 +15,7 @@ class mysumreduce {
     return x;
   }
 
-  def mysumreduce(type in_t) {
-    intype = in_t;
-    statetype = in_t;
-    outtype = in_t;
+  def mysumreduce(type intype, type statetype=intype, type outtype=intype) {
   }
 }
 
@@ -32,7 +29,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = mysumreduce(in_t = int);
+var myreduce = mysumreduce(int);
 var state: myreduce.statetype = myreduce.ident();
 for i in D {
   state = myreduce.combine(state, A(i));
