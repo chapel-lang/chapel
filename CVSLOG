@@ -100398,3 +100398,15 @@ Log message:
 Removed files:
 	chapel/test/studies/jacobi/bradc/: jacobi-simple-brad.future 
 
+---------------------------------------------------------------------------
+
+04/19/07 15:38:33 -- deitz
+
+Log message:
+	Made some clean simplifications to the single loop iterator
+	implementation methods that eliminate some unnecessary complexity with
+	the computation of the condition variables.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
