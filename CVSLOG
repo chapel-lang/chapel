@@ -100479,3 +100479,40 @@ Log message:
 Modified files:
 	chapel/test/npb/cg/bradc/: cg-makea.chpl 
 
+---------------------------------------------------------------------------
+
+04/19/07 16:32:21 -- bradc
+
+Log message:
+	Implemented swap operator using "<=>" as the syntax and
+	implementing it using function calls in the internal
+	modules.  Used two overloads -- one for the generic case
+	which uses inout arguments and should work for any two
+	variables that are legal to assign to one another; a
+	second for arrays, to avoid allocating array temporaries
+	and making inout copies in the generic case.  Conceived
+	of having a third version that handled domains more
+	efficiently, taking advantage of their pass-by-reference
+	semantics, but it turns out that you can't assign a domain
+	within a function because it's treated as "const".  Maybe a
+	topic for future semantic discussions?
+	
+	Added tests of swapping scalars, arrays, and domains.
+	Used swap operator in Sort.chpl module.  Couldn't get
+	it to work for the array slices in BlockLU yet, though
+	I believe it should work for the pivot vector.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          Sort.chpl 
+	chapel/test/studies/lu/: dongarra-lu.chpl 
+Added files:
+	chapel/test/modules/jplevyak/: .cvsignore 
+	chapel/test/statements/bradc/swaps/: .cvsignore swap.chpl 
+	                                     swap.good swapArray.chpl 
+	                                     swapArray.good 
+	                                     swapDomain.chpl 
+	                                     swapDomain.good 
+	chapel/test/studies/lu/marybeth/: .cvsignore 
+
