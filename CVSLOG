@@ -100454,3 +100454,17 @@ Added files:
 	                               test_compare_range.future 
 	                               test_compare_range.good 
 
+---------------------------------------------------------------------------
+
+04/19/07 16:17:45 -- bradc
+
+Log message:
+	Future for Steve to look at, resulting in an ic error
+	message.  (Not exactly the one I sent you over email,
+	but a similar enough case that it is likely to be
+	related).
+
+Added files:
+	chapel/test/arrays/bradc/slices/: .cvsignore icError.chpl 
+	                                  icError.future icError.good 
+
