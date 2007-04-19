@@ -100516,3 +100516,24 @@ Added files:
 	                                     swapDomain.good 
 	chapel/test/studies/lu/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/19/07 16:39:04 -- bradc
+
+Log message:
+	Refiling my semantic future from earlier today as
+	an error message future.  Added a constructor
+	future capturing the way of writing the constructor
+	that we discussed at the meeting.  Also, removed
+	the "constructor" keyword from these tests.
+
+Modified files:
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct.chpl 
+	                                      threeclasstypes-construct.future 
+Added files:
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct2.chpl 
+	                                      threeclasstypes-construct2.future 
+	                                      threeclasstypes-construct2.good 
+
