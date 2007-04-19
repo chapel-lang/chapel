@@ -49,27 +49,6 @@ module CGMakeA {
     }
   }
 
-  def <(x:2*int, y:2*int) {
-    if (x(1) < y(1)) {
-      return true;
-    } else if (x(1) > y(1)) {
-      return false;
-    } else {
-      return (x(2) < y(2));
-    }
-  }
-
-
-  def >(x:2*int, y:2*int) {
-    if (x(1) > y(1)) {
-      return true;
-    } else if (x(1) < y(1)) {
-      return false;
-    } else {
-      return (x(2) > y(2));
-    }
-  }
-
 
   iterator genAIndsSorted(type elemType, n, nonzer, shift) {
     // build associative domain of indices
