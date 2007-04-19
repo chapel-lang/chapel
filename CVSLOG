@@ -100468,3 +100468,14 @@ Added files:
 	chapel/test/arrays/bradc/slices/: .cvsignore icError.chpl 
 	                                  icError.future icError.good 
 
+---------------------------------------------------------------------------
+
+04/19/07 16:22:16 -- bradc
+
+Log message:
+	Removed my manual overloads of < and > on 2-tuples,
+	since the language now does this for us.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: cg-makea.chpl 
+
