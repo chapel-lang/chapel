@@ -280,10 +280,10 @@ buildSingleLoopMethods(FnSymbol* fn,
   BlockStmt* loop = dynamic_cast<BlockStmt*>(yield->parentExpr);
 
   Symbol* headIterator = ii->getHeadCursor->getFormal(1);
-  Symbol* headCursor = newTemp(ii->getHeadCursor, ii->getHeadCursor->retType);
+  //  Symbol* headCursor = newTemp(ii->getHeadCursor, ii->getHeadCursor->retType);
   Symbol* nextIterator = ii->getNextCursor->getFormal(1);
-  Symbol* nextCursor = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
-  ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, nextCursor, ii->getNextCursor->getFormal(2)));
+  //  Symbol* nextCursor = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
+  //  ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, nextCursor, ii->getNextCursor->getFormal(2)));
 
   ASTMap headCopyMap; // copy map of iterator to getHeadCursor; note:
                       // there is no map for getNextCursor since the
@@ -336,8 +336,8 @@ buildSingleLoopMethods(FnSymbol* fn,
     headThen->insertAtTail(expr->copy(&headCopyMap));
     nextThen->insertAtTail(expr->remove());
   }
-  headThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(1)));
-  nextThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(1)));
+  //  headThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(1)));
+  //  nextThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(1)));
 
   //
   // add BLOCK IV to conditional else clause for both getHeadCursor and
@@ -352,8 +352,8 @@ buildSingleLoopMethods(FnSymbol* fn,
     headElse->insertAtTail(expr->copy(&headCopyMap));
     nextElse->insertAtTail(expr->remove());
   }
-  headElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(0)));
-  nextElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(0)));
+  //  headElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(0)));
+  //  nextElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(0)));
 
   //
   // add conditional to getHeadCursor and getNextCursor methods
@@ -405,10 +405,13 @@ buildSingleLoopMethods(FnSymbol* fn,
     }
   }
 
-  ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCursor));
-  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, nextCursor));
+  ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCond->copy()));
+  ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, nextCond->copy()));
 
-  buildIsValidCursor(fn);
+  Symbol* tmp = newTemp(ii->isValidCursor, dtBool);
+  ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, ii->isValidCursor->getFormal(2)));
+  ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
+
   buildGetValue(fn, value);
 
   ii->getHeadCursor->addPragma("inline");
