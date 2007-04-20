@@ -14,14 +14,14 @@ module Norm{
   
     if (p == 1) {
       var maxColSum = abs(x(1,1));
-      for j in D(2) {
-        maxColSum = max(maxColSum,+ reduce abs(x[D(1),j]));
+      for j in D.dim(2) {
+        maxColSum = max(maxColSum,+ reduce abs(x[D.dim(1),j]));
       }
       return maxColSum;
     } else if ((p == 'inf') || (p == 'INF') || (p == 'Inf')) {
       var maxRowSum = abs(x(1,1));
-      for i in D(1) {
-        maxRowSum = max(maxRowSum,+ reduce abs(x[i,D(2)]));
+      for i in D.dim(1) {
+        maxRowSum = max(maxRowSum,+ reduce abs(x[i,D.dim(2)]));
       }
       return maxRowSum;
     } else if ((p == 'frob') || (p == 'FROB') || (p == 'Frob')) {

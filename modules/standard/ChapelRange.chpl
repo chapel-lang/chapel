@@ -25,6 +25,8 @@ def _build_range(param bt: BoundedRangeType, bound: int(64))
   return range(int(64), bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType, bound: uint(64))
   return range(uint(64), bt, false, bound, bound);
+def _build_range(param bt: BoundedRangeType)
+  return range(int, bt, false);
 def _build_range(param bt: BoundedRangeType, bound) {
   compilerError("range bound is not integral");
 }

@@ -159,7 +159,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
 
 
 def cft1st(A, W) {
-  const n = A.domain(1).length;
+  const n = A.domain.dim(1).length;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);
   var x2 = A(2) + A(3);
@@ -222,7 +222,7 @@ def cftmd0(span, A, W) {
 def cftmd1(span, A, W) {
   const m = radix*span;
   const m2 = 2*m;
-  const n = A.domain(1).length;
+  const n = A.domain.dim(1).length;
 
   cftmd0(span, A, W);
   forall (k,k1) in ([m2..n) by m2, 1..) {
@@ -248,7 +248,7 @@ def cftmd1(span, A, W) {
 def cftmd2(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
-  const n = A.domain(1).length;
+  const n = A.domain.dim(1).length;
 
   cftmd0(span, A, W);
   if (m2 >= n) return;
@@ -280,7 +280,7 @@ def cftmd2(span, A, W) {
 
 
 def cftmd21(span, A, W) {
-  const n = A.domain(1).length;
+  const n = A.domain.dim(1).length;
   var m = radix*span;
   var m2 = 2*m;
 

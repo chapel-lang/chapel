@@ -93,7 +93,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     // INSTEAD OF:
     const Q: [VectDom] elemType;
-    [i in MatDom(1)] Q(i) = + reduce [j in MatDom(2)] (A(i,j) * P(j));
+    [i in MatDom.dim(1)] Q(i) = + reduce [j in MatDom.dim(2)] (A(i,j) * P(j));
     //
 
     const alpha = rho / + reduce (P*Q);
@@ -108,7 +108,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
   // WANT (a partial reduction):
   //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
   // INSTEAD OF:
-  [i in MatDom(1)] R(i) = + reduce [j in MatDom(2)] (A(i,j) * Z(j));
+  [i in MatDom.dim(1)] R(i) = + reduce [j in MatDom.dim(2)] (A(i,j) * Z(j));
   //
 
   const rnorm = sqrt(+ reduce ((X-R)**2));

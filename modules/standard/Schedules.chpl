@@ -1,6 +1,6 @@
 iterator BlockSchedule(D: ?DT, numBlocks): DT {
-  const lo = D(1)._low;
-  const hi = D(1)._high;
+  const lo = D.dim(1)._low;
+  const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
   const nbAsIndexType = numBlocks:D._index_type;
   forall i in 0..nbAsIndexType-1 {
@@ -12,8 +12,8 @@ iterator BlockSchedule(D: ?DT, numBlocks): DT {
 
 
 iterator FixedBlockSchedule(D: ?DT, blockSize): DT {
-  const lo = D(1)._low;
-  const hi = D(1)._high;
+  const lo = D.dim(1)._low;
+  const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
   forall i in 0..ceil(numelems:real/blockSize):int - 1 {
     const blo = lo + i*blockSize;

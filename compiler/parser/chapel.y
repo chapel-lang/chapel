@@ -1391,6 +1391,8 @@ top_level_expr:
     { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedLow"), $1); }
 | TDOTDOT expr
     { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedHigh"), $2); }
+| TDOTDOT
+    { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedNone")); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS

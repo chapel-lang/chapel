@@ -49,14 +49,14 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return x;
   }
 
-  iterator ault_help(param dim: int) {
-    if dim == rank - 1 {
-      for i in ranges(dim) do
+  iterator ault_help(param d: int) {
+    if d == rank - 1 {
+      for i in ranges(d) do
         for j in ranges(rank) do
           yield (i, j);
     } else {
-      for i in ranges(dim) do
-        for j in ault_help(dim+1) do
+      for i in ranges(d) do
+        for j in ault_help(d+1) do
           yield (i, (...j));
     }
   }
@@ -78,11 +78,11 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return true;
   }
 
-  def this(dim : int)
-    return ranges(dim);
+  def dim(d : int)
+    return ranges(d);
 
-  def bbox(dim: int) {
-    const r: range(dim_type,bounded,false) = ranges(dim);
+  def bbox(d: int) {
+    const r: range(dim_type,bounded,false) = ranges(d);
     return r;
   }
 
@@ -126,36 +126,36 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   def buildEmptyDomain()
     return SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
 
-  def translate(dim: rank*int) {
+  def translate(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int, stridable=stridable);
     for i in 1..rank do
-      x.ranges(i) = this(i)._translate(dim(i));
+      x.ranges(i) = dim(i)._translate(off(i));
     return x;
   }
 
-  def interior(dim: rank*int) {
+  def interior(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int, stridable=stridable);
     for i in 1..rank do {
-      if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
-          (dim(i) < 0) && (this(i)._low-1-dim(i) > this(i)._high)) {
+      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
+          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
-      x.ranges(i) = this(i)._interior(dim(i));
+      x.ranges(i) = dim(i)._interior(off(i));
     }
     return x;
   }
 
-  def exterior(dim: rank*int) {
+  def exterior(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int, stridable=stridable);
     for i in 1..rank do
-      x.ranges(i) = this(i)._exterior(dim(i));
+      x.ranges(i) = dim(i)._exterior(off(i));
     return x;
   }
 
-  def expand(dim: rank*int) {
+  def expand(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int, stridable=stridable);
     for i in 1..rank do {
-      x.ranges(i) = ranges(i)._expand(dim(i));
+      x.ranges(i) = ranges(i)._expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
@@ -163,10 +163,10 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return x;
   }  
 
-  def expand(dim: int) {
+  def expand(off: int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int, stridable=stridable);
     for i in 1..rank do
-      x.ranges(i) = ranges(i)._expand(dim);
+      x.ranges(i) = ranges(i)._expand(off);
     return x;
   }
 
@@ -177,17 +177,17 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     yield this;
   }
 
-  def strideBy(dim : rank*int) {
+  def strideBy(str : rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=true);
     for i in 1..rank do
-      x.ranges(i) = ranges(i) by dim(i);
+      x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
-  def strideBy(dim : int) {
+  def strideBy(str : int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=true);
     for i in 1..rank do
-      x.ranges(i) = ranges(i) by dim;
+      x.ranges(i) = ranges(i) by str;
     return x;
   }
 }
@@ -223,15 +223,15 @@ class SingleLocaleArithmeticArray: BaseArray {
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
-      off(dim) = dom(dim)._low;
-      str(dim) = dom(dim)._stride;
+      off(dim) = dom.dim(dim)._low;
+      str(dim) = dom.dim(dim)._stride;
       adj(dim) = 0:dim_type;
     }
     blk(rank) = 1:dim_type;
     for dim in 1..rank-1 by -1 do
-      blk(dim) = blk(dim+1) * dom(dim+1).length;
+      blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
     computeFactoredOffs();
-    size = blk(1) * dom(1).length;
+    size = blk(1) * dom.dim(1).length;
     data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
   }
@@ -259,15 +259,15 @@ class SingleLocaleArithmeticArray: BaseArray {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
-      if d(i).length != dom(i).length then
+      if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
     var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
-      alias.off(i) = d(i)._low;
-      alias.blk(i) = blk(i) * dom(i)._stride / str(i);
-      alias.str(i) = d(i)._stride;
+      alias.off(i) = d.dim(i)._low;
+      alias.blk(i) = blk(i) * dom.dim(i)._stride / str(i);
+      alias.str(i) = d.dim(i)._stride;
       alias.adj(i) = adj(i);
     }
     alias.computeFactoredOffs();
@@ -278,9 +278,9 @@ class SingleLocaleArithmeticArray: BaseArray {
     if rank != d.rank then
       halt("array rank change not supported");
     for param i in 1..rank {
-      if !_in(dom(i), d(i)) then
+      if !_in(dom.dim(i), d.dim(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", d);
-      if d(i)._stride % dom(i)._stride != 0 then
+      if d.dim(i)._stride % dom.dim(i)._stride != 0 then
         halt("stride of array slice is not multiple of stride in dimension ", i);
     }
   }
@@ -293,8 +293,8 @@ class SingleLocaleArithmeticArray: BaseArray {
     alias.blk = blk;
     alias.str = str;
     for param i in 1..rank {
-      alias.adj(i) = adj(i) + blk(i) * (off(i) - d(i)._low) / str(i);
-      alias.off(i) = d(i)._low;
+      alias.adj(i) = adj(i) + blk(i) * (off(i) - d.dim(i)._low) / str(i);
+      alias.off(i) = d.dim(i)._low;
     }
     alias.computeFactoredOffs();
     return alias;
@@ -319,9 +319,9 @@ class SingleLocaleArithmeticArray: BaseArray {
 }
 
 def SingleLocaleArithmeticDomain.writeThis(f: Writer) {
-  f.write("[", this(1));
+  f.write("[", dim(1));
   for i in 2..rank do
-    f.write(", ", this(i));
+    f.write(", ", dim(i));
   f.write("]");
 }
 
@@ -329,19 +329,19 @@ def SingleLocaleArithmeticArray.writeThis(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*dim_type;
   for dim in 1..rank do
-    i(dim) = dom(dim)._low;
+    i(dim) = dom.dim(dim)._low;
   label next while true {
     f.write(this(i));
-    if i(rank) <= (dom(rank)._high - dom(rank)._stride:dim_type) {
+    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:dim_type) {
       f.write(" ");
-      i(rank) += dom(rank)._stride:dim_type;
+      i(rank) += dom.dim(rank)._stride:dim_type;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom(dim)._high - dom(dim)._stride:dim_type) {
-          i(dim) += dom(dim)._stride:dim_type;
+        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:dim_type) {
+          i(dim) += dom.dim(dim)._stride:dim_type;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom(dim2)._low;
+            i(dim2) = dom.dim(dim2)._low;
           }
           continue next;
         }
@@ -354,6 +354,6 @@ def SingleLocaleArithmeticArray.writeThis(f: Writer) {
 def _intersect(a: SingleLocaleArithmeticDomain, b: SingleLocaleArithmeticDomain) {
   var c = SingleLocaleArithmeticDomain(rank=a.rank, dim_type=a.dim_type, stridable=a.stridable);
   for param i in 1..a.rank do
-    c.ranges(i) = _intersect(a(i), b(i));
+    c.ranges(i) = _intersect(a.dim(i), b.dim(i));
   return c;
 }

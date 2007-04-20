@@ -7,5 +7,5 @@ dostuff(A);
 def dostuff(x: [?D] int) {
 writeln("rank of domain = ", D.rank);
 for i in [1..D.rank] do
-  writeln("length of domain(",i,") = ",D(i).length);
+  writeln("length of domain(",i,") = ",D.dim(i).length);
 }

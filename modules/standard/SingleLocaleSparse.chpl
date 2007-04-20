@@ -90,8 +90,8 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     return cursorColInd <= nnz;
   }
   */
-  def this(dim : int) {
-    if (dim == 1) {
+  def dim(d : int) {
+    if (d == 1) {
       return rowRange;
     } else {
       return colRange;
@@ -154,8 +154,8 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     // still need to re-allocate the arrays
   }
 
-  iterator dimIter(param dim, ind) {
-    if (dim != 2) {
+  iterator dimIter(param d, ind) {
+    if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CRS domains");
     }
     for c in colIdx[rowStart(ind)..rowStop(ind)] do

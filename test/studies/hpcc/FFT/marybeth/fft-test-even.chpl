@@ -109,7 +109,7 @@ def dfft(A: [?AD] complex, W) {
   var lasti:int;
   var m, m2, k1: int;
 
-  const n = AD(1).length;
+  const n = AD.dim(1).length;
 
   for i in 2..logN by 2 {
     m = l << 2;

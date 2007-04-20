@@ -10,13 +10,13 @@ forall (i,j) in d do
 writeln(a);
 
 iterator rmo(d : domain(2)) : (int,int)
-  forall i in d(1) do
-    forall j in d(2) do
+  forall i in d.dim(1) do
+    forall j in d.dim(2) do
       yield (i,j);
 
 iterator cmo(d : domain(2)) : (int,int)
-  forall j in d(2) do
-    forall i in d(1) do
+  forall j in d.dim(2) do
+    forall i in d.dim(1) do
       yield (i,j);
 
 for i in rmo(d) do

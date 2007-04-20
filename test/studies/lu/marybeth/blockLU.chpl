@@ -57,14 +57,14 @@ def blockLU(x: [?D], piv, blk) where (D.rank != 2) {
 input parameter to blockLU must be a two-dimensional array.");
 }
 
-def blockLU(A: [?D], piv: [D(1)], blk) where (D.rank == 2){
+def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
   var slice0, slice1, slice2: range;
   var ind: index(D);
 
-  if ((D(1).low != D(2).low) | (D(1).high != D(2).high)) then 
+  if ((D.dim(1).low != D.dim(2).low) | (D.dim(1).high != D.dim(2).high)) then 
     halt("error: blockLU requires square matrix with same dimensions");
 
-  var A1D = D(1);
+  var A1D = D.dim(1);
   for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
     in IterateByBlocks(A1D,blk) {
   

@@ -9,7 +9,7 @@ twiddles(A);
 
 
 def twiddles(W: [?WD] complex) {
-  const n = WD(1).length;
+  const n = WD.dim(1).length;
   const delta = atan(1.0) / n;
   const i = 1.0;
 

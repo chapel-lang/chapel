@@ -52,11 +52,11 @@ def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
 //
 // computes && reduction over stridable of ranges
 //
-def _any_stridable(ranges, param dim: int = 1) param {
-  if ranges(dim).stridable == true then
+def _any_stridable(ranges, param d: int = 1) param {
+  if ranges(d).stridable == true then
     return true;
-  else if ranges.size > dim then
-    return _any_stridable(ranges, dim+1);
+  else if ranges.size > d then
+    return _any_stridable(ranges, d+1);
   else
     return false;
 }
@@ -109,11 +109,11 @@ record _domain {
       yield i;
   }
 
-  def this(dim : int)
-    return _value(dim);
+  def dim(d : int)
+    return _value.dim(d);
 
-  iterator dimIter(param dim, ind) {
-    for i in _value.dimIter(dim, ind) do yield i;
+  iterator dimIter(param d, ind) {
+    for i in _value.dimIter(d, ind) do yield i;
   }
 
   def buildArray(type eltType) {
@@ -390,7 +390,7 @@ class BaseDomain {
 
 
 class BaseArithmeticDomain : BaseDomain {
-  def bbox(dim:int) {
+  def bbox(d:int) {
     halt("bbox not supported for this domain type");
     return 1..0;
   }

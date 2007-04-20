@@ -32,13 +32,13 @@ module Norm{
   // matrix norms
     select (p) {
       when norm1 do
-        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j]));
+        return max reduce [j in D.dim(2)] (+ reduce abs(x[D.dim(1), j]));
 
       when norm2 do
         halt("Haven't implemented 2-norm for 2D arrays yet");
 
       when normInf do
-        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)]));
+        return max reduce [i in D.dim(1)] (+ reduce abs(x[i, D.dim(2)]));
 
       when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
 
