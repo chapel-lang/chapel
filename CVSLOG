@@ -100614,3 +100614,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/07 10:51:52 -- marybeth
+
+Log message:
+	Updating blockLU test to use the swap operator.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: blockLU.chpl 
+
