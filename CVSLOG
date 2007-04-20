@@ -100653,3 +100653,14 @@ Added files:
 Removed files:
 	chapel/test/functions/bradc/: topLevelFnNoParens.future 
 
+---------------------------------------------------------------------------
+
+04/20/07 14:10:22 -- deitz
+
+Log message:
+	Fixed a bug that I accidentally introduced in the last checkin with
+	secondary methods that have no parentheses.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+
