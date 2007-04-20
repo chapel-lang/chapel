@@ -37,7 +37,19 @@ check_redefinition(Symbol* sym) {
 
 
 static void
-check_returns(FnSymbol* fn) {
+check_functions(FnSymbol* fn) {
+
+  if (fn->fnClass == FN_ITERATOR) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_IN ||
+          formal->intent == INTENT_INOUT ||
+          formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_REF) {
+        USR_FATAL(formal, "formal argument of iterator cannot have intent");
+      }
+    }
+  }
+
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
   collect_asts(&asts, fn);
@@ -114,7 +126,7 @@ checkParsed(void) {
     if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
       check_parsed_vars(a);
     else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
-      check_returns(fn);
+      check_functions(fn);
   }
 }
 
