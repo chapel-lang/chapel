@@ -100583,3 +100583,15 @@ Added files:
 	chapel/test/statements/bradc/swaps/: swapArrayDiffIndices.chpl 
 	                                     swapArrayDiffIndices.good 
 
+---------------------------------------------------------------------------
+
+04/20/07 10:23:26 -- bradc
+
+Log message:
+	Updated future on this test -- realized that the
+	reason it isn't working is that it uses rank-change
+	slicing which is known to be unimplemented.
+
+Modified files:
+	chapel/test/arrays/bradc/slices/: icError.future 
+
