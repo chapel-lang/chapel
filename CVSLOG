@@ -100690,3 +100690,23 @@ Added files:
 	                            parensBeforeMethod.chpl 
 	                            parensBeforeMethod.good 
 
+---------------------------------------------------------------------------
+
+04/20/07 14:36:30 -- deitz
+
+Log message:
+	Fixed a bug in the default equality and inequality operators for
+	records and classes that support promotion.  You can now use == and !=
+	on ranges.
+	
+	Updated the .future message of
+	
+	  test/domains/marybeth/test_compare_range
+	
+	to "semantic" because this test calls min on ranges.  Should <
+	et. al. be overloaded for ranges?  What should it mean?
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/domains/marybeth/: test_compare_range.future 
+
