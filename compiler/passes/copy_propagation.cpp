@@ -152,6 +152,20 @@ void localCopyPropagation(FnSymbol* fn) {
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
+static bool isDeadVariable(DefExpr* def) {
+  if (def->sym->uses.n > 0)
+    return false;
+  if (def->sym->defs.n <= 1)
+    return true;
+  forv_Vec(SymExpr, se, def->sym->defs) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr))
+      if (call->isPrimitive(PRIMITIVE_MOVE))
+        continue;
+    return false;
+  }
+  return true; // only target of moves
+}
+
 void deadVariableElimination(FnSymbol* fn) {
   bool change = true;
   while (change) {
@@ -163,7 +177,7 @@ void deadVariableElimination(FnSymbol* fn) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
         if (def->sym->astType != SYMBOL_VAR || def->parentSymbol != fn)
           continue; // only variables, no fields of nested types
-        if (def->sym->uses.n == 0 && def->sym->defs.n <= 1) {
+        if (isDeadVariable(def)) {
           forv_Vec(SymExpr, se, def->sym->defs) {
             CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
             Expr* rhs = call->get(2);
