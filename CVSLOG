@@ -100784,3 +100784,19 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: overloadMethodArg.future 
 
+---------------------------------------------------------------------------
+
+04/20/07 16:32:21 -- deitz
+
+Log message:
+	Added an error check against iterators that have formal arguments with
+	intents.  Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/trivial/mjoyner/iterators/: 
+	                                        nest_func_iterator2b.good 
+Removed files:
+	chapel/test/trivial/mjoyner/iterators/: 
+	                                        nest_func_iterator2b.future 
+
