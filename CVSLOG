@@ -100710,3 +100710,14 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	chapel/test/domains/marybeth/: test_compare_range.future 
 
+---------------------------------------------------------------------------
+
+04/20/07 14:54:25 -- bradc
+
+Log message:
+	Switched reference to a cpkg version of perl to
+	a generic version of perl.
+
+Modified files:
+	chapel/util/: replstring 
+
