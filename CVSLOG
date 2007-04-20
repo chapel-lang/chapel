@@ -100549,3 +100549,37 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/test/Share/: typevar-2.chpl 
 
+---------------------------------------------------------------------------
+
+04/20/07 10:16:46 -- bradc
+
+Log message:
+	Fixed a really foolish bug with swapping arrays -- though
+	I was looping over the two arrays' domains in a zippered
+	manner, I was also swapping A(i) with B(i) rather than A(i)
+	with B(j), which assumed that both arrays were indexed the
+	same way.  Duh.  Added a test to lock in this behavior.
+	
+	This allows blockLU to use swaps with the following change
+	applied:
+	
+	< //        piv(k) <==> piv(ind);
+	< //        A(k,..) <==> A(ind,..);
+	<         var temp = piv(k);
+	<         piv(k) = piv(ind);
+	<         piv(ind) = temp;
+	<         for i in A1D {
+	<           rtemp = A(k,i);
+	<           A(k,i) = A(ind,i);
+	<           A(ind,i) = rtemp;
+	<         }
+	---
+	>         piv(k) <=> piv(ind);
+	>         A(k..k,A1D) <=> A(ind..ind,A1D);
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+Added files:
+	chapel/test/statements/bradc/swaps/: swapArrayDiffIndices.chpl 
+	                                     swapArrayDiffIndices.good 
+
