@@ -443,7 +443,7 @@ def _iteratorClass.writeThis(f: Writer) {
 //
 pragma "inline" def _chpl_swap(x: [?D1], y:[?D2]) {
   for (i,j) in (D1, D2) do
-    x(i) <=> y(i);
+    x(i) <=> y(j);
 }
 
 
