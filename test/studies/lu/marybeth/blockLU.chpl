@@ -52,12 +52,14 @@ def main() {
   writeln(piv);
 }
 
-def blockLU(A: [?D], piv: [D(1)], blk) {
-  var slice0, slice1, slice2: range;
-  var rtemp: A.eltType;
+def blockLU(x: [?D], piv, blk) where (D.rank != 2) {
+  compilerError("blockLU factors a matrix.  The first
+input parameter to blockLU must be a two-dimensional array.");
+}
 
-  if (D.rank != 2) then 
-    halt("error: blockLU requires 2D array");
+def blockLU(A: [?D], piv: [D(1)], blk) where (D.rank == 2){
+  var slice0, slice1, slice2: range;
+  var ind: index(D);
 
   if ((D(1).low != D(2).low) | (D(1).high != D(2).high)) then 
     halt("error: blockLU requires square matrix with same dimensions");
@@ -78,21 +80,13 @@ def blockLU(A: [?D], piv: [D(1)], blk) {
       slice1 = k+1..UnfactoredInds.high;
       slice2 = k+1..CurrentBlockInds.high;
 
-//    ind = maxIndex reduce (A1(UnfactoredInds(k..),k));
-      var (ind,_) = amaxIndex(A(slice0,k..k));
+      ind = amaxIndex(A(slice0,k..k));
 
-      if (ind != k) {
-//        piv(k) <==> piv(ind);
-//        A(k,..) <==> A(ind,..);
-        var temp = piv(k);
-        piv(k) = piv(ind);
-        piv(ind) = temp;
-        for i in A1D {
-          rtemp = A(k,i);
-          A(k,i) = A(ind,i);
-          A(ind,i) = rtemp;       
-        } 
-      } 
+      if (ind(1) != k) {
+        piv(k) <=> piv(ind(1));
+        A(k..k,A1D) <=> A(ind(1)..ind(1),A1D);
+      }
+
       if (A1(k,k) != 0.0) {
         forall i in slice1 {
           A1(i,k) = A1(i,k)/A1(k,k);
