@@ -1,6 +1,0 @@
-symbol resolution
-
-In this test, an argument named foo is not shadowing
-a method named foo as it seems it should.  Maybe
-there's a subtle rule I'm not getting, but this seems
-unfortunate if so.

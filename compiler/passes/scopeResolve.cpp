@@ -204,6 +204,12 @@ void scopeResolve(Symbol* base) {
           Symbol* parent = symExpr->parentSymbol;
           while (!dynamic_cast<ModuleSymbol*>(parent)) {
             if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+
+              // stopgap bug fix: do not let methods shadow symbols
+              // that are more specific than methods
+              if (sym && sym->getFunction() == method)
+                break;
+
               if (method->_this && symExpr->var != method->_this) {
                 Type* type = method->_this->type;
                 if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||

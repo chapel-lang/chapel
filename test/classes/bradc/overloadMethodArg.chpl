@@ -17,7 +17,7 @@ class C {
 
   def baz(foo:int, bar: int) {
     if (foo < bar) {
-      writlen("less");
+      writeln("less");
     } else {
       writeln("greater");
     }
