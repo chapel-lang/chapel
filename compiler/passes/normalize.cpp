@@ -73,6 +73,12 @@ void normalize(BaseAST* base) {
       fixup_query_formals(fn);
       if (fn->buildSetter)
         build_lvalue_function(fn);
+
+      // functions (not methods) without parentheses are resolved
+      // during scope resolution
+      if (fn->noParens && !fn->isMethod)
+        fn->visible = false;
+
     }
   }
 
