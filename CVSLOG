@@ -100664,3 +100664,29 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/07 14:23:58 -- bradc
+
+Log message:
+	A couple of class tests, one seemingly a bug.
+	
+	1) overloadMethodArg.chpl shows that if a method has an
+	   argument that shares its name, the argument does not
+	   shadow the method name within the method definition.
+	   This seems odd to me (and caused lots of problems due
+	   to the use of arguments named "dim" throughout a lot
+	   of the standard modules once I renamed the domain
+	   "this()" function to be "dim()".
+	
+	2) The other tests whether a method that expects parens
+	   can be parenthesized before the argument list as in
+	   (c.foo)(args...).  It can, as expected.
+
+Added files:
+	chapel/test/classes/bradc/: overloadMethodArg.chpl 
+	                            overloadMethodArg.future 
+	                            overloadMethodArg.good 
+	                            parensBeforeMethod.chpl 
+	                            parensBeforeMethod.good 
+
