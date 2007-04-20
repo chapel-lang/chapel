@@ -1,4 +1,4 @@
-#!/opt/cpkg/v3/all/bin/perl
+#!/usr/bin/perl
 
 $timestamp = "Time-stamp: <Mon, 13 Sep 1999, 14:25:33 PDT  tilo>";
 $timestamp =~ s/.+: <(\d+) (\w+) (\d+) ([0-9:]+) (\w+)>/$1 $2 $3  $4  by $5/;
@@ -41,6 +41,12 @@ $timestamp =~ s/.+: <(\d+) (\w+) (\d+) ([0-9:]+) (\w+)>/$1 $2 $3  $4  by $5/;
 # $Id$
 #
 # $Log$
+# Revision 1.1  2006/11/01 00:19:41  bradc
+#
+# Checking utilities into our util/ directory
+# - diffLatexCode: script for diffing latex code
+# - replstring: script for replacing text in files
+#
 # Revision 1.1  2002/07/17 20:40:35  deitz
 # initial revsion
 #
