@@ -122,9 +122,6 @@ checkParsed(void) {
 void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->noParens && !fn->_this)
-      USR_FATAL_CONT(fn, "functions require parentheses");
-
     // do not check body of nested function (would be again)
     if (fn->defPoint->parentSymbol->astType == SYMBOL_FN)
       continue;

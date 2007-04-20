@@ -456,6 +456,12 @@ void cleanup(void) {
           add_class_to_hierarchy(ct);
         }
       } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+
+        // functions (not methods) without parentheses are resolved
+        // during scope resolution
+        if (fn->noParens && !fn->isMethod)
+          fn->visible = false;
+
         flatten_primary_methods(fn);
         add_this_formal_to_method(fn);
         change_cast_in_where(fn);

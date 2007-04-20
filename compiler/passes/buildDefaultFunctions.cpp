@@ -235,7 +235,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
   forv_Vec(FnSymbol, fn, gFns) {
-    if (!strcmp("main", fn->name) && !fn->formals->length()) {
+    if (!strcmp("main", fn->name) && !fn->noParens && !fn->formals->length()) {
       if (!match) {
         match = fn;
       } else {

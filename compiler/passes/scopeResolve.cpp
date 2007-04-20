@@ -165,6 +165,18 @@ void scopeResolve(Symbol* base) {
 
         Symbol* sym = symExpr->lookup(name);
 
+        bool handleFunctionWithoutParens = false;
+        for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp)) {
+            if (!fn->isMethod && fn->noParens) {
+              symExpr->replace(new CallExpr(fn));
+              handleFunctionWithoutParens = true;
+            }
+          }
+        }
+        if (handleFunctionWithoutParens)
+          continue;
+
         // sjd: stopgap to avoid shadowing variables or functions by methods
         while (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
           if (fn->isMethod)
