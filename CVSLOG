@@ -100595,3 +100595,22 @@ Log message:
 Modified files:
 	chapel/test/arrays/bradc/slices/: icError.future 
 
+---------------------------------------------------------------------------
+
+04/20/07 10:35:38 -- deitz
+
+Log message:
+	Improved the effectiveness of dead variable elimination to eliminate
+	variables that are defined multiple times but each time with moves.
+	Previously, variables would not be removed if they had more than one
+	definition.
+	
+	Along with my last checkin, this decreases the number of lines of code
+	generated to implement the simple loop "for i in 1..10 do writeln(i)"
+	from 56 to 36.
+	
+	Working on a more dramatic change shortly.
+
+Modified files:
+	chapel/compiler/passes/: copy_propagation.cpp 
+
