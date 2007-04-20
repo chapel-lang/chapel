@@ -100624,3 +100624,32 @@ Log message:
 Modified files:
 	chapel/test/studies/lu/marybeth/: blockLU.chpl 
 
+---------------------------------------------------------------------------
+
+04/20/07 12:19:13 -- deitz
+
+Log message:
+	Added support for functions without parentheses that are called
+	without parentheses.  Such functions are resolved during scope
+	resolution.  The visible flag is set to false so that they cannot be
+	resolved later during function resolution, which would allow them to
+	be called with parentheses.  That would be ambiguous if the return
+	type were something that defined a this method.
+	
+	Inserted a check when determining the main function to require that
+	the main function have parentheses.
+	
+	Added an error test case where a function that has no parentheses is
+	called with parentheses.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	chapel/test/classes/deitz/: test_bad_function_noparens.good 
+	chapel/test/trivial/bradc/entrypoint/: main2.good 
+Added files:
+	chapel/test/functions/deitz/: test_function_noparens_error.chpl 
+	                              test_function_noparens_error.good 
+Removed files:
+	chapel/test/functions/bradc/: topLevelFnNoParens.future 
+
