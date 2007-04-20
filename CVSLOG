@@ -100537,3 +100537,15 @@ Added files:
 	                                      threeclasstypes-construct2.future 
 	                                      threeclasstypes-construct2.good 
 
+---------------------------------------------------------------------------
+
+04/19/07 17:16:06 -- bradc
+
+Log message:
+	Removed "constructor" keyword from compiler -- we now
+	use "def" with the class name as the function name.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/Share/: typevar-2.chpl 
+
