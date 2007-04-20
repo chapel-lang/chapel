@@ -1,7 +1,7 @@
 class Subgraph {
   type wtype;
   var x : wtype;
-  constructor Subgraph(y : int) : x(y) {
+  def Subgraph(y : int) : x(y) {
   }
 }
 

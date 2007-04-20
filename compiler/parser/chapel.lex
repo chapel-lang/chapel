@@ -45,7 +45,6 @@ cobegin         processToken(TCOBEGIN);
 compilerError   processToken(TCOMPILERERROR);
 config          processToken(TCONFIG);
 const           processToken(TCONST);
-constructor     processToken(TCONSTRUCTOR);
 continue        processToken(TCONTINUE);
 def             processToken(TDEF);
 distributed     processToken(TDISTRIBUTED);

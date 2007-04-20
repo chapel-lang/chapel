@@ -101,7 +101,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TCOBEGIN
 %token TCONFIG
 %token TCONST
-%token TCONSTRUCTOR
 %token TCONTINUE
 %token TDEF
 %token TDISTRIBUTED
@@ -679,8 +678,6 @@ fn_decl_stmt:
 fn_tag:
   TDEF
     { $$ = FN_FUNCTION; }
-| TCONSTRUCTOR
-    { $$ = FN_CONSTRUCTOR; }
 | TITERATOR
     { $$ = FN_ITERATOR; }
 ;
