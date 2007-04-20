@@ -1,4 +1,6 @@
-deitz
+rank-change slicing/error messages
 
-Passing slices to a function that queries the domains doesn't seem to
-be working.
+This test doesn't work because it uses the rank-change
+style of slicing.  The error message could stand to be
+improved, but implementing rank-change slicing would
+also fix it.
