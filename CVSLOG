@@ -100721,3 +100721,50 @@ Log message:
 Modified files:
 	chapel/util/: replstring 
 
+---------------------------------------------------------------------------
+
+04/20/07 14:56:20 -- bradc
+
+Log message:
+	Removed ability to index into a domain to get the range
+	of one of its dimensions.  Replaced this with a dim()
+	method that takes an int and returns the range.  Had to
+	rename a number of arguments named "dim" in the modules
+	that conflicted with this method, some correctly, others
+	due to the bug filed in overloadMethodArg.chpl.
+	
+	Also added parser support for the full unbounded range
+	"..", though it isn't useful for anything yet.
+	
+	Next step: support domain slicing.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelRange.chpl Schedules.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/arrays/deitz/: matrix.chpl 
+	chapel/test/arrays/deitz/domains/: test_domain_dims.chpl 
+	chapel/test/demo/review_060130/: iterators.chpl 
+	chapel/test/domains/bradc/: queryLength.chpl 
+	chapel/test/domains/marybeth/: test_compare_range2.chpl 
+	                               testrank.chpl 
+	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-sparse.chpl 
+	chapel/test/npb/ft/: ft-serial.chpl 
+	chapel/test/release/examples/: norm.chpl 
+	chapel/test/sparse/deitz/: test_sparse1.good 
+	chapel/test/spec/marybeth/: Norm.chpl 
+	chapel/test/studies/hpcc/FFT/: fft-candidate-2d.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: bitreverse.chpl 
+	                                     bitreverse2.chpl fft.chpl 
+	                                     twiddles-onebased.chpl 
+	                                     twiddles.chpl 
+	chapel/test/studies/hpcc/FFT/marybeth/: fft-test-even.chpl 
+	                                        fft2d.chpl 
+	chapel/test/studies/lu/marybeth/: blockLU.chpl blocks.chpl 
+Added files:
+	chapel/test/sparse/deitz/: test_sparse1.future 
+	chapel/test/types/complex/marybeth/: .cvsignore 
+	chapel/test/types/complex/waynew/: .cvsignore 
+
