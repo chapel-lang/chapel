@@ -1,3 +1,7 @@
+semantic (< on ranges)
+
+Should < be implemented on ranges?  What does min of multiple ranges mean?
+
 domains, ranges
 
 This test attempts to compare the two ranges of a 2D domain, D.

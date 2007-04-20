@@ -277,9 +277,11 @@ static void build_record_equality_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   for_fields(tmp, ct) {
-    Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-    Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-    fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gFalse)));
+    if (strcmp(tmp->name, "_promotionType")) {
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gFalse)));
+    }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gTrue));
   DefExpr* def = new DefExpr(fn);
@@ -300,9 +302,11 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   for_fields(tmp, ct) {
-    Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-    Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-    fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gTrue)));
+    if (strcmp(tmp->name, "_promotionType")) {
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gTrue)));
+    }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gFalse));
   DefExpr* def = new DefExpr(fn);
