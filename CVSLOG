@@ -100768,3 +100768,19 @@ Added files:
 	chapel/test/types/complex/marybeth/: .cvsignore 
 	chapel/test/types/complex/waynew/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+04/20/07 15:42:37 -- deitz
+
+Log message:
+	Fixed a bug in scope resolution in which methods would shadow all
+	symbols including symbols that were more local.
+	
+	Fixed a misspelling of writlen and removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: scopeResolve.cpp 
+	chapel/test/classes/bradc/: overloadMethodArg.chpl 
+Removed files:
+	chapel/test/classes/bradc/: overloadMethodArg.future 
+
