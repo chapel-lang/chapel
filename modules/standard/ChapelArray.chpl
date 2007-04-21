@@ -109,6 +109,26 @@ record _domain {
       yield i;
   }
 
+  // slicing a domain using a varargs set of ranges of rank elements
+  def this(i: range(_dim_index_type,?bnd,?str) ... rank) {
+    // assuming stridable dependent on incoming ranges for now;
+    // really should check stridablility of current domain as well to be
+    // correct.
+    var newRanges: rank*range(_dim_index_type, bounded, stridable=_any_stridable(i));
+    for param d in 1..rank {
+      newRanges(d) = _value.dim(d)(i(d));
+    }
+    // this should really be something like:
+    //           var subdomainClass = dist.buildDomain(...)
+    // but it seems that domains don't store a pointer to their
+    // distribution currently, so we build a SingleLocaleArithmetic
+    // for now.  Ugh!
+    return [(...newRanges)];
+    // And then we would do:
+    //    return _domain(_domain_type, _index_type, _dim_index_type, rank, 
+    //                   subdomainClass);
+  }
+
   def dim(d : int)
     return _value.dim(d);
 
@@ -257,8 +277,8 @@ record _array {
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
-  def this(i: range(_dim_index_type,bounded,?stridable) ...rank) {
-    var d = [(...i)];
+  def this(i: range(_dim_index_type,?bnd,?stridable) ...rank) {
+    var d = _dom[(...i)];
     return this(d);
   }
 
@@ -274,15 +294,15 @@ record _array {
     y = val;
   }
 
-  def =this(i: range(_dim_index_type,bounded,?stridable) ...rank, val) where rank > 0 {
-    var d = [(...i)];
+  def =this(i: range(_dim_index_type,?bnd,?stridable) ...rank, val) where rank > 0 {
+    var d = _dom[(...i)];
     var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;
   }
 
-  def =this(i: range(_dim_index_type,bounded,?stridable) ...rank, val: eltType) where rank > 0 {
-    var d = [(...i)];
+  def =this(i: range(_dim_index_type,?bnd,?stridable) ...rank, val: eltType) where rank > 0 {
+    var d = _dom[(...i)];
     var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
     y._value = _value.slice(d._value);
     y = val;

@@ -57,6 +57,30 @@ record range {
   def high: eltType return _high;
   def stride: eltType return _stride; // should be :int ??
 
+  def this(subrange: range(?eltType, ?boundedness, ?stridable)) {
+    if (stride != 1 || _stride != 1) {
+      halt("range slicing not supported for strided ranges yet");
+    }
+    if (boundedness == bounded) {
+      if (subrange.low >= low && subrange.high <= high) {
+        return range(eltType, bounded, stridable, subrange.low, subrange.high,
+                     subrange.stride);
+      } else {
+        halt("Range sliced out-of-range:", subrange);
+      }
+    } else if (boundedness == boundedLow) {
+      return range(eltType, bounded, stridable, subrange.low, _high,
+                   subrange.stride);
+    } else if (boundedness == boundedHigh) {
+      return range(eltType, bounded, stridable, _low, subrange.high, 
+                   subrange.stride);
+    } else if (boundedness == boundedNone) {
+      return range(eltType, bounded, stridable, _low, _high, subrange.stride);
+    } else {
+      compilerError("unexpected boundedness case in range.this()");
+    }
+  }
+
   iterator ault() {
     if boundedType != bounded {
       if stridable {
