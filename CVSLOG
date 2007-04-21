@@ -100800,3 +100800,59 @@ Removed files:
 	chapel/test/trivial/mjoyner/iterators/: 
 	                                        nest_func_iterator2b.future 
 
+---------------------------------------------------------------------------
+
+04/20/07 17:27:56 -- bradc
+
+Log message:
+	Added support for slicing for ranges, domains, and
+	arrays using partially-bounded or un-bounded ranges.
+	This is to say, you can slice into a range, domain,
+	or array using "l..", "..u", or ".." in each dimension,
+	and the missing bounds will be inherited from context.
+	
+	Some caveats in this change:
+	
+	(1) Using strided slices and/or slicing strided
+	    ranges/domains/arrays is not yet implemented
+	
+	(2) The new domain that's created will be a
+	    SingleLocaleDomain, when it ought to inherit
+	    the distribution from the domain being sliced.
+	
+	With this change, Mary Beth's block LU test can take
+	advantage of unbounded ranges using the following
+	patch:
+	
+	79,81c79,81
+	<       slice0 = k..UnfactoredInds.high;
+	<       slice1 = k+1..UnfactoredInds.high;
+	<       slice2 = k+1..CurrentBlockInds.high;
+	---
+	>       slice0 = UnfactoredInds(k..);
+	>       slice1 = UnfactoredInds(k+1..);
+	>       slice2 = UnfactoredInds(k+1..CurrentBlockInds.high);
+	87c87
+	<         A(k..k,A1D) <=> A(ind(1)..ind(1),A1D);
+	---
+	>         A(k..k,..) <=> A(ind(1)..ind(1),..);
+	105c105
+	<         slice2 = k+1..CurrentBlockInds.high;
+	---
+	>         slice2 = CurrentBlockInds(k+1..);
+	
+	Improvements to the Sort and Search modules should
+	also be possible, but I haven't investigated those
+	yet.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl ChapelRange.chpl 
+Added files:
+	chapel/test/arrays/bradc/slices/: unboundedSlices.chpl 
+	                                  unboundedSlices.good 
+	                                  unboundedSlices2D.chpl 
+	                                  unboundedSlices2D.good 
+	chapel/test/domains/bradc/: domainSlices.chpl domainSlices.good 
+	chapel/test/types/range/bradc/: rangeSlices.chpl 
+	                                rangeSlices.good 
+
