@@ -100856,3 +100856,25 @@ Added files:
 	chapel/test/types/range/bradc/: rangeSlices.chpl 
 	                                rangeSlices.good 
 
+---------------------------------------------------------------------------
+
+04/20/07 17:28:54 -- marybeth
+
+Log message:
+	Checking in a MatrixOps module into test/studies/matrixlib.
+	It's not quite ready for prime time, so I'm putting it into
+	the studies part of the test directory for now.  It contains
+	an overloaded * definition for matrix multiplication.  It also
+	contains routines that compute the index of the maximum element
+	of an array and blockLU.
+	
+	For now, I'm checking in one test that tests the overloaded
+	matrix multiplication.  I'll be adding more routines to this module
+	and more tests.
+
+Added files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl MatrixOps.notest 
+	                                test_overloading.chpl 
+	                                test_overloading.compopts 
+	                                test_overloading.good 
+
