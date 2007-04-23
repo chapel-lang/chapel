@@ -100930,3 +100930,20 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: domarr2.future 
 
+---------------------------------------------------------------------------
+
+04/23/07 09:49:11 -- deitz
+
+Log message:
+	Enabled loop statements using for/forall to elide indices as in
+	
+	  for 1..4 do
+	
+	Added a test.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_loop_noindex.chpl 
+	                            test_loop_noindex.good 
+
