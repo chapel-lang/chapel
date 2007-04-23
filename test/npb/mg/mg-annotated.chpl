@@ -23,7 +23,7 @@
 //   A-D: increasingly large "production" runs
 //   O: other
 
-enum classVals {S, W, A, B, C, D, O};
+enum classVals {S, W, A, B, C, D};
 
 
 // arrays of values used to characterize each problem class:
@@ -31,31 +31,31 @@ enum classVals {S, W, A, B, C, D, O};
 //   iterations: the number of iterations to run
 //   checksum: the expected result, if the default characteristics are used
 
-const probSize: [S..O] int = (32, 64, 256, 256, 512, 1024, 256),
-      iterations: [S..O] int = (4, 40, 4, 20, 20, 50, 4),
-      checksum: [S..O] real  = (0.0000530770700573,
-                                  0.00000000000000000250391406439,
-                                  0.000002433365309,
-                                  0.00000180056440132,
-                                  0.000000570674826298,
-                                  0.000000000158327506043,
-                                  0.0);
+const Class: domain(classVals);
+const probSizes:  [Class] int = (32, 64, 256, 256, 512, 1024),
+      iterations: [Class] int = (4, 40, 4, 20, 20, 50),
+      checksums:  [Class] real  = (0.0000530770700573,
+                                   0.00000000000000000250391406439,
+                                   0.000002433365309,
+                                   0.00000180056440132,
+                                   0.000000570674826298,
+                                   0.000000000158327506043);
 
 
 // this is the problem class that will be used for the run.  Since
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const Class: classVals = S;
+config const probClass: classVals = S;
 
 
 // the problem size.  By default, the problem size will be the same in
-// each dimension (n), as specified by the Class variable.  This
+// each dimension (n), as specified by the probClass variable.  This
 // default may be overridden for all dimensions by specifying a new
 // value for n on the executable's command-line or by overriding any
 // of the dimensional problem sizes individually (nx, ny, nz).
 
-config const n = probSize(Class);
+config const n = probSize(probClass);
 config const nx = n,
              ny = n,
              nz = n;
@@ -71,12 +71,12 @@ config const numLevels = log2(min(nx,ny,nz)),
 // the number of iterations to run.  Again, determined by the problem
 // class by default, but overridable.
 
-             numIters = iterations(Class),
+             numIters = iterations(probClass),
 
 
 // the checksum for the benchmark, again overridable.
 
-             verifyValue = checksum(Class);
+             verifyValue = checksum(probClass);
 
 
 // A flag specifying whether or not a "warmup" round should be run, a
@@ -174,7 +174,7 @@ def initializeMG(V, U, R) {
 def computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
-  for it in (1..numIters) {
+  for it in 1..numIters {
     runOneIteration(V, U, R);
   }
   var (rnm2, _) = norm2u3(R(1));
@@ -234,7 +234,7 @@ def runOneIteration(V, U, R) {
 
 def mg3P(V, U, R) {
   // project up the hierarchy
-  for lvl in (2..numLevels) {
+  for lvl in 2..numLevels {
     rprj3(R(lvl), R(lvl-1));
   }
 
@@ -243,7 +243,7 @@ def mg3P(V, U, R) {
   psinv(U(numLevels), R(numLevels));
 
   // interpolate down the hierarchy
-  for lvl in (2..numLevels-1) by -1 {
+  for lvl in 2..numLevels-1 by -1 {
     U(lvl) = 0.0;
     interp(U(lvl), U(lvl+1));
     resid(R(lvl), R(lvl), U(lvl));
@@ -392,8 +392,8 @@ def norm2u3(R) {
 
 // initCValues() sets the c values for the psinv() stencil
 
-def initCValues(Class) {
-  if (Class == A || Class == S || Class == W) {
+def initCValues(probClass) {
+  if (probClass == A || probClass == S || probClass == W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
@@ -454,16 +454,16 @@ def zran3(V) {
   var pos, neg: [1..numCharges] index(Base);
 
   // compute the random array of values
-  V = [i,j,k in Base] longRandlc((i-1) + (j-1)*nx + (k-1)*nx*ny);
+  fillRandom(V, 314159265);
 
   // the following does a number of maxloc/minloc reductions, each of
   // which returns the location of the largest/smallest element as an
   // index of the array's domain.  This is an easy, though slow way to
   // perform this computation.  A better way would be to write a
   // user-defined reduction using Chapel's features for that, but this
-  // required lots more effort and it isn't being timed anyway.
+  // requires more effort and it isn't being timed anyway.
 
-  for i in (1..numCharges) {
+  for i in 1..numCharges {
     pos(i) = maxloc reduce V;
     neg(i) = minloc reduce V;
     pos(i) = 0.5;  // (remove from consideration on next iteration)
@@ -472,62 +472,8 @@ def zran3(V) {
 
   // zero out the array and assign the initial 1.0 and -1.0 values
   V = 0.0;
-  for i in (1..numCharges) {
+  for i in 1..numCharges {
     V(pos(i)) =  1.0;
     V(neg(i)) = -1.0;
   }
-}
-
-
-// "RANDOM" NUMBER STUFF: This is basically the same as what the NPB
-// supplies in randdp.f; I don't claim to understand them in any
-// depth.
-
-def longRandlc(n) {
-  const s = 314159265.0,
-        arand = 5.0**13;
-
-  var kk = n,
-      t1 = s,
-      t2 = arand,
-      t3: real;
-
-  while (kk != 0) {
-    var ik = kk / 2;
-    if (2*ik != kk) {
-      t3 = randlc(t1, t2);
-    }
-    if (kk > 0) {
-      t3 = randlc(t2, t2);
-    }
-    kk = ik;
-  }
-
-  return randlc(t1, arand);
-}
-
-
-def randlc(x, a) {
-  const r23 = 0.5**23,
-        t23 = 2.0**23,
-        r46 = 0.5**46,
-        t46 = 2.0**46;
-
-  var t1, t2, t3, t4, a1, a2, x1, x2, y: real;
-
-  t1 = r23 * x;
-  a1 = t1:int;
-  a2 = a - t23 * a1;
-
-  t1 = r23 * x;
-  x1 = t1:int;
-  x2 = x - t23 * x1;
-  t1 = a1 * x2 + a2 * x1;
-  t2 = (r23 * t1):int;
-  y = t1 - t23 * t2;
-  t3 = t23 * y + a2 * x2;
-  t3 = (r46 * t3):int;
-  x = t3 - t46 * t4;
-
-  return r46 * x;
 }
