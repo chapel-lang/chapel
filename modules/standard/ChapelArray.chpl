@@ -227,10 +227,24 @@ record _domain {
 }
 
 def =(a: _domain, b: _domain) {
-//  if a == nil then return b; // stopgap: why? --sjd
+  //  if a == nil then return b; // stopgap: why? --sjd
   for e in a._value._arrs do
     e.reallocate(b);
   a._value.setIndices(b._value.getIndices());
+  return a;
+}
+
+def =(a: _domain, b: _tuple) {
+  for ind in 1..b.size {
+    a.add(b(ind));
+  }
+  return a;
+}
+
+def =(a: _domain, b) {  // b is iteratable
+  for ind in b {
+    a.add(ind);
+  }
   return a;
 }
 

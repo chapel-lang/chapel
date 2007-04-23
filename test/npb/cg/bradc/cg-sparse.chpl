@@ -34,15 +34,9 @@ config const numTrials = 1,
 
 
 def main() {
-  // build the sparse domain first
   const DenseSpace = [1..n, 1..n];
-  var MatrixSpace: sparse subdomain(DenseSpace); // dist(CSR);
-
-  for ind in genAIndsSorted(elemType, n, nonzer, shift) {
-    MatrixSpace += ind;
-  }
-
-  // and then the array
+  const MatrixSpace: sparse subdomain(DenseSpace) // dist(CSR);
+                   = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 
   for (ind, v) in makea(elemType, n, nonzer, shift) {
