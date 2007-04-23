@@ -423,6 +423,10 @@ for_stmt:
     { $$ = build_for_block($1, $2, $4, $5); }
 | for_tag expr TIN expr TDO stmt
     { $$ = build_for_block($1, $2, $4, new BlockStmt($6)); }
+| for_tag expr parsed_block_stmt
+    { $$ = build_for_block($1, new SymExpr("_dummy"), $2, $3); }
+| for_tag expr TDO stmt
+    { $$ = build_for_block($1, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
 ;
 
 
