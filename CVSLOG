@@ -101044,3 +101044,14 @@ Added files:
 	                                     sparseDomainInitTuple.chpl 
 	                                     sparseDomainInitTuple.good 
 
+---------------------------------------------------------------------------
+
+04/23/07 15:13:05 -- bradc
+
+Log message:
+	Changed Sort module to use unbounded sequences, just
+	for fun.
+
+Modified files:
+	chapel/modules/standard/: Sort.chpl 
+
