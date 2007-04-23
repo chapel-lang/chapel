@@ -202,7 +202,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
-%type <pblockstmt> type_select_stmt on_stmt
+%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
@@ -303,7 +303,12 @@ stmt_ls:
 
 stmt:
   empty_stmt
-| label_stmt
+| non_empty_stmt
+;
+
+
+non_empty_stmt:
+  label_stmt
 | goto_stmt
 | break_stmt
 | continue_stmt
@@ -427,6 +432,10 @@ expr_for_stmt:
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = build_for_block(BLOCK_FORALL, $2->only()->remove(), $4, new BlockStmt($6));
+    }
+| TLSBR nonempty_expr_ls TRSBR non_empty_stmt
+    {
+      $$ = build_for_block(BLOCK_FORALL, new SymExpr("_dummy"), $2->only()->remove(), new BlockStmt($4));
     }
 ;
 
@@ -1358,6 +1367,16 @@ expr:
       forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
+| TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
+    {
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid loop expression");
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $4));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(build_if_expr(new CallExpr("_cond_test", $2), $4, $6))); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
@@ -1367,6 +1386,15 @@ expr:
       FnSymbol* forif_fn = new FnSymbol("_forif_fn");
       forif_fn->fnClass = FN_ITERATOR;
       forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, new CallExpr("_cond_test", $7)));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
+| TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
+    {
+      if ($2->length() != 1)
+        USR_FATAL($5, "invalid index expression");
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->fnClass = FN_ITERATOR;
+      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $7, new CallExpr("_cond_test", $5)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 ;

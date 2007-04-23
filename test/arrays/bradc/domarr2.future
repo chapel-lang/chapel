@@ -1,7 +1,0 @@
-semantic
-
-Fails because of line
-
-A = [Mat] 2.0;
-
-Should this be legal?  There is no index but none is used.
