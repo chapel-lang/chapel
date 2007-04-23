@@ -100878,3 +100878,14 @@ Added files:
 	                                test_overloading.compopts 
 	                                test_overloading.good 
 
+---------------------------------------------------------------------------
+
+04/23/07 09:21:02 -- deitz
+
+Log message:
+	Removed .future for now legal test.
+
+Removed files:
+	chapel/test/functions/iterators/bradc/: 
+	                                        topLevelIteratorNoParens.future 
+
