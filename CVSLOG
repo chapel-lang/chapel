@@ -100973,3 +100973,14 @@ Log message:
 Modified files:
 	chapel/test/studies/matrixlib/: MatrixOps.chpl 
 
+---------------------------------------------------------------------------
+
+04/23/07 12:31:58 -- bradc
+
+Log message:
+	Did a few housecleaning steps to MG, but nothing
+	serious.
+
+Modified files:
+	chapel/test/npb/mg/: mg-annotated.chpl 
+
