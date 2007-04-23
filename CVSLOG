@@ -100960,3 +100960,16 @@ Modified files:
 Added files:
 	chapel/test/studies/lu/marybeth/: blockLU.compopts 
 
+---------------------------------------------------------------------------
+
+04/23/07 10:54:23 -- marybeth
+
+Log message:
+	Made changes to blockLU to use domain slicing.  Also, changed
+	equality test comparing D.dim(1) to D.dim(2).  Now, it is a
+	simple equality test where it used to be an explicit comparison
+	of the .low and .high values of D.dim(1) and D.dim(2).
+
+Modified files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl 
+
