@@ -100984,3 +100984,27 @@ Log message:
 Modified files:
 	chapel/test/npb/mg/: mg-annotated.chpl 
 
+---------------------------------------------------------------------------
+
+04/23/07 12:36:20 -- bradc
+
+Log message:
+	Removed restriction in compiler that the "main"
+	entry point function must have parenthesis.
+	Checked specification, and the current wording
+	is sufficiently vague that it didn't seem to
+	need updating to reflect this change.
+	
+	Interesting to note that it seems that other
+	functions named "main" can be defined that
+	take args, which will not be taken as the
+	entry point, which could be a source of
+	confusion.  Might want to either make these
+	illegal, or illegal if they can't be called
+	in a 0-argument form (all arguments have defaults),
+	or generate a warning, or...
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/trivial/bradc/entrypoint/: .cvsignore main2.good 
+
