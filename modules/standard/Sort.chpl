@@ -59,8 +59,8 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   Data(loptr) = pivotVal;
 
   //  cobegin {
-    QuickSort(Data[lo..loptr-1]);  // could use unbounded ranges here
-    QuickSort(Data[loptr+1..hi]);
+    QuickSort(Data[..loptr-1]);  // could use unbounded ranges here
+    QuickSort(Data[loptr+1..]);
     //  }
 
   if (doublecheck) then
