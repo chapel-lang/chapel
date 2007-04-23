@@ -101008,3 +101008,39 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	chapel/test/trivial/bradc/entrypoint/: .cvsignore main2.good 
 
+---------------------------------------------------------------------------
+
+04/23/07 14:42:43 -- bradc
+
+Log message:
+	Adding support for assigning or initializing sparse
+	domains using "things that can be iterated over" and/or
+	"tuples".  This supports initializations using forall
+	expressions yielding indices, iterators, and explicit
+	lists of indices, ....  Added tests of initializations
+	and assignments of sparse domains.
+	
+	Updated the CG benchmark to use an initialization like
+	this and to make the domain const rather than assigning
+	it in an explicit loop after the fact.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	chapel/test/npb/cg/bradc/: cg-sparse.chpl 
+	chapel/test/trivial/bradc/entrypoint/: .cvsignore 
+Added files:
+	chapel/test/performance/deitz/: .cvsignore 
+	chapel/test/sparse/bradc/assignDom/: .cvsignore 
+	                                     sparseDomainAssignForall.chpl 
+	                                     sparseDomainAssignForall.good 
+	                                     sparseDomainAssignIterator.chpl 
+	                                     sparseDomainAssignIterator.good 
+	                                     sparseDomainAssignTuple.chpl 
+	                                     sparseDomainAssignTuple.good 
+	                                     sparseDomainInitForall.chpl 
+	                                     sparseDomainInitForall.good 
+	                                     sparseDomainInitIterator.chpl 
+	                                     sparseDomainInitIterator.good 
+	                                     sparseDomainInitTuple.chpl 
+	                                     sparseDomainInitTuple.good 
+
