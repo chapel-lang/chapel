@@ -101055,3 +101055,20 @@ Log message:
 Modified files:
 	chapel/modules/standard/: Sort.chpl 
 
+---------------------------------------------------------------------------
+
+04/23/07 16:11:22 -- bradc
+
+Log message:
+	Adding a test of how array type inference should work (or at
+	least, how I believe it should work) as a future.  In some
+	sense, this sort of inference is holding up writing partial
+	reductions using a functional interface for NAS CG.  In
+	other senses, it's not -- just trading one user writearound
+	for another.
+
+Added files:
+	chapel/test/arrays/bradc/: inferArrayType.chpl 
+	                           inferArrayType.future 
+	                           inferArrayType.good 
+
