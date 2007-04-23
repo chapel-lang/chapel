@@ -27,18 +27,26 @@ def amaxIndex(A:[?D]) {
 }
 
 def blockLU(x: [?D], piv, blk) where (D.rank != 2) {
+// This routine will give a compiler error if blockLU
+// is called with an array that is not two dimensional.
+
   compilerError("blockLU factors a matrix.  The first
 input parameter to blockLU must be a two-dimensional array.");
 }
 
 def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
-  var slice0, slice1, slice2: range;
-  var ind: index(D);
+// Block LU with pivoting.
+// In this version, A1D is a range, not a 1D domain.  The iterator,
+// IterateByBlocks returns ranges, not subdomains of A1D.  Temporary
+// ranges, slice1 and slice2 are used to define what should be
+// subdomains sliced by indefinite ranges.
 
-  if ((D.dim(1).low != D.dim(2).low) | (D.dim(1).high != D.dim(2).high)) then 
+  if (D.dim(1) != D.dim(2)) then
     halt("error: blockLU requires square matrix with same dimensions");
 
   var A1D = D.dim(1);
+  var ind: index(D);
+
   for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
     in IterateByBlocks(A1D,blk) {
   
@@ -49,23 +57,19 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
 
 // LU factorization of A1 
     for k in CurrentBlockInds {
-//    temporaries used instead of subdomains with indefinite ranges.
-      slice0 = k..UnfactoredInds.high;
-      slice1 = k+1..UnfactoredInds.high;
-      slice2 = k+1..CurrentBlockInds.high;
 
-      ind = amaxIndex(A(slice0,k..k));
+      ind = amaxIndex(A(UnfactoredInds(k..),k..k));
 
       if (ind(1) != k) {
         piv(k) <=> piv(ind(1));
-        A(k..k,A1D) <=> A(ind(1)..ind(1),A1D);
+        A(k..k,..) <=> A(ind(1)..ind(1),..);
       }
 
       if (A1(k,k) != 0.0) {
-        forall i in slice1 {
+        forall i in UnfactoredInds(k+1..) {
           A1(i,k) = A1(i,k)/A1(k,k);
         }
-        forall (i,j) in [slice1,slice2] {
+        forall (i,j) in [UnfactoredInds(k+1..),CurrentBlockInds(k+1..)] {
           A1(i,j) -= A1(i,k)*A1(k,j);
         }
       } 
@@ -75,9 +79,7 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
 // Update of A12.
     forall j in TrailingBlockInds {
       for k in CurrentBlockInds {
-//    temporary range used instead of subdomain with indefinite range
-        slice2 = k+1..CurrentBlockInds.high;
-        forall i in slice2 {
+        forall i in CurrentBlockInds(k+1..) {
           A12(i,j) -= A1(i,k)*A12(k,j);
         }
       }
