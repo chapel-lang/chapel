@@ -100947,3 +100947,16 @@ Added files:
 	chapel/test/trivial/deitz/: test_loop_noindex.chpl 
 	                            test_loop_noindex.good 
 
+---------------------------------------------------------------------------
+
+04/23/07 10:34:08 -- marybeth
+
+Log message:
+	Changing blockLU test to call blockLU in the MatrixOps module in
+	test/studies/matrixlib.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: blockLU.chpl 
+Added files:
+	chapel/test/studies/lu/marybeth/: blockLU.compopts 
+
