@@ -100889,3 +100889,44 @@ Removed files:
 	chapel/test/functions/iterators/bradc/: 
 	                                        topLevelIteratorNoParens.future 
 
+---------------------------------------------------------------------------
+
+04/23/07 09:33:54 -- deitz
+
+Log message:
+	Enabled forall statements and loops using the bracket syntax to not
+	require an index as in
+	
+	  A = [Mat] 2.0;
+	
+	Removed a .future.
+	
+	Still to do, it does not make sense to require an index in loops that
+	don't use the special bracket syntax.
+	
+	There is an ambiguity between an expression statement that is a domain
+	literal expression and a forall statement using the bracket syntax
+	without an index followed by an empty statement.  For example, the
+	code
+	
+	  [i in D] ;
+	
+	iterates over D and executes nothing (an empty statement) but the code
+	
+	  [D] ;
+	
+	is interpreted as an expression statement that is a domain expression.
+	There is no iteration over D in this case even though it "could" be
+	interpreted also as a forall statement over D that executes the empty
+	statement.  That is, priority is given to the domain expression.
+	
+	If this ambiguity is concerning, we can remove support for eliding the
+	iterator from a loop.  I don't think this ambiguity is a concern.  It
+	should be documented in the spec.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/arrays/bradc/: domarr2.good 
+Removed files:
+	chapel/test/arrays/bradc/: domarr2.future 
+
