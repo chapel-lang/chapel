@@ -1,6 +1,0 @@
-semantic
-
-I believe that we should be supporting top-level
-iterators and functions without iterators for
-orthogonality in the language and to permit
-replacement of variables with iterators/functions.
