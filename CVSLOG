@@ -101072,3 +101072,27 @@ Added files:
 	                           inferArrayType.future 
 	                           inferArrayType.good 
 
+---------------------------------------------------------------------------
+
+04/23/07 16:56:07 -- marybeth
+
+Log message:
+	Added MMIterator to MatrixOps module.  This iterator defines
+	how the rows and columns of the matrices should be accessed
+	when multiplying two matrices.  For now, it is defined so
+	that C = A*B is computed by updating C, a column at a time.
+	(The indices are yielded by nesting the loops in j, k, i order.)
+	
+	This iterator is a good example of how rank changing array
+	slices would be useful.  If the iterator returned one dimension
+	as a domain slice, then it would be clear how the memory accesses
+	should be done to compute the matrix multiplication.  (In this
+	case, if the row dimension was returned as a range spanning all
+	rows of the matrix, the computation of C(i,j) would clearly be
+	by column. Each iteration would update the entire jth column of C
+	by adding to it the jth column of A scaled by the appropriate
+	element of B.)
+
+Modified files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl 
+
