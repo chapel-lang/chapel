@@ -5,16 +5,18 @@ def *(A:[?D1],B:[?D2]) {
   if (D1.dim(2).length != D2.dim(1).length) then
     halt("Matrix multiplication with incompatible matrices");
 
-  for i in D1.dim(1) {
-    for j in D2.dim(2) {
-      for (k1,k2) in (D1.dim(2),D2.dim(1)) {
-        C(i,j) += A(i,k1)*B(k2,j);
-      }
-    }
+  for (i,j,k1,k2) in MMIterator(D1, D2) {
+    C(i,j) += A(i,k1)*B(k2,j);
   }
   return C;
 }
 
+iterator MMIterator(D1, D2) {
+  for j in D2.dim(2) do 
+    for (k1,k2) in (D1.dim(2),D2.dim(1)) do 
+      for i in D1.dim(1) do 
+        yield (i,j,k1,k2);
+}
 
 def maxIndex(A:[?D]) {
    var (_,ind) = maxloc reduce (A,D);
@@ -52,6 +54,7 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
   
     var A1 => A[UnfactoredInds,CurrentBlockInds];
     var A2 => A[UnfactoredInds,TrailingBlockInds];
+    var A21 => A[TrailingBlockInds,CurrentBlockInds];
     var A12 => A[CurrentBlockInds,TrailingBlockInds];
     var A22 => A[TrailingBlockInds,TrailingBlockInds];
 
@@ -84,11 +87,9 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
         }
       }
     }
-// Update of A22 -= A12*A21.
-    forall (i,j) in [TrailingBlockInds, TrailingBlockInds] {
-      for k in CurrentBlockInds {
-        A22(i,j) -= A1(i,k)*A12(k,j);
-      }
+// Update of A22 -= A21*A12.
+    for (i,j,k1,k2) in MMIterator(A21.domain,A12.domain) {
+      A22(i,j) -= A21(i,k1)*A12(k2,j);
     }
   }
 }
