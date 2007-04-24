@@ -198,6 +198,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   param rank : int;
   type dim_type;
   param stridable: bool;
+  param reindexed: bool = false; // may have blk(rank) != 1
 
   var dom : SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
   var off: rank*dim_type;
@@ -248,8 +249,14 @@ class SingleLocaleArithmeticArray: BaseArray {
       for param i in 1..rank do
         sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - adj(i);
     } else {
-      for param i in 1..rank do
-        sum = sum + ind(i) * blk(i) - adj(i);
+      if reindexed {
+        for param i in 1..rank do
+          sum = sum + ind(i) * blk(i) - adj(i);
+      } else {
+        for param i in 1..rank-1 do
+          sum = sum + ind(i) * blk(i) - adj(i);
+        sum = sum + ind(rank) - adj(rank);
+      }
       sum = sum - factoredOffs;
     }
     return data(sum:int); // !!ahh
@@ -261,7 +268,7 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, true, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -287,7 +294,7 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def slice(d: SingleLocaleArithmeticDomain) {
     checkSlice(d);
-    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, reindexed, d, noinit=true);
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -302,7 +309,7 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value.stridable, d._value);
+      var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value.stridable, reindexed, d._value);
       for i in _intersect(d._value, dom) do
         new(i) = this(i);
       off = new.off;
