@@ -101263,3 +101263,18 @@ Modified files:
 	                         lowerIterators.cpp 
 	chapel/modules/standard/: ChapelBase.chpl ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+04/24/07 11:12:40 -- marybeth
+
+Log message:
+	Put the overloaded matrix multiplication routine in its own
+	module, MatrixMult and updated tests accordingly.
+
+Modified files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl 
+	                                test_overloading.chpl 
+	                                test_overloading.compopts 
+Added files:
+	chapel/test/studies/matrixlib/: MatrixMult.chpl 
+
