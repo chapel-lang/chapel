@@ -9,7 +9,9 @@ def main() {
   const n = readSize(Adat);
   config var blk = readBlk(Adat);
 
+  // The blocksize cannot be less than 1.  Reset to 1 if this happens.
   // The blocksize cannot exceed the size of n.  Reset to n if this happens.
+  blk = max(1,blk);
   blk = min(blk,n);
 
   var A1D = 1..n;
@@ -18,10 +20,7 @@ def main() {
   initA(A,Adat);
   Adat.close;
 
-  var slice0, slice1, slice2: range;
   var piv: [A1D] int;
-  var ind, temp:int;
-  var rtemp: real;
 
   [i in A1D] piv(i) = i;
 
