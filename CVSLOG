@@ -101278,3 +101278,30 @@ Modified files:
 Added files:
 	chapel/test/studies/matrixlib/: MatrixMult.chpl 
 
+---------------------------------------------------------------------------
+
+04/24/07 11:54:37 -- bradc
+
+Log message:
+	At Steve's request, pruned down the number of tests
+	in my CG directory that have big .good files, either
+	by reducing the problem size (in the case that the
+	test wasn't otherwise represented), or by removing
+	the test (when it was).
+	
+	Updated the README.
+
+Modified files:
+	chapel/test/npb/cg/bradc/: README cg-makea2.good cg-makea3.good 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-makea2.execopts cg-makea3.execopts 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea1-sparse.chpl 
+	                           cg-makea1-sparse.compopts 
+	                           cg-makea1-sparse.future 
+	                           cg-makea1-sparse.good 
+	                           cg-makea2-sparse.chpl 
+	                           cg-makea2-sparse.compopts 
+	                           cg-makea2-sparse.future 
+	                           cg-makea2-sparse.good 
+
