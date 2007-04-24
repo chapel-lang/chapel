@@ -101190,3 +101190,76 @@ Added files:
 	chapel/test/classes/diten/: allocateManyObjects.chpl 
 	                            allocateManyObjects.good 
 
+---------------------------------------------------------------------------
+
+04/24/07 11:10:12 -- deitz
+
+Log message:
+	Added support for handling iterators by expanding them around the body
+	of the loop that they define.  This is applied to all iterators that
+	have a single yield statement.  We need to check for the case of
+	recursive iterators but this is not done yet.
+	
+	There is an oddity in this expansion.  Because the expansion happens
+	before the iterator class is defined and the formal arguments need to
+	be accessed as fields of the iterator class, we use a GET_MEMBER
+	primitive on the field number and change it to the field at the end of
+	the pass.  This assumes that the fields of an iterator class contain
+	the formal arguments in order first.
+	
+	Added a primitive loop "c for loop"
+	
+	  for __primitive("c for loop", i, low, high, stride) {
+	
+	that results in code similar to a C for loop as in
+	
+	  for (i = low; i <= high; i += stride)
+	
+	This assumes a positive stride and is currently only used for the
+	non-stridable case.
+	
+	Added a noop function _cfor_inc that will always be used in the body
+	of a loop defined by this primitive and signals the change to the
+	induction variable i, allowing the compiler to treat this loop as any
+	other.
+	
+	This change has no effect on serial RA performance on my desktop.
+	
+	This change cleans the generated code in certain cases significantly.
+	The loop
+	
+	  for i in 1..10 do
+	    writeln(i);
+	
+	results in the following C:
+	
+	  for (_i_214096 = __tmp_214101; _i_214096 <= __tmp_214108; _i_214096 += 1) {
+	    i = _i_214096;
+	    writeln(i);
+	  }
+	
+	Better, the loop
+	
+	  iterator foo() {
+	    for i in 1..4 do
+	      yield i;
+	  }
+	
+	  for i in foo() do
+	    writeln(i);
+	
+	results in the following C:
+	
+	  for (_i_214407 = __tmp_214412; _i_214407 <= __tmp_214419; _i_214407 += 1) {
+	    _i_214438 = _i_214407;
+	    i = _i_214438;
+	    writeln(i);
+	  }
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp stmt.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
+	                         lowerIterators.cpp 
+	chapel/modules/standard/: ChapelBase.chpl ChapelRange.chpl 
+
