@@ -1,4 +1,4 @@
-use MatrixOps;
+use MatrixMult;
 
 def main() {
 
