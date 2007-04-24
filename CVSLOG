@@ -101107,3 +101107,29 @@ Modified files:
 	chapel/modules/standard/: SingleLocaleSparse.chpl 
 	chapel/test/sparse/deitz/: test_sparse1.good 
 
+---------------------------------------------------------------------------
+
+04/24/07 08:47:16 -- bradc
+
+Log message:
+	Some test additions and changes related to my last check-in.
+	
+	Removed future for test_sparse1.chpl which now works due to
+	the support for printing.
+	
+	Added a test to my CG directory to print out the sparse
+	domain and array computed by cg-makea.chpl
+	
+	Added a future to mirror the one I checked in yesterday
+	afternoon, in which a variable is declared of inferred
+	sparse domain/array type.
+
+Added files:
+	chapel/test/npb/cg/bradc/: cg-printa.chpl cg-printa.compopts 
+	                           cg-printa.good 
+	chapel/test/sparse/bradc/: inferSparseArrayType.chpl 
+	                           inferSparseArrayType.future 
+	                           inferSparseArrayType.good 
+Removed files:
+	chapel/test/sparse/deitz/: test_sparse1.future 
+
