@@ -99,6 +99,10 @@ enum PrimitiveTag {
 
   PRIMITIVE_CLASS_NULL, // check reference/class is NULL
 
+  PRIMITIVE_GC_CC_INIT,  // Initialize Heap for copy-collecting
+  PRIMITIVE_GC_ADD_ROOT,    // Add a root variable for garbage collection
+  PRIMITIVE_GC_DELETE_ROOT, // Remove a root variable for garbage collection
+
   PRIMITIVE_GC_INIT,  // set reference count to zero
   PRIMITIVE_GC_TOUCH, // increase reference count
   PRIMITIVE_GC_FREE,  // decrease reference count

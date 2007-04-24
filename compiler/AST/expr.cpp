@@ -1201,7 +1201,11 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* _chpl_alloc(size_t size, char* description);
-      fprintf( outfile, "_chpl_alloc(sizeof(");
+      if (!copyCollect) {
+        fprintf( outfile, "_chpl_alloc(sizeof(");
+      } else {
+        fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");
+      }
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
@@ -1323,6 +1327,19 @@ void CallExpr::codegen(FILE* outfile) {
         //        fprintf(outfile, "(((%s)==NULL)||((*%s)==NULL))", sym->var->cname, sym->var->cname);
         //      } else
         //INT_FATAL(this, "ill-formed primitive_ref_null");
+      break;
+    case PRIMITIVE_GC_CC_INIT:
+      fprintf(outfile, "_chpl_gc_init(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ");\n");
+      break;
+    case PRIMITIVE_GC_ADD_ROOT:
+      fprintf(outfile, "_addRoot(&");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ");\n");
+      break;
+    case PRIMITIVE_GC_DELETE_ROOT:
+      fprintf(outfile, "_deleteRoot();\n");
       break;
     case PRIMITIVE_GC_INIT:
       get(1)->codegen(outfile);

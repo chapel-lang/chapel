@@ -13,6 +13,7 @@ RUNTIME_CFLAGS += -I../include/$(CHPL_MAKE_PLATFORM) -I../include
 CHPL_RT_SRCS = \
 	arg.c \
         chplcast.c \
+        chplcopygc.c \
 	chplexit.c \
 	chplio.c \
 	chplmem.c \

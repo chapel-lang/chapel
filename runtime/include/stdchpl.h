@@ -13,6 +13,7 @@
 #include "arg.h"
 #include "config.h"
 #include "chplcast.h"
+#include "chplcopygc.h"
 #include "chplio.h"
 #include "chplmem.h"
 #include "chplmem_tests.h"

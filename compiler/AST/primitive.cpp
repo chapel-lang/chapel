@@ -300,6 +300,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
 
+  prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_ADD_ROOT, "_addRoot", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
+
   prim_def(PRIMITIVE_CLASS_NULL, "_refnull", returnInfoBool);
   prim_def(PRIMITIVE_GC_INIT, "_gc_init", returnInfoVoid);
   prim_def(PRIMITIVE_GC_TOUCH, "_refup", returnInfoVoid);
