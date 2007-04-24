@@ -101337,3 +101337,31 @@ Log message:
 Modified files:
 	chapel/test/studies/lu/marybeth/: blockLU.chpl 
 
+---------------------------------------------------------------------------
+
+04/24/07 13:38:58 -- deitz
+
+Log message:
+	Added a "reindexed" parameter to the SingleLocaleArithmeticArray to
+	specialize the case where the array has not been reindexed and so it
+	is known that blk(rank) (the multiplication factor for the last
+	dimension) is one.  This eliminates one of the multiplications in an
+	array access.  For 1D arrays, there is only one access, so it is an
+	especially big win.
+	
+	This change results in a pleasing improvement to RA performance:
+	
+	  RA (Problem size = 2**25)
+	  C    21.194
+	  CHPL 21.844  3.1% overhead
+	
+	  RA (Problem size = 2**20)
+	  C     0.478
+	  CHPL  0.492  2.9% overhead
+	
+	Inlined the _compound_cast function at the Chapel level.
+
+Modified files:
+	chapel/modules/standard/: ChapelBase.chpl 
+	                          SingleLocaleArithmetic.chpl 
+
