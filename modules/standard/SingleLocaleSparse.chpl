@@ -204,6 +204,25 @@ class SingleLocaleSparseArray: BaseArray {
 }
 
 
+def SingleLocaleSparseDomain.writeThis(f: Writer) {
+  f.writeln("[");
+  for r in rowRange {
+    const lo = rowStart(r);
+    const hi = rowStop(r);
+    for c in lo..hi {
+      f.write(" (", r, ", ", colIdx(c), ")", if (c==hi) then "\n" else "");
+    }
+  }
+  f.writeln("]");
+}
+
+
 def SingleLocaleSparseArray.writeThis(f: Writer) {
-  halt("Sparse arrays cannot currently be written");
+  for r in dom.rowRange {
+    const lo = dom.rowStart(r);
+    const hi = dom.rowStop(r);
+    for c in lo..hi {
+      f.write(data(c), if (c==hi) then "\n" else " ");
+    }
+  }
 }
