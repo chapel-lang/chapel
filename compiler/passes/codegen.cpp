@@ -112,6 +112,11 @@ static void codegen_header(void) {
   cnames.put("register", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      if (FnSymbol* fn = call->isResolved())
+        if (fn->hasPragma("c for loop increment"))
+          call->remove();
+
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       Symbol* sym = def->sym;
 

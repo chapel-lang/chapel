@@ -1316,6 +1316,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_WHILEDO:
     case PRIMITIVE_LOOP_DOWHILE:
     case PRIMITIVE_LOOP_FOR:
+    case PRIMITIVE_LOOP_C_FOR:
+    case PRIMITIVE_INC_C_FOR:
+    case PRIMITIVE_LOOP_INLINE:
     case PRIMITIVE_YIELD:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;

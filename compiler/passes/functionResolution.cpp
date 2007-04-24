@@ -96,8 +96,13 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
   if (fn->retType != dtUnknown) {
     fn->retExprType->remove();
-    if (fn->fnClass == FN_ITERATOR)
+    if (fn->fnClass == FN_ITERATOR) {
       prototypeIteratorClass(fn);
+      resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
+      resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
+      resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
+      resolvedFns.set_add(fn->iteratorInfo->getValue);
+    }
   }
 }
 
@@ -1584,6 +1589,21 @@ static void fold_param_for(CallExpr* loop) {
   makeNoop(loop);
 }
 
+static bool
+canExpandIterator(FnSymbol* iterator) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, iterator);
+  int count = 0;
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      if (call->isPrimitive(PRIMITIVE_YIELD))
+        count++;
+  }
+  if (count == 1)
+    return true;
+  return false;
+}
+
 static Expr*
 expand_for_loop(CallExpr* call) {
   CallExpr* result;
@@ -1598,6 +1618,11 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* iterator = dynamic_cast<VarSymbol*>(se2->var);
   if (!index || !iterator)
     INT_FATAL(call, "bad for loop primitive");
+  if (canExpandIterator(iterator->type->defaultConstructor)) {
+    result = call;
+    call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
+    return result;
+  }
   VarSymbol* cursor = new VarSymbol("_cursor");
   cursor->isCompilerTemp = true;
   block->insertBefore(new DefExpr(cursor));
@@ -2313,8 +2338,13 @@ resolveFns(FnSymbol* fn) {
       INT_FATAL(fn, "Unable to resolve return type");
   }
 
-  if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo)
+  if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo) {
     prototypeIteratorClass(fn);
+    resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
+    resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
+    resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
+    resolvedFns.set_add(fn->iteratorInfo->getValue);
+  }
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {

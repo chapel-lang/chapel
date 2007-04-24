@@ -792,3 +792,6 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
   y = x;
   x = t;
 }
+
+pragma "c for loop increment" def _cfor_inc(inout i, s) {
+}

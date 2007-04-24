@@ -185,6 +185,20 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, "for (;");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
+    } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
+      fprintf(outfile, "for (");
+      loopInfo->get(1)->codegen(outfile);
+      fprintf(outfile, " = ");
+      loopInfo->get(2)->codegen(outfile);
+      fprintf(outfile, "; ");
+      loopInfo->get(1)->codegen(outfile);
+      fprintf(outfile, " <= ");
+      loopInfo->get(3)->codegen(outfile);
+      fprintf(outfile, "; ");
+      loopInfo->get(1)->codegen(outfile);
+      fprintf(outfile, " += ");
+      loopInfo->get(4)->codegen(outfile);
+      fprintf(outfile, ") ");
     }
   }
 

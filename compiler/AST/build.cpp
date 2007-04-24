@@ -287,27 +287,47 @@ BlockStmt* build_for_block(BlockTag tag,
   BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
 
-  iterator = new CallExpr("_getIterator", iterator);
-
-  VarSymbol* iteratorSym = new VarSymbol("_iterator");
-  iteratorSym->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(iteratorSym));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
-
-  VarSymbol* index = new VarSymbol("_index");
-  index->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(index));
-  stmts->insertAtTail(new BlockStmt(
-    new CallExpr(PRIMITIVE_MOVE, index, 
-      new CallExpr(
-        new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
+  CallExpr* icall = dynamic_cast<CallExpr*>(iterator);
+  if (icall && icall->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
+    body->loopInfo = icall;
+    if (icall->argList->length() == 4) {
+      VarSymbol* tmp;
+      Expr* actual;
+      tmp = new VarSymbol("_tmp");
+      tmp->isCompilerTemp = true;
+      stmts->insertAtTail(new DefExpr(tmp));
+      actual = icall->get(2);
+      actual->replace(new SymExpr(tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, actual));
+      tmp = new VarSymbol("_tmp");
+      tmp->isCompilerTemp = true;
+      stmts->insertAtTail(new DefExpr(tmp));
+      actual = icall->get(3);
+      actual->replace(new SymExpr(tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, actual));
+      body->insertAtHead(new CallExpr("_cfor_inc",
+                                      icall->get(1)->copy(),
+                                      icall->get(4)->copy()));
+    }
+  } else {
+    iterator = new CallExpr("_getIterator", iterator);
+    VarSymbol* iteratorSym = new VarSymbol("_iterator");
+    iteratorSym->isCompilerTemp = true;
+    stmts->insertAtTail(new DefExpr(iteratorSym));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
+    VarSymbol* index = new VarSymbol("_index");
+    index->isCompilerTemp = true;
+    stmts->insertAtTail(new DefExpr(index));
+    stmts->insertAtTail(new BlockStmt(
+      new CallExpr(PRIMITIVE_MOVE, index, 
         new CallExpr(
-          new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor"))))),
-    BLOCK_TYPE));
-
-  destructureIndices(body, indices, new SymExpr(index));
-
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+          new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
+          new CallExpr(
+            new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor"))))),
+      BLOCK_TYPE));
+    destructureIndices(body, indices, new SymExpr(index));
+    body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+  }
   stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(body->post_loop));

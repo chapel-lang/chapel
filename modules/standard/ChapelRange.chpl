@@ -81,7 +81,7 @@ record range {
     }
   }
 
-  iterator ault() {
+  pragma "expand inline" iterator ault() {
     if boundedType != bounded {
       if stridable {
         var i = if _stride > 0 then _low else _high;
@@ -104,10 +104,9 @@ record range {
           i = i + _stride:eltType;
         }
       } else {
-        var i = _low;
-        while i <= _high {
+        var i: eltType;
+        for __primitive("c for loop", i, _low, _high, 1) {
           yield i;
-          i = i + 1;
         }
       }
     }

@@ -96,6 +96,9 @@ enum PrimitiveTag {
   PRIMITIVE_LOOP_WHILEDO,
   PRIMITIVE_LOOP_DOWHILE,
   PRIMITIVE_LOOP_FOR,
+  PRIMITIVE_LOOP_C_FOR,
+  PRIMITIVE_INC_C_FOR,
+  PRIMITIVE_LOOP_INLINE, // inline iterator in place of loop
 
   PRIMITIVE_CLASS_NULL, // check reference/class is NULL
 
