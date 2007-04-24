@@ -101144,3 +101144,49 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+04/24/07 10:09:11 -- diten
+
+Log message:
+	Check in some copying garbage collection framework. All of the following
+	changes apply only if the command-line option --copy-collect is specified.
+	
+	At the beginning of _chpl_main, add a call to _chpl_gc_init() to initialize the
+	heap to 2MB and set up a few structs with pointers into the heap.
+	
+	At the beginning of all functions, add calls to _addRoot() for each variable
+	that can point into the heap.  Also add _deleteRoot() calls just before the
+	function's return statement for each of these variables.
+	
+	Make class constructors call _chpl_gc_malloc() instead of _chpl_alloc(). This
+	new malloc calls the garbage-collector if it runs out of available memory.
+	
+	Some major simplifying assumptions are made, for example:
+	* All heap allocated objects are 24 bytes in size.  This was the size of the
+	  struct I was using in testing this.
+	* No heap allocated object points to another heap allocated object.
+	* No program has more than 2MB of reachable data.
+	* Only one thread does anything that involves the heap (this might be even more
+	  constrained).
+	
+	Obviously none of these are acceptable in the long term.
+	
+	Add a test case that loops over allocating a simple object, calling a function
+	on the object, and overwriting the pointer to it in the next iteration.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/compiler/passes/: copyCollect.cpp 
+	chapel/runtime/include/: chplcopygc.h 
+	chapel/runtime/src/: chplcopygc.c 
+	chapel/test/classes/diten/: allocateManyObjects.chpl 
+	                            allocateManyObjects.good 
+
