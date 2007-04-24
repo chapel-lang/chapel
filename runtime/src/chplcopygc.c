@@ -72,11 +72,11 @@ void* _chpl_gc_malloc(size_t number, size_t size, char* description,
 }
 
 void _chpl_gc_init(size_t heapsize) {
-  void *heap1, *heap2;
+  char *heap1, *heap2;
 
   // allocate the from and to spaces
-  heap1 = _chpl_malloc(1, heapsize, "Heap 1", 1, "");
-  heap2 = _chpl_malloc(1, heapsize, "Heap 2", 1, "");
+  heap1 = (char*)_chpl_malloc(1, heapsize, "Heap 1", 1, "");
+  heap2 = (char*)_chpl_malloc(1, heapsize, "Heap 2", 1, "");
 
   // allocate structs to point into the spaces
   _from_space = (_memory_space*)_chpl_malloc(1, sizeof(_memory_space),
@@ -85,11 +85,11 @@ void _chpl_gc_init(size_t heapsize) {
                                            "Space pointer 2", 1, "");
 
   // fill in the pointers
-  _from_space->head = (char*)heap1;
-  _from_space->tail = (char*)(heap1+heapsize);
-  _from_space->current = (char*)heap1;
-  _to_space->head = (char*)heap2;
-  _to_space->tail = (char*)(heap2 + heapsize);
-  _to_space->current = (char*)heap2;
+  _from_space->head = heap1;
+  _from_space->tail = heap1+heapsize;
+  _from_space->current = heap1;
+  _to_space->head = heap2;
+  _to_space->tail = heap2 + heapsize;
+  _to_space->current = heap2;
 }
 
