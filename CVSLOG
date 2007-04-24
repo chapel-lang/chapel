@@ -101305,3 +101305,24 @@ Removed files:
 	                           cg-makea2-sparse.future 
 	                           cg-makea2-sparse.good 
 
+---------------------------------------------------------------------------
+
+04/24/07 12:09:56 -- bradc
+
+Log message:
+	Changed the local heap1 and heap2 variables in
+	_chpl_gc_init() from void* pointers to char*
+	pointers to reduce the number of casts and get
+	rid of some pointer math on void*'s that was
+	causing portability problems on the MTA
+	(  (char*)(heap2 + heapsize) does the pointer
+	math on a void* before casting to a char*,
+	which is troublesome since it would be done
+	in terms of sizeof(void)).
+	
+	David, I don't think should cause any problems
+	for you, but let me know if it does.
+
+Modified files:
+	chapel/runtime/src/: chplcopygc.c 
+
