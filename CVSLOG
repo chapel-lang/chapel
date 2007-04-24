@@ -101326,3 +101326,14 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplcopygc.c 
 
+---------------------------------------------------------------------------
+
+04/24/07 12:29:12 -- marybeth
+
+Log message:
+	Added extra check to ensure that the blocksize, blk is not less than 1.
+	Cleaned up the source a bit, deleting unused variables.
+
+Modified files:
+	chapel/test/studies/lu/marybeth/: blockLU.chpl 
+
