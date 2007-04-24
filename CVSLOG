@@ -101096,3 +101096,14 @@ Log message:
 Modified files:
 	chapel/test/studies/matrixlib/: MatrixOps.chpl 
 
+---------------------------------------------------------------------------
+
+04/24/07 08:43:20 -- bradc
+
+Log message:
+	Added default write methods for sparse domains and arrays.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/sparse/deitz/: test_sparse1.good 
+
