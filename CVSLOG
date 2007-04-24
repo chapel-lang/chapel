@@ -101133,3 +101133,14 @@ Added files:
 Removed files:
 	chapel/test/sparse/deitz/: test_sparse1.future 
 
+---------------------------------------------------------------------------
+
+04/24/07 09:16:21 -- bradc
+
+Log message:
+	Adding final valgrind suppression against getpwuid
+	which was causing one of the gdbddash tests to fail.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
