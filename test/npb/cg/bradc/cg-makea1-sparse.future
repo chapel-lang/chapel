@@ -1,4 +1,0 @@
-bradc
-
-This test is currently too long-running (and its behavior is
-matched in cg-makea1-sparse-small.chpl).  Maybe remove?
