@@ -101379,3 +101379,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/07 09:39:39 -- marybeth
+
+Log message:
+	Forgot to check in the MatrixMult.notest file.
+
+Added files:
+	chapel/test/studies/matrixlib/: MatrixMult.notest 
+
