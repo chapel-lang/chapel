@@ -17,7 +17,7 @@ expandIteratorInline(CallExpr* call) {
   FnSymbol* iterator = ic->type->defaultConstructor;
   ASTMap map;
   BlockStmt* ibody = iterator->body->copy(&map);
-  CallExpr* yield;
+  CallExpr* yield = NULL;
   body = dynamic_cast<BlockStmt*>(call->parentExpr);
 call->remove();
 body->replace(ibody);
