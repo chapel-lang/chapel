@@ -101365,3 +101365,17 @@ Modified files:
 	chapel/modules/standard/: ChapelBase.chpl 
 	                          SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+04/24/07 17:31:58 -- bradc
+
+Log message:
+	Fixing an uninitialized variable that
+	breaks the build when compiling with
+	OPTIMIZE=1.  Looking for a gcc flag
+	setting that will show these warnings
+	when not compiling -O3.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+
