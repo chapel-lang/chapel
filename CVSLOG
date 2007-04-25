@@ -101446,3 +101446,21 @@ Log message:
 Removed files:
 	chapel/test/types/tuple/diten/: onetuple.chpl onetuple.good 
 
+---------------------------------------------------------------------------
+
+04/25/07 14:13:32 -- deitz
+
+Log message:
+	Fixed a bug in which a default expression on an argument was not
+	properly removed from the AST.  The pointer was simply overwritten.
+	
+	This fixes the valgrind error on modules/bradc/ra-paramWidth.
+	
+	Also fixed a bug in which the exprType of an argument was set
+	incorrectly in the code in cleanup that sets the type to that of the
+	default expression.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: cleanup.cpp 
+
