@@ -101389,3 +101389,33 @@ Log message:
 Added files:
 	chapel/test/studies/matrixlib/: MatrixMult.notest 
 
+---------------------------------------------------------------------------
+
+04/25/07 10:55:07 -- diten
+
+Log message:
+	Allow nested tuple destructuring in variable declarations as in:
+	  var (a,(b,c)) = (1,(2,3));
+	
+	To support this, add two new rules to the tuple_var_decl_stmt_inner_ls
+	production in chapel.y.  Also add a new function build_tuple_var_decl to
+	recursively handle the nesting.
+	
+	The above example gets parsed as:
+	{ // scopeless block
+	  var _tuple_tmp = (1,(2,3));
+	  var a = _tuple_tmp(1);
+	  var b = _tuple_tmp(2)(1);
+	  var c = _tuple_tmp(2)(2);
+	}
+	
+	Add a test case that tries a few arrangements of tuple variable declarations.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/types/tuple/diten/: tuple_var_decl_nest.chpl 
+	                                tuple_var_decl_nest.good 
+
