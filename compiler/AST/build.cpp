@@ -47,6 +47,28 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
 }
 
 
+void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
+  int count = 1;
+  for_alist(Expr, expr, decls->body) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      if (strcmp(def->sym->name, "_")) {
+        def->init = new CallExpr(base->copy(), new_IntSymbol(count));
+        insertPoint->insertBefore(def->remove());
+      } else {
+        def->remove();
+      }
+    } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+      build_tuple_var_decl(new CallExpr(base, new_IntSymbol(count)),
+                           blk, insertPoint);
+    } else {
+      INT_FATAL(expr, "Unexpected expression in build_tuple_var_decl");
+    }
+    count++;
+  }
+  decls->remove();
+}
+
+
 DefExpr*
 buildLabelStmt(char* name) {
   return new DefExpr(new LabelSymbol(name));

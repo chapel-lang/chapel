@@ -988,13 +988,16 @@ var_decl_stmt_inner:
       int count = 1;
       for_alist(Expr, expr, $2->body) {
         if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-          if (strcmp(def->sym->name, "_")){
+          if (strcmp(def->sym->name, "_")) {
             def->init = new CallExpr(tmp, new_IntSymbol(count));
           } else {
             def->remove();
           }
-          count++;
+        } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+          build_tuple_var_decl(new CallExpr(tmp, new_IntSymbol(count)),
+                               blk, expr);
         }
+        count++;
       }
       $2->insertAtHead(new DefExpr(tmp, $5, $4));
       $$ = $2;
@@ -1007,9 +1010,18 @@ tuple_var_decl_stmt_inner_ls:
     {
       $$ = build_chpl_stmt(new DefExpr(new VarSymbol($1)));
     }
+| TLP tuple_var_decl_stmt_inner_ls TRP
+    { 
+      $$ = build_chpl_stmt($2);
+    }
 | tuple_var_decl_stmt_inner_ls TCOMMA identifier
     {
       $1->insertAtTail(new DefExpr(new VarSymbol($3)));
+      $$ = $1;
+    }
+| tuple_var_decl_stmt_inner_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
+    {
+      $1->insertAtTail($4);
       $$ = $1;
     }
 ;

@@ -13,6 +13,7 @@ Expr* buildLogicalOr(Expr* left, Expr* right);
 
 BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
+void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint);
 DefExpr* buildLabelStmt(char* name);
 ModuleSymbol* build_module(char* name, modType type, AList* stmts);
 CallExpr* build_primitive_call(AList* exprs);
