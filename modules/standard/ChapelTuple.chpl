@@ -123,38 +123,41 @@ pragma "inline" def -(a: _tuple) {
 
 pragma "inline" def +(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) + b, a(a.size) + b);
+    if i == a.size {
+      var result = a(i) + b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return (onetuple);
     } else {
       var rest = help(i+1);
       return (a(i) + b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) + b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def +(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a + b(i), a + b(b.size));
+    if i == b.size {
+      var result = a + b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a + b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a + b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def +(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) + b(i), a(a.size) + b(b.size));
+    if i == a.size {
+      var result = a(i) + b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) + b(i), (...rest));
@@ -164,46 +167,46 @@ pragma "inline" def +(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if (a.size == 1)
-    return a(1)+b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def -(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) - b, a(a.size) - b);
+    if i == a.size {
+      var result = a(i) - b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) - b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) - b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def -(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a - b(i), a - b(b.size));
+    if i == b.size {
+      var result = a - b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a - b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a - b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def -(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) - b(i), a(a.size) - b(b.size));
+    if i == a.size {
+      var result = a(i) - b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) - b(i), (...rest));
@@ -213,46 +216,46 @@ pragma "inline" def -(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) - b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def *(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) * b, a(a.size) * b);
+    if i == a.size {
+      var result = a(i) * b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) * b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) * b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def *(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a * b(i), a * b(b.size));
+    if i == b.size {
+      var result = a * b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a * b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a * b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def *(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) * b(i), a(a.size) * b(b.size));
+    if i == a.size {
+      var result = a(i) * b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) * b(i), (...rest));
@@ -262,46 +265,46 @@ pragma "inline" def *(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) * b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def /(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) / b, a(a.size) / b);
+    if i == a.size {
+      var result = a(i) / b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) / b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) / b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def /(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a / b(i), a / b(b.size));
+    if i == b.size {
+      var result = a / b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a / b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a / b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def /(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) / b(i), a(a.size) / b(b.size));
+    if i == a.size {
+      var result = a(i) / b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) / b(i), (...rest));
@@ -311,46 +314,46 @@ pragma "inline" def /(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) / b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def %(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) % b, a(a.size) % b);
+    if i == a.size {
+      var result = a(i) % b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) % b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) % b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def %(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a % b(i), a % b(b.size));
+    if i == b.size {
+      var result = a % b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a % b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a % b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def %(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) % b(i), a(a.size) % b(b.size));
+    if i == a.size {
+      var result = a(i) % b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) % b(i), (...rest));
@@ -360,46 +363,46 @@ pragma "inline" def %(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) % b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def **(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) ** b, a(a.size) ** b);
+    if i == a.size {
+      var result = a(i) ** b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) ** b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) ** b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def **(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a ** b(i), a ** b(b.size));
+    if i == b.size {
+      var result = a ** b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a ** b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a ** b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def **(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) ** b(i), a(a.size) ** b(b.size));
+    if i == a.size {
+      var result = a(i) ** b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) ** b(i), (...rest));
@@ -409,10 +412,7 @@ pragma "inline" def **(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) ** b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def ~(a: _tuple) {
@@ -423,38 +423,41 @@ pragma "inline" def ~(a: _tuple) {
 
 pragma "inline" def &(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) & b, a(a.size) & b);
+    if i == a.size {
+      var result = a(i) & b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) & b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) & b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def &(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a & b(i), a & b(b.size));
+    if i == b.size {
+      var result = a & b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a & b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a & b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def &(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) & b(i), a(a.size) & b(b.size));
+    if i == a.size {
+      var result = a(i) & b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) & b(i), (...rest));
@@ -464,46 +467,46 @@ pragma "inline" def &(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) & b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def |(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) | b, a(a.size) | b);
+    if i == a.size {
+      var result = a(i) | b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) | b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) | b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def |(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a | b(i), a | b(b.size));
+    if i == b.size {
+      var result = a | b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a | b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a | b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def |(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) | b(i), a(a.size) | b(b.size));
+    if i == a.size {
+      var result = a(i) | b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) | b(i), (...rest));
@@ -513,46 +516,46 @@ pragma "inline" def |(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) | b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def ^(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) ^ b, a(a.size) ^ b);
+    if i == a.size {
+      var result = a(i) ^ b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) ^ b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) ^ b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def ^(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a ^ b(i), a ^ b(b.size));
+    if i == b.size {
+      var result = a ^ b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a ^ b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a ^ b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def ^(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) ^ b(i), a(a.size) ^ b(b.size));
+    if i == a.size {
+      var result = a(i) ^ b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) ^ b(i), (...rest));
@@ -562,46 +565,46 @@ pragma "inline" def ^(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) ^ b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def <<(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) << b, a(a.size) << b);
+    if i == a.size {
+      var result = a(i) << b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) << b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) << b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def <<(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a << b(i), a << b(b.size));
+    if i == b.size {
+      var result = a << b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a << b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a << b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def <<(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) << b(i), a(a.size) << b(b.size));
+    if i == a.size {
+      var result = a(i) << b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) << b(i), (...rest));
@@ -611,46 +614,46 @@ pragma "inline" def <<(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) << b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def >>(a: _tuple, b) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) >> b, a(a.size) >> b);
+    if i == a.size {
+      var result = a(i) >> b;
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) >> b, (...rest));
     }
   }
-  if a.size == 1 then
-    return a(1) >> b;
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def >>(a, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == b.size-1 {
-      return (a >> b(i), a >> b(b.size));
+    if i == b.size {
+      var result = a >> b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a >> b(i), (...rest));
     }
   }
-  if b.size == 1 then
-    return a >> b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def >>(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
-    if i == a.size-1 {
-      return (a(i) >> b(i), a(a.size) >> b(b.size));
+    if i == a.size {
+      var result = a(i) >> b(i);
+      var onetuple: 1 * result.type;
+      onetuple(1) = result;
+      return onetuple;
     } else {
       var rest = help(i+1);
       return (a(i) >> b(i), (...rest));
@@ -659,10 +662,7 @@ pragma "inline" def >>(a: _tuple, b: _tuple) {
   if (a.size != b.size) then
     compilerError("Tuples must have the same size");
 
-  if a.size == 1 then
-    return a(1) >> b(1);
-  else
-    return help(1);
+  return help(1);
 }
 
 pragma "inline" def !(a: _tuple) {
