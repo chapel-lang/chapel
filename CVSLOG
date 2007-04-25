@@ -101464,3 +101464,29 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+04/25/07 15:02:23 -- deitz
+
+Log message:
+	Replaced the explicit iterator methods in the tuple record with an
+	ault iterator.  This removes the last of the Chapel-level definitions
+	of these functions and cleans up the code to handle zipper iteration.
+	
+	Added commented out code to halt if zippering two iterators that have
+	different lengths.  This code as it is currently defined did not work
+	when zippering unbounded ranges since the error should not arise in
+	that case.
+	
+	Fixed fft-zip future and updated .good.  It is still a future since
+	detection of different lengths in zippered context is not enabled.
+	
+	Fixed a bug in which the line numbers attributed to a halt in an
+	iterator that has been expanded around a body in another function
+	would still point to the original iterator code location.
+
+Modified files:
+	chapel/compiler/passes/: lowerIterators.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.chpl fft-zip.good 
+
