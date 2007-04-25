@@ -426,6 +426,7 @@ void cleanup(void) {
           if (s->var->type != dtNil) {
             arg->defPoint->exprType = new CallExpr( PRIMITIVE_TYPEOF,
                                                     arg->defaultExpr->copy());
+            insert_help(arg->defPoint->exprType, arg->defPoint, arg, fn->argScope);
             arg->type = dtUnknown;
           }
         }

@@ -957,12 +957,16 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
       cloneFormal->intent = INTENT_BLANK;
       cloneFormal->isGeneric = false;
       cloneFormal->instantiatedParam = true;
+      if (cloneFormal->defaultExpr)
+        cloneFormal->defaultExpr->remove();
       cloneFormal->defaultExpr = new SymExpr(gNil);
       cloneFormal->defaultExpr->parentSymbol = cloneFormal;
     } else if (Type* t = dynamic_cast<Type*>(generic_subs->get(formal))) {
       cloneFormal->isGeneric = false;
       cloneFormal->instantiatedFrom = formal->type;
       cloneFormal->type = t;
+      if (cloneFormal->defaultExpr)
+        cloneFormal->defaultExpr->remove();
       cloneFormal->defaultExpr = new SymExpr(gNil);
       cloneFormal->defaultExpr->parentSymbol = cloneFormal;
     }
