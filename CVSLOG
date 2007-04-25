@@ -101435,3 +101435,14 @@ Added files:
 	chapel/test/types/tuple/diten/: onetupleops.chpl 
 	                                onetupleops.good 
 
+---------------------------------------------------------------------------
+
+04/25/07 12:01:32 -- diten
+
+Log message:
+	Remove a test that checks for + over 1-tuples returning a scalar.  This is
+	no longer the expected behavior.
+
+Removed files:
+	chapel/test/types/tuple/diten/: onetuple.chpl onetuple.good 
+
