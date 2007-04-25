@@ -1,3 +1,27 @@
+pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
+  if i == t.size {
+    return (_getIterator(t(i)), 1); // ignore last == 1
+  } else {
+    return (_getIterator(t(i)), (..._getIteratorTupleHelp(t, i+1)));
+  }
+}
+
+pragma "inline" def _getHeadCursorTupleHelp(t: _tuple, param i: int) {
+  if i == t.size-1 {
+    return (t(i).getHeadCursor(), 1); // ignore last == 1
+  } else {
+    return (t(i).getHeadCursor(), (..._getHeadCursorTupleHelp(t, i+1)));
+  }
+}
+
+pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
+  if i == ic.size-2 {
+    return (ic(1).getValue(c(1)), ic(2).getValue(c(2)));
+  } else {
+    return (ic(1).getValue(c(1)), (..._getValueTupleHelp(ic, c, i+1)));
+  }
+}
+
 pragma "scalar replace tuples" pragma "tuple" record _tuple {
   param size : int;
 
@@ -13,49 +37,33 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
     halt("tuple indexing out-of-bounds error");
   }
 
-  def _getHeadCursorHelp(param i: int, c: _tuple) {
-    if (i <= size) {
-      var cc = ((...c), this(i).getHeadCursor());
-      return _getHeadCursorHelp(i+1, cc);
+  iterator ault() {
+    if size == 1 {
+      for i in this(1) {
+        var t: 1*i.type;
+        t(1) = i;
+        yield t;
+      }
     } else {
-      return c;
+      var ic = _getIteratorTupleHelp(this, 2);
+      var c = _getHeadCursorTupleHelp(ic, 1);
+      if c.size != ic.size then
+        compilerError("internal size check failure; zipper failed");
+      for i in this(1) {
+        for param i in 1..ic.size-1 do
+          if !ic(i).isValidCursor(c(i)) then
+            break; /*halt("zippered iterations have non-equal lengths");*/
+        if ic.size == 2 then
+          yield (i, ic(1).getValue(c(1)));
+        else
+          yield (i, (..._getValueTupleHelp(ic, c, 1)));
+        for param i in 1..ic.size-1 do
+          c(i) = ic(i).getNextCursor(c(i));
+      }
+//       for param i in 1..ic.size-1 do
+//         if ic(i).isValidCursor(c(i)) then
+//           halt("zippered iterations have non-equal lengths");
     }
-  }
-
-  def getHeadCursor() {
-    var c = this(1).getHeadCursor();
-    var ct : 1*c;
-    ct(1) = c;
-    return _getHeadCursorHelp(2, ct);
-  }
-
-  def getNextCursor(c) {
-    for param i in 1..size do
-      c(i) = this(i).getNextCursor(c(i));
-    return c;
-  }
-
-  def _getValueHelp(param i: int, v: _tuple, c: _tuple) {
-    if (i <= size) {
-      var vv = ((...v), this(i).getValue(c(i)));
-      return _getValueHelp(i+1, vv, c);
-    } else {
-      return v;
-    }
-  }
-
-  def getValue(c) {
-    var v = this(1).getValue(c(1));
-    var vt : 1*v;
-    vt(1) = v;
-    return _getValueHelp(2, vt, c);
-  }
-
-  def isValidCursor(c) {
-    for param i in 1..size do
-      if !this(i).isValidCursor(c(i)) then
-        return false;
-    return true;
   }
 }
 
@@ -829,14 +837,3 @@ def _build_tuple(x ...?size) {
   else
     return x;
 }
-
-pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
-  if i == t.size-1 {
-    return (_getIterator(t(i)), _getIterator(t(t.size)));
-  } else {
-    return (_getIterator(t(i)), (..._getIteratorTupleHelp(t, i+1)));
-  }
-}
-
-pragma "inline" def _getIterator(t: _tuple)
-  return _getIteratorTupleHelp(t, 1);
