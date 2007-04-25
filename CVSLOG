@@ -101419,3 +101419,19 @@ Added files:
 	chapel/test/types/tuple/diten/: tuple_var_decl_nest.chpl 
 	                                tuple_var_decl_nest.good 
 
+---------------------------------------------------------------------------
+
+04/25/07 11:56:58 -- diten
+
+Log message:
+	Make the tuple operators other than comparisons return a 1-tuple when operating
+	on a 1-tuple instead of a scalar. Comparisons continue to return a bool.
+	
+	Add a test that checks for this behavior.
+
+Modified files:
+	chapel/modules/standard/: ChapelTuple.chpl 
+Added files:
+	chapel/test/types/tuple/diten/: onetupleops.chpl 
+	                                onetupleops.good 
+
