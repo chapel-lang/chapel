@@ -101490,3 +101490,20 @@ Modified files:
 	chapel/modules/standard/: ChapelTuple.chpl 
 	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.chpl fft-zip.good 
 
+---------------------------------------------------------------------------
+
+04/26/07 12:05:45 -- deitz
+
+Log message:
+	Added a flag
+	
+	  --no-expand-iterators-inline-opt
+	
+	to disable the expand-inline iterator optimization.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
