@@ -11,6 +11,8 @@ extern void iprint_view(int id);
 extern void nprint_view(BaseAST* ast);
 extern void nprint_view_noline(BaseAST* ast);
 extern void mark_view(BaseAST* ast, int id);
+extern void list_view(BaseAST* ast);
+extern void list_view_noline(BaseAST* ast);
 
 extern void print_symtab(BaseAST* ast);
 extern void nprint_symtab(BaseAST* ast);

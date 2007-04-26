@@ -66,7 +66,8 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         BasicBlock* bottom = basicBlock;
         BB_THREAD(top, loopTop);
         BB_THREAD(loopBottom, bottom);
-        BB_THREAD(loopBottom, top);
+        BB_THREAD(loopBottom, loopTop);
+        BB_THREAD(top, bottom);
       } else {
         for_alist(Expr, stmt, s->body) {
           BBB(stmt);
@@ -131,9 +132,10 @@ void printBasicBlocks(FnSymbol* fn) {
     forv_Vec(BasicBlock, bb, b->outs) {
       printf("%d ", bb->id);
     }
+    printf("\n");
     forv_Vec(Expr, expr, b->exprs) {
-      print_view_noline(expr);
+      list_view_noline(expr);
     }
-    printf("\n\n");
+    printf("\n");
   }
 }

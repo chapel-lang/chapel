@@ -265,6 +265,13 @@ void list_view(BaseAST* ast) {
   fflush(stdout);
 }
 
+void list_view_noline(BaseAST* ast) {
+  if (dynamic_cast<Symbol*>(ast))
+    printf("%-7d ", ast->id);
+  list_ast(ast);
+  fflush(stdout);
+}
+
 void print_view(BaseAST* ast) {
   view_ast(ast);
   printf("\n\n");
