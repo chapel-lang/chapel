@@ -18,6 +18,7 @@ Optimization Control:
       --unoptimized       false     ->true   Generate naive code (many temps)
       --scalar-replace-tuples false     ->true   Generate scalar components of tuples
       --no-single-loop-iterator-opt false     ->true   Disable the optimization of iterators composed of a single loop
+      --no-expand-iterators-inline-opt false     ->true   Disable the expansion of iterators inlined around loop bodies
 
 Code Generation:
 ----------------

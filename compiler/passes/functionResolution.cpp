@@ -1618,10 +1618,12 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* iterator = dynamic_cast<VarSymbol*>(se2->var);
   if (!index || !iterator)
     INT_FATAL(call, "bad for loop primitive");
-  if (canExpandIterator(iterator->type->defaultConstructor)) {
-    result = call;
-    call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
-    return result;
+  if (!fDisableExpandIteratorsInlineOpt) {
+    if (canExpandIterator(iterator->type->defaultConstructor)) {
+      result = call;
+      call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
+      return result;
+    }
   }
   VarSymbol* cursor = new VarSymbol("_cursor");
   cursor->isCompilerTemp = true;
