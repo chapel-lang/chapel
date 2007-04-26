@@ -101507,3 +101507,15 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+04/26/07 16:02:28 -- deitz
+
+Log message:
+	Fixed a bug in how basic blocks are linked and improved the printing
+	of basic blocks to use the new list_ast format.
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp view.cpp 
+	chapel/compiler/include/: view.h 
+
