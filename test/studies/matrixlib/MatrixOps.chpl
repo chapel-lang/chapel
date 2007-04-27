@@ -35,6 +35,7 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
 
   var A1D = D.dim(1);
   var ind: index(D);
+  const zero = 0.0:A.eltType;
 
   for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
     in IterateByBlocks(A1D,blk) {
@@ -55,7 +56,7 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
         A(k..k,..) <=> A(ind(1)..ind(1),..);
       }
 
-      if (A1(k,k) != 0.0) {
+      if (A1(k,k) != zero) {
         forall i in UnfactoredInds(k+1..) {
           A1(i,k) = A1(i,k)/A1(k,k);
         }
@@ -82,13 +83,12 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
 }
 
 iterator IterateByBlocks(D:range,blksize) {
-  var n = D.length;
-  var lo,hi: int;
+  var end = D.high;
+  var hi: int;
 
   for i in D by blksize {
-    lo = i;
-    hi = min(i + blksize-1,n);
-    yield (lo..n,i..hi,hi+1..n); 
+    hi = min(i + blksize-1,end);
+    yield (i..end,i..hi,hi+1..end); 
   }   
 }
 
