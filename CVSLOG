@@ -101519,3 +101519,19 @@ Modified files:
 	chapel/compiler/AST/: bb.cpp view.cpp 
 	chapel/compiler/include/: view.h 
 
+---------------------------------------------------------------------------
+
+04/27/07 09:02:43 -- diten
+
+Log message:
+	Fix a bug I inserted when I added PRIMITIVE_IS_ENUM.  This bug caused a
+	compile-time infinite loop when a where clause can't be folded.
+	
+	Add a test with a where clause that can't be folded.  The expected output is
+	a compiler error.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/functions/diten/: badwhere.chpl badwhere.good 
+
