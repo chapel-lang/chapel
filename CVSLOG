@@ -101535,3 +101535,19 @@ Modified files:
 Added files:
 	chapel/test/functions/diten/: badwhere.chpl badwhere.good 
 
+---------------------------------------------------------------------------
+
+04/27/07 12:09:53 -- marybeth
+
+Log message:
+	Checking in Cholesky code and tests.  blockChol.chpl contains the block
+	algorithm and chol.chpl contains the unblocked version.  The test matrix
+	was generated from the matrix gallery in matlab.  It's the lehmer matrix
+	of order 10.
+
+Added files:
+	chapel/test/studies/cholesky/marybeth/: chol.good chol.chpl 
+	                                        blockChol.good 
+	                                        blockChol.chpl 
+	                                        lehmer10.dat 
+
