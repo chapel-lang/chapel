@@ -6,7 +6,7 @@
 BasicBlock::BasicBlock(int init_id) : id(init_id) {}
 
 #define BB_START()                              \
-  basicBlock = new BasicBlock(++id)
+  basicBlock = new BasicBlock(id++)
 
 #define BB_ADD(expr)                            \
   basicBlock->exprs.add(expr)
@@ -57,6 +57,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       if (s->loopInfo) {
         BasicBlock* top = basicBlock;
         BB_RESTART();
+        BB_ADD(s->loopInfo);
         BasicBlock* loopTop = basicBlock;
         for_alist(Expr, stmt, s->body) {
           BBB(stmt);

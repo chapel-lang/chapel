@@ -1,7 +1,14 @@
 #include "astutil.h"
+#include "bb.h"
 #include "expr.h"
 #include "stmt.h"
 #include "iterator.h"
+#include "view.h"
+
+//
+// turn on debug live variable analysis
+//
+//#define DEBUG_LIVE
 
 
 bool isRecordType(Type* t) {
@@ -422,6 +429,231 @@ buildSingleLoopMethods(FnSymbol* fn,
 }
 
 
+#ifdef DEBUG_LIVE
+static void
+debug_df_print_set(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals) {
+  int i = 0;
+  forv_Vec(Vec<bool>, set, sets) {
+    printf("%d: ", i);
+    for (int j = 0; j < set->n; j++) {
+      if (set->v[j])
+        printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
+    }
+    printf("\n");
+    i++;
+  }
+  printf("\n");
+}
+#endif
+
+
+static void
+computeLiveVariables(Vec<Symbol*>& syms, FnSymbol* fn) {
+
+  int i;
+
+#ifdef DEBUG_LIVE
+  printf("Iterator\n");
+  list_view(fn);
+#endif
+
+#ifdef DEBUG_LIVE
+  printf("Basic Blocks\n");
+  printBasicBlocks(fn);
+#endif
+
+  //
+  // locals: a vector of local variables in function fn
+  // localID: a mapping of local variables to indices starting at 0
+  //
+  Vec<Symbol*> locals;
+  Map<Symbol*,int> localID;
+
+  i = 0;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        if (dynamic_cast<VarSymbol*>(def->sym)) {
+          locals.add(def->sym);
+          localID.put(def->sym, i++);
+        }
+      }
+    }
+  }
+
+#ifdef DEBUG_LIVE
+  printf("Local Variables\n");
+  forv_Vec(Symbol, local, locals) {
+    printf("%d: %s[%d]\n", localID.get(local), local->name, local->id);
+  }
+  printf("\n");
+#endif
+
+  //
+  // useSet: a set of SymExprs that are uses of local variables
+  // defSet: a set of SymExprs that are defs of local variables
+  //
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+
+  compute_sym_uses(fn);
+  forv_Vec(Symbol, local, locals) {
+    forv_Vec(SymExpr, se, local->defs) {
+      defSet.set_add(se);
+    } 
+    forv_Vec(SymExpr, se, local->uses) {
+      useSet.set_add(se);
+    }
+  }
+
+  //
+  // USE(i): the set of variables that are used in basic block i
+  // before they are defined (if at all) in the block
+  // DEF(i): the set of variables that are defined in basic block i
+  // before they are used (if at all) in the block
+  // LVin(i): the set of variables that are live at entry to basic
+  // block i
+  // LVout(i): the set of variables that are live at exit from basic
+  // block i
+  //
+  Vec<Vec<bool>*> USE;
+  Vec<Vec<bool>*> DEF;
+  Vec<Vec<bool>*> LVin;
+  Vec<Vec<bool>*> LVout;
+
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    Vec<bool>* use = new Vec<bool>();
+    Vec<bool>* def = new Vec<bool>();
+    Vec<bool>* lvin = new Vec<bool>();
+    Vec<bool>* lvout = new Vec<bool>();
+    forv_Vec(Symbol, local, locals) {
+      use->add(false);
+      def->add(false);
+      lvin->add(false);
+      lvout->add(false);
+    }
+    forv_Vec(Expr, expr, bb->exprs) {
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, expr);
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (useSet.set_in(se)) {
+            int id = localID.get(se->var);
+            if (!def->v[id])
+              use->v[id] = true;
+          }
+          if (defSet.set_in(se)) {
+            int id = localID.get(se->var);
+            if (!use->v[id])
+              def->v[id] = true;
+          }
+        }
+      }
+    }
+    USE.add(use);
+    DEF.add(def);
+    LVin.add(lvin);
+    LVout.add(lvout);
+  }
+
+#ifdef DEBUG_LIVE
+  printf("DEF\n"); debug_df_print_set(DEF, locals);
+  printf("USE\n"); debug_df_print_set(USE, locals);
+#endif
+
+  bool iterate = true;
+  while (iterate) {
+    iterate = false;
+    i = 0;
+    forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+      for (int j = 0; j < locals.n; j++) {
+        bool new_in = (LVout.v[i]->v[j] & !DEF.v[i]->v[j]) | USE.v[i]->v[j];
+        if (new_in != LVin.v[i]->v[j]) {
+          LVin.v[i]->v[j] = new_in;
+          iterate = true;
+        }
+        bool new_out = false;
+        forv_Vec(BasicBlock, outbb, bb->outs) {
+          new_out = new_out | LVin.v[outbb->id]->v[j];
+        }
+        if (new_out != LVout.v[i]->v[j]) {
+          LVout.v[i]->v[j] = new_out;
+          iterate = true;
+        }
+      }
+      i++;
+    }
+#ifdef DEBUG_LIVE
+    printf("LVin\n"); debug_df_print_set(LVin, locals);
+    printf("LVout\n"); debug_df_print_set(LVout, locals);
+#endif
+  }
+
+  i = 0;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    bool hasYield = false;
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+        if (call->isPrimitive(PRIMITIVE_YIELD))
+          hasYield = true;
+    }
+    if (hasYield) {
+      Vec<bool> live;
+      for (int j = 0; j < locals.n; j++) {
+        live.add(LVout.v[i]->v[j]);
+      }
+      for (int k = bb->exprs.n - 1; k >= 0; k--) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(bb->exprs.v[k])) {
+          if (call->isPrimitive(PRIMITIVE_YIELD)) {
+            for (int j = 0; j < locals.n; j++) {
+              if (live.v[j]) {
+                syms.add_exclusive(locals.v[j]);
+              }
+            }
+          }
+        }
+        Vec<BaseAST*> asts;
+        collect_asts(&asts, bb->exprs.v[k]);
+        forv_Vec(BaseAST, ast, asts) {
+          if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+            if (defSet.set_in(se)) {
+              live.v[localID.get(se->var)] = false;
+            }
+            if (useSet.set_in(se)) {
+              live.v[localID.get(se->var)] = true;
+            }
+          }
+        }
+      }
+    }
+    i++;
+  }
+
+#ifdef DEBUG_LIVE
+  printf("LIVE at Yield Points\n");
+  forv_Vec(Symbol, sym, syms) {
+    printf("%s[%d]\n", sym->name, sym->id);
+  }
+  printf("\n");
+#endif
+
+//   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+//     forv_Vec(Expr, expr, bb->exprs) {
+//       if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+//         if (dynamic_cast<VarSymbol*>(def->sym)) {
+//           if (!def->sym->isReference) { // references are short-lived
+//                                         // and should never need to be
+//                                         // stored in an iterator class
+//                                         // (hopefully)
+//             syms.add(def->sym);
+//           }
+//         }
+//       }
+//     }
+//   }
+}
+
+
 void lowerIterator(FnSymbol* fn) {
   IteratorInfo* ii = fn->iteratorInfo;
 
@@ -434,22 +666,18 @@ void lowerIterator(FnSymbol* fn) {
   // optimization note: only variables live at yield points are required
   Map<Symbol*,Symbol*> local2field;
   Vec<Symbol*> locals;
+
+  for_formals(formal, fn)
+    locals.add(formal);
+  buildBasicBlocks(fn);
+  computeLiveVariables(locals, fn);
+
   int i = 0;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<ArgSymbol*>(def->sym) || dynamic_cast<VarSymbol*>(def->sym)) {
-        if (def->sym->isReference) // references are short-lived and
-                                   // should never need to be stored
-                                   // in an iterator class (hopefully)
-          continue;
-        Symbol* local = def->sym;
-        Symbol* field =
-          new VarSymbol(astr("_", istr(i++), "_", local->name), local->type);
-        local2field.put(local, field);
-        locals.add(local);
-        ii->classType->fields->insertAtTail(new DefExpr(field));
-      }
-    }
+  forv_Vec(Symbol, local, locals) {
+    Symbol* field =
+      new VarSymbol(astr("_", istr(i++), "_", local->name), local->type);
+    local2field.put(local, field);
+    ii->classType->fields->insertAtTail(new DefExpr(field));
   }
 
   Symbol* value = local2field.get(fn->getReturnSymbol());
