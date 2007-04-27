@@ -101551,3 +101551,17 @@ Added files:
 	                                        blockChol.chpl 
 	                                        lehmer10.dat 
 
+---------------------------------------------------------------------------
+
+04/27/07 12:37:56 -- marybeth
+
+Log message:
+	Checking in a few fixes to the blockLU in MatrixOps.
+	Made the IterateByBlocks iterator more general so that it
+	works for ranges other than 1..n.  Defined a constant for
+	zero that is the same type as the elements of A.  This
+	constant is used to test for a zero pivot.
+
+Modified files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl 
+
