@@ -101565,3 +101565,42 @@ Log message:
 Modified files:
 	chapel/test/studies/matrixlib/: MatrixOps.chpl 
 
+---------------------------------------------------------------------------
+
+04/27/07 13:07:42 -- deitz
+
+Log message:
+	Reindexed the basic blocks to start at zero instead of one.
+	
+	Added the loopInfo expression to the top basic block in the loop.
+	
+	Implemented an initial unoptimized live variable data flow analysis.
+	Necessary performance improvements to the speed of this compiler
+	analysis include changing the vector of bool values to a bit vector
+	and making the iteration over the basic blocks use a queue of basic
+	blocks.  Nevertheless, the semantics of the analysis appear to be
+	correct.
+	
+	Applied the live variable analysis to determine what local variables
+	in an iterator need to be added as fields to the iterator class for
+	that iterator.  Prior to this analysis, all local variables and formal
+	arguments became fields in the iterator class.  Now, just local
+	variables that are live at yield points and all formal arguments
+	become fields in the iterator class.
+	
+	This improves the performance of the promoted version of the stream
+	benchmark by a factor of 3.9.  It currently is 3.6 times slower than
+	the non-promotion version (down from 14.3 times before this change).
+	
+	The number of fields in the iterator class for the promoted addition
+	function drop from 44 to 9 with this change.
+	
+	Note that the live variable analysis is not well abstracted.  In
+	particular, the data flow analysis should be separated from the
+	particular live variable analysis to allow for other analyses to be
+	easily implemented.  This is particularly important if we decide to
+	implement any other analyses.
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp iterator.cpp 
+
