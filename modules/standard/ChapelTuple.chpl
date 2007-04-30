@@ -1,3 +1,12 @@
+def _firstIteratorUnboundedHelp(x) param
+  return false;
+
+def _firstIteratorUnboundedHelp(r: range) param where r.boundedType != bounded
+  return true;
+
+def _firstIteratorUnbounded(t: _tuple) param
+  return _firstIteratorUnboundedHelp(t(1));
+
 pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
   if i == t.size {
     return (_getIterator(t(i)), 1); // ignore last == 1
@@ -50,9 +59,11 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
       if c.size != ic.size then
         compilerError("internal size check failure; zipper failed");
       for i in this(1) {
-        for param i in 1..ic.size-1 do
-          if !ic(i).isValidCursor(c(i)) then
-            break; /*halt("zippered iterations have non-equal lengths");*/
+// _firstIteratorUnbounded makes it so that we don't insert these breaks if the first iterator can fully control the loop; this is important so that the single loop iterator optimization can fire; the break in the loop disables it
+        if _firstIteratorUnbounded(this) then
+          for param i in 1..ic.size-1 do
+            if !ic(i).isValidCursor(c(i)) then
+              break; /*halt("zippered iterations have non-equal lengths");*/
         if ic.size == 2 then
           yield (i, ic(1).getValue(c(1)));
         else

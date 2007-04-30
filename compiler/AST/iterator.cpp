@@ -228,6 +228,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(call->parentExpr)) {
           if (block->loopInfo &&
               (block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
+               block->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
                block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO))) {
             singleYield = call;
           } else {
@@ -242,6 +243,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleFor) {
           return NULL;
         } else if ((block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
+                    block->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
                     block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
@@ -287,10 +289,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   BlockStmt* loop = dynamic_cast<BlockStmt*>(yield->parentExpr);
 
   Symbol* headIterator = ii->getHeadCursor->getFormal(1);
-  //  Symbol* headCursor = newTemp(ii->getHeadCursor, ii->getHeadCursor->retType);
   Symbol* nextIterator = ii->getNextCursor->getFormal(1);
-  //  Symbol* nextCursor = newTemp(ii->getNextCursor, ii->getNextCursor->retType);
-  //  ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, nextCursor, ii->getNextCursor->getFormal(2)));
 
   ASTMap headCopyMap; // copy map of iterator to getHeadCursor; note:
                       // there is no map for getNextCursor since the
@@ -331,6 +330,19 @@ buildSingleLoopMethods(FnSymbol* fn,
     ii->getNextCursor->insertAtTail(expr->remove());
   }
 
+  Symbol* cloopHeadCond = NULL;
+  Symbol* cloopNextCond = NULL;
+  if (loop->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
+    cloopHeadCond = new VarSymbol("_cond", dtBool);
+    cloopNextCond = new VarSymbol("_cond", dtBool);
+    ii->getHeadCursor->insertAtTail(new DefExpr(cloopHeadCond));
+    ii->getNextCursor->insertAtTail(new DefExpr(cloopNextCond));
+    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(2)->copy(&headCopyMap)));
+    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopHeadCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(3)->copy(&headCopyMap))));
+    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(), new CallExpr(PRIMITIVE_ADD, loop->loopInfo->get(1)->copy(), loop->loopInfo->get(4)->copy())));
+    ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopNextCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(), loop->loopInfo->get(3)->copy())));
+  }
+
   //
   // add BLOCK II to conditional then clause for both getHeadCursor and
   // getNextCursor methods; set cursor to 1
@@ -343,8 +355,6 @@ buildSingleLoopMethods(FnSymbol* fn,
     headThen->insertAtTail(expr->copy(&headCopyMap));
     nextThen->insertAtTail(expr->remove());
   }
-  //  headThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(1)));
-  //  nextThen->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(1)));
 
   //
   // add BLOCK IV to conditional else clause for both getHeadCursor and
@@ -359,14 +369,16 @@ buildSingleLoopMethods(FnSymbol* fn,
     headElse->insertAtTail(expr->copy(&headCopyMap));
     nextElse->insertAtTail(expr->remove());
   }
-  //  headElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, headCursor, new_IntSymbol(0)));
-  //  nextElse->insertAtTail(new CallExpr(PRIMITIVE_MOVE, nextCursor, new_IntSymbol(0)));
 
   //
   // add conditional to getHeadCursor and getNextCursor methods
   //
   Expr* headCond = loop->loopInfo->get(1)->copy(&headCopyMap);
   Expr* nextCond = loop->loopInfo->get(1)->remove();
+  if (loop->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
+    headCond = new SymExpr(cloopHeadCond);
+    nextCond = new SymExpr(cloopNextCond);
+  }
   ii->getHeadCursor->insertAtTail(new CondStmt(headCond, headThen, headElse));
   ii->getNextCursor->insertAtTail(new CondStmt(nextCond, nextThen, nextElse));
 
