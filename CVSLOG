@@ -101661,3 +101661,22 @@ Log message:
 Added files:
 	chapel/make/: Makefile.x1 
 
+---------------------------------------------------------------------------
+
+04/30/07 16:35:04 -- marybeth
+
+Log message:
+	Adding more functionality to the block Cholesky algorithm - blockCholChoice
+	contains a blockChol function that computes either the lower triangular
+	or upper triangular Cholesky factor.
+	
+	This current implementation is for discussion purposes.  How can both
+	options be implemented in one routine efficiently?  For now, it's
+	implemented in a way to show the similarities between the two computations.
+	It's probably not the most efficient way to program both methods in one
+	routine.
+
+Added files:
+	chapel/test/studies/cholesky/marybeth/: blockCholChoice.chpl 
+	                                        blockCholChoice.good 
+
