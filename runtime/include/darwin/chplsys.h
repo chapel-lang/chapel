@@ -2,7 +2,9 @@
 #define _DARWIN_CHPLSYS_H_
 
 #include "../chplsys.h"
+#include <sys/sysctl.h>
 
-#define NO_BYTES_PER_LOCALE
+
+#define APPLE
 
 #endif

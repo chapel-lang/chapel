@@ -13,9 +13,17 @@ _uint64 _bytesPerLocale(void) {
   _printInternalError("sorry- bytesPerLocale not supported on this platform");
   return 0;
 #else
+#ifdef APPLE
+  _uint64 membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
+    _printInternalError("query of physical memory failed");
+  return (membytes);
+#else
   _uint64 numPages = sysconf(_SC_PHYS_PAGES);
   _uint64 pageSize = chplGetPageSize();
   _uint64 total = numPages * pageSize;
   return total;
+#endif
 #endif
 }
