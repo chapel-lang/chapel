@@ -101629,3 +101629,14 @@ Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 	chapel/modules/standard/: ChapelTuple.chpl 
 
+---------------------------------------------------------------------------
+
+04/30/07 10:53:47 -- deitz
+
+Log message:
+	Implemented bytesPerLocale on mac os.
+
+Modified files:
+	chapel/runtime/include/darwin/: chplsys.h 
+	chapel/runtime/src/: chplsys.c 
+
