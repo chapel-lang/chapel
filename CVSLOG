@@ -101640,3 +101640,24 @@ Modified files:
 	chapel/runtime/include/darwin/: chplsys.h 
 	chapel/runtime/src/: chplsys.c 
 
+---------------------------------------------------------------------------
+
+04/30/07 14:10:35 -- diten
+
+Log message:
+	Add Makefile.x1 based on Makefile.mta. With an X1 PrgEnv loaded and the
+	environment variables
+	CHPL_PLATFORM x1
+	CHPL_CORSS_PLATFORM linux (etc)
+	
+	The runtime builds and tests I've tried build and run. I can't find any
+	bytesPerLocale type of system call on X1, so I can't get the HPCC benchmarks to
+	run with good problem sizes.
+	
+	Unfortunately, nearly nothing automatically vectorizes or multi-streams
+	because almost everything (array access) is a function call, and loops with
+	un-inlined function calls don't get these optimizations.
+
+Added files:
+	chapel/make/: Makefile.x1 
+
