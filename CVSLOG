@@ -101604,3 +101604,28 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: bb.cpp iterator.cpp 
 
+---------------------------------------------------------------------------
+
+04/30/07 09:24:36 -- deitz
+
+Log message:
+	Made the single loop iterator optimization apply to C for loops as
+	well as lower ed Chapel for loops and while loops.
+	
+	Removed break-statement from the tuple iterator if the first iterator
+	is bounded.  The break-statement is only necessary if the first
+	iterator is unbounded since the generated loop would have no stopping
+	condition.  Removing this break-statement is necessary in order to
+	enable the single loop iterator optimization which is disabled by
+	break and continue statements.
+	
+	These changes improve stream performance:
+	
+	Before this change:   5.221  246.4% overhead
+	After this change:    3.473  130.5% overhead
+	No promotion version: 1.507
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+
