@@ -101698,3 +101698,14 @@ Removed files:
 	                                                  countMemory.chap01.good 
 	                                                  countMemory.chap02.good 
 
+---------------------------------------------------------------------------
+
+05/01/07 11:00:43 -- diten
+
+Log message:
+	Add a new runtime include directory for X1 that has a copy of the sunos
+	chplfp.h to define isinf(x).
+
+Added files:
+	chapel/runtime/include/x1/: chplfp.h 
+
