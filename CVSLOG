@@ -101741,3 +101741,21 @@ Modified files:
 	                         scalarReplace.cpp 
 	chapel/modules/standard/: ChapelArray.chpl ChapelTuple.chpl 
 
+---------------------------------------------------------------------------
+
+05/01/07 14:37:25 -- diten
+
+Log message:
+	Generate a function containing a switch statement with a case for each valid
+	cid. The cid2size function returns the size of the class that corresponds to
+	the cid argument.  Use this function to find the correct size of objects to be
+	copied during collection.
+	
+	Also, when creating the calls at the begining and end of functions to
+	add/remove roots to/from the root set, scan records local to the function
+	looking for additional class pointers that were missed previously.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp copyCollect.cpp 
+	chapel/runtime/src/: chplcopygc.c 
+
