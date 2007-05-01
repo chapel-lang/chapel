@@ -101680,3 +101680,21 @@ Added files:
 	chapel/test/studies/cholesky/marybeth/: blockCholChoice.chpl 
 	                                        blockCholChoice.good 
 
+---------------------------------------------------------------------------
+
+05/01/07 09:20:21 -- bradc
+
+Log message:
+	Updated memory tests for chap01 and chap02 to reflect
+	(1) changes in memory, (2) changes in how uname -n
+	reports the machine name.
+
+Added files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap01.us.cray.com.good 
+	                                                  countMemory.chap02.us.cray.com.good 
+Removed files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap01.good 
+	                                                  countMemory.chap02.good 
+
