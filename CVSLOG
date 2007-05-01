@@ -101709,3 +101709,35 @@ Log message:
 Added files:
 	chapel/runtime/include/x1/: chplfp.h 
 
+---------------------------------------------------------------------------
+
+05/01/07 12:42:28 -- deitz
+
+Log message:
+	Added inline pragmas to the tuple copy function, the _build_tuple
+	function, the domain and array wrapper _pass functions and the array
+	wrapper assignment function to enable the following optimization.
+	
+	Implemented a tuple variable scalar replacement optimization that
+	works like the class variable scalar replacement optimization but on
+	records.  This optimization applies to variables that can be replaced
+	by their components.  It is not like the general scalar replacement
+	optimization which changes all instances of a type and eliminates the
+	type.  Refactored this optimization along with the class variable
+	scalar replacement optimization to run in an acceptable amount of
+	time.  Improvements should be made.
+	
+	These changes improve stream performance significantly:
+	
+	Before this change:   3.388  129.4% overhead
+	After this change:    1.654   11.9% overhead
+	No promotion version: 1.477
+	
+	The iterator classes for nested 1D promotion are completely inlined in
+	this case.  2D promotion is another story...
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         scalarReplace.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelTuple.chpl 
+
