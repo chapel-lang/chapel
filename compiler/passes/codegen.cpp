@@ -228,6 +228,31 @@ static void codegen_header(void) {
 
 
 static void
+codegen_cid2size(FILE* outfile) {
+  fprintf(outfile, "size_t cid2size(_int64 cid) {\n");
+  fprintf(outfile, "size_t size;\n");
+  fprintf(outfile, "switch(cid) {\n");
+  forv_Vec(TypeSymbol, typeSym, gTypes) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+      if (ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "case %d:\n", ct->id);
+        fprintf(outfile, "size = sizeof(_");
+        ct->symbol->codegen(outfile);
+        fprintf(outfile, ");\n");
+        fprintf(outfile, "break;\n");
+      }
+    }
+  }
+  fprintf(outfile, "default:\n");
+  fprintf(outfile, "halt(\"Bad cid in cid2size\", 1, \"\");\n");
+  fprintf(outfile, "break;\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "return size;\n");
+  fprintf(outfile, "}\n");
+}
+
+
+static void
 codegen_config(FILE* outfile) {
   fprintf(outfile, "void CreateConfigVarTable(void) {\n");
   fprintf(outfile, "initConfigVarTable();\n");
@@ -282,6 +307,7 @@ void codegen(void) {
     beautify(&modulefile);
   }
 
+  codegen_cid2size(mainfile.fptr);
   closeCFile(&mainfile);
   beautify(&mainfile);
   makeBinary();

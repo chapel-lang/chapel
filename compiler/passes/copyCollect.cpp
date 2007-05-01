@@ -4,37 +4,84 @@
 #include "expr.h"
 #include "stmt.h"
 
-/* Return if type t would be allocated on the heap.
-   Currently only true if t is a regular Class type */
-bool isHeapType(Type* t) {
-  if (ClassType* ct = dynamic_cast<ClassType*>(t)) {
-    if (ct->classTag == CLASS_CLASS) {
-      return true;
-    }
-  }
-  return false;
+void addToRootSet(FnSymbol* fn, Expr* expr);
+void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def);
+
+void addToRootSet(FnSymbol* fn, Expr* expr) {
+  fn->insertAtHead(new CallExpr(PRIMITIVE_GC_ADD_ROOT, expr));
+  fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_DELETE_ROOT));
 }
 
 
-/* Insert primitive calls to add and remove a symbol to the root set */
-void addToRootSet(FnSymbol* fn, Symbol* sym) {
-  if (isHeapType(sym->type)) {
-    fn->insertAtHead(new CallExpr(PRIMITIVE_GC_ADD_ROOT, sym));
-    fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_DELETE_ROOT));
-  }
-}
-
-
-/* Recursively walk through sub-blocks adding pointers to the root set */
-void copyCollectionHelper(FnSymbol* fn, BlockStmt* block) {
-  for_asts(expr, block->body) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      addToRootSet(fn, def->sym);
-    } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
-      copyCollectionHelper(fn, blk);
+/*
+  If all is well:
+    * fn is never null
+    * if base and def are non-null, base is a reference chain to the
+      record to be scanned (ie rec1.rec2.rec3), and def is the def
+      of that record - in this case rec3.
+    * if base is non-null and def is null, base is a BlockStmt which is
+      a sub-block of fn.
+*/
+void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
+  if (!base) {
+    /* This is the first level of recursion.  Scan the formals. */
+    for_formals(formal, fn) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(formal->type)) {
+        if (ct->classTag == CLASS_CLASS) {
+          addToRootSet(fn, new SymExpr(formal));
+        } else if (ct->classTag == CLASS_RECORD) {
+          buildRootSetForFunction(fn, new SymExpr(formal), formal->defPoint);
+        }
+      }
+    }
+    /* Now scan the Function body */
+    for_asts(expr, fn->body->body) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+          if (ct->classTag == CLASS_CLASS) {
+          addToRootSet(fn, new SymExpr(def->sym));
+          } else if (ct->classTag == CLASS_RECORD) {
+            buildRootSetForFunction(fn, new SymExpr(def->sym), def);
+          }
+        }
+      } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+        buildRootSetForFunction(fn, blk, NULL);
+      }
+    }
+  } else if (!def) {
+    /* Looking at a BlockStmt */
+    BlockStmt* blk = dynamic_cast<BlockStmt*>(base);
+    assert(blk);
+    for_asts(ast, blk->body) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+          if (ct->classTag == CLASS_CLASS) {
+            addToRootSet(fn, new SymExpr(def->sym));
+          } else if (ct->classTag == CLASS_RECORD) {
+            buildRootSetForFunction(fn, new SymExpr(def->sym), def);
+          }
+        }
+      }
+    }
+  } else {
+    /* Looking at a record. */
+    ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
+    assert(ct);
+    for_fields(field, ct) {
+      if (ClassType* classfield = dynamic_cast<ClassType*>(field->type)) {
+        if (classfield->classTag == CLASS_CLASS) {
+          addToRootSet(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                           base->copy(),
+                                           new SymExpr(field)));
+        } else if (classfield->classTag == CLASS_RECORD) {
+          buildRootSetForFunction(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                                   base,
+                                                   new SymExpr(field)),
+                                  field->defPoint);
+        }
+      }
     }
   }
-  
 }
 
 
@@ -42,9 +89,7 @@ void copyCollection(void) {
   if (!copyCollect)
     return;
   forv_Vec(FnSymbol, fn, gFns) {
-    for_formals(formal, fn) {
-      addToRootSet(fn, formal);
-    }
-    copyCollectionHelper(fn, fn->body);
+    buildRootSetForFunction(fn, NULL, NULL);
   }
 }
+

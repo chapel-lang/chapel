@@ -5,6 +5,8 @@
 #include "error.h"
 #include "chplmem.h"
 
+extern size_t cid2size(_int64 cid);
+
 _memory_space *_from_space, *_to_space;
 
 int totalRoots = 0;
@@ -30,10 +32,11 @@ void _chpl_gc_copy_collect(void) {
       } else {
         if (STACK_PTR(rootlist[i]) >= (void*)_from_space->head &&
             STACK_PTR(rootlist[i]) < (void*)_from_space->tail) {
-          memmove(_to_space->current, STACK_PTR(rootlist[i]), 24);
+          size_t size = cid2size(*(_int64*)STACK_PTR(rootlist[i]));
+          memmove(_to_space->current, STACK_PTR(rootlist[i]), size);
           HEAP_AS_PTR(rootlist[i]) = (void*)_to_space->current;
           STACK_PTR(rootlist[i]) = (void*)_to_space->current;
-          _to_space->current += 24;
+          _to_space->current += size;
         } else {
           /* BAD - Something in the root set points at something that
              wasn't moved, but isn't in the from-space */
