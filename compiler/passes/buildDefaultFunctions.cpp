@@ -477,8 +477,10 @@ static void build_record_copy_function(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   normalize(fn);
-  if (ct->symbol->hasPragma("tuple"))
+  if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple copy");
+    fn->addPragma("inline");
+  }
 }
 
 

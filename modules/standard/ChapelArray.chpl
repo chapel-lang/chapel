@@ -248,7 +248,7 @@ def =(a: _domain, b) {  // b is iteratable
   return a;
 }
 
-def _pass(a: _domain)
+pragma "inline" def _pass(a: _domain)
   return a;
 
 def _init(a: _domain)
@@ -349,7 +349,7 @@ record _array {
   }
 }
 
-def =(a: _array, b) {
+pragma "inline" def =(a: _array, b) {
   for (i,bb) in (a._dom,b) do
     a(i) = bb;
   return a;
@@ -385,7 +385,7 @@ def _copy(a: _array) {
   return b;
 }
 
-def _pass(a: _array) {
+pragma "inline" def _pass(a: _array) {
   return a;
 }
 
