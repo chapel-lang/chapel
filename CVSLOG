@@ -101759,3 +101759,15 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp copyCollect.cpp 
 	chapel/runtime/src/: chplcopygc.c 
 
+---------------------------------------------------------------------------
+
+05/02/07 08:01:07 -- diten
+
+Log message:
+	Fix two nightly testing regressions.  The cid2size function was calling "halt"
+	as the default case.  The definition of "halt" can change depending on the
+	input.  Instead, call "_printError".
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
