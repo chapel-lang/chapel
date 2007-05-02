@@ -101771,3 +101771,60 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+05/02/07 14:14:50 -- deitz
+
+Log message:
+	Reworked localCopyPropagation to use similar mechanisms to my live
+	variable analysis work.  This greatly simplifies the code.  Also made
+	localCopyPropagation apply to all variables, not just compiler
+	temporaries.  It is disabled in the following cases:
+	
+	  variables of complex type and records:
+	    standard simplification due to partial updates
+	
+	  references via isReference:
+	    must maintain referenceness
+	
+	  threaded variables via on_heap, is_ref, and isConcurrent:
+	    can be changed by other threads
+	
+	  returned variables:
+	    treated specially by the compiler, these need to be variables and
+	    not constants; for example, lowering of iterators
+	
+	Added Symbol::isConcurrent to keep track of symbols that are accessed
+	inside of cobegin and/or begin statements.  I was under the impression
+	that is_ref and on_heap tracked all of these, but in cobegin
+	statements, it looks like they were sometimes unmarked since they can
+	remain on the stack.  These are marked now to avoid copy propagation
+	in a threaded context.
+	
+	Inserted a second call to the cullOverReferences pass after inlining
+	takes place.  This is necessary because some of the over references
+	could not be culled before inlining if a function is called in
+	different contexts, one requiring a reference and the other not.  This
+	leads to a problem now that copy propagation is more effective.
+	
+	Disabled culling of over references on record types to handle the
+	a.b.c case, except for tuples (arrays/deitz/jacobi5) where it is
+	apparently necessary.  References need to be fixed.
+	
+	Moved convenience routine isRecordType to type.h for easy usage.
+	
+	Made compressUnnecessaryScopes also remove empty block statements.
+	
+	This checkin decreases the number of generated lines of code for
+	stream.c from 997 to 804, or about 19%.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp iterator.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         cullOverReferences.cpp 
+	                         lowerIterators.cpp parallel.cpp 
+	                         scalarReplace.cpp 
+
