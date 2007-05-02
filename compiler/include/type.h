@@ -180,5 +180,6 @@ bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
+bool isRecordType(Type* t);
 
 #endif

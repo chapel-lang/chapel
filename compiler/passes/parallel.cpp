@@ -262,6 +262,7 @@ thread_args() {
               for_actuals(arg, fcall) {
                 SymExpr *s = dynamic_cast<SymExpr*>(arg);
                 Symbol  *var = s->var; // arg or var
+                var->isConcurrent = true;
                 VarSymbol* field = new VarSymbol(var->name, var->type);
                 field->is_ref = true;
                 ctype->fields->insertAtTail(new DefExpr(field));

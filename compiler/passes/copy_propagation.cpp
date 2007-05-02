@@ -7,15 +7,17 @@
 #include "symscope.h"
 
 //
-// Removes nested block statements.  We don't want basic blocks to
-// span across multiple block statements or we run into trouble where
-// a variable is used outside of its scope during copy propagation.
+// Removes unnecessary nested and/or empty block statements.
 //
 void compressUnnecessaryScopes(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts_postorder(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      if (block->body->length() == 0) {
+        block->remove();
+        continue;
+      }
       if (block->loopInfo ||
           block->blockTag == BLOCK_COBEGIN ||
           block->blockTag == BLOCK_BEGIN)
@@ -24,127 +26,103 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
         for_alist(Expr, stmt, block->body)
           block->insertBefore(stmt->remove());
         block->remove();
-      }
-    }
-  }
-}
-
-//
-// Applies local copy propagation ultra conservatively in the presence
-// of pass by reference assuming that any argument to a call may be
-// pass by reference.
-//
-// In the presence of threads, made even more conservative; compiler
-// temps only.
-//
-typedef ChainHashMap<Symbol*,PointerHashFns,Symbol*> AvailableMap;
-
-static void
-copyAvailable(AvailableMap& available, CallExpr* call) {
-  if (call->primitive) {
-    if (!strcmp(call->primitive->name, "fscanf"))
-      return;
-    for_actuals(actual, call) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
-        if (Symbol* copy = available.get(sym->var))
-          sym->var = copy;
-      if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
-        if (call->isPrimitive(PRIMITIVE_CAST))
-          if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
-            if (Symbol* copy = available.get(sym->var))
-              sym->var = copy;
-    }
-  } else {
-    for_formals_actuals(formal, actual, call) {
-      if (formal->intent != INTENT_BLANK)
         continue;
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
-        if (Symbol* copy = available.get(sym->var))
-          sym->var = copy;
-      if (CallExpr* call = dynamic_cast<CallExpr*>(actual))
-        if (call->isPrimitive(PRIMITIVE_CAST))
-          if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
-            if (Symbol* copy = available.get(sym->var))
-              sym->var = copy;
-    }
-  }
-}
-
-static void
-removeAvailable(AvailableMap& available, CallExpr* call) {
-  Vec<Symbol*> keys;
-  available.get_keys(keys);
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, call);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-      forv_Vec(Symbol, key, keys) {
-        if (key == sym->var || available.get(key) == sym->var)
-          available.del(key);
       }
     }
   }
 }
 
-void localCopyPropagation(BasicBlock* bb) {
-  AvailableMap available;
-  forv_Vec(Expr, expr, bb->exprs) {
-    // Replace rhs that match available
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
-          if (Symbol* copy = available.get(rhs->var))
-            rhs->var = copy;
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
-          copyAvailable(available, rhs);
-      } else {
-        copyAvailable(available, call);
-      }
-    }
-
-    // Remove pairs of invalidated copies
-    // This would be alot easier if we didn't have to worry about pass
-    // by reference!
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
-          Vec<Symbol*> keys;
-          available.get_keys(keys);
-          forv_Vec(Symbol, key, keys) {
-            if (key == lhs->var || available.get(key) == lhs->var)
-              available.del(key);
-          }
-        }
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
-          removeAvailable(available, rhs);
-      } else {
-        removeAvailable(available, call);
-      }
-    }
-
-    // Insert pairs of available copies
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
-          if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
-            if (lhs->var == rhs->var)
-              continue;
-            if (!lhs->var->isCompilerTemp) // only compiler temps
-              continue;
-            if (lhs->var->isReference || rhs->var->isReference)
-              continue;
-            available.put(lhs->var, rhs->var);
-          }
-        }
-      }
-    }
-  }
-}
-
+//
+// Apply local copy propagation to basic blocks of function
+//
 void localCopyPropagation(FnSymbol* fn) {
   buildBasicBlocks(fn);
+  compute_sym_uses(fn);
+
+  //
+  // locals: a vector of local variables in function fn that are
+  // candidates for copy propagation
+  //
+  Vec<Symbol*> locals;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    localCopyPropagation(bb);
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+          if (var != fn->getReturnSymbol() &&
+              !is_complex_type(var->type) &&
+              !isRecordType(var->type) &&
+              !var->isReference &&
+              !var->isConcurrent &&
+              !var->on_heap &&
+              !var->is_ref)
+            locals.add(def->sym);
+    }
+  }
+
+  //
+  // useSet: a set of SymExprs that are uses of local variables
+  // defSet: a set of SymExprs that are defs of local variables
+  //
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+  forv_Vec(Symbol, local, locals) {
+    forv_Vec(SymExpr, se, local->defs) {
+      defSet.set_add(se);
+    } 
+    forv_Vec(SymExpr, se, local->uses) {
+      useSet.set_add(se);
+    }
+  }
+
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
+
+    forv_Vec(Expr, expr, bb->exprs) {
+
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, expr);
+
+      //
+      // replace uses with available copies
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (useSet.set_in(se) && !defSet.set_in(se)) {
+            if (available.get(se->var)) {
+              se->var = available.get(se->var);
+            }
+          }
+        }
+      }
+
+      //
+      // invalidate available copies based on defs
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (defSet.set_in(se)) {
+            Vec<Symbol*> keys;
+            available.get_keys(keys);
+            forv_Vec(Symbol, key, keys) {
+              if (key == se->var || available.get(key) == se->var)
+                available.del(key);
+            }
+          }
+        }
+      }
+
+      //
+      // insert pairs into available copies map
+      //
+      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+        if (call->isPrimitive(PRIMITIVE_MOVE))
+          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
+            if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
+              if (lhs->var != rhs->var &&
+                  defSet.set_in(lhs) &&
+                  (useSet.set_in(rhs) || rhs->var->isConst()))
+                available.put(lhs->var, rhs->var);
+    }
   }
 }
 

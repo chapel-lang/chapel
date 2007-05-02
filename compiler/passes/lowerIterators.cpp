@@ -20,35 +20,35 @@ expandIteratorInline(CallExpr* call) {
   CallExpr* yield = NULL;
   reset_file_info(ibody, call->lineno, call->filename);
   body = dynamic_cast<BlockStmt*>(call->parentExpr);
-call->remove();
-body->replace(ibody);
-Vec<BaseAST*> asts;
-collect_asts(&asts, ibody);
-forv_Vec(BaseAST, ast, asts) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-    if (call->isPrimitive(PRIMITIVE_YIELD)) {
-      yield = call;
-      call->replace(body);
-    }
-    if (call->isPrimitive(PRIMITIVE_RETURN)) // remove return
-      call->remove();
-  }
-}
-body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, yield->get(1)));
- int count = 0;
-for_formals(formal, iterator) {
-  VarSymbol* var = new VarSymbol(formal->name, formal->type);
-  // count is used to get the nth field out of the iterator class;
-  // it is replaced by the field once the iterator class is created
-  CallExpr* access = new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(++count));
-  ibody->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, access));
-  ibody->insertAtHead(new DefExpr(var));
+  call->remove();
+  body->replace(ibody);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, ibody);
   forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
-      if (se->var == formal)
-        se->var = var;
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isPrimitive(PRIMITIVE_YIELD)) {
+        yield = call;
+        call->replace(body);
+      }
+      if (call->isPrimitive(PRIMITIVE_RETURN)) // remove return
+        call->remove();
+    }
   }
-}
+  body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, yield->get(1)));
+  int count = 0;
+  for_formals(formal, iterator) {
+    VarSymbol* var = new VarSymbol(formal->name, formal->type);
+    // count is used to get the nth field out of the iterator class;
+    // it is replaced by the field once the iterator class is created
+    CallExpr* access = new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(++count));
+    ibody->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, access));
+    ibody->insertAtHead(new DefExpr(var));
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
+        if (se->var == formal)
+          se->var = var;
+    }
+  }
 }
 
 
@@ -72,7 +72,6 @@ void lowerIterators() {
       }
     }
   }
-  compute_sym_uses();
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->fnClass == FN_ITERATOR) {
       lowerIterator(fn);

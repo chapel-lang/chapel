@@ -659,3 +659,11 @@ int get_width(Type *t) {
   INT_FATAL(t, "Unknown bit width");
   return 0;
 }
+
+
+bool isRecordType(Type* t) {
+  ClassType* ct = dynamic_cast<ClassType*>(t);
+  if (ct && ct->classTag == CLASS_RECORD)
+    return true;
+  return false;
+}

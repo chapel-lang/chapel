@@ -130,7 +130,8 @@ Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   isReference(false),
   canReference(false),
   canParam(false),
-  canType(false)
+  canType(false),
+  isConcurrent(false)
 {}
 
 
@@ -340,6 +341,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->canReference = canReference;
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
+  newVarSymbol->isConcurrent = isConcurrent;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }

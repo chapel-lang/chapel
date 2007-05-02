@@ -11,14 +11,6 @@
 //#define DEBUG_LIVE
 
 
-bool isRecordType(Type* t) {
-  ClassType* ct = dynamic_cast<ClassType*>(t);
-  if (ct && ct->classTag == CLASS_RECORD)
-    return true;
-  return false;
-}
-
-
 IteratorInfo::IteratorInfo() :
   classType(NULL),
   getHeadCursor(NULL),
@@ -673,6 +665,8 @@ void lowerIterator(FnSymbol* fn) {
   currentFilename = fn->filename;
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, fn);
+
+  compute_sym_uses(fn);
 
   // make fields for all local variables and arguments
   // optimization note: only variables live at yield points are required

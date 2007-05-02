@@ -51,7 +51,7 @@ void cullOverReferences() {
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-          if (var->isReference) {
+          if (var->isReference && (!isRecordType(var->type) || var->type->symbol->hasPragma("tuple"))) {
             int refCount = 0;
             int writeCount = 0;
             forv_Vec(SymExpr, sym, var->defs) {
@@ -79,7 +79,7 @@ void cullOverReferences() {
             }
           }
         } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
-          if (fn->retRef) {
+          if (fn->retRef && (!isRecordType(fn->retType) || fn->retType->symbol->hasPragma("tuple"))) {
             int refCount = 0;
             forv_Vec(CallExpr, call, *fn->calledBy) {
               if (CallExpr* ref = dynamic_cast<CallExpr*>(call->parentExpr))

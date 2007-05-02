@@ -316,10 +316,11 @@ void scalarReplace(ClassType* ct) {
         if ((nfields > 1 && def->sym == ret) || arg)
           clone = new ArgSymbol((arg && !isThis) ? arg->intent : INTENT_REF,
                                 name, field->type);
-        else
+        else {
           clone = new VarSymbol(name, field->type);
-        if (sym->isReference)
-          clone->isReference = true;
+          if (sym->isReference)
+            clone->isReference = true;
+        }
         syms->add(clone);
         if (nfields > 1 && def->sym == ret)
           fn->insertFormalAtTail(new DefExpr(clone));
@@ -371,10 +372,12 @@ void scalarReplace(ClassType* ct) {
           se->remove();
         }
       } else if (call && call->isPrimitive(PRIMITIVE_RETURN)) {
-        if (nfields > 1)
+        if (nfields > 1) {
           se->replace(new SymExpr(gVoid));
-        else
+        } else
           se->replace(new SymExpr(syms->v[0]));
+        FnSymbol* fn = call->getFunction();
+        fn->retRef = false;
       } else {
         for (int id = 0; id < nfields; id++) {
           se->insertBefore(new SymExpr(syms->v[id]));
@@ -393,17 +396,27 @@ void scalarReplace(ClassType* ct) {
         continue;
       if (move->isPrimitive(PRIMITIVE_MOVE) ||
           move->isPrimitive(PRIMITIVE_REF)) {
+        SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+        if (!lhs->var->isReference)
+          move->primitive = primitives[PRIMITIVE_MOVE];
         bool isref = move->isPrimitive(PRIMITIVE_REF);
         if (CallExpr* call = dynamic_cast<CallExpr*>(move->argList->tail)) {
           if (FnSymbol* fn = call->isResolved()) {
-            if (nfields > 1 && fn->retType == ct) {
-              call->remove();
-              for_actuals(actual, move) {
-                actual->remove();
-                call->insertAtTail(actual);
+            if (fn->retType == ct) {
+              if (nfields > 1) {
+                call->remove();
+                for_actuals(actual, move) {
+                  actual->remove();
+                  call->insertAtTail(actual);
+                  SymExpr* se = dynamic_cast<SymExpr*>(actual);
+                  se->var->isReference = false;
+                }
+                move->replace(call);
+                continue;
+              } else {
+                lhs->var->isReference = false;
+                move->primitive = primitives[PRIMITIVE_MOVE];
               }
-              move->replace(call);
-              continue;
             }
           }
         }
