@@ -140,3 +140,55 @@ void printBasicBlocks(FnSymbol* fn) {
     printf("\n");
   }
 }
+
+//#define DEBUG_FLOW
+
+#ifdef DEBUG_FLOW
+static void
+debug_flow_print_set(Vec<Vec<bool>*>& sets) {
+  int i = 0;
+  forv_Vec(Vec<bool>, set, sets) {
+    printf("%d: ", i);
+    for (int j = 0; j < set->n; j++)
+      printf("%d", set->v[j] ? 1 : 0);
+    printf("\n");
+    i++;
+  }
+  printf("\n");
+}
+#endif
+
+
+void backwardFlowAnalysis(FnSymbol* fn,
+                          Vec<Vec<bool>*>& GEN,
+                          Vec<Vec<bool>*>& KILL,
+                          Vec<Vec<bool>*>& IN,
+                          Vec<Vec<bool>*>& OUT) {
+  bool iterate = true;
+  while (iterate) {
+    iterate = false;
+    int i = 0;
+    forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+      for (int j = 0; j < IN.v[i]->n; j++) {
+        bool new_in = (OUT.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
+        if (new_in != IN.v[i]->v[j]) {
+          IN.v[i]->v[j] = new_in;
+          iterate = true;
+        }
+        bool new_out = false;
+        forv_Vec(BasicBlock, outbb, bb->outs) {
+          new_out = new_out | IN.v[outbb->id]->v[j];
+        }
+        if (new_out != OUT.v[i]->v[j]) {
+          OUT.v[i]->v[j] = new_out;
+          iterate = true;
+        }
+      }
+      i++;
+    }
+#ifdef DEBUG_FLOW
+    printf("IN\n"); debug_flow_print_set(IN);
+    printf("OUT\n"); debug_flow_print_set(OUT);
+#endif
+  }
+}

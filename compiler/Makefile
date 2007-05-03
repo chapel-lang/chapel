@@ -16,6 +16,7 @@ SUBDIRS = \
 	backend \
 	ifa \
 	main \
+	optimizations \
 	parser \
 	passes \
 	util \
@@ -34,6 +35,7 @@ include AST/Makefile.include
 include backend/Makefile.include
 include ifa/Makefile.include
 include main/Makefile.include
+include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
 include util/Makefile.include
@@ -48,6 +50,7 @@ CHPL_OBJS = \
 	$(BACKEND_OBJS) \
 	$(IFA_OBJS) \
 	$(MAIN_OBJS) \
+	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
 	$(PASSES_OBJS) \
 	$(SYMTAB_OBJS) \

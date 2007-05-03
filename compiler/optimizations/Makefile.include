@@ -1,0 +1,5 @@
+OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(CHPL_MAKE_PLATFORM)
+
+ALL_SRCS += optimizations/*.cpp
+
+include $(COMPILER_ROOT)/optimizations/Makefile.share

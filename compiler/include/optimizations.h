@@ -10,4 +10,11 @@ void localCopyPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
 
+void liveVariableAnalysis(FnSymbol* fn,
+                          Vec<Symbol*>& locals,
+                          Map<Symbol*,int>& localID,
+                          Vec<SymExpr*>& useSet,
+                          Vec<SymExpr*>& defSet,
+                          Vec<Vec<bool>*>& OUT);
+
 #endif

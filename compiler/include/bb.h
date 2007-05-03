@@ -21,4 +21,9 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt = NULL);
 
 void printBasicBlocks(FnSymbol* fn);
 
+void backwardFlowAnalysis(FnSymbol* fn,
+                          Vec<Vec<bool>*>& GEN,
+                          Vec<Vec<bool>*>& KILL,
+                          Vec<Vec<bool>*>& IN,
+                          Vec<Vec<bool>*>& OUT);
 #endif

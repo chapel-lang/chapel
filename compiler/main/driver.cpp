@@ -39,6 +39,7 @@ bool fScalarReplaceTuples = false;
 bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableSingleLoopIteratorOpt = false;
 bool fDisableExpandIteratorsInlineOpt = false;
+bool fDisableLiveVariablesIteratorClassOpt = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
 bool fRefCount = false;
@@ -121,6 +122,7 @@ static ArgumentDescription arg_desc[] = {
  {"warn-promotion", ' ', "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {"default-dist", ' ', "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
  {"no-scalar-replace-array-wrappers", ' ', "Generate explicit array wrappers", "F", &fDisableScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
+ {"no-live-variables-iterator-class-opt", ' ', "Do not use live variable analysis for iterator class construction", "F", &fDisableLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
  {"copy-collect", ' ', "Turn on copying garbage-collection", "F", &copyCollect, NULL, NULL},
  {0}
 };
