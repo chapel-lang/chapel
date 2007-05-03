@@ -101828,3 +101828,20 @@ Modified files:
 	                         lowerIterators.cpp parallel.cpp 
 	                         scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/07 09:06:51 -- deitz
+
+Log message:
+	Improved copy propagation to apply to immediate values that are not
+	explicitly flagged as constants.
+	
+	Updated a test to cope with better constant propagation.
+	
+	This decreases the number of lines of generated code from stream.c
+	further, from 804 to 760.
+
+Modified files:
+	chapel/compiler/passes/: copy_propagation.cpp 
+	chapel/test/trivial/deitz/: test_shortcircuit_land_lor.chpl 
+
