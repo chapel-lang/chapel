@@ -1,9 +1,9 @@
 #ifndef _OPTIMIZATIONS_H_
 #define _OPTIMIZATIONS_H_
 
+void collapseBlocks(FnSymbol* fn);
 void scalarReplace(ClassType* ct);
 void inlineCall(CallExpr* call);
-void compressUnnecessaryScopes(FnSymbol* fn);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);

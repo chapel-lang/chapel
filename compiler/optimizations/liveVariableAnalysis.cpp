@@ -1,8 +1,8 @@
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
-#include "stmt.h"
 #include "optimizations.h"
+#include "stmt.h"
 
 //#define DEBUG_LIVE
 

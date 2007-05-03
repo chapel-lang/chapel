@@ -1,36 +1,11 @@
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "symscope.h"
-
-//
-// Removes unnecessary nested and/or empty block statements.
-//
-void compressUnnecessaryScopes(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-      if (block->body->length() == 0) {
-        block->remove();
-        continue;
-      }
-      if (block->loopInfo ||
-          block->blockTag == BLOCK_COBEGIN ||
-          block->blockTag == BLOCK_BEGIN)
-        continue;
-      if (block->list) {
-        for_alist(Expr, stmt, block->body)
-          block->insertBefore(stmt->remove());
-        block->remove();
-        continue;
-      }
-    }
-  }
-}
 
 //
 // Apply local copy propagation to basic blocks of function
@@ -196,48 +171,14 @@ void deadExpressionElimination(FnSymbol* fn) {
   }
 }
 
-//
-// Removes gotos where the label immediately follows the goto
-//
-void removeUnnecessaryGotos(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast))
-      if (DefExpr* def = dynamic_cast<DefExpr*>(gotoStmt->next))
-        if (def->sym == gotoStmt->label)
-          gotoStmt->remove();
-  }
-}
-
-//
-// Remove unused labels
-//
-void removeUnusedLabels(FnSymbol* fn) {
-  Vec<BaseAST*> labels;
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast))
-      labels.set_add(gotoStmt->label);
-  }
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-      if (LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym))
-        if (!labels.set_in(label))
-          def->remove();
-  }
-}
-
 void copyPropagation(void) {
   if (unoptimized)
     return;
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
-    compressUnnecessaryScopes(fn);
+    collapseBlocks(fn);
     removeUnnecessaryGotos(fn);
-    removeUnusedLabels(fn);
     localCopyPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);

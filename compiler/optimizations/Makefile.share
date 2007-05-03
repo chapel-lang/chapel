@@ -1,5 +1,7 @@
 OPTIMIZATIONS_SRCS = \
-	liveVariableAnalysis.cpp
+	collapseBlocks.cpp \
+	liveVariableAnalysis.cpp \
+	removeUnnecessaryGotos.cpp
 
 CVS_SRCS = $(OPTIMIZATIONS_SRCS)
 SRCS = $(CVS_SRCS)
