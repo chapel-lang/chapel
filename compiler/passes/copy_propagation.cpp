@@ -120,7 +120,7 @@ void localCopyPropagation(FnSymbol* fn) {
             if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
               if (lhs->var != rhs->var &&
                   defSet.set_in(lhs) &&
-                  (useSet.set_in(rhs) || rhs->var->isConst()))
+                  (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate()))
                 available.put(lhs->var, rhs->var);
     }
   }
