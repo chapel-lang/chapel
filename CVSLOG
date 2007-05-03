@@ -101891,3 +101891,22 @@ Added files:
 	chapel/compiler/optimizations/: collapseBlocks.cpp 
 	                                removeUnnecessaryGotos.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/07 15:32:30 -- deitz
+
+Log message:
+	Inserted code to delete bool vectors used for live variable analysis.
+	
+	Added isEssential bool to primitives.  This bool signals that a
+	primitive should never be eliminated even if it appears to be dead
+	because it modifies its arguments and/or has side effects.  In
+	addition, return and yield are marked as essential since they produce
+	effects of functions.  In adding new primitives, make sure that the
+	isEssential flag is set correctly.  This should be relatively easy.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp iterator.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/optimizations/: liveVariableAnalysis.cpp 
+
