@@ -101871,3 +101871,23 @@ Added files:
 	                                Makefile.include Makefile.share 
 	                                liveVariableAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/07 12:04:25 -- deitz
+
+Log message:
+	Moved the optimization to collapse unnecessary block statements into
+	its own file.
+	
+	Moved the optimization to remove unnecessary goto statements into its
+	own file.
+
+Modified files:
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/optimizations/: Makefile.share 
+	                                liveVariableAnalysis.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp lowerIterators.cpp 
+Added files:
+	chapel/compiler/optimizations/: collapseBlocks.cpp 
+	                                removeUnnecessaryGotos.cpp 
+
