@@ -180,16 +180,20 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 
 static void
 prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*),
+         bool isEssential = false,
          bool passLineno = false, bool isReference = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
+  primitives[tag]->isEssential = isEssential;
   primitives[tag]->isReference = isReference;
   primitives[tag]->passLineno = passLineno;
 }
 
 static void
 prim_def(char* name, Type *(*returnInfo)(CallExpr*),
+         bool isEssential = false,
          bool passLineno = false, bool isReference = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
+  prim->isEssential = isEssential;
   prim->isReference = isReference;
   prim->passLineno = passLineno;
 }
@@ -202,8 +206,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
   prim_def(PRIMITIVE_REF, "ref", returnInfoMove);
-  prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst);
-  prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst);
+  prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
+  prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", returnInfoFirst);
   prim_def(PRIMITIVE_UNARY_PLUS, "u+", returnInfoFirst);
   prim_def(PRIMITIVE_UNARY_NOT, "u~", returnInfoFirst);
@@ -211,8 +215,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_ADD, "+", returnInfoNumericUp);
   prim_def(PRIMITIVE_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIMITIVE_MULT, "*", returnInfoNumericUp);
-  prim_def(PRIMITIVE_DIV, "/", returnInfoNumericUp);
-  prim_def(PRIMITIVE_MOD, "%", returnInfoFirst);
+  prim_def(PRIMITIVE_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
+  prim_def(PRIMITIVE_MOD, "%", returnInfoFirst); // mod by zero?
   prim_def(PRIMITIVE_LSH, "<<", returnInfoFirst);
   prim_def(PRIMITIVE_RSH, ">>", returnInfoFirst);
   prim_def(PRIMITIVE_EQUAL, "==", returnInfoBool);
@@ -236,63 +240,63 @@ initPrimitive() {
   prim_def(PRIMITIVE_BOR_ID, "_bor_id", returnInfoFirst);
   prim_def(PRIMITIVE_BXOR_ID, "_bxor_id", returnInfoFirst);
 
-  prim_def(PRIMITIVE_SETCID, "setcid", returnInfoVoid);
+  prim_def(PRIMITIVE_SETCID, "setcid", returnInfoVoid, true);
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
-  prim_def(PRIMITIVE_UNION_SETID, "set_union_id", returnInfoVoid);
+  prim_def(PRIMITIVE_UNION_SETID, "set_union_id", returnInfoVoid, true);
   prim_def(PRIMITIVE_UNION_GETID, "get_union_id", returnInfoBool);
-  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, false, true);
+  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, false, false, true);
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
 
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
-  prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid);
-  prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", returnInfoMove);
-  prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
-  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
-  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", returnInfoMove, true);
+  prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid, true);
+  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid, true);
+  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid, true, true);
 
   // thread primitives
-  prim_def(PRIMITIVE_THREAD_INIT, "thread_init", returnInfoVoid);
-  prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64);  // 64-bit
+  prim_def(PRIMITIVE_THREAD_INIT, "thread_init", returnInfoVoid, true);
+  prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64, true);  // 64-bit
   prim_def(PRIMITIVE_GET_SERIAL, "thread_get_serial", returnInfoBool);
-  prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid);
+  prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
 
   // operations on sync/single vars
-  prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_signal_full", returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_BROADCAST_FULL,"sync_broadcast_full",returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full", returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_signal_empty", returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_BROADCAST_EMPTY,"sync_broadcast_empty",returnInfoVoid);
-  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_signal_full", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_BROADCAST_FULL,"sync_broadcast_full",returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_signal_empty", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_BROADCAST_EMPTY,"sync_broadcast_empty",returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty", returnInfoVoid, true);
   // sync/single var support
-  prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP);
-  prim_def(PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid);
-  prim_def(PRIMITIVE_CONDVAR_NEW, "condvar_new", returnInfoCondVarP);
-  prim_def(PRIMITIVE_CONDVAR_DESTROY, "condvar_destroy", returnInfoVoid);
+  prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP, true);
+  prim_def(PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid, true);
+  prim_def(PRIMITIVE_CONDVAR_NEW, "condvar_new", returnInfoCondVarP, true);
+  prim_def(PRIMITIVE_CONDVAR_DESTROY, "condvar_destroy", returnInfoVoid, true);
 
-  prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true);
-  prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true);
+  prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
+  prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", returnInfoCast);
   prim_def(PRIMITIVE_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
-  prim_def(PRIMITIVE_USE, "use", returnInfoVoid);
+  prim_def(PRIMITIVE_USE, "use", returnInfoVoid, true);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 
-  prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid, true);
-  prim_def(PRIMITIVE_ARRAY_FREE, "array_free", returnInfoVoid, true);
-  prim_def(PRIMITIVE_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid);
-  prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
-  prim_def(PRIMITIVE_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex, false, true);
-  prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid);
-  prim_def(PRIMITIVE_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid);
+  prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
+  prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex, false, false, true);
+  prim_def(PRIMITIVE_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex, false, false, true);
+  prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid, true);
+  prim_def(PRIMITIVE_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
-  prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid);
+  prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
   prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);
@@ -300,7 +304,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_C_FOR, "c for loop", returnInfoVoid);
-  prim_def(PRIMITIVE_INC_C_FOR, "c for loop increment", returnInfoFirst);
   prim_def(PRIMITIVE_LOOP_INLINE, "inline loop", returnInfoVoid);
 
   prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
@@ -318,69 +321,69 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_GET_IC_TYPE, "get_ic_type", returnInfoICType);
 
-  prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid);
+  prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
   prim_def("_config_has_value", returnInfoBool);
   prim_def("_config_get_value", returnInfoString);
 
-  prim_def("acos", returnInfoFloat);
-  prim_def("acosh", returnInfoFloat);
-  prim_def("asin", returnInfoFloat);
-  prim_def("asinh", returnInfoFloat);
-  prim_def("atan", returnInfoFloat);
-  prim_def("atan2", returnInfoFloat);  
-  prim_def("atanh", returnInfoFloat);
-  prim_def("cbrt", returnInfoFloat);
-  prim_def("ceil", returnInfoFloat);
-  prim_def("cos", returnInfoFloat);
-  prim_def("cosh", returnInfoFloat);
-  prim_def("exp", returnInfoFloat);
-  prim_def("exp2", returnInfoFloat);
-  prim_def("erf", returnInfoFloat);
-  prim_def("erfc", returnInfoFloat);
-  prim_def("expm1", returnInfoFloat);
-  prim_def("fabs", returnInfoFloat);
-  prim_def("floor", returnInfoFloat);
-  prim_def("lgamma", returnInfoFloat);
-  prim_def("log", returnInfoFloat);
-  prim_def("log2", returnInfoFloat);
-  prim_def("log10", returnInfoFloat);
-  prim_def("log1p", returnInfoFloat);
-  prim_def("nearbyint", returnInfoFloat);
-  prim_def("rint", returnInfoFloat);
-  prim_def("round", returnInfoFloat);
-  prim_def("sin", returnInfoFloat);
-  prim_def("sinh", returnInfoFloat);
-  prim_def("sqrt", returnInfoFloat);
-  prim_def("tan", returnInfoFloat);
-  prim_def("tanh", returnInfoFloat);
-  prim_def("tgamma", returnInfoFloat);
-  prim_def("trunc", returnInfoFloat);
-  prim_def("fopen", returnInfoFile);
-  prim_def("fclose", returnInfoInt32);
-  prim_def("fprintf", returnInfoInt32);
-  prim_def("fscanf", returnInfoInt32);
-  prim_def("fflush", returnInfoInt32);
-  prim_def("readLit", returnInfoBool);
-  prim_def("string_fscanf", returnInfoString, true);
-  prim_def("string_contains", returnInfoBool);
-  prim_def("string_copy", returnInfoString);
-  prim_def("string_index", returnInfoString);
-  prim_def("string_concat", returnInfoString);
-  prim_def("string_equal", returnInfoBool);
-  prim_def("string_select", returnInfoString);
-  prim_def("string_strided_select", returnInfoString);
+  prim_def("acos", returnInfoFloat, true);
+  prim_def("acosh", returnInfoFloat, true);
+  prim_def("asin", returnInfoFloat, true);
+  prim_def("asinh", returnInfoFloat, true);
+  prim_def("atan", returnInfoFloat, true);
+  prim_def("atan2", returnInfoFloat, true);  
+  prim_def("atanh", returnInfoFloat, true);
+  prim_def("cbrt", returnInfoFloat, true);
+  prim_def("ceil", returnInfoFloat, true);
+  prim_def("cos", returnInfoFloat, true);
+  prim_def("cosh", returnInfoFloat, true);
+  prim_def("exp", returnInfoFloat, true);
+  prim_def("exp2", returnInfoFloat, true);
+  prim_def("erf", returnInfoFloat, true);
+  prim_def("erfc", returnInfoFloat, true);
+  prim_def("expm1", returnInfoFloat, true);
+  prim_def("fabs", returnInfoFloat, true);
+  prim_def("floor", returnInfoFloat, true);
+  prim_def("lgamma", returnInfoFloat, true);
+  prim_def("log", returnInfoFloat, true);
+  prim_def("log2", returnInfoFloat, true);
+  prim_def("log10", returnInfoFloat, true);
+  prim_def("log1p", returnInfoFloat, true);
+  prim_def("nearbyint", returnInfoFloat, true);
+  prim_def("rint", returnInfoFloat, true);
+  prim_def("round", returnInfoFloat, true);
+  prim_def("sin", returnInfoFloat, true);
+  prim_def("sinh", returnInfoFloat, true);
+  prim_def("sqrt", returnInfoFloat, true);
+  prim_def("tan", returnInfoFloat, true);
+  prim_def("tanh", returnInfoFloat, true);
+  prim_def("tgamma", returnInfoFloat, true);
+  prim_def("trunc", returnInfoFloat, true);
+  prim_def("fopen", returnInfoFile, true);
+  prim_def("fclose", returnInfoInt32, true);
+  prim_def("fprintf", returnInfoInt32, true);
+  prim_def("fscanf", returnInfoInt32, true);
+  prim_def("fflush", returnInfoInt32, true);
+  prim_def("readLit", returnInfoBool, true);
+  prim_def("string_fscanf", returnInfoString, true, true);
+  prim_def("string_contains", returnInfoBool, true);
+  prim_def("string_copy", returnInfoString, true);
+  prim_def("string_index", returnInfoString, true);
+  prim_def("string_concat", returnInfoString, true);
+  prim_def("string_equal", returnInfoBool, true);
+  prim_def("string_select", returnInfoString, true);
+  prim_def("string_strided_select", returnInfoString, true);
   prim_def("string_length", returnInfoInt32);
   prim_def("ascii", returnInfoInt32);
-  prim_def("sleep", returnInfoVoid);
+  prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);
-  prim_def("_chpl_exit", returnInfoVoid);
+  prim_def("_chpl_exit", returnInfoVoid, true);
 
-  prim_def("complex_get_real", returnInfoComplexField, false, true);
-  prim_def("complex_get_imag", returnInfoComplexField, false, true);
-  prim_def("complex_set_real", returnInfoVoid);
-  prim_def("complex_set_imag", returnInfoVoid);
+  prim_def("complex_get_real", returnInfoComplexField, false, false, true);
+  prim_def("complex_get_imag", returnInfoComplexField, false, false, true);
+  prim_def("complex_set_real", returnInfoVoid, true);
+  prim_def("complex_set_imag", returnInfoVoid, true);
 
   prim_def("get_stdin", returnInfoFile);
   prim_def("get_stdout", returnInfoFile);
@@ -389,30 +392,30 @@ initPrimitive() {
   prim_def("get_errno", returnInfoString);
   prim_def("get_eof", returnInfoInt32);
 
-  prim_def("_init_timer", returnInfoVoid);
-  prim_def("_now_timer", returnInfoTimer);
-  prim_def("_seconds_timer", returnInfoFloat);
-  prim_def("_microseconds_timer", returnInfoFloat);
-  prim_def("_now_year", returnInfoInt32);
-  prim_def("_now_month", returnInfoInt32);
-  prim_def("_now_day", returnInfoInt32);
-  prim_def("_now_time", returnInfoFloat);
+  prim_def("_init_timer", returnInfoVoid, true);
+  prim_def("_now_timer", returnInfoTimer, true);
+  prim_def("_seconds_timer", returnInfoFloat, true);
+  prim_def("_microseconds_timer", returnInfoFloat, true);
+  prim_def("_now_year", returnInfoInt32, true);
+  prim_def("_now_month", returnInfoInt32, true);
+  prim_def("_now_day", returnInfoInt32, true);
+  prim_def("_now_time", returnInfoFloat, true);
 
   prim_def("_bytesPerLocale", returnInfoUInt64);
 
-  prim_def("_chpl_memtest_printMemTable", returnInfoVoid, true);
-  prim_def("_chpl_memtest_printMemStat", returnInfoVoid, true);
-  prim_def("_chpl_memtest_resetMemStat", returnInfoVoid, true);
-  prim_def("_chpl_memtest_allocAndFree", returnInfoVoid, true);
-  prim_def("_chpl_memtest_freedMalloc", returnInfoVoid, true);
-  prim_def("_chpl_memtest_freedWithoutMalloc", returnInfoVoid, true);
-  prim_def("_chpl_memtest_reallocWithoutMalloc", returnInfoVoid, true);
-  prim_def("_chpl_memtest_reallocZeroSize", returnInfoVoid, true);
-  prim_def("_chpl_memtest_mallocOutOfMemory", returnInfoVoid, true);
-  prim_def("_chpl_memtest_reallocOutOfMemory", returnInfoVoid, true);
-  prim_def("startTrackingMem", returnInfoVoid);
+  prim_def("_chpl_memtest_printMemTable", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_printMemStat", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_resetMemStat", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_allocAndFree", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_freedMalloc", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_freedWithoutMalloc", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_reallocWithoutMalloc", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_reallocZeroSize", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_mallocOutOfMemory", returnInfoVoid, true, true);
+  prim_def("_chpl_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
+  prim_def("startTrackingMem", returnInfoVoid, true);
 
-  prim_def("_printError", returnInfoVoid, true);
+  prim_def("_printError", returnInfoVoid, true, true);
 
-  prim_def("_mem_used", returnInfoUInt64, true);
+  prim_def("_mem_used", returnInfoUInt64, false, true);
 }

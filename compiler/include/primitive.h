@@ -97,7 +97,6 @@ enum PrimitiveTag {
   PRIMITIVE_LOOP_DOWHILE,
   PRIMITIVE_LOOP_FOR,
   PRIMITIVE_LOOP_C_FOR,
-  PRIMITIVE_INC_C_FOR,
   PRIMITIVE_LOOP_INLINE, // inline iterator in place of loop
 
   PRIMITIVE_CLASS_NULL, // check reference/class is NULL
@@ -125,6 +124,7 @@ class PrimitiveOp { public:
   PrimitiveTag tag;
   char *name;
   Type *(*returnInfo)(CallExpr*);
+  bool isEssential; // has effects visible outside of the function
   bool isReference;
   bool passLineno; // pass line number and filename to this primitive
 

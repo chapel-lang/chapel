@@ -500,6 +500,9 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
   }
   printf("\n");
 #endif
+
+  forv_Vec(Vec<bool>, out, OUT)
+    delete out;
 }
 
 

@@ -127,4 +127,13 @@ liveVariableAnalysis(FnSymbol* fn,
 #endif
 
   backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
+
+  forv_Vec(Vec<bool>, use, USE)
+    delete use;
+
+  forv_Vec(Vec<bool>, def, DEF)
+    delete def;
+
+  forv_Vec(Vec<bool>, in, IN)
+    delete in;
 }
