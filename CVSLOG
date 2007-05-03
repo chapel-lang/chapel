@@ -101845,3 +101845,29 @@ Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp 
 	chapel/test/trivial/deitz/: test_shortcircuit_land_lor.chpl 
 
+---------------------------------------------------------------------------
+
+05/03/07 10:46:07 -- deitz
+
+Log message:
+	Added an optimizations directory for optimizations.
+	
+	Refactored live variable analysis into its own file and added this to
+	the new optimizations directory.
+	
+	Refactored the bit vector backward dataflow analysis into bb.cpp.
+	
+	Added a flag --no-live-variables-iterator-class-opt to disable using
+	live variable analysis to build the iterator class.  With this flag,
+	all local variables are included in the iterator class.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: bb.cpp iterator.cpp 
+	chapel/compiler/include/: bb.h driver.h optimizations.h 
+	chapel/compiler/main/: driver.cpp 
+Added files:
+	chapel/compiler/optimizations/: .cvsignore Makefile 
+	                                Makefile.include Makefile.share 
+	                                liveVariableAnalysis.cpp 
+
