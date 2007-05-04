@@ -101927,3 +101927,22 @@ Modified files:
 Added files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+05/04/07 14:35:47 -- bradc
+
+Log message:
+	Rewrote the RA RandStream iterator to take a range/domain
+	argument rather than two integer values.  This is much
+	nicer than our previous version in that it: (a) makes
+	better use of Chapel concepts, (b) doesn't require the
+	block to be decomposed when passing it into the iterator.
+	It also has the benefit of conserving the number of lines
+	of code.
+	
+	Updated the README to note this change.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: README ra-randstream.chpl 
+	                                      ra.chpl 
+
