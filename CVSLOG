@@ -102247,3 +102247,18 @@ Added files:
 	chapel/doc/internal/quickReference/: chapel_listing.tex 
 	                                     flowfram.sty Makefile 
 
+---------------------------------------------------------------------------
+
+05/04/07 16:54:33 -- marybeth
+
+Log message:
+	Checking in very rough draft of Chapel quick reference guide.
+	The formatting is more or less set.  Now, I have to work on the
+	content.
+	
+	This guide uses the flowfram package, which is new.  It is not
+	installed with our latex, so I am checking in flowfram.sty file.
+
+Added files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
