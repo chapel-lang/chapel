@@ -8,100 +8,6 @@
 #include "symscope.h"
 
 //
-// Apply local copy propagation to basic blocks of function
-//
-void localCopyPropagation(FnSymbol* fn) {
-  buildBasicBlocks(fn);
-  compute_sym_uses(fn);
-
-  //
-  // locals: a vector of local variables in function fn that are
-  // candidates for copy propagation
-  //
-  Vec<Symbol*> locals;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
-          if (var != fn->getReturnSymbol() &&
-              !is_complex_type(var->type) &&
-              !isRecordType(var->type) &&
-              !var->isReference &&
-              !var->isConcurrent &&
-              !var->on_heap &&
-              !var->is_ref)
-            locals.add(def->sym);
-    }
-  }
-
-  //
-  // useSet: a set of SymExprs that are uses of local variables
-  // defSet: a set of SymExprs that are defs of local variables
-  //
-  Vec<SymExpr*> useSet;
-  Vec<SymExpr*> defSet;
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defSet.set_add(se);
-    } 
-    forv_Vec(SymExpr, se, local->uses) {
-      useSet.set_add(se);
-    }
-  }
-
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
-
-    forv_Vec(Expr, expr, bb->exprs) {
-
-      Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
-
-      //
-      // replace uses with available copies
-      //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-          if (useSet.set_in(se) && !defSet.set_in(se)) {
-            if (available.get(se->var)) {
-              se->var = available.get(se->var);
-            }
-          }
-        }
-      }
-
-      //
-      // invalidate available copies based on defs
-      //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-          if (defSet.set_in(se)) {
-            Vec<Symbol*> keys;
-            available.get_keys(keys);
-            forv_Vec(Symbol, key, keys) {
-              if (key == se->var || available.get(key) == se->var)
-                available.del(key);
-            }
-          }
-        }
-      }
-
-      //
-      // insert pairs into available copies map
-      //
-      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
-        if (call->isPrimitive(PRIMITIVE_MOVE))
-          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
-            if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
-              if (lhs->var != rhs->var &&
-                  defSet.set_in(lhs) &&
-                  (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate()))
-                available.put(lhs->var, rhs->var);
-    }
-  }
-}
-
-//
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
@@ -180,6 +86,9 @@ void copyPropagation(void) {
     collapseBlocks(fn);
     removeUnnecessaryGotos(fn);
     localCopyPropagation(fn);
+    deadVariableElimination(fn);
+    deadExpressionElimination(fn);
+    globalCopyPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }

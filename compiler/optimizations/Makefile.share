@@ -1,5 +1,6 @@
 OPTIMIZATIONS_SRCS = \
 	collapseBlocks.cpp \
+        copyPropagation.cpp \
 	liveVariableAnalysis.cpp \
 	removeUnnecessaryGotos.cpp
 

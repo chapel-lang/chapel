@@ -192,3 +192,41 @@ void backwardFlowAnalysis(FnSymbol* fn,
 #endif
   }
 }
+
+
+void forwardFlowAnalysis(FnSymbol* fn,
+                         Vec<Vec<bool>*>& GEN,
+                         Vec<Vec<bool>*>& KILL,
+                         Vec<Vec<bool>*>& IN,
+                         Vec<Vec<bool>*>& OUT) {
+  bool iterate = true;
+  while (iterate) {
+    iterate = false;
+#ifdef DEBUG_FLOW
+    printf("IN\n"); debug_flow_print_set(IN);
+    printf("OUT\n"); debug_flow_print_set(OUT);
+#endif
+    for (int i = 0; i < fn->basicBlocks->n; i++) {
+      for (int j = 0; j < IN.v[i]->n; j++) {
+        bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
+        if (new_out != OUT.v[i]->v[j]) {
+          OUT.v[i]->v[j] = new_out;
+          iterate = true;
+        }
+      }
+    }
+    for (int i = 1; i < fn->basicBlocks->n; i++) {
+      BasicBlock* bb = fn->basicBlocks->v[i];
+      for (int j = 0; j < IN.v[i]->n; j++) {
+        bool new_in = true;
+        forv_Vec(BasicBlock, inbb, bb->ins) {
+          new_in = new_in & OUT.v[inbb->id]->v[j];
+        }
+        if (new_in != IN.v[i]->v[j]) {
+          IN.v[i]->v[j] = new_in;
+          iterate = true;
+        }
+      }
+    }
+  }
+}

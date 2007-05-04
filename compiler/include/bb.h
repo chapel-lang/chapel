@@ -26,4 +26,11 @@ void backwardFlowAnalysis(FnSymbol* fn,
                           Vec<Vec<bool>*>& KILL,
                           Vec<Vec<bool>*>& IN,
                           Vec<Vec<bool>*>& OUT);
+
+void forwardFlowAnalysis(FnSymbol* fn,
+                         Vec<Vec<bool>*>& GEN,
+                         Vec<Vec<bool>*>& KILL,
+                         Vec<Vec<bool>*>& IN,
+                         Vec<Vec<bool>*>& OUT);
+
 #endif
