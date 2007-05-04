@@ -6,9 +6,9 @@ module RARandomStream {
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
 
-  iterator RAStream(numvals, start:randType = 0) {
-    var val = getNthRandom(start);
-    for i in 1..numvals {
+  iterator RAStream(block) {
+    var val = getNthRandom(block.low);
+    for i in block {
       getNextRandom(val);
       yield val;
     }

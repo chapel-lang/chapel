@@ -94,3 +94,8 @@ Other changes to date are:
 
   * removed the Temp array in the bitReverseShuffle() routine of
     fft.chpl and fft-mta.chpl to reduce memory requirements.
+
+  * changed the RAStream iterator to take a range/domain as its
+    argument rather than two integers.  This makes good use of
+    Chapel's range concept and requires the need to break the block
+    parameter apart at the callsite.
