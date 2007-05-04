@@ -101946,3 +101946,304 @@ Modified files:
 	chapel/test/release/examples/hpcc06/: README ra-randstream.chpl 
 	                                      ra.chpl 
 
+---------------------------------------------------------------------------
+
+05/04/07 16:51:28 -- marybeth
+
+Log message:
+	\documentclass[a4paper,landscape]{report}
+	
+	\usepackage[landscape,margin=.75in]{geometry}
+	\usepackage{color}
+	\usepackage{flowfram}
+	
+	\usepackage{times}
+	\usepackage{listings}
+	\usepackage{longtable}
+	\input{chapel_listing}
+	\input{syntax_listing}
+	
+	% Use sans-serif font as default font
+	\renewcommand{\familydefault}{cmss}
+	
+	% adjust \textheight so that it is an integer multiple of
+	% \baselineskip
+	%\adjustheight{\textheight}
+	
+	\Ncolumn{3}
+	
+	% Make a border along the top of each page
+	%\vtwotonetop{1cm}{0.6\paperwidth}{[cmyk]{0.65,0.13,0,0}}{topleft}%
+	%{0.4\paperwidth}{[cmyk]{0.94,0.54,0,0}}{topright}
+	
+	% empty page style, because I am going to make my own
+	\pagestyle{empty}
+	
+	% Each new chapter sets \thispagestyle{\chapterfirstpagestyle}, change this empty as well
+	\renewcommand{\chapterfirstpagestyle}{empty}
+	
+	% Now make a frame in which to put my own customized footer
+	\newdynamicframe[1,2]{\textwidth}{\headheight}{0pt}{-\footskip}[footer]
+	
+	% set the contents of the frame:
+	\setdynamiccontents*{footer}{{\sf \sl {\small Chapel Quick Reference Guide \hfill page \thepage}}}
+	
+	%\newcommand{\env}[1]{\texttt{#1}}
+	%\newcommand{\cmdname}[1]{\texttt{\symbol{92}#1}}
+	%\newcommand{\meta}[1]{\textnormal{\textless\textit{#1}\textgreater}}
+	\newcommand{\ie}{\emph{i.e.}}
+	\newcommand{\eg}{\emph{e.g.}}
+	\newcommand{\etc}{etc}
+	%\newcommand{\incode}[1]{\texttt{#1}}
+	
+	\begin{document}
+	
+	\setlength{\parindent}{0in}
+	\setlength{\parskip}{1mm plus2mm minus1mm}
+	
+	\lstset{language=chapel}
+	
+	{\footnotesize
+	\subsubsection*{Chapel Programs}
+	
+	{\bf File extension} \newline
+	Chapel programs end with the file extension \verb+.chpl+.
+	
+	{\bf Modules} \newline
+	Chapel programs are constructed from one or more Chapel modules.
+	To access routines in other modules, the \chpl{use} statement
+	must be included indicating which module(s) to use.
+	The simple case:  a Chapel program is contained within
+	one file, not using other modules.  In this case, the
+	\chpl{main} function definition is not required.
+	
+	{\bf Compiler command} \newline
+	The Chapel compiler command is \verb+chpl+.
+	
+	{\bf Comments}
+	\begin{chapel}
+	// Comments on a single line
+	/* Comments
+	   between lines */
+	\end{chapel}
+	\subsubsection*{Types}
+	{\bf Primitive Types} \newline
+	\begin{tabular}{|l|l|}
+	\hline
+	Type & Default Size \\
+	\hline
+	\begin{chapel}
+	int
+	uint
+	\end{chapel}
+	& 32 bits \\
+	\hline
+	\begin{chapel}
+	real
+	imag
+	\end{chapel}
+	& 64 bits \\
+	\hline
+	\begin{chapel}
+	complex
+	\end{chapel}
+	& 128 bits \\
+	\hline
+	\begin{chapel}
+	bool
+	\end{chapel}
+	& 1 bit  \\
+	\hline
+	\begin{chapel}
+	string
+	\end{chapel}
+	& unbounded  \\
+	\hline
+	\end{tabular}
+	
+	Other sizes for the primitive data types can
+	specified.
+	\begin{chapel}
+	var x: real(32);  //x is 32-bit real
+	var index: int(8); //index is 8-bit int
+	\end{chapel}
+	
+	{\bf Other types} \newline
+	The Chapel language supports enumerated types,
+	class types, record types, tuple types, and domain and
+	array types.
+	
+	{\bf Type alias}
+	\begin{chapel}
+	type elemType = real(32);
+	var alpha: elemType;
+	\end{chapel}
+	\subsubsection*{Variables}
+	{\bf Variable kinds} \newline
+	There are three kinds of Chapel variables: \chpl{var},
+	\chpl{const} (runtime constants), \chpl{param} (compile time constants).
+	
+	{\bf Variable declarations} \newline
+	
+	{\bf Configurable variables} \newline
+	The keyword \chpl{config} may precede any variable
+	declaration, indicating if that variable may be set at
+	compile time or runtime.
+	\subsubsection*{Statements and Expressions}
+	{\bf Conditional statement}
+	\begin{chapel}
+	if (alpha == 0.0) then
+	  x = 0.0;
+	else if (alpha == 1.0) then
+	  x = y;
+	else
+	  x = alpha*y;
+	if (x > z) {
+	  z = alpha*x;
+	  y = alpha*x;
+	}
+	\end{chapel}
+	{\bf Select statement}
+	\begin{chapel}
+	select pos {
+	  when "first" do
+	    x = y(1);
+	  when "last" do
+	    x = y(y.N);
+	  when "middle" do
+	    x = y((y.N/2):int + y.N%2);
+	  otherwise
+	    writeln("Unrecognized element position");
+	}
+	\end{chapel}
+	{\bf While and do while loops}
+	\begin{chapel}
+	do {
+	  t += 1;
+	  writeln(t);
+	} while (t <= 10);
+	
+	while (t <= 10) {
+	  t += 1;
+	  writeln(t);
+	}
+	\end{chapel}
+	{\bf For loop}
+	\begin{chapel}
+	def norm1(x) {
+	  var norm = 0.0;
+	  for i in x.domain {
+	    norm += abs(x(i));
+	  }
+	  return norm;
+	}
+	\end{chapel}
+	{\bf Type select statement}
+	\begin{chapel}
+	type select x {
+	  when int do writeln("Integer type");
+	  when real do writeln("Real type");
+	  otherwise writeln("Not integer or real type");
+	}
+	\end{chapel}
+	{\bf Query Expression}
+	\begin{chapel}
+	def sumOfThree(x: ?t, y:t, z:t):t {
+	   var sum: t;
+	
+	   sum = x + y + z;
+	   return sum;
+	}
+	\end{chapel}
+	{\bf Let Expression}
+	\begin{chapel}
+	if (b*b > 4.0*a*c) {
+	  var x:  (real, real);
+	  x = let temp1 = sqrt(b*b - 4.0*a*c),
+	          temp2 = 2.0*a in
+	          ((-b + temp1)/temp2, (-b - temp1)/temp2);
+	  } else {
+	  var x: (complex, complex);
+	  x = let temp1 = sqrt(4.0*a*c - b*b)/(2.0*a),
+	          temp2 = -b/(2.0*a) in
+	          ((temp2,temp1):complex,(temp2,-temp1):complex);
+	  }
+	}
+	\end{chapel}
+	{\bf Conditional Expression}
+	\begin{chapel}
+	def writehalf(i: int) {
+	  var half = if (i % 2) then i/2 +1 else i/2;
+	  writeln("Half of ",i," is ",half);
+	}
+	\end{chapel}
+	\subsubsection{Iterators}
+	\begin{chapel}
+	iterator evens(n): int {
+	  for i in 1..n do yield 2*i;
+	}
+	\end{chapel}
+	\begin{chapel}
+	iterator blockByCol(m,n): seq of seq of int {
+	  for i in 1..n by 2 yield [1..n, i..i+1];
+	}
+	\end{chapel}
+	Using this iterator in a \chpl{for} loop allows a matrix to be
+	accessed \chpl{m} columns at a time.
+	\subsubsection{Arrays and Domains}
+	\begin{chapel}
+	const D = [1..n];
+	var x, y: [D] real;
+	
+	for i in D {
+	  x(i) = i;
+	  y(i) = i*i;
+	}
+	\end{chapel}
+	
+	\begin{chapel}
+	const D2: domain(2) = [1..n, 1..n];
+	var A, B, C: [D2] real;
+	const alpha: real;
+	
+	A = B + alpha * C;
+	\end{chapel}
+	
+	Whole-array operations like this one are implicitly parallel, if the \chpl{D2}
+	domain were distributed across a set of processors.  For example,
+	a block distribution of \chpl{D2} would be specified as follows.
+	\begin{chapel}
+	const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
+	var A, B, C: [DistD2] real;
+	\end{chapel}
+	To compute \chpl{A = B + alpha * C}, each processor would perform the
+	operations for the array elements that it owns,
+	as defined by \chpl{DistD2}'s distribution since that was the domain
+	used to define all three arrays.
+	
+	Since arrays are reference types, they are passed by reference to functions
+	where they may be modified and remain modified upon return.  However, assignment
+	of arrays is by value.
+	
+	Arithmetic domains are just one kind of domain.  Domains may
+	also be sparse, indefinite, enumerated or opaque.  Subdomains may be
+	defined to specify a subset of the domain's indices, as in the case of
+	inner, non-boundary points of a grid.
+	
+	\subsubsection*{Parallel constructs}
+	{\bf Data parallel} \newline
+	
+	{\bf Task parallel} \newline
+	
+	\subsubsection*{Data Locality}
+	
+	\subsubsection*{Synchronizing and Serializing Tasks}
+	
+	\subsubsection*{Data Distributions}
+	}
+	\end{document}
+
+Added files:
+	chapel/doc/internal/quickReference/: chapel_listing.tex 
+	                                     flowfram.sty Makefile 
+
