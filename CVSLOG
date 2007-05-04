@@ -101910,3 +101910,20 @@ Modified files:
 	chapel/compiler/include/: primitive.h 
 	chapel/compiler/optimizations/: liveVariableAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/04/07 13:04:56 -- deitz
+
+Log message:
+	Implemented global copy propagation in new file.
+	
+	Moved local copy propagation to new file.
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp 
+	chapel/compiler/include/: bb.h optimizations.h 
+	chapel/compiler/optimizations/: Makefile.share 
+	chapel/compiler/passes/: copy_propagation.cpp 
+Added files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
