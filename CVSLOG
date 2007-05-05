@@ -102262,3 +102262,14 @@ Log message:
 Added files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/05/07 13:55:44 -- marybeth
+
+Log message:
+	More edits to quick reference guide.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+	                                     chapel_listing.tex 
+
