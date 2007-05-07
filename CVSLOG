@@ -102293,3 +102293,21 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/06/07 18:04:33 -- diten
+
+Log message:
+	Add test lcs.chpl.  This uses a dynamic programming approach to find a longest
+	common substring of two input strings.  The example was taken from
+	"Introduction to Algorithms" second edition by Cormen, Leiserson, Rivest, Stein.
+	In finding a longest common substring, letters may be removed from either
+	input string, but letters may not be re-arranged.
+	
+	This was intended as a CUG BoF example code, but unfortunately doesn't make use
+	of many cool Chapel constructs.  I doubt if it should be used for that purpose
+	unless somebody can find a way to clean it up first.
+
+Added files:
+	chapel/test/trivial/diten/lcs/: lcs.chpl lcs.good strings 
+
