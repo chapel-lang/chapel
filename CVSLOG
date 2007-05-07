@@ -102377,3 +102377,18 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/07/07 14:40:32 -- deitz
+
+Log message:
+	Added four potential puzzles for CUG BOF.  The puzzles are described
+	in puzzles.txt.  Added solutions to all four.  Digits is an
+	interesting parallel challenge for larger numbers.
+
+Added files:
+	chapel/test/puzzles/deitz/: digits.chpl digits.good 
+	                            histogram.chpl histogram.good 
+	                            puzzles.txt roman.chpl roman.good 
+	                            roman.stdin 
+
