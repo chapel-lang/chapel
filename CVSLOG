@@ -102311,3 +102311,13 @@ Log message:
 Added files:
 	chapel/test/trivial/diten/lcs/: lcs.chpl lcs.good strings 
 
+---------------------------------------------------------------------------
+
+05/06/07 22:59:18 -- marybeth
+
+Log message:
+	A few more edits.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
