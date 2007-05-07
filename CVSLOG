@@ -102352,3 +102352,16 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: Makefile 
 
+---------------------------------------------------------------------------
+
+05/07/07 12:45:37 -- diten
+
+Log message:
+	Make a few minor changes to the quick reference.  A single file can contain
+	multiple modules, default read and write methods are created for types the user
+	didn't create them for, and in the classes section, x should be assigned to,
+	not typed.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
