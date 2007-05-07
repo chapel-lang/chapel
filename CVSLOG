@@ -102321,3 +102321,13 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/07/07 10:34:02 -- marybeth
+
+Log message:
+	Deleting input of syntax_listing from reference.tex.  It's not needed.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
