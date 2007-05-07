@@ -102341,3 +102341,14 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/07/07 11:35:11 -- marybeth
+
+Log message:
+	Changing the makefile to explicitly create reference.ps with the
+	dvips command.
+
+Modified files:
+	chapel/doc/internal/quickReference/: Makefile 
+
