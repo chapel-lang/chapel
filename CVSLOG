@@ -102392,3 +102392,16 @@ Added files:
 	                            puzzles.txt roman.chpl roman.good 
 	                            roman.stdin 
 
+---------------------------------------------------------------------------
+
+05/07/07 14:49:45 -- diten
+
+Log message:
+	Add a test which uses a string->enum conversion to convert roman style numbers
+	to regular decimal values.  This conversion process is very lenient, allowing
+	for example "IIIII" to convert to 5.  Additional checks would be possible,
+	but would complicate the code.
+
+Added files:
+	chapel/test/puzzles/diten/: roman.chpl roman.execopts roman.good 
+
