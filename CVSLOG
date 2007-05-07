@@ -102331,3 +102331,13 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+05/07/07 10:47:01 -- marybeth
+
+Log message:
+	Edits to make the quick reference guide fit on two pages.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
