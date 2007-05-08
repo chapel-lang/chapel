@@ -102456,3 +102456,47 @@ Modified files:
 	chapel/modules/standard/: ChapelTuple.chpl 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+05/08/07 14:03:32 -- deitz
+
+Log message:
+	Added new iterator method getZipCursor4 to handle code in a single
+	loop iterator after the loop.  Added a test case that would have
+	caught this bug.
+	
+	The four new iterator methods are used when zippered with another
+	iterator as follows:
+	
+	  c = ic.getZipCursor1();
+	  while /* condition based on other iterator */ {
+	    c = ic.getZipCursor2(c);
+	    v = ic.getValue(c);
+	    // body of loop accesses v
+	    c = ic.getZipCursor3(c);
+	  }
+	  c = ic.getZipCursor4(c);
+	
+	These four methods now match exactly to the four blocks that a single
+	loop iterator identifies:
+	
+	  iterator singleLoopIterator() {
+	    BLOCK I
+	    loop {
+	      BLOCK II
+	      yield
+	      BLOCK III
+	    }
+	    BLOCK IV
+	  }
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: iterator.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_zip_loop_iterator.chpl 
+	                                        test_zip_loop_iterator.good 
+
