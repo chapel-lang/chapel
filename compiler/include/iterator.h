@@ -11,6 +11,7 @@ public:
   FnSymbol* getZipCursor1;
   FnSymbol* getZipCursor2;
   FnSymbol* getZipCursor3;
+  FnSymbol* getZipCursor4;
   IteratorInfo();
 };
 

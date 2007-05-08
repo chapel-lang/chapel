@@ -73,6 +73,8 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
         for param i in 1..ic.size-1 do
           c(i) = ic(i).getZipCursor3(c(i));
       }
+      for param i in 1..ic.size-1 do
+        c(i) = ic(i).getZipCursor4(c(i));
 //       for param i in 1..ic.size-1 do
 //         if ic(i).isValidCursor(c(i)) then
 //           halt("zippered iterations have non-equal lengths");

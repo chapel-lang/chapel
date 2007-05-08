@@ -105,6 +105,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
       resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
       resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
+      resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
     }
   }
 }
@@ -2348,6 +2349,7 @@ resolveFns(FnSymbol* fn) {
     resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
     resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
     resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
+    resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
   }
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
