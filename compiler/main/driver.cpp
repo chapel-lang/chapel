@@ -35,6 +35,7 @@ bool developer = false;
 bool ignore_errors = false;
 int trace_level = 0;
 int fcg = 0;
+bool fDisableCopyPropagation = false;
 bool fScalarReplaceTuples = false;
 bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableSingleLoopIteratorOpt = false;
@@ -77,6 +78,7 @@ static ArgumentDescription arg_desc[] = {
  {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
  {"no-single-loop-iterator-opt", ' ', "Disable the optimization of iterators composed of a single loop", "F", &fDisableSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"no-expand-iterators-inline-opt", ' ', "Disable the expansion of iterators inlined around loop bodies", "F", &fDisableExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
+ {"no-copy-propagation", ' ', "Disable copy propagation", "F", &fDisableCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
 
  {"", ' ', "Code Generation", NULL, NULL, NULL, NULL},
  {"savec", ' ', "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},

@@ -15,11 +15,11 @@ pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
   }
 }
 
-pragma "inline" def _getHeadCursorTupleHelp(t: _tuple, param i: int) {
+pragma "inline" def _getZipCursor1TupleHelp(t: _tuple, param i: int) {
   if i == t.size-1 {
-    return (t(i).getHeadCursor(), 1); // ignore last == 1
+    return (t(i).getZipCursor1(), 1); // ignore last == 1
   } else {
-    return (t(i).getHeadCursor(), (..._getHeadCursorTupleHelp(t, i+1)));
+    return (t(i).getZipCursor1(), (..._getZipCursor1TupleHelp(t, i+1)));
   }
 }
 
@@ -55,11 +55,13 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
       }
     } else {
       var ic = _getIteratorTupleHelp(this, 2);
-      var c = _getHeadCursorTupleHelp(ic, 1);
+      var c = _getZipCursor1TupleHelp(ic, 1);
       if c.size != ic.size then
         compilerError("internal size check failure; zipper failed");
       for i in this(1) {
 // _firstIteratorUnbounded makes it so that we don't insert these breaks if the first iterator can fully control the loop; this is important so that the single loop iterator optimization can fire; the break in the loop disables it
+        for param i in 1..ic.size-1 do
+          c(i) = ic(i).getZipCursor2(c(i));
         if _firstIteratorUnbounded(this) then
           for param i in 1..ic.size-1 do
             if !ic(i).isValidCursor(c(i)) then
@@ -69,7 +71,7 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
         else
           yield (i, (..._getValueTupleHelp(ic, c, 1)));
         for param i in 1..ic.size-1 do
-          c(i) = ic(i).getNextCursor(c(i));
+          c(i) = ic(i).getZipCursor3(c(i));
       }
 //       for param i in 1..ic.size-1 do
 //         if ic(i).isValidCursor(c(i)) then

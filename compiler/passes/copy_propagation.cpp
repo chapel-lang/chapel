@@ -85,11 +85,14 @@ void copyPropagation(void) {
   forv_Vec(FnSymbol, fn, fns) {
     collapseBlocks(fn);
     removeUnnecessaryGotos(fn);
-    localCopyPropagation(fn);
+    if (!fDisableCopyPropagation)
+      localCopyPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
-    globalCopyPropagation(fn);
-    deadVariableElimination(fn);
-    deadExpressionElimination(fn);
+    if (!fDisableCopyPropagation) {
+      globalCopyPropagation(fn);
+      deadVariableElimination(fn);
+      deadExpressionElimination(fn);
+    }
   }
 }

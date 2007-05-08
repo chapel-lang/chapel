@@ -8,6 +8,9 @@ public:
   FnSymbol* getNextCursor;
   FnSymbol* isValidCursor;
   FnSymbol* getValue;
+  FnSymbol* getZipCursor1;
+  FnSymbol* getZipCursor2;
+  FnSymbol* getZipCursor3;
   IteratorInfo();
 };
 

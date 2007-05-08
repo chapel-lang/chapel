@@ -7,6 +7,14 @@
 #include "view.h"
 
 
+static void
+updateOneSymbol(FnSymbol* fn, Symbol* s1, Symbol* s2) {
+  ASTMap map;
+  map.put(s1, s2);
+  update_symbols(fn, &map);
+}
+
+
 //#define DEBUG_LIVE
 
 
@@ -74,10 +82,26 @@ void prototypeIteratorClass(FnSymbol* fn) {
   ii->getValue->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
+  ii->getZipCursor1 = buildEmptyIteratorMethod("getZipCursor1", ii->classType);
+  ii->getZipCursor1->retType = cursorType;
+
+  ii->getZipCursor2 = buildEmptyIteratorMethod("getZipCursor2", ii->classType);
+  ii->getZipCursor2->retType = cursorType;
+  ii->getZipCursor2->insertFormalAtTail(
+    new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
+
+  ii->getZipCursor3 = buildEmptyIteratorMethod("getZipCursor3", ii->classType);
+  ii->getZipCursor3->retType = cursorType;
+  ii->getZipCursor3->insertFormalAtTail(
+    new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
+
   fn->defPoint->insertBefore(new DefExpr(ii->getHeadCursor));
   fn->defPoint->insertBefore(new DefExpr(ii->getNextCursor));
   fn->defPoint->insertBefore(new DefExpr(ii->isValidCursor));
   fn->defPoint->insertBefore(new DefExpr(ii->getValue));
+  fn->defPoint->insertBefore(new DefExpr(ii->getZipCursor1));
+  fn->defPoint->insertBefore(new DefExpr(ii->getZipCursor2));
+  fn->defPoint->insertBefore(new DefExpr(ii->getZipCursor3));
 
   ii->classType->defaultConstructor = fn;
   ii->classType->scalarPromotionType = fn->retType;
@@ -195,6 +219,46 @@ buildGetValue(FnSymbol* fn, Symbol* value) {
 }
 
 
+static void
+buildDefaultZipMethods(FnSymbol* fn) {
+  IteratorInfo* ii = fn->iteratorInfo;
+  Symbol *iterator, *cursor, *t1;
+
+  //
+  // getZipCursor1 == getHeadCursor
+  //
+  iterator = ii->getZipCursor1->getFormal(1);
+  t1 = newTemp(ii->getZipCursor1, ii->getZipCursor1->retType);
+  ii->getZipCursor1->insertAtTail(
+    new CallExpr(PRIMITIVE_MOVE, t1,
+      new CallExpr(ii->getHeadCursor, iterator)));
+  ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+  ii->getZipCursor1->addPragma("inline");
+
+  //
+  // getZipCursor2 is NOOP
+  //
+  iterator = ii->getZipCursor2->getFormal(1);
+  cursor = ii->getZipCursor2->getFormal(2);
+  t1 = newTemp(ii->getZipCursor2, ii->getZipCursor2->retType);
+  ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, cursor));
+  ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+  ii->getZipCursor2->addPragma("inline");
+
+  //
+  // getZipCursor3 == getNextCursor
+  //
+  iterator = ii->getZipCursor3->getFormal(1);
+  cursor = ii->getZipCursor3->getFormal(2);
+  t1 = newTemp(ii->getZipCursor3, ii->getZipCursor3->retType);
+  ii->getZipCursor3->insertAtTail(
+    new CallExpr(PRIMITIVE_MOVE, t1,
+      new CallExpr(ii->getNextCursor, iterator, cursor)));
+  ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
+  ii->getZipCursor3->addPragma("inline");
+}
+
+
 //
 // Determines that an iterator has a single loop with a single yield
 // in it by checking the following conditions:
@@ -281,35 +345,51 @@ buildSingleLoopMethods(FnSymbol* fn,
 
   Symbol* headIterator = ii->getHeadCursor->getFormal(1);
   Symbol* nextIterator = ii->getNextCursor->getFormal(1);
+  Symbol* zip1Iterator = ii->getZipCursor1->getFormal(1);
+  Symbol* zip2Iterator = ii->getZipCursor2->getFormal(1);
+  Symbol* zip3Iterator = ii->getZipCursor3->getFormal(1);
 
-  ASTMap headCopyMap; // copy map of iterator to getHeadCursor; note:
-                      // there is no map for getNextCursor since the
-                      // asts are moved (not copied) to getNextCursor
+  ASTMap headCopyMap; // copy map of iterator to getHeadCursor
+  ASTMap zip1Map;     // copy map of iterator to getZipCursor1
+  ASTMap zip2Map;     // copy map of iterator to getZipCursor2
+  ASTMap zip3Map;     // copy map of iterator to getZipCursor3
+                      // note: there is no map for getNextCursor since
+                      // the asts are moved (not copied) to
+                      // getNextCursor
 
   //
-  // add local variable defs to getNextCursor and getHeadCursor
+  // add local variable defs to iterator methods that need them
   //
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (dynamic_cast<ArgSymbol*>(def->sym))
         continue;
-      ii->getHeadCursor->insertAtHead(def->copy(&headCopyMap));
       ii->getNextCursor->insertAtHead(def->remove());
+      ii->getHeadCursor->insertAtHead(def->copy(&headCopyMap));
+      ii->getZipCursor1->insertAtHead(def->copy(&zip1Map));
+      ii->getZipCursor2->insertAtHead(def->copy(&zip2Map));
+      ii->getZipCursor3->insertAtHead(def->copy(&zip3Map));
     }
   }
 
   //
   // add BLOCK I to getHeadCursor method
+  // copy BLOCK I to getZipCursor1 method
   //
   for_alist(Expr, expr, fn->body->body) {
     if (expr == loop)
       break;
     ii->getHeadCursor->insertAtTail(expr->copy(&headCopyMap));
+    ii->getZipCursor1->insertAtTail(expr->copy(&zip1Map));
     expr->remove();
+  }
+
+  if (loop->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
   }
 
   //
   // add BLOCK III to getNextCursor method
+  // add BLOCK III to getZipCursor3 method
   //
   bool postYield = false;
   for_alist(Expr, expr, loop->body) {
@@ -319,24 +399,37 @@ buildSingleLoopMethods(FnSymbol* fn,
       continue;
     }
     ii->getNextCursor->insertAtTail(expr->remove());
+    ii->getZipCursor3->insertAtTail(expr->copy(&zip3Map));
   }
 
   Symbol* cloopHeadCond = NULL;
   Symbol* cloopNextCond = NULL;
+  Symbol* cloopZip2Cond = NULL;
   if (loop->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
     cloopHeadCond = new VarSymbol("_cond", dtBool);
     cloopNextCond = new VarSymbol("_cond", dtBool);
+    cloopZip2Cond = new VarSymbol("_cond", dtBool);
     ii->getHeadCursor->insertAtTail(new DefExpr(cloopHeadCond));
     ii->getNextCursor->insertAtTail(new DefExpr(cloopNextCond));
+    ii->getZipCursor2->insertAtTail(new DefExpr(cloopZip2Cond));
     ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(2)->copy(&headCopyMap)));
     ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopHeadCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(3)->copy(&headCopyMap))));
+
+    Symbol* counter = dynamic_cast<SymExpr*>(loop->loopInfo->get(1))->var;
+    ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_MOVE, zip1Map.get(counter), loop->loopInfo->get(2)->copy(&zip1Map)));
+    ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, local2field.get(counter), zip1Map.get(counter)));
+
     ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(), new CallExpr(PRIMITIVE_ADD, loop->loopInfo->get(1)->copy(), loop->loopInfo->get(4)->copy())));
     ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopNextCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(), loop->loopInfo->get(3)->copy())));
+    ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&zip3Map), new CallExpr(PRIMITIVE_ADD, loop->loopInfo->get(1)->copy(&zip3Map), loop->loopInfo->get(4)->copy(&zip3Map))));
+    ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, local2field.get(counter), zip3Map.get(counter)));
+
+    ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopZip2Cond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&zip2Map), loop->loopInfo->get(3)->copy(&zip2Map))));
   }
 
   //
   // add BLOCK II to conditional then clause for both getHeadCursor and
-  // getNextCursor methods; set cursor to 1
+  // getNextCursor methods and to the getZipCursor2 method
   //
   BlockStmt* headThen = new BlockStmt();
   BlockStmt* nextThen = new BlockStmt();
@@ -345,6 +438,7 @@ buildSingleLoopMethods(FnSymbol* fn,
       break;
     headThen->insertAtTail(expr->copy(&headCopyMap));
     nextThen->insertAtTail(expr->remove());
+    ii->getZipCursor2->insertAtTail(expr->copy(&zip2Map));
   }
 
   //
@@ -365,10 +459,12 @@ buildSingleLoopMethods(FnSymbol* fn,
   // add conditional to getHeadCursor and getNextCursor methods
   //
   Expr* headCond = loop->loopInfo->get(1)->copy(&headCopyMap);
+  Expr* zip2Cond = loop->loopInfo->get(1)->copy(&zip2Map);
   Expr* nextCond = loop->loopInfo->get(1)->remove();
   if (loop->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
     headCond = new SymExpr(cloopHeadCond);
     nextCond = new SymExpr(cloopNextCond);
+    zip2Cond = new SymExpr(cloopZip2Cond);
   }
   ii->getHeadCursor->insertAtTail(new CondStmt(headCond, headThen, headElse));
   ii->getNextCursor->insertAtTail(new CondStmt(nextCond, nextThen, nextElse));
@@ -376,41 +472,72 @@ buildSingleLoopMethods(FnSymbol* fn,
   // load local variables from fields at return points and update
   // fields when local variables change
   forv_Vec(Symbol, local, locals) {
-    bool loadInGetHeadCursor = false;
     Symbol* field = local2field.get(local);
     if (dynamic_cast<ArgSymbol*>(local)) {
-      loadInGetHeadCursor = true;
       Symbol* newlocal = newTemp(ii->getNextCursor, local->type, local->name);
-      ASTMap map;
-      map.put(local, newlocal);
-      update_symbols(ii->getNextCursor, &map);
+      updateOneSymbol(ii->getNextCursor, local, newlocal);
 
-      Symbol* newlocal2 = newTemp(ii->getHeadCursor, local->type, local->name);
-      {
-        ASTMap map;
-        map.put(local, newlocal2);
-        update_symbols(ii->getHeadCursor, &map);
-      }
-      local = newlocal;
+      Symbol* newlocal2;
+
+      newlocal2 = newTemp(ii->getHeadCursor, local->type, local->name);
+      updateOneSymbol(ii->getHeadCursor, local, newlocal2);
       headCopyMap.put(newlocal, newlocal2);
+      ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
+
+      newlocal2 = newTemp(ii->getZipCursor1, local->type, local->name);
+      updateOneSymbol(ii->getZipCursor1, local, newlocal2);
+      zip1Map.put(newlocal, newlocal2);
+      ii->getZipCursor1->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip1Iterator, field)));
+
+      newlocal2 = newTemp(ii->getZipCursor2, local->type, local->name);
+      updateOneSymbol(ii->getZipCursor2, local, newlocal2);
+      zip2Map.put(newlocal, newlocal2);
+      ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip2Iterator, field)));
+
+      newlocal2 = newTemp(ii->getZipCursor3, local->type, local->name);
+      updateOneSymbol(ii->getZipCursor3, local, newlocal2);
+      zip3Map.put(newlocal, newlocal2);
+      ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip3Iterator, field)));
+
+      local = newlocal;
+    } else {
+      ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip2Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER, zip2Iterator, field)));
+      ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip3Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER, zip3Iterator, field)));
     }
-    if (loadInGetHeadCursor)
-      ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, headCopyMap.get(local), new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, nextIterator, field)));
     if (isRecordType(local->type)) {
       ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field, dynamic_cast<Symbol*>(headCopyMap.get(local))));
       ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, new SymExpr(local)));
+      ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field, dynamic_cast<Symbol*>(zip1Map.get(local))));
+      ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field, dynamic_cast<Symbol*>(zip2Map.get(local))));
+      ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field, dynamic_cast<Symbol*>(zip3Map.get(local))));
     } else {
       forv_Vec(SymExpr, se, local->defs) {
         if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
           parent->getStmtExpr()->insertAfter(
             new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field,
               new SymExpr(local)));
-        if ((se = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
+        SymExpr* se2;
+        if ((se2 = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
             parent->getStmtExpr()->insertAfter(
               new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field,
                 new SymExpr(dynamic_cast<Symbol*>(headCopyMap.get(local)))));
+        if ((se2 = dynamic_cast<SymExpr*>(zip1Map.get(se))))
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
+            parent->getStmtExpr()->insertAfter(
+              new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field,
+                new SymExpr(dynamic_cast<Symbol*>(zip1Map.get(local)))));
+        if ((se2 = dynamic_cast<SymExpr*>(zip2Map.get(se))))
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
+            parent->getStmtExpr()->insertAfter(
+              new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field,
+                new SymExpr(dynamic_cast<Symbol*>(zip2Map.get(local)))));
+        if ((se2 = dynamic_cast<SymExpr*>(zip3Map.get(se))))
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
+            parent->getStmtExpr()->insertAfter(
+              new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field,
+                new SymExpr(dynamic_cast<Symbol*>(zip3Map.get(local)))));
       }
     }
   }
@@ -418,7 +545,19 @@ buildSingleLoopMethods(FnSymbol* fn,
   ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, headCond->copy()));
   ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, nextCond->copy()));
 
-  Symbol* tmp = newTemp(ii->isValidCursor, dtBool);
+  Symbol* tmp;
+
+  tmp = newTemp(ii->getZipCursor1, ii->getZipCursor1->retType);
+  ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new_IntSymbol(0)));
+  ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
+
+  ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, zip2Cond));
+
+  tmp = newTemp(ii->getZipCursor3, ii->getZipCursor3->retType);
+  ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new_IntSymbol(0)));
+  ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
+
+  tmp = newTemp(ii->isValidCursor, dtBool);
   ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, ii->isValidCursor->getFormal(2)));
   ii->isValidCursor->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
 
@@ -428,6 +567,9 @@ buildSingleLoopMethods(FnSymbol* fn,
   ii->getNextCursor->addPragma("inline");
   ii->isValidCursor->addPragma("inline");
   ii->getValue->addPragma("inline");
+  ii->getZipCursor1->addPragma("inline");
+  ii->getZipCursor2->addPragma("inline");
+  ii->getZipCursor3->addPragma("inline");
   fn->addPragma("inline");
 }
 
@@ -565,6 +707,7 @@ void lowerIterator(FnSymbol* fn) {
     buildGetHeadCursor(fn);
     buildIsValidCursor(fn);
     buildGetValue(fn, value);
+    buildDefaultZipMethods(fn);
   }
 
   // rebuild iterator function

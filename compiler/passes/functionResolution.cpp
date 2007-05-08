@@ -102,6 +102,9 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
       resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
       resolvedFns.set_add(fn->iteratorInfo->getValue);
+      resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
+      resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
+      resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
     }
   }
 }
@@ -2342,6 +2345,9 @@ resolveFns(FnSymbol* fn) {
     resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
     resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
     resolvedFns.set_add(fn->iteratorInfo->getValue);
+    resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
+    resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
+    resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
   }
 
   if (fn->fnClass == FN_CONSTRUCTOR) {
