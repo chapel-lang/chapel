@@ -102405,3 +102405,54 @@ Log message:
 Added files:
 	chapel/test/puzzles/diten/: roman.chpl roman.execopts roman.good 
 
+---------------------------------------------------------------------------
+
+05/08/07 13:20:58 -- deitz
+
+Log message:
+	Added three new iterator methods for use in zipper contexts.
+	
+	The original iterator methods form a loop as follows, where c is the
+	cursor and ic is the iterator class:
+	
+	  c = ic.getHeadCursor();
+	  while ic.isValidCursor(c) {
+	    v = ic.getValue(c);
+	    // body of loop accesses v
+	    c = ic.getNextCursor(c);
+	  }
+	
+	The three new iterator methods are used when zippered with another
+	iterator as follows:
+	
+	  c = ic.getZipCursor1();
+	  while /* condition based on other iterator */ {
+	    c = ic.getZipCursor2(c);
+	    v = ic.getValue(c);
+	    // body of loop accesses v
+	    c = ic.getZipCursor3(c);
+	  }
+	
+	These three iterator methods are specialized in the case of a single
+	loop iterator assuming the single loop iterator optimization is
+	enabled (as by default).  In the event that they are not specialized,
+	these methods default to the original methods, that is, getZipCursor1
+	calls getHeadCursor, getZipCursor2 has no effect, and getZipCursor3
+	calls getNextCursor.
+	
+	Before this change:   1.683  13.9% overhead
+	After this change:    1.476   0.0% overhead
+	No promotion version: 1.477
+	
+	Added a --no-copy-propagation flag to turn off this particular
+	optimization.  The flag --unoptimized also turns it off.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: driver.h iterator.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
