@@ -1,2 +1,1 @@
-Halt reached: test_begin_error_lineno.chpl:10
-a thread is out of control
+test_begin_error_lineno.chpl:10: error: halt reached - a thread is out of control
