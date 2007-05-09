@@ -102500,3 +102500,15 @@ Added files:
 	                                        test_zip_loop_iterator.chpl 
 	                                        test_zip_loop_iterator.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 08:20:53 -- deitz
+
+Log message:
+	Added two more digits problem solutions.  These use a sorted numbers iterator where a sorted number is defined to have its digits sorted, as suggested by MB.  This cuts down on the problem space significantly.  The third solution has a .future and I think shows a bug in the hash table indefinite domain.
+
+Added files:
+	chapel/test/puzzles/deitz/: digits2.chpl digits2.good 
+	                            digits3.chpl digits3.future 
+	                            digits3.good 
+
