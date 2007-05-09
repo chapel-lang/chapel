@@ -102574,3 +102574,47 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_special_init_bug.future 
 
+---------------------------------------------------------------------------
+
+05/09/07 11:19:55 -- deitz
+
+Log message:
+	Added initial support for a new compiler flag --explain-call that
+	explains the function resolution process.  It currently prints out the
+	list of visible functions, followed by the list of candidate
+	functions, followed by the best function.
+	
+	It requires a string argument.  Use
+	
+	  --explain-call=foo
+	
+	to explain the resolution of function call foo at all call sites to
+	foo.  Use
+	
+	  --explain-call=foo:module
+	
+	to explain the resolution of function call foo at all call sites in
+	the module named module.  Use
+	
+	  --explain-call=foo:module:9
+	
+	to explain the resolution of function call foo at all call sites in
+	the module named module at line number 9.  As a convenience, just the
+	line number can be specified as in
+	
+	  --explain-call=foo:9
+	
+	to explain the resolution of function call foo at all call sites in
+	all modules at line number 9.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/functions/deitz/: test_explain1.chpl 
+	                              test_explain1.compopts 
+	                              test_explain1.good 
+
