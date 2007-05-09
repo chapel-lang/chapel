@@ -1319,6 +1319,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_C_FOR:
     case PRIMITIVE_LOOP_INLINE:
     case PRIMITIVE_YIELD:
+    case PRIMITIVE_IS_ENUM:
+    case PRIMITIVE_IS_TUPLE:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:
@@ -1376,8 +1378,6 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, "->_ref_count < 0)");
       break;
-    case PRIMITIVE_IS_ENUM: // FALLTHRU
-    break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");
       break;

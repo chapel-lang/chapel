@@ -1,0 +1,5 @@
+Destructured tuple function arguments prevent overloading
+
+Due to using "&" instead of "&&" in where clauses, overloaded functions can
+fail to resolve when the functions have destructured tuple arguments.
+

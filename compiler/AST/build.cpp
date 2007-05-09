@@ -689,3 +689,73 @@ build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
     argSymbol->type = dtAny;
   return new DefExpr(argSymbol, NULL, type);
 }
+
+
+/* Destructure tuple function arguments.  Add to the function's where clause
+   to match the shape of the tuple being destructured. */
+Expr*
+build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
+  static int uid = 1;
+  int count = 0;
+  bool outermost = false;
+  Expr* where = NULL;
+
+  if (!base) {
+    /* This is the top-level call to build_tuple_arg */
+    Expr* tupleType = new SymExpr(new UnresolvedSymbol("_tuple"));
+    ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
+                                         stringcat("_tuple_arg_tmp",
+                                                   intstring(uid++)),
+                                         dtUnknown , NULL, NULL);
+    argSymbol->isCompilerTemp = true;
+    argSymbol->canParam = true;
+    fn->insertFormalAtTail(new DefExpr(argSymbol, NULL, tupleType));
+    base = new SymExpr(argSymbol);
+    outermost = true;
+  }
+
+  for_alist(Expr, expr, tupledefs->body) {
+    count++;
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      def->init = new CallExpr(base->copy(), new_IntSymbol(count));
+      fn->insertAtHead(def->remove());
+    } else if (BlockStmt* subtuple = dynamic_cast<BlockStmt*>(expr)) {
+      /* newClause is:
+         (& IS_TUPLE(base(count)) (build_tuple_arg's where clause)) */
+      Expr* newClause = new CallExpr("&",
+                          new CallExpr(PRIMITIVE_IS_TUPLE,
+                            new CallExpr(base->copy(),
+                              new_IntSymbol(count))),
+                          build_tuple_arg(fn, subtuple,
+                            new CallExpr(base, new_IntSymbol(count))));
+      if (where) {
+        where = new CallExpr("&", where, newClause);
+      } else {
+        where = newClause;
+      }
+    }
+  }
+
+  CallExpr* sizeClause = new CallExpr("==", new_IntSymbol(count),
+                                      new CallExpr(".", base->copy(),
+                                                   new_StringSymbol("size")));
+  if (where) {
+    where = new CallExpr("&", sizeClause, where);
+  } else {
+    where = sizeClause;
+  }
+
+  if (outermost) {
+    /* Only the top-level call to this function should modify the actual
+       function where clause. */
+    if (fn->where) {
+      where = new CallExpr("&", fn->where->body->head->remove(),
+                           where);
+      fn->where->body->insertAtHead(where);
+    } else {
+      fn->where = new BlockStmt(where);
+    }
+  }
+  return where;
+}
+

@@ -2153,6 +2153,16 @@ postFold(Expr* expr) {
       }
       result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
+    } else if (call->isPrimitive(PRIMITIVE_IS_TUPLE)) {
+      bool is_tuple = false;
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+        Symbol* typeSym = sym->var->type->symbol;
+        if (typeSym->hasPragma("tuple")) {
+          is_tuple = true;
+        }
+      }
+      result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(result);
     } else if (call->isPrimitive(PRIMITIVE_UNARY_MINUS)) {
       FOLD_CALL1(P_prim_minus);
     } else if (call->isPrimitive(PRIMITIVE_UNARY_PLUS)) {
@@ -2207,6 +2217,7 @@ postFold(Expr* expr) {
       }
     }
   }
+
   if (CondStmt* cond = dynamic_cast<CondStmt*>(result->parentExpr)) {
     if (cond->condExpr == result) {
       if (Expr* expr = fold_cond_stmt(cond)) {

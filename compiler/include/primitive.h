@@ -111,7 +111,8 @@ enum PrimitiveTag {
   PRIMITIVE_GC_ISPOS, // check reference count is greater than zero
   PRIMITIVE_GC_ISNEG, // check reference count is less than zero
  
-  PRIMITIVE_IS_ENUM,   // True if type passed is an enum
+  PRIMITIVE_IS_ENUM,   // True if argument is an enum
+  PRIMITIVE_IS_TUPLE,  // True if argument is a tuple
 
   PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
 

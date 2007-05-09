@@ -669,20 +669,25 @@ fn_decl_stmt:
   fn_tag function opt_formal_ls fn_param fnretref opt_type where parsed_block_stmt
     {
       $2->fnClass = $1;
-      if (!$3)
-        $2->noParens = true;
-      else {
-        for_alist(DefExpr, def, $3) {
-          def->remove();
-          $2->insertFormalAtTail(def);
-        }
-      }
       $2->isParam = $4;
       $2->buildSetter = $5;
       $2->retExprType = $6;
       if ($7)
         $2->where = new BlockStmt($7);
       $2->body = new BlockStmt($8);
+
+      if (!$3)
+        $2->noParens = true;
+      else {
+        for_alist(Expr, expr, $3) {
+          if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+            def->remove();
+            $2->insertFormalAtTail(def);
+          } else if (BlockStmt* tupledefs = dynamic_cast<BlockStmt*>(expr)) {
+            build_tuple_arg($2, tupledefs, NULL);
+          }
+        }
+      }
       $$ = build_chpl_stmt(new DefExpr($2));
     }
 ;
@@ -708,8 +713,12 @@ formal_ls:
     { $$ = new AList(); }
 | formal
     { $$ = new AList($1); }
+| TLP tuple_var_decl_stmt_inner_ls TRP
+    { $$ = new AList($2); }
 | formal_ls TCOMMA formal
     { $1->insertAtTail($3); }
+| formal_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
+    { $1->insertAtTail($4); }
 ;
 
 
