@@ -102663,3 +102663,33 @@ Log message:
 Modified files:
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 15:24:12 -- deitz
+
+Log message:
+	Added runtime checks to ensure that zippered iteration fails if the
+	entities being zippered are of unequal size.  This check is disabled
+	with --no-bounds-checks though should probably get its own flag,
+	perhaps something like --no-zipper-checks.  Then an umbrella flag
+	--no-runtime-checks can set both of these.
+	
+	Made it so that the getZipCursor2 and getZipCursor4 methods return
+	cursors that can be checked for validity.
+	
+	Added three tests and updated one.  Removed one future.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.good 
+Added files:
+	chapel/test/functions/deitz/iterators/: test_zip_check1.chpl 
+	                                        test_zip_check1.good 
+	                                        test_zip_check2.chpl 
+	                                        test_zip_check2.good 
+	                                        test_zip_check3.chpl 
+	                                        test_zip_check3.good 
+Removed files:
+	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.future 
+
