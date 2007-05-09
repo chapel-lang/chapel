@@ -25,6 +25,8 @@ static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs);
 
 static void setFieldTypes(FnSymbol* fn);
 
+static int explainLine;
+static ModuleSymbol* explainModule;
 
 static Vec<FnSymbol*> resolvedFns;
 Vec<CallExpr*> callStack;
@@ -962,6 +964,18 @@ char* fn2string(FnSymbol* fn) {
 }
 
 
+static bool
+explainCallMatch(CallExpr* call) {
+  if (!call->isNamed(fExplainCall))
+    return false;
+  if (explainModule && explainModule != call->getModule())
+    return false;
+  if (explainLine != -1 && explainLine != call->lineno)
+    return false;
+  return true;
+}
+
+
 static FnSymbol*
 resolve_call(CallExpr* call,
              char *name,
@@ -978,11 +992,38 @@ resolve_call(CallExpr* call,
   else
     visibleFns.add(call->isResolved());
 
+  if (explainLine && explainCallMatch(call)) {
+    USR_PRINT(call, "call: %s",
+              call2string(call, name, *actual_types,
+                          *actual_params, *actual_names));
+    if (visibleFns.n == 0)
+      USR_PRINT(call, "no visible functions found");
+    bool first = true;
+    forv_Vec(FnSymbol, visibleFn, visibleFns) {
+      USR_PRINT(visibleFn, "%s %s",
+                first ? "visible functions are:" : "                      ",
+                fn2string(visibleFn));
+      first = false;
+    }
+  }
+
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
                  actual_types, actual_params, actual_names);
+  }
+
+  if (explainLine && explainCallMatch(call)) {
+    if (candidateFns.n == 0)
+      USR_PRINT(call, "no candidates found");
+    bool first = true;
+    forv_Vec(FnSymbol, candidateFn, candidateFns) {
+      USR_PRINT(candidateFn, "%s %s",
+                first ? "candidates are:" : "               ",
+                fn2string(candidateFn));
+      first = false;
+    }
   }
 
   FnSymbol* best = NULL;
@@ -997,6 +1038,10 @@ resolve_call(CallExpr* call,
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  actual_types, actual_params,
                                  &actual_formals);
+  }
+
+  if (best && explainLine && explainCallMatch(call)) {
+    USR_PRINT(best, "best candidate is: %s", fn2string(best));
   }
 
   if (!best && candidateFns.n > 0) {
@@ -2514,6 +2559,38 @@ build_ddf() {
 
 void
 resolve() {
+  explainLine = 0;
+  if (strcmp(fExplainCall, "")) {
+    char *token, *str1 = NULL, *str2 = NULL;
+    token = strstr(fExplainCall, ":");
+    if (token) {
+      *token = '\0';
+      str1 = token+1;
+      token = strstr(str1, ":");
+      if (token) {
+        *token = '\0';
+        str2 = token + 1;
+      }
+    }
+    if (str1) {
+      if (str2 || !atoi(str1)) {
+        forv_Vec(ModuleSymbol, mod, allModules) {
+          if (!strcmp(mod->name, str1)) {
+            explainModule = mod;
+            break;
+          }
+        }
+        if (!explainModule)
+          USR_FATAL("invalid module name '%s' passed to --explain-call flag", str1);
+      } else
+        explainLine = atoi(str1);
+      if (str2)
+        explainLine = atoi(str2);
+    }
+    if (explainLine == 0)
+      explainLine = -1;
+  }
+
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
 

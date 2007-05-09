@@ -47,6 +47,7 @@ bool fRefCount = false;
 bool no_inline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
+char fExplainCall[256] = "";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
@@ -98,6 +99,7 @@ static ArgumentDescription arg_desc[] = {
  {"chplhome", ' ', "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},
  {"set", 's', "Set config param value", "S", configParamString, NULL, readConfigParam},
+ {"explain-call", ' ', "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
 
  {"", ' ', "Compiler Information", NULL, NULL, NULL, NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, printVersionAndExit},
