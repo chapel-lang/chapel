@@ -102636,3 +102636,20 @@ Removed files:
 	                                   test_begin_error_lineno.compopts 
 	                                   test_begin_error_lineno.future 
 
+---------------------------------------------------------------------------
+
+05/09/07 12:06:10 -- diten
+
+Log message:
+	Allow multiple modules to be used in a single use statement.  Add a test that
+	both uses multiple modules in one statement, and uses only one module in
+	another use statement.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/modules/diten/: modules.chpl modules.notest 
+	                            multiple_module_use.chpl 
+	                            multiple_module_use.compopts 
+	                            multiple_module_use.good 
+
