@@ -102653,3 +102653,13 @@ Added files:
 	                            multiple_module_use.compopts 
 	                            multiple_module_use.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 12:13:11 -- deitz
+
+Log message:
+	Updated user help message.
+
+Modified files:
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
