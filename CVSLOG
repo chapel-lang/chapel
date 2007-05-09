@@ -102557,3 +102557,20 @@ Added files:
 	chapel/test/types/tuple/diten/: destructure_arg_tuples.chpl 
 	                                destructure_arg_tuples.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 11:07:22 -- deitz
+
+Log message:
+	Fixed a bug in which conditional expressions, or other expressions
+	implemented via nested functions, resulted in a seg fault in cleanup
+	when used in conjunction with the special syntactic support for array
+	declarations.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_special_init_bug.future 
+
