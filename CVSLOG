@@ -102618,3 +102618,21 @@ Added files:
 	                              test_explain1.compopts 
 	                              test_explain1.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 11:38:11 -- deitz
+
+Log message:
+	Removed two .futures that have been working ever since the removal of
+	the --cg-chpl-lineno flag but which were failing because they still
+	tried to use this flag.
+
+Modified files:
+	chapel/test/parallel/begin/deitz/: test_begin_error_lineno.good 
+Removed files:
+	chapel/test/compflags/bradc/: linenoConditional.compopts 
+	                              linenoConditional.future 
+	chapel/test/parallel/begin/deitz/: 
+	                                   test_begin_error_lineno.compopts 
+	                                   test_begin_error_lineno.future 
+
