@@ -42,6 +42,7 @@ Miscellaneous Flags:
       --chplhome          .         path     Over-ride $CHPL_HOME
       --[no-]devel        false     ->true   Compile as developer
   -s, --set                         string   Set config param value
+      --explain-call                string   Explain resolution of call
 
 Compiler Information:
 ---------------------
