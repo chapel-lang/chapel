@@ -102546,3 +102546,14 @@ Added files:
 Removed files:
 	chapel/test/trivial/jplevyak/: destruct-arg-1.future 
 
+---------------------------------------------------------------------------
+
+05/09/07 09:08:51 -- diten
+
+Log message:
+	Add a more involved test of tuple destructuring for function arguments.
+
+Added files:
+	chapel/test/types/tuple/diten/: destructure_arg_tuples.chpl 
+	                                destructure_arg_tuples.good 
+
