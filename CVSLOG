@@ -102512,3 +102512,37 @@ Added files:
 	                            digits3.chpl digits3.future 
 	                            digits3.good 
 
+---------------------------------------------------------------------------
+
+05/09/07 09:04:31 -- diten
+
+Log message:
+	Add tuple destructuring for function arguments.  The definition:
+	def foo(a, (b,(c,d))) where cond { ...
+	
+	becomes:
+	def foo(a, _tuple_arg: _tuple) where
+	      cond & _tuple_arg.size == 2 &
+	      PRIMITIVE_IS_TUPLE(_tuple_arg(2)) & _tuple_arg(2).size == 2 {
+	  var b = _tuple_arg(1);
+	  var c = _tuple_arg(2)(1);
+	  var d = _tuple_arg(2)(2); ...
+	
+	Once folding of && is implemented, the where clause should be changed to use it
+	instead of bitwise &.
+	
+	Remove a .future.  Add a more involved test of this.  Add a future showing why
+	the where clause needs to use short-circuiting && instead of bitwise.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	chapel/compiler/include/: build.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/types/tuple/diten/: overload_destructure_args.chpl 
+	                                overload_destructure_args.future 
+	                                overload_destructure_args.good 
+Removed files:
+	chapel/test/trivial/jplevyak/: destruct-arg-1.future 
+
