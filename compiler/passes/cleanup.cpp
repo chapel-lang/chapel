@@ -434,6 +434,9 @@ void cleanup(void) {
     }
   }
 
+  asts.clear();
+  collect_asts(&asts);
+
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
