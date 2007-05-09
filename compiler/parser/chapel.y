@@ -202,7 +202,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
-%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt
+%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
@@ -652,10 +652,19 @@ decl_stmt:
 
 
 use_stmt:
-  TUSE lvalue TSEMI
-    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_USE, $2)); }
+  TUSE use_stmt_ls TSEMI
+    { $$ = $2; }
 ;
 
+use_stmt_ls:
+  lvalue
+    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_USE, $1)); }
+| use_stmt_ls TCOMMA lvalue
+    {
+      $1->insertAtTail(new CallExpr(PRIMITIVE_USE, $3));
+      $$ = $1;
+    }
+;
 
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
