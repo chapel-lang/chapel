@@ -102706,3 +102706,23 @@ Log message:
 Removed files:
 	chapel/test/users/shetag/: condarr.future 
 
+---------------------------------------------------------------------------
+
+05/10/07 15:55:10 -- diten
+
+Log message:
+	More garbage collection work.  Do a breadth-first pointer traversal starting
+	with the root-set.  To do this, generate one array per class type containing
+	the offsets of the pointer fields in the C struct representing the class, as
+	well as a cid2offsets function which returns pointers to these arrays.
+	
+	Also, add pointers that are at module scope to the root-set so they can be
+	collected.  I've not yet added pointers that are in module scope records to
+	the root-set, nor does the pointer traversal find pointers in records in
+	classes.  It shouldn't be a big change to scan records in these situations
+	though.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp copyCollect.cpp 
+	chapel/runtime/src/: chplcopygc.c 
+
