@@ -6,6 +6,7 @@
 #include "chplmem.h"
 
 extern size_t cid2size(_int64 cid);
+extern size_t* cid2offsets(_int64 cid);
 
 _memory_space *_from_space, *_to_space;
 
@@ -44,6 +45,36 @@ void _chpl_gc_copy_collect(void) {
       }
     }
   }
+  /* Now that any root objects are moved, move sub-objects. */
+  char* scanptr = _to_space->head;
+  while (scanptr != _to_space->current) {
+    int i = 1;
+    size_t *offsets = cid2offsets(*(_int64*)scanptr);
+    while (offsets[i] != 0) {
+      void* current = (void*)(scanptr + offsets[i]);
+      if (STACK_PTR(current)) {
+        if (HEAP_AS_PTR(current) >= (void*)_to_space->head &&
+            HEAP_AS_PTR(current) < (void*)_to_space->tail) {
+          STACK_PTR(current) = HEAP_AS_PTR(current);
+        } else {
+          if (STACK_PTR(current) >= (void*)_from_space->head &&
+              STACK_PTR(current) < (void*)_from_space->tail) {
+            size_t size = cid2size(*(_int64*)STACK_PTR(current));
+            memmove(_to_space->current, STACK_PTR(current), size);
+            HEAP_AS_PTR(current) = (void*)_to_space->current;
+            STACK_PTR(current) = (void*)_to_space->current;
+            _to_space->current += size;
+          } else {
+            /* BAD - Something pointing at a non-forwarded object that isn't
+               isn't in the from-space or NULL */
+          }
+        }
+      }
+      i++;
+    }
+    scanptr += offsets[0];
+  }
+
   _from_space->current = _from_space->head;
   tmp = _from_space;
   _from_space = _to_space;

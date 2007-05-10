@@ -228,6 +228,60 @@ static void codegen_header(void) {
 
 
 static void
+codegen_cid2offsets(FILE* outfile) {
+  // Generate one array for each Class.  Initialize it to contain the offsets
+  // of each class field that is a pointer to a class.  The first location
+  // in the array is the size of the class. Then, generate a function
+  // cid2offsets which takes a cid and returns a pointer to the array
+  // corresponding to the class with that cid.
+  forv_Vec(TypeSymbol, typeSym, gTypes) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+      if (ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "size_t _");
+        ct->symbol->codegen(outfile);
+        fprintf(outfile, "_offsets[] = { sizeof(_");
+        ct->symbol->codegen(outfile);
+        fprintf(outfile, "), ");
+        for_fields(field, ct) {
+          if (ClassType* innerct = dynamic_cast<ClassType*>(field->type)) {
+            if (innerct->classTag == CLASS_CLASS) {
+              fprintf(outfile, "(size_t)&((_");
+              ct->symbol->codegen(outfile);
+              fprintf(outfile, "*)NULL)->");
+              field->codegen(outfile);
+              fprintf(outfile, ", ");
+            }
+          }
+        }
+        fprintf(outfile, "0 };\n");
+      }
+    }
+  }
+
+  fprintf(outfile, "size_t* cid2offsets(_int64 cid) {\n");
+  fprintf(outfile, "size_t* offsets;\n");
+  fprintf(outfile, "switch(cid) {\n");
+  forv_Vec(TypeSymbol, typeSym, gTypes) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+      if (ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "case %d:\n", ct->id);
+        fprintf(outfile, "offsets = _");
+        ct->symbol->codegen(outfile);
+        fprintf(outfile, "_offsets;\n");
+        fprintf(outfile, "break;\n");
+      }
+    }
+  }
+  fprintf(outfile, "default:\n");
+  fprintf(outfile, "_printError(\"Bad cid in cid2offsets\", 0, 0);\n");
+  fprintf(outfile, "break;\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "return offsets;\n");
+  fprintf(outfile, "}\n");
+}
+
+
+static void
 codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "size_t cid2size(_int64 cid) {\n");
   fprintf(outfile, "size_t size;\n");
@@ -307,6 +361,7 @@ void codegen(void) {
     beautify(&modulefile);
   }
 
+  codegen_cid2offsets(mainfile.fptr);
   codegen_cid2size(mainfile.fptr);
   closeCFile(&mainfile);
   beautify(&mainfile);

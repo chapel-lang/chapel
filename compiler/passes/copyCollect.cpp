@@ -85,11 +85,30 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
 }
 
 
+void buildRootSetForModule(ModuleSymbol* module) {
+  for_alist(Expr, expr, module->block->body) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      if (dynamic_cast<VarSymbol*>(def->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+          if (ct->classTag == CLASS_CLASS) {
+            addToRootSet(chpl_main, new SymExpr(def->sym));
+          }
+        }
+      }
+    }
+  }
+}
+
 void copyCollection(void) {
   if (!copyCollect)
     return;
+
   forv_Vec(FnSymbol, fn, gFns) {
     buildRootSetForFunction(fn, NULL, NULL);
+  }
+
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    buildRootSetForModule(mod);
   }
 }
 
