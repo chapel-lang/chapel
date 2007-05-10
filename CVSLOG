@@ -102693,3 +102693,16 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/FFT/bradc/: fft-zip.future 
 
+---------------------------------------------------------------------------
+
+05/10/07 09:12:29 -- bradc
+
+Log message:
+	Removed working future fixed by Steve's bug fix
+	yesterday (this test may be redundant with Steve's...
+	I filed it under the users directory so that we
+	could keep track of what codes/bugs users submitted).
+
+Removed files:
+	chapel/test/users/shetag/: condarr.future 
+
