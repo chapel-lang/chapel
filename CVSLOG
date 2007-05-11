@@ -102782,3 +102782,19 @@ Log message:
 Added files:
 	chapel/test/Bin/: nightly.novgr.examples.cron 
 
+---------------------------------------------------------------------------
+
+05/11/07 11:54:46 -- bradc
+
+Log message:
+	Changed HPCC example files to use comma-separated
+	modules rather than a separate use statement per
+	line.  Put all standard modules in one use statement
+	and all user modules in a second.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: fft-mta.chpl fft.chpl 
+	                                      probSize.chpl ra.chpl 
+	                                      stream-nopromote.chpl 
+	                                      stream.chpl README 
+
