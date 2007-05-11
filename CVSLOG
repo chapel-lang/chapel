@@ -102770,3 +102770,15 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+05/11/07 11:27:20 -- bradc
+
+Log message:
+	New nightly cron script that only runs the examples
+	directory (currently being used on my cygwin machine
+	when it's turned on and connected).
+
+Added files:
+	chapel/test/Bin/: nightly.novgr.examples.cron 
+
