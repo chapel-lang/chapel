@@ -102740,3 +102740,22 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+05/11/07 09:25:04 -- bradc
+
+Log message:
+	Added code that Aniruddha submitted, currently filed as a
+	future, though if there's agreement, I believe that the
+	current implementation is correct and the future could be
+	removed and .good file updated (for now I put the .good
+	file to be as Aniruddha expected).
+	
+	Also added a version that refers to an "i" in an enclosing
+	scope to ensure that it works as expected.
+
+Added files:
+	chapel/test/users/shetag/: tensorForall.chpl tensorForall.future 
+	                           tensorForall.good tensorForall2.chpl 
+	                           tensorForall2.good 
+
