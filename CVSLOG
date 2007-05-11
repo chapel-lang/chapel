@@ -102820,3 +102820,98 @@ Added files:
 	                          tce-slide8.chpl tce-slide8.execopts 
 	                          tce-slide8.good 
 
+---------------------------------------------------------------------------
+
+05/11/07 12:11:02 -- bradc
+
+Log message:
+	Added initial support for doing performance testing
+	for a Chapel test foo.chpl.  When the testing system
+	is run in its normal mode, it runs tests for
+	correctness as always.
+	
+	When run with the -performance flag, the test system
+	only runs tests that have a .perfkeys file.  This
+	file should contain a string per line indicating
+	keys/labels from the test's output file that should
+	be used to identify values that we want to track for
+	performance purposes.  In particular, if a test
+	generates output like:
+	
+	        Execution Time: 1.2345 seconds
+	
+	Having a line in the tests .perfkeys file:
+	
+	        Execution Time:
+	
+	would cause the value "1.2345" to be read from the
+	test's output file and logged in a data file.
+	
+	The data file for a test is named foo.dat and is
+	located in ./perfdat/<machine-name>/ by default.
+	This default can (and likely should) be changed
+	on a user-by-user basis by setting the
+	CHPL_TEST_PERF_DIR environment variable to indicate
+	a directory where you would like performance results
+	to be written.
+	
+	The format of the data file is to list the keys from
+	the test's .perfkeys file on line 1 the first time
+	a .dat file is created, and to write the values
+	corresponding to the keys on lines following that for
+	each test.  All keys and values are tab-separated for
+	easy importing into Excel or gnuplot.  The first column
+	is set to be the date that the test was run.  For example,
+	after running the above test a few times, we might end up
+	with a data file like:
+	
+	        Date    Execution Time
+	        05/10/07        1.2345
+	        05/11/07        1.2432
+	        05/12/07        1.2333
+	
+	In addition to the .perfkeys file, a performance test
+	can (and often will need to) specify .perfcompopts and
+	.perfexecopts files mirroring the .compopts and .execopts
+	files used for normal testing.  For most tests, one will
+	want to turn on compiler options like -O or
+	--no-bounds-checks while execution options that cause
+	timing and such information to be printed out.
+	
+	Performance tests are "successful" from the point of view
+	of the testing system if all of the .perfkeys entries
+	could be found.  If any cannot be found for a test, the
+	test is unsuccessful.  Note that performance tests are
+	not compared against their .good files due to the likely
+	presence of nondeterministic output.  For this reason, it
+	is often a good idea to have some sort of self-verification
+	"Success/failure" message be one of the key/data values
+	read by the .perfkeys file.
+	
+	As a first example of using the performance testing
+	capability, added .perfkeys and .perfcompopts files for the
+	hpcc06/stream.chpl example, in which I grab out all sorts
+	of information -- problem size, memory utilization, GUPS,
+	timings, success/failure, etc.  To see how this works try:
+	
+	start_test -startdir release/examples/hpcc06 -performance
+	
+	Future work:
+	* make cron job execute this on an otherwise idle machine
+	  to track performance
+	* make cron job graph results over time to look for
+	  anomalies
+	* support some sort of threshholding mechanism to
+	  automatically detect anomalies and alert the development
+	  team to them during a nightly run (given a threshhold
+	  for a given key by the user, for example).
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+	chapel/test/release/examples/hpcc06/: .cvsignore 
+Added files:
+	chapel/test/Bin/: computePerfStats.pl 
+	chapel/test/release/examples/hpcc06/: stream.perfcompopts 
+	                                      stream.perfkeys 
+
