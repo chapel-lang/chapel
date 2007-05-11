@@ -79,6 +79,7 @@ mysystem("cd $compdir/ifa && $tokctr $allcppfiles > ../ifa.ntoks");
 mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks");
 mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks");
 mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks");
+mysystem("cd $compdir/optimizations && $tokctr $allcppfiles > ../opt.ntoks");
 mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks");
 mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks");
 mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks");
@@ -87,7 +88,7 @@ mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks");
 mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
 mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
-mysystem("cd $chapeldir && make third-party comprt", "making compiler", 1, 1);
+mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
 mysystem("$compdir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks");
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
@@ -97,6 +98,7 @@ $ifatoks = `cat $compdir/ifa.ntoks`; chomp($ifatoks);
 $backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
 $includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
 $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
+$opttoks = `cat $compdir/opt.ntoks`; chomp($opttoks);
 $parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
 $passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
 $symtabtoks = `cat $compdir/symtab.ntoks`; chomp($symtabtoks);
@@ -127,6 +129,9 @@ if ($includetoks == "") {
 }
 if ($maintoks == "") {
     $maintoks = 0;
+}
+if ($opttoks == "") {
+    $opttoks = 0;
 }
 if ($parsertoks == "") {
     $parsertoks = 0;
@@ -188,40 +193,11 @@ $tot += $runtimetoks;
 emit($tot);
 $tot += $chpcodetoks;
 emit($tot);
+$tot += $opttoks;
+emit($tot);
 
 `echo -n "\n" >> $statfile`;
 
-
-#
-# sort output
-#
-
-
-if (0) {
-#
-# write stats and build new graph
-#
-if ($knownumtests == 1) {
-    $testcol = "$newnumtests";
-} else {
-    $testcol = "-";
-}
-if ($stdstatus == 0) {
-    $stdcol = "$newstdsucc";
-} else {
-    $stdcol = "-";
-}
-if ($vgrstatus == 0) {
-    $vgrcol = "$newvgrsucc";
-} else {
-    $vgrcol = "-";
-}
-`echo "$statdate\t-\t$testcol\t$stdcol\t$vgrcol" >> $statfile`;
-if ($debug == 0) {
-    `ci -l -m"automated nightly checkin" $statfile`;
-}
-`cd $statdir && ./makeplot`;
-}
 
 #
 # clean up
