@@ -102759,3 +102759,14 @@ Added files:
 	                           tensorForall.good tensorForall2.chpl 
 	                           tensorForall2.good 
 
+---------------------------------------------------------------------------
+
+05/11/07 09:33:23 -- bradc
+
+Log message:
+	Added token counting mechanism for the optimizations
+	directory.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
