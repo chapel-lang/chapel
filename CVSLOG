@@ -102798,3 +102798,25 @@ Modified files:
 	                                      stream-nopromote.chpl 
 	                                      stream.chpl README 
 
+---------------------------------------------------------------------------
+
+05/11/07 11:59:23 -- bradc
+
+Log message:
+	Added TCE (Tensor Contraction Engine) example that
+	I worked up some time ago on my laptop into the
+	test system.  I'd lost track of the fact that I'd
+	never committed it.
+	
+	This test itself doesn't compute anything interesting,
+	but does convert a TCE example from the attached
+	powerpoint slide into Chapel, showing that Chapel
+	would be a very attractive language for expressing
+	TCE computations, without being as domain-specific
+	as the TCE language.
+
+Added files:
+	chapel/test/studies/tce/: .cvsignore cray-tce.ppt 
+	                          tce-slide8.chpl tce-slide8.execopts 
+	                          tce-slide8.good 
+
