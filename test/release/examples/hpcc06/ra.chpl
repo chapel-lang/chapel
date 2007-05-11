@@ -1,7 +1,6 @@
 use Time;
 
-use HPCCProblemSize;
-use RARandomStream;
+use HPCCProblemSize, RARandomStream;
 
 
 param numTables = 1;

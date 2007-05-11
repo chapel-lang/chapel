@@ -99,3 +99,6 @@ Other changes to date are:
     argument rather than two integers.  This makes good use of
     Chapel's range concept and requires the need to break the block
     parameter apart at the callsite.
+
+  * changed the module "use" statements to use comma-separated lists
+    of modules rather than a separate use statement per module.

@@ -1,6 +1,4 @@
-use BitOps;
-use Random;
-use Time;
+use BitOps, Random, Time;
 
 use HPCCProblemSize;
 

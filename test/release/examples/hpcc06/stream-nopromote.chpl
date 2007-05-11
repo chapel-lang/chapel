@@ -1,6 +1,4 @@
-use Time;
-use Types;
-use Random;
+use Time, Types, Random;
 
 use HPCCProblemSize;
 
