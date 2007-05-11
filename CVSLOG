@@ -102726,3 +102726,17 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp copyCollect.cpp 
 	chapel/runtime/src/: chplcopygc.c 
 
+---------------------------------------------------------------------------
+
+05/10/07 17:50:53 -- marybeth
+
+Log message:
+	Adding an outline for new subsections in the language overview
+	section.
+	
+	When these new subsections are written, the discussions of the example
+	codes can then be shortened quite a bit.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
