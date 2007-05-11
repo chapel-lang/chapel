@@ -18,16 +18,17 @@ for expressing parallelism.  Chapel supports a
 abstraction for the expression of both data and control flow as
 compared to parallel programming models currently used in production.
 
+In Chapel, a \emph{locale} is an abstraction for the processing
+unit of the target architecture.  Locales are to be defined such that
+a locale's threads will all have similar access times to any
+specific memory address.  For example, a locale in a commodity cluster 
+could be defined to be a single core of a processor, a multicore
+processor or an SMP node of multiple processors.
+
 \emph{Global-view data structures} are arrays and other data
 aggregates whose sizes and indices are expressed globally in spite of
 the fact that their implementations may distribute them across the
-memories of multiple nodes or \emph{locales}.\footnote{A \emph{locale}
-  in Chapel is a unit of the target architecture that supports
-  computation and data storage.  Locales are defined for an
-  architecture such that a locale's threads will all have similar
-  access times to any specific memory address.  For commodity
-  clusters, each of their (single-core) processors, multicore
-  processors, or SMP nodes would be considered a locale.}  This
+memories of multiple locales.  This
 contrasts with most parallel languages used in practice, which tend to
 require users to partition distributed data aggregates into
 per-processor chunks, either manually or using language abstractions.
@@ -130,16 +131,18 @@ mainstream programming and scripting languages.
 
 \subsection{Getting Started}
 
+\paragraph{Hello World}
 A Chapel version of the standard ``hello world'' computation is given
 here:
 \begin{chapel}
-writeln("Hello, world!");
+writeln("Hello, world!"); \\writes Hello, world! to stdout
 \end{chapel}
 \noindent This program contains a single line of code that makes a
 call to the standard \chpl{writeln} subroutine, passing it a string
 literal argument, \chpl{"Hello, world\!"}.  This call causes the string
 to be printed to the console when the program is executed.
 
+\paragraph{Chapel Programs}
 In general, Chapel programs define code using one or more named
 \emph{modules}, each of which supports top-level initialization code
 that is invoked the first time the module is used.  Programs also
@@ -147,10 +150,11 @@ define a single entry point via a subroutine named \chpl{main}.  To
 facilitate exploratory programming, Chapel allows programmers to
 define modules using files rather than an explicit module declaration,
 and to omit the program entry point when the program only has a single
-user module.  This example takes advantage of both these features.
+user module.  
 
 Chapel code is stored in files with the extension \chpl{.chpl}.
-Assuming this program is stored in a file called \chpl{hello.chpl}, it
+Assuming the ``hello world'' program is stored in a file called 
+\chpl{hello.chpl}, it
 would define a single user module, \chpl{hello}, whose name is taken
 from the filename.  Since the file defines a module, the top-level
 code in the file defines the module's initialization code.  And since
@@ -160,18 +164,72 @@ define an entry point.  Thus, when the program is executed, the single
 code, invoking the call to \chpl{writeln()}, and printing out the
 message.
 
-To compile and run this program, execute the following commands at the
-system prompt:
-{\small
-\begin{verbatim} 
+\paragraph{Compiling and Running}
+To compile and run the ``hello world'' program, execute the 
+following commands at the system prompt:
+\begin{commandline} 
 > chpl -o hello hello.chpl
 > ./hello
-\end{verbatim}}
+\end{commandline}
 The following output will be printed to the console:
-{\small
-\begin{verbatim}
+\begin{commandline}
 > Hello, world!
-\end{verbatim}}
+\end{commandline}
+
+\subsection{Types}
+\paragraph{Primitive Types}
+\paragraph{Enumerated Types}
+\paragraph{Tuple Types}
+\paragraph{Classes}
+\paragraph{Records}
+\paragraph{Ranges}
+\paragraph{Domains and Arrays}
+\paragraph{The Locale Type}
+\paragraph{The File Type}
+\paragraph{The Type Alias}
+
+\subsection{Variables}
+\paragraph{Variable Kinds}
+\paragraph{Variable Declarations}
+\paragraph{Configuration Variables}
+\paragraph{Synchronization Variables}
+
+\subsection{Operators}
+\paragraph{Operator Precedence}
+\paragraph{Assignment Operators}
+\paragraph{The Swap Operator}
+\paragraph{The Array Alias Operator}
+\paragraph{Scans and Reductions}
+
+\subsection{Statements and Expressions}
+\paragraph{Block Statement}
+\paragraph{Begin and Co-begin Statements}
+\paragraph{For Loop Statements}
+\paragraph{Conditional Statement}
+\paragraph{Select Statement}
+\paragraph{While Loops}
+\paragraph{Type Select Statement}
+\paragraph{Query Expression}
+\paragraph{Let Expression}
+\paragraph{Conditional Expression}
+
+\subsection{Functions}
+\paragraph{Function Definitions}
+\paragraph{Function Intents}
+\paragraph{Generic Functions}
+\paragraph{Chapel Standard Functions}
+
+\subsection{Iterators}
+
+\subsection{Input and Output}
+\paragraph{File I/O}
+\paragraph{Chapel Standard I/O Functions}
+\paragraph{Default I/O Methods for Chapel Types}
+
+\subsection{Additional Parallel Support}
+\paragraph{Data Distributions}
+\paragraph{Data Locality}
+\paragraph{Parallel vs. Serial Computations}
 
 \subsection{Example Chapel Programs}
 
