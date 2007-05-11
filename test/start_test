@@ -48,6 +48,7 @@
 #   -notee
 #   -futures
 #   -futuresonly
+#   -performance
 #   -interpret (DEPRECATED)
 #
 # These options can be used with a double-dash as well 
@@ -102,6 +103,34 @@
 # both future and non-future tests.  By default, future tests are
 # skipped over.  The -futuresonly option specifies that the testing
 # system should test only the future tests and not the others.
+#
+# The -performance flag specifies that the testing system should
+# search for and execute performance tests within the testing
+# system.  A test foo.chpl is considered a performance test if a
+# file "foo.perfkeys" exists.  This file contains a string per
+# line that is used to read performance-related cues from the
+# test's compiler+execution output file.  For example, if a test
+# generates a line "Time: x.yz seconds", putting the key "Time:"
+# into its .perfkeys file would cause the testing system to grab
+# the value "x.yz" out of the output file (all non-whitespace 
+# characters after the key string until the next whitespace 
+# character).  These data values will then be written to a file
+# named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
+# $CHPL_TEST_PERF_DIR is "." by default) in a  TAB-separated manner 
+# for graphing or display using gnuplot or Excel.
+#
+# When running with the -performance flag, compiler and executable
+# options are specified in files with .perfcompopts and 
+# .perfexecopts since they will most likely require different
+# compiler options (to specify optimization, turn off bounds
+# checking) and execution options (to request timings and other
+# unpredictable values to be printed out, whereas they're likely
+# to be squelched in the correctness run).
+#
+# Success/failure summaries after a performance run indicate
+# whether all the performance keys for a test were matched or not.
+# In particular, a failure indicates that a test's performance
+# keys couldn't all be found.
 #
 # The -interpret option requests that the compiler be executed in
 # interpreter mode.  This will cause the test system to invoke the
@@ -316,6 +345,7 @@ set logfile = "$testdir/Logs/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
+set performance = 0
 set testfutures = 0
 set testfuturesonly = 0
 set testnotests = 0
@@ -375,6 +405,11 @@ while ( $#argv > 0 )
         case -interpret:
                 shift
                 set interpret = 1
+                breaksw
+        case --performance:
+        case -performance:
+                shift
+                set performance = 1
                 breaksw
         case -norecurse:
         case --norecurse:
@@ -463,6 +498,13 @@ if ($interpret) then
 else
     echo \[interpreter: OFF\] |& $tee -a $logtmp
     setenv CHPL_TEST_INTERP off
+endif
+
+if ($performance) then
+    echo \[performance tests: ON\] |& $tee -a $logtmp
+    setenv CHPL_TEST_PERF on
+else
+    echo \[performance tests: OFF\] |& $tee -a $logtmp
 endif
 
 

@@ -41,6 +41,9 @@ set diffargs = ""
 set compiler = "$argv[1]"
 set testdir = "$argv[2]"
 
+set platform = `$testdir/../util/platform`
+set machine = `uname -n`
+
 if ( ! -f $compiler || ! -x $compiler ) then
 	echo \[Cannot execute compiler \"$compiler\"\]
 	exit
@@ -148,8 +151,20 @@ else
     set futureSuffix = "future"
 endif
 
-set platform = `$testdir/../util/platform`
-set machine = `uname -n`
+if ($?CHPL_TEST_PERF == 0) then
+    set compoptsuffix = "compopts"
+    set execoptsuffix = "execopts"
+    set perftest = 0
+else
+    set compoptsuffix = "perfcompopts"
+    set execoptsuffix = "perfexecopts"
+    set perftest = 1
+    if ($?CHPL_TEST_PERF_DIR == 0) then
+        set perfdir = ./perfdat/$machine
+    else
+        set perfdir = $CHPL_TEST_PERF_DIR
+    endif
+endif
 
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
@@ -167,6 +182,14 @@ foreach chplsrc ($testsrc)
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
 
+    if (-r ./$execfile.perfkeys) then
+    else
+        if ($perftest == 1) then
+#            echo \[Skipping noperf test: $localdir/$execfile\]
+            continue;
+        endif
+    endif
+
     if (-r ./$execfile.notest && $testnotests == 0) then
         echo \[Skipping notest test: $localdir/$execfile\]
         continue;
@@ -179,14 +202,14 @@ foreach chplsrc ($testsrc)
         set catfiles = "$globalCatfiles"
     endif
 
-    if (-r ./$execfile.compopts) then
-	set compopts = "$globalCompopts `cat ./$execfile.compopts`"
+    if (-r ./$execfile.$compoptsuffix) then
+	set compopts = "$globalCompopts `cat ./$execfile.$compoptsuffix`"
     else
         set compopts = "$globalCompopts"
     endif
 
-    if (-r ./$execfile.execopts) then
-	set execopts = "$globalExecopts `cat ./$execfile.execopts`"
+    if (-r ./$execfile.$execoptsuffix) then
+	set execopts = "$globalExecopts `cat ./$execfile.$execoptsuffix`"
     else
         set execopts = "$globalExecopts"
     endif
@@ -224,7 +247,7 @@ foreach chplsrc ($testsrc)
     endif
 
     # if interpreting, skip tests that are futures, noexec, or require execopts
-    if ($CHPL_TEST_INTERP == "on" && (-r ./$execfile.noexec || -r ./$execfile.execopts || -r ./$execfile.future)) then
+    if ($CHPL_TEST_INTERP == "on" && (-r ./$execfile.noexec || -r ./$execfile.$execoptsuffix || -r ./$execfile.future)) then
         echo \[Skipping interpretation of: $localdir/$execfile\]
         continue;
     endif
@@ -327,6 +350,7 @@ foreach chplsrc ($testsrc)
                 ./$execfile.prediff $execfile $execlog $compiler
             endif
 
+            if ($perftest == 0) then
 	    if ( ! -r $checkfile ) then
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
 		rm -f $binfile
@@ -345,6 +369,21 @@ foreach chplsrc ($testsrc)
 		rm -f $binfile
 		continue
 	    endif
+            else
+                if (! -e $perfdir) then
+                    mkdir -p $perfdir
+                endif
+                echo \[Executing checkKeys $execfile $perfdir\]
+                $testdir/Bin/computePerfStats.pl $execfile $perfdir
+                set perfstatus = $status
+                if ($perfstatus == 0) then
+                    echo "[Success matching performance keys for $localdir/$execfile]"
+                else
+                    echo "[Error matching performance keys for $localdir/$execfile]"
+                endif
+		rm $execlog
+		rm -f $binfile
+            endif
 	else
 	    echo "$futuretest""[Error could not locate executable $binfile for $localdir/$execfile]"
 	endif
