@@ -102915,3 +102915,33 @@ Added files:
 	chapel/test/release/examples/hpcc06/: stream.perfcompopts 
 	                                      stream.perfkeys 
 
+---------------------------------------------------------------------------
+
+05/11/07 17:08:32 -- deitz
+
+Log message:
+	Added a reaching definitions flow analysis
+	
+	Added a function to build def-use and use-def chains.
+	
+	Added a new pass deadCodeElimination that currently just builds up the
+	du and ud chains.  It does not yet eliminate any code.
+	
+	Refactored shared code between this new analysis and the existing
+	analyses.
+	
+	Added a number of standard printing functions to print bit vector sets
+	and local variable sets, etc.  These used to be defined where used.
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp 
+	chapel/compiler/include/: bb.h optimizations.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/optimizations/: Makefile.share 
+	                                copyPropagation.cpp 
+	                                liveVariableAnalysis.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+Added files:
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+	                                reachingDefinitionsAnalysis.cpp 
+
