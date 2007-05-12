@@ -25,6 +25,7 @@ void _deleteRoot(void) {
 void _chpl_gc_copy_collect(void) {
   int i;
   _memory_space* tmp;
+  char* scanptr;
   for (i=0; i < totalRoots; i++) {
     if (STACK_PTR(rootlist[i])) {
       if (HEAP_AS_PTR(rootlist[i]) >= (void*)_to_space->head &&
@@ -46,7 +47,7 @@ void _chpl_gc_copy_collect(void) {
     }
   }
   /* Now that any root objects are moved, move sub-objects. */
-  char* scanptr = _to_space->head;
+  scanptr = _to_space->head;
   while (scanptr != _to_space->current) {
     int i = 1;
     size_t *offsets = cid2offsets(*(_int64*)scanptr);
