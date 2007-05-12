@@ -102945,3 +102945,14 @@ Added files:
 	chapel/compiler/optimizations/: deadCodeElimination.cpp 
 	                                reachingDefinitionsAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/11/07 17:08:46 -- bradc
+
+Log message:
+	Fixed C++-ism of declaring a variable in the executable
+	part of a C function that cygwin complains about.
+
+Modified files:
+	chapel/runtime/src/: chplcopygc.c 
+
