@@ -4,7 +4,9 @@
 #include "chpl.h"
 
 class Expr;
+class SymExpr;
 class Stmt;
+class Symbol;
 class FnSymbol;
 
 class BasicBlock {
@@ -19,7 +21,19 @@ class BasicBlock {
 // stmt argument is internal only
 void buildBasicBlocks(FnSymbol* fn, Expr* stmt = NULL);
 
-void printBasicBlocks(FnSymbol* fn);
+void buildLocalsVectorMap(FnSymbol* fn,
+                          Vec<Symbol*>& locals,
+                          Map<Symbol*,int>& localMap);
+
+void buildDefsVectorMap(FnSymbol* fn,
+                        Vec<Symbol*>& locals,
+                        Vec<SymExpr*>& defs,
+                        Map<SymExpr*,int>& defMap);
+
+void buildDefUseSets(FnSymbol* fn,
+                     Vec<Symbol*>& locals,
+                     Vec<SymExpr*>& useSet,
+                     Vec<SymExpr*>& defSet);
 
 void backwardFlowAnalysis(FnSymbol* fn,
                           Vec<Vec<bool>*>& GEN,
@@ -31,6 +45,14 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& GEN,
                          Vec<Vec<bool>*>& KILL,
                          Vec<Vec<bool>*>& IN,
-                         Vec<Vec<bool>*>& OUT);
+                         Vec<Vec<bool>*>& OUT,
+                         bool intersection = true);
+
+void printBasicBlocks(FnSymbol* fn);
+
+void printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap);
+void printDefsVector(Vec<SymExpr*> defs, Map<SymExpr*,int>& defMap);
+void printLocalsVectorSets(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals);
+void printBitVectorSets(Vec<Vec<bool>*>& sets);
 
 #endif

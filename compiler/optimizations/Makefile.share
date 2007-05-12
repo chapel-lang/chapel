@@ -1,7 +1,9 @@
 OPTIMIZATIONS_SRCS = \
 	collapseBlocks.cpp \
         copyPropagation.cpp \
+	deadCodeElimination.cpp \
 	liveVariableAnalysis.cpp \
+	reachingDefinitionsAnalysis.cpp \
 	removeUnnecessaryGotos.cpp
 
 CVS_SRCS = $(OPTIMIZATIONS_SRCS)

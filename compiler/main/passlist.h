@@ -10,8 +10,10 @@ void checkParsed();
 void checkResolved();
 void cleanup();
 void codegen();
+void copyCollection();
 void copyPropagation();
 void cullOverReferences();
+void deadCodeElimination();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
@@ -26,7 +28,6 @@ void prune();
 void resolve();
 void scalarReplace();
 void scopeResolve();
-void copyCollection();
 
 //
 // passlist: contains passes in the order that they are called
@@ -64,6 +65,7 @@ PassInfo passlist[] = {
   RUN(cullOverReferences), // remove excess references (more exposed due to inlining)
   RUN(scalarReplace),   // scalar replace all tuples
   RUN(copyPropagation), // copy propagation and other low-level optimizations
+  RUN(deadCodeElimination), // eliminate dead code
   RUN(prune),           // prune AST of dead functions and types
 
   // AST to C

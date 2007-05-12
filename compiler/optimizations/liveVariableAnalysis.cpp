@@ -7,24 +7,6 @@
 //#define DEBUG_LIVE
 
 
-#ifdef DEBUG_LIVE
-static void
-debug_df_print_set(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals) {
-  int i = 0;
-  forv_Vec(Vec<bool>, set, sets) {
-    printf("%d: ", i);
-    for (int j = 0; j < set->n; j++) {
-      if (set->v[j])
-        printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
-    }
-    printf("\n");
-    i++;
-  }
-  printf("\n");
-}
-#endif
-
-
 //
 // Given a function fn, computes:
 //
@@ -44,35 +26,13 @@ liveVariableAnalysis(FnSymbol* fn,
                      Vec<SymExpr*>& useSet,
                      Vec<SymExpr*>& defSet,
                      Vec<Vec<bool>*>& OUT) {
-  int i = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-        if (dynamic_cast<VarSymbol*>(def->sym)) {
-          locals.add(def->sym);
-          localMap.put(def->sym, i++);
-        }
-      }
-    }
-  }
+  buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
-  printf("Local Variables\n");
-  forv_Vec(Symbol, local, locals) {
-    printf("%d: %s[%d]\n", localMap.get(local), local->name, local->id);
-  }
-  printf("\n");
+  printLocalsVector(locals, localMap);
 #endif
 
-  compute_sym_uses(fn);
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defSet.set_add(se);
-    } 
-    forv_Vec(SymExpr, se, local->uses) {
-      useSet.set_add(se);
-    }
-  }
+  buildDefUseSets(fn, locals, useSet, defSet);
 
   //
   // USE(i): the set of variables that are used in basic block i
@@ -122,8 +82,8 @@ liveVariableAnalysis(FnSymbol* fn,
   }
 
 #ifdef DEBUG_LIVE
-  printf("DEF\n"); debug_df_print_set(DEF, locals);
-  printf("USE\n"); debug_df_print_set(USE, locals);
+  printf("DEF\n"); printLocalsVectorSets(DEF, locals);
+  printf("USE\n"); printLocalsVectorSets(USE, locals);
 #endif
 
   backwardFlowAnalysis(fn, USE, DEF, IN, OUT);

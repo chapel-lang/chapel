@@ -350,7 +350,7 @@ void globalCopyPropagation(FnSymbol* fn) {
   printf("IN:\n"); debug_flow_print_set(IN);
 #endif
 
-  forwardFlowAnalysis(fn, COPY, KILL, IN, OUT);
+  forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
 
 
   for (int i = 0; i < fn->basicBlocks->n; i++) {

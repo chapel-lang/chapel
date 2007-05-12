@@ -1,3 +1,4 @@
+#include "astutil.h"
 #include "bb.h"
 #include "expr.h"
 #include "stmt.h"
@@ -123,41 +124,51 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
   }
 }
 
-void printBasicBlocks(FnSymbol* fn) {
-  forv_Vec(BasicBlock, b, *fn->basicBlocks) {
-    printf("%d:  ", b->id);
-    forv_Vec(BasicBlock, bb, b->ins) {
-      printf("%d ", bb->id);
+void buildLocalsVectorMap(FnSymbol* fn,
+                          Vec<Symbol*>& locals,
+                          Map<Symbol*,int>& localMap) {
+  int i = 0;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        if (dynamic_cast<VarSymbol*>(def->sym)) {
+          locals.add(def->sym);
+          localMap.put(def->sym, i++);
+        }
+      }
     }
-    printf(" >  ");
-    forv_Vec(BasicBlock, bb, b->outs) {
-      printf("%d ", bb->id);
+  }
+}
+
+void buildDefsVectorMap(FnSymbol* fn,
+                        Vec<Symbol*>& locals,
+                        Vec<SymExpr*>& defs,
+                        Map<SymExpr*,int>& defMap) {
+  int i = 0;
+  forv_Vec(Symbol, local, locals) {
+    forv_Vec(SymExpr, se, local->defs) {
+      defs.add(se);
+      defMap.put(se, i++);
     }
-    printf("\n");
-    forv_Vec(Expr, expr, b->exprs) {
-      list_view_noline(expr);
+  }
+}
+
+void buildDefUseSets(FnSymbol* fn,
+                     Vec<Symbol*>& locals,
+                     Vec<SymExpr*>& useSet,
+                     Vec<SymExpr*>& defSet) {
+  compute_sym_uses(fn);
+  forv_Vec(Symbol, local, locals) {
+    forv_Vec(SymExpr, se, local->defs) {
+      defSet.set_add(se);
+    } 
+    forv_Vec(SymExpr, se, local->uses) {
+      useSet.set_add(se);
     }
-    printf("\n");
   }
 }
 
 //#define DEBUG_FLOW
-
-#ifdef DEBUG_FLOW
-static void
-debug_flow_print_set(Vec<Vec<bool>*>& sets) {
-  int i = 0;
-  forv_Vec(Vec<bool>, set, sets) {
-    printf("%d: ", i);
-    for (int j = 0; j < set->n; j++)
-      printf("%d", set->v[j] ? 1 : 0);
-    printf("\n");
-    i++;
-  }
-  printf("\n");
-}
-#endif
-
 
 void backwardFlowAnalysis(FnSymbol* fn,
                           Vec<Vec<bool>*>& GEN,
@@ -187,8 +198,8 @@ void backwardFlowAnalysis(FnSymbol* fn,
       i++;
     }
 #ifdef DEBUG_FLOW
-    printf("IN\n"); debug_flow_print_set(IN);
-    printf("OUT\n"); debug_flow_print_set(OUT);
+    printf("IN\n"); printBitVectorSets(IN);
+    printf("OUT\n"); printBitVectorSets(OUT);
 #endif
   }
 }
@@ -198,7 +209,8 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& GEN,
                          Vec<Vec<bool>*>& KILL,
                          Vec<Vec<bool>*>& IN,
-                         Vec<Vec<bool>*>& OUT) {
+                         Vec<Vec<bool>*>& OUT,
+                         bool intersection) {
   bool iterate = true;
   while (iterate) {
     iterate = false;
@@ -217,16 +229,93 @@ void forwardFlowAnalysis(FnSymbol* fn,
     }
     for (int i = 1; i < fn->basicBlocks->n; i++) {
       BasicBlock* bb = fn->basicBlocks->v[i];
-      for (int j = 0; j < IN.v[i]->n; j++) {
-        bool new_in = true;
-        forv_Vec(BasicBlock, inbb, bb->ins) {
-          new_in = new_in & OUT.v[inbb->id]->v[j];
+      if (intersection) {
+        for (int j = 0; j < IN.v[i]->n; j++) {
+          bool new_in = true;
+          forv_Vec(BasicBlock, inbb, bb->ins) {
+            new_in = new_in & OUT.v[inbb->id]->v[j];
+          }
+          if (new_in != IN.v[i]->v[j]) {
+            IN.v[i]->v[j] = new_in;
+            iterate = true;
+          }
         }
-        if (new_in != IN.v[i]->v[j]) {
-          IN.v[i]->v[j] = new_in;
-          iterate = true;
+      } else {
+        for (int j = 0; j < IN.v[i]->n; j++) {
+          bool new_in = false;
+          forv_Vec(BasicBlock, inbb, bb->ins) {
+            new_in = new_in | OUT.v[inbb->id]->v[j];
+          }
+          if (new_in != IN.v[i]->v[j]) {
+            IN.v[i]->v[j] = new_in;
+            iterate = true;
+          }
         }
       }
     }
   }
+}
+
+
+void printBasicBlocks(FnSymbol* fn) {
+  forv_Vec(BasicBlock, b, *fn->basicBlocks) {
+    printf("%2d:  ", b->id);
+    forv_Vec(BasicBlock, bb, b->ins) {
+      printf("%d ", bb->id);
+    }
+    printf(" >  ");
+    forv_Vec(BasicBlock, bb, b->outs) {
+      printf("%d ", bb->id);
+    }
+    printf("\n");
+    forv_Vec(Expr, expr, b->exprs) {
+      list_view_noline(expr);
+    }
+    printf("\n");
+  }
+}
+
+void printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap) {
+  printf("Local Variables\n");
+  forv_Vec(Symbol, local, locals) {
+    printf("%2d: %s[%d]\n", localMap.get(local), local->name, local->id);
+  }
+  printf("\n");
+}
+
+void printDefsVector(Vec<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
+  printf("Variable Definitions\n");
+  forv_Vec(SymExpr, def, defs) {
+    printf("%2d: %s[%d] in %d\n", defMap.get(def), def->var->name,
+           def->var->id, def->getStmtExpr()->id);
+  }
+  printf("\n");
+}
+
+void printLocalsVectorSets(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals) {
+  int i = 0;
+  forv_Vec(Vec<bool>, set, sets) {
+    printf("%2d: ", i);
+    for (int j = 0; j < set->n; j++) {
+      if (set->v[j])
+        printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
+    }
+    printf("\n");
+    i++;
+  }
+  printf("\n");
+}
+
+void printBitVectorSets(Vec<Vec<bool>*>& sets) {
+  int i = 0;
+  forv_Vec(Vec<bool>, set, sets) {
+    printf("%2d: ", i);
+    for (int j = 0; j < set->n; j++) {
+      printf("%d", (set->v[j]) ? 1 : 0);
+      if ((j+1) % 10 == 0) printf(" ");
+    }
+    printf("\n");
+    i++;
+  }
+  printf("\n");
 }
