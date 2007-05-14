@@ -79,11 +79,78 @@ void deadCodeElimination(FnSymbol* fn) {
   Map<SymExpr*,Vec<SymExpr*>*> DU;
   Map<SymExpr*,Vec<SymExpr*>*> UD;
   buildDefUseChains(fn, DU, UD);
+
+  Map<Expr*,Expr*> exprMap;
+  Vec<Expr*> liveCode;
+  Vec<Expr*> workSet;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    forv_Vec(Expr, expr, bb->exprs) {
+      bool essential = false;
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, expr);
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+          // mark function calls and essential primitives as essential
+          if (call->isResolved() ||
+              (call->primitive && call->primitive->isEssential))
+            essential = true;
+          // mark assignments to global variables as essential
+          if (call->isPrimitive(PRIMITIVE_MOVE) ||
+              call->isPrimitive(PRIMITIVE_REF))
+            if (SymExpr* se = dynamic_cast<SymExpr*>(call->get(1)))
+              if (!DU.get(se) || // DU chain only contains locals
+                  se->var->isReference) // reference issue
+                essential = true;
+        }
+        if (Expr* sub = dynamic_cast<Expr*>(ast)) {
+          exprMap.put(sub, expr);
+          if (BlockStmt* block = dynamic_cast<BlockStmt*>(sub->parentExpr))
+            if (block->loopInfo == sub)
+              essential = true;
+          if (CondStmt* cond = dynamic_cast<CondStmt*>(sub->parentExpr))
+            if (cond->condExpr == sub)
+              essential = true;
+        }
+      }
+      if (essential) {
+        liveCode.set_add(expr);
+        workSet.add(expr);
+      }
+    }
+  }
+
+  forv_Vec(Expr, expr, workSet) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, expr);
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (Vec<SymExpr*>* defs = UD.get(se)) {
+          forv_Vec(SymExpr, def, *defs) {
+            Expr* expr = exprMap.get(def);
+            if (!liveCode.set_in(expr)) {
+              liveCode.set_add(expr);
+              workSet.add(expr);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (expr->astType == EXPR_SYM || expr->astType == EXPR_CALL)
+        if (!liveCode.set_in(expr))
+          expr->remove();
+    }
+  }
+
   freeDefUseChains(DU, UD);
 }
 
 void deadCodeElimination() {
   forv_Vec(FnSymbol, fn, gFns) {
     deadCodeElimination(fn);
+    deadVariableElimination(fn);
   }
 }

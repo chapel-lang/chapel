@@ -246,7 +246,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_UNION_GETID, "get_union_id", returnInfoBool);
   prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, false, false, true);
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
-  prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
+  prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
   prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid, true);
