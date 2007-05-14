@@ -102969,3 +102969,19 @@ Log message:
 Modified files:
 	chapel/test/users/shetag/: tensorForall.good 
 
+---------------------------------------------------------------------------
+
+05/14/07 11:18:39 -- bradc
+
+Log message:
+	Noticed recently that we had not implemented overloaded
+	versions of our math functions for 32-bit math.  Filing
+	a future to note this.  To fix, shouldn't just implement
+	an overloaded sin(), but all sensical routines.
+
+Added files:
+	chapel/test/modules/standard/math/bradc/: .cvsignore 
+	                                          sin32bit.chpl 
+	                                          sin32bit.future 
+	                                          sin32bit.good 
+
