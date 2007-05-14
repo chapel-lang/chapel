@@ -103008,3 +103008,21 @@ Modified files:
 Added files:
 	chapel/test/arrays/marybeth/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+05/14/07 15:12:51 -- deitz
+
+Log message:
+	Implemented dead code elimination.  This is overly conservative when
+	it comes to references.  It also marks control flow conditions
+	(BlockStmt::loopInfo and CondStmt::condExpr) as essential.  I'm not
+	sure I understood how this was handled in the Muchnick text so I may
+	have erred here on being overly conservative.
+	
+	Made the SET_MEMBER primitive essential since it is not pure.  This
+	essential flag on primitives is now used.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+
