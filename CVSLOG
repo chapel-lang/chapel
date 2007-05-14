@@ -102985,3 +102985,26 @@ Added files:
 	                                          sin32bit.future 
 	                                          sin32bit.good 
 
+---------------------------------------------------------------------------
+
+05/14/07 11:27:48 -- bradc
+
+Log message:
+	Added support for [lo..hi) open-interval syntax for
+	ranges in addition to domains.  Barring any other
+	cues, [lo..hi) will be treated as a range -- to make
+	it into a domain, need to explicitly give a type or
+	wrap it in square brackets.  The goal here is to
+	provide a lower-overhead and more orthogonal way of
+	taking advantage of the [) syntax for those who like
+	it; to rub salt in the wounds of those who don't.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: ChapelArray.chpl ChapelLocale.chpl 
+	                          ChapelRange.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+Added files:
+	chapel/test/arrays/marybeth/: .cvsignore 
+
