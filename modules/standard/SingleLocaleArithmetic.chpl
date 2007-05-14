@@ -39,7 +39,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     ranges = x;
   }
 
-  def buildExclusiveUpperDomain() {
+  def buildOpenIntervalUpper() {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=dim_type, stridable=stridable);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then

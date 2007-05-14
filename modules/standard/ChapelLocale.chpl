@@ -5,7 +5,7 @@ if (numLocales != 1) then
 
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleDomain: domain(1) distributed(OnePer) = [0..numLocales);
-const LocaleDomain = [0..numLocales);
+const LocaleDomain: domain(1) = [0..numLocales);
 
 class locale {
   const id: int;

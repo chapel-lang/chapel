@@ -70,8 +70,8 @@ def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   return d;
 }
 
-def _build_exclusive_upper_domain(x: _domain)
-  return x.buildExclusiveUpperDomain();
+def _build_open_interval_upper(x: _domain)
+  return x.buildOpenIntervalUpper();
 
 def _build_index_type(param i: int) where i > 1 {
   var x : i*int;
@@ -157,8 +157,8 @@ record _domain {
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def buildExclusiveUpperDomain()
-    return _domain(_domain_type, _index_type, _dim_index_type, rank, _value.buildExclusiveUpperDomain());
+  def buildOpenIntervalUpper()
+    return _domain(_domain_type, _index_type, _dim_index_type, rank, _value.buildOpenIntervalUpper());
 
   def add(i) {
     _value.add(i);

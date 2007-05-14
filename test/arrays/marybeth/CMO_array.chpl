@@ -18,7 +18,7 @@ class CMODomain: BaseDomain {
   def buildEmptyDomain()
     return CMODomain(rank=rank, dim_type=dim_type);
 
-  def buildExclusiveUpperDomain() {
+  def buildOpenIntervalUpper() {
     var x = CMODomain(rank=rank, dim_type=dim_type);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then

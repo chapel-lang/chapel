@@ -258,3 +258,14 @@ def _extended_euclid(u: int, v: int) {
   }
   return (u3, u1);
 }
+
+
+def _build_open_interval_upper(r: range) {
+  return range(r.eltType, r.boundedType, r.stridable, r._low, r._high-1);
+}
+
+def =(a: _domain, b: range) {
+  const bdom = _build_domain(b);
+  a = bdom;
+  return a;
+}
