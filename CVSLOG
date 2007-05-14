@@ -102956,3 +102956,16 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplcopygc.c 
 
+---------------------------------------------------------------------------
+
+05/14/07 10:00:02 -- bradc
+
+Log message:
+	Based on confirmation from Steve and silence from
+	others, making current interpretation of Aniruddha's
+	tensor forall loop the expected behavior for this
+	test.
+
+Modified files:
+	chapel/test/users/shetag/: tensorForall.good 
+
