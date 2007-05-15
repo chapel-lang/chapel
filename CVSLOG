@@ -103117,3 +103117,16 @@ Removed files:
 	                           test_jacobi_leak.future 
 	                           test_jacobi_leak.good 
 
+---------------------------------------------------------------------------
+
+05/15/07 15:55:32 -- marybeth
+
+Log message:
+	Removing seq.chpl, seq.good, seq.future.
+	
+	This test is rewritten to not use sequences.  That code is in
+	test/spec/marybeth/sort.chpl.
+
+Removed files:
+	chapel/test/spec/marybeth/: seq.chpl seq.good seq.future 
+
