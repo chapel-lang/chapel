@@ -103098,3 +103098,22 @@ Log message:
 Removed files:
 	chapel/test/users/shetag/: tensorForall.future 
 
+---------------------------------------------------------------------------
+
+05/15/07 14:28:27 -- bradc
+
+Log message:
+	Removing reference counting futures since reference
+	counting is on the way out.
+
+Removed files:
+	chapel/test/memory/deitz/: test_array_leak.chpl 
+	                           test_array_leak.future 
+	                           test_array_leak.good 
+	                           test_array_of_class_leak.chpl 
+	                           test_array_of_class_leak.future 
+	                           test_array_of_class_leak.good 
+	                           test_jacobi_leak.chpl 
+	                           test_jacobi_leak.future 
+	                           test_jacobi_leak.good 
+
