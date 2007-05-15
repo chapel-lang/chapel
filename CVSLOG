@@ -103088,3 +103088,13 @@ Added files:
 	                                rangeMath2.future 
 	                                rangeMath2.good 
 
+---------------------------------------------------------------------------
+
+05/15/07 14:23:30 -- bradc
+
+Log message:
+	Oops, forgot to remove this future yesterday.
+
+Removed files:
+	chapel/test/users/shetag/: tensorForall.future 
+
