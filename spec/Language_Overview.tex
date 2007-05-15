@@ -131,11 +131,11 @@ mainstream programming and scripting languages.
 
 \subsection{Getting Started}
 
-\paragraph{Hello World}
+\paragraph{Hello World} 
 A Chapel version of the standard ``hello world'' computation is given
 here:
 \begin{chapel}
-writeln("Hello, world!"); \\writes Hello, world! to stdout
+writeln("Hello, world!"); //writes Hello, world! to stdout
 \end{chapel}
 \noindent This program contains a single line of code that makes a
 call to the standard \chpl{writeln} subroutine, passing it a string
@@ -164,7 +164,19 @@ define an entry point.  Thus, when the program is executed, the single
 code, invoking the call to \chpl{writeln()}, and printing out the
 message.
 
-\paragraph{Compiling and Running}
+\paragraph{Comments} 
+There are two ways of providing comments in Chapel source code.
+Inserting ``\chpl{//}'' indicates that a comment follows, through to  
+the end of that line.  Using ``\chpl{/*}'' indicates the start of a comment that
+may span multiple lines.  In this case, the comment must be
+explicitly ended with ``\chpl{*/}''.
+\begin{chapel}
+// Comments on a single line
+/* Comments
+   between lines */
+\end{chapel}
+
+\paragraph{Compiling and Running} 
 To compile and run the ``hello world'' program, execute the 
 following commands at the system prompt:
 \begin{commandline} 
@@ -178,53 +190,421 @@ The following output will be printed to the console:
 
 \subsection{Types}
 \paragraph{Primitive Types}
+Chapel provides primitive data types for signed and unsigned integers, 
+real, imaginary and complex floating point numbers, booleans and strings.
+The following table provides information about the names of these data
+types in Chapel, and their default sizes and initial values.
+If the size of the integer and floating point data types are not specified, 
+then the default size is used.  When declaring variables, if an initial
+value is not supplied then the default initial value for that variable's 
+type is used. 
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+{\bf Type} & {\bf Default Size} & {\bf Types with Specified Sizes} & {\bf Default Initial Value}\\
+\hline
+\chpl{int} & 32 bits &
+\chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)} &
+\chpl{0} \\
+\hline
+\chpl{uint} & 32 bits &
+\chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)} &
+\chpl{0} \\
+\hline
+\chpl{real} & 64 bits &
+\chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)} &
+\chpl{0.0} \\
+\hline
+\chpl{imag} & 64 bits &
+\chpl{imag(32)}, \chpl{imag(64)}, \chpl{imag(128)} &
+\chpl{0.0i} \\
+\hline
+\chpl{complex} & 128 bits &
+\chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)} &
+\chpl{0.0 + 0.0i} \\
+\hline
+\chpl{bool} & 1 bit & &
+\chpl{false} \\
+\hline
+\chpl{string} & unbounded & &
+\chpl{""} \\
+\hline
+\end{tabular}
+\end{center}
+
 \paragraph{Enumerated Types}
+An enumerated type defines an ordered set of named constants.
+\begin{chapel}
+enum day {sun, mon, tue, wed, thu, fri, sat};
+var d: day = mon;
+\end{chapel}
+
 \paragraph{Tuple Types}
+Tuples are ordered sets of components.  They can contain
+elements of all the same type or of multiple types.
+\begin{chapel}
+var pt: (int,real); //pt is mixed tuple, init to (0,0.0)
+var z: 3*int; //z is tuple of ints, init to (0,0,0)
+\end{chapel}
+
 \paragraph{Classes}
+Classes are data structures with fields and methods.  They
+are assigned by reference.
+\begin{chapel}
+class circle {
+  var radius: real;
+  def area {
+    param pi = 3.14;
+    return pi*(radius**2);
+  }
+}
+var x = circle(radius=1.0);
+\end{chapel}
+
 \paragraph{Records}
+Records are similar to classes but are assigned by
+value.
+\begin{chapel}
+record point {
+  var x,y: real;
+}
+var p = point(0.0,1.0);
+\end{chapel}
+
 \paragraph{Ranges}
+Ranges define arithmetic sequences.
+\begin{chapel}
+var span1D: range = 1..n;
+var D = [span1D,span1D];
+\end{chapel}
+
 \paragraph{Domains and Arrays}
+Domains specify an index set.  Arrays are declared with domains.
+Arrays and domains may
+be arithmetic, sparse, indefinite, enumerated or opaque.
+\begin{chapel}
+const D2: domain(2) = [1..n, 1..n];
+var A, B, C: [D2] real;
+\end{chapel}
+Domains can be specified with a distribution, defining how the
+data is distributed across a set of processors.
+\begin{chapel}
+const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
+var A, B, C: [DistD2] real;
+\end{chapel}
+
+Arrays are passed by reference to functions
+where they may be modified.  Assignment of arrays is by value.
+
+Subdomains may be
+defined to specify a subset of the domain's indices. Subarrays may be defined
+with subdomains or ranges to specify part of an array.
+\begin{chapel}
+writeln(A(1..2,1..2)); //writes first 2x2 block of A
+\end{chapel}
+
 \paragraph{The Locale Type}
 \paragraph{The File Type}
+Chapel provides a built-in \chpl{file} type to handle input and
+output to files.  The \chpl{file} type contains the
+fields:  \chpl{filename}, \chpl{path}, and \chpl{mode}.
+The \chpl{file} type supports the following methods:
+\chpl{open}, \chpl{close}, \chpl{read}, \chpl{write} and \chpl{writeln}.
+
 \paragraph{The Type Alias}
+A type alias may defined for any type.  When used, it has the
+same meaning as using the aliased type directly.
+\begin{chapel}
+type elemType = real(32);
+var alpha: elemType; //alpha is 32-bit real
+\end{chapel}
 
 \subsection{Variables}
 \paragraph{Variable Kinds}
+There are three kinds of Chapel variables: \chpl{var},
+\chpl{const} (runtime constants), \chpl{param} (compile time constants).
+
 \paragraph{Variable Declarations}
+Variable declarations include a type specification, an assignment
+to an initial value or both.
+\begin{chapel}
+var x: real = 1.0; //x is real, init to 1.0
+var y, z: real; //y, z are real, init to 0.0
+
+var n = 10; //n inferred to be int, init to 10
+const size = n; //size is runtime constant int,
+                //set to 10
+\end{chapel}
+
 \paragraph{Configuration Variables}
+The keyword \chpl{config} may precede any global variable
+declaration, indicating that the variable may be set at
+compile time or runtime.
+\begin{chapel}
+config const n = 100;
+config param debug:bool;
+\end{chapel}
+To set configuration variables at runtime, use ``\chpl{--}''
+followed by the variable name and value on the execution
+command line.
+\begin{commandline}
+> ./a.out --n=1000
+\end{commandline}
+To set configuration variables at compile time, use
+``\chpl{-s}'' followed by the variable name and value on the
+compiler command line.
+\begin{commandline}
+> chpl testprogram.chpl -s debug=true
+\end{commandline}
+
 \paragraph{Synchronization Variables}
+Single variables are assigned once.  Using a single variable
+before it is assigned, suspends the computation until another
+task assigns a value to it.
+Sync variables are similar to single variables,
+but permit multiple assignments to that variable. Sync
+variables have a {\em full} or {\em empty} state associated
+with them that is modified when read and written to and control
+access to these variables between threads of computation.
+\begin{chapel}
+var x: single int;
+var y: sync real;
+\end{chapel}
 
 \subsection{Operators}
 \paragraph{Operator Precedence}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+{\bf Operators} & {\bf Associativity} & {\bf Use} \\
+\hline
+\verb@.@ & left & member access \\
+\verb@() []@ & left & function call, index expression \\
+\verb@**@ & right & exponentiation \\
+unary \verb@+ - ~@ & right & sign and bitwise negation \\
+\verb@:@ & left & cast\\
+\verb@* / %@ & left & multiply, divide, and modulus \\
+\verb@+ -@ & left & plus and minus \\
+\verb@&@ & left & bitwise and \\
+\verb@^@ & left & bitwise xor \\
+\verb@<< >>@ & left & shift left and shift right \\
+\verb@|@ & left & bitwise or \\
+\verb@<= >= < >@ & left & ordered comparison \\
+\verb@== !=@ & left & equality comparison \\
+\verb@!@ & right & logical negation \\
+\verb@&&@ & left & logical and \\
+\verb@||@ & left & logical or \\
+\verb@..@ & left & ranges  \\
+\verb@in@ & left & forall expressions \\
+\verb@by@ & left & striding sequences \\
+\verb@if@ & left & conditional expressions \\
+\verb@reduce scan@ & left & reductions and scans\\
+\verb@,@ & left & comma separated expressions \\
+\hline
+\end{tabular}
+\end{center}
+
 \paragraph{Assignment Operators}
+Supported assignment operators:
+\begin{chapel}
+ = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
+\end{chapel}
+
 \paragraph{The Swap Operator}
+The swap operator, \chpl{<=>} swaps the values between
+the left and right-hand side expressions.
+\begin{chapel}
+x <=> y; //swaps the value in x with the value in y
+\end{chapel}
+
 \paragraph{The Array Alias Operator}
+The array alias operator, \chpl{=>}, creates an alias
+to an array or an array slice.
+\begin{chapel}
+A11 => A(block1,block1);
+\end{chapel}
+
 \paragraph{Scans and Reductions}
 
 \subsection{Statements and Expressions}
 \paragraph{Block Statement}
+Chapel statements are separated by a semi-colon.  A block
+of statements is delimited by braces, \{ \}.  Variables
+declared within a block statement are local to that block.
+
 \paragraph{Begin and Co-begin Statements}
+The cobegin statement is used to create parallelism within
+a block statement.  All statements within the block statement
+are executed concurrently.
+\begin{chapel}
+cobegin {
+  init(A);
+  init(B);
+}
+\end{chapel}
+The \chpl{begin} statement spawns a computation to execute a
+statement.
+\begin{chapel}
+begin {
+  while(!done) do work(x);
+}
+otherwork(x);
+done = true;
+\end{chapel}
 \paragraph{For Loop Statements}
-\paragraph{Conditional Statement}
-\paragraph{Select Statement}
+Serial loops are designated by the \chpl{for} keyword.
+\begin{chapel}
+for i in 1..n {
+  norm1 += abs(x(i));
+}
+\end{chapel}
+
+Parallel loops are specified using \chpl{forall} or
+the shorthand bracket notation.
+\begin{chapel}
+forall ind in D {
+  A(ind) = x*y;
+}
+[ind in D] A(ind) = x*y; //equivalent to above loop
+\end{chapel}
 \paragraph{While Loops}
+Chapel provide two types of \chpl{while} loops.
+\begin{chapel}
+do {
+  t += 1;
+} while (t <= 10);
+
+while (t <= 10) {
+  t += 1;
+}
+\end{chapel}
+\paragraph{Conditional Statement}
+The Chapel conditional statement uses the standard 
+\chpl{if}--\chpl{then}--\chpl{else} structure.  When
+the then clause is a block of statements, delimited with
+`\{' and `\}', the \chpl{then} keyword may be omitted.
+\begin{chapel}
+if (a == 0.0) then x = 0.0;
+else x = a*y;
+if (b != 0.0) {
+  z = b*x;
+}
+\end{chapel}
+\paragraph{Select Statement}
+Chapel provides a \chpl{select} statement that allows the option of
+executing different statement blocks, depending on the value of the
+select variable.
+\begin{chapel}
+select pos {
+  when "first" do x = y(1);
+  when "last" do x = y(n);
+  when "middle" do x = y(((n/2):int) + n%2);
+  otherwise writeln("invalid position");
+}
+\end{chapel}
 \paragraph{Type Select Statement}
+The \chpl{type select} statement allows the choice of
+executing different statement blocks depending on the type
+of the select variable.
+\begin{chapel}
+type select ind {
+  when int do y = x(ind);
+  when real, uint do y = x(ind:int);
+  otherwise y = 0.0;
+}
+\end{chapel}
 \paragraph{Query Expression}
+The query expression uses a \chpl{?} to indicate that the type of the
+preceding variable be queried and assigned to the following variable.
+\begin{chapel}
+def sumOfThree(x: ?t, y:t, z:t):t {
+   return x + y + z;
+}
+\end{chapel}
 \paragraph{Let Expression}
+The \chpl{let}--\chpl{in} expression defines variables to
+be used only in the expression following the \chpl{in} keyword.
+\begin{chapel}
+x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
+    in ((-b + t1)/t2, (-b - t1)/t2);
+\end{chapel}
 \paragraph{Conditional Expression}
+Chapel provides a conditional expression that can be evaluated
+and then assigned.
+\begin{chapel}
+var half = if (i % 2) then i/2 +1 else i/2;
+\end{chapel}
 
 \subsection{Functions}
 \paragraph{Function Definitions}
+Functions are defined with a name and a list of function
+arguments.  Optionally, intent types, return types and a
+where clause can be specified.
+\begin{chapel}
+def area(x:real, y:real): real {
+  return x*y;
+}
+\end{chapel}
+
 \paragraph{Function Intents}
+The intents of function arguments can be specified as \chpl{in},
+\chpl{out} or \chpl{inout}.
+
+If the intent is omitted, then the
+argument has a blank intent, copying in the value using the assignment
+operator.
+Arguments with a blank intent cannot be assigned within a function.
+Arrays and domains are an exception.  They are always passed by reference
+and may be modified within a function.
+Domains can be passed only with a blank intent.
+
 \paragraph{Generic Functions}
+Generic functions contain formal arguments that do not have
+a specified type.
+\begin{chapel}
+def absSum(x:[?D]) {
+  var sum: x.type;
+  for i in D do sum += abs(x(i));
+  return sum;
+}
+\end{chapel}
+This routine, \chpl{absSum}, can be called
+with arrays of any type for which an \chpl{abs} function is
+defined.
+
 \paragraph{Chapel Standard Functions}
 
 \subsection{Iterators}
+Iterators are defined similarly to functions, except that
+they are defined with the keyword \chpl{iterator} and they
+contain a \chpl{yield} statement.
+\begin{chapel}
+iterator evens(n) {
+  for i in 1..n do yield (i,2*i);
+}
+\end{chapel}
+Iterators may be called in \chpl{for} and \chpl{forall} loop
+statements.  For each iteration of the loop, a value from the
+iterator is yielded and the body of the loop executed.
+\begin{chapel}
+for (i,i2) in evens(m) {
+  x(i) = y(i2);
+}
+\end{chapel}
+
 
 \subsection{Input and Output}
 \paragraph{File I/O}
+
 \paragraph{Chapel Standard I/O Functions}
+Chapel provides built-in functions \chpl{write} and \chpl{writeln}
+to write to \chpl{stdout}, and the built-in function \chpl{read}
+that reads from \chpl{stdin}.
+
 \paragraph{Default I/O Methods for Chapel Types}
+Default \chpl{read} and \chpl{write} methods are provided for all
+Chapel types.
+
 
 \subsection{Additional Parallel Support}
 \paragraph{Data Distributions}
