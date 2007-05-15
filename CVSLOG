@@ -103142,3 +103142,16 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: iterators.chpl iterators.good 
 
+---------------------------------------------------------------------------
+
+05/15/07 16:41:56 -- marybeth
+
+Log message:
+	Filled out the outline for the language overview section a bit more,
+	using material from the Quick Reference Guide.  Much more work needs
+	to be done to this material, and much of it may end up being replaced
+	with better text and examples.  For now, it provides a placeholder.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
