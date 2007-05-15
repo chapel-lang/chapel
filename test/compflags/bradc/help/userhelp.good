@@ -38,6 +38,7 @@ Linker Control:
 
 Miscellaneous Flags:
 --------------------
+      --no-warnings       false     ->true   Disable output of warnings
       --instantiate-max   256       int      Limit number of instantiations
       --chplhome          .         path     Over-ride $CHPL_HOME
       --[no-]devel        false     ->true   Compile as developer

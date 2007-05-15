@@ -33,6 +33,7 @@ bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
+bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
 bool fDisableCopyPropagation = false;
@@ -95,6 +96,7 @@ static ArgumentDescription arg_desc[] = {
  {"ccflags", ' ', "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
 
  {"", ' ', "Miscellaneous Flags", NULL, NULL, NULL, NULL},
+ {"no-warnings", ' ', "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"instantiate-max", ' ', "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"chplhome", ' ', "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},

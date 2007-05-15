@@ -44,7 +44,7 @@ char *dupstr(char *s, char *e = 0);
   if (setupError(__FILE__, __LINE__, true, true, true, false)) printProblem
 
 #define USR_WARN \
-  if (setupError(__FILE__, __LINE__, false, true, true, false)) printProblem
+  if (!ignore_warnings && setupError(__FILE__, __LINE__, false, true, true, false)) printProblem
 
 #define USR_PRINT \
   if (setupError(__FILE__, __LINE__, false, true, true, true)) printProblem

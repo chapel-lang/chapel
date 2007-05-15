@@ -51,6 +51,7 @@ Is this "while x"(i); or "while x(i)";?
 
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
+  static bool atomic_warning = false;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)          \
   if (N) { \
@@ -575,6 +576,10 @@ block_stmt:
     }
 | TATOMIC stmt
     {
+      if (!atomic_warning) {
+        atomic_warning = true;
+        USR_WARN($2, "atomic keyword is ignored (not implemented)");
+      }
       $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_ATOMIC));
     }
 | TBEGIN stmt
