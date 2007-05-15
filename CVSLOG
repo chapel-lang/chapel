@@ -103071,3 +103071,20 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: ra.compopts 
 
+---------------------------------------------------------------------------
+
+05/15/07 13:52:21 -- bradc
+
+Log message:
+	A test showing what appears to be a function resolution
+	bug.  Overloading multiplication on ranges is listed as
+	a candidate, but for some reason, a promoted integer
+	multiplication is chosen as the best match.  Getting this
+	working would allow FFT to be cleaned up as suggested by
+	Paul Casella.
+
+Added files:
+	chapel/test/types/range/bradc/: rangeMath2.chpl 
+	                                rangeMath2.future 
+	                                rangeMath2.good 
+
