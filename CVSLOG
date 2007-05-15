@@ -103061,3 +103061,13 @@ Log message:
 Modified files:
 	chapel/test/parallel/begin/waynew/: simple2.chpl simple2.good 
 
+---------------------------------------------------------------------------
+
+05/15/07 09:01:52 -- deitz
+
+Log message:
+	Fixed thinko in compopts file for new --no-warnings flag.  Added --.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: ra.compopts 
+
