@@ -1,0 +1,8 @@
+function resolution
+
+For some reason, my overloads for math on ranges are not
+taking precedence over promoted integer functions.
+
+Ultimately, the goal is to move these functions to the
+ChapelRange module in which case they should be removed
+from this test.
