@@ -1,5 +1,0 @@
-semantic / tensor forall
-
-Should a tensor forall be allowed to use one of the loop index
-variables in its iterator expression?  I'd say no (bradc).
-
