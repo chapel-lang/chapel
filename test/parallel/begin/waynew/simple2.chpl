@@ -9,8 +9,8 @@ def work() {
   begin {
     while (!go);
     b = 2 * a;
+    writeln( "b is ", b);
     a = 2 * b;
-    writeln( "a is ", a);
   }
 }
 
