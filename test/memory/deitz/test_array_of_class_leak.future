@@ -1,3 +1,0 @@
-array memory leak - cycle
-
-arrays point to domains and domains point to arrays
