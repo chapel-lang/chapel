@@ -9,6 +9,7 @@ This directory contains several Chapel example codes:
      jacobi.chpl            : Jacobi iteration in Chapel
      genericStack.chpl      : a generic stack class (linked list implementation)
      genericStack2.chpl     : another generic stack class (array implementation)
+     iterators.chpl         : sample iterators
      norm.chpl              : sample module for computing array norms
      prod-cons.chpl         : producer-consumer using a sync variable
      tree_construct.chpl    : construct and walk a tree in parallel

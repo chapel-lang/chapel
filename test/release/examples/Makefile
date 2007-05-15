@@ -11,7 +11,8 @@ TARGETS = \
 	genericStack2 \
 	norm \
 	prod-cons \
-	tree_construct
+	tree_construct \
+	iterators
 
 default: all hpcc06
 
