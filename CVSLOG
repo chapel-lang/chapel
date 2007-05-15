@@ -103051,3 +103051,13 @@ Modified files:
 	chapel/test/users/shetag/fock/: fock-1-begin-blc.good 
 	                                fock-1.good 
 
+---------------------------------------------------------------------------
+
+05/14/07 17:20:13 -- deitz
+
+Log message:
+	Removed recently discovered race condition from test.
+
+Modified files:
+	chapel/test/parallel/begin/waynew/: simple2.chpl simple2.good 
+
