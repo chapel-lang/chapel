@@ -103026,3 +103026,28 @@ Modified files:
 	chapel/compiler/AST/: primitive.cpp 
 	chapel/compiler/optimizations/: deadCodeElimination.cpp 
 
+---------------------------------------------------------------------------
+
+05/14/07 17:15:44 -- deitz
+
+Log message:
+	Added a --no-warnings flag to disable all compiler emitted warnings.
+	
+	Added a warning that is triggered once if an atomic statement is used
+	in the Chapel code to inform the user that the atomic keyword will be
+	ignored.
+
+Modified files:
+	chapel/compiler/include/: driver.h misc.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/test/modules/bradc/: ra-paramWidth.good 
+	chapel/test/npb/is/diten/: is_no_buckets.good 
+	chapel/test/parallel/atomic/bradc/: atomicSingleStmt.good 
+	chapel/test/release/examples/hpcc06/: ra.compopts 
+	chapel/test/studies/hpcc/RA/: ra-hpcc06.good ra-latest.good 
+	chapel/test/studies/hpcc/RA/marybeth/: ra3.good 
+	chapel/test/users/shetag/fock/: fock-1-begin-blc.good 
+	                                fock-1.good 
+
