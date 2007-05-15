@@ -103130,3 +103130,15 @@ Log message:
 Removed files:
 	chapel/test/spec/marybeth/: seq.chpl seq.good seq.future 
 
+---------------------------------------------------------------------------
+
+05/15/07 16:17:46 -- deitz
+
+Log message:
+	Added an iterators example to the set of release examples.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README 
+Added files:
+	chapel/test/release/examples/: iterators.chpl iterators.good 
+
