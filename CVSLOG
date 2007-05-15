@@ -103155,3 +103155,17 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+05/15/07 16:45:18 -- bradc
+
+Log message:
+	Removing a test that is outdated -- tried to format a
+	read using a syntax that we're not even flirting with
+	any more.
+
+Removed files:
+	chapel/test/trivial/shannon/: readWriteComplexTuple.chpl 
+	                              readWriteComplexTuple.future 
+	                              readWriteComplexTuple.good 
+
