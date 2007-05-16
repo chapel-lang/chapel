@@ -175,7 +175,7 @@ int _chpl_cobegin (int                      nthreads,
                                           NULL, 
                                           fp[t], 
                                           a[t]))) {
-        // break; // do not abort for now?
+        _printInternalError("too many threads");
       }
       retv |= twrk[t].error;
     }
@@ -200,7 +200,8 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
   _chpl_thread_t thread;
   void          *fn_retv;
 
-  pthread_create(&thread, NULL, nt->fun, nt->arg);
+  if (pthread_create(&thread, NULL, nt->fun, nt->arg))
+    _printInternalError("too many threads");
   pthread_join(thread, (void*) &fn_retv);
 
   // decrement begin thread count and see if we can signal Chapel exit
@@ -242,6 +243,8 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
     nt->fun = fp;
     nt->arg = a;
     error |= pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt);
+    if (error)
+      _printInternalError("too many threads");
     pthread_detach(thread);
   }
   return error;
