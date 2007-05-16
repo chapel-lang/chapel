@@ -103507,3 +103507,14 @@ Log message:
 Added files:
 	chapel/test/: FUTURES 
 
+---------------------------------------------------------------------------
+
+05/16/07 15:33:28 -- marybeth
+
+Log message:
+	Some minor changes to MatrixOps module, in the blockLU routine.
+	It now checks for a valid block size.  The comments were also updated.
+
+Modified files:
+	chapel/test/studies/matrixlib/: MatrixOps.chpl 
+
