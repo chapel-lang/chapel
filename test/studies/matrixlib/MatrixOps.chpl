@@ -24,14 +24,18 @@ input parameter to blockLU must be a two-dimensional array.");
 }
 
 def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
-// Block LU with pivoting.
-// In this version, A1D is a range, not a 1D domain.  The iterator,
-// IterateByBlocks returns ranges, not subdomains of A1D.  Temporary
-// ranges, slice1 and slice2 are used to define what should be
-// subdomains sliced by indefinite ranges.
+// Block LU with pivoting.  This version is written for a single
+// locale and it assumes that the input matrix A is square and
+// has identical ranges for the two dimensions of the matrix.
+// The block size, blk, must be set to a valid block size - one
+// that is greater than zero and less than or equal to the dimension
+// of the matrix A.
 
   if (D.dim(1) != D.dim(2)) then
     halt("error: blockLU requires square matrix with same dimensions");
+
+  if (blk <= 0) | (blk > D.dim(1).length) then
+    halt(blk," is an invalid block size passed to blockLU");
 
   var A1D = D.dim(1);
   var ind: index(D);
