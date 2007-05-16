@@ -103198,3 +103198,18 @@ Added files:
 	chapel/test/parallel/cobegin/deitz/: test_array_cobegin.chpl 
 	                                     test_array_cobegin.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 09:58:32 -- deitz
+
+Log message:
+	Added a future for a bug that shows up when using many threads.  It
+	appears that if a certain number of threads are live, then when new
+	threads are forked, they are dropped on the floor and the work that
+	they were supposed to do is not done.  This number appears to be 153.
+
+Added files:
+	chapel/test/parallel/cobegin/deitz/: test_many_threads.chpl 
+	                                     test_many_threads.future 
+	                                     test_many_threads.good 
+
