@@ -1,4 +1,4 @@
-sync vars
+bug: op= on sync vars
 
 The assignment:  count += 1, where count is a sync var, gets the
 following compiler error:

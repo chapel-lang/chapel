@@ -1,5 +1,7 @@
-array fields and type aliases
+bug: array fields via type aliases
 
 deitz
 
-an array field in a class is special-cased in the constructor which is built during cleanup but here the array field is defined via a typedef and so the constructor is not built correctly.
+an array field in a class is special-cased in the constructor which is
+built during cleanup but here the array field is defined via a typedef
+and so the constructor is not built correctly.

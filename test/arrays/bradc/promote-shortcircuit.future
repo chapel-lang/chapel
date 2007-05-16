@@ -1,4 +1,4 @@
-short-circuiting promotion
+unimplemented feature: short-circuiting promotion
 
 This test tries to use short-circuiting promotion to
 do what seems like a legal operation.  It does not

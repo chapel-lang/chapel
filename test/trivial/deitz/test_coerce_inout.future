@@ -1,3 +1,4 @@
-semantic - intents and coercions
+error message: inout
 
-How do we deal with this case?
+Need to make sure that implicit coercions are legal from
+formal to actual and vice-versa.

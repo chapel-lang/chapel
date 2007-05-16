@@ -1,4 +1,4 @@
-params in classes
+semantic: params in classes
 
 This is a variation on weirdParamInit3.future in which the c member
 does not have an initial value.  This might be a more legal test than

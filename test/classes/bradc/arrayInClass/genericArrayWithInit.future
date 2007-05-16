@@ -1,5 +1,5 @@
-arrays in classes
+bug: initialized arrays in classes
 
 It seems that if an array member is declared
-using an initializerz, the constructor cannot
+using an initializer, the constructor cannot
 be resolved.

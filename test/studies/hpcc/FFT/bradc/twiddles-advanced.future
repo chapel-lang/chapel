@@ -1,8 +1,4 @@
-semantic
-
-If we're going to do this, we need to draw a line first!
-
-advanced argument querying (HPCC RA, very low unless simple)
+feature request: formal array argument bounds query
 
 This is a very advanced version of the twiddles function in
 which we use an anonymous domain with query bounds to determine

@@ -1,4 +1,4 @@
-function resolution
+bug: function resolution
 
 For some reason, my overloads for math on ranges are not
 taking precedence over promoted integer functions.

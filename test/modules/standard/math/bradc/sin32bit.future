@@ -1,4 +1,4 @@
-32-bit math routines
+unimplemented feature: 32-bit math routines
 
 We need to overload our standard math routines to support
 32-bit versions of the functions rather than promoting to

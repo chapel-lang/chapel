@@ -1,4 +1,4 @@
-parameter folding
+bug: implicit parameter coercions in conditional expression
 
 In this code, if param (or 0) is not explicitly typed as
 uint(64), a typecheck error occurs on combining ints and

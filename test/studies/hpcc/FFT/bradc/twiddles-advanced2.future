@@ -1,8 +1,4 @@
-semantic
-
-Again, I think we need to draw the line first.  -Steve
-
-advanced array passing (long-term)
+feature request: formal array argument with indefinite reindexing
 
 This is a very advanced version of the twiddles function in
 which we use an anonymous domain with an unspecified bound to

@@ -1,5 +1,6 @@
-formal type from default value
+unimplemented feature: formal type constrained by default value
 
 deitz
 
-formal arguments should take their type (dispatch constraint) from the default expression
+formal arguments should take their type (dispatch constraint) from the
+default expression

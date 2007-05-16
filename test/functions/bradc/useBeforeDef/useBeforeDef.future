@@ -1,6 +1,4 @@
-global use before def
-
-deitz
+semantic: global use before def
 
 Like test/studies/blas/marybeth/saxpy2.chpl, this test should report a
 use-before-def error.

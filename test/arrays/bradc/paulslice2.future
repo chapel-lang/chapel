@@ -1,4 +1,4 @@
-semantic -- arithmetic sequence operations
+feature request: math operators on ranges
 
 It seems reasonable that this code should work similarly to
 paulslice.chpl, but it doesn't, I believe due to the fact

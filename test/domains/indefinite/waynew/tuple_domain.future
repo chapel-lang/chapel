@@ -1,5 +1,4 @@
-type in expression context
+bug: associative domain of het tuple type
 
-deitz
 
 Currently failing test.  See comments for what it is trying to duplicate.

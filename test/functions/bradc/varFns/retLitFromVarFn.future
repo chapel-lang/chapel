@@ -1,4 +1,4 @@
-var fn semantics
+error message: var fn illegal return
 
 My sense is that one shouldn't be able to return a
 non-lvalue from a var function.  If this is accurate,

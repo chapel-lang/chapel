@@ -104,8 +104,10 @@ printDevelErrorHeader(BaseAST* ast) {
           }
           if (err_fn->getModule()->initFn != err_fn && !err_fn->isCompilerTemp &&
               err_fn->filename && err_fn->lineno) {
-            fprintf(stderr, "%s:%d: In function '%s':\n",
-                    err_fn->filename, err_fn->lineno, err_fn->name);
+            fprintf(stderr, "%s:%d: In %s '%s':\n",
+                    err_fn->filename, err_fn->lineno, 
+                    (err_fn->fnClass == FN_ITERATOR ? "iterator" : "function"), 
+                    err_fn->name);
           }
         }
       }

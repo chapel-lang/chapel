@@ -1,5 +1,5 @@
-error message
+error message: formal argument missing parameterized tuple type
 
-deitz/jplevyak
+This doesn't resolve as expected, but the error message is
+suboptimal since it doesn't give a type for the x argument.
 
-This shouldn't resolve

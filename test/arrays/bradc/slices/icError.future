@@ -1,4 +1,4 @@
-rank-change slicing/error messages
+error message: iterator sugaring
 
 This test doesn't work because it uses the rank-change
 style of slicing.  The error message could stand to be

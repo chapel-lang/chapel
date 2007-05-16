@@ -1,4 +1,4 @@
-constructors/error messages
+error message: type assignment in constructors
 
 The question here was whether to allow assignment of types within a
 user-supplied constructor.  The answer was "no", but that a similar
@@ -8,21 +8,8 @@ direction.  This test needs a better error message (the current one
 isn't clear and says nothing about the line in question and).  I'm
 adding a second test for the other variation.
 
+Brad: I continue to think that type assignment within constructors
+is a reasonable way to bind formal types to a class' generic types
+(with the understanding that they have to be at the top level, will
+be evaluated at compile-time, etc.)
 
-semantic
-
-We don't currently support constructors and this does a slightly weird
-thing anyway by passing a type to a constructor and doing bindings
-to type variables within the constructor.
-
-
-bradc
-
-not all type variables are defined in the constructor call
-
-???
-
-This tries to call a user-supplied default constructor that
-takes a type parameter, which doesn't seem to be implemented
-yet.  This relates somewhat to the email conversation we
-were having at and after last week's meeting (June 2nd).

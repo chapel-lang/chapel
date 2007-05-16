@@ -1,4 +1,4 @@
-Destructured tuple function arguments prevent overloading
+bug: destructured tuple function arguments prevent overloading (fold &&)
 
 Due to using "&" instead of "&&" in where clauses, overloaded functions can
 fail to resolve when the functions have destructured tuple arguments.

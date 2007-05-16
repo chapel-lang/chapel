@@ -1,4 +1,4 @@
-query variables
+unimplemented feature: query formal array domain and element type
 
 It appears that when querying both an array's domain and its
 element type, a syntax error is triggered.

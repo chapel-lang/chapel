@@ -1,4 +1,4 @@
-config var value in help message
+feature request: help prints config var default values
 
 Re-enable the ability to print the configuration 
 variable's default value.

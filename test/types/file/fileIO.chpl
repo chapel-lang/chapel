@@ -22,7 +22,7 @@ if (numErrors > 0) {
 def writeArray(n, X, filename) {
   var outfile = file(filename, "w");
   outfile.open;
-  outfile.writeln(n, n);
+  outfile.writeln(n, " ", n);
   outfile.writeln(X);
   outfile.close;
 }

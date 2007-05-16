@@ -1,4 +1,4 @@
-semantic - arithmetic sequence ops
+feature request: math operators on ranges
 
 This test captures two semantic questions that also come 
 up in test/arrays/bradc/paulslice*.chpl:

@@ -1,6 +1,0 @@
-memory leak
-
-deitz
-
-Test memory leaks with indefinite domains and arrays.  Would like to
-have zero leaks.

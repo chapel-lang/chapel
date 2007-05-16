@@ -1,0 +1,6 @@
+bug: module naming collision
+
+Module init functions are not named in a generic/unique
+enough way to avoid collisions between modules with the
+same name at different scopes.
+

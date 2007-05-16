@@ -1,3 +1,0 @@
-memory leak
-
-this test shows a leak with on_heap allocated stuff.

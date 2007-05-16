@@ -1,8 +1,12 @@
-homogeneous tuple syntax
+feature request: general support for homogenous tuple types
 
-Homogeneous tuple syntax doesn't seem to be working as I (or, I think
-Steve) had expected.  I think this has been a known fragility in the
-parser for some time now.  This test demonstrates some of it.
+I would like a homogeneous tuple type to be used anywhere
+that a type should legally appear.  This test demonstrates
+many different possibilities.  It could be that the
+parenthesized version should be illegal.
 
-Not all of these forms may be correct.  Just trying to establish which
-are and which aren't.
+(Brad would like all of these to be supported, by
+switching to a different syntax for homogeneous
+tuples (and similarly to introduce a "new" keyword
+for creating new class instancess) so that types
+and expressions aren't as ambiguous as they are now).

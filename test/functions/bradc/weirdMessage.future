@@ -1,4 +1,4 @@
-error messages
+error message: prints statement instead of call
 
 I was surprised that this test printed out my whole statement as the
 unresolved call.  Is this implying that the "=" is the unresolved

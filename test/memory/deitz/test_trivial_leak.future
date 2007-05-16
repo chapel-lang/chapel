@@ -1,3 +1,0 @@
-memory leak
-
-This test shows a simple memory leak with writeln, which creates but does not free strings.

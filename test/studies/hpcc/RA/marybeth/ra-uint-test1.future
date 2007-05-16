@@ -1,3 +1,8 @@
-error message
+error message: improve clarity of array access problem
 
-this needs a better error message
+this needs a better error message.
+
+Brad: I think the message here is pretty precise, but I
+imagine that we could do a bit more reasoning to determine
+which parts of the array access/assignment are legal and
+which are not to generate a more specific error message.

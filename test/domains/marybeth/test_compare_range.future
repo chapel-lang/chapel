@@ -1,4 +1,14 @@
-semantic (< on ranges)
+error message: iterator sugaring
+
+Brad writes:
+
+* I believe we decided not to support < on ranges.
+
+* However, this test's error message could stand to be cleaned up.
+  Currently, min is being promoted.  We could overload for ranges
+  to generate a clean compiler error message or sugar the iterator
+  syntax if that generated a reasonable error message.
+
 
 Should < be implemented on ranges?  What does min of multiple ranges mean?
 

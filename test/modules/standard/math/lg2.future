@@ -1,4 +1,4 @@
-lg2 error on real types
+bug: log2 error on negative/zero ints (bradc)
 
 bradc
 

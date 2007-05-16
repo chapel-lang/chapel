@@ -1,2 +1,2 @@
-12
-2
+test_type_in_class3.chpl:12: error: unresolved call 'node(int).element_type'
+test_type_in_class3.chpl:2: note: candidates are: :node.element_type

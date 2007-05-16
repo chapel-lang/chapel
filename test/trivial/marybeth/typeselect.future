@@ -1,4 +1,4 @@
-return in type select
+bug: return in type select
 
 This test fails to compile, complaining of illegal use of a function that doesn't
 return a value.

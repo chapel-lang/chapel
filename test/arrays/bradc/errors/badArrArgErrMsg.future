@@ -1,4 +1,10 @@
-error message
+error message: formal array argument w/ query domain element type
+
+This is getting better, but could be better still in terms of the
+candidates.  I've updated the .good message.
+
+
+Original message:
 
 Here's an unresolved call error message involving arrays that
 could stand to be cleaned up a bit.  Currently reveals a bit

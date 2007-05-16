@@ -1,4 +1,4 @@
-generic types/error message
+error message: generic types
 
 Seems like this test ought to work, but it doesn't seem 
 to be.  The error message isn't very good either (doesn't

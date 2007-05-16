@@ -1,4 +1,4 @@
-array slicing
+bug: array slicing
 
 It appears that when slicing into an array via a singleton
 index, the current implementation doesn't zipper the array

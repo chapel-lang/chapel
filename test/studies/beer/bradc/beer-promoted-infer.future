@@ -1,11 +1,5 @@
-semantic
+unimplemented feature: short-circuiting promotion
 
-promotion over conditional expressions
-
-old:
-
-deitz
-
-For some reason, == doesn't seem to be promoting across integers and
-sequences of integers.  See also types/seq/bradc/promoteSeq.chpl.
-
+This relies on promotion over conditional expressions which
+isn't currently supported for reasons similar to lack of
+support for promotion of short-circuiting operators.

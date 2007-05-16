@@ -1,6 +1,4 @@
-global use before def
-
-deitz
+semantic: global use before def
 
 This test should fail with an error message that D is used before
 it is defined.

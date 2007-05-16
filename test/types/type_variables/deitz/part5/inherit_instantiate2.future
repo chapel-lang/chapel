@@ -1,4 +1,7 @@
-semantic
+error message: uninstantiated generic parent
+
+We decided you can't do this, so the error message needs to be fixed
+up.
 
 inherit from generic types?
 

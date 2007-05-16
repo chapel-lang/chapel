@@ -1,4 +1,4 @@
-array type inference
+bug: array type inference
 
 This is a test that checks whether array types are
 inferred by printing out both the inferred array

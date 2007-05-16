@@ -1,4 +1,4 @@
-const arrays
+error message: assigning const arrays
 
 This test demonstrates that if an array is declared to be const,
 it can be assigned to.  I believe this should result in an error.

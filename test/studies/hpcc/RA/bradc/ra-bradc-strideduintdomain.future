@@ -1,3 +1,6 @@
-semantic
+feature request: uint stride
 
-Striding a uint domain by a uint doesn't seem to work.  Can it?
+The proposal here is to support a version of the by
+operator that takes a uint and makes sure it's in
+the range of 0..max(int) and if so, uses it; otherwise
+halts.

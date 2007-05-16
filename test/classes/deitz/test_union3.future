@@ -1,4 +1,4 @@
-inout
+bug: inout of union members
 
 need an intermediate for x.i and copy it back after the function call to
 handle the out param
