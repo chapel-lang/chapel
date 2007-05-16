@@ -103469,3 +103469,27 @@ Removed files:
 	                                      stream-nopromote.execopts 
 	                                      stream-nopromote.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 14:26:26 -- deitz
+
+Log message:
+	Added a compile-time error check to ensure that an overridden method
+	returns a value of the same type as the method which it overrides.
+	
+	Updated two semantic future tests to use "bounded" instead of "0" when
+	specifying a range and then removed the two .future files.  Yes, this
+	is illegal.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/classes/bradc/overloadMethods/: 
+	                                            v4oneClassReturnNoMatch.chpl 
+	                                            v4oneClassReturnNoMatch.good 
+	                                            v5bothReturnTypes.chpl 
+	                                            v5bothReturnTypes.good 
+Removed files:
+	chapel/test/classes/bradc/overloadMethods/: 
+	                                            v4oneClassReturnNoMatch.future 
+	                                            v5bothReturnTypes.future 
+
