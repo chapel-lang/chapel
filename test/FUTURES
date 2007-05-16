@@ -1,0 +1,267 @@
+Bugs
+====
+
+return statements in type select statements don't work
+------------------------------------------------------
+return in type select [trivial/marybeth/typeselect]
+
+log2 on ints doesn't handle negatives and zeros well
+----------------------------------------------------
+lg2 error on real types [modules/standard/math/lg2]
+
+should parse all executable command line flags before acting on any?
+--------------------------------------------------------------------
+invalid executable command line arguments [execflags/shannon/spellingTest]
+
+inout/out arguments aren't checked to ensure they are lvalues
+-------------------------------------------------------------
+inout [functions/jplevyak/intent-8-error]
+semantic - intents and coercions [trivial/deitz/test_coerce_inout]
+
+sending union components in to inout arguments doesn't work
+-----------------------------------------------------------
+inout [classes/deitz/test_union3]
+
+Multiple modules with the same name not handled gracefully
+----------------------------------------------------------
+module init function naming [modules/diten/nested_module_collision]
+error message [modules/bradc/multipleModulesSameName]
+
+
+Whole-array negation of arrays of record/complex components doesn't work
+------------------------------------------------------------------------
+? [types/complex/bradc/negateimaginary2]
+
+
+Indefinite domain membership test can sometimes result in infinite loop
+-----------------------------------------------------------------------
+? hash table bug [puzzles/deitz/digits3]
+
+
+Slicing arrays with singletons (e.g., [i, 1..n]) doesn't work -- use degenerate range instead (e.g., [i..i, 1..n])
+------------------------------------------------------------------------
+array slicing [arrays/bradc/sliceViaSingleton3d]
+array slicing [arrays/bradc/sliceViaSingleton]
+
+Array type of forall expressions & promoted operators incorrect
+---------------------------------------------------------------
+array type inference [arrays/bradc/inferArrayType]
+array type inference [sparse/bradc/inferSparseArrayType]
+
+Poor error messages when using promotion and iterators
+------------------------------------------------------
+arrays [arrays/marybeth/test_arrayops]
+
+Class array members with generic element types cannot be initialized
+--------------------------------------------------------------------
+arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
+
+Cobegins containing calls with array slices don't work
+------------------------------------------------------
+cobegins passing array slices [parallel/cobegin/bradc/arrayargs]
+
+Initializing class member with conditional expression doesn't work
+------------------------------------------------------------------
+complicated expression in class [classes/marybeth/test-init]
+
+Const arrays are not protected from reassignment
+------------------------------------------------
+const arrays [arrays/bradc/constArray]
+
+Destructuring tuple arguments doesn't mix with overloading
+----------------------------------------------------------
+Destructured tuple function arguments prevent overloading [types/tuple/diten/overload_destructure_args]
+
+Accessing module members directly by name
+-----------------------------------------
+diten [trivial/deitz/test_module_access1]
+
+Empty lists cannot be initialized using "nil"
+---------------------------------------------
+error message [types/seq/bradc/emptySeq3]
+
+Default argument values should result in type constraints
+---------------------------------------------------------
+formal type from default value [functions/deitz/test_default_type]
+
+Function resolution has a few subtle undiagnosed bugs
+-----------------------------------------------------
+function resolution [types/range/bradc/rangeMath2]
+nested classes (diten) [classes/diten/deep_nest]
+
+parameter values are not implicitly coerced in conditional expressions
+----------------------------------------------------------------------
+parameter folding [studies/hpcc/RA/bradc/ra-condexpr]
+
+command-line config var parsing isn't checked as well as one might like
+-----------------------------------------------------------------------
+runtime error (deitz) [execflags/shannon/configs/configVarInvalidBoolean]
+runtime error (deitz) [execflags/shannon/configs/configVarInvalidComplex]
+runtime error (deitz) [execflags/shannon/configs/configVarInvalidFloat]
+runtime error (deitz) [execflags/shannon/configs/configVarInvalidInteger]
+
+
+Features
+========
+
+op= on sync vars not yet supported
+----------------------------------
+sync vars [parallel/begin/marybeth/test_forbegin3]
+
+can't stride domain by uint
+---------------------------
+semantic [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
+
+
+formal array type with query/indefinite domain
+----------------------------------------------
+semantic [studies/hpcc/FFT/bradc/twiddles-advanced2]
+semantic [studies/hpcc/FFT/bradc/twiddles-advanced]
+query variables [functions/bradc/querydomelem]
+
+
+promotion over conditional expressions/short-circuiting not supported
+---------------------------------------------------------------------
+short-circuiting promotion [studies/beer/bradc/beer-promoted-infer]
+short-circuiting promotion [arrays/bradc/promote-shortcircuit]
+
+config vars of tuple types
+--------------------------
+semantic [execflags/bradc/tupleConfig]
+
+
+Math on ranges
+--------------
+math operators on ranges [types/seq/bradc/multArithSeq]
+math operators on ranges [arrays/bradc/paulslice2]
+
+math routines are not implemented in their 32-bit versions
+----------------------------------------------------------
+32-bit math routines [modules/standard/math/bradc/sin32bit]
+
+
+class array fields defined using symbolic type names don't work
+---------------------------------------------------------------
+array fields and type aliases [arrays/jplevyak/simple-4]
+
+
+arrays of arrays
+----------------
+array of array [arrays/bradc/workarounds/arrayOfArray2]
+array of array [arrays/bradc/workarounds/arrayOfArray]
+array of arrays [arrays/deitz/part2/test_array_of_array1]
+array of arrays [arrays/deitz/test_array_of_array2]
+sparse (bradc) [arrays/bradc/workarounds/arrayOfSpsArray2]
+sparse (bradc) [arrays/bradc/workarounds/arrayOfSpsArray]
+
+arrays of sync variables
+------------------------
+array of syncs [parallel/single/waynew/sarray]
+array of syncs [users/shetaga/syncarr]
+
+can't insert new indices into sparse domains once arrays are storing nonzeroes
+------------------------------------------------------------------------------
+sparse domain modification (bradc) [npb/cg/bradc/cg-makea2-small-sparse]
+sparse domain modification (bradc) [sparse/bradc/sparseArray4]
+
+user constructors are somewhat weak
+-----------------------------------
+
+runtime out-of-memory messages don't point to line number properly
+------------------------------------------------------------------
+error message (runtime line number) [memory/shannon/memmaxExceedsLineno2]
+
+error messages don't sugar internal types ideally
+-------------------------------------------------
+error message [arrays/bradc/errors/badArrArgErrMsg]
+error message [studies/hpcc/RA/marybeth/ra-uint-test1]
+error message [types/tuple/deitz/test_param_tuple_arg1-error]
+rank-change slicing/error messages [arrays/bradc/slices/icError]
+semantic (< on ranges) [domains/marybeth/test_compare_range]
+
+error messages don't hide internal implementation sufficiently
+--------------------------------------------------------------
+error message [arrays/deitz/test_domain_mixed_dim_types]
+
+error messages not generated if functions don't return along all control paths
+------------------------------------------------------------------------------
+error message [functions/deitz/test_return1]
+
+error messages not generated for illegal setter/var functions
+-------------------------------------------------------------
+error messages [functions/bradc/setterFns/setterReturns2]
+error messages [functions/bradc/setterFns/setterReturns]
+var fn semantics [functions/bradc/varFns/retLitFromVarFn]
+var fn semantics [functions/bradc/varFns/retLocFromVarFn]
+
+error messages not generated for inheriting from generic class
+--------------------------------------------------------------
+error message [types/type_variables/deitz/part5/inherit_instantiate2]
+semantic [types/type_variables/deitz/part5/inherit_instantiate4]
+uninstantiated generic parent [classes/jplevyak/inherit-1]
+uninstantiated generic parent [classes/jplevyak/inherit-2-fixed]
+uninstantiated generic parent [classes/jplevyak/inherit-2]
+
+
+can't do reads of arrays
+------------------------
+file I/O [types/file/fileIO]
+
+initializing a class' generic type members is hard to do without default constructor; also can't chain generic types within a class well
+------------------------------------------------------------------------
+constructors [reductions/bradc/manual/threeclasstypes-construct2]
+constructors/error messages [reductions/bradc/manual/threeclasstypes-construct]
+generic classes with default types [reductions/bradc/manual/threeclasstypes]
+generic types/error message [classes/bradc/genericTypes]
+
+
+???
+===
+
+type in value context
+---------------------
+type in expression context [domains/indefinite/waynew/tuple_domain]
+
+Unclear use-before-def rules when using globals within a function
+-----------------------------------------------------------------
+global use before def [functions/bradc/useBeforeDef/useBeforeDef2]
+global use before def [functions/bradc/useBeforeDef/useBeforeDef]
+global use before def [studies/blas/marybeth/saxpy2]
+
+tuple syntax is not general
+---------------------------
+homogeneous tuple syntax [types/tuple/bradc/hetTupleArr]
+homogeneous tuple syntax [types/tuple/bradc/homogTupleArr]
+
+used to use sequences
+---------------------
+marybeth [spec/marybeth/seq]
+
+memory leak
+-----------
+memory leak [domains/indefinite/waynew/memory1]
+memory leak [memory/deitz/test_threaded_leak]
+memory leak [memory/deitz/test_trivial_leak]
+
+
+unclassified nested class bug
+-----------------------------
+nested classes (diten) [classes/deitz/nested/test_nested1]
+nested classes (diten) [classes/deitz/nested/test_nested2]
+nested classes [classes/deitz/test_type_in_class1]
+
+overloaded method return types
+------------------------------
+overloaded method return types [classes/bradc/overloadMethods/v4oneClassReturnNoMatch]
+overloaded method return types [classes/bradc/overloadMethods/v5bothReturnTypes]
+
+weird parameter initializations
+-------------------------------
+params in classes [classes/bradc/paramInClass/weirdParamInit3]
+params in classes [classes/bradc/paramInClass/weirdParamInit4]
+
+var functions can't be promoted
+-------------------------------
+promoted var function [arrays/deitz/promotion/test_scalar_promote10]
+
+
