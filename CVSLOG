@@ -103493,3 +103493,17 @@ Removed files:
 	                                            v4oneClassReturnNoMatch.future 
 	                                            v5bothReturnTypes.future 
 
+---------------------------------------------------------------------------
+
+05/16/07 15:27:11 -- bradc
+
+Log message:
+	Adding a file that I used to categorize futures as a
+	placeholder.  The next version of this file should map
+	from lines in the STATUS file to future tests to that
+	we can determine what a STATUS line refers to/whether
+	or not it has been resolved.
+
+Added files:
+	chapel/test/: FUTURES 
+
