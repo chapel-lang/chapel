@@ -27,6 +27,5 @@ def jam_records() {
 
 
 jam_records();
-a = 2;
 go = true;
 
