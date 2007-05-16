@@ -1,5 +1,0 @@
-semantic: overloaded method return types
-
-This overloaded method's return type is either illegal and 
-not generating a compiler error or it is legal and not
-working.
