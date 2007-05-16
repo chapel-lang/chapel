@@ -103169,3 +103169,13 @@ Removed files:
 	                              readWriteComplexTuple.future 
 	                              readWriteComplexTuple.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 08:46:20 -- deitz
+
+Log message:
+	Removed non-determinism with yesterday's change to print b instead of a.
+
+Modified files:
+	chapel/test/parallel/begin/waynew/: simple2.chpl simple2.good 
+
