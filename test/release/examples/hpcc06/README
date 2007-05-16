@@ -9,27 +9,6 @@ Award Competition for class 2 ("most productivity").  For a detailed
 explanation of these benchmarks, please refer to hpcc06.pdf in the
 doc/ directory.
 
-The primary performance bottleneck for these benchmarks comes from the
-insertion of sequence temporaries by the Chapel compiler to capture
-intermediate values for promoted operators and reductions.  This
-results in a much larger memory footprint than the benchmarks are
-intended to use and will bog down most systems due to swapping.  To
-select smaller problem sizes and avoid this overhead, override the
-default values of the m and n configuration variables on the
-command-line to specify smaller problem sizes (for example: "stream
---m=100000").  These sequence temporaries are not required by Chapel
-semantics, but were inserted to move our compiler implementation
-forward more rapidly.  We plan to remove these sequence temporaries in
-the near future.  To see an example of the impact of these sequences,
-compare the difference in reported performance between stream.chpl and
-stream-nopromote.chpl.  The second version has its Triad statement
-rewritten to avoid promotion and runs much faster in practice.
-
-Apart from this primary bottleneck, there are several other smaller
-performance issues, most of which can be resolved through traditional
-optimizations that we simply haven't prioritized in our implementation
-effort yet.
-
 The codes in this directory have been improved from the versions in
 the paper.  Some of these changes resolve workarounds in our original
 implementations that were called out in the report using "Compiler
