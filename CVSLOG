@@ -103238,3 +103238,15 @@ Added files:
 	                               parallelQuickSort.execopts 
 	                               parallelQuickSort.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 13:09:27 -- deitz
+
+Log message:
+	Changed the behavior of our threading runtime to halt with an error
+	"too many threads" if a begin or cobegin does not succeed in forking a
+	thread.  Previously, the work was just not done.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
