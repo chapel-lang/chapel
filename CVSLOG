@@ -103250,3 +103250,196 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+05/16/07 13:26:45 -- bradc
+
+Log message:
+	Sorted through futures, updating .future files and
+	classifying as appropriate.
+	
+	Expanded on Steve's future classification scheme by
+	having the first line of each future follow something
+	like the following template:
+	
+	  label: description (owner)
+	
+	where label is one of the following six choices:
+	
+	  bug: the test shows a bug in the implementation
+	  error message: the test needs a compiler error msg
+	                 (or, more often, a better one)
+	  feature request: requests a new feature for the
+	                   language or implementation
+	  runtime error: the test needs a runtime error msg
+	                 (or a better one)
+	  semantic: the test raises questions about the
+	            language which probably need to be
+	            addressed before fixing the future
+	  unimplemented feature: the test exercises a feature
+	                         that we've never implemented
+	
+	description is a brief phrasing of the problem (trying
+	to reuse existing descriptions whenever possible), and
+	owner is the developer who currently owns the future
+	(if applicable).
+	
+	The goal of using these labels is to reduce the amount
+	of work required to convert the list of futures into a
+	STATUS file.
+	
+	In some cases, putting a test into one of these
+	categories was a judgement call -- particularly between
+	bug and unimplemented feature -- feel free to change
+	the classification of any of them if you disagree.
+	
+	In addition to unifying the format of the .future files,
+	added and removed information from the future files to
+	reflect decisions that we've made and information we've
+	determined.  Didn't always preserve the previous content
+	in a log-style format, figuring we could rely on CVS to
+	do that for us.
+	
+	This scan also resulted in the following changes:
+	
+	* Removed a few more reference counting leak futures.
+	
+	* Fixed a future by having our error message generator
+	  print "iterator" rather than "function" for bugs in
+	  iterators.  (several other changes had gotten this
+	  future within epsilon of working, this was just putting
+	  the icing on the cake).
+	
+	* Reclassified the semantic futures that we'd reviewed
+	  as a group in spec meetings, and updated .good files
+	  as necessary.
+	
+	* Updated some old domain indexing syntax to use .dim
+	
+	* Fixed a thinko when I thought that writing multiple
+	  arguments was meant to put a space between them.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/arrays/bradc/: constArray.future 
+	                           inferArrayType.future 
+	                           paulslice2.future 
+	                           promote-shortcircuit.future 
+	                           sliceViaSingleton.future 
+	                           sliceViaSingleton3d.future 
+	chapel/test/arrays/bradc/errors/: badArrArgErrMsg.future 
+	                                  badArrArgErrMsg.good 
+	chapel/test/arrays/bradc/slices/: icError.future 
+	chapel/test/arrays/bradc/workarounds/: arrayOfArray.future 
+	                                       arrayOfArray2.future 
+	                                       arrayOfSpsArray.future 
+	                                       arrayOfSpsArray2.future 
+	chapel/test/arrays/deitz/: test_array_of_array2.future 
+	                           test_domain_mixed_dim_types.future 
+	chapel/test/arrays/deitz/part2/: test_array_of_array1.future 
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote10.future 
+	chapel/test/arrays/jplevyak/: simple-4.future 
+	chapel/test/arrays/marybeth/: test_arrayops.future 
+	chapel/test/classes/bradc/: genericTypes.future 
+	chapel/test/classes/bradc/arrayInClass/: 
+	                                         genericArrayWithInit.future 
+	chapel/test/classes/bradc/overloadMethods/: 
+	                                            v4oneClassReturnNoMatch.future 
+	                                            v5bothReturnTypes.future 
+	chapel/test/classes/bradc/paramInClass/: weirdParamInit3.future 
+	                                         weirdParamInit4.future 
+	chapel/test/classes/deitz/: test_type_in_class1.future 
+	                            test_type_in_class3.good 
+	                            test_union3.future 
+	chapel/test/classes/deitz/nested/: test_nested1.future 
+	                                   test_nested2.future 
+	chapel/test/classes/diten/: deep_nest.future 
+	chapel/test/classes/jplevyak/: inherit-1.future 
+	                               inherit-2-fixed.future 
+	                               inherit-2.future 
+	chapel/test/classes/marybeth/: test-init.future 
+	chapel/test/domains/indefinite/waynew/: tuple_domain.future 
+	chapel/test/domains/marybeth/: test_compare_range.chpl 
+	                               test_compare_range.future 
+	chapel/test/execflags/bradc/: int32configBad.future 
+	                              tupleConfig.future 
+	chapel/test/execflags/shannon/: spellingTest.future 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarInvalidBoolean.future 
+	                                        configVarInvalidComplex.future 
+	                                        configVarInvalidFloat.future 
+	                                        configVarInvalidInteger.future 
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVarDefaultValue.future 
+	chapel/test/functions/bradc/: querydomelem.future 
+	                              weirdMessage.future 
+	chapel/test/functions/bradc/setterFns/: setterReturns.future 
+	                                        setterReturns2.future 
+	chapel/test/functions/bradc/useBeforeDef/: useBeforeDef.future 
+	                                           useBeforeDef2.future 
+	chapel/test/functions/bradc/varFns/: retLitFromVarFn.future 
+	                                     retLocFromVarFn.future 
+	chapel/test/functions/deitz/: test_default_type.future 
+	                              test_return1.future 
+	chapel/test/functions/jplevyak/: intent-8-error.future 
+	chapel/test/memory/shannon/: memmaxExceedsLineno2.future 
+	chapel/test/modules/bradc/: multipleModulesSameName.future 
+	chapel/test/modules/diten/: nested_module_collision.future 
+	chapel/test/modules/standard/math/: lg2.future 
+	chapel/test/modules/standard/math/bradc/: sin32bit.future 
+	chapel/test/npb/cg/bradc/: cg-makea2-small-sparse.future 
+	chapel/test/parallel/begin/marybeth/: test_forbegin3.future 
+	chapel/test/parallel/cobegin/bradc/: arrayargs.future 
+	chapel/test/parallel/cobegin/deitz/: test_many_threads.future 
+	chapel/test/parallel/single/waynew/: sarray.future 
+	chapel/test/puzzles/deitz/: digits3.future 
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct.future 
+	                                      threeclasstypes-construct2.future 
+	                                      threeclasstypes.future 
+	chapel/test/sparse/bradc/: inferSparseArrayType.future 
+	                           sparseArray4.future 
+	chapel/test/studies/beer/bradc/: beer-promoted-infer.future 
+	chapel/test/studies/blas/marybeth/: saxpy2.future 
+	chapel/test/studies/hpcc/FFT/bradc/: twiddles-advanced.future 
+	                                     twiddles-advanced2.future 
+	chapel/test/studies/hpcc/RA/bradc/: 
+	                                    ra-bradc-strideduintdomain.future 
+	                                    ra-condexpr.future 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
+	chapel/test/trivial/deitz/: test_coerce_inout.future 
+	                            test_module_access1.future 
+	chapel/test/trivial/marybeth/: typeselect.future 
+	chapel/test/types/complex/bradc/: negateimaginary2.future 
+	chapel/test/types/file/: fileIO.chpl fileIO.future 
+	chapel/test/types/range/bradc/: rangeMath2.future 
+	chapel/test/types/seq/bradc/: emptySeq3.future 
+	                              length.modify.future 
+	                              multArithSeq.future 
+	chapel/test/types/tuple/bradc/: hetTupleArr.future 
+	                                homogTupleArr.future 
+	chapel/test/types/tuple/deitz/: 
+	                                test_param_tuple_arg1-error.future 
+	chapel/test/types/tuple/diten/: overload_destructure_args.future 
+	chapel/test/types/type_variables/deitz/part5/: 
+	                                               inherit_instantiate2.future 
+	                                               inherit_instantiate4.future 
+	chapel/test/users/shetag/: syncarr.future 
+Added files:
+	chapel/test/arrays/bradc/errors/: .cvsignore 
+	chapel/test/classes/diten/: .cvsignore 
+	chapel/test/parallel/begin/marybeth/: .cvsignore 
+Removed files:
+	chapel/test/classes/deitz/: test_type_in_class3.future 
+	chapel/test/domains/indefinite/waynew/: memory1.chpl 
+	                                        memory1.future 
+	                                        memory1.good 
+	chapel/test/functions/iterators/bradc/: iteratorBadError.future 
+	chapel/test/memory/deitz/: test_threaded_leak.chpl 
+	                           test_threaded_leak.future 
+	                           test_threaded_leak.good 
+	                           test_trivial_leak.chpl 
+	                           test_trivial_leak.future 
+	                           test_trivial_leak.good 
+
