@@ -103179,3 +103179,22 @@ Log message:
 Modified files:
 	chapel/test/parallel/begin/waynew/: simple2.chpl simple2.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 09:49:20 -- deitz
+
+Log message:
+	Fixed a bug in which the field in the cobegin class that captures
+	arrays used in cobegin statements would lose its is_ref reference flag
+	when scalar replacement removed the array wrapper record.  The
+	isReference reference flag was maintained, but not the is_ref
+	reference flag.  Can these be unified?
+	
+	Added a test of an array in a cobegin.
+
+Modified files:
+	chapel/compiler/passes/: scalarReplace.cpp 
+Added files:
+	chapel/test/parallel/cobegin/deitz/: test_array_cobegin.chpl 
+	                                     test_array_cobegin.good 
+
