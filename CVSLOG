@@ -103213,3 +103213,13 @@ Added files:
 	                                     test_many_threads.future 
 	                                     test_many_threads.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 10:09:53 -- deitz
+
+Log message:
+	Reorganized README.
+
+Modified files:
+	chapel/test/release/examples/: README 
+
