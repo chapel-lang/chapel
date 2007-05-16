@@ -103443,3 +103443,29 @@ Removed files:
 	                           test_trivial_leak.future 
 	                           test_trivial_leak.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 14:15:42 -- bradc
+
+Log message:
+	Removed the stream-nopromote example from the release
+	and moved it to the studies directory.  We included
+	this only to save some face regarding performance in
+	the initial release;  it isn't important enough to
+	include on its own.  Removed mention of it from the
+	READMEs and Makefiles.
+
+Modified files:
+	chapel/test/release/examples/: README 
+	chapel/test/release/examples/hpcc06/: Makefile README 
+Added files:
+	chapel/test/studies/hpcc/STREAMS/: stream-nopromote.chpl 
+	                                   stream-nopromote.compopts 
+	                                   stream-nopromote.execopts 
+	                                   stream-nopromote.good 
+Removed files:
+	chapel/test/release/examples/hpcc06/: stream-nopromote.chpl 
+	                                      stream-nopromote.compopts 
+	                                      stream-nopromote.execopts 
+	                                      stream-nopromote.good 
+
