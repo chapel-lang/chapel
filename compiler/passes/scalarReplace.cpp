@@ -320,6 +320,9 @@ void scalarReplace(ClassType* ct) {
           clone = new VarSymbol(name, field->type);
           if (sym->isReference)
             clone->isReference = true;
+          if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+            if (var->is_ref)
+              dynamic_cast<VarSymbol*>(clone)->is_ref = true;
         }
         syms->add(clone);
         if (nfields > 1 && def->sym == ret)
