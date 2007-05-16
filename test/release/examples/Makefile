@@ -10,6 +10,7 @@ TARGETS = \
 	genericStack \
 	genericStack2 \
 	norm \
+	parallelQuickSort \
 	prod-cons \
 	tree_construct \
 	iterators
