@@ -103223,3 +103223,18 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: README 
 
+---------------------------------------------------------------------------
+
+05/16/07 10:37:13 -- deitz
+
+Log message:
+	Added a parallel quick sort example that is well-documented,
+	instructive, and shows parallel speedup on chap01.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README 
+Added files:
+	chapel/test/release/examples/: parallelQuickSort.chpl 
+	                               parallelQuickSort.execopts 
+	                               parallelQuickSort.good 
+
