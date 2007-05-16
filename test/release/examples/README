@@ -2,29 +2,32 @@
 Chapel Examples Directory and Testing System
 ============================================
 
-This directory contains several Chapel example codes:
+This directory contains the following example codes:
 
-     hello.chpl             : "Hello, world!" program using a config variable
      beer.chpl              : computes lyrics to "99 bottles of beer"
-     jacobi.chpl            : Jacobi iteration in Chapel
      genericStack.chpl      : a generic stack class (linked list implementation)
      genericStack2.chpl     : another generic stack class (array implementation)
+     hello.chpl             : "Hello, world!" program using a config variable
      iterators.chpl         : sample iterators
+     jacobi.chpl            : Jacobi iteration
      norm.chpl              : sample module for computing array norms
      prod-cons.chpl         : producer-consumer using a sync variable
      tree_construct.chpl    : construct and walk a tree in parallel
-     hpcc06/                : our code for the 2006 HPC Challenge competition
-       stream.chpl          : our global STREAM Triad entry
-       ra.chpl              : our global Random Access entry
-       ra-randstream.chpl   : the random stream generator for our RA entry
-       fft.chpl             : our global 1D FFT entry
-       probSize.chpl        : a common module for computing problem sizes
-       fft-mta.chpl         : a port of the 2005 Konecny, Kahan, Feo entry
-       stream-nopromote.chpl: a rewrite of the STREAM Triad to avoid promotion
-     Bin/                   : helper scripts used by the test system
 
-Most of these examples can be compiled in a standalone manner, for
-example:
+The hpcc06 directory contains Chapel versions of the HPC Challenge
+benchmarks:
+
+     stream.chpl            : our global STREAM Triad entry
+     ra.chpl                : our global Random Access entry
+     ra-randstream.chpl     : the random stream generator for our RA entry
+     fft.chpl               : our global 1D FFT entry
+     probSize.chpl          : a common module for computing problem sizes
+     fft-mta.chpl           : a port of the 2005 Konecny, Kahan, Feo entry
+     stream-nopromote.chpl  : a rewrite of the STREAM Triad to avoid promotion
+
+Most of the examples can be compiled in a standalone manner, for
+example, the canonical "Hello, world!" program can be compiled as
+follows:
 
      chpl -o hello hello.chpl
 
