@@ -103691,3 +103691,23 @@ Modified files:
 Removed files:
 	chapel/test/types/range/bradc/: rangeMath2.future 
 
+---------------------------------------------------------------------------
+
+05/17/07 14:01:29 -- bradc
+
+Log message:
+	Implemented +, -, * on range\int combinations and put
+	a halt in / on range\int combinations not being sure
+	how to handle that yet.  Updated rangeMath2 test,
+	removed feature request futures that utilized this
+	capability, and updated STATUS and FUTURES files.
+
+Modified files:
+	./: STATUS 
+	chapel/modules/standard/: ChapelRange.chpl 
+	chapel/test/: FUTURES 
+	chapel/test/types/range/bradc/: rangeMath2.chpl rangeMath2.good 
+Removed files:
+	chapel/test/types/seq/bradc/: multArithSeq.future 
+	chapel/test/arrays/bradc/: paulslice2.future 
+
