@@ -103541,3 +103541,41 @@ Added files:
 	                                 initReal32.future 
 	                                 initReal32.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 17:23:37 -- bradc
+
+Log message:
+	Updated the STATUS file to reflect current STATUS as best I
+	understand it.  Also made the FUTURES file map from the 1-line
+	descriptions in the STATUS file to the futures that resulted
+	in that line.
+	
+	If we could try to be somewhat disciplined about keeping these
+	files up-to-date as we add futures, fix futures, add features
+	from now until the release, that would be appreciated when I
+	take another pass through this before the future.
+	
+	As we update our spec chapters, we should also make sure that
+	the unimplemented features in the STATUS file match those in
+	our chapters (which is to say, there's a 1-1 correspondance).
+	
+	Also, I'm looking for formatting suggestions for the STATUS file.
+	I like today's better than the original, but think it could be
+	even better.  Just am not sure how.  Formatting for the FUTURES
+	file is not as important, as that's for internal use only.
+	
+	Made some minor reclassifications and cleanups to future files
+	along the way.  Also added a workaround to one of Wayne's
+	tests to make sure it works.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+	chapel/test/functions/jplevyak/: intent-8-error.future 
+	chapel/test/parallel/cobegin/deitz/: test_many_threads.future 
+	chapel/test/trivial/deitz/: test_module_access1.future 
+Added files:
+	chapel/test/domains/indefinite/waynew/: tuple_domain_named.chpl 
+	                                        tuple_domain_named.good 
+
