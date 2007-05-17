@@ -24,6 +24,8 @@ while (@ARGV) {
         $debug = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
+    } elsif ($flag eq "-performance") {
+        $performance = 1;
     } else {
         $printusage = 1;
         last;
@@ -104,9 +106,17 @@ if ($logdir eq "" || $statdir eq "") {
     exit 1;
 }
 if ($debug == 1) {
-    $statfile = "$statdir/nightly.$platform-debug.dat";
+    if ($performance == 1) {
+        $statfile = "$statdir/nightly-perf.$platform-debug.dat";
+    } else {
+        $statfile = "$statdir/nightly.$platform-debug.dat";
+    }
 } else {
-    $statfile = "$statdir/nightly.$platform-cron.dat";
+    if ($performance == 1) {
+        $statfile = "$statdir/nightly-perf.$platform-cron.dat";
+    } else {
+        $statfile = "$statdir/nightly.$platform-cron.dat";
+    }
 }
 
 
@@ -237,6 +247,9 @@ if ($valgrind == 0) {
 if ($examples == 1) {
     $testflags = "$testflags -startdir release/examples";
 }
+if ($performance == 1) {
+    $testflags = "$testflags -performance";
+}
 
 if ($runtests == 1) {
     $status = mysystem("cd $testdir && ./start_test $testflags", "running standard tests", 0, 0);
@@ -300,7 +313,11 @@ if ($runtests == 1) {
     if ($debug == 1) {
         $mailsubject = "Chapel Debug ($platform): $shortstatus";
     } else {
-        $mailsubject = "Chapel Nightly ($platform): $shortstatus";
+        if ($performance == 1) {
+            $mailsubject = "Chapel Performance ($platform): $shortstatus";
+        } else {
+            $mailsubject = "Chapel Nightly ($platform): $shortstatus";
+        }
     }
     
     if ($debug == 1) {
