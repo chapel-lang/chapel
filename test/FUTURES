@@ -21,9 +21,6 @@ bug: conditional expression in class member initialization [classes/marybeth/tes
 * Destructuring tuple arguments disables overloads of that function name
 bug: destructured tuple function arguments prevent overloading (fold &&) [types/tuple/diten/overload_destructure_args]
 
-* In some undiagnosed cases, function resolution fails to work as expected
-bug: function resolution [types/range/bradc/rangeMath2]
-
 * Function calls from inner classes to outer class methods don't always work
 bug: function resolution with nested classes [classes/diten/deep_nest]
 
@@ -123,8 +120,6 @@ feature request: formal array argument with indefinite reindexing [studies/hpcc/
 feature request: general support for homogenous tuple types [types/tuple/bradc/hetTupleArr]
 feature request: general support for homogenous tuple types [types/tuple/bradc/homogTupleArr]
 feature request: help prints config var default values [execflags/shannon/configs/help/configVarDefaultValue]
-feature request: math operators on ranges [arrays/bradc/paulslice2]
-feature request: math operators on ranges [types/seq/bradc/multArithSeq]
 feature request: private members [types/seq/bradc/length.modify]
 feature request: uint stride [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
 

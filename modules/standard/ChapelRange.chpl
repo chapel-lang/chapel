@@ -269,3 +269,36 @@ def =(a: _domain, b: range) {
   a = bdom;
   return a;
 }
+
+
+def +(r: range, s:int) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+def -(r: range, s:int) {
+  return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
+}
+
+def *(r: range, s:int) {
+  return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
+}
+
+def /(r: range, s:int) {
+  compilerError("Semantic Error: Unsure how to define division for range/scalar yet");
+}
+
+def +(s:int, r: range) {
+  return range((s+r._low).type, r.boundedType, r.stridable, s+r._low, s+r._high, r._stride);
+}
+
+def -(s:int, r: range) {
+  return range((s-r._low).type, r.boundedType, r.stridable, s-r._low, s-r._high, r._stride);
+}
+
+def *(s:int, r: range) {
+  return range((s*r._low).type, r.boundedType, stridable=true, s*r._low, s*r._high, s*r._stride);
+}
+
+def /(s:int, r: range) {
+  compilerError("Semantic Error: Unsure how to define division for range/scalar yet");
+}

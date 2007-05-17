@@ -68,8 +68,6 @@ Unimplemented Features:
 
 Bugs:
 
-* In some undiagnosed cases, function resolution fails to work as expected
-
 * Function calls from nested classes to outer class methods don't always work
 
 * Analysis to find return statements along all paths in a function is incomplete
