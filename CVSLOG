@@ -103765,3 +103765,13 @@ Log message:
 Modified files:
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+05/17/07 16:07:22 -- deitz
+
+Log message:
+	Updated Functions section, removing # from operator overloading list.
+
+Modified files:
+	chapel/spec/: Functions.tex 
+
