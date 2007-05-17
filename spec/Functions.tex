@@ -23,7 +23,7 @@ function-name:
   operator-name
 
 operator-name: one of
-  + - * / % ** && || ! == <= >= < > << >> & | ^ ~ #
+  + - * / % ** ! == <= >= < > << >> & | ^ ~
 
 argument-list:
   ( formals[OPT] )
@@ -88,7 +88,7 @@ generic.  It is discussed in~\rsec{Where_Expressions}.
 \label{The_Return_Statement}
 \index{return@\chpl{return}}
 
-The return statement must appear in a function.  It exits that
+The return statement can only appear in a function.  It exits that
 function, returning control to the point at which that function was
 called.  It can optionally return a value.  The syntax of the return
 statement is given by
@@ -357,7 +357,7 @@ listed in the following table:
 {\bf arity} & {\bf operators} \\
 \hline
 unary & \verb@+ - ! ~@ \\
-binary & \verb@+ - * / % ** && || ! == <= >= < > << >> & | ^ #@ \\
+binary & \verb@+ - * / % ** ! == <= >= < > << >> & | ^ @ \\
 \hline
 \end{tabular}
 \end{center}
