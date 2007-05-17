@@ -103605,3 +103605,13 @@ Modified files:
 Removed files:
 	chapel/test/parallel/cobegin/bradc/: arrayargs.future 
 
+---------------------------------------------------------------------------
+
+05/17/07 11:12:46 -- bradc
+
+Log message:
+	Removed final reference to sequences from STATUS file.
+
+Modified files:
+	./: STATUS 
+
