@@ -103579,3 +103579,16 @@ Added files:
 	chapel/test/domains/indefinite/waynew/: tuple_domain_named.chpl 
 	                                        tuple_domain_named.good 
 
+---------------------------------------------------------------------------
+
+05/16/07 18:01:02 -- marybeth
+
+Log message:
+	Adding block LU factorization example.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README 
+Added files:
+	chapel/test/release/examples/: Adata.dat blockLU.chpl 
+	                               blockLU.good 
+
