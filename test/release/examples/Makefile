@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	beer \
+        blockLU \
 	jacobi \
 	genericStack \
 	genericStack2 \
