@@ -103775,3 +103775,13 @@ Log message:
 Modified files:
 	chapel/spec/: Functions.tex 
 
+---------------------------------------------------------------------------
+
+05/17/07 16:19:36 -- deitz
+
+Log message:
+	Added parenthesesless functions and iterator methods to the spec.
+
+Modified files:
+	chapel/spec/: Classes.tex Functions.tex Iterators.tex 
+
