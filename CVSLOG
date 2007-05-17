@@ -103654,3 +103654,40 @@ Removed files:
 	chapel/test/compflags/bradc/: linenoConditional.chpl 
 	                              linenoConditional.good 
 
+---------------------------------------------------------------------------
+
+05/17/07 12:46:04 -- deitz
+
+Log message:
+	Fixed a bug in which functions in modules that were used would take
+	precedence over functions in a given module for code defined at the
+	top level of the module because the use was in the block of the init
+	function rather than the block of the module.
+	
+	Moved functions that conflict with standard functions in the tests
+	
+	  distributions/bradc/foundations/blockdist1.chpl
+	  arrays/deitz/jacobi5.chpl
+	
+	into nested scopes so that they take precedence over the standard
+	functions.
+	
+	Made it so that all ambiguous functions print out in the non-developer
+	error message not just functions in user code.  This avoids the case
+	where we say a function is ambiguous but only print out the candidates
+	in user code, a confusing situation where only one candidate could be
+	printed out.
+	
+	Made it so that standard module file paths are only printed out from
+	the modules directory.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/arrays/deitz/: jacobi5.chpl 
+	chapel/test/classes/deitz/: test_method_call2.good 
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	chapel/test/types/range/bradc/: rangeMath2.good 
+Removed files:
+	chapel/test/types/range/bradc/: rangeMath2.future 
+
