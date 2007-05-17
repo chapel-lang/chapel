@@ -103615,3 +103615,14 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+05/17/07 12:09:38 -- deitz
+
+Log message:
+	Copied probSize module into STREAMS directory to complement
+	stream-nopromote test.  Fixes regression.
+
+Added files:
+	chapel/test/studies/hpcc/STREAMS/: probSize.chpl probSize.notest 
+
