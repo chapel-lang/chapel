@@ -103711,3 +103711,15 @@ Removed files:
 	chapel/test/types/seq/bradc/: multArithSeq.future 
 	chapel/test/arrays/bradc/: paulslice2.future 
 
+---------------------------------------------------------------------------
+
+05/17/07 14:40:16 -- deitz
+
+Log message:
+	Fixed an interesting .good and removed a .future.
+
+Modified files:
+	chapel/test/classes/diten/: deep_nest.good 
+Removed files:
+	chapel/test/classes/diten/: deep_nest.future 
+
