@@ -1,7 +1,5 @@
 error message: inout
 
-deitz
-
 Need to put in a semantic check (maybe in processParameters) that
 ensures that out and inout arguments are passed expressions with
 lvalues.  Ideally, this could be implemented using a nice isLValue()

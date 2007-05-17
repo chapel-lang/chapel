@@ -1,3 +1,5 @@
-bug: direct module access (diten)
+semantic: direct module access for un-use-d module
 
-test for direct module access
+Does a module need to be used before it is used for a member access?
+If not, when is its initializer executed?  Are there challenges in
+finding it?

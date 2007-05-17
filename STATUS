@@ -3,175 +3,236 @@ Chapel Implementation Status
 ============================
 
 This file contains a list of unimplemented features and known bugs in
-the Chapel implementation.  This list is not complete; the language is
-still being defined and the set of standard modules is still being
-compiled.  If you find additional bugs and unimplemented features (or
-would like to request prioritization of those in this file), please
-let us know at chapel_bugs@cray.com or chapel_info@cray.com.
+the Chapel implementation.  If you find additional bugs and
+unimplemented features, or if you would like to request prioritization
+of items in this file, please let us know at chapel_bugs@cray.com or
+chapel_info@cray.com.  Please feel encouraged to err on the side of
+mailing us with any issues you run into.
+
+
+-------
+General
+-------
+
+Unimplemented Features:
+
+* Many error messages continue to be incorrect/confusing/unhelpful
+  Workaround: Please ask us for help interpreting any that you struggle with
+
+* Compiler and runtime errors don't always report useful line numbers
+
+* Generated executable's command-line parsing is not as robust as one would like
 
 
 --------------------------------
 Variables, Types and Expressions
 --------------------------------
-  Unimplemented Features
-    - Non-ASCII strings
-    - Conversions from strings to other primitive types
-    - Configuration parameters (config param)
-    - Primitive type casts on arrays and sequences
-    - Parameter folding of conditional expressions
 
-  Bugs
-    - Converting unsigned integers to complex
-    - Unreliable const assignment error detection
-    - Real literal initizalizer for real(32) type
-    - Allow use before def of globals
-    - Parameter folding on bools and uint<->int
-       - true + true ==> true instead of 2
-    - Using type aliases across modules
-    - Using parameters and constants across modules
+Unimplemented Features:
+* Non-ASCII strings
+* Conversions from strings to other primitive types
+* Parameter folding of conditional expressions
+* Configuration variables of tuple types
+
+Bugs:
+
+* Const arrays can currently be assigned -- should result in a compiler error
+
+* Parameters in branches of conditional expressions are not implicitly coerced
+  e.g., var x:uint;  if (t) then x else 1;  // 1 should be coerced to uint
+
+* Assigning nil to a list/record results in confusing error messages
 
 
 -------
 Modules
 -------
-  Unimplemented Features
-    - The argv sequence
-    - Accessing variables via explicit names, e.g., mod.x
-    - Using modules not explicitly passed to the compiler
 
-  Bugs
-    - Using type aliases across modules
-    - Using parameters and constants across modules
+Unimplemented Features:
+* The argv array
+* Using modules in files not named on the compiler's command-line
+
+Bugs:
+* Two modules sharing the same name break compilation (whether legal or illegal)
 
 
 ---------
 Functions
 ---------
-  Unimplemented Features
-    - Formal arguments in a tuple
-    - Functions as variables and/or arguments to functions
-    - Formal arguments of tuple type must match actual arguments exactly
-    - Promotion over variable and setter functions does not work
-    - s(p)(r) = 0  where s, p, and r are sequences of integers
 
-  Bugs
-    - More visible nested functions are not more specific
-    - Return statements in type select statements
-    - inout arguments with default values
+Unimplemented Features:
+* Functions as variables and/or arguments to functions
+* Array arguments cannot have both their domain and element types queried
+* Coercions of tuple argument components to match formals
+* Formal arguments of inferred type should be constrained by their default value
+
+Bugs:
+
+* In some undiagnosed cases, function resolution fails to work as expected
+
+* Function calls from nested classes to outer class methods don't always work
+
+* Analysis to find return statements along all paths in a function is incomplete
+
+* Return statements in type select statements are not recognized correctly
+
+* Destructuring tuple arguments disables overloads of that function name
+    e.g., def foo((a,b), c) breaks ability to create other overloads of foo()
+
+* Actual arguments passed using inout intents are not checked for legality
+
+* Union members that are passed to arguments of inout/out intent don't work
+
+* Promoting var functions can result in a compilation error
+
+* Var functions should not be permitted to return locals or literals but can
+
+* Setter functions should not be permitted to return anything, but currently can
 
 
 ----------------------------
 Classes, Records, and Unions
 ----------------------------
-  Unimplemented Features
-    - Nested classes and records
-    - Chained constructor calls for derived classes
-    - Shadowing base class fields
-    - Inheriting from multiple classes
-    - Garbage collection
-    - Anonymous record literals
-    - Type select on unions
-    - Assignment between classes and records
 
-  Bugs
-    - Class field of array type specified indirectly via a type alias
-    - Iterator methods in classes
-    - Class field initialized with conditional expression
+Unimplemented Features:
+
+* Constructors are not particularly well-supported
+  - chained constructors for derived classes are not implemented
+  - constructors for generic classes cause problems
+  - constructing nested classes does not work consistently
+
+* Multiple inheritance is not implemented
+
+* Shadowing base class fields is not implemented
+
+* Garbage collection is implemented only at a prototype level
+
+* Anonymous record literals are not supported
+
+* Type select on unions is not implemented
+
+* Assignment between classes and records is unimplemented
+
+Bugs:
+
+* Class fields of array type specified using a type alias don't work
+
+* Class fields of array types that are initialized can cause compile error
+  Workaround: initialize field in initialize() method
+
+* Class fields initialized with conditional expressions fail to compile
+
+* Subclassing uninstantiated generic classes should be prohibited but is not
 
 
 --------------------------------
 Tuples, Sequences, and Iterators
 --------------------------------
-  Unimplemented Features
-    - Ignoring values via underscores
-    - Implicit reductions in conditional, while, and select statements
-    - The transpose, spread, and reshape functions
-    - Indexing by indefinite arithmetic sequences
-    - Zipper iteration bounds matching
 
-  Bugs
-    - Iterator methods in classes
-    - Iterator with tuple return type such as rank*int
-    - Iterators with parameter arguments
-    - Iterators with parameter locals
-    - Iterators with intents
-    - Recursive iterators
-    - Anonymous domain in iterator
+Unimplemented Features:
+* The transpose, spread, and reshape functions
+* Short-circuiting functions and conditional expressions cannot be promoted
 
 
 ------------------
 Arrays and Domains
 ------------------
-  Unimplemented Features
-    - Sparse arrays and domains
-    - Opaque arrays and domains
-    - Enumerated arrays and domains
-    - Arrays of arrays
-    - Index type bounds checking
-    - Subdomains
-    - Array promotion returns sequences
 
-  Bugs
-    - Indefinite domains of explicit tuple type
-       - var td: domain((int, int))
-    - Element-wise negation of components of the element type of arrays
-       - var A: [1..4] complex; A.im = -A.im;
-    - Array of sync/single variables
+Unimplemented Features:
+* Arrays of arrays are not implemented
+* Opaque domains and arrays are not implemented
+* Index type bounds checking is not implemented
+* Checking that subdomain are index subsets is not implemented
 
-    
+Bugs:
+
+* Array promotion/forall expressions evaluate to 1D arrays
+    e.g., foo(A) where A promotes foo() should result in an array of type:
+          [A.domain] foo(A(i)).type but instead results in a 1D array
+    e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
+          but instead results in a 1D array
+
+* Modifying a sparse domain after assigning its array values can cause problems
+
+* Whole-array updates of components of arrays of records/complexes don't work
+    e.g., var A: [1..4] complex; A.im = -A.im;
+  Workaround: use an explicit loop
+    e.g., [i in 1..4] A(i).im = -A(i).im;
+
+* Array operations over slices specified using a singleton index don't work
+    e.g., B[1, 1..n] = A[1..n, 1]
+  Workaround: use a degenerate range
+    e.g., B[1..1, 1..n] = A[1..n, 1..1]
+
+* Associative domain index additions/deletions can result in an infinite loop
+
+* Associative domains of explicit heterogeneous tuple types don't work
+    e.g., var td: domain((int, int));
+  Workaround: name the tuple type
+    e.g., type td_d = (int, int);  var td: domain(td_t);
+
+* Mixing dimensional index types in a domain specification yields poor errors
+    e.g., var m: uint, n: int;  ... [1..m, 1..n]
+
+
 --------
 Generics
 --------
-  Bugs
-    - Generic functions without return statements in paths that will be
-       eliminated via parameter folding
-    - Type aliases in generic class defined by instantiated types
+
+Bugs:
+* Type members in generic class defined by instantiated types
 
 
 -------------------------------
 Parallelism and Synchronization
 -------------------------------
-  Unimplemented Features
-    - Atomic statements
-    - Serial statements
-    - User-defined reductions and scans
-    - Forall loops and ordered forall loops are serialized
-    - Reductions and scans are serialized
-    - Array and sequence operations and assignment are serialized
 
-  Bugs
-    - Arrays of synchronization variables
-    - Synchronization variables in the expression of a conditional statement
-    - Begin blocks that use sync/single variables that are locals
+Unimplemented Features:
+* Atomic statements
+* Arrays of sync/single variables don't work
+* User-defined reductions and scans
+* Forall loops and ordered forall loops are serialized
+* Reductions and scans are serialized
+* Array operations and assignment are serialized
+* If there are insufficient threads to spawn a task, the program halts
+
+Bugs:
+
+* Applying op= style assignments to sync vars does not work
+    e.g., var x: sync int = 0;   x += 1;
+  Workaround: expand operator manually
+    e.g., x = x + 1;
+
+* Cobegins containing function calls with array slice arguments fail to compile
 
 
 --------------------------
 Locality and Distributions
 --------------------------
-  Unimplemented Features
-    - Running using multiple locales
-    - Distributions
+
+Unimplemented Features:
+* Executing using multiple locales
+* Distributions
 
 
 ----------------
 Input and Output
 ----------------
-  Bugs
-    - whole array reads not working
-    - multiple-argument reads not working
+
+Bugs:
+
+* read()s of whole arrays are not working
+    e.g., read(A);
+  Workaround: use a loop and read in the elements one at a time
+    e.g., for i in A.domain read(A(i));
 
 
 -----------------
 Standard Library
 -----------------
-  Bugs
-    - log2(n):int != log2(n:int)
 
+Unimplemented Features:
+* 32-bit math routines are unimplemented, causing coercion to 64-bit versions
 
--------------
-Miscellaneous
--------------
-  Bugs
-    - error messages are incomplete and/or inaccurate
-    - help message printing config vars and their values
-    - using --chpl-cg-lineno flag can result in incorrect execution
+Bugs:
+* log2() of negative and zero integers not implemented correctly

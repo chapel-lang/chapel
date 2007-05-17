@@ -1,267 +1,195 @@
-Bugs
-====
+* Class fields of array type specified using a type alias don't work
+bug: array fields via type aliases [arrays/jplevyak/simple-4]
 
-return statements in type select statements don't work
-------------------------------------------------------
-return in type select [trivial/marybeth/typeselect]
+* Array operations over slices specified using a singleton index don't work
+bug: array slicing [arrays/bradc/sliceViaSingleton3d]
+bug: array slicing [arrays/bradc/sliceViaSingleton]
 
-log2 on ints doesn't handle negatives and zeros well
-----------------------------------------------------
-lg2 error on real types [modules/standard/math/lg2]
+* Array promotion/forall expressions evaluate to 1D arrays
+bug: array type inference [arrays/bradc/inferArrayType]
+bug: array type inference [sparse/bradc/inferSparseArrayType]
 
-should parse all executable command line flags before acting on any?
---------------------------------------------------------------------
-invalid executable command line arguments [execflags/shannon/spellingTest]
+* Associative domain index additions/deletions can result in an infinite loop
+bug: associative array infinite loop (bradc) [puzzles/deitz/digits3]
 
-inout/out arguments aren't checked to ensure they are lvalues
--------------------------------------------------------------
-inout [functions/jplevyak/intent-8-error]
-semantic - intents and coercions [trivial/deitz/test_coerce_inout]
+* Associative domains of explicit heterogeneous tuple types don't work
+bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domain]
 
-sending union components in to inout arguments doesn't work
------------------------------------------------------------
-inout [classes/deitz/test_union3]
+* Cobegins containing function calls with array slice arguments fail to compile
+bug: cobegins passing array slices [parallel/cobegin/bradc/arrayargs]
 
-Multiple modules with the same name not handled gracefully
-----------------------------------------------------------
-module init function naming [modules/diten/nested_module_collision]
-error message [modules/bradc/multipleModulesSameName]
+* Class fields initialized with conditional expressions fail to compile
+bug: conditional expression in class member initialization [classes/marybeth/test-init]
 
+* Destructuring tuple arguments disables overloads of that function name
+bug: destructured tuple function arguments prevent overloading (fold &&) [types/tuple/diten/overload_destructure_args]
 
-Whole-array negation of arrays of record/complex components doesn't work
-------------------------------------------------------------------------
-? [types/complex/bradc/negateimaginary2]
+* In some undiagnosed cases, function resolution fails to work as expected
+bug: function resolution [types/range/bradc/rangeMath2]
 
+* Function calls from inner classes to outer class methods don't always work
+bug: function resolution with nested classes [classes/diten/deep_nest]
 
-Indefinite domain membership test can sometimes result in infinite loop
------------------------------------------------------------------------
-? hash table bug [puzzles/deitz/digits3]
+* Parameters in branches of conditional expressions are not implicitly coerced
+bug: implicit parameter coercions in conditional expression [studies/hpcc/RA/bradc/ra-condexpr]
 
+* Class fields of array types that are initialized can cause compile error
+bug: initialized arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
 
-Slicing arrays with singletons (e.g., [i, 1..n]) doesn't work -- use degenerate range instead (e.g., [i..i, 1..n])
-------------------------------------------------------------------------
-array slicing [arrays/bradc/sliceViaSingleton3d]
-array slicing [arrays/bradc/sliceViaSingleton]
+* Union members that are passed to arguments of inout/out intent don't work
+bug: inout of union members [classes/deitz/test_union3]
 
-Array type of forall expressions & promoted operators incorrect
----------------------------------------------------------------
-array type inference [arrays/bradc/inferArrayType]
-array type inference [sparse/bradc/inferSparseArrayType]
+* log2() of negative and zero integers not implemented correctly
+bug: log2 error on negative/zero ints (bradc) [modules/standard/math/lg2]
 
-Poor error messages when using promotion and iterators
-------------------------------------------------------
-arrays [arrays/marybeth/test_arrayops]
+* Two modules sharing the same name break compilation (whether legal or illegal)
+bug: module naming collision [modules/diten/nested_module_collision]
+error message: module naming collision [modules/bradc/multipleModulesSameName]
 
-Class array members with generic element types cannot be initialized
---------------------------------------------------------------------
-arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
 
-Cobegins containing calls with array slices don't work
-------------------------------------------------------
-cobegins passing array slices [parallel/cobegin/bradc/arrayargs]
+* Whole-array updates of components of arrays of records/complexes don't work
+bug: negating whole-array member [types/complex/bradc/negateimaginary2]
 
-Initializing class member with conditional expression doesn't work
-------------------------------------------------------------------
-complicated expression in class [classes/marybeth/test-init]
 
-Const arrays are not protected from reassignment
-------------------------------------------------
-const arrays [arrays/bradc/constArray]
 
-Destructuring tuple arguments doesn't mix with overloading
-----------------------------------------------------------
-Destructured tuple function arguments prevent overloading [types/tuple/diten/overload_destructure_args]
+* Applying op= style assignments to sync vars does not work
+bug: op= on sync vars [parallel/begin/marybeth/test_forbegin3]
 
-Accessing module members directly by name
------------------------------------------
-diten [trivial/deitz/test_module_access1]
 
-Empty lists cannot be initialized using "nil"
----------------------------------------------
-error message [types/seq/bradc/emptySeq3]
+* Promoting var functions can result in a compilation error
+bug: promoted var function [arrays/deitz/promotion/test_scalar_promote10]
 
-Default argument values should result in type constraints
----------------------------------------------------------
-formal type from default value [functions/deitz/test_default_type]
+* Return statements in type select statements are not recognized correctly
+bug: return in type select [trivial/marybeth/typeselect]
 
-Function resolution has a few subtle undiagnosed bugs
------------------------------------------------------
-function resolution [types/range/bradc/rangeMath2]
-nested classes (diten) [classes/diten/deep_nest]
 
-parameter values are not implicitly coerced in conditional expressions
-----------------------------------------------------------------------
-parameter folding [studies/hpcc/RA/bradc/ra-condexpr]
 
-command-line config var parsing isn't checked as well as one might like
------------------------------------------------------------------------
-runtime error (deitz) [execflags/shannon/configs/configVarInvalidBoolean]
-runtime error (deitz) [execflags/shannon/configs/configVarInvalidComplex]
-runtime error (deitz) [execflags/shannon/configs/configVarInvalidFloat]
-runtime error (deitz) [execflags/shannon/configs/configVarInvalidInteger]
-
-
-Features
-========
+* Const arrays can currently be assigned -- should result in a compiler error
+error message: assigning const arrays [arrays/bradc/constArray]
 
-op= on sync vars not yet supported
-----------------------------------
-sync vars [parallel/begin/marybeth/test_forbegin3]
+* Assigning nil to a list/record results in unuseful error messages
+error message: assigning nil to a list/record [types/seq/bradc/emptySeq3]
 
-can't stride domain by uint
----------------------------
-semantic [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
-
-
-formal array type with query/indefinite domain
-----------------------------------------------
-semantic [studies/hpcc/FFT/bradc/twiddles-advanced2]
-semantic [studies/hpcc/FFT/bradc/twiddles-advanced]
-query variables [functions/bradc/querydomelem]
+* Mixing dimensional index types in a domain specification yields poor errors
+error message: domain dimensional type [arrays/deitz/test_domain_mixed_dim_types]
 
 
-promotion over conditional expressions/short-circuiting not supported
----------------------------------------------------------------------
-short-circuiting promotion [studies/beer/bradc/beer-promoted-infer]
-short-circuiting promotion [arrays/bradc/promote-shortcircuit]
+* Many error messages continue to be incorrect/confusing/unhelpful
+error message: formal argument missing parameterized tuple type [types/tuple/deitz/test_param_tuple_arg1-error]
+error message: formal array argument w/ query domain element type [arrays/bradc/errors/badArrArgErrMsg]
+error message: generic types [classes/bradc/genericTypes]
+error message: improve clarity of array access problem [studies/hpcc/RA/marybeth/ra-uint-test1]
+error message: iterator sugaring [arrays/bradc/slices/icError]
+error message: iterator sugaring [arrays/marybeth/test_arrayops]
+error message: iterator sugaring [domains/marybeth/test_compare_range]
+error message: prints statement instead of call [functions/bradc/weirdMessage]
 
-config vars of tuple types
---------------------------
-semantic [execflags/bradc/tupleConfig]
 
+* Setter functions should not be permitted to return anything, but currently can
+error message: illegal setter return [functions/bradc/setterFns/setterReturns2]
+error message: illegal setter return [functions/bradc/setterFns/setterReturns]
 
-Math on ranges
---------------
-math operators on ranges [types/seq/bradc/multArithSeq]
-math operators on ranges [arrays/bradc/paulslice2]
 
-math routines are not implemented in their 32-bit versions
-----------------------------------------------------------
-32-bit math routines [modules/standard/math/bradc/sin32bit]
+* Actual arguments passed using inout intents are not checked for legality
+error message: inout [functions/jplevyak/intent-8-error]
+error message: inout [trivial/deitz/test_coerce_inout]
 
-
-class array fields defined using symbolic type names don't work
----------------------------------------------------------------
-array fields and type aliases [arrays/jplevyak/simple-4]
-
 
-arrays of arrays
-----------------
-array of array [arrays/bradc/workarounds/arrayOfArray2]
-array of array [arrays/bradc/workarounds/arrayOfArray]
-array of arrays [arrays/deitz/part2/test_array_of_array1]
-array of arrays [arrays/deitz/test_array_of_array2]
-sparse (bradc) [arrays/bradc/workarounds/arrayOfSpsArray2]
-sparse (bradc) [arrays/bradc/workarounds/arrayOfSpsArray]
-
-arrays of sync variables
-------------------------
-array of syncs [parallel/single/waynew/sarray]
-array of syncs [users/shetaga/syncarr]
-
-can't insert new indices into sparse domains once arrays are storing nonzeroes
-------------------------------------------------------------------------------
-sparse domain modification (bradc) [npb/cg/bradc/cg-makea2-small-sparse]
-sparse domain modification (bradc) [sparse/bradc/sparseArray4]
-
-user constructors are somewhat weak
------------------------------------
+* Analysis to find return statements along all paths in a function is incomplete
+error message: returns along all control paths [functions/deitz/test_return1]
 
-runtime out-of-memory messages don't point to line number properly
-------------------------------------------------------------------
-error message (runtime line number) [memory/shannon/memmaxExceedsLineno2]
+* Constructors are not particularly well-supported
+bug: nested class construction [classes/deitz/nested/test_nested1]
+bug: nested class construction [classes/deitz/nested/test_nested2]
+bug: nested class construction [classes/deitz/test_type_in_class1]
+error message: type assignment in constructors [reductions/bradc/manual/threeclasstypes-construct]
+unimplemented feature: constructing generic classes [reductions/bradc/manual/threeclasstypes-construct2]
+unimplemented feature: constructing generic classes [reductions/bradc/manual/threeclasstypes]
 
-error messages don't sugar internal types ideally
--------------------------------------------------
-error message [arrays/bradc/errors/badArrArgErrMsg]
-error message [studies/hpcc/RA/marybeth/ra-uint-test1]
-error message [types/tuple/deitz/test_param_tuple_arg1-error]
-rank-change slicing/error messages [arrays/bradc/slices/icError]
-semantic (< on ranges) [domains/marybeth/test_compare_range]
 
-error messages don't hide internal implementation sufficiently
---------------------------------------------------------------
-error message [arrays/deitz/test_domain_mixed_dim_types]
+* Subclassing uninstantiated generic classes should be prohibited but is not
+error message: uninstantiated generic parent [classes/jplevyak/inherit-1]
+error message: uninstantiated generic parent [classes/jplevyak/inherit-2-fixed]
+error message: uninstantiated generic parent [classes/jplevyak/inherit-2]
+error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate2]
+error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate4]
 
-error messages not generated if functions don't return along all control paths
-------------------------------------------------------------------------------
-error message [functions/deitz/test_return1]
+* Var functions should not be permitted to return locals or literals but can
+error message: var fn illegal return [functions/bradc/varFns/retLitFromVarFn]
+error message: var fn illegal return [functions/bradc/varFns/retLocFromVarFn]
 
-error messages not generated for illegal setter/var functions
--------------------------------------------------------------
-error messages [functions/bradc/setterFns/setterReturns2]
-error messages [functions/bradc/setterFns/setterReturns]
-var fn semantics [functions/bradc/varFns/retLitFromVarFn]
-var fn semantics [functions/bradc/varFns/retLocFromVarFn]
 
-error messages not generated for inheriting from generic class
---------------------------------------------------------------
-error message [types/type_variables/deitz/part5/inherit_instantiate2]
-semantic [types/type_variables/deitz/part5/inherit_instantiate4]
-uninstantiated generic parent [classes/jplevyak/inherit-1]
-uninstantiated generic parent [classes/jplevyak/inherit-2-fixed]
-uninstantiated generic parent [classes/jplevyak/inherit-2]
+* Requested features
+feature request: command line config value range check [execflags/bradc/int32configBad]
+feature request: formal array argument bounds query [studies/hpcc/FFT/bradc/twiddles-advanced]
+feature request: formal array argument with indefinite reindexing [studies/hpcc/FFT/bradc/twiddles-advanced2]
+feature request: general support for homogenous tuple types [types/tuple/bradc/hetTupleArr]
+feature request: general support for homogenous tuple types [types/tuple/bradc/homogTupleArr]
+feature request: help prints config var default values [execflags/shannon/configs/help/configVarDefaultValue]
+feature request: math operators on ranges [arrays/bradc/paulslice2]
+feature request: math operators on ranges [types/seq/bradc/multArithSeq]
+feature request: private members [types/seq/bradc/length.modify]
+feature request: uint stride [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
 
 
-can't do reads of arrays
-------------------------
-file I/O [types/file/fileIO]
+* Generated executable's command-line parsing is not as robust as we'd like
+runtime error: command line parsing [execflags/shannon/spellingTest]
+runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidBoolean]
+runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidComplex]
+runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidFloat]
+runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidInteger]
 
-initializing a class' generic type members is hard to do without default constructor; also can't chain generic types within a class well
-------------------------------------------------------------------------
-constructors [reductions/bradc/manual/threeclasstypes-construct2]
-constructors/error messages [reductions/bradc/manual/threeclasstypes-construct]
-generic classes with default types [reductions/bradc/manual/threeclasstypes]
-generic types/error message [classes/bradc/genericTypes]
 
+* Semantic futures
+semantic: direct module access for un-use-d module [trivial/deitz/test_module_access1]
+semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef2]
+semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef]
+semantic: global use before def [studies/blas/marybeth/saxpy2]
+semantic: params in classes [classes/bradc/paramInClass/weirdParamInit3]
+semantic: params in classes [classes/bradc/paramInClass/weirdParamInit4]
 
-???
-===
 
-type in value context
----------------------
-type in expression context [domains/indefinite/waynew/tuple_domain]
+* 32-bit math routines are unimplemented, causing coercion to 64-bit versions
+unimplemented feature: 32-bit math routines [modules/standard/math/bradc/sin32bit]
 
-Unclear use-before-def rules when using globals within a function
------------------------------------------------------------------
-global use before def [functions/bradc/useBeforeDef/useBeforeDef2]
-global use before def [functions/bradc/useBeforeDef/useBeforeDef]
-global use before def [studies/blas/marybeth/saxpy2]
 
-tuple syntax is not general
----------------------------
-homogeneous tuple syntax [types/tuple/bradc/hetTupleArr]
-homogeneous tuple syntax [types/tuple/bradc/homogTupleArr]
+* Arrays of arrays are not implemented
+unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfArray2]
+unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfArray]
+unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfSpsArray2]
+unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfSpsArray]
+unimplemented feature: array of array [arrays/deitz/part2/test_array_of_array1]
+unimplemented feature: array of arrays [arrays/deitz/test_array_of_array2]
 
-used to use sequences
----------------------
-marybeth [spec/marybeth/seq]
+* Arrays of sync/single variables are unsupported
+unimplemented feature: array of syncs [parallel/single/waynew/sarray]
+unimplemented feature: array of syncs [users/shetag/syncarr]
 
-memory leak
------------
-memory leak [domains/indefinite/waynew/memory1]
-memory leak [memory/deitz/test_threaded_leak]
-memory leak [memory/deitz/test_trivial_leak]
+* read()s of whole arrays are not working
+unimplemented feature: array reads [types/file/fileIO]
 
 
-unclassified nested class bug
------------------------------
-nested classes (diten) [classes/deitz/nested/test_nested1]
-nested classes (diten) [classes/deitz/nested/test_nested2]
-nested classes [classes/deitz/test_type_in_class1]
+* Configuration variables of tuple types
+unimplemented feature: configs of tuples (string-to-value) [execflags/bradc/tupleConfig]
 
-overloaded method return types
-------------------------------
-overloaded method return types [classes/bradc/overloadMethods/v4oneClassReturnNoMatch]
-overloaded method return types [classes/bradc/overloadMethods/v5bothReturnTypes]
+* Formal arguments of inferred type should be constrained by their default value
+unimplemented feature: formal type constrained by default value [functions/deitz/test_default_type]
 
-weird parameter initializations
--------------------------------
-params in classes [classes/bradc/paramInClass/weirdParamInit3]
-params in classes [classes/bradc/paramInClass/weirdParamInit4]
 
-var functions can't be promoted
--------------------------------
-promoted var function [arrays/deitz/promotion/test_scalar_promote10]
+* Array arguments cannot have both their domain and element types queried
+unimplemented feature: query formal array domain and element type [functions/bradc/querydomelem]
 
+* Short-circuiting functions and conditional expressions cannot be promoted
+unimplemented feature: short-circuiting promotion [arrays/bradc/promote-shortcircuit]
+unimplemented feature: short-circuiting promotion [studies/beer/bradc/beer-promoted-infer]
 
+* Modifying a sparse domain after assigning its array values can cause problems
+unimplemented feature: sparse domain modification (bradc) [npb/cg/bradc/cg-makea2-small-sparse]
+unimplemented feature: sparse domain modification (bradc) [sparse/bradc/sparseArray4]
+
+
+* If there are insufficient threads to spawn a task, the program halts
+unimplemented feature: task pool to avoid exhausting thread resources [parallel/cobegin/deitz/test_many_threads]
+
+* Compiler and runtime errors don't always report useful line numbers
+runtime error: line number in out-of-memory [memory/shannon/memmaxExceedsLineno2]

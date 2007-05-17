@@ -1,3 +1,6 @@
-bug: too many threads
+unimplemented feature: task pool to avoid exhausting thread resources
 
-It appears that if a certain number of threads are live, then when new threads are forked, they are dropped on the floor and the work that they were supposed to do is not done.  This number appears to be 153.
+Currently, when we can't fork off new tasks using threads, we give an
+internal error.  Eventually, such tasks should be queued in some sort
+of structure so that they get scheduled to threads as threads become
+available.
