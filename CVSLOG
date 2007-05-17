@@ -103518,3 +103518,26 @@ Log message:
 Modified files:
 	chapel/test/studies/matrixlib/: MatrixOps.chpl 
 
+---------------------------------------------------------------------------
+
+05/16/07 17:04:38 -- bradc
+
+Log message:
+	This is a feature request future that we consider
+	automatically coercing floating point parameters
+	down to 32-bits if the context requires it, to match
+	what we do for integers.  C# doesn't do this, but I
+	believe it is because their default floating point
+	size is the same as the smallest floating point size
+	so there is no equivalent there with floating point
+	values.
+	
+	As I say in my future, if we choose not to do this,
+	I think we should reconsider whether we should go
+	to 32-bit reals as the default size.
+
+Added files:
+	chapel/test/types/scalar/bradc/: initReal32.chpl 
+	                                 initReal32.future 
+	                                 initReal32.good 
+
