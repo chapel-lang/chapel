@@ -103641,3 +103641,16 @@ Modified files:
 Removed files:
 	chapel/test/studies/hpcc/STREAMS/: probSize.chpl probSize.notest 
 
+---------------------------------------------------------------------------
+
+05/17/07 12:20:42 -- bradc
+
+Log message:
+	Removing this test which is uninteresting without
+	the --cg-chpl-lineno flag (it was designed to show
+	a bug in that flag but is otherwise unremarkable)
+
+Removed files:
+	chapel/test/compflags/bradc/: linenoConditional.chpl 
+	                              linenoConditional.good 
+
