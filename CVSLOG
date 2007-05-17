@@ -103723,3 +103723,21 @@ Modified files:
 Removed files:
 	chapel/test/classes/diten/: deep_nest.future 
 
+---------------------------------------------------------------------------
+
+05/17/07 14:42:31 -- bradc
+
+Log message:
+	Adding some function resolution tests that sprung
+	out of a conversation Steve and I were having.
+	All work as expected.
+
+Added files:
+	chapel/test/functions/bradc/resolution/: .cvsignore 
+	                                         scalarVsArray.chpl 
+	                                         scalarVsArray.good 
+	                                         scalarVsArrayVsGeneric.chpl 
+	                                         scalarVsArrayVsGeneric.good 
+	                                         specificVsGeneric.chpl 
+	                                         specificVsGeneric.good 
+
