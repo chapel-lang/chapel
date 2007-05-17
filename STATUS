@@ -125,13 +125,9 @@ Bugs:
 * Subclassing uninstantiated generic classes should be prohibited but is not
 
 
---------------------------------
-Tuples, Sequences, and Iterators
---------------------------------
-
-Unimplemented Features:
-* The transpose, spread, and reshape functions
-* Short-circuiting functions and conditional expressions cannot be promoted
+-----------------------------
+Tuples, Ranges, and Iterators
+-----------------------------
 
 
 ------------------
@@ -139,6 +135,8 @@ Arrays and Domains
 ------------------
 
 Unimplemented Features:
+* The transpose, spread, and reshape functions
+* Short-circuiting functions and conditional expressions cannot be promoted
 * Arrays of arrays are not implemented
 * Opaque domains and arrays are not implemented
 * Index type bounds checking is not implemented
