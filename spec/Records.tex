@@ -38,8 +38,8 @@ the \chpl{record} keyword replaces the \chpl{class} keyword.
 
 The main differences between records and classes are that records are
 value classes.  They do not need to be reclaimed since the data is
-recovered when the variable goes out of scope, do not support dynamic
-dispatch, and are assigned by value.
+recovered when the variable goes out of scope.  Records do not support
+dynamic dispatch and are assigned by value.
 
 \subsubsection{Records as Value Classes}
 \label{Records_as_Value_Classes}
@@ -64,9 +64,12 @@ a variable is the exact type of that variable.
 
 In record assignment, the fields of the record on the left-hand side
 of the assignment are assigned the values in the fields of the record
-on the righ-hand side of the assignment.  When a base record is
+on the right-hand side of the assignment.  When a base record is
 assigned a derived record, just the fields that exist in the base
-record are assigned.
+record are assigned.  Record assignment is generic in that the
+right-hand side expression can be of any type as long as the type
+contains the same fields (by name) as the record on the left-hand
+side.
 
 \subsection{Default Comparison Operators on Records}
 \label{Record_Comparison_Operators}

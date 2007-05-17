@@ -2,9 +2,8 @@
 \label{Iterators}
 \index{iterators}
 
-An iterator is a function that conceptually returns a sequence of
-values rather than simply a single value.  Classes can be viewed as
-iterators if they implement a structural iterator interface.
+An iterator is a function that conceptually returns multiple values
+rather than simply a single value.
 
 \subsection{Iterator Functions}
 \label{Iterator_Functions}
@@ -15,17 +14,18 @@ function declaration except that the keyword \chpl{def} is replaced
 with the keyword \chpl{iterator}.  The body of the iterator may
 include yield statements alongside return statements.  When a yield is
 encountered, the value is returned, but the iterator is not finished
-evaluating.  It will continue from the point after the yield and can
-yield or return more values.  When a return is encountered, the value
-is returned and the iterator finishes.  An iterator also completes
-after the last statement in the iterator function is executed.
+evaluating when called within a loop.  It will continue from the point
+after the yield and can yield or return more values.  When a return is
+encountered, the value is returned and the iterator finishes.  An
+iterator also completes after the last statement in the iterator
+function is executed.
 
 \subsection{The Yield Statement}
 \label{The_Yield_Statement}
 \index{yield@\chpl{yield}}
 
-Yield statement can only appear in iterators.  The syntax of the yield
-statement is given by
+The yield statements can only appear in iterators.  The syntax of the
+yield statement is given by
 \begin{syntax}
 yield-statement:
   `yield' expression ;
@@ -37,7 +37,7 @@ yield-statement:
 Iterator functions can be called within for or forall loops, in which
 case they are executed in an interleaved manner with the body of the
 loop, or can be called in any expression context, in which case they
-evaluate to a sequence of values.
+evaluate to an array of values.
 
 \subsubsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
@@ -46,14 +46,15 @@ When an iterator is accessed via a for or forall loop, the iterator is
 evaluated alongside the loop body in an interleaved manner.  For each
 iteration, the iterator yields a value and the body is executed.
 
-\subsubsection{Iterators as Sequences}
-\label{Iterators_as_Sequences}
-\index{iterators!and sequences}
+\subsubsection{Iterators as Arrays}
+\label{Iterators_as_Arrays}
+\index{iterators!and arrays}
 
 If an iterator function is accessed outside of the context of a for or
 forall loop iterator expression, then the iterator is iterated over in
-total and the expression evaluates to a sequence that contains the
-values returned by the iterator on each iteration.
+total and the expression evaluates to a one-dimensional arithmetic
+array that contains the values returned by the iterator on each
+iteration.
 \begin{example}
 Given an iterator
 \begin{chapel}
@@ -62,5 +63,5 @@ iterator squares(n: int): int {
     yield i * i;
 }
 \end{chapel}
-the expression \chpl{squares(5)} evaluates to the sequence \chpl{(/1, 4, 9, 16, 25/)}.
+the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \end{example}
