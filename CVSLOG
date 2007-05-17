@@ -103626,3 +103626,18 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/STREAMS/: probSize.chpl probSize.notest 
 
+---------------------------------------------------------------------------
+
+05/17/07 12:17:10 -- bradc
+
+Log message:
+	Steve beat me to fixing my mistake from yesterday.
+	This is a similar fix to what he did except that
+	it uses the probSize module that's already in the
+	studies directory.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/: stream-nopromote.compopts 
+Removed files:
+	chapel/test/studies/hpcc/STREAMS/: probSize.chpl probSize.notest 
+
