@@ -15,9 +15,6 @@ bug: associative array infinite loop (bradc) [puzzles/deitz/digits3]
 * Associative domains of explicit heterogeneous tuple types don't work
 bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domain]
 
-* Cobegins containing function calls with array slice arguments fail to compile
-bug: cobegins passing array slices [parallel/cobegin/bradc/arrayargs]
-
 * Class fields initialized with conditional expressions fail to compile
 bug: conditional expression in class member initialization [classes/marybeth/test-init]
 

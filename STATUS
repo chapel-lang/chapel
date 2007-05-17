@@ -203,8 +203,6 @@ Bugs:
   Workaround: expand operator manually
     e.g., x = x + 1;
 
-* Cobegins containing function calls with array slice arguments fail to compile
-
 
 --------------------------
 Locality and Distributions
