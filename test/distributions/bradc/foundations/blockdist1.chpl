@@ -17,6 +17,8 @@ var globHi: [rankD] indexType = n;
 var mylo: [rankD] indexType;
 var myhi: [rankD] indexType;
 
+def main() {
+
 for loc in localeD {
   var pos: [rankD] int = loc;  // only works for 1D
   for d in 1..rank {
@@ -61,4 +63,6 @@ def min(type t): t {
 
 def max(type t): t {
   return 999;
+}
+
 }

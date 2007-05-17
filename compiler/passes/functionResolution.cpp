@@ -1341,8 +1341,6 @@ resolveCall(CallExpr* call) {
             forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
               if (fn->isSetter) 
                 continue;
-              if (!developer && fn->getModule()->modtype == MOD_STANDARD)
-                continue;
               USR_PRINT(fn, "%s %s",
                         printed_one ? "               " : "candidates are:",
                         fn2string(fn));

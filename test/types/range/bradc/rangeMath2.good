@@ -1,2 +1,16 @@
-r is: 1..4
-r2 is: 5..17 by 4
+rangeMath2.chpl:3: error: ambiguous call '*(:range(int,bounded,0), 4)'
+rangeMath2.chpl:8: note: candidates are: *(r: range, i: _any)
+.../modules/standard/ChapelBase.chpl:174: note:                 *(a: int, b: int)
+.../modules/standard/ChapelBase.chpl:175: note:                 *(a: int(64), b: int(64))
+.../modules/standard/ChapelBase.chpl:178: note:                 *(a: real(128), b: real(128))
+.../modules/standard/ChapelBase.chpl:178: note:                 *(a: real, b: real)
+.../modules/standard/ChapelBase.chpl:178: note:                 *(a: real(32), b: real(32))
+.../modules/standard/ChapelBase.chpl:180: note:                 *(a: complex(256), b: complex(256))
+.../modules/standard/ChapelBase.chpl:180: note:                 *(a: complex, b: complex)
+.../modules/standard/ChapelBase.chpl:180: note:                 *(a: complex(64), b: complex(64))
+.../modules/standard/ChapelBase.chpl:184: note:                 *(a: real(128), b: complex(256))
+.../modules/standard/ChapelBase.chpl:184: note:                 *(a: real, b: complex)
+.../modules/standard/ChapelBase.chpl:184: note:                 *(a: real(32), b: complex(64))
+.../modules/standard/ChapelBase.chpl:185: note:                 *(a: complex(256), b: real(128))
+.../modules/standard/ChapelBase.chpl:185: note:                 *(a: complex, b: real)
+.../modules/standard/ChapelBase.chpl:185: note:                 *(a: complex(64), b: real(32))

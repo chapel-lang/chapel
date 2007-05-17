@@ -40,7 +40,11 @@ process_import_expr(CallExpr* call) {
     INT_FATAL(call, "Use primitive has no module");
   if (mod != compilerModule)
     call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
-  call->parentScope->addModuleUse(mod);
+
+  if (call->getFunction() == call->getModule()->initFn)
+    call->getModule()->block->blkScope->addModuleUse(mod);
+  else
+    call->parentScope->addModuleUse(mod);
   call->getStmtExpr()->remove();
 }
 

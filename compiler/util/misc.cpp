@@ -9,6 +9,7 @@
 #include "symbol.h"
 #include "expr.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -49,6 +50,13 @@ static int err_fatal;
 static int err_user;
 static int err_print;
 static FnSymbol* err_fn = NULL;
+
+
+static char* cleanFilename(BaseAST* ast) {
+  if (strstr(ast->filename, "/modules/standard"))
+    return stringcat("...", strstr(ast->filename, "/modules/standard"));
+  return ast->filename;
+}
 
 
 static void
@@ -116,7 +124,7 @@ printDevelErrorHeader(BaseAST* ast) {
 
 
   if (ast && ast->filename && ast->lineno)
-    fprintf(stderr, "%s:%d: ", ast->filename, ast->lineno);
+    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->lineno);
 
   fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");
 

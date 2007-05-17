@@ -1,6 +1,3 @@
-def +(x : 2*int, y : 2*int)
-  return (x(1) + y(1), x(2) + y(2));
-
 config const n = 5;
 config const epsilon = 0.00001;
 
@@ -19,6 +16,10 @@ Temp(SouthD) = 1.0;
 var iter = 0;
 
 do {
+
+  def +(x : 2*int, y : 2*int)          // override module functions
+    return (x(1) + y(1), x(2) + y(2));
+
   [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
   iter += 1;
   if (+ reduce abs(A - Temp)) <= epsilon {
