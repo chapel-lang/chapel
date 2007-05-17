@@ -103592,3 +103592,16 @@ Added files:
 	chapel/test/release/examples/: Adata.dat blockLU.chpl 
 	                               blockLU.good 
 
+---------------------------------------------------------------------------
+
+05/17/07 09:08:37 -- deitz
+
+Log message:
+	Removed working .future and updated STATUS and FUTURES.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/parallel/cobegin/bradc/: arrayargs.future 
+
