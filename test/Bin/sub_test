@@ -278,6 +278,8 @@ foreach chplsrc ($testsrc)
         endif
 	if ( ! -r $checkfile ) then
 	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
+            echo \[Compiler output was as follows:\]
+            cat $complog
 	    continue
 	endif
 
@@ -353,6 +355,8 @@ foreach chplsrc ($testsrc)
             if ($perftest == 0) then
 	    if ( ! -r $checkfile ) then
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
+                echo \[Exexcution output was as follows:\]
+                cat $execlog
 		rm -f $binfile
 		continue
 	    endif
