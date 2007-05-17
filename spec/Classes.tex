@@ -97,9 +97,9 @@ reads the field \chpl{name} and assigns the value to the variable
 \label{Class_Methods}
 \index{classes!methods}
 
-A method is a function that is bound to a class.  A method is called
-by passing an instance of the class to the method via a special
-syntax that is similar to a field access.
+A method is a function or iterator that is bound to a class.  A method
+is called by passing an instance of the class to the method via a
+special syntax that is similar to a field access.
 
 \subsubsection{Class Method Declarations}
 \label{Class_Method_Declarations}
@@ -108,6 +108,8 @@ Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
   `def' type-binding function-name argument-list[OPT] var-clause[OPT]
+    return-type[OPT] where-clause[OPT] block-level-statement
+  `iterator' type-binding function-name argument-list[OPT] var-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
 
 type-binding:
@@ -159,28 +161,6 @@ def bar(c: C) { }
 Then given an instance of \chpl{C} called \chpl{c}, the method
 call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c}.
-\end{example}
-
-\subsubsection{Class Methods without Parentheses}
-\label{Class_Methods_without_Parentheses}
-\index{classes!methods without parentheses}
-
-Methods do not require parentheses if they have empty argument lists.
-Methods declared without parentheses around empty argument lists must
-be called without parentheses.
-
-\begin{example}
-Given the definitions
-\begin{chapel}
-class C {
-  def foo { }
-  def bar() { }
-}
-\end{chapel}
-and an instance of \chpl{C} called \chpl{c}, then the
-method \chpl{foo} can be called by writing \chpl{c.foo} and the
-method \chpl{bar} can be called by writing \chpl{c.bar()}.  It is an
-error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
 \end{example}
 
 \subsubsection{The {\em this} Method}

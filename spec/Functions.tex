@@ -14,7 +14,7 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
-  `def' function-name argument-list var-clause[OPT]
+  `def' function-name argument-list[OPT] var-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
 
 function-name:
@@ -71,6 +71,9 @@ in~\rsec{Generics}.
 Default expressions allow for the omission of actual arguments at the
 call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
+
+Functions do not require parentheses if they have no arguments.  Such
+functions are described in~\rsec{Functions_without_Parentheses}.
 
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
@@ -512,6 +515,25 @@ is determined by the following steps:
 \item
  Otherwise neither mapping is more specific.
 \end{itemize}
+
+\subsection{Functions without Parentheses}
+\label{Functions_without_Parentheses}
+\index{functions!functions without parentheses}
+
+Functions do not require parentheses if they have empty argument
+lists.  Functions declared without parentheses around empty argument
+lists must be called without parentheses.
+
+\begin{example}
+Given the definitions
+\begin{chapel}
+def foo { }
+def bar() { }
+\end{chapel}
+the function \chpl{foo} can be called by writing \chpl{foo} and the
+function \chpl{bar} can be called by writing \chpl{bar()}.  It is an
+error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
+\end{example}
 
 \subsection{Nested Functions}
 \label{Nested_Functions}
