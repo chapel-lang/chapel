@@ -103752,3 +103752,16 @@ Modified files:
 	./: STATUS 
 	chapel/test/: FUTURES 
 
+---------------------------------------------------------------------------
+
+05/17/07 15:52:48 -- bradc
+
+Log message:
+	Made the testing system so that if a .good file is
+	missing, the compiler/execution output is still
+	printed out so that the log shows the output that
+	was generated.
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+
