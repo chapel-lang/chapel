@@ -1,0 +1,8 @@
+feature request: implicit floating point parameter coercion
+
+Unlike integers, floating point literals are not implicitly coerced
+down to smaller floating point sizes, implying that the initialization
+of a real(32) requires a cast.  I believe that it would be appropriate
+to the spirit of Chapel to permit this.  If not, I think we need to
+reconsider whether our default floating point width should be 32 bits
+to support this case.
