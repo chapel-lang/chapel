@@ -68,8 +68,6 @@ Unimplemented Features:
 
 Bugs:
 
-* Function calls from nested classes to outer class methods don't always work
-
 * Analysis to find return statements along all paths in a function is incomplete
 
 * Return statements in type select statements are not recognized correctly

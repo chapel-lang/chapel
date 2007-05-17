@@ -21,9 +21,6 @@ bug: conditional expression in class member initialization [classes/marybeth/tes
 * Destructuring tuple arguments disables overloads of that function name
 bug: destructured tuple function arguments prevent overloading (fold &&) [types/tuple/diten/overload_destructure_args]
 
-* Function calls from inner classes to outer class methods don't always work
-bug: function resolution with nested classes [classes/diten/deep_nest]
-
 * Parameters in branches of conditional expressions are not implicitly coerced
 bug: implicit parameter coercions in conditional expression [studies/hpcc/RA/bradc/ra-condexpr]
 
