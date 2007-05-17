@@ -103796,3 +103796,14 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+05/17/07 16:34:54 -- deitz
+
+Log message:
+	Updated classes, records, and iterators section, mostly removing
+	references to sequences.  Iterators now are said to return 1D arrays.
+
+Modified files:
+	chapel/spec/: Classes.tex Iterators.tex Records.tex 
+
