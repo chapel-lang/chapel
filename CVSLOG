@@ -103741,3 +103741,14 @@ Added files:
 	                                         specificVsGeneric.chpl 
 	                                         specificVsGeneric.good 
 
+---------------------------------------------------------------------------
+
+05/17/07 14:44:49 -- deitz
+
+Log message:
+	Oops, already.  Updated STATUS and FUTURES to match .future I removed.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+
