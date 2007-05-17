@@ -103785,3 +103785,14 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Functions.tex Iterators.tex 
 
+---------------------------------------------------------------------------
+
+05/17/07 16:23:18 -- bradc
+
+Log message:
+	First attempt at modifying the nightly script to
+	do performance tests.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
