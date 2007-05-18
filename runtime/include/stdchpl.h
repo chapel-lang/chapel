@@ -15,6 +15,7 @@
 #include "chplcast.h"
 #include "chplcopygc.h"
 #include "chplio.h"
+#include "chplmath.h"
 #include "chplmem.h"
 #include "chplmem_tests.h"
 #include "chplrt.h"
