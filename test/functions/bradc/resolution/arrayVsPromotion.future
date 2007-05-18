@@ -1,0 +1,5 @@
+feature request: promotion is less specific than generic
+
+My intuition is that function calls that rely on promotion
+should always be lower priority than those that do not,
+even if they use generics.

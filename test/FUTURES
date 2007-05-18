@@ -116,6 +116,8 @@ feature request: general support for homogenous tuple types [types/tuple/bradc/h
 feature request: help prints config var default values [execflags/shannon/configs/help/configVarDefaultValue]
 feature request: private members [types/seq/bradc/length.modify]
 feature request: uint stride [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
+feature request: promotion is less specific than generic [functions/bradc/resolution/arrayVsPromotion]
+feature request: promotion is less specific than generic [functions/bradc/resolution/rangeVsPromotion]
 
 
 * Generated executable's command-line parsing is not as robust as we'd like
