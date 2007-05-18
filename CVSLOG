@@ -103947,3 +103947,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: README 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:35:39 -- bradc
+
+Log message:
+	Modified the nightly script so that performance
+	tests don't log to the normal RCS status files.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
