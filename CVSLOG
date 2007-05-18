@@ -103829,3 +103829,15 @@ Log message:
 Modified files:
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:06:45 -- deitz
+
+Log message:
+	Reworked mini stack example in generic arguments section to cite Stack
+	example at the end of this chapter rather than build its own as I'd
+	just done.
+
+Modified files:
+	chapel/spec/: Generics.tex 
+
