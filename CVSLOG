@@ -103926,3 +103926,24 @@ Added files:
 Removed files:
 	chapel/test/modules/standard/math/: lg2.future 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:24:38 -- bradc
+
+Log message:
+	Oh, I forgot to add.  In my last checkin, I also
+	added a second test of FFT to the examples
+	directory so that it is tested for even and odd
+	powers of two.  I did this by adding an empty module,
+	compiling it against the fft module, and using a
+	different execopts file to avoid code duplication.
+	
+	These two cases are handled  differently in the cleanup
+	phase of the code which is part of the reason my demo
+	crashed and burned at CUG -- I'd only tested my
+	rewrites for odd powers of two, and at CUG I decided
+	to run an even power of two.  Whoops.
+
+Modified files:
+	chapel/test/release/examples/: README 
+
