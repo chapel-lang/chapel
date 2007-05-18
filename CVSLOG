@@ -103819,3 +103819,13 @@ Log message:
 Modified files:
 	chapel/spec/: Generics.tex 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:05:21 -- bradc
+
+Log message:
+	Fixed a spelling mistake.
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+
