@@ -1403,7 +1403,7 @@ Two implementations of a generic stack type, \chpl{Stack}, are given below.  The
 defines \chpl{Stack} to be a linked list of \chpl{MyNode} objects.  In
 the second implementation, \chpl{Stack} is an array.  Both implementations of
 \chpl{Stack} define the methods, \chpl{push}, 
-\chpl{pop} and \chpl{isEmpty?}. 
+\chpl{pop} and \chpl{isEmpty}. 
 
 \paragraph{Chapel Features}
 These examples demonstrate {\em classes} \index{classes} and {\em records}\index{record}.  
@@ -1470,14 +1470,14 @@ record Stack {                      (*\label{stack_list_start}*)
   }                                 (*\label{stack_list_push_end}*)
 
   def pop() {                       (*\label{stack_list_pop_start}*)
-    if isEmpty? then                (*\label{stack_list_pop_empty_1}*)
+    if isEmpty then                 (*\label{stack_list_pop_empty_1}*)
       halt("attempt to pop an item off an empty stack"); (*\label{stack_list_empty_2}*)
     var oldTop = top;               (*\label{stack_list_pop_oldtop}*)
     top = top.next;                 (*\label{stack_list_pop_newtop}*)
     return oldTop.item;             (*\label{stack_list_pop_return}*)
   }                                 (*\label{stack_list_pop_end}*)
 
-  def isEmpty? return top == nil;   (*\label{stack_list_isempty}*)
+  def isEmpty return top == nil;   (*\label{stack_list_isempty}*)
 }                                  (*\label{stack_list_end}*)
 \end{numberedchapel}
 
@@ -1534,7 +1534,7 @@ The \chpl{pop} method is given in lines~\ref{stack_list_pop_start} -
 \ref{stack_list_pop_end}.  
 \begin{chapel}
   def pop() {           
-    if isEmpty? then   
+    if isEmpty then   
       halt("attempt to pop an item off an empty stack"); 
     var oldTop = top;               
     top = top.next;                
@@ -1543,20 +1543,20 @@ The \chpl{pop} method is given in lines~\ref{stack_list_pop_start} -
 \end{chapel}
 This method returns the item at the top of
 the stack and resets \chpl{top} to point to the next object in the stack.
-First, a call to the \chpl{Stack} method \chpl{isEmpty?} is made to 
+First, a call to the \chpl{Stack} method \chpl{isEmpty} is made to 
 determine if the stack is
 empty.  If it is, the program halts with a message indicating that 
 an attempt was made to pop an item off of an empty stack.  Otherwise,
 \chpl{top} is reset, and the appropriate item is returned.
-In this method, \chpl{this.isEmpty?} and \chpl{this.top} are implicit when
-\chpl{isEmpty?} and \chpl{top} are used.
+In this method, \chpl{this.isEmpty} and \chpl{this.top} are implicit when
+\chpl{isEmpty} and \chpl{top} are used.
 The memory of the \chpl{oldTop} object is freed, through automatic
 garbage collection.
 
-The \chpl{isEmpty?} method, which is used to check if the stack
+The \chpl{isEmpty} method, which is used to check if the stack
 is empty in the \chpl{pop} method, is defined to be:
 \begin{chapel}
-  def isEmpty? return top == nil;   
+  def isEmpty return top == nil;   
 \end{chapel}
 
 \paragraph{Array Implementation}
@@ -1585,13 +1585,13 @@ record Stack {                     (*\label{stack_array_start}*)
   }                                 (*\label{stack_array_push_end}*)
 
   def pop() {                       (*\label{stack_array_pop_start}*)
-    if isEmpty? then                (*\label{stack_array_pop_empty_1}*)
+    if isEmpty then                 (*\label{stack_array_pop_empty_1}*)
       halt("attempt to pop an item off an empty stack"); (*\label{stack_array_pop_empty_2}*)
     numItems -= 1;                  (*\label{stack_array_pop_num_dec}*)
     return data(numItems+1);        (*\label{stack_array_pop_return}*)
   }                                 (*\label{stack_array_pop_end}*)
 
-  def isEmpty? return numItems == 0; (*\label{stack_array_isempty}*)
+  def isEmpty return numItems == 0; (*\label{stack_array_isempty}*)
 }                                   (*\label{stack_array_end}*)
 \end{numberedchapel}
 
@@ -1602,7 +1602,7 @@ When first instantiated,
 the stack is empty and \chpl{numItems} is initialized to zero.   The \chpl{data}
 array is declared with an anonymous one-dimensional domain, \chpl{[1..2]}.
 
-The same three methods, \chpl{push}, \chpl{pop}, and \chpl{isEmpty?} are
+The same three methods, \chpl{push}, \chpl{pop}, and \chpl{isEmpty} are
 defined for this array implementation.  Like the linked list implementation,
 there are no explicit references to \chpl{this} when accessing fields and
 methods.
@@ -1637,7 +1637,7 @@ In \chpl{pop}, the top item in the stack, as indicated by the \chpl{numItem} cou
 is returned, if the stack is not empty.
 \begin{chapel}
   def pop() {                       
-    if isEmpty? then                
+    if isEmpty then                
       halt("attempt to pop an item off an empty stack"); 
     numItems -= 1;                  
     return data(numItems+1);       
@@ -1648,9 +1648,9 @@ halts indicating that there was an attempt to pop an item off of an empty stack.
 Otherwise, the \chpl{numItems} counter is decremented and \chpl{data(numItems+1)}
 is returned as the popped item.  
 
-The \chpl{isEmpty?} method checks to see if
+The \chpl{isEmpty} method checks to see if
 the stack is empty, that is if \chpl{numItems} equals zero.
 \begin{chapel}
-  def isEmpty? return numItems == 0; 
+  def isEmpty return numItems == 0; 
 \end{chapel}
 
