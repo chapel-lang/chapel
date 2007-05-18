@@ -98,42 +98,49 @@ def bitReverse(val: ?valType, revBits = 64) {
 
 def dfft(A: [?ADom], W) {
   const numElements = A.numElements;
-  var span = 1;
 
-  for i in [2..log2(numElements)) by 2 {
-    const m = radix*span,
-          m2 = 2*m;
-
-    forall (k,k1) in (ADom by m2, 0..) {
-      var wk2 = W(k1),
-          wk1 = W(2*k1),
+  for (str, span) in genDFTPhases(numElements, radix) {
+    forall (bankStart, twidIndex) in (ADom by 2*span, 0..) {
+      var wk2 = W(twidIndex),
+          wk1 = W(2*twidIndex),
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):elemType;
 
-      forall j in [k..k+span) do
-        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
+      forall lo in bankStart + [0..str) do
+        butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
 
-      wk1 = W(2*k1+1);
+      wk1 = W(2*twidIndex+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):elemType;
       wk2 *= 1.0i;
 
-      forall j in [k+m..k+m+span) do
-        butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
+      forall lo in bankStart + span + [0..str) do
+        butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
     }
-    span *= radix;
   }
 
-  if ((span*radix) == numElements) then
-    forall j in [0..span) do
-      butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
-  else
-    forall j in [0..span) {
-      const a = A(j),
-            b = A(j+span);
-      A(j)      = a + b;
-      A(j+span) = a - b;
+  const str = radix**log4(numElements-1);
+  if (str*radix == numElements) then
+    forall lo in [0..str) do
+      butterfly(1.0, 1.0, 1.0, A[[0..radix)*str + lo]);
+  else {
+    forall lo in [0..str) {
+      const a = A(lo),
+            b = A(lo+str);
+      A(lo)     = a + b;
+      A(lo+str) = a - b;
     }
+  }
+}
+
+
+iterator genDFTPhases(numElements, radix) {
+  var stride = 1;
+  for i in 1..log4(numElements-1) {
+    const span = stride * radix;
+    yield (stride, span);
+    stride = span;
+  }
 }
 
 
@@ -151,6 +158,9 @@ def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
   x0 = x1 - x3rot;
   A(4) = wk3 * x0;
 }
+
+
+def log4(x) return logBasePow2(x, 2);
 
 
 def verifyResults(z, Z, Twiddles) {

@@ -30,9 +30,6 @@ bug: initialized arrays in classes [classes/bradc/arrayInClass/genericArrayWithI
 * Union members that are passed to arguments of inout/out intent don't work
 bug: inout of union members [classes/deitz/test_union3]
 
-* log2() of negative and zero integers not implemented correctly
-bug: log2 error on negative/zero ints (bradc) [modules/standard/math/lg2]
-
 * Two modules sharing the same name break compilation (whether legal or illegal)
 bug: module naming collision [modules/diten/nested_module_collision]
 error message: module naming collision [modules/bradc/multipleModulesSameName]

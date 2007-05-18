@@ -38,20 +38,34 @@ pragma "inline" def tanh(x : real) return __primitive("tanh", x);
 pragma "inline" def tgamma(x : real) return __primitive("tgamma", x);
 pragma "inline" def trunc(x : real) return __primitive("trunc", x);
 
-def log2(in i: int(?w)) {
-  var retval = -1;
-  while (i >= 1) {
-    i /= 2;
-    retval += 1;
+
+def _logBasePow2Help(in val, baseLog2) {
+  var result = -1;
+  while (val != 0) {
+    val >>= baseLog2;
+    result += 1;
   }
-  return retval;
+  return result;
 }
 
-def log2(in i: uint(?w)) {
-  var retval = -1;
-  while (i >= 1) {
-    i /= 2;
-    retval += 1;
+def logBasePow2(in val: int(?w), baseLog2) {
+  if (val < 1) {
+    halt("Can't take the log() of a non-positive integer");
   }
-  return retval;
+  return _logBasePow2Help(val, baseLog2);
+}
+
+def logBasePow2(in val: uint(?w), baseLog2) {
+  if (val < 1) {
+    halt("Can't take the log() of a non-positive integer");
+  }
+  return _logBasePow2Help(val, baseLog2);
+}
+
+def log2(in val: int(?w)) {
+  return logBasePow2(val, 1);
+}
+
+def log2(in val: uint(?w)) {
+  return logBasePow2(val, 1);
 }

@@ -81,3 +81,9 @@ Other changes to date are:
 
   * changed the module "use" statements to use comma-separated lists
     of modules rather than a separate use statement per module.
+
+  * greatly refactored FFT code:
+    - to make slices a bit more algorithmic and less magic numbery
+    - to make main loop driven by iterator and make fewer loop-carried
+      variables clutter the body
+
