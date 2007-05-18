@@ -1,6 +1,6 @@
 use Time;
 
-config var n: int = 256;
+config var n: int = 512;
 config var s: uint = 4;
 
 var A: [1..n] int;
