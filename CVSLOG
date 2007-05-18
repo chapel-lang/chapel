@@ -103958,3 +103958,22 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:37:31 -- bradc
+
+Log message:
+	Adding a feature request that a decision between promotion
+	and a generic not be considered ambiguous, but that
+	promotion loses such battles.
+
+Modified files:
+	chapel/test/: FUTURES 
+Added files:
+	chapel/test/functions/bradc/resolution/: arrayVsPromotion.chpl 
+	                                         arrayVsPromotion.future 
+	                                         arrayVsPromotion.good 
+	                                         rangeVsPromotion.chpl 
+	                                         rangeVsPromotion.future 
+	                                         rangeVsPromotion.good 
+
