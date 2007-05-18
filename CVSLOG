@@ -103977,3 +103977,16 @@ Added files:
 	                                         rangeVsPromotion.future 
 	                                         rangeVsPromotion.good 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:40:44 -- bradc
+
+Log message:
+	Added some excerpts from email discussion with Steve on this
+	topic to capture our current thinking.  Meant to include
+	these earlier, but forgot until I hit "commit".
+
+Modified files:
+	chapel/test/functions/bradc/resolution/: arrayVsPromotion.future 
+	                                         rangeVsPromotion.future 
+
