@@ -103990,3 +103990,17 @@ Modified files:
 	chapel/test/functions/bradc/resolution/: arrayVsPromotion.future 
 	                                         rangeVsPromotion.future 
 
+---------------------------------------------------------------------------
+
+05/18/07 09:15:35 -- deitz
+
+Log message:
+	Removed ? from identifiers in the language overview.  Added support
+	for query expressions nested in formal argument types to Expressions
+	section.  Rather than playing zone on my sections, I'm playing
+	man-to-man on some changes that I think show up across multiple
+	sections.
+
+Modified files:
+	chapel/spec/: Expressions.tex Language_Overview.tex 
+
