@@ -457,6 +457,7 @@ sub mysystem {
 }
 
 sub commitstats {
+    if ($performance == 0) {
     if ($debug == 0) {
         `ci -l -m"automated nightly checkin" $statfile`;
     }
@@ -467,6 +468,7 @@ sub commitstats {
         if ($platform eq "linux") {
             `cd $statdir && ./makeplot`;
         }
+    }
     }
 }
 
