@@ -1133,8 +1133,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       if (t->symbol->hasPragma( "synchronization primitive")) {
         if (!hasPragma( "synchronization primitive") ||
             (isMethod && (t->instantiatedFrom != _this->type))) {
-          Type  *base_type = dynamic_cast<Type*>( t->substitutions.v[0].value);
-          generic_substitutions->put( key, base_type);
+          // allow types to be instantiated to sync types
+          Symbol* arg = dynamic_cast<Symbol*>(key);
+          if (!arg || !arg->isTypeVariable) {
+            // instantiation of a non-type formal of sync type loses sync
+            Type  *base_type = dynamic_cast<Type*>( t->substitutions.v[0].value);
+            generic_substitutions->put( key, base_type);
+          }
         }
       }
     }

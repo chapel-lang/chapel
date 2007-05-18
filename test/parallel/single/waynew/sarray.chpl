@@ -1,3 +1,5 @@
+use Time;
+
 param NUM = 10;
 
 var signal: [1..NUM] sync bool;
