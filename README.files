@@ -10,6 +10,7 @@ the files and directories that they contain.
   README            : top-level README with quick-start information
   README.files      : this file
   BUILD_VERSION     : the build version of the Chapel compiler
+  CHANGES           : a list of changes since the previous release
   CONTRIBUTORS      : a list of contributors to the Chapel project
   COPYRIGHT         : copyright information
   LICENSE           : Chapel's license

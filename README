@@ -68,6 +68,7 @@ For more detailed information about...      refer to...
   ...using the compiler                       ...doc/README.compiling
   ...executing Chapel programs                ...doc/README.executing
   ...implementation status                    ...STATUS
+  ...changes since the last release           ...CHANGES
   ...reporting bugs                           ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
   ...a tutorial using the HPCC benchmarks     ...doc/hpcc06.pdf
