@@ -144,29 +144,21 @@ to the function at the call site with the constraint that the type of
 the actual argument is an instantiation of the generic type.  A copy
 of the function is instantiated for each unique actual type.
 \begin{example}
-The following code defines a function \chpl{output} that takes an
-actual argument that is a generic stack and outputs the elements in
-the stack without any space between the elements.  The function is
-generic on the type of its argument.
+The following code defines a function \chpl{writeTop} that takes an
+actual argument that is a generic stack
+(see~\rsec{Example_Generic_Stack}) and outputs the top element of the
+stack.  The function is generic on the type of its argument.
 \begin{chapel}
-class MyStack {
-  type eltType;
-  var value: eltType;
-  var next: MyStack(eltType);
-}
-
-def output(s: MyStack) {
-  write(s.value);
-  if s.next then
-    output(s.next);
+def writeTop(s: Stack) {
+  write(s.top.item);
 }
 \end{chapel}
 \end{example}
 
 Types and parameters may be queried from the top-level types of formal
 arguments as well.  In the example above, the formal argument's type
-could also be specified as \chpl{MyStack(?type)} in which case the
-symbol \chpl{type} is equivalent to \chpl{s.eltType}.
+could also be specified as \chpl{Stack(?type)} in which case the
+symbol \chpl{type} is equivalent to \chpl{s.itemType}.
 
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}
