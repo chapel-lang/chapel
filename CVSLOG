@@ -104035,3 +104035,27 @@ Log message:
 Modified files:
 	chapel/test/parallel/cobegin/deitz/: test_many_threads.chpl 
 
+---------------------------------------------------------------------------
+
+05/18/07 11:01:37 -- deitz
+
+Log message:
+	Fixed a bug with instantiating a class with a sync type.
+	Instantiation with variables of sync type removes the synchronization
+	part of the type, so that the sync can be read during the constructor
+	call, and this was happening with sync types as well, leading to a
+	resolution error with reading a type.  Added a test case.
+	
+	Added a use of the Time module to Wayne's sync array test, but this
+	still fails.  The problem with arrays of syncs seems to be that the
+	assignment to an element of an array requires a variable of the
+	element type (sync) thereby not allowing an assignment of a nonsync
+	and leading to a write.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/parallel/single/waynew/: sarray.chpl 
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync_in_generic.chpl 
+	                                  test_sync_in_generic.good 
+
