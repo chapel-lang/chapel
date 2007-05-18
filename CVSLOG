@@ -104024,3 +104024,14 @@ Modified files:
 Added files:
 	chapel/runtime/include/: chplmath.h 
 
+---------------------------------------------------------------------------
+
+05/18/07 09:36:24 -- deitz
+
+Log message:
+	Bumped up the number of threads invoked by test_many_threads to 512
+	since linux64 seems to handle the 256 threads case.
+
+Modified files:
+	chapel/test/parallel/cobegin/deitz/: test_many_threads.chpl 
+
