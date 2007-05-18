@@ -103841,3 +103841,88 @@ Log message:
 Modified files:
 	chapel/spec/: Generics.tex 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:17:46 -- bradc
+
+Log message:
+	Cleaned up FFT:
+	
+	* replaced a for loop that made little-to-no sense
+	  and whose iterator variable was unused with an
+	  iterator that makes more sense (is based on the
+	  log4 of the problem size).
+	
+	* Moved the loop-carried values that we did care
+	  about out of the loop body and into the iterator
+	  and renamed them for clarity.
+	
+	* Replaced some repetitive expressions and magic
+	  numbers in the for loop and array ranges with
+	  expressions based on radix and math on ranges
+	  of the general form [0..radix) * stride + lo
+	
+	* Cleaned up the cleanup phase a bit.
+	
+	* Renamed variables for clarity
+	
+	Please read the current FFT code and see if you
+	can suggest additional things to clarify it/
+	its variables/etc.  I think it's come a long way
+	but I'm sure there's more that could still be
+	done (and I want to lock the code in before
+	working on the tutorial document again).
+	
+	As part of this check-in fixed the (bad) future
+	that I'd created some ago that for some reason
+	believed that log2(x:int) should equal log2(x):int
+	in all cases.  First, not mathematically true;
+	second, not really in the spirit of log2() on
+	integers.  Cleaned up the future to only call
+	legal values for now, and added additional tests
+	that call log2() for integers with zero and
+	negative values.
+	
+	Made log2() for zeroes and negative values call
+	halt() for now.  We could return a sentinel
+	value, but it's not clear that that's any
+	more useful, so I'll wait for someone to
+	present a compelling case and feature request.
+	
+	Added a logBasePow2() which computes a log of
+	an integer that's a power of two using bit
+	shift operators.  I write these in every
+	benchmark I write and always struggle to get
+	them right, so making it part of the standard
+	library seems nice.  The first argument is the
+	value to take the log of and the second is the
+	log2 of the power of 2.  So for example:
+	
+	     log(x, 3)
+	
+	is log_8(x).  Added some tests of this
+	functionality.
+	
+	Updated the STATUS and FUTURES files.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+	chapel/modules/standard/: Math.chpl 
+	chapel/test/modules/standard/math/: lg2.chpl lg2.good 
+	chapel/test/release/examples/: README 
+	chapel/test/release/examples/hpcc06/: Makefile README fft.chpl 
+Added files:
+	chapel/test/modules/standard/math/bradc/: lg2neg.chpl 
+	                                          lg2neg.good 
+	                                          lg2zero.chpl 
+	                                          lg2zero.good log2.chpl 
+	                                          log2.good log4.chpl 
+	                                          log4.good 
+	chapel/test/release/examples/hpcc06/: fft-testPow4.chpl 
+	                                      fft-testPow4.compopts 
+	                                      fft-testPow4.execopts 
+	                                      fft-testPow4.good 
+Removed files:
+	chapel/test/modules/standard/math/: lg2.future 
+
