@@ -104004,3 +104004,23 @@ Log message:
 Modified files:
 	chapel/spec/: Expressions.tex Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+05/18/07 09:28:31 -- bradc
+
+Log message:
+	Fixed last night's lg/lg2 regressions, which reflected
+	some sort of confusion on my part when testing on chap01.
+	Editied lg.chpl to avoid redundancy with other tests that
+	tested for log2 on negative and zero values.
+	
+	Added a prototype for log2() which doesn't seem to be showing
+	up on our systems for some reason.  Even though it seems like
+	it should not be necessary, it should not break things either.
+
+Modified files:
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/modules/standard/math/: lg.chpl lg.good 
+Added files:
+	chapel/runtime/include/: chplmath.h 
+
