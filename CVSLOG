@@ -103807,3 +103807,15 @@ Log message:
 Modified files:
 	chapel/spec/: Classes.tex Iterators.tex Records.tex 
 
+---------------------------------------------------------------------------
+
+05/17/07 17:01:46 -- deitz
+
+Log message:
+	Removed sequences and ? in identifiers from Generics section.  Added
+	documentation of querying parameters and types in top-level formal
+	argument types, e.g., (x: C(?t)).
+
+Modified files:
+	chapel/spec/: Generics.tex 
+
