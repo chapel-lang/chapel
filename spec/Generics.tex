@@ -20,7 +20,8 @@ Some formal argument has no specified type and no default value.
 \item
 Some formal argument is specified with a queried type.
 \item
-The type of some formal argument is a generic type, e.g., \chpl{seq}.
+The type of some formal argument is a generic type, e.g., \chpl{List}.
+Queries may be inlined in generic types, e.g., \chpl{List(?eltType)}.
 \item
 The type of some formal argument is an array type where either the
 element type is queried or omitted or the domain is queried or
@@ -39,18 +40,21 @@ function at a call site.  The formal argument has the semantics of a
 type alias.
 \begin{example}
 The following code defines a function that takes two types at the call
-site and returns a 2-tuple of sequences where the element types of the
-two sequences are defined by the two type arguments:
+site and returns a 2-tuple where the types of the components of the
+tuple are defined by the two type arguments and the values are
+specified by the types default values.
 \begin{chapel}
-def buildTupleOfSeqs(type t, type tt)
-  return (seq(t), seq(tt));
+def build2Tuple(type t, type tt) {
+  var x1: t;
+  var x2: tt;
+  return (x1, x2);
+}
 \end{chapel}
 This function is instantiated with ``normal'' function call syntax
 where the arguments are types:
 \begin{chapel}
-var tupleOfSeqs = buildTupleOfSeqs(int, string);
-tupleOfSeqs(1) #= 1;
-tupleOfSeqs(2) #= "hello";
+var t2 = build2Tuple(int, string);
+t2 = (1, "hello");
 \end{chapel}
 \end{example}
 
@@ -140,17 +144,29 @@ to the function at the call site with the constraint that the type of
 the actual argument is an instantiation of the generic type.  A copy
 of the function is instantiated for each unique actual type.
 \begin{example}
-The following code defines a function that takes an actual argument
-that is a sequence and outputs the elements in a sequence without any
-space between the elements.  The function is generic on the element
-type of the sequence.
+The following code defines a function \chpl{output} that takes an
+actual argument that is a generic stack and outputs the elements in
+the stack without any space between the elements.  The function is
+generic on the type of its argument.
 \begin{chapel}
-def output(s: seq) {
-  for e in s do
-    write(e);
+class MyStack {
+  type eltType;
+  var value: eltType;
+  var next: MyStack(eltType);
+}
+
+def output(s: MyStack) {
+  write(s.value);
+  if s.next then
+    output(s.next);
 }
 \end{chapel}
 \end{example}
+
+Types and parameters may be queried from the top-level types of formal
+arguments as well.  In the example above, the formal argument's type
+could also be specified as \chpl{MyStack(?type)} in which case the
+symbol \chpl{type} is equivalent to \chpl{s.eltType}.
 
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}
@@ -377,13 +393,13 @@ record Stack {
   }
 
   def pop() {
-    if isEmpty? then
+    if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
     top = top.next;
     return oldTop.item;
   }
 
-  def isEmpty? return top == nil;
+  def isEmpty return top == nil;
 }
 \end{chapel}
