@@ -104059,3 +104059,25 @@ Added files:
 	chapel/test/parallel/sync/deitz/: test_sync_in_generic.chpl 
 	                                  test_sync_in_generic.good 
 
+---------------------------------------------------------------------------
+
+05/18/07 16:15:42 -- bradc
+
+Log message:
+	First stab at CHANGES file.  Don't bother reading it,
+	I'm just archiving to not lose my work before the
+	next pass.
+	
+	This draft is more or less a big laundry list of changes
+	sorted into rough categories.  More work needs to be done
+	to order the items, make sure they're in the right
+	categories, call out higher-level/bigger changes at the
+	top of the file and lump minutiae at the bottom, etc.  For
+	now I erred on the side of listing most major changes to
+	avoid additional sweeps of the CVSLOG file.
+
+Modified files:
+	./: README README.files 
+Added files:
+	./: CHANGES 
+
