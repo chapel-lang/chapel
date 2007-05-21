@@ -104081,3 +104081,46 @@ Modified files:
 Added files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+05/21/07 10:53:47 -- diten
+
+Log message:
+	Fold paramater valued && and || by:
+	
+	1. Replace "bool.isTrue" with "isTrue(a: bool)" and "isTrue(param a:bool) param"
+	This way, function resolution is able to replace the call with its value when
+	it is a parameter.
+	
+	2. Change the definition of the function generated for AND (similar for OR) to:
+	def _and_if_fn() {
+	  move(T1, isTrue(left))
+	  if T1 {
+	    move(T2, PRIMITIVE_LOGICAL_FOLDER(T1, isTrue(right)))
+	  } else
+	    move(T2, PRIMITIVE_LOGICAL_FOLDER(T1, false))
+	  }
+	  return T2
+	}
+	
+	3. Inline the above function much earlier than normal, in the cleanup phase.
+	This way, normalization doesn't get in the way of folding.
+	
+	4. In preFold, replace the logical folder primitive with its second argument;
+	if the first argument is an immediate, set the canParam flag on T2 since
+	only one assignment will be made to it - one of the clauses in the conditional
+	statement will be folded away.
+	
+	Add a test and update a test that used "var" instead of "param" as a workaround
+	for not folding logicals.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+	chapel/test/types/enum/diten/: paramenums.chpl 
+Added files:
+	chapel/test/trivial/diten/: paramlogical.chpl paramlogical.good 
+
