@@ -1321,6 +1321,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_YIELD:
     case PRIMITIVE_IS_ENUM:
     case PRIMITIVE_IS_TUPLE:
+    case PRIMITIVE_LOGICAL_FOLDER:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:

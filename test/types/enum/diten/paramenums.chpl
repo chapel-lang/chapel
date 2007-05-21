@@ -18,11 +18,11 @@ def main() {
   param result14= testlte(orange, six);   // true  (5 <= 6)
   param result15= testlte(violet, two);   // true  (2 <= 2)
   param result16= testlte(orange, one);   // false (5 <= 1)
-  // result should be a param too, but && isn't folded over bools
-  var result = result1  && !result2  && !result3  && result4  && !result5 &&
-               !result6 && result7   && result8   && !result9 && result10 &&
-               result11 && !result12 && !result13 && result14 && result15 &&
-               !result16;
+
+  param result = result1  && !result2  && !result3  && result4  && !result5 &&
+                 !result6 && result7   && result8   && !result9 && result10 &&
+                 result11 && !result12 && !result13 && result14 && result15 &&
+                 !result16;
 
   if (!result) {
     writeln(result1);

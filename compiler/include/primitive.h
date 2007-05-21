@@ -114,6 +114,8 @@ enum PrimitiveTag {
   PRIMITIVE_IS_ENUM,   // True if argument is an enum
   PRIMITIVE_IS_TUPLE,  // True if argument is a tuple
 
+  PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
+
   PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
 
   PRIMITIVE_INT_ERROR,

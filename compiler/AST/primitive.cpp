@@ -320,6 +320,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_IS_ENUM, "isEnumType", returnInfoBool);
   prim_def(PRIMITIVE_IS_TUPLE, "isTupleType", returnInfoBool);
 
+  prim_def(PRIMITIVE_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
   prim_def(PRIMITIVE_GET_IC_TYPE, "get_ic_type", returnInfoICType);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);

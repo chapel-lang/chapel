@@ -251,7 +251,9 @@ pragma "inline" def **(param a: uint(64), param b: uint(64)) param return __prim
 // logical operations on primitive types
 //
 pragma "inline" def !(a: bool) return __primitive("!", a);
-pragma "inline" def bool.isTrue return this;
+
+pragma "inline" def isTrue(a: bool) return a;
+pragma "inline" def isTrue(param a: bool) param return a;
 
 pragma "inline" def !(param a: bool) param return __primitive("!", a);
 

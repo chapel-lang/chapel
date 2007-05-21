@@ -1988,6 +1988,21 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
                call->argList->length() == 2) {
       result = expand_for_loop(call);
+    } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
+      SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
+      if (VarSymbol* sym = dynamic_cast<VarSymbol*>(sym1->var)) {
+        if (sym->immediate) {
+          CallExpr* mvCall = dynamic_cast<CallExpr*>(call->parentExpr);
+          SymExpr* sym = dynamic_cast<SymExpr*>(mvCall->get(1));
+          VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+          var->canParam = true;
+          result = call->get(2)->remove();
+          call->replace(result);
+        } else {
+          result = call->get(2)->remove();
+          call->replace(result);
+        }
+      }
     }
   }
   return result;

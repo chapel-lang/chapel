@@ -14,15 +14,72 @@ Expr* buildDot(BaseAST* base, char* member) {
 
 
 Expr* buildLogicalAnd(Expr* left, Expr* right) {
-  FnSymbol* ifFn = build_if_expr(new CallExpr(".", left, new_StringSymbol("isTrue")), new CallExpr(".", right, new_StringSymbol("isTrue")), new SymExpr(gFalse));
-  ifFn->buildSetter = false;
+  static int uid = 1;
+  FnSymbol* ifFn = new FnSymbol("_and_if_fn");
+  VarSymbol* tmp1 = new VarSymbol(stringcat("_and_if_tmp", intstring(uid++)));
+  VarSymbol* tmp2 = new VarSymbol(stringcat("_and_if_tmp", intstring(uid++)));
+
+  tmp1->isCompilerTemp = true;
+  tmp2->isCompilerTemp = true;
+  tmp1->canParam = true;
+
+  ifFn->addPragma("inline early");
+  ifFn->insertAtHead(new DefExpr(tmp1));
+  ifFn->insertAtHead(new DefExpr(tmp2));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1,
+                                  new CallExpr("isTrue", left)));
+
+  // PRIMITIVE_LOGICAL_FOLDER will set tmp2's canParam flag to true if
+  // tmp1 is a parameter.  If tmp1 is a parameter, this CondStmt will be
+  // folded, and tmp2 will only be assigned once.
+  ifFn->insertAtTail(
+    new CondStmt(
+      new SymExpr(tmp1),                                      // Condition test
+      new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp2),         // Then case
+                   new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                                new SymExpr(tmp1),
+                                new CallExpr("isTrue", right))),
+      new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp2),         // Else case
+                   new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                   new SymExpr(tmp1),
+                   new SymExpr(gFalse)))));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(tmp2)));
   return new CallExpr(new DefExpr(ifFn));
 }
 
 
 Expr* buildLogicalOr(Expr* left, Expr* right) {
-  FnSymbol* ifFn = build_if_expr(new CallExpr(".", left, new_StringSymbol("isTrue")), new SymExpr(gTrue), new CallExpr(".", right, new_StringSymbol("isTrue")));
-  ifFn->buildSetter = false;
+  static int uid = 1;
+  FnSymbol* ifFn = new FnSymbol("_or_if_fn");
+  VarSymbol* tmp1 = new VarSymbol(stringcat("_or_if_tmp", intstring(uid++)));
+  VarSymbol* tmp2 = new VarSymbol(stringcat("_or_if_tmp", intstring(uid++)));
+
+  tmp1->isCompilerTemp = true;
+  tmp2->isCompilerTemp = true;
+  tmp1->canParam = true;
+
+  ifFn->addPragma("inline early");
+  ifFn->insertAtHead(new DefExpr(tmp1));
+  ifFn->insertAtHead(new DefExpr(tmp2));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1,
+                                  new CallExpr("isTrue", left)));
+
+  // PRIMITIVE_LOGICAL_FOLDER will set tmp2's canParam flag to true if
+  // tmp1 is a parameter.  If tmp1 is a parameter, this CondStmt will be
+  // folded, and tmp2 will only be assigned once.
+  ifFn->insertAtTail(
+    new CondStmt(
+      new SymExpr(tmp1),                                  // Condition test
+      new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp2),     // Then case
+                   new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                                new SymExpr(tmp1),
+                                new SymExpr(gTrue))),
+      new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp2),     // Else case
+                   new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                                new SymExpr(tmp1),
+                                new CallExpr("isTrue", right)))));
+
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp2));
   return new CallExpr(new DefExpr(ifFn));
 }
 

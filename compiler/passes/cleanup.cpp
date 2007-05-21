@@ -119,6 +119,54 @@ getBlock(Expr* stmt) {
   return getBlock(stmt->parentExpr);
 }
 
+
+//
+// Given a call-site and the definition of the function, inline the function
+// body.  This requires that the function have zero arguments and the last
+// statement in the function body is the only return from the function.
+//
+static void early_inline_call(CallExpr* call, DefExpr* def) {
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym);
+  AList* fn_body = fn->body->body->copy();
+  reset_file_info(fn_body, call->lineno, call->filename);
+  CallExpr* return_stmt = dynamic_cast<CallExpr*>(fn_body->last());
+  Expr* return_value = return_stmt->get(1);
+  if (!fn->formals->isEmpty())
+    INT_FATAL(fn, "Cannot inline a call with formals early");
+  if (!return_stmt->isPrimitive(PRIMITIVE_RETURN))
+    INT_FATAL(fn, "Last statement in function must be a return");
+  return_stmt->remove();
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn_body);
+  for_alist(Expr, stmt, fn_body) {
+    stmt->remove();
+    call->getStmtExpr()->insertBefore(stmt);
+  }
+  call->replace(return_value);
+}
+
+
+//
+// Inline the functions that are generated for && and || expressions;
+// during parsing, these are calls to defs of the functions.
+//
+static void normalize_nested_logical_function_expressions(DefExpr* def) {
+  if (def->sym->hasPragma("inline early")) {
+    Expr* stmt = def->getStmtExpr();
+    BlockStmt* block = getBlock(stmt);
+    CallExpr* call = dynamic_cast<CallExpr*>(def->parentExpr);
+    if (block->getFunction()->body == block &&
+        block->getFunction() == block->getModule()->initFn)
+      stmt = stmt->getFunction()->defPoint->getStmtExpr();
+    def->replace(new SymExpr(def->sym->name));
+    stmt->insertBefore(def);
+    Vec<Expr*> stmts;
+    early_inline_call(call, def);
+    def->remove();
+    def = NULL;
+  }
+}
+
 //
 // Moves expressions that are parsed as nested function definitions
 // into their own statement; during parsing, these are embedded in
@@ -438,9 +486,19 @@ void cleanup(void) {
     }
   }
 
+  // Inline calls to the functions generated for && and ||
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      normalize_nested_logical_function_expressions(def);
+    }
+  }
+
   asts.clear();
   collect_asts(&asts);
-
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
