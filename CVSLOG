@@ -104148,3 +104148,58 @@ Modified files:
 	chapel/test/types/tuple/diten/: overload_destructure_args.chpl 
 	                                overload_destructure_args.future 
 
+---------------------------------------------------------------------------
+
+05/21/07 13:28:39 -- bradc
+
+Log message:
+	Added some more performance tests:
+	
+	- ra.chpl from the release/examples/hpcc06/ directory
+	- cg-sparse.chpl from the npb/cg/bradc/ directory
+	- also added two new performance tests that look at the speed of
+	  compiler passes using fft.chpl from release/examples/hpcc06
+	  and cg-sparse.chpl as referenced above.
+	
+	Fixed a bug in the performance key searcher in which
+	duplicate keys were being found more than once.  Now
+	they're found just once and the first is taken.  This
+	is a slight issue for the compiler passes that are
+	called multiple times and are currently indistinguishable.
+	I'm ignoring this for now (it would be nice to have the
+	compiler number repeats of passes, either manually or
+	automatically).
+	
+	Updated some .cvsignore files.
+	
+	Checking in my note as to where I stopped in the CVSLOG
+	while working on the CHANGES file.  I added this right
+	after checking in last week.
+
+Modified files:
+	./: CHANGES 
+	chapel/test/Bin/: computePerfStats.pl 
+	chapel/test/npb/cg/bradc/: .cvsignore 
+	chapel/test/release/examples/: .cvsignore 
+Added files:
+	chapel/test/npb/cg/bradc/: cg-sparse.perfcompopts 
+	                           cg-sparse.perfkeys 
+	chapel/test/parallel/cobegin/deitz/: .cvsignore 
+	chapel/test/performance/compiler/bradc/: .cvsignore 
+	                                         cg-makea.chpl 
+	                                         cg-makea.notest 
+	                                         cg-sparse.chpl 
+	                                         cg-sparse.compopts 
+	                                         cg-sparse.execopts 
+	                                         cg-sparse.good 
+	                                         cg-sparse.perfcompopts 
+	                                         cg-sparse.perfkeys 
+	                                         fft.chpl fft.compopts 
+	                                         fft.execopts fft.good 
+	                                         fft.perfcompopts 
+	                                         fft.perfkeys 
+	                                         probSize.chpl 
+	                                         probSize.notest 
+	chapel/test/release/examples/hpcc06/: ra.perfcompopts 
+	                                      ra.perfkeys 
+
