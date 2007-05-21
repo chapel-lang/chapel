@@ -104134,3 +104134,17 @@ Log message:
 Modified files:
 	chapel/test/trivial/diten/: paramlogical.chpl 
 
+---------------------------------------------------------------------------
+
+05/21/07 12:43:32 -- diten
+
+Log message:
+	Make the where clauses generated for tuple destructuring function arguments
+	use logical && rather than bitwise &.  Update a future test to make resolution
+	depend on a destructured tuple rather than the non-tuple argument.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/test/types/tuple/diten/: overload_destructure_args.chpl 
+	                                overload_destructure_args.future 
+
