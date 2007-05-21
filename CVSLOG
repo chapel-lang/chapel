@@ -104124,3 +104124,13 @@ Modified files:
 Added files:
 	chapel/test/trivial/diten/: paramlogical.chpl paramlogical.good 
 
+---------------------------------------------------------------------------
+
+05/21/07 11:01:19 -- diten
+
+Log message:
+	Forgot to save this file before checking in - left an extra line I didn't want.
+
+Modified files:
+	chapel/test/trivial/diten/: paramlogical.chpl 
+
