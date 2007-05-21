@@ -54,7 +54,7 @@ static FnSymbol* err_fn = NULL;
 
 static char* cleanFilename(BaseAST* ast) {
   if (strstr(ast->filename, "/modules/standard"))
-    return stringcat("...", strstr(ast->filename, "/modules/standard"));
+    return stringcat("$CHPL_HOME", strstr(ast->filename, "/modules/standard"));
   return ast->filename;
 }
 
