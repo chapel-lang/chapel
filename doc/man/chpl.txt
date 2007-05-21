@@ -1,0 +1,17 @@
+NAME
+  chpl - Cray Inc. Chapel compiler
+SYNOPSIS
+  chpl [-g] [-O] [-savec dir] [-o outfile] 
+       [-h] [--version] [--copyright] [--license] infile...
+DESCRIPTION
+  chpl converts the Chapel source infiles into an executable.  It
+  kicks major ass.
+OPTIONS
+  -h          The -h option displays help
+  -g          The -g option turns on debugging help
+ENVIRONMENT
+  CHPL_HOME     location of the root chapel installation directory
+BUGS
+  See $CHPL_HOME/STATUS
+AUTHORS
+  See $CHPL_HOME/CONTRIBUTORS
