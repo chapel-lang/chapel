@@ -1,5 +1,4 @@
-bug: destructured tuple function arguments prevent overloading (fold &&)
+bug: more specific tuple arg is ambigous with less specific _any arg
 
-Due to using "&" instead of "&&" in where clauses, overloaded functions can
-fail to resolve when the functions have destructured tuple arguments.
-
+A more specific tuple destructured argument is not chosen over an argument
+with no type explicitly specified.

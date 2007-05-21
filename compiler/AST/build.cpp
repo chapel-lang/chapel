@@ -779,14 +779,14 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     } else if (BlockStmt* subtuple = dynamic_cast<BlockStmt*>(expr)) {
       /* newClause is:
          (& IS_TUPLE(base(count)) (build_tuple_arg's where clause)) */
-      Expr* newClause = new CallExpr("&",
+      Expr* newClause = buildLogicalAnd(
                           new CallExpr(PRIMITIVE_IS_TUPLE,
                             new CallExpr(base->copy(),
                               new_IntSymbol(count))),
                           build_tuple_arg(fn, subtuple,
                             new CallExpr(base, new_IntSymbol(count))));
       if (where) {
-        where = new CallExpr("&", where, newClause);
+        where = buildLogicalAnd(where, newClause);
       } else {
         where = newClause;
       }
@@ -797,7 +797,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
                                       new CallExpr(".", base->copy(),
                                                    new_StringSymbol("size")));
   if (where) {
-    where = new CallExpr("&", sizeClause, where);
+    where = buildLogicalAnd(sizeClause, where);
   } else {
     where = sizeClause;
   }
@@ -806,8 +806,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     /* Only the top-level call to this function should modify the actual
        function where clause. */
     if (fn->where) {
-      where = new CallExpr("&", fn->where->body->head->remove(),
-                           where);
+      where = buildLogicalAnd(fn->where->body->head->remove(), where);
       fn->where->body->insertAtHead(where);
     } else {
       fn->where = new BlockStmt(where);

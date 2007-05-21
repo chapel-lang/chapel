@@ -1,4 +1,4 @@
-def foo(a, (b, (c, d))) {
+def foo(a: int, (b, (c, d))) {
   writeln("One normal arg, one nested tuple arg.");
 }
 
