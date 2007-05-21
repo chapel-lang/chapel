@@ -1,5 +1,4 @@
-*.tmp
 a.out
-latex
+*.tmp
 output
 perfdat

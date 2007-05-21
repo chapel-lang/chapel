@@ -42,7 +42,7 @@ foreach my $key (@keys) {
     print STATS "\t";
     my $found = 0;
     foreach my $line (@file_lines) {
-        if ($line =~ m/\Q$key\E(\s*)(\S*)/) {
+        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
             print "found it: $2\n";
             print STATS "$2";
             $found = 1;

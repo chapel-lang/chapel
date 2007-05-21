@@ -1,0 +1,1 @@
+cg-makea.chpl -O --no-bounds-checks
