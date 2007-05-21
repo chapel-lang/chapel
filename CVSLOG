@@ -104232,3 +104232,15 @@ Log message:
 Added files:
 	chapel/doc/man/: .cvsignore Makefile chpl.txt grabVersion.pl 
 
+---------------------------------------------------------------------------
+
+05/21/07 16:22:01 -- deitz
+
+Log message:
+	Changed printing of errors in standard modules from prefixing the path
+	with ... to prefixing the path with the string "$CHPL_HOME" as
+	suggested by Brad.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+
