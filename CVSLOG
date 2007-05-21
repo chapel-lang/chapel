@@ -104203,3 +104203,32 @@ Added files:
 	chapel/test/release/examples/hpcc06/: ra.perfcompopts 
 	                                      ra.perfkeys 
 
+---------------------------------------------------------------------------
+
+05/21/07 15:38:58 -- bradc
+
+Log message:
+	Template for creating a chpl man page using the
+	txt2man utility.  Available at ~bradc/bin/ or
+	directly from the web at: http://mvertes.free.fr/
+	
+	The man page for txt2man is in ~bradc/man/man1/
+	Or, read the text source for the man page in the
+	source of the script itself, which also serves
+	as a nice example to base your own man page from.
+	
+	chpl.txt is a stub for a Chapel source man page.
+	
+	The Makefile here will build chpl.1 (the man
+	page) as well as chpl.pdf and chpl.html -- PDF
+	and HTML versions of the man page.  grabVersion.pl
+	is a script that reads the compiler version number
+	out of the compiler sources to embed into the man
+	page.
+	
+	I'm not planning on doing more with this for now,
+	if anyone else wants to play with it a bit.
+
+Added files:
+	chapel/doc/man/: .cvsignore Makefile chpl.txt grabVersion.pl 
+
