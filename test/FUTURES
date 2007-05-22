@@ -18,9 +18,6 @@ bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domai
 * Class fields initialized with conditional expressions fail to compile
 bug: conditional expression in class member initialization [classes/marybeth/test-init]
 
-* Destructuring tuple arguments disables overloads of that function name
-bug: destructured tuple function arguments prevent overloading (fold &&) [types/tuple/diten/overload_destructure_args]
-
 * Parameters in branches of conditional expressions are not implicitly coerced
 bug: implicit parameter coercions in conditional expression [studies/hpcc/RA/bradc/ra-condexpr]
 
@@ -135,6 +132,7 @@ semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef]
 semantic: global use before def [studies/blas/marybeth/saxpy2]
 semantic: params in classes [classes/bradc/paramInClass/weirdParamInit3]
 semantic: params in classes [classes/bradc/paramInClass/weirdParamInit4]
+semantic: explicitly typing fields in tuple arguments [types/tuple/diten/tuple_destructure_arg_types.chpl]
 
 
 * 32-bit math routines are unimplemented, causing coercion to 64-bit versions

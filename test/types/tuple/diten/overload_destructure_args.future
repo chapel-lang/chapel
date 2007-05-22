@@ -1,4 +1,0 @@
-bug: more specific tuple arg is ambigous with less specific _any arg
-
-A more specific tuple destructured argument is not chosen over an argument
-with no type explicitly specified.
