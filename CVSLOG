@@ -104371,3 +104371,17 @@ Added files:
 	                                   lu_chapel.pdf notes052306.txt 
 	                                   scalapack_luslides_brad.ppt 
 
+---------------------------------------------------------------------------
+
+05/22/07 12:06:22 -- bradc
+
+Log message:
+	Fixed nightly script to improve performance tests.
+	Hadn't realized it previously, but the output files
+	being generated weren't being kept separate from
+	the normal nightly tests, resulting in a lack of
+	logs and bad night-to-night diffing.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
