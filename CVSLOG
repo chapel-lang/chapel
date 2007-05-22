@@ -104344,3 +104344,30 @@ Removed files:
 	                                         fft.perfcompopts 
 	                                         fft.perfkeys 
 
+---------------------------------------------------------------------------
+
+05/22/07 11:54:50 -- bradc
+
+Log message:
+	Checking in some old code studies that have been lying
+	around in my local directory forever.  None of these
+	are meant to be tested -- just part of the archives.
+
+Added files:
+	chapel/test/ssca/ssca1/bradc/: .cvsignore NOTEST excerpt.chpl 
+	                               excerpt.feo.mta.c 
+	                               excerpt.maltby.c 
+	                               excerpt.maltby.pseudocode 
+	                               excerpt2.chpl 
+	chapel/test/studies/lu/bradc/old/: .cvsignore NOTEST 
+	                                   lu.scalar.betterrow.chpl 
+	                                   lu.scalar.ccomments.chpl 
+	                                   lu.scalar.chpl 
+	                                   lu.scalar.johnmb.chpl 
+	                                   lu.scalar.relaunch.chpl 
+	                                   lu.scalar.rep.ccomments.chpl 
+	                                   lu.scalar.zpl 
+	                                   lu.userview.chpl 
+	                                   lu_chapel.pdf notes052306.txt 
+	                                   scalapack_luslides_brad.ppt 
+
