@@ -104300,3 +104300,47 @@ Added files:
 Removed files:
 	chapel/test/types/tuple/diten/: overload_destructure_args.future 
 
+---------------------------------------------------------------------------
+
+05/22/07 11:46:06 -- bradc
+
+Log message:
+	Oops, committed a thinko and checked in my compiler performance
+	tests with the same name as the benchmark performance tests
+	which caused them to share a performance data output file in
+	the nightly regressions.  Renamed all the files and added a
+	.perfexecopts file to the fft test so that it wouldn't run
+	forever.
+	
+	If this "multiple performance tests share the same name" continues
+	to be a problem, we can add a hook to name the performance data
+	file for a particular test.  I suspect it will be rare in practice,
+	though since most "real" tests tend to have a unique name and we
+	aren't likely to do lots of compiler + benchmark performance tests.
+
+Added files:
+	chapel/test/performance/compiler/bradc/: cg-sparse-timecomp.chpl 
+	                                         cg-sparse-timecomp.compopts 
+	                                         cg-sparse-timecomp.execopts 
+	                                         cg-sparse-timecomp.good 
+	                                         cg-sparse-timecomp.perfcompopts 
+	                                         cg-sparse-timecomp.perfkeys 
+	                                         fft-timecomp.chpl 
+	                                         fft-timecomp.compopts 
+	                                         fft-timecomp.execopts 
+	                                         fft-timecomp.good 
+	                                         fft-timecomp.perfcompopts 
+	                                         fft-timecomp.perfexecopts 
+	                                         fft-timecomp.perfkeys 
+Removed files:
+	chapel/test/performance/compiler/bradc/: cg-sparse.chpl 
+	                                         cg-sparse.compopts 
+	                                         cg-sparse.execopts 
+	                                         cg-sparse.good 
+	                                         cg-sparse.perfcompopts 
+	                                         cg-sparse.perfkeys 
+	                                         fft.chpl fft.compopts 
+	                                         fft.execopts fft.good 
+	                                         fft.perfcompopts 
+	                                         fft.perfkeys 
+
