@@ -1,0 +1,3 @@
+unimplemented feature: setting the IRV
+
+Currently there's no way to set the IRV of a sparse array.

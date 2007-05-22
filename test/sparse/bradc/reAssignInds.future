@@ -1,0 +1,4 @@
+bug: reassigning sparse domain
+
+When reassigning a sparse domain, we need to clear out its sparse
+indices before accumulating the new ones.

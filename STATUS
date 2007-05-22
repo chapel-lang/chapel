@@ -125,6 +125,9 @@ Bugs:
 Tuples, Ranges, and Iterators
 -----------------------------
 
+Unimplemented Features:
+* Slicing strided ranges is not yet supported
+
 
 ------------------
 Arrays and Domains
@@ -137,6 +140,9 @@ Unimplemented Features:
 * Opaque domains and arrays are not implemented
 * Index type bounds checking is not implemented
 * Checking that subdomain are index subsets is not implemented
+* Slicing strided domains and arrays is not implemented
+* Only 2D sparse arrays are currently supported
+* Sparse arrays don't support assignment to their IRVs
 
 Bugs:
 
@@ -147,6 +153,8 @@ Bugs:
           but instead results in a 1D array
 
 * Modifying a sparse domain after assigning its array values can cause problems
+
+* Sparse arrays can't be sliced with dense domains
 
 * Whole-array updates of components of arrays of records/complexes don't work
     e.g., var A: [1..4] complex; A.im = -A.im;
@@ -211,8 +219,10 @@ Unimplemented Features:
 Input and Output
 ----------------
 
-Bugs:
+Unimplemented Features:
+* a mechanism for controlling the precision/width of scalar values
 
+Bugs:
 * read()s of whole arrays are not working
     e.g., read(A);
   Workaround: use a loop and read in the elements one at a time

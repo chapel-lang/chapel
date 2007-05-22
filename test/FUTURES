@@ -179,3 +179,24 @@ unimplemented feature: task pool to avoid exhausting thread resources [parallel/
 
 * Compiler and runtime errors don't always report useful line numbers
 runtime error: line number in out-of-memory [memory/shannon/memmaxExceedsLineno2]
+
+* Slicing strided ranges is not yet supported
+unimplemented feature: slicing strided ranges [types/range/bradc/strideRangeSlice2]
+
+* Slicing strided domains and arrays is not implemented
+unimplemented feature: slicing strided domains/arrays [domains/bradc/slices/sliceStridedDomain]
+unimplemented feature: slicing strided domains/arrays [arrays/bradc/slices/sliceStridedArray]
+
+* Only 2D sparse arrays are currently supported
+unimplemented feature: non-2D sparse [sparse/bradc/sparse1D]
+unimplemented feature: non-2D sparse [sparse/bradc/sparse3D]
+
+* Sparse arrays don't support assignment to their IRVs
+unimplemented feature: setting the IRV [sparse/bradc/setIRV]
+bug: growing sparse array doesn't use IRV [sparse/bradc/growEmpty]
+
+* Sparse arrays can't be sliced with dense domains
+unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithDense]
+
+* a mechanism for controlling the precision/width of scalar values
+feature request: output formatting [io/bradc/formatoutput]

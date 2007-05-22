@@ -1,0 +1,6 @@
+rOdd is: 1..9 by 2
+rOddSlice = 3..7 by 2
+rOddSlice = 3..2 by 2
+rOddSlice = 3..7 by 2
+rOddSlice = 3..7 by 2
+strideRangeSlice2.chpl:21: error: halt reached - range slice out of bounds: 0..11

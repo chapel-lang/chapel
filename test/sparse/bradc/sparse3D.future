@@ -1,0 +1,5 @@
+unimplemented feature: non-2D sparse
+
+Sparse domains/arrays are currently only implemented
+for 2D.  Need to implement arbitrary rank.
+

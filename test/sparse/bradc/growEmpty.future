@@ -1,0 +1,6 @@
+bug: growing sparse array doesn't use IRV
+
+When growing a sparse array, the new elements are
+filled in with the element type's "zero" value
+rather than the IRV.
+

@@ -1,0 +1,5 @@
+D is: [1..10, 1..10]
+D2 is: [1..9 by 2, 1..9 by 2]
+D2Slice is: [1..9 by 2, 1..0 by 2];
+D2Slice is: [1..9 by 2, 3..9 by 2];
+sliceDomain.chpl:17: error: halt reached - range slice out of bounds: 0..9
