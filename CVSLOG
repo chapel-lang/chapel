@@ -104267,3 +104267,13 @@ Added files:
 	chapel/test/parallel/sync/deitz/: test_sync_formal.chpl 
 	                                  test_sync_formal.good 
 
+---------------------------------------------------------------------------
+
+05/22/07 09:03:59 -- deitz
+
+Log message:
+	I did not mean to check this test in yesterday.  Added a .future.
+
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync_formal.future 
+
