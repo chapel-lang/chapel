@@ -104277,3 +104277,26 @@ Log message:
 Added files:
 	chapel/test/parallel/sync/deitz/: test_sync_formal.future 
 
+---------------------------------------------------------------------------
+
+05/22/07 09:14:14 -- diten
+
+Log message:
+	Update a test to expect an error from an ambiguous tuple argument.  Add a test
+	using function overloading with differently shaped tuples.  Add a future
+	suggesting allowing types for tuple arguments.  Updated FUTURES file to
+	reflect these changes.
+
+Modified files:
+	chapel/test/: FUTURES 
+	chapel/test/types/tuple/diten/: overload_destructure_args.chpl 
+	                                overload_destructure_args.good 
+Added files:
+	chapel/test/types/tuple/diten/: overload_destructure_args2.chpl 
+	                                overload_destructure_args2.good 
+	                                tuple_destructure_arg_types.chpl 
+	                                tuple_destructure_arg_types.future 
+	                                tuple_destructure_arg_types.good 
+Removed files:
+	chapel/test/types/tuple/diten/: overload_destructure_args.future 
+
