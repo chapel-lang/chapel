@@ -40,12 +40,13 @@ if (@ARGV) {
 
 if ($printusage == 1) {
     print "nightly [-debug|-notest|-cron] {[-valgrind|-interpret]}\n";
-    print "\t-debug     : check out sources and run for individual user (default)\n";
-    print "\t-cron      : use for nightly cron runs only\n";
-    print "\t-notest    : don't run the tests (check the build only)\n";
-    print "\t-examples  : run the release/examples tests only\n";
-    print "\t-valgrind  : run tests in valgrind mode\n";
-    print "\t-interpret : run tests in interpreted mode\n";
+    print "\t-debug       : check out sources and run for individual user (default)\n";
+    print "\t-cron        : use for nightly cron runs only\n";
+    print "\t-notest      : don't run the tests (check the build only)\n";
+    print "\t-examples    : run the release/examples tests only\n";
+    print "\t-valgrind    : run tests in valgrind mode\n";
+#    print "\t-interpret   : run tests in interpreted mode\n";
+    print "\t-performance : run performance tests\n";
     exit 1;
 }
 
@@ -124,6 +125,9 @@ if ($valgrind == 1) {
     if ($interpret == 1) {
         $threechars = "vgi";
         $morechars = "intrp+vgrnd";
+    } elsif ($performance == 1) {
+        $threechars = "vgp";
+        $morechars = "perf+vgrnd";
     } else {
         $threechars = "vgr";
         $morechars = "valgrind";
@@ -131,6 +135,9 @@ if ($valgrind == 1) {
 } elsif ($interpret == 1) {
     $threechars = "int";
     $morechars = "interpret";
+} elsif ($performance == 1) {
+    $threechars = "prf";
+    $morechars = "performance";
 } else {
     $threechars = "std";
     $morechars = "standard";
@@ -314,7 +321,7 @@ if ($runtests == 1) {
         $mailsubject = "Chapel Debug ($platform): $shortstatus";
     } else {
         if ($performance == 1) {
-            $mailsubject = "Chapel Performance ($platform): $shortstatus";
+            $mailsubject = "Chapel Performance Nightly ($platform): $shortstatus";
         } else {
             $mailsubject = "Chapel Nightly ($platform): $shortstatus";
         }
