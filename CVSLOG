@@ -104385,3 +104385,19 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+05/22/07 13:49:23 -- diten
+
+Log message:
+	Change the name of the pointer to the outer class from "this0" to "outer".
+	Just a trivial search and replace.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: cleanup.cpp flattenClasses.cpp 
+	                         scopeResolve.cpp 
+	chapel/test/classes/diten/: nesting_with_inheritance.chpl 
+	                            nesting_with_inheritance.good 
+
