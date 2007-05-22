@@ -104401,3 +104401,75 @@ Modified files:
 	chapel/test/classes/diten/: nesting_with_inheritance.chpl 
 	                            nesting_with_inheritance.good 
 
+---------------------------------------------------------------------------
+
+05/22/07 15:05:34 -- bradc
+
+Log message:
+	Filing a bunch of tests/futures to track outstanding
+	issues in my brain and on my various TODO lists.
+	Updated the STATUS and FUTURE files.
+	
+	* strided slicing of non-strided ranges/domains/arrays
+	  works, but slicing of strided ranges/domains/arrays
+	  does not.  Filed tests of the former, futures for
+	  the latter.
+	
+	* filed a third promotion function resolution example
+	  that Steve came up with on our email conversation
+	  which, the more I thought about it, the more I liked
+	  it and wanted to capture it.
+	
+	* added a future as a placeholder for formatting scalar
+	  output -- something that would allow us to get something
+	  other than the default precision/width.  No great
+	  ideas about syntax yet, this is really more of a
+	  placeholder than anything.
+	
+	* a bunch of sparse futures and tests:
+	  - reassigning a domain doesn't clear out sparse index
+	    set
+	  - growing a sparse domain doesn't fill in new array
+	    values with the IRV
+	  - the IRV currently can't be set
+	  - futures against non-2D sparse domains/arrays
+	  - can't currently slice a sparse domain with a dense
+
+Modified files:
+	./: STATUS 
+	chapel/modules/standard/: ChapelRange.chpl 
+	chapel/test/: FUTURES 
+Added files:
+	chapel/test/arrays/bradc/slices/: sliceArray.chpl 
+	                                  sliceArray.good 
+	                                  sliceStridedArray.chpl 
+	                                  sliceStridedArray.future 
+	                                  sliceStridedArray.good 
+	chapel/test/domains/bradc/slices/: .cvsignore sliceDomain.chpl 
+	                                   sliceDomain.good 
+	                                   sliceStridedDomain.chpl 
+	                                   sliceStridedDomain.future 
+	                                   sliceStridedDomain.good 
+	chapel/test/functions/bradc/resolution/: 
+	                                         arrayVsPromotion-deitz.chpl 
+	                                         arrayVsPromotion-deitz.future 
+	                                         arrayVsPromotion-deitz.good 
+	chapel/test/io/bradc/: .cvsignore formatoutput.chpl 
+	                       formatoutput.future formatoutput.good 
+	chapel/test/sparse/bradc/: accumInds.chpl accumInds.good 
+	                           growEmpty.chpl growEmpty.future 
+	                           growEmpty.good reAssignInds.chpl 
+	                           reAssignInds.future reAssignInds.good 
+	                           setIRV.chpl setIRV.future setIRV.good 
+	                           sliceWithDense.chpl 
+	                           sliceWithDense.future 
+	                           sliceWithDense.good sparse1D.chpl 
+	                           sparse1D.future sparse1D.good 
+	                           sparse3D.chpl sparse3D.future 
+	                           sparse3D.good 
+	chapel/test/types/range/bradc/: strideRangeSlice.chpl 
+	                                strideRangeSlice.good 
+	                                strideRangeSlice2.chpl 
+	                                strideRangeSlice2.future 
+	                                strideRangeSlice2.good 
+
