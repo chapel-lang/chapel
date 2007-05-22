@@ -47,6 +47,7 @@ static void inline_call(CallExpr* call, Vec<Expr*>* stmts) {
   if (!se || se->var->astType == SYMBOL_ARG)
     INT_FATAL(fn, "inlined function cannot return an argument symbol");
   return_stmt->remove();
+  return_value->remove();
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn_body);
   for_alist(Expr, stmt, fn_body)

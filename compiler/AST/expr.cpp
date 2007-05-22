@@ -131,7 +131,7 @@ Expr* Expr::remove(void) {
 void Expr::replace(Expr* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::replace");
-  if (new_ast->prev || new_ast->next)
+  if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::replace");
   if (list) {
     new_ast->next = next;

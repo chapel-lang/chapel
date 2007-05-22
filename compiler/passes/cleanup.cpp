@@ -142,6 +142,7 @@ static void early_inline_call(CallExpr* call, DefExpr* def) {
     stmt->remove();
     call->getStmtExpr()->insertBefore(stmt);
   }
+  return_value->remove();
   call->replace(return_value);
 }
 

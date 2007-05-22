@@ -568,7 +568,7 @@ fix_def_expr(VarSymbol* var) {
     stmt->insertAfter(
       new CallExpr(PRIMITIVE_MOVE, constTemp,
         new CallExpr("_copy", init->remove())));
-    var->defPoint->init = NULL; // Why is this needed? (diten)
+
   }
 }
 
