@@ -104244,3 +104244,26 @@ Log message:
 Modified files:
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+05/21/07 17:04:56 -- deitz
+
+Log message:
+	Added a new check to Expr::replace to ensure that an expression
+	already in a list is not passed to this routine.  The old check relied
+	on sentinels and failed for expressions that were in a list alone.
+	
+	Fixed a bug in inlining and early inlining in which a node that was in
+	a list of a single node (the return expression) was inserted into the
+	tree again via the replace function.
+	
+	Removed an assignment of NULL to DefExpr::init.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: cleanup.cpp inlineFunctions.cpp 
+	                         normalize.cpp 
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync_formal.chpl 
+	                                  test_sync_formal.good 
+
