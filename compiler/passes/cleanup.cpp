@@ -334,9 +334,9 @@ static void build_constructor(ClassType* ct) {
   ClassType *outerType =
     dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
-    // Create a "this0" pointer to the outer class in the inner class
-    VarSymbol* _this0 = new VarSymbol("this0", outerType);
-    ct->fields->insertAtHead(new DefExpr(_this0));
+    // Create a "outer" pointer to the outer class in the inner class
+    VarSymbol* outer = new VarSymbol("outer", outerType);
+    ct->fields->insertAtHead(new DefExpr(outer));
 
     // Save the this pointer -- addDeclarations will overwrite it
     Symbol* myThis = fn->_this;
@@ -347,7 +347,7 @@ static void build_constructor(ClassType* ct) {
     fnDef->remove();
     outerType->addDeclarations(new AList(fnDef), true);
 
-    // Save what is currently "this" into "this->this0".  "this" 
+    // Save what is currently "this" into "this->outer".  "this" 
     // currently points at an instance of the outer class.
     VarSymbol* tmp = new VarSymbol("_tmp");
     tmp->isCompilerTemp = true;
@@ -355,14 +355,14 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, fn->_this));
     
     Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, myThis,
-                                     new_StringSymbol("this0"), tmp);
+                                     new_StringSymbol("outer"), tmp);
     fn->insertAtTail(assign_expr);
-    ct->_this0 = _this0;
+    ct->outer = outer;
     
     // Restore the "this" pointer to point to the inner class
     fn->_this = myThis;
   } else {
-    ct->_this0 = NULL;
+    ct->outer = NULL;
   }
 
   forv_Vec(FnSymbol, method, ct->methods) {

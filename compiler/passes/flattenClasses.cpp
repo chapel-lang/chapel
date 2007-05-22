@@ -38,13 +38,4 @@ void flattenClasses(void) {
     def->remove();
     mod->block->insertAtTail(def);
   }
-
-  // Add this0 pointer usages when a symbol is not defined at the
-  // nested class's level, but is defined at an outer class's level
-  //forv_Vec(ClassType, ct, all_nested_classes) {
-    
-  //}
-
-
-
 }

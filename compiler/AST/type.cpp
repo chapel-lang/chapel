@@ -286,7 +286,8 @@ ClassType::ClassType(ClassTag initClassTag) :
   isIterator(false),
   structScope(NULL),
   fields(new AList()),
-  inherits(new AList())
+  inherits(new AList()),
+  outer(NULL)
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
@@ -324,6 +325,7 @@ ClassType*
 ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
   copy_type->isIterator = isIterator;
+  copy_type->outer = outer;
   copy_type->fields->insertAtTail(COPY_INT(fields));
   copy_type->inherits->insertAtTail(COPY_INT(inherits));
   for_fields(field, copy_type) {

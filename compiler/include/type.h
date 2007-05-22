@@ -108,7 +108,7 @@ class ClassType : public Type {
   SymScope* structScope;
   AList* fields;
   AList* inherits; // used from parsing, sets dispatchParents
-  Symbol* _this0;  // pointer to an outer class if this is an inner class
+  Symbol* outer;  // pointer to an outer class if this is an inner class
 
   ClassType(ClassTag initClassTag);
   ~ClassType();

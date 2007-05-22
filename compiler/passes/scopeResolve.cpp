@@ -25,7 +25,7 @@ name_matches_method(char* name, Type* type) {
   if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
     if (dynamic_cast<ClassType*>(outerType)) {
-      ClassType* outer = dynamic_cast<ClassType*>(ct->_this0->type);
+      ClassType* outer = dynamic_cast<ClassType*>(ct->outer->type);
       if (name_matches_method(name, outer))
         return true;
     }
@@ -199,7 +199,7 @@ void scopeResolve(Symbol* base) {
             }
         }
 
-        // Apply 'this' and 'this0' in methods where necessary
+        // Apply 'this' and 'outer' in methods where necessary
         {
           Symbol* parent = symExpr->parentSymbol;
           while (!dynamic_cast<ModuleSymbol*>(parent)) {
@@ -227,7 +227,7 @@ void scopeResolve(Symbol* base) {
                       if (!dynamic_cast<CallExpr*>(symExpr->parentExpr)) {
                         // If name_matches_method, and parent is not a
                         // CallExpr, then this is a type specification
-                        // so don't give it this.this0...
+                        // so don't give it this.outer...
                         break;
                       }
                       while (ct && !name_matches_method_local(name, ct)) {
@@ -254,7 +254,7 @@ void scopeResolve(Symbol* base) {
                         if (i < nestDepth) {
                           dot = new CallExpr(".",
                                              method->_this,
-                                             new_StringSymbol("this0"));
+                                             new_StringSymbol("outer"));
                         } else {
                           dot = new CallExpr(".",
                                              method->_this,
@@ -263,7 +263,7 @@ void scopeResolve(Symbol* base) {
                       } else {
                         if (i < nestDepth) {
                           dot = new CallExpr(".",
-                                             dot, new_StringSymbol("this0"));
+                                             dot, new_StringSymbol("outer"));
                         } else {
                           dot = new CallExpr(".", dot, new_StringSymbol(name));
                         }

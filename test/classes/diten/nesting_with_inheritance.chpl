@@ -14,7 +14,7 @@ class outer {
       writeln("x should be 0. x is: ", x);
       foo();
       writeln("x should be 3. x is: ", x);
-      writeln("this0.x should be 0. this0.x is: ", this0.x);
+      writeln("outer.x should be 0. outer.x is: ", outer.x);
     }
   }
   def runit() {
