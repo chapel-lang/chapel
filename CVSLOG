@@ -104492,3 +104492,23 @@ Log message:
 Modified files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+05/22/07 17:05:22 -- bradc
+
+Log message:
+	A pair of small test changes:
+	
+	(1) wrote a test to capture an iterator invocation
+	    and print out its domain to make sure I had
+	    the semantics correct in the CHANGES file.
+	
+	(2) small change to fft.chpl to take advantage of
+	    ability to elide unneeded loop indices.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+Added files:
+	chapel/test/functions/iterators/bradc/: captureIterator.chpl 
+	                                        captureIterator.good 
+
