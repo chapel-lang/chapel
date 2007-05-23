@@ -92,16 +92,28 @@ Semantic Changes:
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
 - removed support for structural iterator interface (getHeadCursor, etc.)
-- added support for default iterators for classes (TODO: named ault :P ...)
+- added support for defining default iterators for classes and records
 - initial support for querying parameters/types in a formal class argument
   - similar support for variable-length argument lists of generics
 - where clauses can now compare against formal generic types
 - short-circuiting operators only require isTrue rather than true? & false?
 - in x op=y, a cast to x.type is used in assigning back to x if it is primitive
-- homogenous tuples specified as "1*type" are equivalent to "type" (TODO: TRUE?)
 - compilerError() can now take multiple arguments like a halt()
-- AND_EXPAND (TODO: FOR USER?)
-- mechanism for indicating that a class is promotable has changed (TODO: XPOSE?)
+
+Documentation:
+- added CHANGES file
+- added Quick Reference document (TODO: ???)
+- updated HPCC tutorial document and broke into two docs: overview and tutorial (TODO:???)
+- updated STATUS file
+
+Example Codes:
+- several improvements to the HPCC benchmarks due to bug fixes, new features
+- added iterators.chpl example to demonstrate use of iterators
+- added parallelQuickSort.chpl example to demonstrate serial/cobegin statements
+- added blockLU.chpl example to demonstrate domain slicing, array aliases, swap
+- added fft-testPow4.chpl test to test fft.chpl for power-of-4 problem sizes
+- removed stream-nopromote.chpl example, which had become largely redundant
+- added performance testing support of stream.chpl and ra.chpl
 
 Standard Modules:
 - Search: new standard module
@@ -109,6 +121,21 @@ Standard Modules:
 - Types: numBits() and numBytes() are now param functions
 - Random: fillRandom() routines now work for arrays of arbitrary rank
 - Random: some new functionality
+
+Compiler Flags:
+- removed --cg-chpl-lineno flag; this capability is now always on
+- added -s/--set for setting config params
+- added -g flag for debugging generated code; turns on --cg-cpp-lines by default
+- added -O flag for optimizing generated code
+- added --explain-call flag that helps determine how a function call is resolved
+- added --no-warnings flag to diable all compiler warnings
+- --no-gc became --ref-count to reflect reference counting being off by default
+- added --scalar-replace-tuples flag: replaces tuples with scalars
+- added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
+- added --no-expand-iterators-inline-opt flag to disable iterator inlining
+
+Generated Code Flags:
+-- added a --gdb flag to make it easier to debug generated code
 
 New Run-time Checks:
 - test expressions in loops, conditionals restricted to bools, classes, integers
@@ -147,21 +174,6 @@ Error Message Improvements:
 - better error checking of legal vs. illegal casts
 - generally improved quality of compiler error messages
 
-Compiler Flags:
-- removed --cg-chpl-lineno flag; this capability is now always on
-- added -s/--set for setting config params
-- added -g flag for debugging generated code; turns on --cg-cpp-lines by default
-- added -O flag for optimizing generated code
-- added --explain-call flag that helps determine how a function call is resolved
-- added --no-warnings flag to diable all compiler warnings
-- --no-gc became --ref-count to reflect reference counting being off by default
-- added --scalar-replace-tuples flag: replaces tuples with scalars
-- added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
-- added --no-expand-iterators-inline-opt flag to disable iterator inlining
-
-Generated Code Flags:
--- added a --gdb flag to make it easier to debug generated code
-
 Compiler Analysis and Optimizations/Performance of Generated Code:
 - removed the insertion of all large sequence/array temporaries
 - extensive optimizations of iterators and loop generation
@@ -172,9 +184,11 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - reaching definitions analysis
 - def-use and use-def chains
 
-Compiler Performance:
+Compiler Performance and Cleanup:
 - improvements to function resolution, vararg function instantiation
 - made compiler build with debugging off and optimizations on for non-developers
+- removed unused scalar replacement code
+- renamed and refactored internal modules
 
 Generated Code:
 - now generating structured loops rather than gotos and labels
@@ -183,6 +197,9 @@ Generated Code:
 - _chpl_header.h file is generated in a cleaner manner
 - changed munging of variable names to improve gdb support and readability
 - using pragmas, generated code has been shown to vectorize on X1/thread on MTA
+
+Testing System:
+- added support for doing performance-tracking experiments
 
 Internal:
 - new IR traversal mechanisms
@@ -193,28 +210,8 @@ Internal:
 - domain and array wrappers now implemented as records
 - improved creation of init functions
 - removed ability to cast primitives to strings by casting to "%<format>"
-
-Code Cleanup:
-- removed unused scalar replacement code
-- renamed and refactored internal modules
-
-Documentation:
-- added CHANGES file
-- added Quick Reference document (TODO: ???)
-- updated HPCC tutorial document and broke into two docs: overview and tutorial (TODO:???)
-- updated STATUS file
-
-Example Codes:
-- several improvements to the HPCC benchmarks due to bug fixes, new features
-- added iterators.chpl example to demonstrate use of iterators
-- added parallelQuickSort.chpl example to demonstrate serial/cobegin statements
-- added blockLU.chpl example to demonstrate domain slicing, array aliases, swap
-- added fft-testPow4.chpl test to test fft.chpl for power-of-4 problem sizes
-- removed stream-nopromote.chpl example, which had become largely redundant
-- added performance testing support of stream.chpl and ra.chpl
-
-Testing System:
-- added support for doing performance-tracking experiments
+- new mechanism for indicating that a class is promotable
+- added AND_EXPAND and PRIMITIVE_TUPLE_AND_EXPAND
 
 
 -----------
