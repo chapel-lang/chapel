@@ -104523,3 +104523,16 @@ Log message:
 Modified files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+05/23/07 10:14:25 -- bradc
+
+Log message:
+	Fixed a bug in our nightly token counting in which we were
+	no longer counting the standard module tokens due to the
+	fact that the compiler's location moved from compiler to
+	bin/$CHPL_PLATFORM.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
