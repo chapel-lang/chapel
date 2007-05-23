@@ -136,7 +136,7 @@ def dfft(A: [?ADom], W) {
 
 iterator genDFTPhases(numElements, radix) {
   var stride = 1;
-  for i in 1..log4(numElements-1) {
+  for 1..log4(numElements-1) {
     const span = stride * radix;
     yield (stride, span);
     stride = span;
