@@ -104536,3 +104536,14 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+05/23/07 12:04:27 -- bradc
+
+Log message:
+	Some edits based on Steve's feedback and some
+	reorganization of High-Level Themes sections...
+
+Modified files:
+	./: CHANGES 
+
