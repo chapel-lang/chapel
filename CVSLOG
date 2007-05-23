@@ -104473,3 +104473,22 @@ Added files:
 	                                strideRangeSlice2.future 
 	                                strideRangeSlice2.good 
 
+---------------------------------------------------------------------------
+
+05/22/07 17:03:57 -- bradc
+
+Log message:
+	Reorganized CHANGES file so that categories are more
+	accurate.  Within each category, ordered changes by
+	approximate importance/sexiness with some attention
+	toward grouping related changes.
+	
+	This version of CHANGES is ready for feedback, and
+	should be useful for people to use when updating
+	their spec sections (alternatively, we could go
+	through the CHANGES file and farm out topics to
+	people to update).
+
+Modified files:
+	./: CHANGES 
+
