@@ -9,167 +9,190 @@ version 0.5
 -----------
 Second preliminary release of Chapel Compiler, June 2007
 
-Themes:
+High-Level Themes:
 - single-locale, multiple threads
 - support for additional serial features
 - improved single-threaded performance
 
-Features:
-- added support for param functions
-- serial statement
-- implemented dynamic casts for class types
-- support for promoting casts across array elements (TODO: OR BUG FIX?)
+Changes to Chapel Language:
+- eliminated sequences
+  - in the future, a standard List library will provide similar functionality
+  - removed # and #= operators, since they were supported for sequences
+  - removed support for sequence literals; use tuples in their place
+    e.g., var A: [1..3] real = (0.1, 2.3, 4.5);
+  - removed support for casting sequences to tuples and tuples to sequences
+  - iterators in an expression context now result in a 1D, 1-based array
+    e.g., "iterator foo() { ... }  var A = foo();" creates a 1D array over [1..]
+- added range type to language to replace old "arithmetic sequence" concept
+  e.g., "lo..hi" or "lo..hi by str" are ranges
+  - open interval syntax supported for ranges
+    e.g., "[lo..hi)" is equivalent to lo..hi-1
+  - +, -, *, / operators on range/scalar combinations
+- added support for creating array aliases
+  e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
+- support for standard math, bitwise, and comparison operators for tuples
+  e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
+- swap operator: <=>
+  e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
+- better support for writing output
+  - enabled strings to be written to using a write() method
+    e.g., var s: string;  s.write("x is: ", x);
+  - added a Writer class that enables user classes to be written to
+  - writeThis() methods that define how a type should be written to a Writer
+- added minloc and maxloc reductions that return min/max value and index
+  e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
+- changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
+  e.g., var rows = D.dim(1);
+- arithmetic domains and arrays support low and high methods that return bounds
+  e.g., var loInd = A.low();
+- support for range, domain, and array slicing via bounded or unbounded ranges
+  e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
+- support for promoting casts across array elements
   e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
-- subdomain keyword is now supported, though subset relationship is not checked
+- added support for param functions that support compile-time evaluation
+  e.g., "def square(param x) param { return x**2; }  param pi2 = square(3.14);"
+- support for default values for param members of classes
+  e.g., class C { param bitWidth = 32; ... }
+- support for functions without parentheses
+  e.g., def f { writeln("In function f"); }
+  - allow "main" function to be declared with or without parentheses
+    e.g., def main { writeln("Program will start here"); ... }
+- allow "<index> in" to be elided in for/forall loops/expressions
+  e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
+- support for multiple modules to be listed within a single "use" statement
+
+Newly Implemented Features:
+- support for sparse domains/arrays
+  - assignment of aggregate index expressions to sparse domains
+  - accumulation of indices into sparse domains using +=
+- added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
+- enumerated domains and arrays
+- support for nested classes, records, and iterators
+- serial statement
 - added support for using "_" to ignore elements during tuple destructuring
   e.g., var t: (int, real) = ...;   (t1, _) = t;
 - added support for nested tuple destructuring in variable decls/formal args
-- enabled strings to be written to using a write() method
-  e.g., var s: string;  s.write("x is: ", x);
-- Writer class that enables classes to support write methods
-- writeThis() methods that define how a type should be written to a Writer
-- initial support for specifying a distribution class; interface still in flux
-- arithmetic domains and arrays support low and high methods that return bounds
-- initial support for accessing a module's member via modname.membername
-- minloc and maxloc reductions
-- support for nested classes, records, and iterators
-- enumerated domains and arrays
 - support for config params of primitive and enumerated types
-- eliminated sequences
-  - in the future, a standard library will support similar functionality
-  - removed # and #= operators, since they were supported for sequences
-  - removed support for sequence literals; use tuples instead
-  - removed support for casting sequences to tuples and tuples to sequences
-  - iterators that are captured into variables now result in a 1D array 
-- added range type to language to represent things like lo..hi and lo..hi by str
+- initial support for accessing a module's member via modname.membername
+- implemented dynamic casts between class types
 - turned reference counting garbage collection off by default
-  - and added initial support for copy collection garbage collection
-- support for default values for param members of classes
-- parameter folding of relational operators on enum types (TODO: OR SEMANTIC?)
-- added support for creating array aliases
-- support for standard math, bitwise, and comparison operators for tuples
-- swap operator: <=>
-- support for functions without parentheses
-- allow main function to be declared with or without parentheses
-- changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
-- added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
-- support for range, domain, and array slicing via bounded or unbounded ranges
-- allow "<index> in" to be elided in for/forall loops/expressions
-- support for sparse domains/arrays
-  - addition of indices
-  - assignment of index lists, forall expressions, etc.
-- implemented bytesPerLocale for Macintosh
-- support for multiple modules to be listed within a single "use" statement
-- runtime checks added to ensure that zippered iterations are of equal size
-- open interval syntax supported for ranges
-- +, -, * operators on ranges
+  - added initial support for copy collection garbage collection
+- subdomain keyword is now supported, though subset relationship is not checked
+- initial support for specifying a distribution class; interface still in flux
+
+Syntactic/Naming Changes:
+- removed support for using "?" in identifiers
+  - changed standard method member? to member
+  - changed standard method true? to isTrue
+- removed support for "--" as a single-line comment style
+- an array's domain is now accessed via A.domain rather than A.dom
+- array element type identifier changed from elt_type to eltType
 
 Semantic Changes:
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
-- test expressions in loops, conditionals restricted to bools, classes, integers
-- casts from uints to complexes now supported (TODO: OR WAS THIS A BUG FIX?)
-- short-circuiting operators only require isTrue rather than isTrue & isFalse
-- compilerError() can now take multiple arguments like a halt()
-- where clauses can now compare against formal generic types (TODO: OR BUG FIX?)
-- in x op=y, a cast to x.type is used in assigning back to x if it is primitive
-- disabled parameter folding of floating point values (TODO: CORRECT?)
-- removed ability to cast primitives to strings by casting to "%<format>"
-- renamed array and domain interface methods (TODO: WHICH?  12/06/07 13:26:43)
-- mechanism for indicating that a class is promotable has changed (TODO: XPOSE?)
-- tuple specified as "1*type" is equivalent to "type" (TODO: TRUE?)
-- initial support for querying parameters/types in a formal class argument
-- similar support for variable-length argument lists of generics
-- AND_EXPAND (TODO: FOR USER?)
 - removed support for structural iterator interface (getHeadCursor, etc.)
-- added support for default iterators for classes (named ault :P ...)
-
-Syntactic Changes:
-- array element type identifier changed from elt_type to eltType
-- removed support for "--" as single-line comment style
-- an array's domain is now accessed via A.domain rather than A.dom
-- removed support for using "?" in identifiers
-  - changed standard method member? to member
-  - changed standard method true? to isTrue
-- constructor keyword no longer supported -- use def <classname> instead
+- added support for default iterators for classes (TODO: named ault :P ...)
+- initial support for querying parameters/types in a formal class argument
+  - similar support for variable-length argument lists of generics
+- where clauses can now compare against formal generic types
+- short-circuiting operators only require isTrue rather than true? & false?
+- in x op=y, a cast to x.type is used in assigning back to x if it is primitive
+- homogenous tuples specified as "1*type" are equivalent to "type" (TODO: TRUE?)
+- compilerError() can now take multiple arguments like a halt()
+- AND_EXPAND (TODO: FOR USER?)
+- mechanism for indicating that a class is promotable has changed (TODO: XPOSE?)
 
 Standard Modules:
-- numBits() and numBytes() are now param functions
-- fillRandom() routines now work for arrays of arbitrary rank
-- oddness/evenness of seed (TODO: CHECK)
-- new standard modules: Sort and Search
-- some changes to Random
+- Search: new standard module
+- Sort: new standard module
+- Types: numBits() and numBytes() are now param functions
+- Random: fillRandom() routines now work for arrays of arbitrary rank
+- Random: some new functionality
+
+New Run-time Checks:
+- test expressions in loops, conditionals restricted to bools, classes, integers
+- runtime checks added to ensure that zippered iterations are of equal size
 
 Bug Fixes:
-- classes can now have iterator methods
-- "true + true" now yields "2" rather than "true"
-- modules can now refer to param values and types from other modules correctly
-- better error checking of legal vs. illegal casts
-- recursive iterators now work
 - fixed portability issues in flex lexer file, chapel.lex
-- improved error reporting when attempting to assign to constants
+- implemented bytesPerLocale for Macintosh
+- classes can now have iterator methods
+- recursive iterators now work
+- "true + true" now yields "2" rather than "true"
+- casts from uints to complexes now supported
 - casts from integral types to enumerated types now supported
-- improved error message for tuples of non-param size
-- type aliases can now be created for array types
-- improved thread safety of generated code
 - initial support for casts from strings to primitive types
-- config variable initializers are no longer evaluated if set on command-line
-- improved runtime error reporting of source filename/line#
-- const values can no longer be passed to arguments with inout or out intent
+- modules can now refer to param values and types from other modules correctly
+- disabled parameter folding of floating point values
+- parameter folding of relational operators on enum types
+- type aliases can now be created for array types
 - fixed numerical bugs in array slicing and reindexing
+- config variable initializers are no longer evaluated if set on command-line
+- const values can no longer be passed to arguments with inout or out intent
+- constructor keyword no longer supported -- use def <classname> instead
+- fixed "bug" with log2 on integers and made it halt on zero or negatives
+- improved thread safety of generated code
 - made creation of too many threads result in halt() rather than lost work
   - eventually we'll need to queue up tasks; this is a stopgap
-- fixed "bug" with log2 on integers and made it halt on zero or negatives
 
-Aesthetic Improvements:
+Error Message Improvements:
+- added message to compiler warning that "atomic" is unimplemented when used
 - unified runtime and compiler error message formats
 - runtime errors identify source file/line#
-- cleaned up syntax error messages
 - improved quality of compilerError() error message output
+- cleaned up syntax error messages
+- improved error message for tuples of non-param size
+- improved error reporting when attempting to assign to constants
+- better error checking of legal vs. illegal casts
 - generally improved quality of compiler error messages
-- added message to compiler warning that "atomic" is unimplemented when used
 
-Compiler Flag Changes:
+Compiler Flags:
 - removed --cg-chpl-lineno flag; this capability is now always on
-- added --scalar-replace-tuples flag: replaces tuples with scalars
 - added -s/--set for setting config params
-- --no-gc became --ref-count to reflect reference counting being off by default
 - added -g flag for debugging generated code; turns on --cg-cpp-lines by default
 - added -O flag for optimizing generated code
-- added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
-- added --no-expand-iterators-inline-opt flag to disable iterator inlining
 - added --explain-call flag that helps determine how a function call is resolved
 - added --no-warnings flag to diable all compiler warnings
+- --no-gc became --ref-count to reflect reference counting being off by default
+- added --scalar-replace-tuples flag: replaces tuples with scalars
+- added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
+- added --no-expand-iterators-inline-opt flag to disable iterator inlining
 
-Performance/Optimizations:
-- global/local copy propagation
+Generated Code Flags:
+-- added a --gdb flag to make it easier to debug generated code
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+- removed the insertion of all large sequence/array temporaries
 - extensive optimizations of iterators and loop generation
-- removed the insertion of large sequence/array temporaries
+- global/local copy propagation
 - dead variable elimination
+- dead code elimination
 - live variable analysis
 - reaching definitions analysis
 - def-use and use-def chains
-- dead code elimination
 
 Compiler Performance:
 - improvements to function resolution, vararg function instantiation
 - made compiler build with debugging off and optimizations on for non-developers
 
 Generated Code:
-- 25% reduction in lines of generated code for jacobi example (11259 -> 8311)
 - now generating structured loops rather than gotos and labels
-- module functions generated in order with comments to identify source location
+- 25% reduction in lines of generated code for jacobi example (11259 -> 8311)
+- module functions generated in order, with comments to identify source location
 - _chpl_header.h file is generated in a cleaner manner
+- changed munging of variable names to improve gdb support and readability
 - using pragmas, generated code has been shown to vectorize on X1/thread on MTA
 
 Internal:
 - new IR traversal mechanisms
+- flow analysis optimization framework
 - vararg functions handled within function resolution
 - parameter folding folded into function resolution
 - new compiler gdb commands: lv (list view)
-- improved creation of init functions
 - domain and array wrappers now implemented as records
-- flow analysis optimization framework
+- improved creation of init functions
+- removed ability to cast primitives to strings by casting to "%<format>"
 
 Code Cleanup:
 - removed unused scalar replacement code
@@ -182,12 +205,13 @@ Documentation:
 - updated STATUS file
 
 Example Codes:
-- several improvements to the HPCC benchmarks based on bug fixes, new features
+- several improvements to the HPCC benchmarks due to bug fixes, new features
 - added iterators.chpl example to demonstrate use of iterators
 - added parallelQuickSort.chpl example to demonstrate serial/cobegin statements
 - added blockLU.chpl example to demonstrate domain slicing, array aliases, swap
 - added fft-testPow4.chpl test to test fft.chpl for power-of-4 problem sizes
 - removed stream-nopromote.chpl example, which had become largely redundant
+- added performance testing support of stream.chpl and ra.chpl
 
 Testing System:
 - added support for doing performance-tracking experiments
@@ -198,7 +222,7 @@ version 0.4
 -----------
 Preliminary release of Chapel Compiler, December 15, 2006
 
-Themes:
+High-Level Themes:
 - get initial implementation into users hands for feedback & experimentation
 - single-locale, multiple threads
 - correctness over performance
