@@ -104512,3 +104512,14 @@ Added files:
 	chapel/test/functions/iterators/bradc/: captureIterator.chpl 
 	                                        captureIterator.good 
 
+---------------------------------------------------------------------------
+
+05/23/07 09:30:12 -- bradc
+
+Log message:
+	Slight adjustments to CHANGES file based on a night's
+	sleep.
+
+Modified files:
+	./: CHANGES 
+
