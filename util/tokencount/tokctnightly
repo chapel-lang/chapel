@@ -68,6 +68,7 @@ mysystem("cd $tmpdir && cvs -d :pserver:bradc\@gemelli.cs.washington.edu:2403/ge
 
 $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $compdir = "$tmpdir/chapel/compiler";
+$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_PLATFORM'}";
 
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
@@ -89,7 +90,7 @@ mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
 mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
 mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
-mysystem("$compdir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks");
+mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
