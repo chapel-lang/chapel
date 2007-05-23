@@ -13,6 +13,9 @@ High-Level Themes:
 - single-locale, multiple threads
 - support for additional serial features
 - improved single-threaded performance
+- improved multi-threaded correctness
+- target audience: HPLS evaluation team, HPCS mission partners, 
+  select HPC users and centers
 
 Changes to Chapel Language:
 - eliminated sequences
@@ -23,7 +26,7 @@ Changes to Chapel Language:
   - removed support for casting sequences to tuples and tuples to sequences
   - iterators in an expression context now result in a 1D, 1-based array
     e.g., "iterator foo() { ... }  var A = foo();" creates a 1D array over [1..]
-- added range type to language to replace old "arithmetic sequence" concept
+- added "range" type to language to replace old "arithmetic sequence" concept
   e.g., "lo..hi" or "lo..hi by str" are ranges
   - open interval syntax supported for ranges
     e.g., "[lo..hi)" is equivalent to lo..hi-1
@@ -50,7 +53,7 @@ Changes to Chapel Language:
 - support for promoting casts across array elements
   e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
 - added support for param functions that support compile-time evaluation
-  e.g., "def square(param x) param { return x**2; }  param pi2 = square(3.14);"
+  e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
 - support for default values for param members of classes
   e.g., class C { param bitWidth = 32; ... }
 - support for functions without parentheses
@@ -85,7 +88,7 @@ Syntactic/Naming Changes:
   - changed standard method member? to member
   - changed standard method true? to isTrue
 - removed support for "--" as a single-line comment style
-- an array's domain is now accessed via A.domain rather than A.dom
+- an array's domain should now be accessed via A.domain rather than A.dom
 - array element type identifier changed from elt_type to eltType
 
 Semantic Changes:
@@ -137,7 +140,7 @@ Compiler Flags:
 Generated Code Flags:
 -- added a --gdb flag to make it easier to debug generated code
 
-New Run-time Checks:
+New Semantic Checks (for old Semantics):
 - test expressions in loops, conditionals restricted to bools, classes, integers
 - runtime checks added to ensure that zippered iterations are of equal size
 
@@ -220,6 +223,7 @@ version 0.4
 Preliminary release of Chapel Compiler, December 15, 2006
 
 High-Level Themes:
-- get initial implementation into users hands for feedback & experimentation
 - single-locale, multiple threads
-- correctness over performance
+- support for base language features
+- designed for correctness over performance
+- target audience: HPLS language evaluation team and HPCS mission partners
