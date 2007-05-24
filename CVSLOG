@@ -104562,3 +104562,18 @@ Modified files:
 Removed files:
 	chapel/test/sparse/bradc/: setIRV.future 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:31:56 -- bradc
+
+Log message:
+	Added list of modifications that need to be made to the
+	spec.  Those that are not implemented are listed as
+	"OPEN".  Replace with your name in order to claim it.
+	Replace with "CLOSED" when you're done making the
+	modification.  When everything is CLOSED, the spec is
+	probably close to a releasable state.
+
+Added files:
+	chapel/spec/: MODS 
+
