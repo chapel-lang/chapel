@@ -104701,3 +104701,26 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+05/24/07 16:27:44 -- bradc
+
+Log message:
+	Fixed two future areas with one stone.  (1) sparse
+	arrays now preserve their values correctly when
+	new indices are added to the sparse domain;  (2)
+	sparse arrays now fill in new array values with
+	their IRV rather than the default element initializer
+	as before.  Removed the three .future files
+	corresponding to these changes and updated the
+	STATUS and FUTURES files.
+
+Modified files:
+	./: STATUS 
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/npb/cg/bradc/: cg-makea2-small-sparse.future 
+	chapel/test/sparse/bradc/: growEmpty.future sparseArray4.future 
+
