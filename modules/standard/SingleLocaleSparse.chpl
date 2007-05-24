@@ -1,6 +1,6 @@
 use Search;
 
-class SingleLocaleSparseDomain: BaseArithmeticDomain {
+class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   param rank : int;
   type dim_type;
   var parentDom: BaseArithmeticDomain;
@@ -36,18 +36,6 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
                                     parentDom = BaseArithmeticDomain());
 
-  // really, really would like to replace the following with a true
-  // iterator like:
-  //
-  // iterator this() {
-  //   for i in 1..nnz {
-  //     while (rowStart(cursorRow+1) < i) {
-  //       cursorRow += 1;
-  //     }
-  //     yield (cursorRow, colIdx(i));
-  //   }
-  // }
-
   iterator ault() {
     var cursorRow = rowRange.low;
     for i in 1..nnz {
@@ -57,39 +45,7 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
       yield (cursorRow, colIdx(i));
     }
   }
-  /*
-  var cursorRow: index(rowDom);
-  var cursorColInd: index(nnzDom);
 
-  def getHeadCursor() {
-    cursorRow = rowRange.low;
-    cursorColInd = 1;
-    //    writeln("rowStart = ", rowStart);
-    while (rowStart(cursorRow+1) <= cursorColInd) {
-      cursorRow += 1;
-    }
-    return (cursorRow, colIdx(cursorColInd));
-  }
-
-  def getNextCursor(c) {
-    cursorColInd += 1;
-    if (cursorColInd <= nnz) {
-      while (rowStart(cursorRow+1) <= cursorColInd) {
-        cursorRow += 1;
-      }
-      return (cursorRow, colIdx(cursorColInd));
-    }
-    return (-1,-1);
-  }
-
-  def getValue(c) {
-    return c;
-  }
-
-  def isValidCursor?(c) {
-    return cursorColInd <= nnz;
-  }
-  */
   def dim(d : int) {
     if (d == 1) {
       return rowRange;
@@ -123,7 +79,8 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
     // increment number of nonzeroes
     nnz += 1;
 
-    // double nnzDom if we've outgrown it
+    // double nnzDom if we've outgrown it; grab current size otherwise
+    var oldNNZDomSize = nnzDomSize;
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
 
@@ -132,16 +89,9 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
 
     const (row,col) = ind;
 
-    // shift column indices and array data up
+    // shift column indices up
     for i in [insertPt..nnz) by -1 {
       colIdx(i+1) = colIdx(i);
-      // need to shift arrays as well
-      /*
-      for a in _arrs {
-        const arr = a:SingleLocaleSparseArray(?et, ?rank, ?dt);
-        arr.data(i+1) = arr.data(i);
-      }
-      */
     }
 
     colIdx(insertPt) = col;
@@ -151,7 +101,16 @@ class SingleLocaleSparseDomain: BaseArithmeticDomain {
       rowStart(r) += 1;
     }
 
-    // still need to re-allocate the arrays
+    // shift all of the arrays up and initialize nonzeroes if
+    // necessary 
+    //
+    // BLC: Note: if arithmetic arrays had a user-settable
+    // initialization value, we could set it to be the IRV and skip
+    // this second initialization of any new values in the array.
+    // we could also eliminate the oldNNZDomSize variable
+    for a in _arrs {
+      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
+    }
   }
 
   iterator dimIter(param d, ind) {
@@ -204,6 +163,16 @@ class SingleLocaleSparseArray: BaseArray {
 
   def IRV var {
     return irv;
+  }
+
+  def sparseShiftArray(shiftrange, initrange) {
+    for i in initrange {
+      data(i) = irv;
+    }
+    for i in shiftrange by -1 {
+      data(i+1) = data(i);
+    }
+    data(shiftrange.low) = irv;
   }
 }
 

@@ -415,7 +415,12 @@ class BaseArray {
   def _resize( length: int, old_map: _ddata(int)) {
     halt("resizing not supported for this array type");
   }
+
+  def sparseShiftArray(shiftrange, initrange) {
+    halt("sparseGrowDomain not supported for non-sparse arrays");
+  }
 }
+
 
 class BaseDomain {
   var _arrs: list of BaseArray;
@@ -432,6 +437,10 @@ class BaseArithmeticDomain : BaseDomain {
     halt("bbox not supported for this domain type");
     return 1..0;
   }
+}
+
+
+class BaseSparseArithmeticDomain : BaseArithmeticDomain {
 }
 
 
