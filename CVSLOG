@@ -104577,3 +104577,20 @@ Log message:
 Added files:
 	chapel/spec/: MODS 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:37:03 -- bradc
+
+Log message:
+	Adding a bug in which an array declared using
+	the [i in D] syntax, but which has no initializing
+	expression results in a core dump.  Also fixed an
+	accidental use of this in another test.
+
+Modified files:
+	chapel/test/sparse/bradc/: growEmpty.chpl 
+Added files:
+	chapel/test/arrays/bradc/: forallInitButNoInit.chpl 
+	                           forallInitButNoInit.future 
+	                           forallInitButNoInit.good 
+
