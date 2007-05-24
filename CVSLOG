@@ -104632,3 +104632,22 @@ Log message:
 Modified files:
 	chapel/test/Bin/: computePerfStats.pl 
 
+---------------------------------------------------------------------------
+
+05/24/07 13:44:57 -- bradc
+
+Log message:
+	Added test of math on ranges and decided to
+	implement the division operator in the obvious
+	way, for better or worse.  (Interesting note
+	is that scalar/range subtraction and division
+	is not nearly as useful as range/scalar
+	subtraction and division.  Is this reason to
+	disallow those cases?  I'm not sure at this
+	point...).
+
+Modified files:
+	chapel/modules/standard/: ChapelRange.chpl 
+Added files:
+	chapel/test/types/range/bradc/: rangeMath.chpl rangeMath.good 
+
