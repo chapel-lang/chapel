@@ -1,0 +1,6 @@
+bug: array declared using [i in D] syntax but no initializer
+
+This code seg faults in the current compiler.  I believe
+that the correct behavior would be to ignore the forall
+loop syntax, but would also be open to making this
+illegal if there was a compelling case for that.
