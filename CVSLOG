@@ -104609,3 +104609,14 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: countrange tokctnightly 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:46:29 -- bradc
+
+Log message:
+	Added the CHANGES file to the list of files included
+	in the release.
+
+Modified files:
+	chapel/util/: gen_release 
+
