@@ -90,7 +90,7 @@ mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
 mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
 mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
-mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks", 1, 1);
+mysystem("$bindir/chpl --chplhome $chapeldir --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
