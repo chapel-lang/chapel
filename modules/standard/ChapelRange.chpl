@@ -284,7 +284,7 @@ def *(r: range, s:int) {
 }
 
 def /(r: range, s:int) {
-  compilerError("Semantic Error: Unsure how to define division for range/scalar yet");
+  return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
 }
 
 def +(s:int, r: range) {
@@ -300,5 +300,5 @@ def *(s:int, r: range) {
 }
 
 def /(s:int, r: range) {
-  compilerError("Semantic Error: Unsure how to define division for range/scalar yet");
+  return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
 }
