@@ -104724,3 +104724,41 @@ Removed files:
 	chapel/test/npb/cg/bradc/: cg-makea2-small-sparse.future 
 	chapel/test/sparse/bradc/: growEmpty.future sparseArray4.future 
 
+---------------------------------------------------------------------------
+
+05/24/07 16:43:07 -- bradc
+
+Log message:
+	Aesthetic change to the testing system -- in
+	deciding the machine name, made it strip off
+	everything after the initial string (e.g.,
+	".wc.cray.com" or ".us.cray.com") for
+	brevity/clarity/short filenames.  Did this
+	change in anticipation of chap03-chap08
+	getting their OS' upgraded and having their
+	uname -n machine names change as chap01-02
+	did previously.  Will still need to upgrade
+	the amount of memory they have in the
+	countMemory tests, but won't have to create
+	new files for them.
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+Added files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap01.good 
+	                                                  countMemory.chap02.good 
+	                                                  countMemory.chevy.good 
+	                                                  countMemory.mono.good 
+	                                                  countMemory.solitary.good 
+	                                                  countMemory.stemp6.good 
+Removed files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap01.us.cray.com.good 
+	                                                  countMemory.chap02.us.cray.com.good 
+	                                                  countMemory.chevy.wc.cray.com.good 
+	                                                  countMemory.mono.wc.cray.com.good 
+	                                                  countMemory.solitary.wc.cray.com.good 
+	                                                  countMemory.stemp6.wc.cray.com.good 
+
