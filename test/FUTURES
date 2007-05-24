@@ -200,3 +200,6 @@ unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithD
 
 * a mechanism for controlling the precision/width of scalar values
 feature request: output formatting [io/bradc/formatoutput]
+
+* Many error messages continue to be incorrect/confusing/unhelpful
+error message: internal/impossible candidate functions [sparse/bradc/denseIRV]
