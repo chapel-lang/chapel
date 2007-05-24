@@ -464,7 +464,7 @@ sub mysystem {
 }
 
 sub commitstats {
-    if ($performance == 0) {
+  if ($performance == 0) {
     if ($debug == 0) {
         `ci -l -m"automated nightly checkin" $statfile`;
     }
@@ -476,7 +476,15 @@ sub commitstats {
             `cd $statdir && ./makeplot`;
         }
     }
-    }
+  } else {
+      $graphdir = $ENV{'CHPL_TEST_PERF_DIR'};
+      if ($graphdir eq "") {
+          print "Skipping graphs -- CHPL_TEST_PERF_DIR not set\n";
+      } else {
+          print "Making graphs...\n";
+          `cd $graphdir && make`;
+      }
+  }
 }
 
 sub numsuccesses {
