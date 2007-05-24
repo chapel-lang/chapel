@@ -104594,3 +104594,18 @@ Added files:
 	                           forallInitButNoInit.future 
 	                           forallInitButNoInit.good 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:46:09 -- bradc
+
+Log message:
+	Added a -chplhome flag to the tokctnightly script to cause
+	it to use its own CHPL_HOME rather than the one in the
+	invokee's environment.
+	
+	Changed the countrange script to take a second optional
+	parameter indicating how many days to process.
+
+Modified files:
+	chapel/util/tokencount/: countrange tokctnightly 
+
