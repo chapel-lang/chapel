@@ -104676,3 +104676,28 @@ Added files:
 	chapel/test/sparse/bradc/: denseIRV.chpl denseIRV.future 
 	                           denseIRV.good 
 
+---------------------------------------------------------------------------
+
+05/24/07 16:13:00 -- bradc
+
+Log message:
+	Made the nightly performance test execution
+	make the resulting graphs and update them.
+	This means that every night, we should
+	automatically get a new set of graphs at:
+	
+	http://insidecray/~bradc/performance/performance.html
+	
+	For users who run the nightly script by hand
+	(are there any anymore? :), you can generate
+	your own set of graphs by setting CHPL_TEST_PERF_DIR
+	in your environment, placing a Makefile there, and
+	running nightly -debug -performance.  After the
+	performance tests have run, it will cd to your
+	directory and make whatever the Makefile does (the
+	cron job Makefile builds the graphs and copies them
+	into my web space).
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
