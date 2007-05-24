@@ -104547,3 +104547,18 @@ Log message:
 Modified files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:15:38 -- bradc
+
+Log message:
+	Added ability for users of sparse arrays to read/write
+	the IRV (Implicitly Replicated Value;  the "zero" value)
+	via A.IRV.  Removed .future for a test of this capability.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleSparse.chpl 
+Removed files:
+	chapel/test/sparse/bradc/: setIRV.future 
+
