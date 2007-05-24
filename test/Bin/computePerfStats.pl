@@ -21,7 +21,7 @@ close (TEST);
 if (-e "$data_file") {
 } else {
     open STATS, ">$data_file" or die "can't open $data_file for creating $!";
-    print STATS "Date";
+    print STATS "# Date";
     foreach my $key (@keys) {
         print STATS "\t$key";
     }
