@@ -104620,3 +104620,15 @@ Log message:
 Modified files:
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+05/24/07 11:47:11 -- bradc
+
+Log message:
+	Changed the performance statistics perl script so that
+	it would start the first line of labels with a # to make
+	the output gnuplot safe.
+
+Modified files:
+	chapel/test/Bin/: computePerfStats.pl 
+
