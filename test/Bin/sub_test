@@ -42,7 +42,7 @@ set compiler = "$argv[1]"
 set testdir = "$argv[2]"
 
 set platform = `$testdir/../util/platform`
-set machine = `uname -n`
+set machine = `uname -n | awk 'BEGIN {FS = "."}{print $1}'`
 
 if ( ! -f $compiler || ! -x $compiler ) then
 	echo \[Cannot execute compiler \"$compiler\"\]

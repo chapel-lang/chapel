@@ -156,7 +156,8 @@
 # same mechanisms.  If the output for a test varies by machine or
 # platform name, files named <testname>.<machname>.good or 
 # <testname>.<platform>.good can be used to specify the output for
-# such tests, where "machname" is the output of "uname -n" and
+# such tests, where "machname" is the output of "uname -n" with
+# any "." qualifiers after the machine name stripped off and
 # "platform" is the value of $CHPL_PLATFORM.  The most specific
 # good file will be used, in the order: machname, platform, generic.
 #
