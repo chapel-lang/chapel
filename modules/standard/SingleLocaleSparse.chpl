@@ -201,6 +201,10 @@ class SingleLocaleSparseArray: BaseArray {
     else
       halt("attempting to assign a 'zero' value in a sparse array: ", ind);
   }
+
+  def IRV var {
+    return irv;
+  }
 }
 
 

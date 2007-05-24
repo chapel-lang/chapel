@@ -347,6 +347,10 @@ record _array {
     var x = _value.reindex(d._value);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
+
+  def IRV var {
+    return _value.IRV;
+  }
 }
 
 pragma "inline" def =(a: _array, b) {
