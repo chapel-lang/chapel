@@ -104781,3 +104781,15 @@ Modified files:
 	chapel/util/: gen_release setchplenv.bash setchplenv.csh 
 	              setchplenv.sh 
 
+---------------------------------------------------------------------------
+
+05/25/07 09:51:52 -- bradc
+
+Log message:
+	Oops, forgot to update this prediff script to look
+	at the appropriate machine-specific output file
+	to determine the amount of memory on a machine.
+
+Modified files:
+	chapel/test/studies/hpcc/common/: testProbSize.prediff 
+
