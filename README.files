@@ -25,6 +25,7 @@ the files and directories that they contain.
   lib/
     $CHPL_PLATFORM/ : runtime library location, once they've been built
   make/             : Makefile settings for various platforms
+  man/              : Stores man pages for the Chapel compiler (chpl)
   modules/          : standard Chapel modules
   runtime/          : source files for Chapel's runtime support libraries
     etc/            : Makefiles for compiler-generated code

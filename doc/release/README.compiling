@@ -13,6 +13,11 @@ in four columns: (1) the flag, (2) the current or default value of the
 flag, (3) the kind of argument it takes, (4) a brief description of
 the flag.
 
+More detailed information about the compiler is also available on its
+man page, which is available if your environment is set up via:
+
+     man chpl
+
 
 -----------------
 Most Useful Flags

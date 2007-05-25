@@ -18,3 +18,7 @@ echo "to $CHPL_PLATFORM"
 echo -n "Updating PATH "
 setenv PATH "$PATH":"$CHPL_HOME"/bin/$CHPL_PLATFORM
 echo "to include $CHPL_HOME/bin/$CHPL_PLATFORM"
+
+echo -n "Updating MANPATH "
+setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
+echo "to include $CHPL_HOME/man"

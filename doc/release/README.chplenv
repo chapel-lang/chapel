@@ -2,7 +2,7 @@
 Setting up your environment for Chapel
 ======================================
 
-To get started, there are three environment settings that you should
+To get started, there are four environment settings that you should
 make in order to use this release effectively:
 
 1) Set the CHPL_HOME environment variable to point to the location of
@@ -41,6 +41,11 @@ make in order to use this release effectively:
    which is created when you build the compiler.  For example:
 
         set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
+
+4) Set your man path to include the directory $CHPL_HOME/man.  For
+   example:
+
+        setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
 
 
 

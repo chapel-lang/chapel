@@ -18,4 +18,8 @@ if [ "$path_tail" != "chapel" ]
       echo -n "Updating PATH to include "
       export PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_PLATFORM
       echo "$CHPL_HOME"/bin/$CHPL_PLATFORM
+
+      echo -n "Updating MANPATH to include "
+      export MANPATH="$MANPATH":"$CHPL_HOME"/man
+      echo "$CHPL_HOME"/man
 fi

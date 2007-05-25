@@ -53,6 +53,7 @@ $cvsignores = "CVS|RCS|.cvsignore";
     "doc",
     "examples",
     "make",
+    "man",
     "modules",
     "runtime"
 );
@@ -72,6 +73,12 @@ system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/test && cp start_test start_clean ../examples/");
 system("cd chapel/examples && mkdir Bin");
 system("cd chapel/test/Bin && cp timedexec sub_test sub_clean ../../examples/Bin/");
+
+print "Building the man page...\n";
+system("cd chapel/doc/man && make");
+system("cd chapel && mkdir man");
+system("cd chapel/man && mkdir man1");
+system("cp chapel/doc/man/chpl.1 chapel/man/man1/");
 
 print "Creating the docs directory...\n";
 system("cd chapel && mv doc doctmp");
