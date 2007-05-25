@@ -104793,3 +104793,15 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/common/: testProbSize.prediff 
 
+---------------------------------------------------------------------------
+
+05/25/07 14:57:11 -- bradc
+
+Log message:
+	Added an -unoptimized flag to the nightly regression testing
+	suite in order to generate a unique subject line and filename
+	for Steve's unoptimized regression tests.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
