@@ -104762,3 +104762,22 @@ Removed files:
 	                                                  countMemory.solitary.wc.cray.com.good 
 	                                                  countMemory.stemp6.wc.cray.com.good 
 
+---------------------------------------------------------------------------
+
+05/24/07 17:07:55 -- bradc
+
+Log message:
+	Believing that it's going to be important for us
+	to have a man page in the release, even if it's
+	not yet perfect, I added the creation of the man
+	page to the gen_release script, added MANPATH mods
+	to the setchplenv.* environment setting scripts,
+	and added mention of the man page to a few of the
+	relevent README files.
+
+Modified files:
+	./: README.files 
+	chapel/doc/release/: README.chplenv README.compiling 
+	chapel/util/: gen_release setchplenv.bash setchplenv.csh 
+	              setchplenv.sh 
+
