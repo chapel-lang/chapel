@@ -104805,3 +104805,15 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+05/25/07 15:55:05 -- marybeth
+
+Log message:
+	Creating a future about the file type not having a write method defined.
+
+Added files:
+	chapel/test/trivial/marybeth/: test-init-file-type.chpl 
+	                               test-init-file-type.future 
+	                               test-init-file-type.good 
+
