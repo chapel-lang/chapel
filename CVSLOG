@@ -104817,3 +104817,13 @@ Added files:
 	                               test-init-file-type.future 
 	                               test-init-file-type.good 
 
+---------------------------------------------------------------------------
+
+05/25/07 17:18:19 -- marybeth
+
+Log message:
+	Made edits to the Language Overview section, primarily in the Types part.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
