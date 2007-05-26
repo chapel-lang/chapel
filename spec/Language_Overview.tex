@@ -189,7 +189,7 @@ The following output will be printed to the console:
 \end{commandline}
 
 \subsection{Types}
-\paragraph{Primitive Types}
+\subsubsection{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
 real, imaginary and complex floating point numbers, booleans and strings.
 The following table provides information about the names of these data
@@ -228,6 +228,33 @@ type is used.
 \hline
 \chpl{string} & unbounded & &
 \chpl{""} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Non Primitive Types}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf Type} & {\bf Default Initial Value}\\
+\hline
+\chpl{enum} & first enum constant \\
+\hline
+\chpl{class} & {\tt nil} \\
+\hline
+\chpl{record} & default constructed record \\
+\hline
+\chpl{range} & empty range:  \chpl{(1..0)} \\
+\hline
+\chpl{domain} & empty range for each dimension \\
+\hline
+\chpl{array} & default initial values of element types \\
+\hline
+\chpl{tuple} & default initial values of component types \\
+\hline
+\chpl{locale} &  \\
+\hline
+\chpl{file} &  empty strings for filename and path fields, mode = "r"\\
 \hline
 \end{tabular}
 \end{center}
