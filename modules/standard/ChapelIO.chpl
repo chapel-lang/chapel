@@ -86,6 +86,13 @@ class file: Writer {
   }
 }
 
+def file.writeThis(f: Writer) {
+  f.write("(filename = ",this.filename);
+  f.write(", path = ",this.path);
+  f.write(", mode = ",this.mode);
+  f.write(")");
+}
+
 def file.flush() {
   _fflush(_fp);
 }
