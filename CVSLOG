@@ -104827,3 +104827,14 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+05/29/07 09:10:27 -- deitz
+
+Log message:
+	Updated chevy memory .good.
+
+Modified files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chevy.good 
+
