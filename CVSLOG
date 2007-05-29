@@ -104848,3 +104848,15 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelIO.chpl 
 
+---------------------------------------------------------------------------
+
+05/29/07 15:32:45 -- marybeth
+
+Log message:
+	Deleted the future for writing a variable of file type.
+
+Modified files:
+	chapel/test/trivial/marybeth/: test-init-file-type.good 
+Removed files:
+	chapel/test/trivial/marybeth/: test-init-file-type.future 
+
