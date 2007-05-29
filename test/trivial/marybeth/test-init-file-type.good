@@ -1,2 +1,1 @@
-(filename = input.dat, path = , mode = )
-
+(filename = input.dat, path = ., mode = r)
