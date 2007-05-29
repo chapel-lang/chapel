@@ -104838,3 +104838,13 @@ Modified files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.chevy.good 
 
+---------------------------------------------------------------------------
+
+05/29/07 15:28:41 -- marybeth
+
+Log message:
+	Added a writeThis method for the file type.
+
+Modified files:
+	chapel/modules/standard/: ChapelIO.chpl 
+
