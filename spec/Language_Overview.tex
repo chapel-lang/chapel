@@ -189,6 +189,13 @@ The following output will be printed to the console:
 \end{commandline}
 
 \subsection{Types}
+Chapel is a strongly typed language.  Each variable must be declared
+with a type specification or with an assignment to an initial value from which
+the type can be inferred.  
+
+In addition, each variable is initialized
+when it is declared.  If an initial value is not specified, then the variable
+is initialized to a default initial value according to its type. 
 \subsubsection{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
 real, imaginary and complex floating point numbers, booleans and strings.
@@ -232,7 +239,9 @@ type is used.
 \end{tabular}
 \end{center}
 
-\subsubsection{Non Primitive Types}
+\subsubsection{Non-Primitive Types}
+The non-primitive types are listed in the table below, along
+with their default initial values for variables of that type. 
 \begin{center}
 \begin{tabular}{|l|l|}
 \hline
@@ -252,19 +261,36 @@ type is used.
 \hline
 \chpl{tuple} & default initial values of component types \\
 \hline
-\chpl{locale} &  \\
+\chpl{locale} & ordered list of processor ids assigned at job launch \\
 \hline
-\chpl{file} &  empty strings for filename and path fields, mode = "r"\\
+\chpl{file} &  \chpl{(filename = , path = ., mode = r)}\\
 \hline
 \end{tabular}
 \end{center}
 
+The paragraphs below give a brief description and example for each
+type.
+
 \paragraph{Enumerated Types}
 An enumerated type defines an ordered set of named constants.
+By default, these constants have a default coercion to an
+integral value, starting with zero for the first constant. 
+An integral value may be assigned to one or more of the constants
+to override the default behavior. 
+
+\begin{example}
 \begin{chapel}
-enum day {sun, mon, tue, wed, thu, fri, sat};
-var d: day = mon;
+enum day {sun = 1, mon, tue, wed, thu, fri, sat};
+var d: day = wed;
+
+writeln(d, " is day number ", d:int, " of the week");
 \end{chapel}
+
+This example would output:
+\begin{commandline}
+wed is day number 4 of the week
+\end{commandline}
+\end{example}
 
 \paragraph{Tuple Types}
 Tuples are ordered sets of components.  They can contain
