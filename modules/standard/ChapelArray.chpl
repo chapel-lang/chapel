@@ -26,10 +26,17 @@ def _build_subdomain_type(dom)
 
 def _build_sparse_subdomain_type(dist, parentDom) {
   var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value);
-  // This index(2) is lame/incorrect, but the technique of using the
-  // iterator to find out the index type is lame too -- all of which
-  // could be fixed if we could have tuple types within classes.
-  return _domain(x.type, index(2), parentDom._dim_index_type, parentDom.rank, x);
+  if (parentDom.rank > 1) {
+    // BLC: would like to just inline this definition of indType rather
+    // than name it, but currently we can't use the homogenous tuple
+    // syntax in an expression context.  Would like to invent a
+    // non-ambiguous homogenous tuple syntax to disambiguate these cases
+    // and allow it to be used anywhere. 
+    type indType = parentDom.rank*parentDom._dim_index_type;
+    return _domain(x.type, indType, parentDom._dim_index_type, parentDom.rank, x);
+  } else {
+    return _domain(x.type, parentDom._dim_index_type, parentDom._dim_index_type, parentDom.rank, x);
+  }
 }
 
 record _ArrayTypeInfo {

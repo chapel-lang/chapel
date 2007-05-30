@@ -38,16 +38,17 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     return parentDom.bbox(d);
   }
 
-  def find(ind: rank*dim_type) {
+  // private
+  def find(ind) {
     return BinarySearch(indices, ind, 1, nnz);
   }
 
-  def member(ind: rank*dim_type) {
+  def member(ind) { // ind should be verified to be index type
     const (found, loc) = find(ind);
     return found;
   }
 
-  def add(ind: rank*dim_type) {
+  def add_help(ind) {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
@@ -84,6 +85,14 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     }
   }
 
+  def add(ind: dim_type) where rank == 1 {
+    add_help(ind);
+  }
+
+  def add(ind: rank*dim_type) {
+    add_help(ind);
+  }
+
   iterator dimIter(param d, ind) {
     if (d != rank-1) {
       compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
@@ -103,8 +112,30 @@ class SingleLocaleSparseArray: BaseArray {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  //  def this(ind: dim_type ... 1) var where rank == 1
-  //    return this(ind);
+  def this(ind: dim_type) where rank == 1 {
+    // make sure we're in the dense bounding box
+    if boundsChecking then
+      if !((dom.parentDom).member(ind)) then
+        halt("array index out of bounds: ", ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
+    return if (found) then data(loc) else irv;
+  }
+
+  def =this(ind: dim_type, val:eltType) where rank == 1 {
+    // make sure we're in the dense bounding box
+    if boundsChecking then
+      if !((dom.parentDom).member(ind)) then
+        halt("array index out of bounds: ", ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
+    if found then
+      data(loc) = val;
+    else
+      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+  }
 
   def this(ind: rank*dim_type) {
     // make sure we're in the dense bounding box
@@ -149,35 +180,55 @@ class SingleLocaleSparseArray: BaseArray {
 
 
 def SingleLocaleSparseDomain.writeThis(f: Writer) {
-  f.writeln("[");
-  if (nnz >= 1) {
-    var prevInd = indices(1);
-    write(" ", prevInd);
-    for i in 2..nnz {
-      if (prevInd(1) != indices(i)(1)) {
-        writeln();
+  if (rank == 1) {
+    f.write("[");
+    if (nnz >= 1) {
+      f.write(indices(1));
+      for i in 2..nnz {
+        f.write(" ", indices(i));
       }
-      prevInd = indices(i);
-      write(" ", prevInd);
     }
+    f.write("]");
+  } else {
+    f.writeln("[");
+    if (nnz >= 1) {
+      var prevInd = indices(1);
+      f.write(" ", prevInd);
+      for i in 2..nnz {
+        if (prevInd(1) != indices(i)(1)) {
+          f.writeln();
+        }
+        prevInd = indices(i);
+        f.write(" ", prevInd);
+      }
+    }
+    f.writeln("\n]");
   }
-  f.writeln("\n]");
 }
 
 
 def SingleLocaleSparseArray.writeThis(f: Writer) {
-  if (dom.nnz >= 1) {
-    var prevInd = dom.indices(1);
-    write(data(1));
-    for i in 2..dom.nnz {
-      if (prevInd(1) != dom.indices(i)(1)) {
-        writeln();
-      } else {
-        write(" ");
+  if (rank == 1) {
+    if (dom.nnz >= 1) {
+      f.write(data(1));
+      for i in 2..dom.nnz {
+        f.write(" ", data(i));
       }
-      prevInd = dom.indices(i);
-      write(data(i));
     }
-    writeln();
+  } else {
+    if (dom.nnz >= 1) {
+      var prevInd = dom.indices(1);
+      f.write(data(1));
+      for i in 2..dom.nnz {
+        if (prevInd(1) != dom.indices(i)(1)) {
+          f.writeln();
+        } else {
+          f.write(" ");
+        }
+        prevInd = dom.indices(i);
+        f.write(data(i));
+      }
+      f.writeln();
+    }
   }
 }
