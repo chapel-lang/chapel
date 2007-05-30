@@ -56,7 +56,7 @@ OPEN   added support for partially and fully unbounded ranges ("lo..", "..hi", "
 OPEN   enumerated domains and arrays
 OPEN   support for nested classes, records, and iterators
 OPEN   serial statement
-MBH    added support for using "_" to ignore elements during tuple destructuring
+CLOSED (MBH) added support for using "_" to ignore elements during tuple destructuring
        e.g., var t: (int, real) = ...;   (t1, _) = t;
 OPEN   added support for nested tuple destructuring in variable decls/formal args
 OPEN   support for config params of primitive and enumerated types
