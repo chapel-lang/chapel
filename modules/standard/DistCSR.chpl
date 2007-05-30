@@ -135,6 +135,10 @@ class CSRDomain: BaseSparseArithmeticDomain {
     }
   }
 
+  def clear() {
+    nnz = 0;
+  }
+
   iterator dimIter(param d, ind) {
     if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CSR domains");

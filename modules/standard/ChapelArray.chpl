@@ -167,6 +167,10 @@ record _domain {
   def buildOpenIntervalUpper()
     return _domain(_domain_type, _index_type, _dim_index_type, rank, _value.buildOpenIntervalUpper());
 
+  def clear() {
+    _value.clear();
+  }
+
   def add(i) {
     _value.add(i);
   }
@@ -249,6 +253,7 @@ def =(a: _domain, b: _tuple) {
 }
 
 def =(a: _domain, b) {  // b is iteratable
+  a.clear();
   for ind in b {
     a.add(ind);
   }
