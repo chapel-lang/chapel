@@ -104931,3 +104931,18 @@ Log message:
 Modified files:
 	chapel/spec/: Tuples.tex MODS 
 
+---------------------------------------------------------------------------
+
+05/30/07 11:35:32 -- bradc
+
+Log message:
+	Updated memory tests for chap03-06 to reflect recent
+	upgrade.
+
+Modified files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap03.good 
+	                                                  countMemory.chap04.good 
+	                                                  countMemory.chap05.good 
+	                                                  countMemory.chap06.good 
+
