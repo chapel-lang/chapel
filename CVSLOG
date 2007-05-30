@@ -104880,3 +104880,33 @@ Log message:
 Modified files:
 	chapel/spec/: Tuples.tex 
 
+---------------------------------------------------------------------------
+
+05/30/07 11:20:18 -- bradc
+
+Log message:
+	Moved my previous sparse domain/array implementation to
+	a standard module DistCSR.chpl and named the distribution
+	CSR (Compressed Sparse Row, another name for CRS --
+	Compressed Row Storage).  Changed my sparse CG implementations
+	to use CSR, but left other sparse tests to use the default
+	sparse domain/array implementation.
+	
+	Implemented SingleLocaleSparse.chpl to use a rank-independent
+	coordinate storage format using a 1D vector of coordinates
+	(stored as type index(rank) -- not completely ideal since
+	the indexType could be something other than int -- would prefer
+	rank*int, but can't create arrays of homogenous tuples within
+	classes currently.  This makes all of the current 2D tests
+	work, but doesn't quite work for the 1D and 3D future tests.
+	Not sure why yet, but this is a good checkpoint along the way.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/npb/cg/bradc/: cg-sparse.chpl 
+	chapel/test/performance/compiler/bradc/: cg-sparse-timecomp.chpl 
+	chapel/test/sparse/bradc/: sparse3D.chpl 
+Added files:
+	chapel/modules/standard/: DistCSR.chpl 
+
