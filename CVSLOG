@@ -104920,3 +104920,14 @@ Log message:
 Modified files:
 	chapel/spec/: MODS 
 
+---------------------------------------------------------------------------
+
+05/30/07 11:33:42 -- marybeth
+
+Log message:
+	Removed Status note from section on ignoring values in a tuple with an
+	underscore.
+
+Modified files:
+	chapel/spec/: Tuples.tex MODS 
+
