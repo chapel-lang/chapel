@@ -104910,3 +104910,13 @@ Modified files:
 Added files:
 	chapel/modules/standard/: DistCSR.chpl 
 
+---------------------------------------------------------------------------
+
+05/30/07 11:25:06 -- marybeth
+
+Log message:
+	Took item in MODS list for ignoring values in a tuple with an underscore.
+
+Modified files:
+	chapel/spec/: MODS 
+
