@@ -105010,3 +105010,34 @@ Modified files:
 	./: STATUS 
 	chapel/test/: FUTURES 
 
+---------------------------------------------------------------------------
+
+05/30/07 16:36:32 -- bradc
+
+Log message:
+	Fixed future in which re-assigning a sparse array's
+	indices did not clear out its previous index list.
+	Did this by exposing a "clear()" method on the
+	domain which is intended to clear out its index set.
+	Currently implemented only for sparse arrays, though
+	one could imagine this having an implementation for
+	dense arithmetic and associative domains as well.
+	
+	Added a new test that ensured that reassigning the
+	sparse indices also cleared out its associated arrays
+	as expected.
+	
+	Did not do any reclaiming of memory at this time.
+	One could imagine that after a sparse domain is
+	reassigned, it might be appropriate to reduce its
+	memory usage to something close to the new number
+	of indices.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl DistCSR.chpl 
+	                          SingleLocaleSparse.chpl 
+Added files:
+	chapel/test/sparse/bradc/: reAssignInds2.chpl reAssignInds2.good 
+Removed files:
+	chapel/test/sparse/bradc/: reAssignInds.future 
+
