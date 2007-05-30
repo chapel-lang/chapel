@@ -141,7 +141,6 @@ Unimplemented Features:
 * Index type bounds checking is not implemented
 * Checking that subdomain are index subsets is not implemented
 * Slicing strided domains and arrays is not implemented
-* Only 2D sparse arrays are currently supported
 
 Bugs:
 

@@ -184,10 +184,6 @@ unimplemented feature: slicing strided ranges [types/range/bradc/strideRangeSlic
 unimplemented feature: slicing strided domains/arrays [domains/bradc/slices/sliceStridedDomain]
 unimplemented feature: slicing strided domains/arrays [arrays/bradc/slices/sliceStridedArray]
 
-* Only 2D sparse arrays are currently supported
-unimplemented feature: non-2D sparse [sparse/bradc/sparse1D]
-unimplemented feature: non-2D sparse [sparse/bradc/sparse3D]
-
 * Sparse arrays can't be sliced with dense domains
 unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithDense]
 
