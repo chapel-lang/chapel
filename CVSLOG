@@ -104870,3 +104870,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+05/30/07 11:15:09 -- marybeth
+
+Log message:
+	Fixed typo in Tuples.tex.
+
+Modified files:
+	chapel/spec/: Tuples.tex 
+
