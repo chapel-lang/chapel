@@ -104946,3 +104946,15 @@ Modified files:
 	                                                  countMemory.chap05.good 
 	                                                  countMemory.chap06.good 
 
+---------------------------------------------------------------------------
+
+05/30/07 13:38:41 -- marybeth
+
+Log message:
+	Added a suggestionbox environment to the spec.  This environment
+	is intended to be used to identify language issues where we would
+	be interested in getting user feedback.
+
+Modified files:
+	chapel/spec/: spec.tex 
+
