@@ -3,6 +3,7 @@
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
 use CGMakeA;
+use DistCSR;
 
 type elemType = real(64);
 
@@ -35,7 +36,7 @@ config const numTrials = 1,
 
 def main() {
   const DenseSpace = [1..n, 1..n];
-  const MatrixSpace: sparse subdomain(DenseSpace) // dist(CSR);
+  const MatrixSpace: sparse subdomain(DenseSpace) distributed(CSR())
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 

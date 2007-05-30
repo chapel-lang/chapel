@@ -1,18 +1,48 @@
+class CSR {
+  param stridable: bool = false;
+
+  def buildDomain(param rank: int, type dim_type) {
+    halt("The CSR distribution does not support dense domains");
+  }
+
+  def buildEnumDomain(type ind_type) {
+    halt("The CSR distribution does not support enumerated domains");
+  }
+
+  def buildDomain(type ind_type) {
+    halt("The CSR distribution does not support associative domains");
+  }
+
+  def buildSparseDomain(param rank:int, type dim_type, 
+                        parentDom: BaseArithmeticDomain) {
+    return CSRDomain(rank=rank, dim_type=dim_type, 
+                                    parentDom=parentDom);
+  }
+}
+
 use Search;
 
-class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
+class CSRDomain: BaseSparseArithmeticDomain {
   param rank : int;
   type dim_type;
   var parentDom: BaseArithmeticDomain;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
   //  type ind_type = rank*dim_type;
 
+  var rowRange = parentDom.bbox(1);
+  var colRange = parentDom.bbox(2);
+
+  const rowDom = [rowRange.low..rowRange.high+1];
   var nnzDomSize = nnz;
   var nnzDom = [1..nnzDomSize];
 
-  var indices: [nnzDom] index(rank);
+  var rowStart: [rowDom] dim_type;      // would like index(nnzDom)
+  var colIdx: [nnzDom] dim_type;        // would like index(parentDom.bbox(1))
 
   def initialize() {
+    if (rank != 2) then
+      compilerError("Only 2D sparse domains are supported presently");
+    for i in rowDom do rowStart(i) = 1;
     nnz = 0;
   }
 
@@ -22,24 +52,38 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   def setIndices(x);
 
   def buildArray(type eltType)
-    return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
+    return CSRArray(eltType, rank, dim_type, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
+    return CSRDomain(rank=rank, dim_type=dim_type, 
                                     parentDom = BaseArithmeticDomain());
 
   iterator ault() {
+    var cursorRow = rowRange.low;
     for i in 1..nnz {
-      yield indices(i);
+      while (rowStart(cursorRow+1) <= i) {
+        cursorRow += 1;
+      }
+      yield (cursorRow, colIdx(i));
     }
   }
 
   def dim(d : int) {
-    return parentDom.bbox(d);
+    if (d == 1) {
+      return rowRange;
+    } else {
+      return colRange;
+    }
+  }
+
+  def rowStop(row) {
+    return rowStart(row+1)-1;
   }
 
   def find(ind: rank*dim_type) {
-    return BinarySearch(indices, ind, 1, nnz);
+    const (row, col) = ind;
+
+    return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
   def member(ind: rank*dim_type) {
@@ -65,12 +109,19 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
       nnzDom = [1..nnzDomSize];
     }
 
-    // shift indices up
+    const (row,col) = ind;
+
+    // shift column indices up
     for i in [insertPt..nnz) by -1 {
-      indices(i+1) = indices(i);
+      colIdx(i+1) = colIdx(i);
     }
 
-    indices(insertPt) = ind;
+    colIdx(insertPt) = col;
+
+    // bump the rowStart counts
+    for r in row+1..rowDom.high {  // want rowDom[row+1..]
+      rowStart(r) += 1;
+    }
 
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
@@ -85,21 +136,21 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   }
 
   iterator dimIter(param d, ind) {
-    if (d != rank-1) {
-      compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
+    if (d != 2) {
+      compilerError("dimIter(1, ...) not supported on CSR domains");
     }
-    halt("dimIter() not yet implemented for sparse domains");
-    yield indices(1);
+    for c in colIdx[rowStart(ind)..rowStop(ind)] do
+      yield c;
   }
 }
 
 
-class SingleLocaleSparseArray: BaseArray {
+class CSRArray: BaseArray {
   type eltType;
   param rank : int;
   type dim_type;
 
-  var dom : SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
+  var dom : CSRDomain(rank=rank, dim_type=dim_type);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
@@ -148,36 +199,25 @@ class SingleLocaleSparseArray: BaseArray {
 }
 
 
-def SingleLocaleSparseDomain.writeThis(f: Writer) {
+def CSRDomain.writeThis(f: Writer) {
   f.writeln("[");
-  if (nnz >= 1) {
-    var prevInd = indices(1);
-    write(" ", prevInd);
-    for i in 2..nnz {
-      if (prevInd(1) != indices(i)(1)) {
-        writeln();
-      }
-      prevInd = indices(i);
-      write(" ", prevInd);
+  for r in rowRange {
+    const lo = rowStart(r);
+    const hi = rowStop(r);
+    for c in lo..hi {
+      f.write(" (", r, ", ", colIdx(c), ")", if (c==hi) then "\n" else "");
     }
   }
-  f.writeln("\n]");
+  f.writeln("]");
 }
 
 
-def SingleLocaleSparseArray.writeThis(f: Writer) {
-  if (dom.nnz >= 1) {
-    var prevInd = dom.indices(1);
-    write(data(1));
-    for i in 2..dom.nnz {
-      if (prevInd(1) != dom.indices(i)(1)) {
-        writeln();
-      } else {
-        write(" ");
-      }
-      prevInd = dom.indices(i);
-      write(data(i));
+def CSRArray.writeThis(f: Writer) {
+  for r in dom.rowRange {
+    const lo = dom.rowStart(r);
+    const hi = dom.rowStop(r);
+    for c in lo..hi {
+      f.write(data(c), if (c==hi) then "\n" else " ");
     }
-    writeln();
   }
 }
