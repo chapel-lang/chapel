@@ -104958,3 +104958,43 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex 
 
+---------------------------------------------------------------------------
+
+05/30/07 15:24:24 -- bradc
+
+Log message:
+	Got arbitrary-D sparse domains and arrays working.  This
+	required a few nitty details:
+	
+	- had to remove a hard-coded index(2) from ChapelArray.chpl
+	  that was an acknowledged hack that I forgot about and had
+	  trouble debugging (thanks to Steve for getting me unstuck)
+	
+	- added a member function to 1D arithmetic domains that takes
+	  an integer rather than a 1-tuple
+	
+	- lots of specializing to the SingleLocaleSparse domain/array
+	  classes to deal with the fact that 1D sparse domains/arrays
+	  are indexed using integers rather than tuples.  I think there
+	  are some reasonable questions here about whether the wrapper
+	  functions should be protecting the distribution author from
+	  more of these details and/or whether there are other ways
+	  of implementing the sparse domains/arrays to simplify these
+	  cases.  For example, I currently store sparse indices for a
+	  1D domain using an array of ints.  Perhaps an array of
+	  1*tuples would be preferable without introducing additional
+	  overhead?
+	
+	- specializing of the writeThis() routines for sparse domains
+	  arrays for the 1D cases.
+	
+	- removed 2 futures.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/test/sparse/bradc/: sparse1D.good sparse3D.good 
+Removed files:
+	chapel/test/sparse/bradc/: sparse1D.future sparse3D.future 
+
