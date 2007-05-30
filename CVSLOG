@@ -104860,3 +104860,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/marybeth/: test-init-file-type.future 
 
+---------------------------------------------------------------------------
+
+05/29/07 17:51:14 -- marybeth
+
+Log message:
+	More edits to the Language Overview.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
