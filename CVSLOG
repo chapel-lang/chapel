@@ -104998,3 +104998,15 @@ Modified files:
 Removed files:
 	chapel/test/sparse/bradc/: sparse1D.future sparse3D.future 
 
+---------------------------------------------------------------------------
+
+05/30/07 15:25:42 -- bradc
+
+Log message:
+	Oops, forgot to update STATUS and FUTURES files
+	with that last change.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+
