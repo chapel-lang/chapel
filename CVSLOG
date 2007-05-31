@@ -105041,3 +105041,39 @@ Added files:
 Removed files:
 	chapel/test/sparse/bradc/: reAssignInds.future 
 
+---------------------------------------------------------------------------
+
+05/31/07 13:57:30 -- deitz
+
+Log message:
+	Removed --ref-count flag and support for reference counting memory
+	management.  Updated the CHANGES file and removed tests of the flag.
+
+Modified files:
+	./: CHANGES 
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+Removed files:
+	chapel/compiler/passes/: memoryManage.cpp 
+	chapel/test/domains/indefinite/waynew/: memory1.compopts 
+	                                        memory1.execopts 
+	                                        memory2.chpl 
+	                                        memory2.compopts 
+	                                        memory2.execopts 
+	                                        memory2.good 
+	chapel/test/memory/deitz/: COMPOPTS EXECOPTS test_seq_leak.chpl 
+	                           test_seq_leak.good 
+	                           test_trivial_leak2.chpl 
+	                           test_trivial_leak2.good 
+	                           test_trivial_leak3.chpl 
+	                           test_trivial_leak3.good 
+	                           test_trivial_leak4.chpl 
+	                           test_trivial_leak4.good 
+	                           test_trivial_leak5.chpl 
+	                           test_trivial_leak5.good 
+	                           test_trivial_leak6.chpl 
+	                           test_trivial_leak6.good 
+
