@@ -78,8 +78,7 @@ Newly Implemented Features:
 - support for config params of primitive and enumerated types
 - initial support for accessing a module's member via modname.membername
 - implemented dynamic casts between class types
-- turned reference counting garbage collection off by default
-  - added initial support for copy collection garbage collection
+- added initial support for copy collection garbage collection
 - subdomain keyword is now supported, though subset relationship is not checked
 - initial support for specifying a distribution class; interface still in flux
 
@@ -127,12 +126,12 @@ Standard Modules:
 
 Compiler Flags:
 - removed --cg-chpl-lineno flag; this capability is now always on
+- removed --no-gc used for a stopgap reference counting scheme
 - added -s/--set for setting config params
 - added -g flag for debugging generated code; turns on --cg-cpp-lines by default
 - added -O flag for optimizing generated code
 - added --explain-call flag that helps determine how a function call is resolved
 - added --no-warnings flag to diable all compiler warnings
-- --no-gc became --ref-count to reflect reference counting being off by default
 - added --scalar-replace-tuples flag: replaces tuples with scalars
 - added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
 - added --no-expand-iterators-inline-opt flag to disable iterator inlining

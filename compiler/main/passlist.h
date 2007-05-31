@@ -19,7 +19,6 @@ void flattenFunctions();
 void inlineFunctions();
 void insertLineNumbers();
 void lowerIterators();
-void memoryManage();
 void normalize();
 void parallel1();
 void parallel2();
@@ -69,7 +68,6 @@ PassInfo passlist[] = {
   RUN(prune),           // prune AST of dead functions and types
 
   // AST to C
-  RUN(memoryManage),      // insert memory frees, garbage collection
   RUN(copyCollection),    // insert code needed for copying garbage collection
   RUN(insertLineNumbers), // insert line numbers for error messages
   RUN(codegen),           // generate C code and build it

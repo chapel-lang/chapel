@@ -13,7 +13,6 @@ Code Size Statistics:
 Optimization Control:
 ---------------------
       --no-bounds-checks  false     ->true   Disable bounds checking
-      --ref-count         false     ->true   Enabled reference counting
       --no-inline         false     ->true   Do not inline functions
       --unoptimized       false     ->true   Generate naive code (many temps)
       --scalar-replace-tuples false     ->true   Generate scalar components of tuples
