@@ -216,14 +216,15 @@ void EnumType::codegenDef(FILE* outfile) {
   for_alist(DefExpr, constant, constants) {
     if (!first) {
       fprintf(outfile, ", ");
-    } else {
-      first = false;
     }
     constant->sym->codegen(outfile);
     if (constant->init) {
       fprintf(outfile, " = ");
       constant->init->codegen(outfile);
+    } else if (first) {
+      fprintf(outfile, " = 1");
     }
+    first = false;
   }
   fprintf(outfile, "} ");
   symbol->codegen(outfile);

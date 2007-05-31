@@ -2009,7 +2009,7 @@ preFold(Expr* expr) {
 }
 
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
-  long val1 = -1, val2 = -1, count = -1;
+  long val1 = -1, val2 = -1, count = 0;
   // ^^^ This is an assumption that "long" on the compiler host is at
   // least as big as "int" on the target.  This is not guaranteed to be true.
   EnumType *type1, *type2;
@@ -2029,7 +2029,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
     }
   }
   // Loop over the enum values to find the int value of e2
-  count = -1;
+  count = 0;
   for_alist(DefExpr, constant, type2->constants) {
     if (!get_int(constant->init, &count)) {
       count++;
