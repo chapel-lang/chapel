@@ -105077,3 +105077,23 @@ Removed files:
 	                           test_trivial_leak6.chpl 
 	                           test_trivial_leak6.good 
 
+---------------------------------------------------------------------------
+
+05/31/07 14:02:00 -- diten
+
+Log message:
+	Make the first value for an enumerated type be one instead of zero if it isn't
+	explicitly initialized.  Just codegen " = 1" after the first name, and start
+	counting at 1 when folding enum comparison operators.
+	
+	Change some .goods that expected zero based enums.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/bradc/protoast/codegen/: enum.good 
+	chapel/test/types/enum/deitz/: test_enum1.good test_enum1b.good 
+	                               test_enum2.good test_enum4.good 
+	                               test_enum5.good 
+	                               test_enum_overload.good 
+
