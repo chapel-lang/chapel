@@ -189,13 +189,13 @@ The following output will be printed to the console:
 \end{commandline}
 
 \subsection{Types}
-Chapel is a strongly typed language.  Each variable must be declared
-with a type specification or with an assignment to an initial value from which
-the type can be inferred.  
+Chapel is a strongly typed language.  Each variable declaration
+must include a type specification or an assignment to an initial value 
+from which the type can be inferred.  
 
-In addition, each variable is initialized
-when it is declared.  If an initial value is not specified, then the variable
-is initialized to a default initial value according to its type. 
+In addition, when each variable is declared, it is also initialized.
+If an initial value is not specified, then the variable
+is initialized to a default value according to its type. 
 \subsubsection{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
 real, imaginary and complex floating point numbers, booleans and strings.
@@ -273,14 +273,14 @@ type.
 
 \paragraph{Enumerated Types}
 An enumerated type defines an ordered set of named constants.
-By default, these constants have a default coercion to an
-integral value, starting with zero for the first constant. 
+By default, these constants can be coerced to an 
+integral value, starting with one for the first constant. 
 An integral value may be assigned to one or more of the constants
 to override the default behavior. 
 
 \begin{example}
 \begin{chapel}
-enum day {sun = 1, mon, tue, wed, thu, fri, sat};
+enum day {sun, mon, tue, wed, thu, fri, sat};
 var d: day = wed;
 
 writeln(d, " is day number ", d:int, " of the week");
@@ -292,17 +292,20 @@ wed is day number 4 of the week
 \end{commandline}
 \end{example}
 
-\paragraph{Tuple Types}
-Tuples are ordered sets of components.  They can contain
-elements of all the same type or of multiple types.
-\begin{chapel}
-var pt: (int,real); //pt is mixed tuple, init to (0,0.0)
-var z: 3*int; //z is tuple of ints, init to (0,0,0)
-\end{chapel}
-
 \paragraph{Classes}
-Classes are data structures with fields and methods.  They
-are assigned by reference.
+Classes are data structures defined with fields and methods, and
+they are assigned by reference.  A class may inherit fields and
+methods from another class.  
+
+An instance of a class is created by calling its constructor
+in a variable declaration.  Each call to the constructor
+instantiates a new object of the class and returns a reference to 
+the object.  Chapel provides a default class constructor for each class.
+
+\begin{example}
+The following code gives an example of the circle class.  
+The variable, \chpl{x}, is an instance of the circle class with
+a radius of \chpl{1.0}.
 \begin{chapel}
 class circle {
   var radius: real;
@@ -313,16 +316,50 @@ class circle {
 }
 var x = circle(radius=1.0);
 \end{chapel}
+\end{example}
 
 \paragraph{Records}
-Records are similar to classes but are assigned by
-value.
+Records are similar to classes.  They contain fields and methods
+and can inherit fields and methods from other records.  A record,
+however, directly contains the data associated with the fields
+in the record.  A record is not a reference to storage location as
+classes are.  Thus, records are assigned by value.  
+
+\begin{example}
+In the example code below, \chpl{p} and \chpl{q} are both
+variables of the record \chpl{point}.  They are distinct storage
+locations and can be updated independently of each other.
+
 \begin{chapel}
 record point {
   var x,y: real;
 }
 var p = point(0.0,1.0);
+var q = p;
 \end{chapel}
+\end{example}
+
+\paragraph{Tuple Types}
+Tuples are lightweight records with anonymous fields.
+The fields can be all of the same type or of multiple types, and
+they are indexed in the order in which they were declared.
+\begin{example}
+The following variable declarations give an example of a mixed tuple,
+\chpl{pt} and a homogeneous tuple \chpl{x}.
+\begin{chapel}
+var pt: (int,real);
+var x: 3*int;
+\end{chapel}
+
+Among their many uses, tuples may be used in the assignment to a
+complex variable.
+\begin{chapel}
+var x, y: real;
+var z: complex;
+(*\vdots*)
+z = (x,y):complex;
+\end{chapel}
+\end{example}
 
 \paragraph{Ranges}
 Ranges define arithmetic sequences.
