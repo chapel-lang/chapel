@@ -21,7 +21,6 @@ scalarReplace :
 copyPropagation :
 deadCodeElimination :
 prune :
-memoryManage :
 copyCollection :
 insertLineNumbers :
 codegen :
