@@ -105107,3 +105107,17 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/01/07 10:33:43 -- bradc
+
+Log message:
+	Removed memoryManagement passs from compiler timing
+	regression tests, and from the performance tables
+	that we've generated so far.
+
+Modified files:
+	chapel/test/performance/compiler/bradc/: 
+	                                         cg-sparse-timecomp.perfkeys 
+	                                         fft-timecomp.perfkeys 
+
