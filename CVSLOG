@@ -105121,3 +105121,29 @@ Modified files:
 	                                         cg-sparse-timecomp.perfkeys 
 	                                         fft-timecomp.perfkeys 
 
+---------------------------------------------------------------------------
+
+06/04/07 09:09:56 -- diten
+
+Log message:
+	Fix problems with the outer pointer for generic nested classes.  Though it took
+	a long time to track down, this was actually a fairly trivial change. I just
+	had to change the way the outer pointer is defined and assigned to in the
+	constructor.  The instantiations then fell out.
+	
+	Also, make nprint_view return instead of dereferencing NULL when given a NULL
+	AST.  I've found myself making gdb abort by accidentally trying to view NULL.
+	
+	Fix a minor typo I found while reading the Generics section of the spec.
+	
+	Add the beginnings of a double linked list example using a nested Node class.
+	Currently, has methods to add to front and back, a default front-to-back
+	iterator and a backward iterator.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp view.cpp 
+	chapel/compiler/passes/: cleanup.cpp scopeResolve.cpp 
+	chapel/spec/: Generics.tex 
+Added files:
+	chapel/test/release/examples/: linkedList.chpl linkedList.good 
+
