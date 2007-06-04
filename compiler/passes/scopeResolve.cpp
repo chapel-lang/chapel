@@ -24,11 +24,9 @@ name_matches_method(char* name, Type* type) {
   }
   if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
-    if (dynamic_cast<ClassType*>(outerType)) {
-      ClassType* outer = dynamic_cast<ClassType*>(ct->outer->type);
+    if (ClassType* outer = dynamic_cast<ClassType*>(outerType))
       if (name_matches_method(name, outer))
         return true;
-    }
   }
   return false;
 }
@@ -224,12 +222,6 @@ void scopeResolve(Symbol* base) {
                     ClassType* ct = dynamic_cast<ClassType*>(type);
                     int nestDepth = 0;
                     if (name_matches_method(name, type)) {
-                      if (!dynamic_cast<CallExpr*>(symExpr->parentExpr)) {
-                        // If name_matches_method, and parent is not a
-                        // CallExpr, then this is a type specification
-                        // so don't give it this.outer...
-                        break;
-                      }
                       while (ct && !name_matches_method_local(name, ct)) {
                         // count how many classes out from current depth that
                         // this method is first defined in

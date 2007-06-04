@@ -129,10 +129,9 @@ SymScope::lookup(char* name) {
         if (sym)
           return sym;
         Type* outerType = ct->symbol->defPoint->parentSymbol->type;
-        if (dynamic_cast<ClassType*>(outerType)) {
+        if (ClassType* ot = dynamic_cast<ClassType*>(outerType)) {
           // Nested class.  Look at the scope of the outer class
-          ClassType* outer = dynamic_cast<ClassType*>(ct->outer->type);
-          Symbol* sym = outer->structScope->lookup(name);
+          Symbol* sym = ot->structScope->lookup(name);
           if (sym)
             return sym;
         }

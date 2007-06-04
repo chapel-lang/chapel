@@ -138,6 +138,8 @@ html_file_name( int pass, char *module) {
 
 static void
 view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
+  if (!ast)
+    return;
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     printf("\n");
     for (int i = 0; i < indent; i++)
