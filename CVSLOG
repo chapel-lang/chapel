@@ -105147,3 +105147,48 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: linkedList.chpl linkedList.good 
 
+---------------------------------------------------------------------------
+
+06/05/07 15:41:22 -- bradc
+
+Log message:
+	Dropping in a snapshot of the scripts that I've been
+	using to get past performance of benchmarks into the
+	util/ directory.
+	
+	getoldperf is the main script which takes a date on
+	its command line, checks out a version of the compiler
+	for that date, builds it, and runs the performance
+	tests for the hpcc06 directory.  It can also take a
+	test name as an optional second argument, which will
+	say which test to run.  This script was written fairly
+	specifically for the tests that I was trying to do for
+	MS3, and will almost certainly require additional work
+	to use it for other purposes.  But it's better than
+	nothing.
+	
+	timerange is a meta-script that will run getoldperf
+	for a number of days starting an optional number of
+	days ago (defaults to "today").  It runs getoldperf
+	for each of those scripts.
+	
+	To use these scripts before the test system had
+	performance testing, or before a particular test
+	had *.perf* files created for it, one of my main
+	hacks has been to copy the *.perf* files in the
+	directory being tested from the user's current
+	Chapel directory into the snapshot that was checked
+	out.  This allowed me to create .perfcompopts files
+	that made sense for certain time ranges in the past,
+	for example, when the performance-testing system
+	did not exist.  I couldn't think of a cleaner means
+	of changing the past.
+	
+	I'm also checking in the raw performance timings I
+	took for RA and STREAM for MS3.
+
+Added files:
+	chapel/util/pastPerformance/: .cvsignore MS3-ra.dat 
+	                              MS3-stream.dat getoldperf 
+	                              timerange 
+
