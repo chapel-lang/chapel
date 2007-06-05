@@ -19,7 +19,6 @@ static const int numVectors = 3;
 #define printStats 1
 #endif
 
-#define numArrays 1
 
 static int m = 0;
 static int numTrials = 10;
@@ -46,7 +45,7 @@ static double getCurrentTime(void) {
 
 static void printProblemSize(int problemSize) {
   const int bytesPerArray = problemSize * sizeof(elemType);
-  const double totalMemInGB = (double)bytesPerArray / (1024.0*1024.0*1024.0);
+  const double totalMemInGB = ((double)bytesPerArray * numVectors) / (1024.0*1024.0*1024.0);
 
   printf("Problem size = %d\n", problemSize);
   printf("Bytes per array = %d\n", bytesPerArray);
