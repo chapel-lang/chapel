@@ -105192,3 +105192,20 @@ Added files:
 	                              MS3-stream.dat getoldperf 
 	                              timerange 
 
+---------------------------------------------------------------------------
+
+06/05/07 16:07:38 -- bradc
+
+Log message:
+	Fixed a small thinko in our stream C reference
+	versions in which the amount of memory required
+	was computed improperly.  This doesn't invalidate
+	anything about the way we've used these benchmarks,
+	just makes it print out the correct number of GB
+	required.
+
+Modified files:
+	chapel/test/studies/hpcc/STREAMS/performance/: .cvsignore 
+	                                               stream-index.c 
+	                                               stream-walker.c 
+
