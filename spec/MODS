@@ -2,7 +2,7 @@
 *** BLC: STOPPED AT 05/18/07 11:01:37 -- deitz ***
 
 Changes to Chapel Language:
-OPEN   eliminated sequences
+SJD    eliminated sequences
        - in the future, a standard List library will provide similar functionality
        - removed # and #= operators, since they were supported for sequences
        - removed support for sequence literals; use tuples in their place
@@ -10,90 +10,92 @@ OPEN   eliminated sequences
        - removed support for casting sequences to tuples and tuples to sequences
        - iterators in an expression context now result in a 1D, 1-based array
          e.g., "iterator foo() { ... }  var A = foo();" creates a 1D array over [1..]
-OPEN   added "range" type to language to replace old "arithmetic sequence" concept
+BLC    added "range" type to language to replace old "arithmetic sequence" concept
        e.g., "lo..hi" or "lo..hi by str" are ranges
        - open interval syntax supported for ranges
          e.g., "[lo..hi)" is equivalent to lo..hi-1
        - +, -, *, / operators on range/scalar combinations
-OPEN   added support for creating array aliases
+       discuss stridable parameter for ranges and domains
+
+SJD    added support for creating array aliases
        e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
-OPEN   support for standard math, bitwise, and comparison operators for tuples
+DMI    support for standard math, bitwise, and comparison operators for tuples
        e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
-OPEN   swap operator: <=>
+
+MBH    swap operator: <=>
        e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
-OPEN   better support for writing output
+BLC    better support for writing output
        - enabled strings to be written to using a write() method
          e.g., var s: string;  s.write("x is: ", x);
        - added a Writer class that enables user classes to be written to
        - writeThis() methods that define how a type should be written to a Writer
-OPEN   added minloc and maxloc reductions that return min/max value and index
+BLC    added minloc and maxloc reductions that return min/max value and index
        e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
-OPEN   changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
+BLC    changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
        e.g., var rows = D.dim(1);
-OPEN   arithmetic domains and arrays support low and high methods that return bounds
+BLC    arithmetic domains and arrays support low and high methods that return bounds
        e.g., var loInd = A.low();
-OPEN   support for range, domain, and array slicing via bounded or unbounded ranges
+BLC    support for range, domain, and array slicing via bounded or unbounded ranges
        e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
-OPEN   support for promoting casts across array elements
+SJD    support for promoting casts across array elements
        e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
-OPEN   added support for param functions that support compile-time evaluation
+SJD    added support for param functions that support compile-time evaluation
        e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
-OPEN   support for default values for param members of classes
+SJD    support for default values for param members of classes
        e.g., class C { param bitWidth = 32; ... }
-OPEN   support for functions without parentheses
+SJD    support for functions without parentheses
        e.g., def f { writeln("In function f"); }
        - allow "main" function to be declared with or without parentheses
          e.g., def main { writeln("Program will start here"); ... }
-OPEN   allow "<index> in" to be elided in for/forall loops/expressions
+MBH    allow "<index> in" to be elided in for/forall loops/expressions
        e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
-OPEN   support for multiple modules to be listed within a single "use" statement
+DMI    support for multiple modules to be listed within a single "use" statement
 
 Newly Implemented Features:
-OPEN   support for sparse domains/arrays
+BLC    support for sparse domains/arrays
        - assignment of aggregate index expressions to sparse domains
        - accumulation of indices into sparse domains using +=
-OPEN   added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
-OPEN   enumerated domains and arrays
-OPEN   support for nested classes, records, and iterators
-OPEN   serial statement
+BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
+BLC    enumerated domains and arrays
+SJD    support for nested classes, records, and iterators
+SJD    serial statement
 CLOSED (MBH) added support for using "_" to ignore elements during tuple destructuring
        e.g., var t: (int, real) = ...;   (t1, _) = t;
-OPEN   added support for nested tuple destructuring in variable decls/formal args
-OPEN   support for config params of primitive and enumerated types
-OPEN   initial support for accessing a module's member via modname.membername
-OPEN   implemented dynamic casts between class types
-OPEN   turned reference counting garbage collection off by default
+DMI    added support for nested tuple destructuring in variable decls/formal args
+DMI    support for config params of primitive and enumerated types
+DMI    initial support for accessing a module's member via modname.membername
+SJD    implemented dynamic casts between class types
+DMI    turned reference counting garbage collection off by default
        - added initial support for copy collection garbage collection
-OPEN   subdomain keyword is now supported, though subset relationship is not checked
-OPEN   initial support for specifying a distribution class; interface still in flux
+BLC    subdomain keyword is now supported, though subset relationship is not checked
+BLC    initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
-OPEN   removed support for using "?" in identifiers
+MBH    removed support for using "?" in identifiers
        - changed standard method member? to member
        - changed standard method true? to isTrue
-OPEN   removed support for "--" as a single-line comment style
-OPEN   an array's domain should now be accessed via A.domain rather than A.dom
-OPEN   array element type identifier changed from elt_type to eltType
+MBH    removed support for "--" as a single-line comment style
+BLC    an array's domain should now be accessed via A.domain rather than A.dom
+BLC    array element type identifier changed from elt_type to eltType
 
 Semantic Changes:
-OPEN   changed relative precedence of casts and unary +/- (unary +/- is now tighter)
+MBH    changed relative precedence of casts and unary +/- (unary +/- is now tighter)
        e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
-OPEN   removed support for structural iterator interface (getHeadCursor, etc.)
-OPEN   added support for defining default iterators for classes and records
-OPEN   initial support for querying parameters/types in a formal class argument
+CLOSED (SJD) removed support for structural iterator interface (getHeadCursor, etc.)
+SJD    added support for defining default iterators for classes and records
+SJD    initial support for querying parameters/types in a formal class argument
        - similar support for variable-length argument lists of generics
-OPEN   where clauses can now compare against formal generic types
-OPEN   short-circuiting operators only require isTrue rather than true? & false?
-OPEN   in x op=y, a cast to x.type is used in assigning back to x if it is primitive
-OPEN   compilerError() can now take multiple arguments like a halt()
+SJD    where clauses can now compare against formal generic types
+SJD    short-circuiting operators only require isTrue rather than true? & false?
+SJD    compilerError() can now take multiple arguments like a halt()
 
 Standard Modules:
-OPEN   Search: new standard module
-OPEN   Sort: new standard module
-OPEN   Types: numBits() and numBytes() are now param functions
-OPEN   Random: fillRandom() routines now work for arrays of arbitrary rank
-OPEN   Random: some new functionality
+BLC    Search: new standard module
+BLC    Sort: new standard module
+BLC    Types: numBits() and numBytes() are now param functions
+BLC    Random: fillRandom() routines now work for arrays of arbitrary rank
+BLC    Random: some new functionality
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
-OPEN   removed the insertion of all large sequence/array temporaries
+SJD    removed the insertion of all large sequence/array temporaries
 
