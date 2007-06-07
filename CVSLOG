@@ -105209,3 +105209,13 @@ Modified files:
 	                                               stream-index.c 
 	                                               stream-walker.c 
 
+---------------------------------------------------------------------------
+
+06/07/07 14:00:41 -- marybeth
+
+Log message:
+	Updating MODS list from meeting.
+
+Modified files:
+	chapel/spec/: MODS 
+
