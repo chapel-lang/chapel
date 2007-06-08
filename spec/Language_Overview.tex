@@ -129,8 +129,14 @@ the gulf that exists between parallel programming languages and
 mainstream programming and scripting languages.
 
 
-\subsection{Getting Started}
+\subsection{Summary of Chapel Language Features}
 
+This following section provides a summary of Chapel language features.  
+This summary is not intended to give a complete description of each feature.
+Rather, it should give the reader a map to the rest of the specification
+document.  
+
+\subsubsection{Getting Started}
 \paragraph{Hello World} 
 A Chapel version of the standard ``hello world'' computation is given
 here:
@@ -188,7 +194,7 @@ The following output will be printed to the console:
 > Hello, world!
 \end{commandline}
 
-\subsection{Types}
+\subsubsection{Types}
 Chapel is a strongly typed language.  Each variable declaration
 must include a type specification or an assignment to an initial value 
 from which the type can be inferred.  
@@ -196,7 +202,7 @@ from which the type can be inferred.
 In addition, when each variable is declared, it is also initialized.
 If an initial value is not specified, then the variable
 is initialized to a default value according to its type. 
-\subsubsection{Primitive Types}
+\paragraph{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
 real, imaginary and complex floating point numbers, booleans and strings.
 The following table provides information about the names of these data
@@ -239,7 +245,7 @@ type is used.
 \end{tabular}
 \end{center}
 
-\subsubsection{Non-Primitive Types}
+\paragraph{Non-Primitive Types}
 The non-primitive types are listed in the table below, along
 with their default initial values for variables of that type. 
 \begin{center}
@@ -328,7 +334,7 @@ classes are.  Thus, records are assigned by value.
 \begin{example}
 In the example code below, \chpl{p} and \chpl{q} are both
 variables of the record \chpl{point}.  They are distinct storage
-locations and can be updated independently of each other.
+locations that are updated independently of each other.
 
 \begin{chapel}
 record point {
@@ -362,43 +368,87 @@ z = (x,y):complex;
 \end{example}
 
 \paragraph{Ranges}
-Ranges define arithmetic sequences.
+Ranges represent bounded and unbounded strided 
+arithmetic sequences of integral types.  Ranges can be specified by the 
+literal expression, "\chpl{low..high by stride}" where \chpl{low},
+\chpl{high} and \chpl{stride} are integral expressions.  The bounds
+of the range, \chpl{low} and \chpl{high}, can be left unspecified to
+indicate an unbounded arithmetic sequence.  The stride is also optional.
+If \chpl{by stride} is omitted, the default stride of the sequence is one. 
+
+Ranges are most commonly used in the definition of arithmetic domains
+and in iterator expressions.
+
+\begin{example}
+The following example shows the definition of the range \chpl{span1D}
+which is the arithmetic sequence \chpl{1} to \chpl{n}.  This range is
+then used in the definition of the arithmetic two-dimensional domain, 
+\chpl{D}.
+ 
 \begin{chapel}
 var span1D: range = 1..n;
 var D = [span1D,span1D];
 \end{chapel}
+\end{example}
 
 \paragraph{Domains and Arrays}
-Domains specify an index set.  Arrays are declared with domains.
-Arrays and domains may
+In Chapel, the indices and values for a data set are maintained
+in two distinct types of data structures.  Domains specify indices
+and arrays store the values for sets of data.  Arrays and domains may
 be arithmetic, sparse, indefinite, enumerated or opaque.
+
+An array must be specified with a domain in its variable declaration, and 
+it is linked with this domain during execution.
+When a domain is modified by adding or removing indices, all arrays declared with
+this domain reflect this change.  Values that can be indexed by both the
+old and new domains are preserved in the array.  Values that can only be
+accessed with the old domain are lost, and values that can be accessed by only
+the new domain result in new entries in the array.
+A domain can be declared with a distribution function which indicates how the 
+data values in arrays declared with this domain are to be distributed across
+processors.
+
+Arrays are passed by reference to functions
+where they may be modified, but assignment of arrays is by value.  
+
+\begin{example}
+In the code below, \chpl{D2} is declared with the type \chpl{domain(2)}
+indicating that it is a two-dimensional domain.  The domain declaration
+also includes an intialization for the domain using the range \chpl{1..n},
+indicating that \chpl{D2} is an arithmetic domain.  The arrays declared
+with \chpl{D2}, \chpl{A}, \chpl{B}, \chpl{C} are thus two-dimensional
+arithmetic arrays.
 \begin{chapel}
 const D2: domain(2) = [1..n, 1..n];
 var A, B, C: [D2] real;
 \end{chapel}
-Domains can be specified with a distribution, defining how the
-data is distributed across a set of processors.
+
+The code below shows the declaration for a distributed two-dimensional 
+arithmetic domain and arrays.
 \begin{chapel}
 const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
 var A, B, C: [DistD2] real;
 \end{chapel}
-
-Arrays are passed by reference to functions
-where they may be modified.  Assignment of arrays is by value.
-
-Subdomains may be
-defined to specify a subset of the domain's indices. Subarrays may be defined
-with subdomains or ranges to specify part of an array.
-\begin{chapel}
-writeln(A(1..2,1..2)); //writes first 2x2 block of A
-\end{chapel}
+\end{example}
 
 \paragraph{The Locale Type}
+In Chapel, the term {\em locale} refers to the processing unit in a parallel
+computer system.  The \chpl{locale} type is used to associate 
+computations and data to these processing units.  Chapel provides
+a predefined array \chpl{Locales} where each entry is of the \chpl{locale}
+type.  User-defined variables of \chpl{locale} type can be declared to store 
+entries from this \chpl{Locales} array or the entries can be accessed 
+directly to indicate where data should be reside in memory or where computations
+should be executed.   
+
 \paragraph{The File Type}
 Chapel provides a built-in \chpl{file} type to handle input and
-output to files.  The \chpl{file} type contains the
+output to files.  Variables declared to be of this type store
+information about the files that are to be accessed or created during
+execution, and they provide methods for reading and writing to these
+files.  Variables of the \chpl{file} type contain the
 fields:  \chpl{filename}, \chpl{path}, and \chpl{mode}.
-The \chpl{file} type supports the following methods:
+And, they provide the following methods:
 \chpl{open}, \chpl{close}, \chpl{read}, \chpl{write} and \chpl{writeln}.
 
 \paragraph{The Type Alias}
@@ -409,7 +459,7 @@ type elemType = real(32);
 var alpha: elemType; //alpha is 32-bit real
 \end{chapel}
 
-\subsection{Variables}
+\subsubsection{Variables}
 \paragraph{Variable Kinds}
 There are three kinds of Chapel variables: \chpl{var},
 \chpl{const} (runtime constants), \chpl{param} (compile time constants).
@@ -461,7 +511,7 @@ var x: single int;
 var y: sync real;
 \end{chapel}
 
-\subsection{Operators}
+\subsubsection{Operators}
 \paragraph{Operator Precedence}
 \begin{center}
 \begin{tabular}{|l|l|l|}
@@ -516,7 +566,7 @@ A11 => A(block1,block1);
 
 \paragraph{Scans and Reductions}
 
-\subsection{Statements and Expressions}
+\subsubsection{Statements and Expressions}
 \paragraph{Block Statement}
 Chapel statements are separated by a semi-colon.  A block
 of statements is delimited by braces, \{ \}.  Variables
@@ -625,7 +675,7 @@ and then assigned.
 var half = if (i % 2) then i/2 +1 else i/2;
 \end{chapel}
 
-\subsection{Functions}
+\subsubsection{Functions}
 \paragraph{Function Definitions}
 Functions are defined with a name and a list of function
 arguments.  Optionally, intent types, return types and a
@@ -664,7 +714,7 @@ defined.
 
 \paragraph{Chapel Standard Functions}
 
-\subsection{Iterators}
+\subsubsection{Iterators}
 Iterators are defined similarly to functions, except that
 they are defined with the keyword \chpl{iterator} and they
 contain a \chpl{yield} statement.
@@ -683,7 +733,7 @@ for (i,i2) in evens(m) {
 \end{chapel}
 
 
-\subsection{Input and Output}
+\subsubsection{Input and Output}
 \paragraph{File I/O}
 
 \paragraph{Chapel Standard I/O Functions}
@@ -696,7 +746,7 @@ Default \chpl{read} and \chpl{write} methods are provided for all
 Chapel types.
 
 
-\subsection{Additional Parallel Support}
+\subsubsection{Additional Parallel Support}
 \paragraph{Data Distributions}
 \paragraph{Data Locality}
 \paragraph{Parallel vs. Serial Computations}
