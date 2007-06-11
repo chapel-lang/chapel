@@ -8,13 +8,13 @@
 #include "symscope.h"
 
 void copyPropagation(void) {
-  if (unoptimized)
-    return;
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, gFns) {
     collapseBlocks(fn);
     removeUnnecessaryGotos(fn);
+  }
+  if (unoptimized)
+    return;
+  forv_Vec(FnSymbol, fn, gFns) {
     if (!fDisableCopyPropagation)
       localCopyPropagation(fn);
     deadVariableElimination(fn);

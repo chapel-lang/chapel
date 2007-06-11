@@ -216,7 +216,7 @@ CallExpr* build_primitive_call(AList* exprs) {
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
-  fn->buildSetter = true;
+  //  fn->retRef = true;
   fn->addPragma("inline");
   if (e2)
     fn->insertAtTail(
@@ -323,16 +323,7 @@ destructureIndices(BlockStmt* block,
                    BaseAST* indices,
                    Expr* init) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
-    if (call->isNamed("_cast")) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
-        if (!dynamic_cast<UnresolvedSymbol*>(sym->var))
-          INT_FATAL(sym, "unresolved symbol expected");
-        Expr* type = call->get(1);
-        type->remove();
-        block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init, type));
-      } else
-        USR_FATAL(call, "invalid index expression");
-    } else if (call->isNamed("_tuple")) {
+    if (call->isNamed("_tuple")) {
       int i = 0;
       for_actuals(actual, call) {
         if (i > 0) { // skip first (size parameter)
@@ -349,9 +340,12 @@ destructureIndices(BlockStmt* block,
       }
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(indices)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-      block->insertAtHead(new DefExpr(new VarSymbol(sym->var->name), init));
-    else
+    if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+      VarSymbol* var = new VarSymbol(sym->var->name);
+      var->isCompilerTemp = true;
+      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
+      block->insertAtHead(new DefExpr(var));
+    } else
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
   }
 }

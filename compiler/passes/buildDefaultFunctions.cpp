@@ -9,7 +9,6 @@
 
 static void build_chpl_main(void);
 static void build_getter(ClassType* ct, Symbol* field);
-static void build_setter(ClassType* ct, Symbol* field);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(ClassType* ct);
@@ -43,7 +42,6 @@ void buildDefaultFunctions(void) {
           VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
           // if suppress for cobegin created arg classes
           if (cfield && !cfield->is_ref && strcmp(field->name, "_promotionType")) {
-            build_setter(ct, field);
             build_getter(ct, field);
           }
         }
@@ -159,69 +157,14 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
   if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access"))));
+    fn->insertAtTail(new CondStmt(new SymExpr(gSetter), new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)), new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access")))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   if (field->isParam())
     fn->isParam = true;
-  reset_file_info(fn, field->lineno, field->filename);
-  normalize(fn);
-  ct->methods.add(fn);
-  fn->isMethod = true;
-  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
-  fn->noParens = true;
-  fn->_this = _this;
-}
-
-
-static void build_setter(ClassType* ct, Symbol* field) {
-  if (FnSymbol* fn = function_exists(field->name, 4, dtMethodToken->symbol->name, ct->symbol->name, dtSetterToken->symbol->name)) {
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, fn);
-    forv_Vec(BaseAST, ast, asts) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-        if (call->isNamed(field->name) && call->argList->length() == 4) {
-          if (call->get(1)->typeInfo() == dtMethodToken &&
-              call->get(2)->typeInfo() == ct &&
-              call->get(3)->typeInfo() == dtSetterToken) {
-            Expr* arg2 = call->get(2);
-            Expr* arg4 = call->get(4);
-            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, arg2->remove(), new_StringSymbol(field->name), arg4->remove()));
-          }
-        }
-      }
-    }
-    return;
-  }
-
-  FnSymbol* fn = new FnSymbol(field->name);
-  fn->isSetter = true;
-  fn->defSetGet = true;
-  fn->addPragma("inline");
-  fn->retType = dtVoid;
-  if (ct->symbol->hasPragma( "synchronization primitive")) 
-    fn->addPragma( "synchronization primitive");
-
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->insertFormalAtTail(_this);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken));
-  fn->insertFormalAtTail(fieldArg);
-  VarSymbol* val = new VarSymbol("_tmp");
-  val->isCompilerTemp = true;
-  val->canReference = true;
-  fn->insertAtTail(new DefExpr(val));
-  if (ct->classTag == CLASS_UNION) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("_copy", fieldArg)));
-  } else {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
-  }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+  else
+    fn->retRef = true;
   reset_file_info(fn, field->lineno, field->filename);
   normalize(fn);
   ct->methods.add(fn);
@@ -427,7 +370,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   for_fields(tmp, ct) {
-    if (!tmp->isTypeVariable && strcmp(tmp->name, "_promotionType"))
+    if (!tmp->isTypeVariable && !tmp->isParam() && strcmp(tmp->name, "_promotionType"))
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));

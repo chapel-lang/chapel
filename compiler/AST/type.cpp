@@ -20,7 +20,8 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   defaultConstructor(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
-  instantiatedWith(NULL)
+  instantiatedWith(NULL),
+  refType(NULL)
 {}
 
 
@@ -45,6 +46,11 @@ bool Type::inTree(void) {
     return symbol->inTree();
   else
     return false;
+}
+
+
+Type* Type::typeInfo(void) {
+  return this;
 }
 
 
@@ -415,7 +421,10 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  if (classTag == CLASS_CLASS)
+  if (symbol->hasPragma("ref"))
+    fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
+            symbol->cname);
+  else if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname);
 }
@@ -519,6 +528,9 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
+  gSetter = new VarSymbol("setter", dtBool, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gSetter);
+
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gBoundsChecking);
   if (no_bounds_checking) {
@@ -579,8 +591,6 @@ void initPrimitiveTypes(void) {
   dtIterator->isGeneric = true;
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
-  dtSetterToken = createPrimitiveType ("_ST", "_ST");
-  CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_st");
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
   dtEnumerated->isGeneric = true;
 }
@@ -665,4 +675,17 @@ bool isRecordType(Type* t) {
   if (ct && ct->classTag == CLASS_RECORD)
     return true;
   return false;
+}
+
+bool isReference(Type* t) {
+  return !t->refType;
+}
+
+Type* getValueType(Type* type) {
+  if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
+    if (ct->symbol->hasPragma("ref")) {
+      return ct->getField(1)->type;
+    }
+  }
+  return NULL;
 }

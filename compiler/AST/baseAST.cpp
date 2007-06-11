@@ -299,6 +299,12 @@ bool BaseAST::inTree(void) {
 }
 
 
+Type* BaseAST::typeInfo(void) {
+  INT_FATAL(this, "Unexpected call to BaseAST::typeInfo()");
+  return NULL;
+}
+
+
 void BaseAST::verify() {
 }
 

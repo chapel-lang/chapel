@@ -54,14 +54,12 @@ PassInfo passlist[] = {
 
   // Post-resolution cleanup
   RUN(flattenFunctions),   // denest nested functions
+  RUN(lowerIterators),     // lowers iterators into functions/classes
   RUN(cullOverReferences), // remove excess references
   RUN(parallel2),          // parallel transforms, part 2
 
-  RUN(lowerIterators),     // lowers iterators into functions/classes
-
   // Optimizations
   RUN(inlineFunctions), // function inlining
-  RUN(cullOverReferences), // remove excess references (more exposed due to inlining)
   RUN(scalarReplace),   // scalar replace all tuples
   RUN(copyPropagation), // copy propagation and other low-level optimizations
   RUN(deadCodeElimination), // eliminate dead code

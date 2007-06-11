@@ -3,21 +3,13 @@ class DataBlock {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  def this(i : int) : t {
+  def this(i : int) var : t {
     if i == 1 then
       return x1;
     else if i == 2 then
       return x2;
     else
       return x3;
-  }
-  def =this(i : int, val : t) {
-    if i == 1 then
-      x1 = val;
-    else if i == 2 then
-      x2 = val;
-    else
-      x3 = val;
   }
 }
 

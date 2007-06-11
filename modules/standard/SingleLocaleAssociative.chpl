@@ -329,7 +329,7 @@ class SingleLocaleAssociativeArray: BaseArray {
   def this(ind : ind_type) var : eltType
     return data(dom._get_index(ind));
 
-  iterator ault() {
+  iterator ault() var {
     for i in 0..dom.num_inds-1 do
       yield data(i);
   }

@@ -45,7 +45,6 @@ class Symbol : public BaseAST {
   bool isCompilerTemp;
   bool isTypeVariable;
   bool isReference;    // is a reference
-  bool canReference;   // can be a reference (determined during resolution)
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
@@ -59,6 +58,7 @@ class Symbol : public BaseAST {
   virtual void clean();
   void setParentScope(SymScope* init_parentScope);
   virtual bool inTree();
+  virtual Type* typeInfo(void);
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -167,12 +167,10 @@ class FnSymbol : public Symbol {
   fnType fnClass;
   bool noParens;
   bool retRef;
-  bool buildSetter;
   bool defSetGet;
   bool isParam;
   IteratorInfo* iteratorInfo;
   SymScope* argScope;
-  bool isSetter;
   bool isGeneric;
   Symbol* _this;
   bool isMethod;
@@ -287,10 +285,10 @@ extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
 extern Symbol *gNil;
+extern Symbol *gSetter;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;
-extern Symbol *gSetterToken;
 extern Symbol *gVoid;
 extern Symbol *gFile;
 extern Symbol *gTimer;

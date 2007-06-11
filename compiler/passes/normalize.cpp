@@ -16,7 +16,6 @@
 bool normalized = false;
 
 static void change_method_into_constructor(FnSymbol* fn);
-static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
@@ -71,8 +70,6 @@ void normalize(BaseAST* base) {
       currentFilename = fn->filename;
       fixup_array_formals(fn);
       fixup_query_formals(fn);
-      if (fn->buildSetter)
-        build_lvalue_function(fn);
 
       // functions (not methods) without parentheses are resolved
       // during scope resolution
@@ -154,40 +151,6 @@ void normalize(BaseAST* base) {
 }
 
 
-static void build_lvalue_function(FnSymbol* fn) {
-  FnSymbol* new_fn = fn->copy();
-  fn->defPoint->insertAfter(new DefExpr(new_fn));
-  if (fn->_this)
-    fn->_this->type->methods.add(new_fn);
-  fn->buildSetter = false;
-  new_fn->retType = dtVoid;
-  new_fn->cname = stringcat("_setter_", fn->cname);
-  ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_st",
-                                         dtSetterToken);
-  ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", dtAny);
-  Expr* exprType = NULL;
-  if (new_fn->retExprType) {
-    lvalue->type = dtUnknown;
-    exprType = new_fn->retExprType;
-    exprType->remove();
-  }
-  new_fn->insertFormalAtTail(new DefExpr(setterToken));
-  new_fn->insertFormalAtTail(new DefExpr(lvalue, NULL, exprType));
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, new_fn->body);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* returnStmt = dynamic_cast<CallExpr*>(ast)) {
-      if (returnStmt->isPrimitive(PRIMITIVE_RETURN) &&
-          returnStmt->parentSymbol == new_fn) {
-        Expr* expr = returnStmt->get(1);
-        expr->replace(new SymExpr(gVoid));
-        returnStmt->insertBefore(new CallExpr("=", expr, lvalue));
-      }
-    }
-  }
-}
-
-
 static void normalize_returns(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
@@ -221,7 +184,6 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
-    retval->canReference = true;
     if (fn->isParam)
       retval->consClass = VAR_PARAM;
     fn->insertAtHead(new DefExpr(retval));
@@ -232,9 +194,12 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
-      if (fn->retExprType)
+      if (fn->retExprType && !fn->retRef) // how to handle retRef + cast?
         ret_expr = new CallExpr("_cast", fn->retExprType->copy(), ret_expr);
-      ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
+      if (fn->retRef)
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
+      else
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
     }
     if (fn->fnClass == FN_ITERATOR) {
       if (!retval)
@@ -309,14 +274,11 @@ static void decompose_special_calls(CallExpr* call) {
 
 static void apply_getters_setters(FnSymbol* fn) {
   // Most generally:
-  //   x.f(a) = y --> f(_mt, x)(a, _st, y)
-  // which is the same as
-  //   call(= call(call(. x "f") a) y) --> call(call(f _mt x) a _st y)
-  // Also:
-  //   x.f = y --> f(_mt, x, _st, y)
-  //   f(a) = y --> f(a, _st, y)
-  //   x.f --> f(_mt, x)
   //   x.f(a) --> f(_mt, x)(a)
+  // which is the same as
+  //   call(call(. x "f") a) --> call(call(f _mt x) a)
+  // Also:
+  //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
   Vec<BaseAST*> asts;
@@ -330,10 +292,6 @@ static void apply_getters_setters(FnSymbol* fn) {
                                      // getter or a setter
         continue;
       if (call->isNamed(".")) { // handle getter
-        if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr))
-          if (parent->isNamed("="))
-            if (parent->get(1) == call)
-              continue; // handle setter below
         char* method = NULL;
         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(2)))
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
@@ -349,32 +307,6 @@ static void apply_getters_setters(FnSymbol* fn) {
         if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
           if (parent->baseExpr == getter)
             getter->partialTag = true;
-      } else if (call->isNamed("=")) {
-        if (CallExpr* lhs = dynamic_cast<CallExpr*>(call->get(1))) {
-          if (lhs->isNamed(".")) {
-            char* method = NULL;
-            if (SymExpr* symExpr = dynamic_cast<SymExpr*>(lhs->get(2)))
-              if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
-                if (var->immediate->const_kind == CONST_KIND_STRING)
-                  method = var->immediate->v_string;
-            if (!method)
-              INT_FATAL(call, "No method name for getter or setter");
-            Expr* _this = lhs->get(1);
-            _this->remove();
-            Expr* rhs = call->get(2);
-            rhs->remove();
-            CallExpr* setter =
-              new CallExpr(method, gMethodToken, _this, gSetterToken, rhs);
-            call->replace(setter);
-          } else {
-            Expr* rhs = call->get(2);
-            rhs->remove();
-            lhs->remove();
-            call->replace(lhs);
-            lhs->insertAtTail(gSetterToken);
-            lhs->insertAtTail(rhs);
-          }
-        }
       }
     }
   }
@@ -394,7 +326,7 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag)
     return;
 
-  if (call->primitive)
+  if (call->primitive && !(call->isPrimitive(PRIMITIVE_GET_REF)))
     return;
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
@@ -408,7 +340,6 @@ static void insert_call_temps(CallExpr* call) {
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_VAR);
   tmp->isCompilerTemp = true;
-  tmp->canReference = true;
   tmp->canParam = true;
   tmp->canType = true;
   call->replace(new SymExpr(tmp));
@@ -468,7 +399,6 @@ fix_def_expr(VarSymbol* var) {
   if (var->consClass == VAR_CONST) {
     constTemp = new VarSymbol("_constTmp");
     constTemp->isCompilerTemp = true;
-    constTemp->canReference = true;
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, constTemp));
   }
@@ -549,7 +479,6 @@ fix_def_expr(VarSymbol* var) {
     if (init) {
       VarSymbol* initTemp = new VarSymbol("_tmp");
       initTemp->isCompilerTemp = true;
-      initTemp->canReference = true;
       initTemp->canParam = true;
       stmt->insertBefore(new DefExpr(initTemp));
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, initTemp, init->remove()));
@@ -594,12 +523,14 @@ static void tag_global(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (ClassType* ct = dynamic_cast<ClassType*>(formal->type))
       if (ct->classTag == CLASS_CLASS &&
+          !ct->symbol->hasPragma("ref") &&
           !ct->symbol->hasPragma("domain") &&
           !ct->symbol->hasPragma("array"))
         fn->global = true;
     if (SymExpr* sym = dynamic_cast<SymExpr*>(formal->defPoint->exprType))
       if (ClassType* ct = dynamic_cast<ClassType*>(sym->var->type))
         if (ct->classTag == CLASS_CLASS &&
+            !ct->symbol->hasPragma("ref") &&
             !ct->symbol->hasPragma("domain") &&
             !ct->symbol->hasPragma("array"))
           fn->global = true;

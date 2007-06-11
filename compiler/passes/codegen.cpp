@@ -88,6 +88,15 @@ static void codegen_header(void) {
 
   // reserved C words that require renaming to compile
   cnames.put("abs", 1);
+  cnames.put("cos", 1);
+  cnames.put("sin", 1);
+  cnames.put("tan", 1);
+  cnames.put("acos", 1);
+  cnames.put("asin", 1);
+  cnames.put("atan", 1);
+  cnames.put("floor", 1);
+  cnames.put("sqrt", 1);
+  cnames.put("conjg", 1);
   cnames.put("exit", 1);
   cnames.put("_init", 1);
   cnames.put("stdin", 1);
@@ -107,6 +116,7 @@ static void codegen_header(void) {
   cnames.put("log2", 1);
   cnames.put("remove", 1);
   cnames.put("fprintf", 1);
+  cnames.put("fscanf", 1);
   cnames.put("clone", 1);
   cnames.put("new", 1);
   cnames.put("register", 1);
@@ -162,10 +172,11 @@ static void codegen_header(void) {
   FILE* outfile = header.fptr;
 
   fprintf(outfile, "#include \"stdchpl.h\"\n");
-  fprintf(outfile, "\n/*** Class Reference Types ***/\n\n");
+  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
 
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    typeSymbol->codegenPrototype(outfile);
+    if (!typeSymbol->hasPragma("ref"))
+      typeSymbol->codegenPrototype(outfile);
   }
 
   // codegen enumerated types
@@ -202,13 +213,22 @@ static void codegen_header(void) {
     }
   }
 
+  // codegen reference types
+  fprintf(outfile, "/*** References ***/\n\n");
+  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+    if (typeSymbol->hasPragma("ref"))
+      typeSymbol->codegenPrototype(outfile);
+  }
+
   // codegen remaining types
-  fprintf(outfile, "/*** Classes ***/\n\n");
+  fprintf(outfile, "\n/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSymbol->type))
       if (ct->classTag != CLASS_CLASS)
         continue;
     if (dynamic_cast<EnumType*>(typeSymbol->type))
+      continue;
+    if (typeSymbol->hasPragma("ref"))
       continue;
     typeSymbol->codegenDef(outfile);
   }
@@ -236,7 +256,7 @@ codegen_cid2offsets(FILE* outfile) {
   // corresponding to the class with that cid.
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS) {
+      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "size_t _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets[] = { sizeof(_");
@@ -263,7 +283,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS) {
+      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "case %d:\n", ct->id);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -288,7 +308,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS) {
+      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "case %d:\n", ct->id);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);

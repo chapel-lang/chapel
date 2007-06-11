@@ -32,31 +32,22 @@ class file: Writer {
     }
   }
 
-  def filename {
+  def filename var : string {
+    if setter then
+      _checkFileStateChangeLegality("filename");
     return filename;
   }
 
-  def =filename(newfilename) {
-    _checkFileStateChangeLegality("filename");
-    filename = newfilename;
-  }
-
-  def path {
+  def path var : string {
+    if setter then
+      _checkFileStateChangeLegality("path");
     return path;
   }
 
-  def =path(newpath) {
-    _checkFileStateChangeLegality("path");
-    path = newpath;
-  }
-
-  def mode {
+  def mode var {
+    if setter then
+      _checkFileStateChangeLegality("mode");
     return mode;
-  }
-
-  def =mode(newmode: string) {
-    _checkFileStateChangeLegality("mode");
-    mode = newmode;
   }
 
   def isOpen: bool {

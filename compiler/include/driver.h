@@ -20,7 +20,6 @@ extern int trace_level;
 extern bool unoptimized;
 extern bool no_bounds_checking;
 extern bool no_inline;
-extern bool fScalarReplaceTuples;
 extern bool fDisableScalarReplaceArrayWrappers;
 extern bool fDisableSingleLoopIteratorOpt;
 extern bool fDisableExpandIteratorsInlineOpt;

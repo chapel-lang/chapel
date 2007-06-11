@@ -1,12 +1,11 @@
 class C {
   var x: int;
-  def x {
-    writeln("getter invoked");
+  def x var {
+    if setter then
+      writeln("setter invoked");
+    else
+      writeln("getter invoked");
     return x;
-  }
-  def =x(val: int) {
-    writeln("setter invoked");
-    x = val;
   }
 }
 

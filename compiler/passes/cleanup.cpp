@@ -247,6 +247,8 @@ static void build_constructor(ClassType* ct) {
     fn->cname = astr(ct->symbol->cname);
   }
   fn->isCompilerTemp = true; // compiler inserted
+  if (ct->symbol->hasPragma("ref"))
+    fn->addPragma("ref");
 
   if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple");
@@ -382,15 +384,13 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 
 static void add_this_formal_to_method(FnSymbol* fn) {
-  if (fn->isSetter &&
-      fn->getFormal(fn->formals->length()-1)->type != dtSetterToken)
-    fn->formals->last()->insertBefore
-      (new DefExpr(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken)));
+  return;
   if (fn->hasPragma("ref this")) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->_this);
-    if (!arg)
-      INT_FATAL(fn, "bad pragma \"ref this\"");
-    arg->intent = INTENT_REF;
+    DefExpr* thisDef = fn->_this->defPoint;
+    Expr* type = thisDef->exprType;
+    CallExpr* ref = new CallExpr("ref");
+    thisDef->exprType->replace(ref);
+    ref->insertAtTail(type);
   }
 }
 

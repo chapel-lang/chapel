@@ -116,7 +116,7 @@ class SingleLocaleSparseArray: BaseArray {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def this(ind: dim_type) where rank == 1 {
+  def this(ind: dim_type) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member(ind)) then
@@ -124,47 +124,28 @@ class SingleLocaleSparseArray: BaseArray {
 
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
-    return if (found) then data(loc) else irv;
-  }
-
-  def =this(ind: dim_type, val:eltType) where rank == 1 {
-    // make sure we're in the dense bounding box
-    if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
-        halt("array index out of bounds: ", ind);
-
-    // lookup the index and return the data or IRV
-    const (found, loc) = dom.find(ind);
-    if found then
-      data(loc) = val;
-    else
+    if setter && !found then
       halt("attempting to assign a 'zero' value in a sparse array: ", ind);
-  }
-
-  def this(ind: rank*dim_type) {
-    // make sure we're in the dense bounding box
-    if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
-        halt("array index out of bounds: ", ind);
-
-    // lookup the index and return the data or IRV
-    const (found, loc) = dom.find(ind);
-    return if (found) then data(loc) else irv;
-  }
-
-
-  def =this(ind: rank*dim_type, val:eltType) {
-    // make sure we're in the dense bounding box
-    if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
-        halt("array index out of bounds: ", ind);
-
-    // lookup the index and return the data or IRV
-    const (found, loc) = dom.find(ind);
     if found then
-      data(loc) = val;
+      return data(loc);
     else
+      return irv;
+  }
+
+  def this(ind: rank*dim_type) var {
+    // make sure we're in the dense bounding box
+    if boundsChecking then
+      if !((dom.parentDom).member(ind)) then
+        halt("array index out of bounds: ", ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
+    if setter && !found then
       halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+    if found then
+      return data(loc);
+    else
+      return irv;
   }
 
   def IRV var {

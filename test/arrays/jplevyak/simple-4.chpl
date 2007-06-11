@@ -6,8 +6,7 @@ class C {
 }
 class D {
   var aa : int;
-  def a(i : int) { return aa; }
-  def =a(i : int, val : int) { aa = i; }
+  def a(i : int) var { return aa; }
 }
 class E {
   var a : arr;

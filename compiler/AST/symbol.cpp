@@ -20,10 +20,10 @@ extern Map<Symbol*,Symbol*> paramMap;
 FnSymbol *chpl_main = NULL;
 
 Symbol *gNil = NULL;
+Symbol *gSetter = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
-Symbol *gSetterToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gTimer = NULL;
@@ -128,7 +128,6 @@ Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   isCompilerTemp(false),
   isTypeVariable(false),
   isReference(false),
-  canReference(false),
   canParam(false),
   canType(false),
   isConcurrent(false)
@@ -176,6 +175,11 @@ bool Symbol::inTree(void) {
     return defPoint->inTree();
   else
     return false;
+}
+
+
+Type* Symbol::typeInfo(void) {
+  return type;
 }
 
 
@@ -338,7 +342,6 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->isCompilerTemp = isCompilerTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
   newVarSymbol->isReference = isReference;
-  newVarSymbol->canReference = canReference;
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
@@ -467,9 +470,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_OUT ||
-      intent == INTENT_INOUT ||
-      intent == INTENT_REF ||
+  if (intent == INTENT_REF ||
       (!strcmp(name, "this") && is_complex_type(type)))
     return true;
   ClassType* ct = dynamic_cast<ClassType*>(type);
@@ -563,12 +564,10 @@ FnSymbol::FnSymbol(char* initName) :
   fnClass(FN_FUNCTION),
   noParens(false),
   retRef(false),
-  buildSetter(false),
   defSetGet(false),
   isParam(false),
   iteratorInfo(NULL),
   argScope(NULL),
-  isSetter(false),
   isGeneric(false),
   _this(NULL),
   isMethod(false),
@@ -641,7 +640,6 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
   copy->isGeneric = isGeneric;
-  copy->isSetter = isSetter;
   copy->_this = _this;
   copy->isMethod = isMethod;
   copy->visible = visible;
@@ -694,7 +692,8 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
-  wrapper->retRef = fn->retRef;
+  if (fn->fnClass != FN_ITERATOR) // getValue is ref, not iterator
+    wrapper->retRef = fn->retRef;
   wrapper->isParam = fn->isParam;
   wrapper->isMethod = fn->isMethod;
   return wrapper;
@@ -733,6 +732,12 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
           else   // else, single var case
             call->insertAtTail( new CallExpr( "readFF", wrapper_formal));
         }
+      } else if (ts->hasPragma("ref") && !formal->isTypeVariable) {
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        tmp->isCompilerTemp = true;
+        wrapper->insertAtTail(new DefExpr(tmp));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
+        call->insertAtTail(tmp);
       } else {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }
@@ -742,12 +747,12 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
   }
   if (isMethod && !noParens)
     call = make_method_call_partial(call);
-  if (returns_void(this))
+  if (retType == dtVoid || (retType == dtUnknown && returns_void(this)))
     wrapper->insertAtTail(call);
   else
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertAfter(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint);
+  reset_file_info(wrapper->defPoint, lineno, filename);
   normalize(wrapper);
   addMapCache(&cw_cache, this, wrapper, coercion_map);
   return wrapper;
@@ -786,7 +791,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_type = formal->defPoint->exprType->copy();
       else if (formal->type != dtUnknown && !formal->type->isGeneric)
         temp_type = new SymExpr(formal->type->symbol);
-      if (formal->type->symbol->hasPragma( "synchronization primitive"))
+      if (formal->type->symbol->hasPragma("synchronization primitive") ||
+          formal->type->symbol->hasPragma("ref"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
       call->insertAtTail(temp);
@@ -884,7 +890,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
     i++;
   }
 
-  if (isMethod)
+  if (isMethod && !noParens)
     actualCall = make_method_call_partial(actualCall);
   BaseAST* indices = indicesCall;
   if (indicesCall->argList->length() == 1)
@@ -898,7 +904,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
     wrapper->fnClass = FN_ITERATOR;
-    wrapper->retRef = false;
+    //    wrapper->retRef = false;
     wrapper->removePragma("inline");
   }
   defPoint->insertBefore(new DefExpr(wrapper));
@@ -1024,22 +1030,6 @@ instantiate_tuple_get(FnSymbol* fn) {
 }
 
 FnSymbol*
-instantiate_tuple_set(FnSymbol* fn) {
-  VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
-  if (!var || var->immediate->const_kind != NUM_KIND_INT)
-    return fn;
-  int64 index = var->immediate->int_value();
-  char* name = stringcat("x", intstring(index));
-  VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->isCompilerTemp = true;
-  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, dynamic_cast<DefExpr*>(fn->formals->last())->sym)));
-  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name))));
-  fn->insertAtHead(new DefExpr(tmp));
-  normalize(fn);
-  return fn;
-}
-
-FnSymbol*
 instantiate_tuple_copy(FnSymbol* fn) {
   if (fn->formals->length() != 1)
     INT_FATAL(fn, "tuple copy function has more than one argument");
@@ -1130,8 +1120,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (Type* t = dynamic_cast<Type*>(generic_substitutions->get( key))) {
       if (t->isGeneric)
         INT_FATAL(this, "illegal instantiation with a generic type");
-      if (t->symbol->hasPragma( "synchronization primitive")) {
-        if (!hasPragma( "synchronization primitive") ||
+      if (t->symbol->hasPragma( "synchronization primitive") && !hasPragma("ref")) {
+        if (!hasPragma("synchronization primitive") ||
             (isMethod && (t->instantiatedFrom != _this->type))) {
           // allow types to be instantiated to sync types
           Symbol* arg = dynamic_cast<Symbol*>(key);
@@ -1141,6 +1131,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
             generic_substitutions->put( key, base_type);
           }
         }
+      } else if (!hasPragma("tuple") &&
+                 t->symbol->hasPragma("ref") && !hasPragma("ref")) {
+        generic_substitutions->put(key, t->getField("_val")->type);
       }
     }
 
@@ -1194,7 +1187,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     forv_Vec(BaseAST, value, values)
       if (Type* type = dynamic_cast<Type*>(value))
         if (!dynamic_cast<PrimitiveType*>(type))
-          defPoint->parentScope->addModuleUse(type->getModule());
+          if (!retType->symbol->hasPragma("ref"))
+            defPoint->parentScope->addModuleUse(type->getModule());
 
     // compute instantiatedWith vector and rename instantiated type
     clone->name = astr(clone->name, "(");
@@ -1267,9 +1261,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   } else {
     newfn = instantiate_function(this, generic_substitutions, NULL);
 
-    if (hasPragma("tuple set"))
-      newfn = instantiate_tuple_set(newfn);
-
     if (hasPragma("tuple get"))
       newfn = instantiate_tuple_get(newfn);
 
@@ -1298,8 +1289,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
 void FnSymbol::codegenHeader(FILE* outfile) {
   retType->codegen(outfile);
-  if (retRef)
-    fprintf(outfile, "*");
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
   fprintf(outfile, "(");

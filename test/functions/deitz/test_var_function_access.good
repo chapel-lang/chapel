@@ -1,4 +1,2 @@
-{a = 12}
-0
-12
-{a = 2}
+test_var_function_access.chpl:5: In function 'bar':
+test_var_function_access.chpl:6: error: illegal return expression in var function

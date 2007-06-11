@@ -152,7 +152,12 @@ void compute_sym_uses(BaseAST* base) {
             continue;
           } else if (call->isResolved()) {
             ArgSymbol* arg = actual_to_formal(a);
-            if (arg->intent == INTENT_REF)
+            if (arg->intent == INTENT_OUT) {
+              a->var->defs.add(a);
+              continue;
+            }
+            if (arg->intent == INTENT_REF ||
+                arg->intent == INTENT_INOUT)
               a->var->defs.add(a); // also use
           }
         }

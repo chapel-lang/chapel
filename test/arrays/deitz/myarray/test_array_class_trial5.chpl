@@ -3,26 +3,15 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  def indexedby(i : int) : t {
+  def indexedby(i : int) var {
     var result : t;
     select i {
-      when 1 do result = x1;
-      when 2 do result = x2;
-      when 3 do result = x3;
+      when 1 do return x1;
+      when 2 do return x2;
+      when 3 do return x3;
       otherwise writeln("[Out of bounds read]");
     }
-    write("[Read on ", i, " returns ", result, "]");
-    return result;
-  }
-  def =indexedby(i : int, val : t) : t {
-    select i {
-      when 1 do x1 = val;
-      when 2 do x2 = val;
-      when 3 do x3 = val;
-      otherwise writeln("[Out of bounds write]");
-    }
-    writeln("[Write on ", i, " sets ", val, "]");
-    return val;
+    return x1;
   }
 }
 
@@ -36,12 +25,8 @@ writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));
 class array2d {
   type t;
   var data : array1d(t) = array1d(t);
-  def indexedby(i : int, j : int) : t {
+  def indexedby(i : int, j : int) var : t {
     return data.indexedby((i - 1) * 2 + j);
-  }
-  def =indexedby(i : int, j : int, val : t) : t {
-    data.indexedby((i - 1) * 2 + j) = val;
-    return val;
   }
 }
 

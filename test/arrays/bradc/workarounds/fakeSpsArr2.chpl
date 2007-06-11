@@ -1,9 +1,12 @@
 record sps33 {
   var data:[-1..1, 0..1] real;
+  var irv: real = 0.0;
 
-  def this(i, j) {
+  def this(i, j) var {
     if (i == j) {
-      return 0.0;
+      if setter then
+        halt("Assigning an IRV value");
+      return irv;
     } else if (i==-1) {
       return data(i, j==1);
     } else {
@@ -11,21 +14,7 @@ record sps33 {
     }
   }
 
-  def =this(i, j, v) {
-    if (i == j) {
-      halt("Assigning an IRV value");
-    } else if (i==-1) {
-      data(i, j==1) = v;
-    } else {
-      data(i, j!=-1) = v;
-    }
-  }
-
-  def this(ij: 2*int) {
-    return this(ij(1), ij(2));
-  }
-
-  def =this(ij: 2*int) {
+  def this(ij: 2*int) var {
     return this(ij(1), ij(2));
   }
 }

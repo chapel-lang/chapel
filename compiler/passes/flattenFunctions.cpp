@@ -43,24 +43,49 @@ findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
 
 static void
 addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
-  ASTMap update_map;
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn->body);
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_REF, sym->name, sym->type);
+      Type* type = sym->type->refType ? sym->type->refType : sym->type;
+      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
       fn->insertFormalAtTail(new DefExpr(arg));
-      update_map.put(sym, arg);
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (se->var == sym) {
+            CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+            if (type == sym->type ||
+                (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se)) {
+              se->var = arg;
+            } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+              call->replace(new SymExpr(arg));
+            } else {
+              VarSymbol* tmp = new VarSymbol("_tmp", sym->type);
+              se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
+              se->var = tmp;
+            }
+          }
+        }
+      }
     }
   }
-  if (update_map.n)
-    update_symbols(fn->body, &update_map);
 }
 
 
 static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
-    if (sym)
-      call->insertAtTail(sym);
+    if (sym) {
+      if (sym->type->refType) {
+        VarSymbol* tmp = new VarSymbol("_tmp", sym->type->refType);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
+        call->insertAtTail(tmp);
+      } else {
+        call->insertAtTail(sym);
+      }
+    }
   }
 }
 
@@ -141,6 +166,19 @@ void flattenFunctions(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ts->defPoint->parentSymbol))
       fn->defPoint->insertBefore(ts->defPoint->remove());
+  }
+
+  //
+  // remove unnecessary PRIMITIVE_SET_REF calls
+  //   due to replacement of outer variables with reference arguments
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_SET_REF)) {
+        if (call->get(1)->typeInfo()->symbol->hasPragma("ref"))
+          call->replace(call->get(1)->remove());
+      }
+    }
   }
 }
 

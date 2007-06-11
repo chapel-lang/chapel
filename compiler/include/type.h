@@ -28,6 +28,7 @@ class CallExpr;
 class CondStmt;
 class BlockStmt;
 class SymScope;
+class ClassType;
 
 
 class Type : public BaseAST {
@@ -44,11 +45,13 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
+  ClassType* refType;
 
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual ~Type();
   virtual void verify(); 
   virtual bool inTree();
+  virtual Type* typeInfo(void);
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
 
@@ -153,7 +156,6 @@ TYPE_EXTERN PrimitiveType* dtVoid;
 TYPE_EXTERN PrimitiveType* dtObject;
 TYPE_EXTERN PrimitiveType* dtValue;
 TYPE_EXTERN PrimitiveType* dtMethodToken;
-TYPE_EXTERN PrimitiveType* dtSetterToken;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
@@ -181,5 +183,8 @@ bool is_enum_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
 bool isRecordType(Type* t);
+
+bool isReference(Type* t);
+Type* getValueType(Type* type);
 
 #endif

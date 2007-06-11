@@ -7,6 +7,8 @@ enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
+  PRIMITIVE_SET_REF,
+  PRIMITIVE_GET_REF,
   PRIMITIVE_REF,
   PRIMITIVE_RETURN,
   PRIMITIVE_YIELD,
@@ -49,6 +51,8 @@ enum PrimitiveTag {
   PRIMITIVE_SET_MEMBER,
   PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
   PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
+  PRIMITIVE_GET_REAL,                  // get complex real component
+  PRIMITIVE_GET_IMAG,                  // get complex imag component
   PRIMITIVE_SET_HEAPVAR,               // used to alloc on_heap vars
   PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
   PRIMITIVE_REFC_TOUCH,                // touch reference-counted var

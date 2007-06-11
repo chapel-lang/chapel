@@ -10,17 +10,11 @@
 // never used anywhere.
 //
 static bool isDeadVariable(DefExpr* def) {
-  if (def->sym->uses.n > 0)
-    return false;
-  if (def->sym->defs.n <= 1)
-    return true;
-  forv_Vec(SymExpr, se, def->sym->defs) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr))
-      if (call->isPrimitive(PRIMITIVE_MOVE))
-        continue;
-    return false;
+  if (isReference(def->sym->type)) {
+    return def->sym->uses.n == 0 && def->sym->defs.n <= 1;
+  } else {
+    return def->sym->uses.n == 0;
   }
-  return true; // only target of moves
 }
 
 void deadVariableElimination(FnSymbol* fn) {
@@ -99,7 +93,7 @@ void deadCodeElimination(FnSymbol* fn) {
               call->isPrimitive(PRIMITIVE_REF))
             if (SymExpr* se = dynamic_cast<SymExpr*>(call->get(1)))
               if (!DU.get(se) || // DU chain only contains locals
-                  se->var->isReference) // reference issue
+                  !se->var->type->refType) // reference issue
                 essential = true;
         }
         if (Expr* sub = dynamic_cast<Expr*>(ast)) {
@@ -149,6 +143,8 @@ void deadCodeElimination(FnSymbol* fn) {
 }
 
 void deadCodeElimination() {
+  if (unoptimized)
+    return;
   forv_Vec(FnSymbol, fn, gFns) {
     deadCodeElimination(fn);
     deadVariableElimination(fn);

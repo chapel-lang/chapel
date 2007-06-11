@@ -6,94 +6,104 @@
 #include "symscope.h"
 
 static bool
-isWritten(SymExpr* sym) {
-  CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr);
-  if (!call)
-    return false;
-  if (call->isPrimitive(PRIMITIVE_MOVE) ||
-      call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-      call->isPrimitive(PRIMITIVE_SET_MEMBER_REF_TO))
-    if (call->get(1) == sym)
-      return true;
-  return false;
-}
-
-static bool
-isReferenced(SymExpr* sym) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-    if (call->isPrimitive(PRIMITIVE_REF))
-      if (call->get(2) == sym)
+refNecessary(SymExpr* se) {
+  if (se->var->defs.n > 1)
+    return true;
+  forv_Vec(SymExpr, use, se->var->uses) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(use->parentExpr)) {
+      if (call->isResolved()) {
+        ArgSymbol* formal = actual_to_formal(use);
+        if (formal->defPoint->getFunction()->_this == formal)
+          return true;
+        if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
+          return true;
+      } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (refNecessary(dynamic_cast<SymExpr*>(call->get(1))))
+          return true;
+      } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+        if (!call->get(2)->typeInfo()->refType)
+          return true;
+      } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
         return true;
-    if (call->isResolved()) {
-      ArgSymbol* formal = actual_to_formal(sym);
-      if (formal->intent == INTENT_REF)
-        return true;
-      if (formal->defPoint->getFunction()->_this == formal)
-        return true;
+      }
     }
-    if (call->isPrimitive(PRIMITIVE_RETURN) && sym->getFunction()->retRef)
-      return true;
   }
   return false;
 }
+    
 
-// removes references that are not necessary including those that
-// should not be references in the first place.  this happens in the
-// case where an if expression evaluates to a literal, for example.
+// removes references that are not necessary
 void cullOverReferences() {
+  Map<FnSymbol*,FnSymbol*> refMap; // reference fun to value fun
+
+  //
+  // make value functions from reference functions
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->retRef) {
+      FnSymbol* copy = fn->copy();
+      copy->retRef = false;
+      fn->defPoint->insertBefore(new DefExpr(copy));
+      VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
+      assert(ret->type);
+      CallExpr* call = dynamic_cast<CallExpr*>(copy->body->body->last());
+      if (!call || !call->isPrimitive(PRIMITIVE_RETURN))
+        INT_FATAL(fn, "function is not normal");
+      SymExpr* se = dynamic_cast<SymExpr*>(call->get(1));
+      if (!se)
+        INT_FATAL(fn, "function is not normal");
+      call->insertBefore(new DefExpr(ret));
+      call->insertBefore(new CallExpr(PRIMITIVE_MOVE, ret,
+                           new CallExpr(PRIMITIVE_GET_REF, se->var)));
+      se->var = ret;
+      copy->retType = ret->type;
+      refMap.put(fn, copy);
+    }
+  }
+
+  //
+  // change "setter" to true or false depending on whether the symbol
+  // appears in reference or value functions
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (se->var == gSetter) {
+        FnSymbol* fn = dynamic_cast<FnSymbol*>(se->parentSymbol);
+        if (!fn)
+          INT_FATAL(se, "unexpected case");
+        se->var = fn->retRef ? gTrue : gFalse;
+      }
+    }
+  }
+
   compute_sym_uses();
-  compute_call_sites();
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  bool change;
-  do {
-    change = false;
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-          if (var->isReference && (!isRecordType(var->type) || var->type->symbol->hasPragma("tuple"))) {
-            int refCount = 0;
-            int writeCount = 0;
-            forv_Vec(SymExpr, sym, var->defs) {
-              if (isWritten(sym))
-                writeCount++;
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      //
+      // change call of reference function to value function
+      //
+      if (FnSymbol* fn = call->isResolved()) {
+        if (FnSymbol* copy = refMap.get(fn)) {
+          if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr)) {
+            assert(move->isPrimitive(PRIMITIVE_MOVE));
+            SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
+            assert(se);
+            if (!refNecessary(se)) {
+              VarSymbol* tmp = new VarSymbol("_tmp", copy->retType);
+              move->insertBefore(new DefExpr(tmp));
+              move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
+                                             new CallExpr(PRIMITIVE_SET_REF, tmp)));
+              se->var = tmp;
+              SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+              base->var = copy;
             }
-            forv_Vec(SymExpr, sym, var->uses) {
-              if (isReferenced(sym))
-                refCount++;
-              if (isWritten(sym))
-                writeCount++;
-            }
-            if (FnSymbol* fn = def->getFunction()) {
-              if (fn->getReturnSymbol() == var && !fn->retRef)
-                writeCount = refCount = 0;
-            }
-            if (refCount == 0 && writeCount == 0) {
-              change = true;
-              var->isReference = false;
-              forv_Vec(SymExpr, sym, var->defs) {
-                if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
-                  if (call->isPrimitive(PRIMITIVE_REF))
-                    call->primitive = primitives[PRIMITIVE_MOVE];
-              }
-            }
-          }
-        } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
-          if (fn->retRef && (!isRecordType(fn->retType) || fn->retType->symbol->hasPragma("tuple"))) {
-            int refCount = 0;
-            forv_Vec(CallExpr, call, *fn->calledBy) {
-              if (CallExpr* ref = dynamic_cast<CallExpr*>(call->parentExpr))
-                if (ref->isPrimitive(PRIMITIVE_REF))
-                  if (ref->get(2) == call)
-                    refCount++;
-            }
-            if (refCount == 0) {
-              change = true;
-              fn->retRef = false;
-            }
+          } else {
+            SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+            base->var = copy;
           }
         }
       }
     }
-  } while (change);
+  }
 }

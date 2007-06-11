@@ -50,12 +50,14 @@ returnInfoFloat(CallExpr* call) {
 static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
+  if (t->symbol->hasPragma("ref"))
+    t = getValueType(t);
   if (t == dtComplex[COMPLEX_SIZE_64]) {
-    return dtReal[FLOAT_SIZE_32];
+    return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
-    return dtReal[FLOAT_SIZE_64];
+    return dtReal[FLOAT_SIZE_64]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_256]) {
-    return dtReal[FLOAT_SIZE_128];
+    return dtReal[FLOAT_SIZE_128]->refType;
   } else {
     INT_FATAL( call, "unsupported complex size");
   }
@@ -87,6 +89,22 @@ returnInfoCast(CallExpr* call) {
     USR_FATAL(call, "Illegal cast to generic type");
   }
   return t;
+}
+
+static Type*
+returnInfoVal(CallExpr* call) {
+  ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+  if (!ct || !ct->symbol->hasPragma("ref"))
+    INT_FATAL(call, "attempt to get value type of non-reference type");
+  return ct->getField(1)->type;
+}
+
+static Type*
+returnInfoRef(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  if (!t->refType)
+    INT_FATAL(call, "invalid attempt to get reference type");
+  return t->refType;
 }
 
 static Type*
@@ -125,7 +143,7 @@ returnInfoArrayIndex(CallExpr* call) {
   SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
   if (!sym || !sym->var->type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return dynamic_cast<Type*>(sym->var->type->substitutions.v[0].value);
+  return dynamic_cast<Type*>(sym->var->type->substitutions.v[0].value)->refType;
 }
 
 static Type*
@@ -142,6 +160,8 @@ returnInfoGetMember(CallExpr* call) {
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = dynamic_cast<ClassType*>(sym1->var->type);
+  if (ct->symbol->hasPragma("ref"))
+    ct = dynamic_cast<ClassType*>(getValueType(ct));
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
@@ -158,6 +178,34 @@ returnInfoGetMember(CallExpr* call) {
     }
   } else
     return var->type;
+  INT_FATAL(call, "bad member primitive");
+  return NULL;
+}
+
+static Type*
+returnInfoGetMemberRef(CallExpr* call) {
+  SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
+  if (!sym1)
+    INT_FATAL(call, "bad member primitive");
+  ClassType* ct = dynamic_cast<ClassType*>(sym1->var->type);
+  if (ct->symbol->hasPragma("ref"))
+    ct = dynamic_cast<ClassType*>(getValueType(ct));
+  if (!ct)
+    INT_FATAL(call, "bad member primitive");
+  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad member primitive");
+  VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+  if (!var)
+    INT_FATAL(call, "bad member primitive");
+  if (var->immediate) {
+    char* name = var->immediate->v_string;
+    for_fields(field, ct) {
+      if (!strcmp(field->name, name))
+        return field->type->refType ? field->type->refType : field->type;
+    }
+  } else
+    return var->type->refType ? var->type->refType : var->type;
   INT_FATAL(call, "bad member primitive");
   return NULL;
 }
@@ -205,6 +253,8 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
+  prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
+  prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
   prim_def(PRIMITIVE_REF, "ref", returnInfoMove);
   prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst, true);
@@ -244,9 +294,12 @@ initPrimitive() {
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
   prim_def(PRIMITIVE_UNION_SETID, "set_union_id", returnInfoVoid, true);
   prim_def(PRIMITIVE_UNION_GETID, "get_union_id", returnInfoBool);
-  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, false, false, true);
+  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMemberRef, false, false, true);
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid, true);
+
+  prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
+  prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
 
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
   prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid, true);
@@ -382,8 +435,6 @@ initPrimitive() {
   prim_def("object2int", returnInfoInt64);
   prim_def("_chpl_exit", returnInfoVoid, true);
 
-  prim_def("complex_get_real", returnInfoComplexField, false, false, true);
-  prim_def("complex_get_imag", returnInfoComplexField, false, false, true);
   prim_def("complex_set_real", returnInfoVoid, true);
   prim_def("complex_set_imag", returnInfoVoid, true);
 

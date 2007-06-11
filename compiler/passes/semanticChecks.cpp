@@ -112,12 +112,15 @@ checkParsed(void) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
-      } else if (dynamic_cast<VarSymbol*>(def->sym))
+      } else if (dynamic_cast<VarSymbol*>(def->sym)) {
+        if (def->sym->hasPragma("internal var"))
+          def->sym->isCompilerTemp = true;
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
           if (dynamic_cast<BlockStmt*>(def->parentExpr))
             USR_FATAL_CONT(def->sym,
                            "Variable '%s' is not initialized or has no type",
                            def->sym->name);
+      }
     }
 
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
@@ -186,6 +189,16 @@ check_resolved_syms(Symbol* var) {
   if (var->defs.n > 1)
     USR_FATAL_CONT(var->defs.v[var->defs.n-1],
                    "Assigning to a constant expression");
+  // need something like below to check constant assignment via refs
+  forv_Vec(SymExpr, use, var->uses) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(use->parentExpr))
+      if (call->isPrimitive(PRIMITIVE_SET_REF))
+        if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr))
+          if (move->isPrimitive(PRIMITIVE_MOVE))
+            if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
+              if (lhs->var->defs.n > 1)
+                USR_FATAL_CONT(lhs->var->defs.v[lhs->var->defs.n-1], "Assigning to a constant expression");
+  }
 }
 
 

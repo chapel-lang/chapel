@@ -370,10 +370,10 @@ pragma "inline" def _cond_test(x) {
 //
 //  bug?  in setters, parameterize real argument over complex bit width
 //
-def complex.re return __primitive( "complex_get_real", this);
-def complex.im return __primitive( "complex_get_imag", this);
-def complex.=re(f:real) { __primitive( "complex_set_real", this, f); }
-def complex.=im(f:real) { __primitive( "complex_set_imag", this, f); }
+pragma "ref this"
+def complex.re var return __primitive( "complex_get_real", this);
+pragma "ref this"
+def complex.im var return __primitive( "complex_get_imag", this);
 
 //
 // helper functions
@@ -436,17 +436,27 @@ class _ddata {
     __primitive("array_init", this, eltType, size);
     [i in 0..size-1] __primitive("array_set_first", this, i, d);
   }
-  pragma "inline" def this(i: int) {
+  pragma "inline" def this(i: int) var {
     return __primitive("array_get", this, i);
-  }
-  pragma "inline" def =this(i: int, val: eltType) {
-    __primitive("array_set", this, i, val);
-  }
-  pragma "data set error" pragma "inline" def =this(i: int, val) {
-    compilerError("type mismatch");
   }
 }
 
+//
+// internal reference type
+//
+pragma "ref"
+pragma "no default functions"
+pragma "no object"
+class _ref {
+  var _val;
+}
+
+pragma "inline" pragma "ref"
+def _init(r: _ref) return _init(__primitive("get ref", r));
+pragma "inline" pragma "ref"
+def _copy(r: _ref) return _copy(__primitive("get ref", r));
+pragma "inline" pragma "ref"
+def _pass(r: _ref) return r;
 
 // synchronization primitives support
 pragma "inline" def _init( cv: _mutex_p) return __primitive( "mutex_new");
@@ -769,6 +779,25 @@ pragma "inline" def _getIterator(ic: _iteratorClass)
 
 pragma "inline" def _getIterator(x)
   return x.ault();
+
+def =(ic: _iteratorClass, xs) {
+  pragma "internal var" var xsic;
+  __primitive("move", xsic, _getIterator(xs));
+  var xsc = xsic.getZipCursor1();
+  for e in ic {
+    xsc = xsic.getZipCursor2(xsc);
+    e = xsic.getValue(xsc);
+    xsc = xsic.getZipCursor3(xsc);
+  }
+  xsc = xsic.getZipCursor4(xsc);
+  return ic;
+}
+
+def =(ic: _iteratorClass, x: ic.eltType) {
+  for e in ic do
+    e = x;
+  return ic;
+}
 
   // note: need to verify that rhs can be assigned to lhs; checking
   // that rt:lt is not sufficient to handle parameter coercions

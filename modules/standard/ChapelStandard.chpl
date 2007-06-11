@@ -1,11 +1,11 @@
 use _compiler;
 use ChapelBase;
-use ChapelLocale;
 use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
 use ChapelReduce;
 use ChapelArray;
+use ChapelLocale;
 use SingleLocaleArithmetic;
 use SingleLocaleAssociative;
 use SingleLocaleSparse;

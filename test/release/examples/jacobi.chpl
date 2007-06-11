@@ -17,7 +17,7 @@ def main() {
 
   var X, XNew: [BigDomain] real = 0.0;  // X stores approximate solution
                                         // XNew is work array 
-  X[n+1, 1..n] = 1.0;
+  X[n+1..n+1, 1..n] = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");

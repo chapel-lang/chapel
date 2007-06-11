@@ -1,11 +1,8 @@
 
 class A {
   var a : real;
-  def this(i) {
+  def this(i) var {
     return a;
-  }
-  def =this(i, x) {
-    a = x;
   }
 }
 

@@ -50,22 +50,26 @@ void    _chpl_serial_delete(_bool *p);
 
 
 // macros to init, touch, and free reference-counted Chapel variables
+#define _CHPL_REFC_INIT(_var, _refc, _mutex)            \
+  *_refc = 0;                                           \
+  _chpl_mutex_init(_mutex)
+
 #define _CHPL_REFC_TOUCH(_var, _refc, _mutex)           \
-  _chpl_mutex_lock( &(_mutex));                         \
-  (_refc)++;                                            \
-  _chpl_mutex_unlock( &(_mutex))
+  _chpl_mutex_lock(_mutex);                             \
+  (*_refc)++;                                           \
+  _chpl_mutex_unlock(_mutex)
 
 #define _CHPL_REFC_FREE(_var, _refc, _mutex, ln, fn)    \
-  _chpl_mutex_lock( &(_mutex));                         \
-  (_refc)--;                                            \
+  _chpl_mutex_lock(_mutex);                             \
+  (*_refc)--;                                           \
   if ((_refc) == 0) {                                   \
     _chpl_free( &(_var), ln, fn);                       \
-    _chpl_free( &(_refc), ln, fn);                      \
-    _chpl_mutex_unlock( &(_mutex));                     \
-    _chpl_mutex_destroy( &(_mutex));                    \
-    _chpl_free( &(_mutex), ln, fn);                     \
+    _chpl_free(_refc, ln, fn);                          \
+    _chpl_mutex_unlock(_mutex);                         \
+    _chpl_mutex_destroy(_mutex);                        \
+    _chpl_free(_mutex, ln, fn);                         \
   } else {                                              \
-    _chpl_mutex_unlock( &(_mutex));                     \
+    _chpl_mutex_unlock(_mutex);                         \
   }
 
 

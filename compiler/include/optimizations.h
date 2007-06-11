@@ -2,7 +2,6 @@
 #define _OPTIMIZATIONS_H_
 
 void collapseBlocks(FnSymbol* fn);
-void scalarReplace(ClassType* ct);
 void inlineCall(CallExpr* call);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);

@@ -31,10 +31,8 @@ pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
 pragma "scalar replace tuples" pragma "tuple" record _tuple {
   param size : int;
 
-  pragma "inline" pragma "tuple get" def this(param i : int)
+  pragma "inline" pragma "tuple get" def this(param i : int) var
     return 0;
-
-  pragma "inline" pragma "tuple set" def =this(param i : int, y);
 
   def this(i : int) var {
     for param j in 1..size do
@@ -121,24 +119,24 @@ def _tuple.writeThis(f: Writer) {
   f.write(")");
 }
 
-pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(64)) & (x.size == 2) {
+pragma "inline" def _cast(type t, x: _tuple) where (t == complex(64)) & (x.size == 2) {
   var c: complex(64);
-  c.re = x(1);
-  c.im = x(2);
+  c.re = x(1):real(32);
+  c.im = x(2):real(32);
   return c;
 }
 
-pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(128)) & (x.size == 2) {
+pragma "inline" def _cast(type t, x: _tuple) where (t == complex(128)) & (x.size == 2) {
   var c: complex(128);
-  c.re = x(1);
-  c.im = x(2);
+  c.re = x(1):real(64);
+  c.im = x(2):real(64);
   return c;
 }
 
-pragma "inline" def _cast(type t, x: _tuple) var where (t == complex(256)) & (x.size == 2) {
+pragma "inline" def _cast(type t, x: _tuple) where (t == complex(256)) & (x.size == 2) {
   var c: complex(256);
-  c.re = x(1);
-  c.im = x(2);
+  c.re = x(1):real(128);
+  c.im = x(2):real(128);
   return c;
 }
 

@@ -37,7 +37,6 @@ bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
 bool fDisableCopyPropagation = false;
-bool fScalarReplaceTuples = false;
 bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableSingleLoopIteratorOpt = false;
 bool fDisableExpandIteratorsInlineOpt = false;
@@ -75,7 +74,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-bounds-checks", ' ', "Disable bounds checking", "F", &no_bounds_checking, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"no-inline", ' ', "Do not inline functions" , "F", &no_inline, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
- {"scalar-replace-tuples", ' ', "Generate scalar components of tuples", "F", &fScalarReplaceTuples, "CHPL_SCALAR_REPLACE_TUPLES", NULL},
  {"no-single-loop-iterator-opt", ' ', "Disable the optimization of iterators composed of a single loop", "F", &fDisableSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"no-expand-iterators-inline-opt", ' ', "Disable the expansion of iterators inlined around loop bodies", "F", &fDisableExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-copy-propagation", ' ', "Disable copy propagation", "F", &fDisableCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},

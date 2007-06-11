@@ -46,13 +46,6 @@ record range {
   var _stride : int = 1;                         // integer stride of range
   var _promotionType : eltType;                  // enables promotion
 
-  def =_stride(val: int) {
-    if !stridable then
-      if val != 1 then
-        halt("non-stridable range assigned non-unit stride");
-    _stride = val;
-  }
-
   def low: eltType return _low;
   def high: eltType return _high;
   def stride: eltType return _stride; // should be :int ??
@@ -104,10 +97,15 @@ record range {
           i = i + _stride:eltType;
         }
       } else {
-        var i: eltType;
-        for __primitive("c for loop", i, _low, _high, 1) {
+        var i = _low;
+        while i <= _high {
           yield i;
+          i = i + 1;
         }
+//         var i: eltType;
+//         for __primitive("c for loop", i, _low, _high, 1) {
+//           yield i;
+//         }
       }
     }
   }
@@ -120,6 +118,16 @@ record range {
         then (_high - _low + _stride:eltType) / _stride:eltType
         else (_low - _high + _stride:eltType) / _stride:eltType);
   }
+}
+
+def =(r1: range(stridable=?stridable), r2) {
+  if !stridable then
+    if r2.stride != 1 then
+      halt("non-stridable range assigned non-unit stride");
+  r1._low = r2._low;
+  r1._high = r2._high;
+  r1._stride = r2._stride;
+  return r1;
 }
 
 def by(s : range, i : int) {

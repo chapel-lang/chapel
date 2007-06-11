@@ -292,7 +292,7 @@ record _array {
   var _value : _array_type;
   var _promotionType : eltType;
 
-  def _dom var {
+  def _dom {
     var x : _domain(_value.dom.type, _index_type, _dim_index_type, rank, _value.dom);
     //    x._value = _value.dom;
     return x;
@@ -308,47 +308,13 @@ record _array {
     return this(d);
   }
 
-  def =this(d: _domain, val) {
-    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
-    y._value = _value.slice(d._value);
-    y = val;
-  }
-
-  def =this(d: _domain, val: eltType) {
-    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
-    y._value = _value.slice(d._value);
-    y = val;
-  }
-
-  def =this(i: range(_dim_index_type,?bnd,?stridable) ...rank, val) where rank > 0 {
-    var d = _dom[(...i)];
-    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
-    y._value = _value.slice(d._value);
-    y = val;
-  }
-
-  def =this(i: range(_dim_index_type,?bnd,?stridable) ...rank, val: eltType) where rank > 0 {
-    var d = _dom[(...i)];
-    var y = _array(_array_type, _index_type, _dim_index_type, eltType, rank);
-    y._value = _value.slice(d._value);
-    y = val;
-  }
-
-  def this(i: _index_type)
+  def this(i: _index_type) var
     return _value(i);
 
-  def this(i: _dim_index_type ...rank) where rank > 1
+  def this(i: _dim_index_type ...rank) var where rank > 1
     return _value(i);
 
-  def =this(i: _index_type, val: eltType) {
-    _value(i) = val;
-  }
-
-  def =this(i: _dim_index_type ...rank, val: eltType) where rank > 1 {
-    _value(i) = val;
-  }
-
-  iterator ault() {
+  iterator ault() var {
     for i in _value.ault() do
       yield i;
   }

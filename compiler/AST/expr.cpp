@@ -343,8 +343,14 @@ void DefExpr::codegen(FILE* outfile) {
 
 static void
 codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
-  base->codegen(outfile);
   ClassType* ct = dynamic_cast<ClassType*>(base->typeInfo());
+  if (ct->symbol->hasPragma("ref")) {
+    ct = dynamic_cast<ClassType*>(getValueType(ct));
+    fprintf(outfile, "(*");
+    base->codegen(outfile);
+    fprintf(outfile, ")");
+  } else
+    base->codegen(outfile);
   if (ct->classTag == CLASS_CLASS)
     fprintf(outfile, "->");
   else
@@ -650,22 +656,32 @@ help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
                 BaseAST* ast2 = NULL, BaseAST* ast3 = NULL,
                 BaseAST* ast4 = NULL, BaseAST* ast5 = NULL) {
   fprintf(outfile, "%s(", name);
+  if (!ast1->typeInfo()->refType)
+    fprintf(outfile, "*");
   if (ast1)
     ast1->codegen(outfile);
   if (ast2) {
     fprintf(outfile, ", ");
+    if (!ast2->typeInfo()->refType)
+      fprintf(outfile, "*");
     ast2->codegen(outfile);
   }
   if (ast3) {
     fprintf(outfile, ", ");
+    if (!ast3->typeInfo()->refType)
+      fprintf(outfile, "*");
     ast3->codegen(outfile);
   }
   if (ast4) {
     fprintf(outfile, ", ");
+    if (!ast4->typeInfo()->refType)
+      fprintf(outfile, "*");
     ast4->codegen(outfile);
   }
   if (ast5) {
     fprintf(outfile, ", ");
+    if (!ast5->typeInfo()->refType)
+      fprintf(outfile, "*");
     ast5->codegen(outfile);
   }
   fprintf(outfile, ")");
@@ -738,6 +754,8 @@ void CallExpr::codegen(FILE* outfile) {
           first_actual = false;
         else
           fprintf(outfile, ", ");
+        if (!actual->typeInfo()->refType)
+          fprintf(outfile, "*");
         actual->codegen(outfile);
       }
       fprintf(outfile, ")");
@@ -768,13 +786,29 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegen(outfile);
         break;
       } 
-      get(1)->codegen(outfile);
-      fprintf(outfile, " = ");
-      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
+      if (get(1)->typeInfo()->symbol->hasPragma("ref") &&
+          !get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, "(*");
-      get(2)->codegen(outfile);
-      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
+      get(1)->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("ref") &&
+          !get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, ")");
+      fprintf(outfile, " = ");
+      //      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
+      //        fprintf(outfile, "(*");
+      get(2)->codegen(outfile);
+      //      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
+      //        fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_SET_REF:
+      fprintf(outfile, "/* SET REF */ &(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_GET_REF:
+      fprintf(outfile, "/* GET REF */ *(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_REF:
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
@@ -791,11 +825,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "return");
       if (typeInfo() != dtVoid) {
         fprintf(outfile, " ");
-        FnSymbol* fn = getFunction();
-        SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
-        if (fn->retRef)
-          fprintf(outfile, "&");
-        sym->codegen(outfile);
+        get(1)->codegen(outfile);
       }
       break;
     case PRIMITIVE_UNARY_MINUS:
@@ -1027,9 +1057,11 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_MEMBER:
-      fprintf(outfile, "(&(");
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));
-      fprintf(outfile, "))");
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "))");
       break;
     case PRIMITIVE_GET_MEMBER_VALUE:
       fprintf(outfile, "(");
@@ -1054,8 +1086,7 @@ void CallExpr::codegen(FILE* outfile) {
       SymExpr *s = dynamic_cast<SymExpr*>(get(3));
       VarSymbol *vs;
       if (s && 
-          (vs= dynamic_cast<VarSymbol*>(s->var)) &&
-          vs->on_heap) {  // if on_heap var
+          (vs= dynamic_cast<VarSymbol*>(s->var))) {  // if on_heap var
         fprintf( outfile, "%s", vs->cname);
       } else {
         fprintf( outfile, "&(");
@@ -1064,13 +1095,28 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
+    case PRIMITIVE_GET_REAL:
+      fprintf(outfile, "&(");
+      get(1)->codegen(outfile);
+      if (!get(1)->typeInfo()->refType)
+        fprintf(outfile, "->re)");
+      else
+        fprintf(outfile, ".re)");
+      break;
+    case PRIMITIVE_GET_IMAG:
+      fprintf(outfile, "&(");
+      get(1)->codegen(outfile);
+      if (!get(1)->typeInfo()->refType)
+        fprintf(outfile, "->im)");
+      else
+        fprintf(outfile, ".im)");
+      break;
     case PRIMITIVE_SET_HEAPVAR: {   // used to allocate on_heap vars
       // args: heap var, alloc expr
       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
       VarSymbol *vs;
       if (s &&
-          (vs = dynamic_cast<VarSymbol*>(s->var)) &&
-          vs->on_heap) {
+          (vs = dynamic_cast<VarSymbol*>(s->var))) {
         fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
         get(2)->codegen(outfile);
       } else {
@@ -1078,29 +1124,36 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-    case PRIMITIVE_REFC_INIT: {    // initialize reference-counted var
-      // arg: heap var, refc, refc_mutex
-      SymExpr *se = dynamic_cast<SymExpr*>(get(1));
-      if (VarSymbol *vs = dynamic_cast<VarSymbol*>(se->var)) {
-        if (vs->on_heap) {
-          vs->refc->codegen( outfile);
-          fprintf( outfile, " = 0;\n");
-          fprintf( outfile, "_chpl_mutex_init( &(");
-          vs->refcMutex->codegen( outfile);
-          fprintf( outfile, "))");
-        } else {
-          INT_FATAL( get(1), "refc_init requires an on_heap VarSymbol");
-        }
-      } else {
-        INT_FATAL( get(1), "refc_init requires a VarSymbol");
-      }
+    case PRIMITIVE_REFC_INIT: // initialize reference-counted var
+      fprintf(outfile, "_CHPL_REFC_INIT(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
-    }
     case PRIMITIVE_REFC_TOUCH: // touch reference-counted var
-      help_codegen_fn(outfile, "_CHPL_REFC_TOUCH", get(1), get(2), get(3));
+      fprintf(outfile, "_CHPL_REFC_TOUCH(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_REFC_RELEASE: // possibly free reference-counted var
-      help_codegen_fn(outfile, "_CHPL_REFC_FREE", get(1), get(2), get(3), get(4), get(5));
+      fprintf(outfile, "_CHPL_REFC_FREE(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(4)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(5)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_THREAD_INIT: {
       fprintf( outfile, "_chpl_thread_init()");

@@ -1,11 +1,10 @@
 class C {
   var x: int = 1;
 
-  def =x(newx: int) {
-    if (newx < 0) {
-      halt("Can only assign C.x non-negative integers!");
-    }
-    x = newx;
+  def x var {
+    if !setter && x < 0 then
+      halt("x accessed when negative");
+    return x;
   }
 }
 

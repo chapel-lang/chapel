@@ -684,7 +684,7 @@ fn_decl_stmt:
     {
       $2->fnClass = $1;
       $2->isParam = $4;
-      $2->buildSetter = $5;
+      $2->retRef = $5;
       $2->retExprType = $6;
       if ($7)
         $2->where = new BlockStmt($7);
@@ -837,11 +837,6 @@ type_binding_expr:
 function:
   fname
     { $$ = new FnSymbol($1); }
-| TASSIGN identifier
-    {
-      $$ = new FnSymbol($2);
-      $$->isSetter = true;
-    }
 | type_binding_expr TDOT fname
     {
       $$ = new FnSymbol($3);
@@ -849,15 +844,6 @@ function:
       $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
       if (strcmp("this", $3))
         $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    }
-| type_binding_expr TDOT TASSIGN identifier
-    {
-      $$ = new FnSymbol($4);
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
-      if (strcmp("this", $4))
-        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-      $$->isSetter = true;
     }
 ;
 

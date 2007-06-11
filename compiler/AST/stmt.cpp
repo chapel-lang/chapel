@@ -189,14 +189,20 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, "for (");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " = ");
+      if (loopInfo->get(2)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "*");
       loopInfo->get(2)->codegen(outfile);
       fprintf(outfile, "; ");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " <= ");
+      if (loopInfo->get(3)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "*");
       loopInfo->get(3)->codegen(outfile);
       fprintf(outfile, "; ");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " += ");
+      if (loopInfo->get(4)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "*");
       loopInfo->get(4)->codegen(outfile);
       fprintf(outfile, ") ");
     }

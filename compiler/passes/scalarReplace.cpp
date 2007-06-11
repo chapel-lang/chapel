@@ -69,7 +69,7 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
         SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
-        call->replace(use);
+        call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
         syms.v[id]->uses.add(use);
       } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
@@ -80,6 +80,8 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
         SymExpr* def = new SymExpr(syms.v[id]);
         call->insertAtHead(def);
         syms.v[id]->defs.add(def);
+        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
+          call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
       }
     }
   }
@@ -191,6 +193,8 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
         SymExpr* def = new SymExpr(syms.v[id]);
         call->insertAtHead(def);
         syms.v[id]->defs.add(def);
+        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
+          call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
       }
     }
   }
@@ -220,7 +224,67 @@ scalarReplaceRecordVars(ClassType* ct, Symbol* sym) {
   return change;
 }
 
+//
+// eliminates a record type with a single field
+//
+void scalarReplaceSingleFieldRecord(ClassType* ct) {
+  ct->symbol->defPoint->remove();
+  ct->refType->symbol->defPoint->remove();
+
+  Type* fieldType = dynamic_cast<DefExpr*>(ct->fields->only())->sym->type;
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->parentSymbol) {
+        if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
+          if (call->typeInfo() == ct)
+            call->getStmtExpr()->remove();
+          else if (call->typeInfo() == ct->refType)
+            call->getStmtExpr()->remove();
+        } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+          if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType)
+            call->replace(call->get(1)->remove());
+        } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+          if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType) {
+            Expr* rhs = call->get(3)->remove();
+            Expr* lhs = call->get(1)->remove();
+            call->replace(new CallExpr(PRIMITIVE_MOVE, lhs, rhs));
+          }
+        }
+      }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (def->parentSymbol) {
+        if (def->sym->type == ct) {
+          def->sym->type = fieldType;
+        } else if (def->sym->type == ct->refType) {
+          if (fieldType->refType)
+            def->sym->type = fieldType->refType;
+          else
+            def->sym->type = fieldType;
+        }
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+          if (fn->retType == ct) {
+            fn->retType = fieldType;
+          } else if (fn->retType == ct->refType) {
+            if (fieldType->refType)
+              fn->retType = fieldType->refType;
+            else
+              fn->retType = fieldType;
+          }
+        }
+      }
+    }
+  }
+}
+
 void scalarReplace() {
+  if (unoptimized)
+    return;
+
   bool change = true;
   while (change) {
     Vec<DefExpr*> defs;
@@ -253,201 +317,27 @@ void scalarReplace() {
         change |= unifyClassInstances(ct, def->sym);
       }
     }
+
+    //
+    // NOTE - reenable scalar replacement
+    //
     forv_Vec(DefExpr, def, defs) {
       ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
       if (ct->symbol->hasPragma("iterator class")) {
-        change |= scalarReplaceClassVars(ct, def->sym);
+        if (false) change |= scalarReplaceClassVars(ct, def->sym);
       } else if (ct->symbol->hasPragma("tuple")) {
-        change |= scalarReplaceRecordVars(ct, def->sym);
+        if (false) change |= scalarReplaceRecordVars(ct, def->sym);
       }
     }
-  }
-  if (fScalarReplaceTuples) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
-      if (ts->hasPragma("scalar replace tuples")) {
-        scalarReplace(dynamic_cast<ClassType*>(ts->type));
-      }
-    }
+
   }
   // note: disabled on inlining because scalar replace does not work
   // with inlining, fix when intent_ref and references work
   if (!fDisableScalarReplaceArrayWrappers && !no_inline) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("domain") || ts->hasPragma("array")) {
-        scalarReplace(dynamic_cast<ClassType*>(ts->type));
+        scalarReplaceSingleFieldRecord(dynamic_cast<ClassType*>(ts->type));
       }
-    }
-  }
-}
-
-void scalarReplace(ClassType* ct) {
-  Map<Symbol*,Vec<Symbol*>*> sym2syms; // symbol to replacements map
-  Map<Symbol*,int> field2id;           // field to number map
-  int nfields = 0;                     // number of fields
-
-  //
-  // compute field ordering numbers
-  //
-  for_fields(field, ct) {
-    field2id.put(field, nfields++);
-  }
-
-  //
-  // replace symbol definitions of structural type with multiple
-  // symbol definitions of structural field types
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (def->sym->astType != SYMBOL_VAR && def->sym->astType != SYMBOL_ARG)
-        continue;
-      if (!def->parentSymbol || def->sym->type != ct)
-        continue;
-      Symbol* sym = def->sym;
-      ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
-      bool isThis = !strcmp("this", sym->name);
-      Vec<Symbol*>* syms = new Vec<Symbol*>();
-      FnSymbol* fn = def->getFunction();
-      Symbol* ret = fn->getReturnSymbol();
-      for_fields(field, ct) {
-        Symbol* clone;
-        char* name = sym->name;
-        if (strcmp("_value", field->name))
-          name = astr(name, "_", field->name);
-        if ((nfields > 1 && def->sym == ret) || arg)
-          clone = new ArgSymbol((arg && !isThis) ? arg->intent : INTENT_REF,
-                                name, field->type);
-        else {
-          clone = new VarSymbol(name, field->type);
-          if (sym->isReference)
-            clone->isReference = true;
-          if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
-            if (var->is_ref)
-              dynamic_cast<VarSymbol*>(clone)->is_ref = true;
-        }
-        syms->add(clone);
-        if (nfields > 1 && def->sym == ret)
-          fn->insertFormalAtTail(new DefExpr(clone));
-        else
-          def->insertBefore(new DefExpr(clone));
-      }
-      sym2syms.put(def->sym,syms);
-      def->remove();
-      if (def->sym == fn->_this)
-        fn->_this = NULL;
-    }
-  }
-
-  //
-  // expand uses of symbols of structural type with multiple symbols
-  // structural field types
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-      if (!se->parentSymbol || se->var->type != ct)
-        continue;
-      Vec<Symbol*>* syms = sym2syms.get(se->var);
-      CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
-      if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-        if (se == call->get(1)) {
-          SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
-          int id = field2id.get(member->var);
-          call->replace(new SymExpr(syms->v[id]));
-        } else if (se == call->get(2)) {
-          SymExpr* base = dynamic_cast<SymExpr*>(call->get(1));
-          for (int id = 0; id < nfields; id++) {
-            call->insertBefore(
-              new CallExpr(PRIMITIVE_GET_MEMBER, base->var, syms->v[id]));
-          }
-          call->remove();
-        }
-      } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-        if (se == call->get(1)) {
-          SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
-          int id = field2id.get(member->var);
-          call->primitive = primitives[PRIMITIVE_MOVE];
-          call->get(2)->remove();
-          call->get(1)->remove();
-          call->insertAtHead(syms->v[id]);
-        } else {
-          for (int id = 0; id < nfields; id++) {
-            se->insertBefore(new SymExpr(syms->v[id]));
-          }
-          se->remove();
-        }
-      } else if (call && call->isPrimitive(PRIMITIVE_RETURN)) {
-        if (nfields > 1) {
-          se->replace(new SymExpr(gVoid));
-        } else
-          se->replace(new SymExpr(syms->v[0]));
-        FnSymbol* fn = call->getFunction();
-        fn->retRef = false;
-      } else {
-        for (int id = 0; id < nfields; id++) {
-          se->insertBefore(new SymExpr(syms->v[id]));
-        }
-        se->remove();
-      }
-    }
-  }
-  
-  //
-  // repair moves
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* move = dynamic_cast<CallExpr*>(ast)) {
-      if (!move->parentSymbol)
-        continue;
-      if (move->isPrimitive(PRIMITIVE_MOVE) ||
-          move->isPrimitive(PRIMITIVE_REF)) {
-        SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
-        if (!lhs->var->isReference)
-          move->primitive = primitives[PRIMITIVE_MOVE];
-        bool isref = move->isPrimitive(PRIMITIVE_REF);
-        if (CallExpr* call = dynamic_cast<CallExpr*>(move->argList->tail)) {
-          if (FnSymbol* fn = call->isResolved()) {
-            if (fn->retType == ct) {
-              if (nfields > 1) {
-                call->remove();
-                for_actuals(actual, move) {
-                  actual->remove();
-                  call->insertAtTail(actual);
-                  SymExpr* se = dynamic_cast<SymExpr*>(actual);
-                  se->var->isReference = false;
-                }
-                move->replace(call);
-                continue;
-              } else {
-                lhs->var->isReference = false;
-                move->primitive = primitives[PRIMITIVE_MOVE];
-              }
-            }
-          }
-        }
-        int n = move->argList->length();
-        while (n > 2) {
-          Expr* rhs = move->get(n/2+1)->remove();
-          Expr* lhs = move->get(1)->remove();
-          move->insertBefore(new CallExpr((isref) ? PRIMITIVE_REF : PRIMITIVE_MOVE, lhs, rhs));
-          n -= 2;
-        }
-      } else if (move->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-        int n = move->argList->length();
-        while (n > 3) {
-          Expr* rhs = move->get(n/2+2)->remove();
-          Expr* lhs = move->get(2)->remove();
-          move->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, move->get(1)->copy(), lhs, rhs));
-          n -= 2;
-        }
-      }
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->retType == ct) {
-      if (nfields > 1)
-        fn->retType = dtVoid;
-      else
-        fn->retType = ct->getField(1)->type;
     }
   }
 }

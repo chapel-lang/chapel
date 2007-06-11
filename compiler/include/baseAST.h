@@ -108,6 +108,7 @@ class BaseAST {
   virtual void codegen(FILE* outfile);
 
   virtual bool inTree(void);
+  virtual Type* typeInfo(void);
 
   char* stringLoc(void);
   void printLoc(FILE* outfile);

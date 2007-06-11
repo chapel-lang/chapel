@@ -65,6 +65,33 @@ static bool canDispatch(Type* actualType,
 
 static void pruneResolvedTree();
 
+
+//
+// build reference type
+//
+static void makeRefType(Type* type) {
+  if (type == dtMethodToken)
+    return;
+
+  if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
+    return;
+
+  Vec<Type*> atypes;
+  Vec<Symbol*> aparams;
+  Vec<char*> anames;
+  atypes.add(type);
+  aparams.add(NULL);
+  anames.add(NULL);
+  CallExpr* call = new CallExpr("_construct__ref", type->symbol);
+  chpl_main->insertAtHead(call); // add call to AST temporarily
+  FnSymbol* fn = resolve_call(call, "_construct__ref",
+                              &atypes, &aparams, &anames);
+  type->refType = dynamic_cast<ClassType*>(fn->retType);
+  type->refType->getField(1)->type = type;
+  call->remove();
+}
+
+
 static bool
 hasGenericArgs(FnSymbol* fn) {
   for_formals(formal, fn) {
@@ -97,6 +124,10 @@ static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
   if (fn->retType != dtUnknown) {
+    if (fn->retRef) {
+      makeRefType(fn->retType);
+      fn->retType = fn->retType->refType;
+    }
     fn->retExprType->remove();
     if (fn->fnClass == FN_ITERATOR) {
       prototypeIteratorClass(fn);
@@ -126,6 +157,17 @@ resolveFormals(FnSymbol* fn) {
       if (formal->defPoint->exprType) {
         formal->type = resolve_type_expr(formal->defPoint->exprType);
         formal->defPoint->exprType->remove();
+      }
+
+      //
+      // change type of this on record methods to reference type
+      //
+      if (formal->intent == INTENT_INOUT ||
+          formal->intent == INTENT_OUT ||
+          (formal == fn->_this &&
+           (isRecordType(formal->type) || fn->hasPragma("ref this")))) {
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
       }
     }
     if (fn->retExprType)
@@ -183,7 +225,7 @@ fits_in_uint(int width, Immediate* imm) {
 // results in an instantiation.
 static bool
 canInstantiate(Type* actualType, Type* formalType) {
-  if (actualType == dtMethodToken || actualType == dtSetterToken)
+  if (actualType == dtMethodToken)
     return false;
   if (formalType == dtAny)
     return true;
@@ -206,7 +248,7 @@ canInstantiate(Type* actualType, Type* formalType) {
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 static bool
-canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
+canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn) {
   if (actualType->symbol->hasPragma( "synchronization primitive")) {
     if (actualType->isGeneric) {
       return false;
@@ -215,6 +257,9 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
       return canDispatch(base_type, actualParam, formalType);
     }
   }
+
+  if (actualType->symbol->hasPragma("ref"))
+    return canDispatch(getValueType(actualType), actualParam, formalType, fn);
 
   if (is_int_type(formalType) && dynamic_cast<EnumType*>(actualType)) {
     return true;
@@ -294,7 +339,9 @@ canDispatch(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* f
     if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
       if (ct->classTag == CLASS_CLASS)
         return true;
-  if (canCoerce(actualType, actualParam, formalType))
+  if (actualType->refType == formalType)
+    return true;
+  if (canCoerce(actualType, actualParam, formalType, fn))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent == formalType || canDispatch(parent, actualParam, formalType, fn)) {
@@ -357,11 +404,6 @@ computeActualFormalMap(FnSymbol* fn,
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actual_types->v[i];
           formal_params->v[j] = actual_params->v[i];
-          if (formal->type == dtSetterToken &&
-              actual_types->v[i] != dtSetterToken ||
-              formal->type != dtSetterToken &&
-              actual_types->v[i] == dtSetterToken)
-            return false;
           break;
         }
       }
@@ -382,11 +424,6 @@ computeActualFormalMap(FnSymbol* fn,
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actual_types->v[i];
           formal_params->v[j] = actual_params->v[i];
-          if (formal->type == dtSetterToken &&
-              actual_types->v[i] != dtSetterToken ||
-              formal->type != dtSetterToken &&
-              actual_types->v[i] == dtSetterToken)
-            return false;
           break;
         }
       }
@@ -420,6 +457,9 @@ computeGenericSubs(ASTMap &subs,
       if (formal_actuals->v[i]) {
         if (canInstantiate(formal_actuals->v[i], formal->type)) {
           subs.put(formal, formal_actuals->v[i]);
+        } else if (Type* vt = getValueType(formal_actuals->v[i])) {
+          if (canInstantiate(vt, formal->type))
+            subs.put(formal, vt);
         }
       } else if (formal->defaultExpr) {
         Type* defaultType = resolve_type_expr(formal->defaultExpr);
@@ -579,7 +619,9 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     j++;
     if (!strcmp(fn->name, "=")) {
       if (j == 0) {
-        if (formal_actuals.v[j] != formal->type)
+        if (formal_actuals.v[j] != formal->type &&
+            getValueType(formal_actuals.v[j]) != formal->type)
+          //          delete actual_formals;
           return;
       }
     }
@@ -678,7 +720,7 @@ build_coercion_wrapper(FnSymbol* fn,
     Type* actual_type = actual_types->v[j];
     Symbol* actual_param = actual_params->v[j];
     if (actual_type != formal->type)
-      if (canCoerce(actual_type, actual_param, formal->type) || isDispatchParent(actual_type, formal->type))
+      if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type))
         subs.put(formal, actual_type->symbol);
   }
   if (subs.n)
@@ -709,8 +751,10 @@ build_promotion_wrapper(FnSymbol* fn,
       }
     }
   }
-  if (promotion_wrapper_required)
+  if (promotion_wrapper_required) {
     fn = fn->promotion_wrapper(&promoted_subs, isSquare);
+    resolveFormals(fn);
+  }
   return fn;
 }
 
@@ -858,6 +902,14 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
+char* type2string(Type* type) {
+  if (type->symbol->hasPragma("ref"))
+    return getValueType(type)->symbol->name;
+  else
+    return type->symbol->name;
+}
+
+
 char* call2string(CallExpr* call,
                   char* name,
                   Vec<Type*>& atypes,
@@ -871,9 +923,9 @@ char* call2string(CallExpr* call,
       method = true;
   if (method) {
     if (aparams.v[1] && aparams.v[1]->isTypeVariable)
-      str = stringcat(str, atypes.v[1]->symbol->name, ".");
+      str = stringcat(str, type2string(atypes.v[1]), ".");
     else
-      str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
+      str = stringcat(str, ":", type2string(atypes.v[1]), ".");
   }
   if (!strcmp("this", name))
     _this = true;
@@ -885,19 +937,12 @@ char* call2string(CallExpr* call,
   if (!call->methodTag)
     str = stringcat(str, "(");
   bool first = false;
-  bool setter = false;
   int start = 0;
   if (method)
     start = 2;
   if (_this)
     start = 1;
   for (int i = start; i < atypes.n; i++) {
-    if (aparams.v[i] == gSetterToken) {
-      str = stringcat(str, ") = ");
-      setter = true;
-      first = false;
-      continue;
-    }
     if (!first)
       first = true;
     else
@@ -907,14 +952,14 @@ char* call2string(CallExpr* call,
     VarSymbol* var = dynamic_cast<VarSymbol*>(aparams.v[i]);
     char buff[512];
     if (aparams.v[i] && aparams.v[i]->isTypeVariable)
-      str = stringcat(str, atypes.v[i]->symbol->name);
+      str = stringcat(str, type2string(atypes.v[i]));
     else if (var && var->immediate) {
       sprint_imm(buff, *var->immediate);
       str = stringcat(str, buff);
     } else
-      str = stringcat(str, ":", atypes.v[i]->symbol->name);
+      str = stringcat(str, ":", type2string(atypes.v[i]));
   }
-  if (!call->methodTag && !setter)
+  if (!call->methodTag)
     str = stringcat(str, ")");
   return str;
 }
@@ -927,10 +972,10 @@ char* fn2string(FnSymbol* fn) {
     fn = fn->instantiatedFrom;
   if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
-      str = stringcat(":", fn->getFormal(1)->type->symbol->name);
+      str = stringcat(":", type2string(fn->getFormal(1)->type));
       start = 1;
     } else {
-      str = stringcat(":", fn->getFormal(2)->type->symbol->name, ".", fn->name);
+      str = stringcat(":", type2string(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
   } else if (!strncmp("_construct_", fn->name, 11))
@@ -956,7 +1001,7 @@ char* fn2string(FnSymbol* fn) {
       else
         str = stringcat(str, arg->name);
     } else
-      str = stringcat(str, arg->name, ": ", arg->type->symbol->name);
+      str = stringcat(str, arg->name, ": ", type2string(arg->type));
   }
   if (!fn->noParens)
     str = stringcat(str, ")");
@@ -1146,7 +1191,7 @@ checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
   if (call->isNamed("-")) {
     if (atypes->v[0] == dtUInt[INT_SIZE_64]) {
       USR_FATAL(call, "illegal use of '-' on operand of type %s",
-                atypes->v[0]->symbol->name);
+                type2string(atypes->v[0]));
     }
   }
 }
@@ -1188,8 +1233,8 @@ checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
       if (!base)
         INT_FATAL(call, "bad call baseExpr");
       USR_FATAL(call, "illegal use of '%s' on operands of type %s and %s",
-                base->var->name, atypes->v[0]->symbol->name,
-                atypes->v[1]->symbol->name);
+                base->var->name, type2string(atypes->v[0]),
+                type2string(atypes->v[1]));
     }
   }
 }
@@ -1261,7 +1306,6 @@ resolveCall(CallExpr* call) {
       } else {
         VarSymbol* this_temp = new VarSymbol("this_temp");
         this_temp->isCompilerTemp = true;
-        this_temp->canReference = true;
         base->replace(new SymExpr("this"));
         CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
@@ -1292,14 +1336,14 @@ resolveCall(CallExpr* call) {
       if (!elt_type)
         INT_FATAL(call, "Unexpected substitution of ddata class");
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                atypes.v[3]->symbol->name, elt_type->symbol->name);
+                type2string(atypes.v[3]), type2string(elt_type));
     }
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (!strcmp("_cast", name)) {
           USR_FATAL(userCall(call), "illegal cast from %s to %s",
-                    atypes.v[1]->symbol->name,
-                    atypes.v[0]->symbol->name);
+                    type2string(atypes.v[1]),
+                    type2string(atypes.v[0]));
         } else if (!strcmp("_construct__tuple", name)) {
           SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
           if (!sym || !sym->isParam())
@@ -1309,16 +1353,16 @@ resolveCall(CallExpr* call) {
         } else if (!strcmp("=", name)) {
           if (atypes.v[1] == dtNil) {
             USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
-                      atypes.v[0]->symbol->name);
+                      type2string(atypes.v[0]));
           } else {
             USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                      atypes.v[1]->symbol->name,
-                      atypes.v[0]->symbol->name);
+                      type2string(atypes.v[1]),
+                      type2string(atypes.v[0]));
           }
         } else if (!strcmp("this", name)) {
           USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'",
                          (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
-                         atypes.v[0]->symbol->name,
+                         type2string(atypes.v[0]),
                          call2string(call, name, atypes, aparams, anames));
           USR_STOP();
         } else {
@@ -1339,8 +1383,6 @@ resolveCall(CallExpr* call) {
             }
             bool printed_one = false;
             forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
-              if (fn->isSetter) 
-                continue;
               USR_PRINT(fn, "%s %s",
                         printed_one ? "               " : "candidates are:",
                         fn2string(fn));
@@ -1472,7 +1514,7 @@ resolveCall(CallExpr* call) {
         if (field->type == dtUnknown)
           field->type = t;
         if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
+          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", type2string(t), type2string(field->type));
         found = true;
       }
     }
@@ -1496,10 +1538,6 @@ resolveCall(CallExpr* call) {
           }
         }
       }
-      if (call->get(2)->isRef() && sym->var->canReference) {
-        sym->var->isReference = true;
-        call->primitive = primitives[PRIMITIVE_REF];
-      }
       if (sym->var->isReference && !strncmp(sym->var->name, "_ret_", 5))
         call->primitive = primitives[PRIMITIVE_REF];
       if (t == dtUnknown)
@@ -1517,10 +1555,10 @@ resolveCall(CallExpr* call) {
       ClassType* ct = dynamic_cast<ClassType*>(sym->var->type);
       if (t == dtNil && sym->var->type != dtNil && (!ct || ct->classTag != CLASS_CLASS))
         USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-                  sym->var->type->symbol->name);
-      if (t != dtNil && t != sym->var->type && !isDispatchParent(t, sym->var->type))
+                  type2string(sym->var->type));
+      if (t != dtNil && !(t == sym->var->type || t->refType == sym->var->type || t == sym->var->type->refType) && !isDispatchParent(t, sym->var->type))
         USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                  t->symbol->name, sym->var->type->symbol->name);
+                  type2string(t), type2string(sym->var->type));
       if (t != sym->var->type && isDispatchParent(t, sym->var->type)) {
         Expr* rhs = call->get(2);
         rhs->remove();
@@ -1538,7 +1576,6 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->name == _this ||
       formal->isTypeVariable ||
       formal->instantiatedParam ||
-      formal->type == dtSetterToken ||
       formal->type == dtMethodToken)
     return false;
   return true;
@@ -1547,7 +1584,8 @@ formalRequiresTemp(ArgSymbol* formal) {
 static void
 insertFormalTemps(FnSymbol* fn) {
   if (fn->name == _pass || fn->name == _init ||
-      fn->name == _assign || fn->name == _copy)
+      fn->name == _assign || fn->name == _copy ||
+      fn->hasPragma("ref"))
     return;
   ASTMap formals2vars;
   for_formals(formal, fn) {
@@ -1579,7 +1617,6 @@ insertFormalTemps(FnSymbol* fn) {
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
       fn->insertAtHead(new DefExpr(tmp));
       if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-        formal->intent = INTENT_REF;
         fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
       }
     }
@@ -1856,6 +1893,8 @@ preFold(Expr* expr) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
         if (symExpr->var == gMethodToken) {
           Type* type = call->get(2)->typeInfo();
+          if (type->symbol->hasPragma("ref"))
+            type = getValueType(type);
           Vec<BaseAST*> keys;
           type->substitutions.get_keys(keys);
           forv_Vec(BaseAST, key, keys) {
@@ -1890,6 +1929,8 @@ preFold(Expr* expr) {
         if (!ts && sym->var->isTypeVariable)
           ts = sym->var->type->symbol;
         if (ts) {
+          if (ts->hasPragma("ref"))
+            ts = getValueType(ts->type)->symbol;
           if (ts->type->defaultValue == gNil)
             result = new CallExpr("_cast", ts, ts->type->defaultValue);
           else if (ts->type->defaultValue)
@@ -1991,7 +2032,7 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
       SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
       if (VarSymbol* sym = dynamic_cast<VarSymbol*>(sym1->var)) {
-        if (sym->immediate) {
+        if (sym->immediate || paramMap.get(sym)) {
           CallExpr* mvCall = dynamic_cast<CallExpr*>(call->parentExpr);
           SymExpr* sym = dynamic_cast<SymExpr*>(mvCall->get(1));
           VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
@@ -2002,6 +2043,29 @@ preFold(Expr* expr) {
           result = call->get(2)->remove();
           call->replace(result);
         }
+      }
+    } else if (call->isPrimitive(PRIMITIVE_SET_REF)) {
+      // remove set ref if already a reference
+      if (call->get(1)->typeInfo()->symbol->hasPragma("ref")) {
+        result = call->get(1)->remove();
+        call->replace(result);
+      } else if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr)) {
+        // check legal var function return
+        if (move->isPrimitive(PRIMITIVE_MOVE)) {
+          SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
+          if (lhs->var == move->getFunction()->getReturnSymbol()) {
+            SymExpr* ret = dynamic_cast<SymExpr*>(call->get(1));
+            assert(ret);
+            if (ret->var->defPoint->getFunction() == move->getFunction())
+              USR_FATAL(ret, "illegal return expression in var function");
+          }
+        }
+      }
+    } else if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+      // remove get ref if already a value
+      if (!call->get(1)->typeInfo()->symbol->hasPragma("ref")) {
+        result = call->get(1)->remove();
+        call->replace(result);
       }
     }
   }
@@ -2163,6 +2227,8 @@ postFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
       Type* baseType = call->get(1)->typeInfo();
+      if (baseType->symbol->hasPragma("ref"))
+        baseType = getValueType(baseType);
       char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       if (sym->isParam()) {
@@ -2214,7 +2280,11 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_IS_TUPLE)) {
       bool is_tuple = false;
       if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-        Symbol* typeSym = sym->var->type->symbol;
+        Symbol* typeSym;
+        if (!sym->var->type->refType)
+          typeSym = getValueType(sym->var->type)->symbol;
+        else
+          typeSym = sym->var->type->symbol;
         if (typeSym->hasPragma("tuple")) {
           is_tuple = true;
         }
@@ -2289,6 +2359,8 @@ postFold(Expr* expr) {
 static void
 resolveBody(Expr* body) {
   for_exprs_postorder(expr, body) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(expr))
+      makeRefType(sym->var->type);
     expr = preFold(expr);
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
@@ -2328,7 +2400,7 @@ resolveBody(Expr* body) {
       callStack.pop();
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
       if (ClassType* ct = dynamic_cast<ClassType*>(sym->var->type)) {
-        if (!ct->isGeneric) {
+        if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
           resolveFormals(ct->defaultConstructor);
           resolveFns(ct->defaultConstructor);
         }
@@ -2343,9 +2415,6 @@ resolveFns(FnSymbol* fn) {
   if (resolvedFns.set_in(fn))
     return;
   resolvedFns.set_add(fn);
-
-  if (fn->hasPragma("auto ii"))
-    return;
 
   insertFormalTemps(fn);
 
@@ -2388,7 +2457,7 @@ resolveFns(FnSymbol* fn) {
         bool best = true;
         for (int j = 0; j < retTypes.n; j++) {
           if (retTypes.v[i] != retTypes.v[j]) {
-            if (!canCoerce(retTypes.v[j], retParams.v[j], retTypes.v[i]))
+            if (!canCoerce(retTypes.v[j], retParams.v[j], retTypes.v[i], fn))
               best = false;
           }
         }
@@ -2681,12 +2750,20 @@ resolve() {
           Type* type = fn->getFormal(2)->type;
           CallExpr* subcall = call->copy();
           SymExpr* tmp = new SymExpr(gNil);
-          FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,
-                                                       call->get(2)->copy(),
-                                                       new_IntSymbol(type->id)),
-                                          subcall, tmp);
-          if_fn->retRef = false;
-          if_fn->buildSetter = false;
+          FnSymbol* if_fn = new FnSymbol("_if_fn");
+          if_fn->addPragma("inline");
+          VarSymbol* _ret = new VarSymbol("_ret_if_fn_dd", key->retType);
+          //          _ret->isReference = true;
+          _ret->isCompilerTemp = true;
+          if_fn->insertAtTail(new DefExpr(_ret));
+          if_fn->insertAtTail(
+            new CondStmt(
+              new CallExpr(PRIMITIVE_GETCID,
+                           call->get(2)->copy(),
+                           new_IntSymbol(type->id)),
+              new CallExpr(PRIMITIVE_MOVE, _ret, subcall),
+              new CallExpr(PRIMITIVE_MOVE, _ret, tmp)));
+          if_fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, _ret));
           if_fn->retType = key->retType;
           if (key->retType == dtUnknown)
             INT_FATAL(call, "bad parent virtual function return type");
@@ -2755,9 +2832,17 @@ pruneResolvedTree() {
   // Remove unused types
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol)
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
-        if (!resolvedFns.set_in(ct->defaultConstructor))
-          ct->symbol->defPoint->remove();
+      if (!type->hasPragma("ref"))
+        if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
+          if (!resolvedFns.set_in(ct->defaultConstructor))
+            ct->symbol->defPoint->remove();
+  }
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (type->defPoint && type->defPoint->parentSymbol)
+      if (type->hasPragma("ref"))
+        if (ClassType* ct = dynamic_cast<ClassType*>(getValueType(type->type)))
+          if (!resolvedFns.set_in(ct->defaultConstructor))
+            type->defPoint->remove();
   }
 
   compute_sym_uses();
@@ -2786,6 +2871,9 @@ pruneResolvedTree() {
         // Remove member accesses of types
         // Replace string literals with field symbols in member primitives
         Type* baseType = call->get(1)->typeInfo();
+        if (!call->parentSymbol->hasPragma("ref") &&
+            baseType->symbol->hasPragma("ref"))
+          baseType = getValueType(baseType);
         char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
         if (sym->isTypeVariable && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
@@ -2816,11 +2904,10 @@ pruneResolvedTree() {
           }
         }
       } else if (FnSymbol* fn = call->isResolved()) {
-        // Remove method and setter token actuals
+        // Remove method token actuals
         for (int i = fn->formals->length(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
-              formal->type == dtSetterToken ||
               formal->isTypeVariable)
             call->get(i)->remove();
         }
@@ -2846,9 +2933,8 @@ pruneResolvedTree() {
         // Remove formal type expressions
         if (formal->defPoint->exprType)
           formal->defPoint->exprType->remove();
-        // Remove method and setter token formals
-        if (formal->type == dtMethodToken ||
-            formal->type == dtSetterToken)
+        // Remove method token formals
+        if (formal->type == dtMethodToken)
           formal->defPoint->remove();
         if (formal->isTypeVariable) {
           formal->defPoint->remove();
@@ -2892,6 +2978,27 @@ pruneResolvedTree() {
               call->insertBefore(def);
               def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
             }
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // Insert reference temps for function arguments that expect them.
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->parentSymbol && call->isResolved()) {
+        for_formals_actuals(formal, actual, call) {
+          if (formal->type == actual->typeInfo()->refType) {
+            currentLineno = call->lineno;
+            currentFilename = call->filename;
+            VarSymbol* tmp = new VarSymbol("_tmp", formal->type);
+            tmp->isCompilerTemp = true;
+            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+            actual->replace(new SymExpr(tmp));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));
           }
         }
       }

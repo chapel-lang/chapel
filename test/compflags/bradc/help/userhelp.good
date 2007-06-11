@@ -15,7 +15,6 @@ Optimization Control:
       --no-bounds-checks  false     ->true   Disable bounds checking
       --no-inline         false     ->true   Do not inline functions
       --unoptimized       false     ->true   Generate naive code (many temps)
-      --scalar-replace-tuples false     ->true   Generate scalar components of tuples
       --no-single-loop-iterator-opt false     ->true   Disable the optimization of iterators composed of a single loop
       --no-expand-iterators-inline-opt false     ->true   Disable the expansion of iterators inlined around loop bodies
       --no-copy-propagation false     ->true   Disable copy propagation

@@ -220,15 +220,16 @@ class SingleLocaleArithmeticArray: BaseArray {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  iterator ault() {
+  iterator ault() var {
     for i in dom do
       yield this(i);
   }
 
   def computeFactoredOffs() {
     factoredOffs = 0:dim_type;
-    for i in 1..rank do
+    for i in 1..rank do {
       factoredOffs = factoredOffs + blk(i) * off(i);
+    }
   }
 
   def initialize() {
