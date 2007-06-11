@@ -105483,3 +105483,14 @@ Log message:
 Removed files:
 	chapel/test/types/complex/bradc/: negateimaginary2.future 
 
+---------------------------------------------------------------------------
+
+06/11/07 14:44:59 -- deitz
+
+Log message:
+	Arrays of sync variables now work though whole array assignment to
+	such an array still fails.
+
+Removed files:
+	chapel/test/parallel/single/waynew/: sarray.future 
+
