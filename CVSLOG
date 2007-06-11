@@ -105447,3 +105447,17 @@ Removed files:
 	                           jacobi-scalar-replace-tuples.compopts 
 	                           jacobi-scalar-replace-tuples.good 
 
+---------------------------------------------------------------------------
+
+06/11/07 14:39:54 -- deitz
+
+Log message:
+	Without setters, promoting the this function with ranges in some
+	dimensions and singletons in others results in the correct semantics
+	even though these expressions are not array slices.  Removed two
+	futures.
+
+Removed files:
+	chapel/test/arrays/bradc/: sliceViaSingleton.future 
+	                           sliceViaSingleton3d.future 
+
