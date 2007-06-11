@@ -105461,3 +105461,14 @@ Removed files:
 	chapel/test/arrays/bradc/: sliceViaSingleton.future 
 	                           sliceViaSingleton3d.future 
 
+---------------------------------------------------------------------------
+
+06/11/07 14:41:30 -- deitz
+
+Log message:
+	Setting a field of a union by passing it to a function via OUT intent
+	now works.
+
+Removed files:
+	chapel/test/classes/deitz/: test_union3.future 
+
