@@ -105510,3 +105510,16 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: Makefile 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:06:59 -- bradc
+
+Log message:
+	Small edit to CHANGES that was sitting in my directory.
+	
+	Updates to STATUS and FUTURES based on Steve's big change.
+
+Modified files:
+	./: CHANGES STATUS 
+	chapel/test/: FUTURES 
+
