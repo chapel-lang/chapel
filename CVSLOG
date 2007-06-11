@@ -105241,3 +105241,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/11/07 13:35:39 -- deitz
+
+Log message:
+	Updated UnimplementedFeatures list with David when he was in Seattle.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
