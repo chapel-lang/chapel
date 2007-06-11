@@ -125,7 +125,7 @@ Tuples, Ranges, and Iterators
 
 Unimplemented Features:
 * Slicing strided ranges is not yet supported
-
+* Zipper iteration over var iterators is not yet supported
 
 ------------------
 Arrays and Domains

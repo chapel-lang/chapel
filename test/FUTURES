@@ -167,6 +167,9 @@ runtime error: line number in out-of-memory [memory/shannon/memmaxExceedsLineno2
 * Slicing strided ranges is not yet supported
 unimplemented feature: slicing strided ranges [types/range/bradc/strideRangeSlice2]
 
+* Zipper iteration over var iterators is not yet supported
+unimplemented feature: zipper reference iterators [test/functions/deitz/iterators/test_var_iterator2]
+
 * Slicing strided domains and arrays is not implemented
 unimplemented feature: slicing strided domains/arrays [domains/bradc/slices/sliceStridedDomain]
 unimplemented feature: slicing strided domains/arrays [arrays/bradc/slices/sliceStridedArray]
