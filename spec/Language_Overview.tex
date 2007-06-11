@@ -214,31 +214,46 @@ type is used.
 \begin{center}
 \begin{tabular}{|l|l|l|l|}
 \hline
+& & & \\
 {\bf Type} & {\bf Default Size} & {\bf Types with Specified Sizes} & {\bf Default Initial Value}\\
+& & & \\
 \hline
+& & & \\
 \chpl{int} & 32 bits &
 \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)} &
 \chpl{0} \\
+& & & \\
 \hline
+& & & \\
 \chpl{uint} & 32 bits &
 \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)} &
 \chpl{0} \\
+& & & \\
 \hline
+& & & \\
 \chpl{real} & 64 bits &
 \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)} &
 \chpl{0.0} \\
+& & & \\
 \hline
+& & & \\
 \chpl{imag} & 64 bits &
 \chpl{imag(32)}, \chpl{imag(64)}, \chpl{imag(128)} &
 \chpl{0.0i} \\
+& & & \\
 \hline
+& & & \\
 \chpl{complex} & 128 bits &
 \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)} &
 \chpl{0.0 + 0.0i} \\
+& & & \\
 \hline
+& & & \\
 \chpl{bool} & 1 bit & &
 \chpl{false} \\
+& & & \\
 \hline
+& & & \\
 \chpl{string} & unbounded & &
 \chpl{""} \\
 \hline
@@ -251,24 +266,43 @@ with their default initial values for variables of that type.
 \begin{center}
 \begin{tabular}{|l|l|}
 \hline
+ & \\
 {\bf Type} & {\bf Default Initial Value}\\
+ & \\
 \hline
+ & \\
 \chpl{enum} & first enum constant \\
+ & \\
 \hline
+ & \\
 \chpl{class} & {\tt nil} \\
+ & \\
 \hline
+ & \\
 \chpl{record} & default constructed record \\
+ & \\
 \hline
+ & \\
 \chpl{range} & empty range:  \chpl{(1..0)} \\
+ & \\
 \hline
+& \\
 \chpl{domain} & empty range for each dimension \\
+& \\
 \hline
+& \\
 \chpl{array} & default initial values of element types \\
+& \\
 \hline
+& \\
 \chpl{tuple} & default initial values of component types \\
+& \\
 \hline
+& \\
 \chpl{locale} & ordered list of processor ids assigned at job launch \\
+& \\
 \hline
+ & \\
 \chpl{file} &  \chpl{(filename = , path = ., mode = r)}\\
 \hline
 \end{tabular}
@@ -460,13 +494,18 @@ var alpha: elemType; //alpha is 32-bit real
 \end{chapel}
 
 \subsubsection{Variables}
-\paragraph{Variable Kinds}
 There are three kinds of Chapel variables: \chpl{var},
 \chpl{const} (runtime constants), \chpl{param} (compile time constants).
 
 \paragraph{Variable Declarations}
-Variable declarations include a type specification, an assignment
-to an initial value or both.
+Variable declarations include the kind of variable, a type specification,
+and an assignment to an initial value.  The type specification can be
+omitted if the type can be inferred from the initial value.  If the
+variable is not initialized in its declaration, then it contains a
+default initial value according to its type.
+
+\begin{example}
+The following code gives examples of variable declarations in Chapel. 
 \begin{chapel}
 var x: real = 1.0; //x is real, init to 1.0
 var y, z: real; //y, z are real, init to 0.0
@@ -475,27 +514,39 @@ var n = 10; //n inferred to be int, init to 10
 const size = n; //size is runtime constant int,
                 //set to 10
 \end{chapel}
+\end{example}
 
 \paragraph{Configuration Variables}
 The keyword \chpl{config} may precede any global variable
 declaration, indicating that the variable may be set at
 compile time or runtime.
+To set configuration variables at runtime, use ``\chpl{--}''
+followed by the variable name and value on the execution
+command line.
+To set configuration variables at compile time, use
+``\chpl{-s}'' followed by the variable name and value on the
+compiler command line.
+
+\begin{example}
+The following code gives an example of a configuration
+runtime constant, \chpl{n} and a configuration compile time constant,
+\chpl{debug}.
 \begin{chapel}
 config const n = 100;
 config param debug:bool;
 \end{chapel}
-To set configuration variables at runtime, use ``\chpl{--}''
-followed by the variable name and value on the execution
-command line.
+
+To set \chpl{n} at runtime, the following command is used.
 \begin{commandline}
 > ./a.out --n=1000
 \end{commandline}
-To set configuration variables at compile time, use
-``\chpl{-s}'' followed by the variable name and value on the
-compiler command line.
+
+To set \chpl{debug} at compile time, the following compile commmand
+and flag is used.
 \begin{commandline}
 > chpl testprogram.chpl -s debug=true
 \end{commandline}
+\end{example}
 
 \paragraph{Synchronization Variables}
 Single variables are assigned once.  Using a single variable
@@ -566,114 +617,236 @@ A11 => A(block1,block1);
 
 \paragraph{Scans and Reductions}
 
-\subsubsection{Statements and Expressions}
-\paragraph{Block Statement}
-Chapel statements are separated by a semi-colon.  A block
-of statements is delimited by braces, \{ \}.  Variables
-declared within a block statement are local to that block.
+\subsubsection{Serial Statements}
 
-\paragraph{Begin and Co-begin Statements}
-The cobegin statement is used to create parallelism within
-a block statement.  All statements within the block statement
-are executed concurrently.
-\begin{chapel}
-cobegin {
-  init(A);
-  init(B);
+\begin{center}
+\begin{tabular}{|l|l|l|}
+%\begin{longtable}{|l|l|l|}
+\hline
+ & & \\
+{\bf Statement} & {\bf Description} & {\bf Example} \\
+ & & \\
+\hline
+%\endhead
+%\hline
+%\endfoot
+ & & \\
+Block Statement & 
+\begin{minipage}[t]{2in}
+A block statement is delimited by braces, \{ \} and it
+contains a set of Chapel statements separated by semi-colons.  
+Variables declared within a block statement are local to that block.
+\end{minipage}
+&
+\begin{minipage}[t]{3in}
+\begin{chapel0}
+// Block statement to compute Givens rotation
+{
+tau = -a/b;
+s = 1/sqrt(1 + tau*tau);
+c = s*tau;
 }
-\end{chapel}
-The \chpl{begin} statement spawns a computation to execute a
-statement.
-\begin{chapel}
-begin {
-  while(!done) do work(x);
+\end{chapel0} 
+\end{minipage} \\
+ & & \\
+\hline
+ & & \\
+For Loop Statements &
+\begin{minipage}[t]{2in}
+In Chapel, a for loop defines an index and
+specifies either a function, expression or a variable to
+iterate over.  For loops may be nested.  They
+may also be defined with more than one index variable.
+\end{minipage}
+&
+\begin{minipage}[t]{2in}
+\begin{chapel0}
+for (i,j) in [1..n,1..n] {
+  sum += x(i,j);
 }
-otherwork(x);
-done = true;
-\end{chapel}
-\paragraph{For Loop Statements}
-Serial loops are designated by the \chpl{for} keyword.
-\begin{chapel}
-for i in 1..n {
-  norm1 += abs(x(i));
+for index in userDefinedIterator(n) {
+  sum += y(index);
 }
-\end{chapel}
-
-Parallel loops are specified using \chpl{forall} or
-the shorthand bracket notation.
-\begin{chapel}
-forall ind in D {
-  A(ind) = x*y;
-}
-[ind in D] A(ind) = x*y; //equivalent to above loop
-\end{chapel}
-\paragraph{While Loops}
-Chapel provide two types of \chpl{while} loops.
-\begin{chapel}
-do {
-  t += 1;
-} while (t <= 10);
-
-while (t <= 10) {
-  t += 1;
-}
-\end{chapel}
-\paragraph{Conditional Statement}
-The Chapel conditional statement uses the standard 
+\end{chapel0}
+\end{minipage}\\
+ & & \\
+\hline
+ & & \\
+Conditional Statement &
+\begin{minipage}[t]{2in}
+The Chapel conditional statement uses the standard
 \chpl{if}--\chpl{then}--\chpl{else} structure.  When
 the then clause is a block of statements, delimited with
 `\{' and `\}', the \chpl{then} keyword may be omitted.
-\begin{chapel}
+\end{minipage}
+&
+\begin{minipage}[t]{2in}
+\begin{chapel0}
 if (a == 0.0) then x = 0.0;
 else x = a*y;
 if (b != 0.0) {
   z = b*x;
 }
-\end{chapel}
-\paragraph{Select Statement}
+\end{chapel0}
+\end{minipage}\\
+& & \\
+\hline
+ & & \\
+Select Statement &
+\begin{minipage}[t]{2in}
 Chapel provides a \chpl{select} statement that allows the option of
 executing different statement blocks, depending on the value of the
 select variable.
-\begin{chapel}
+\end{minipage}
+&
+\begin{minipage}[t]{2in}
+\begin{chapel0}
 select pos {
   when "first" do x = y(1);
   when "last" do x = y(n);
   when "middle" do x = y(((n/2):int) + n%2);
   otherwise writeln("invalid position");
 }
-\end{chapel}
-\paragraph{Type Select Statement}
+\end{chapel0}
+\end{minipage}\\
+& & \\
+\hline
+ & & \\
+Type Select Statement &
+\begin{minipage}[t]{2in}
 The \chpl{type select} statement allows the choice of
 executing different statement blocks depending on the type
 of the select variable.
-\begin{chapel}
+\end{minipage}
+&
+\begin{minipage}[t]{2in}
+\begin{chapel0}
 type select ind {
   when int do y = x(ind);
   when real, uint do y = x(ind:int);
   otherwise y = 0.0;
 }
-\end{chapel}
-\paragraph{Query Expression}
+\end{chapel0}
+\end{minipage}
+%\end{longtable}
+\\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Parallel Statements}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+ & & \\
+{\bf Statement} & {\bf Description} & {\bf Example} \\
+ & & \\
+\hline
+& & \\
+Begin Statement &
+\begin{minipage}[t]{2in}
+The \chpl{begin} statement spawns a computation to execute a
+statement.
+\end{minipage}
+&
+\begin{minipage}[t]{3in}
+\begin{chapel0}
+begin {
+  while(!done) do work(x);
+}
+otherwork(x);
+done = true;
+\end{chapel0}
+\end{minipage} \\
+& & \\
+\hline
+& & \\
+Co-begin Statement &
+\begin{minipage}[t]{2in}
+The cobegin statement is used to create parallelism within
+a block statement.  All statements within the block statement
+are executed concurrently.
+\end{minipage}
+&
+\begin{minipage}[t]{3in}
+\begin{chapel0}
+cobegin {
+  init(A);
+  init(B);
+}
+\end{chapel0}
+\end{minipage} \\
+& & \\
+\hline
+& & \\
+Parallel For Loops &
+\begin{minipage}[t]{2in}
+Parallel loops are specified using \chpl{forall} or
+the shorthand bracket notation.
+\end{minipage}
+&
+\begin{minipage}[t]{3in}
+\begin{chapel0}
+//Parallel for loop:
+forall ind in D {
+  A(ind) = x*y;
+}
+//Equivalent parallel loop:
+[ind in D] A(ind) = x*y; 
+\end{chapel0}
+\end{minipage} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Expressions}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+& & \\
+Query Expression &
+\begin{minipage}[t]{2in}
 The query expression uses a \chpl{?} to indicate that the type of the
 preceding variable be queried and assigned to the following variable.
-\begin{chapel}
+\end{minipage} &
+\begin{minipage}[t]{3in}
+\begin{chapel0}
 def sumOfThree(x: ?t, y:t, z:t):t {
    return x + y + z;
 }
-\end{chapel}
-\paragraph{Let Expression}
+\end{chapel0}
+\end{minipage} \\
+& & \\
+\hline
+& & \\
+Let Expression &
+\begin{minipage}[t]{2in}
 The \chpl{let}--\chpl{in} expression defines variables to
 be used only in the expression following the \chpl{in} keyword.
-\begin{chapel}
+\end{minipage} &
+\begin{minipage}[t]{3in}
+\begin{chapel0}
 x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
     in ((-b + t1)/t2, (-b - t1)/t2);
-\end{chapel}
-\paragraph{Conditional Expression}
+\end{chapel0}
+\end{minipage} \\
+& & \\
+\hline
+& & \\
+Conditional Expression &
+\begin{minipage}[t]{2in}
 Chapel provides a conditional expression that can be evaluated
 and then assigned.
-\begin{chapel}
+\end{minipage} &
+\begin{minipage}[t]{3in}
+\begin{chapel0}
 var half = if (i % 2) then i/2 +1 else i/2;
-\end{chapel}
+\end{chapel0}
+\end{minipage} \\
+\hline
+\end{tabular}
+\end{center}
 
 \subsubsection{Functions}
 \paragraph{Function Definitions}
