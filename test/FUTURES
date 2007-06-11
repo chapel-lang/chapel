@@ -1,10 +1,6 @@
 * Class fields of array type specified using a type alias don't work
 bug: array fields via type aliases [arrays/jplevyak/simple-4]
 
-* Array operations over slices specified using a singleton index don't work
-bug: array slicing [arrays/bradc/sliceViaSingleton3d]
-bug: array slicing [arrays/bradc/sliceViaSingleton]
-
 * Array promotion/forall expressions evaluate to 1D arrays
 bug: array type inference [arrays/bradc/inferArrayType]
 bug: array type inference [sparse/bradc/inferSparseArrayType]
@@ -24,17 +20,9 @@ bug: implicit parameter coercions in conditional expression [studies/hpcc/RA/bra
 * Class fields of array types that are initialized can cause compile error
 bug: initialized arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
 
-* Union members that are passed to arguments of inout/out intent don't work
-bug: inout of union members [classes/deitz/test_union3]
-
 * Two modules sharing the same name break compilation (whether legal or illegal)
 bug: module naming collision [modules/diten/nested_module_collision]
 error message: module naming collision [modules/bradc/multipleModulesSameName]
-
-
-* Whole-array updates of components of arrays of records/complexes don't work
-bug: negating whole-array member [types/complex/bradc/negateimaginary2]
-
 
 
 * Applying op= style assignments to sync vars does not work
@@ -148,8 +136,7 @@ unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfSpsArray]
 unimplemented feature: array of array [arrays/deitz/part2/test_array_of_array1]
 unimplemented feature: array of arrays [arrays/deitz/test_array_of_array2]
 
-* Arrays of sync/single variables are unsupported
-unimplemented feature: array of syncs [parallel/single/waynew/sarray]
+* Whole-array assignment to sync arrays does not work
 unimplemented feature: array of syncs [users/shetag/syncarr]
 
 * read()s of whole arrays are not working

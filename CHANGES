@@ -12,7 +12,7 @@ Second preliminary release of Chapel Compiler, June 2007
 High-Level Themes:
 - single-locale, multiple threads
 - support for additional serial features
-- improved single-threaded performance
+- improved single-threaded performance, memory utilization
 - improved multi-threaded correctness
 - target audience: HPLS evaluation team, HPCS mission partners, 
   select HPC users and centers

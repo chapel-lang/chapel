@@ -77,8 +77,6 @@ Bugs:
 
 * Actual arguments passed using inout intents are not checked for legality
 
-* Union members that are passed to arguments of inout/out intent don't work
-
 * Promoting var functions can result in a compilation error
 
 * Var functions should not be permitted to return locals or literals but can
@@ -152,16 +150,6 @@ Bugs:
 
 * Sparse arrays can't be sliced with dense domains
 
-* Whole-array updates of components of arrays of records/complexes don't work
-    e.g., var A: [1..4] complex; A.im = -A.im;
-  Workaround: use an explicit loop
-    e.g., [i in 1..4] A(i).im = -A(i).im;
-
-* Array operations over slices specified using a singleton index don't work
-    e.g., B[1, 1..n] = A[1..n, 1]
-  Workaround: use a degenerate range
-    e.g., B[1..1, 1..n] = A[1..n, 1..1]
-
 * Associative domain index additions/deletions can result in an infinite loop
 
 * Associative domains of explicit heterogeneous tuple types don't work
@@ -187,7 +175,7 @@ Parallelism and Synchronization
 
 Unimplemented Features:
 * Atomic statements
-* Arrays of sync/single variables don't work
+* Whole-array assignment to sync arrays does not work
 * User-defined reductions and scans
 * Forall loops and ordered forall loops are serialized
 * Reductions and scans are serialized
