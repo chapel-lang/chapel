@@ -105494,3 +105494,19 @@ Log message:
 Removed files:
 	chapel/test/parallel/single/waynew/: sarray.future 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:02:37 -- bradc
+
+Log message:
+	Implemented Steve's very lovely suggestion that
+	we not blow away the bison/flex output files on
+	a make clean unless CHPL_DEVELOPER is set.  This
+	makes the release user's experience what one would
+	expect -- if they do a make clean or clobber, they
+	won't need to run flex/bison, just as they didn't
+	when they first unpacked.  Nice, elegant solution.
+
+Modified files:
+	chapel/compiler/parser/: Makefile 
+
