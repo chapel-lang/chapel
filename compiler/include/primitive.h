@@ -53,7 +53,7 @@ enum PrimitiveTag {
   PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
-  PRIMITIVE_SET_HEAPVAR,               // used to alloc on_heap vars
+  PRIMITIVE_SET_HEAPVAR,               // used to alloc variables on heap
   PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
   PRIMITIVE_REFC_TOUCH,                // touch reference-counted var
   PRIMITIVE_REFC_RELEASE,              // dec ref-counter and maybe free var
@@ -77,7 +77,7 @@ enum PrimitiveTag {
   PRIMITIVE_CONDVAR_DESTROY,
 
   PRIMITIVE_CHPL_ALLOC,
-  PRIMITIVE_CHPL_FREE,                 // only for on_heap vars?
+  PRIMITIVE_CHPL_FREE,                 // only for variables on heap?
   PRIMITIVE_PTR_EQUAL,
   PRIMITIVE_PTR_NOTEQUAL,
   PRIMITIVE_CAST,

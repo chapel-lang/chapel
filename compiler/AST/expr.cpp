@@ -1070,8 +1070,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, " = ");
       SymExpr *s = dynamic_cast<SymExpr*>(get(3));
       VarSymbol *vs;
-      if (s && 
-          (vs= dynamic_cast<VarSymbol*>(s->var))) {  // if on_heap var
+      if (s && (vs= dynamic_cast<VarSymbol*>(s->var))) {
         fprintf( outfile, "%s", vs->cname);
       } else {
         fprintf( outfile, "&(");
@@ -1096,7 +1095,7 @@ void CallExpr::codegen(FILE* outfile) {
       else
         fprintf(outfile, ".im)");
       break;
-    case PRIMITIVE_SET_HEAPVAR: {   // used to allocate on_heap vars
+    case PRIMITIVE_SET_HEAPVAR: {
       // args: heap var, alloc expr
       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
       VarSymbol *vs;
@@ -1105,7 +1104,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
         get(2)->codegen(outfile);
       } else {
-        INT_FATAL( get(1), "can only setheapvar with on_heap variables");
+        INT_FATAL(get(1), "invalid variable passed to SET_HEAPVAR");
       }
       break;
     }
@@ -1265,16 +1264,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "); ");
       get(1)->codegen(outfile);
       fprintf(outfile, " = NULL");
-      /*** old CHPL_FREE code (by Wayne?) for heap variables/ not
-           used, rewriting ***/
-//       fprintf( outfile, "_chpl_free( ");
-//       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
-//       if (s && ((VarSymbol*)s->var)->on_heap) {
-//         fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
-//       } else {
-//         get(1)->codegen( outfile);
-//       }
-//       fprintf( outfile, ")");
       break;
     }
     case PRIMITIVE_CAST: {

@@ -93,17 +93,13 @@ class VarSymbol : public Symbol {
   varType      varClass;
   consType     consClass;
   Immediate   *immediate;
-  bool         is_ref;       // reference type?  Initially, for cobegin gen
-  bool         on_heap;      // is var allocated on the heap? for begin's
   VarSymbol   *refc;         // number of outstanding references to
   VarSymbol   *refcMutex;    // guard refc
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
             varType  init_varClass = VAR_NORMAL, 
-            consType init_consClass = VAR_VAR,
-            bool     init_is_ref = false,
-            bool     init_on_heap = false);
+            consType init_consClass = VAR_VAR);
   ~VarSymbol();
   virtual void verify(); 
   COPY_DEF(VarSymbol);

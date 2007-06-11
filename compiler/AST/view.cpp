@@ -461,10 +461,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           } else if (vs->type->symbol->hasPragma( "single var")) {
             fprintf( html_file, "<B>single </B>");
           }
-          if (vs->on_heap) 
-            fprintf( html_file, "<B>heap </B>");
-          if (vs->is_ref)  
-            fprintf( html_file, "<B>ref </B> ");
           fprintf(html_file, "<B>var </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {

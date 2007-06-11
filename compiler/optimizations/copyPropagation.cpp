@@ -13,9 +13,7 @@ bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
     !is_complex_type(var->type) &&
     !isRecordType(var->type) &&
     var->type->refType &&
-    !var->isConcurrent &&
-    !var->on_heap &&
-    !var->is_ref;
+    !var->isConcurrent;
 }
 
 typedef ChainHashMap<Symbol*,PointerHashFns,Symbol*> AvailableMap;

@@ -300,15 +300,11 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 VarSymbol::VarSymbol(char    *init_name,
                      Type    *init_type,
                      varType  init_varClass, 
-                     consType init_consClass,
-                     bool     init_is_ref,
-                     bool     init_on_heap) :
+                     consType init_consClass) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
-  is_ref(init_is_ref),
-  on_heap(init_on_heap),
   refc(NULL),
   refcMutex(NULL)
 { }
@@ -359,9 +355,6 @@ bool VarSymbol::isParam(void){
 
 
 void VarSymbol::codegen(FILE* outfile) {
-  if (on_heap)
-    fprintf(outfile, "(*");
-
   if (immediate && immediate->const_kind == CONST_KIND_STRING) {
     fprintf(outfile, "\"%s\"", immediate->v_string);
   } else if (immediate &&
@@ -385,9 +378,6 @@ void VarSymbol::codegen(FILE* outfile) {
   } else {
     fprintf(outfile, "%s", cname);
   }
-
-  if (on_heap)
-    fprintf(outfile, ")");
 }
 
 
@@ -401,7 +391,6 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  if (is_ref || on_heap) fprintf(outfile, "*");
   fprintf(outfile, "%s;\n", cname);
 }
 

@@ -41,7 +41,7 @@ void buildDefaultFunctions(void) {
         for_fields(field, ct) {
           VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
           // if suppress for cobegin created arg classes
-          if (cfield && !cfield->is_ref && strcmp(field->name, "_promotionType")) {
+          if (cfield && strcmp(field->name, "_promotionType")) {
             build_getter(ct, field);
           }
         }
