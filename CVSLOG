@@ -105472,3 +105472,14 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/: test_union3.future 
 
+---------------------------------------------------------------------------
+
+06/11/07 14:43:27 -- deitz
+
+Log message:
+	Without setters, promotion of a var function now works even when the
+	rhs is not a scalar.  Removed a future.
+
+Removed files:
+	chapel/test/types/complex/bradc/: negateimaginary2.future 
+
