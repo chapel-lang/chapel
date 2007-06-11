@@ -16,11 +16,14 @@ OTHER_DEPEND_RULES = \
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
+ifdef CHPL_DEVELOPER
 CLEAN_TARGS += \
 	*.tab.c \
 	*.yy.c \
 	*.tab.h \
 	*.output \
+
+endif
 
 lex.yy.c: chapel.lex chapel.tab.h
 	flex chapel.lex
