@@ -105229,3 +105229,15 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/11/07 04:54:59 -- marybeth
+
+Log message:
+	More edits to Language Overview.
+	
+	Added a chapel0 environment that does not indent chapel code.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex chapel_listing.tex 
+
