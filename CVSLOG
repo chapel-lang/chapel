@@ -105562,3 +105562,16 @@ Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:50:15 -- deitz
+
+Log message:
+	Removed now unnecessary Symbol::is_ref and Symbol::on_heap.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: primitive.h symbol.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
