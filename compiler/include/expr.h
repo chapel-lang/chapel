@@ -38,8 +38,6 @@ class Expr : public BaseAST {
   virtual bool isParam(void);
   virtual bool isConst(void);
 
-  virtual bool isRef(void);
-
   Expr* getStmtExpr();
 
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
@@ -86,7 +84,6 @@ class SymExpr : public Expr {
   virtual bool isConst(void);
   virtual bool isParam(void);
   void codegen(FILE* outfile);
-  virtual bool isRef(void);
 };
 
 
@@ -131,7 +128,6 @@ class CallExpr : public Expr {
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(PrimitiveTag primitiveTag);
-  virtual bool isRef(void);
 };
 
 

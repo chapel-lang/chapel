@@ -29,8 +29,6 @@ list_sym(Symbol* sym, bool type = true) {
   } else if (dynamic_cast<TypeSymbol*>(sym)) {
     printf("type ");
   }
-  if (sym->isReference)
-    printf("ref ");
   printf("%s", sym->name);
   printf("[%d]", sym->id);
   if (!type) {
@@ -465,7 +463,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           }
           if (vs->on_heap) 
             fprintf( html_file, "<B>heap </B>");
-          if (vs->is_ref || vs->isReference)  
+          if (vs->is_ref)  
             fprintf( html_file, "<B>ref </B> ");
           fprintf(html_file, "<B>var </B> ");
           html_print_symbol( html_file, pass, e->sym, true);

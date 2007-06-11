@@ -1538,8 +1538,6 @@ resolveCall(CallExpr* call) {
           }
         }
       }
-      if (sym->var->isReference && !strncmp(sym->var->name, "_ret_", 5))
-        call->primitive = primitives[PRIMITIVE_REF];
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
 
@@ -2446,9 +2444,6 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  if (ret->isReference)
-    fn->retRef = true;
-
   if (retType == dtUnknown) {
     if (retTypes.n == 1)
       retType = retTypes.v[0];
@@ -2753,7 +2748,6 @@ resolve() {
           FnSymbol* if_fn = new FnSymbol("_if_fn");
           if_fn->addPragma("inline");
           VarSymbol* _ret = new VarSymbol("_ret_if_fn_dd", key->retType);
-          //          _ret->isReference = true;
           _ret->isCompilerTemp = true;
           if_fn->insertAtTail(new DefExpr(_ret));
           if_fn->insertAtTail(

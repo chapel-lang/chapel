@@ -132,7 +132,6 @@ class PrimitiveOp { public:
   char *name;
   Type *(*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
-  bool isReference;
   bool passLineno; // pass line number and filename to this primitive
 
   PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*));

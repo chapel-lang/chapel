@@ -127,7 +127,6 @@ Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   isUserAlias(false),
   isCompilerTemp(false),
   isTypeVariable(false),
-  isReference(false),
   canParam(false),
   canType(false),
   isConcurrent(false)
@@ -237,11 +236,6 @@ Symbol* Symbol::getSymbol(void) {
 }
 
 
-bool Symbol::isRef(void) {
-  return false;
-}
-
-
 char* Symbol::hasPragma(char* str) {
   forv_Vec(char, pragma, pragmas) {
     if (!strcmp(pragma, str))
@@ -341,7 +335,6 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->isUserAlias = isUserAlias;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
-  newVarSymbol->isReference = isReference;
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
@@ -366,7 +359,7 @@ bool VarSymbol::isParam(void){
 
 
 void VarSymbol::codegen(FILE* outfile) {
-  if (on_heap || isReference)
+  if (on_heap)
     fprintf(outfile, "(*");
 
   if (immediate && immediate->const_kind == CONST_KIND_STRING) {
@@ -393,7 +386,7 @@ void VarSymbol::codegen(FILE* outfile) {
     fprintf(outfile, "%s", cname);
   }
 
-  if (on_heap || isReference)
+  if (on_heap)
     fprintf(outfile, ")");
 }
 
@@ -408,13 +401,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  if (is_ref || on_heap || isReference) fprintf(outfile, "*");
+  if (is_ref || on_heap) fprintf(outfile, "*");
   fprintf(outfile, "%s;\n", cname);
-}
-
-
-bool VarSymbol::isRef(void) {
-  return isReference;
 }
 
 
@@ -500,11 +488,6 @@ void ArgSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "* const");
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
-}
-
-
-bool ArgSymbol::isRef(void) {
-  return requiresCPtr();
 }
 
 
@@ -1355,10 +1338,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (!dynamic_cast<TypeSymbol*>(def->sym)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
-          if (def->sym->isReference)
-            fprintf(outfile, "%s = NULL;\n", def->sym->cname);
-          else
-            codegenNullAssignments(outfile, def->sym->cname, ct);
+          codegenNullAssignments(outfile, def->sym->cname, ct);
         }
       }
     }

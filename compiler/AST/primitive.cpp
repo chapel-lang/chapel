@@ -220,7 +220,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
   tag(atag),
   name(aname),
   returnInfo(areturnInfo),
-  isReference(false),
+  isEssential(false),
   passLineno(false)
 {
   primitives_map.put(name, this);
@@ -228,21 +228,17 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 
 static void
 prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*),
-         bool isEssential = false,
-         bool passLineno = false, bool isReference = false) {
+         bool isEssential = false, bool passLineno = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
-  primitives[tag]->isReference = isReference;
   primitives[tag]->passLineno = passLineno;
 }
 
 static void
 prim_def(char* name, Type *(*returnInfo)(CallExpr*),
-         bool isEssential = false,
-         bool passLineno = false, bool isReference = false) {
+         bool isEssential = false, bool passLineno = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;
-  prim->isReference = isReference;
   prim->passLineno = passLineno;
 }
 
@@ -294,7 +290,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
   prim_def(PRIMITIVE_UNION_SETID, "set_union_id", returnInfoVoid, true);
   prim_def(PRIMITIVE_UNION_GETID, "get_union_id", returnInfoBool);
-  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMemberRef, false, false, true);
+  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid, true);
 
@@ -344,8 +340,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
-  prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex, false, false, true);
-  prim_def(PRIMITIVE_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex, false, false, true);
+  prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex);
+  prim_def(PRIMITIVE_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex);
   prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIMITIVE_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 

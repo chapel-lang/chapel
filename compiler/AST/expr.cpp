@@ -94,12 +94,6 @@ bool Expr::isParam(void){
 }
 
 
-bool Expr::isRef() {
-  INT_FATAL("bad call to Expr::isRef()");
-  return false;
-}
-
-
 void Expr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected call to Expr::replaceChild(old, new)");
 }
@@ -260,11 +254,6 @@ void SymExpr::codegen(FILE* outfile) {
   var->codegen(outfile);
   if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
-}
-
-
-bool SymExpr::isRef() {
-  return var->isRef();
 }
 
 
@@ -794,11 +783,7 @@ void CallExpr::codegen(FILE* outfile) {
           !get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, ")");
       fprintf(outfile, " = ");
-      //      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
-      //        fprintf(outfile, "(*");
       get(2)->codegen(outfile);
-      //      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
-      //        fprintf(outfile, ")");
       break;
     case PRIMITIVE_SET_REF:
       fprintf(outfile, "/* SET REF */ &(");
@@ -1469,14 +1454,6 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  if (isNamed("_free")) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-      if (sym->var->isReference)
-        fprintf(outfile, "if (%s) ", sym->var->cname);
-    }
-  }
-    
-
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
 
@@ -1518,15 +1495,6 @@ void CallExpr::codegen(FILE* outfile) {
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
   return primitive && primitive->tag == primitiveTag;
-}
-
-
-bool CallExpr::isRef() {
-  if (FnSymbol* fn = isResolved())
-    return fn->retRef;
-  else if (primitive)
-    return primitive->isReference;
-  return false;
 }
 
 

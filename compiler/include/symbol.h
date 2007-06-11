@@ -44,7 +44,6 @@ class Symbol : public BaseAST {
   bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
   bool isTypeVariable;
-  bool isReference;    // is a reference
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
@@ -71,7 +70,6 @@ class Symbol : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
-  virtual bool isRef(void);
   virtual bool isImmediate();
 
   char* hasPragma(char* str);
@@ -116,7 +114,6 @@ class VarSymbol : public Symbol {
 
   void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
-  virtual bool isRef(void);
   virtual bool isImmediate();
 };
 
@@ -142,7 +139,6 @@ class ArgSymbol : public Symbol {
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
-  virtual bool isRef(void);
 };
 
 
