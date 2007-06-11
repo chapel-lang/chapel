@@ -105523,3 +105523,16 @@ Modified files:
 	./: CHANGES STATUS 
 	chapel/test/: FUTURES 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:08:39 -- deitz
+
+Log message:
+	Added a future for a test I added in the setter->ref checkin.  When
+	iterating over a var iterator in a zipper context, the index is not a
+	reference.  Yet.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_var_iterator2.future 
+
