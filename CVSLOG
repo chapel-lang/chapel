@@ -105536,3 +105536,14 @@ Added files:
 	chapel/test/functions/deitz/iterators/: 
 	                                        test_var_iterator2.future 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:13:19 -- deitz
+
+Log message:
+	Updated files to reflect recent future addition.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+
