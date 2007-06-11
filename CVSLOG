@@ -105251,3 +105251,199 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+06/11/07 14:36:37 -- deitz
+
+Log message:
+	This checkin represents about two weeks of work and a major change to
+	both the language and the compiler.  It also temporarily (I hope)
+	disables scalar replacement on iterator classes and tuples, which
+	should adversely impact the performance of our HPCC benchmarks, and
+	removes support for the C-style for loop.
+	
+	Added reference types and removed setter functions.  A reference type
+	is indentified with a "ref" pragma.  Given a type, the reference type
+	is pointed to via Type::refType.  A function getValueType(Type*) will
+	return the value type of a reference type.
+	
+	For var functions, added support for a "setter" identifier which can
+	be thought of as an implicit argument.  It evaluates to true, at
+	runtime, if the function is used as an lvalue; otherwise it evaluates
+	to false.
+	
+	Added support for iterating over var iterators such that the index
+	variable is a reference to the yielded expression.  Since the default
+	iterator of arrays is a var iterator, given an array A, the statement
+	
+	  for e in A do e = 0;
+	
+	is now equivalent to
+	
+	  A = 0;
+	
+	and
+	
+	  for i in A.domain do A(i) = 0;
+	
+	Removed support for applying a cast to an index variable as in
+	
+	  for i:int in 1..n do ....
+	
+	though we can reenable this for non-var iterators if we feel it is
+	important.
+	
+	Made promotion of a var function result in a var iterator allowing
+	something like A(1, 1..n) to be a valid lvalue even if it is not yet
+	an array.
+	
+	Unified references within the compiler to use the new reference type.
+	Previously, INTENT_REF handled passing via reference, on_heap and
+	is_ref handled references within begin blocks, and isReference handled
+	reference temporaries inserted by the compiler.
+	
+	Added new primitives PRIMITIVE_GET_REF to dereference and
+	PRIMITIVE_SET_REF to take the address of a symbol.
+	
+	Named primitives PRIMITIVE_GET_REAL and PRIMITIVE_GET_IMAG to enable
+	the compiler to use them.  These primitives now return references.
+	
+	Removed setter tokens and the setter transformation of lhs member
+	accesses.  Removed FnSymbol::buildSetter and FnSymbol::isSetter.
+	
+	Removed extra call to cullOverReferences though there should be a new
+	pass to remove unnecessary references after inlining.  After function
+	resolution, cullOverReferences is now more specific.  It clones all
+	var functions and only returns a reference where necessary.  If it
+	does return a reference, it sets setter to true.  This is not entirely
+	correct since the reference may be necessary just to handle records.
+	This will require a third clone.
+	
+	Updated copyPropagation to work in the presence of new functions by
+	treating taking an address of a variable as a possible assignment and
+	invalidating available copies based on this information.
+	
+	Removed Symbol::canReference as function resolution no longer creates
+	references.  Instead, the main mechanism in function resolution is to
+	coerce references into values by inserting dereference primitives.
+	
+	Added a new parenthesesless method, eltType, to all iterator classes
+	to determine the element type of the iterator class.
+	
+	Simplified the version of scalar replacement used on array and domain
+	wrappers to only handle records that contain exactly one field.
+	
+	Removed support for --scalar-replace-tuples which had limitations due
+	to references.
+	
+	Updated compute_sym_uses to deal with INOUT and OUT intents so that a
+	variable passed by OUT is a def and one passed by INOUT is a def and a
+	use.  Such variables will have reference type.  Previously, INOUT and
+	OUT were replaced with REF.
+	
+	Added BaseAST::typeInfo() to allow the typeInfo() function to be
+	called on the base class.
+	
+	Added thirteen tests of corner cases and new features.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      iterator.cpp primitive.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h driver.h optimizations.h 
+	                          primitive.h symbol.h type.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	                                deadCodeElimination.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp copy_propagation.cpp 
+	                         cullOverReferences.cpp 
+	                         flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         lowerIterators.cpp normalize.cpp 
+	                         parallel.cpp scalarReplace.cpp 
+	                         semanticChecks.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelIO.chpl ChapelRange.chpl 
+	                          ChapelStandard.chpl ChapelTuple.chpl 
+	                          DistCSR.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/runtime/include/: chplthreads.h 
+	chapel/test/arrays/bradc/: promote-shortcircuit.chpl 
+	chapel/test/arrays/bradc/workarounds/: fakeSpsArr2.chpl 
+	chapel/test/arrays/deitz/domains/: test_domain2.chpl 
+	chapel/test/arrays/deitz/myarray/: test_array_class_trial1.chpl 
+	                                   test_array_class_trial1.good 
+	                                   test_array_class_trial2.chpl 
+	                                   test_array_class_trial2.good 
+	                                   test_array_class_trial3.chpl 
+	                                   test_array_class_trial3.good 
+	                                   test_array_class_trial4.chpl 
+	                                   test_array_class_trial4.good 
+	                                   test_array_class_trial4a.chpl 
+	                                   test_array_class_trial4a.good 
+	                                   test_array_class_trial5.chpl 
+	                                   test_array_class_trial5.good 
+	                                   test_array_class_trial5a.chpl 
+	                                   test_array_class_trial5a.good 
+	                                   test_array_class_trial5b.chpl 
+	                                   test_array_class_trial5b.good 
+	chapel/test/arrays/deitz/promotion/: test_scalar_promote10.chpl 
+	                                     test_scalar_promote10.good 
+	chapel/test/arrays/jplevyak/: simple-4.chpl 
+	chapel/test/classes/bradc/: setterForField.chpl 
+	                            setterForField.good 
+	chapel/test/classes/deitz/: test_setter_getter.chpl 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/test/functions/deitz/: test_var_function1.good 
+	                              test_var_function2.good 
+	                              test_var_function_access.good 
+	                              test_var_function_access2.good 
+	chapel/test/functions/jplevyak/: call_mapping-1.chpl 
+	                                 call_mapping-1.good 
+	                                 call_mapping-2.chpl 
+	                                 var_return-2.good 
+	chapel/test/release/examples/: jacobi.chpl 
+	chapel/test/trivial/deitz/: coerce2.chpl 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+	chapel/test/types/type_variables/deitz/part1/: 
+	                                               test_clone_class1b.good 
+	chapel/test/types/type_variables/deitz/part4/: 
+	                                               test_datablock2.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_var_iterate.chpl 
+	                           test_var_iterate.good 
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote_method.chpl 
+	                                     test_scalar_promote_method.good 
+	chapel/test/functions/deitz/: test_iterator3.chpl 
+	                              test_iterator3.good 
+	                              test_iterator4.chpl 
+	                              test_iterator4.good 
+	                              test_iterator5.chpl 
+	                              test_iterator5.good 
+	                              test_iterator6.chpl 
+	                              test_iterator6.good 
+	                              test_var_function3.chpl 
+	                              test_var_function3.good 
+	                              test_var_function4.chpl 
+	                              test_var_function4.good 
+	chapel/test/functions/deitz/iterators/: test_var_iterator.chpl 
+	                                        test_var_iterator.good 
+	                                        test_var_iterator2.chpl 
+	                                        test_var_iterator2.good 
+	                                        test_var_iterator3.chpl 
+	                                        test_var_iterator3.good 
+	                                        test_var_iterator4.chpl 
+	                                        test_var_iterator4.good 
+	chapel/test/types/complex/deitz/: test_complex7.chpl 
+	                                  test_complex7.good 
+Removed files:
+	chapel/test/arrays/deitz/: jacobi-scalar-replace-tuples.chpl 
+	                           jacobi-scalar-replace-tuples.compopts 
+	                           jacobi-scalar-replace-tuples.good 
+
