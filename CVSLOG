@@ -105547,3 +105547,18 @@ Modified files:
 	./: STATUS 
 	chapel/test/: FUTURES 
 
+---------------------------------------------------------------------------
+
+06/11/07 16:16:05 -- deitz
+
+Log message:
+	Removed now unnecessary Symbol::isReference and
+	PrimitiveOp::isReference as well as isRef() methods.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp iterator.cpp primitive.cpp 
+	                      symbol.cpp view.cpp 
+	chapel/compiler/include/: expr.h primitive.h symbol.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
