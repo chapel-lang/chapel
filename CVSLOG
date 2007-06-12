@@ -105800,3 +105800,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+06/12/07 12:02:15 -- deitz
+
+Log message:
+	Removed all references and discussions of sequences except in the
+	Modules section which I know David has already changed.
+
+Modified files:
+	chapel/spec/: Classes.tex Domains_and_Arrays.tex Expressions.tex 
+	              Input_and_Output.tex Language_Overview.tex 
+	              Lexical_Structure.tex 
+	              Locality_and_Distribution.tex 
+	              Parallelism_and_Synchronization.tex Ranges.tex 
+	              Reductions_and_Scans.tex Standard_Modules.tex 
+	              Statements.tex Variables.tex chapel_listing.tex 
+
