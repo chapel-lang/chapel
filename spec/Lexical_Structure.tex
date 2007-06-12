@@ -67,10 +67,10 @@ goto        if          imag        in          int
 inout       iterator    let         locale      module
 nil         of          on          ordered     otherwise
 out         param       pragma      real        record
-reduce      return      scan        select      seq
-serial      single      sync        then        true
-type        uint        union       use         var
-when        where       while       yield
+reduce      return      scan        select      serial
+single      sync        then        true        type
+uint        union       use         var         when
+where       while       yield
 \end{chapel}
 
 \subsubsection{Literals}
@@ -90,7 +90,7 @@ language specially:
 {\bf symbols} & {\bf use} \\
 \hline
 \verb@= += -= *= /= **= %= &= |= ^= &&= ||= <<= >>=@ & assignment \\
-\verb@..@ & arithmetic sequences \\
+\verb@..@ & ranges \\
 \verb@...@ & variable argument lists \\
 \verb@&& || !@ & logical operators \\
 \verb@& | ^ ~ << >>@ & bitwise operators \\
@@ -117,7 +117,6 @@ The following braces are part of the Chapel language:
 \hline
 \verb@( )@ & parenthesization, function calls, and tuples \\
 \verb@[ ]@ & domains, square tuples, forall expressions, and function calls \\
-\verb@(/ /)@ & sequence literals \\
 \verb@{ }@ & type scopes and blocks \\
 \hline
 \end{tabular}

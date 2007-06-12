@@ -402,21 +402,22 @@ z = (x,y):complex;
 \end{example}
 
 \paragraph{Ranges}
-Ranges represent bounded and unbounded strided 
-arithmetic sequences of integral types.  Ranges can be specified by the 
-literal expression, "\chpl{low..high by stride}" where \chpl{low},
+Ranges represent bounded and unbounded strided sequences of integral
+types.  Ranges can be specified by the literal expression,
+"\chpl{low..high by stride}" where \chpl{low},
 \chpl{high} and \chpl{stride} are integral expressions.  The bounds
 of the range, \chpl{low} and \chpl{high}, can be left unspecified to
-indicate an unbounded arithmetic sequence.  The stride is also optional.
-If \chpl{by stride} is omitted, the default stride of the sequence is one. 
+indicate an unbounded range.  The stride is also optional.
+If \chpl{by stride} is omitted, the default stride of the range is
+one.
 
 Ranges are most commonly used in the definition of arithmetic domains
 and in iterator expressions.
 
 \begin{example}
 The following example shows the definition of the range \chpl{span1D}
-which is the arithmetic sequence \chpl{1} to \chpl{n}.  This range is
-then used in the definition of the arithmetic two-dimensional domain, 
+which is the ordered set \chpl{1} to \chpl{n}.  This range is then
+used in the definition of the arithmetic two-dimensional domain,
 \chpl{D}.
  
 \begin{chapel}
@@ -587,7 +588,7 @@ unary \verb@+ - ~@ & right & sign and bitwise negation \\
 \verb@||@ & left & logical or \\
 \verb@..@ & left & ranges  \\
 \verb@in@ & left & forall expressions \\
-\verb@by@ & left & striding sequences \\
+\verb@by@ & left & striding ranges and domains \\
 \verb@if@ & left & conditional expressions \\
 \verb@reduce scan@ & left & reductions and scans\\
 \verb@,@ & left & comma separated expressions \\
@@ -1109,11 +1110,12 @@ def main() {
   const ProblemSpace = [1..n, 1..n],
         BigDomain = [0..n+1, 0..n+1];
 \end{chapel}
-Both domains are declared to be \chpl{const}, indicating
-that the values for the domains remain constant during the execution of
-the program.  They are defined using arithmetic sequences, and are, thus,
-arithmetic domains.  Because the domains are initialized in their declaration,
-it is not necessary to specify that they are of domain type.  In this case,
+Both domains are declared to be \chpl{const}, indicating that the
+values for the domains remain constant during the execution of the
+program.  They are defined using ranges, and are, thus, arithmetic
+domains.  Because the domains are initialized in their declaration, it
+is not necessary to specify that they are of domain type.  In this
+case,
 \chpl{: domain(2)} was omitted from both domain declarations.  
 \chpl{BigDomain} is essentially the \chpl{ProblemSpace} 
 domain with additional 
@@ -1670,18 +1672,20 @@ begin {
     writeln("consumer got ", s);     
 }                                   
 \end{chapel}
-This loop is indexed by \chpl{c}, which iterates over
-the arithmetic sequence \chpl{1..numIterations}.  The variable \chpl{c} is a new
-variable defined for the scope of the loop.  Its type is inferred to be integer from
-the integer arithmetic sequence that follows.  During each iteration of the \chpl{for}
-loop, the \chpl{writeln} function is called which outputs the string
-literal \chpl{"consumer got "} and the value of the sync variable \chpl{s}, 
-followed by a line break.  In order to print the value stored in \chpl{s}, the
-sync variable is read only when its state is full.  Once \chpl{s} is successfully
-read, its state will be set to empty.  The next iteration follows, and the 
-consumer computation will suspend execution until the state of \chpl{s} is 
-made full again.  Since the consumer computation only reads \chpl{s}, it will be 
-the producer computation that changes the states of \chpl{s} to full.
+This loop is indexed by \chpl{c}, which iterates over the
+range \chpl{1..numIterations}.  The variable \chpl{c} is a new
+variable defined for the scope of the loop.  Its type is inferred to
+be integer from the integer range that follows.  During each iteration
+of the \chpl{for} loop, the \chpl{writeln} function is called which
+outputs the string literal \chpl{"consumer got "} and the value of the
+sync variable \chpl{s}, followed by a line break.  In order to print
+the value stored in \chpl{s}, the sync variable is read only when its
+state is full.  Once \chpl{s} is successfully read, its state will be
+set to empty.  The next iteration follows, and the consumer
+computation will suspend execution until the state of \chpl{s} is made
+full again.  Since the consumer computation only reads \chpl{s}, it
+will be the producer computation that changes the states of \chpl{s}
+to full.
 
 The producer computation executes the \chpl{for} loop in lines~\ref{producer_start} -
 \ref{producer_end}.  
@@ -1691,13 +1695,13 @@ for p in 1..numIterations {
   s = p;
 }      
 \end{chapel}
-This
-loop is indexed by \chpl{p} which iterates over the same arithmetic sequence
-as the consumer computation.  Like the index \chpl{c}, \chpl{p} is inferred to 
-be an integer.
-During each iteration of this \chpl{for} loop, the \chpl{sleep} function is
-called with the argument\chpl{sleepTime}.  This \chpl{sleep} function is provided
-in the \chpl{Time} standard module, and it causes the producer computation to
+This loop is indexed by \chpl{p} which iterates over the same range as
+the consumer computation.  Like the index \chpl{c}, \chpl{p} is
+inferred to be an integer.  During each iteration of this \chpl{for}
+loop, the \chpl{sleep} function is called with the
+argument\chpl{sleepTime}.  This \chpl{sleep} function is provided in
+the \chpl{Time} standard module, and it causes the producer
+computation to
 \chpl{sleepTime} seconds.  After returning from the \chpl{sleep} function, 
 the producer computation assigns \chpl{s} to be the iteration number \chpl{p}.  
 Because \chpl{s} is a sync variable, this assigment is executed only when the state of 

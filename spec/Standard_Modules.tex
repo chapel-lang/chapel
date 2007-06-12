@@ -529,9 +529,9 @@ def string.substring(x): string
 \begin{protobody}
 Returns a value of string type that is a substring of the base
 expression.  If \chpl{x} is $i$, a value of type \chpl{int}, then the
-result is the $i$th character.  If \chpl{x} is an arithmetic sequence,
-the result is the substring where the characters in the substring are
-given by the values in the arithmetic sequence.
+result is the $i$th character.  If \chpl{x} is a range, the result is
+the substring where the characters in the substring are given by the
+values in the range.
 \end{protobody}
 
 \subsection{Time}

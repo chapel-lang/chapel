@@ -34,7 +34,7 @@ literal-expression:
   real-literal
   imaginary-literal
   string-literal
-  sequence-literal
+  range-literal
   domain-literal
 \end{syntax}
 
@@ -78,9 +78,9 @@ argument described in~\rsec{Named_Arguments}.
 \label{Indexing_Expressions}
 \index{indexing}
 
-Indexing into arrays, sequences, tuples, and domains shares the same
-syntax of a call expression.  Indexing, at its core, is nothing more
-than a call to the indexing function defined on these types.
+Indexing into arrays, tuples, and domains shares the same syntax of a
+call expression.  Indexing, at its core, is nothing more than a call
+to the indexing function defined on these types.
 
 \subsubsection{Member Access Expressions}
 \label{Member_Access_Expressions}
@@ -213,9 +213,9 @@ unary \verb@+ - ~@ & right & sign and bitwise negation \\
 \verb@!@ & right & logical negation \\
 \verb@&&@ & left & logical and \\
 \verb@||@ & left & logical or \\
-\verb@..@ & left & arithmetic sequences \\
+\verb@..@ & left & ranges \\
 \verb@in@ & left & forall expressions \\
-\verb@by@ & left & striding sequences \\
+\verb@by@ & left & striding ranges and domains \\
 \verb@if@ & left & conditional expressions \\
 \verb@reduce scan@ & left & reductions and scans\\
 \verb@,@ & left & comma separated expressions \\
@@ -948,12 +948,12 @@ would be \chpl{"result: 3"}.
 The operator \chpl{by} is predefined on arithmetic domains.  It is
 described in~\rsec{Strided_Arithmetic_Domains_and_Arrays}.
 
-\subsubsection{The Arithmetic Sequence By Operator}
-\label{The_Sequence_By_Operator}
+\subsubsection{The Range By Operator}
+\label{The_Range_By_Operator}
 \index{by@\chpl{by}}
 
-The operator \chpl{by} is predefined on arithmetic sequences.  It is
-described in~\rsec{Strided_Arithmetic_Sequences}.
+The operator \chpl{by} is predefined on ranges.  It is
+described in~\rsec{Strided_Ranges}.
 
 \subsection{Let Expressions}
 \label{Let_Expressions}

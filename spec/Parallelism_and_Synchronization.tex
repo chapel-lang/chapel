@@ -4,12 +4,12 @@
 Chapel is an explicitly parallel programming language.  Parallelism is
 introduced into a program by the user with the following three
 constructs: \chpl{forall}, \chpl{cobegin}, and \chpl{begin}.  In
-addition, some operations on arrays, domains, and sequences are
-executed in parallel.  Synchronization is provided
-with \emph{synchronization variables} and \emph{atomic} statements.  To avoid
-any unintended implications, the terms \emph{computation}
-and \emph{sub-computation} will be used to refer to distinct,
-concurrently executing portions of the program.
+addition, some operations on arrays and domains, as well as
+invocations of promotion, are executed in parallel.  Synchronization
+is provided with \emph{synchronization variables} and \emph{atomic}
+statements.  To avoid any unintended implications, the
+terms \emph{computation} and \emph{sub-computation} will be used to
+refer to distinct, concurrently executing portions of the program.
 
 \subsection{The Forall Loop}
 \label{Forall}
@@ -25,14 +25,14 @@ forall-statement:
    `forall' index-expression `in' iterator-expression block-level-statement
 \end{syntax}
 
-The forall loop evaluates the loop body once for each element in the
-sequence returned by the \sntx{iterator-expression}.  Each instance of
-the forall loop's statement may be executed concurrently with each
-other, but this is not guaranteed.  The compiler and runtime determine
-the actual concurrency based on the specification of the iterator of
-the loop.  The keyword \chpl{ordered}, described
-in~\rsec{Ordered_Forall}, can be used to constrain the parallelism to
-give a partial order on the sequence returned by an iterator.
+The forall loop evaluates the loop body once for each element in
+the \sntx{iterator-expression}.  Each instance of the forall loop's
+statement may be executed concurrently with each other, but this is
+not guaranteed.  The compiler and runtime determine the actual
+concurrency based on the specification of the iterator of the loop.
+The keyword \chpl{ordered}, described in~\rsec{Ordered_Forall}, can be
+used to constrain the parallelism to give a partial order on the
+iterator.
 
 Control continues with the statement following the forall loop only
 after each iteration has been completely evaluated.  Control transfers
@@ -84,9 +84,8 @@ By default a forall loop allows complete concurrent evaluation of the
 iterator expression and among the loop instances. The
 keyword \chpl{ordered} can be used to constrain the general
 parallelism among instances of the loop to that expressed by an
-iterator. This allows an iterator to both define a sequence of values
-and to impose a partial order on that sequence. If the iterator
-expression is a sequence value, there is no effect. This has the same
+iterator. This allows an iterator to both define an array of values
+and to impose a partial order on that iterator.  This has the same
 semantics as with the ordered expression which is explained
 in \rsec{Ordered_Expressions}.  The syntax is:
 \begin{syntax}
@@ -132,17 +131,22 @@ forall-expression:
    [index-expression `in' iterator-expression] expression
 \end{syntax}
 
-The semantics of the forall expression are that a sequence of the
-expression is evaluated.  However, for efficiency, a sequence may not
-be generated if the semantics are the same.
+A forall expression is semantically equivalent to an iterator that
+yields the expressions.
 
 \begin{example}
+The code
 \begin{chapel}
 [i in S] f(i);
 \end{chapel}
-The function \chpl{f} is evaluated for each index in \chpl{S} and the
-result of this expression is a sequence containing the evaluated
-expressions.
+is equivalent to
+\begin{chapel}
+iterator ff() {
+  for i in S do
+    yield f(i);
+}
+ff();
+\end{chapel}
 \end{example}
 
 \begin{status}
@@ -154,11 +158,10 @@ Forall expressions are evaluated serially.
 \index{forall expressions!and conditional expressions}
 
 An if expression that is immediately enclosed by a forall expression
-does not require an else part.  The result of the forall expression is
-a sequence of rank one.
+does not require an else part.
 \begin{example}
-The following expression returns every other element in a sequence
-starting with the first:
+The following expression returns every other element starting with the
+first:
 \begin{chapel}
 [i in 1..s.length] if i % 2 == 1 then s(i)
 \end{chapel}
@@ -225,10 +228,10 @@ In the code
 \begin{chapel}
 ordered [i in S] f(i) 
 \end{chapel}
-\chpl{f} is a function and \chpl{S} is a
-sequence. Each instance of \chpl{f(i)} is executed once for each value
-in \chpl{S} and in sequence order. The \chpl{ordered} constraint does
-not propagate to inhibit parallelism within \chpl{f}.
+\chpl{f} is a function and \chpl{S} is an iterator expression. Each
+instance of \chpl{f(i)} is executed once for each value in \chpl{S}
+and in serial order. The \chpl{ordered} constraint does not propagate
+to inhibit parallelism within \chpl{f}.
 \end{example}
 
 \subsection{The Serial Statement}

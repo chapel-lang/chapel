@@ -2,88 +2,75 @@
 \label{Ranges}
 \index{ranges}
 
-\subsection{Range Assignment}
-\label{Range_Assignment}
-\index{ranges!assignment}
+Ranges contain a sequence of values of integral type that can be
+specified with a low bound $l$, a high bound $h$, and a stride $s$.
+If the stride is negative, the values contained by the range are $h,
+h-s, h-2s, h-3s, ...$ such that all of the values in the sequence are
+greater than $l$.  If the stride is positive, the values contained by
+the range are $l, l+s, l+2s, l+3s, ...$ such that all of the values in
+the sequence are less than $h$.
 
-
-
-\subsection{Arithmetic Sequences}
-\label{Arithmetic_Sequences}
-\index{sequences!arithmetic}
-\index{arithmetic sequences}
-Arithmetic sequences contain an ordered set of values of integral type
-that can be specified with a low bound $l$, a high bound $h$, and a
-stride $s$.  If the stride is negative, the values contained by the
-arithmetic sequence are $h, h-s, h-2s, h-3s, ...$ such that all of the
-values in the sequence are greater than $l$.  If the stride is
-positive, the values contained by the arithmetic sequence are $l, l+s,
-l+2s, l+3s, ...$ such that all of the values in the sequence are
-less than $h$.
-
-\index{arithmetic sequences!literals}
-An arithmetic sequence is specified by the syntax
+\index{ranges!literals}
+A range is specified by the syntax
 \begin{syntax}
-arithmetic-sequence-literal:
+range-literal:
   expression .. expression
 \end{syntax}
 The first expression is taken to be the lower bound, the second
 expression is taken to be the upper bound.  The stride of the
-arithmetic sequence is 1 and can be modified with the \chpl{by}
+range is 1 and can be modified with the \chpl{by}
 operator.
 
-\index{arithmetic sequences!integral element type}
-The element type of the arithmetic sequence type is determined by the
+\index{ranges!integral element type}
+The element type of the range type is determined by the
 type of the low and high bound.  It is
 either \chpl{int}, \chpl{uint}, \chpl{int(64)}, or \chpl{uint64}.  The
 type is determined by conceptually adding the low and high bounds
 together.
 
-All operations supported over sequences are supported over arithmetic
-sequences.  So arithmetic sequences can, for example, sequence promote
-functions and be iterated over.  The result of the sequence promotion
-is a sequence but not an arithmetic sequence.
+\subsection{Strided Ranges}
+\label{Strided_Ranges}
+\index{ranges!strided}
 
-\subsubsection{Strided Arithmetic Sequences}
-\label{Strided_Arithmetic_Sequences}
-\index{arithmetic sequences!strided}
-
-The \chpl{by} operator can be applied to any arithmetic sequence to
-create a strided arithmetic sequence.  It is predefined over an
-arithmetic sequence and an integer to yield a new arithmetic sequence
-that is strided by the integer.  Striding of strided sequences is
+The \chpl{by} operator can be applied to any range to create a strided
+range.  It is predefined over a range and an integer to yield a new
+range that is strided by the integer.  Striding of strided ranges is
 accomplished by multiplying the strides.
 
-\subsubsection{Querying the Bounds and Stride of an Arithmetic Sequence}
+\subsection{Range Assignment}
+\label{Range_Assignment}
+\index{ranges!assignment}
+
+\subsection{Querying the Bounds and Stride of a Range}
 \index{low@\chpl{low}}
 \index{high@\chpl{high}}
 \index{stride@\chpl{stride}}
 
 \begin{protohead}
-def $arithmetic\mbox{ }sequence$.low: eltType
-def $arithmetic\mbox{ }sequence$.high: eltType
-def $arithmetic\mbox{ }sequence$.stride: int
+def range.low: eltType
+def range.high: eltType
+def range.stride: int
 \end{protohead}
 \begin{protobody}
 These routines respectively return the low bound, the high bound, and
-the stride of the arithmetic sequence.  The type of the returned low
-and high bound is the element type of the arithmetic sequence.
+the stride of the range.  The type of the returned low and high bound
+is the element type of the range.
 \end{protobody}
 
-\subsubsection{Indefinite Sequences}
-\label{Indefinite_Sequences}
-\index{arithmetic sequences!indefinite}
+\subsection{Unbounded Ranges}
+\label{Unbounded_Ranges}
+\index{ranges!unbounded}
 
-An indefinite arithmetic sequence is specified by the syntax
+An unbounded range is specified by the syntax
 \begin{syntax}
-indefinite-arithmetic-sequence-literal:
+unbounded-range-literal:
   expression ..
   .. expression
 \end{syntax}
 
-Indefinite arithmetic sequences can be iterated over with zipper
-iteration and their shape conforms to the shape of the sequences they
-are being iterated over.
+Unbounded ranges can be iterated over with zipper iteration and their
+shape conforms to the shape of the other iterators they are being
+iterated over with.
 \begin{example}
 The code
 \begin{chapel}
@@ -93,12 +80,12 @@ for i in (1..5, 3..) do
 produces the output ``(1, 3)(2, 4)(3, 5)(4, 6)(5, 7)''.
 \end{example}
 
-It is an error to zip an indefinite arithmetic sequence with an
-arithmetic sequence that does not have the same sign stride.
+It is an error to zip an unbounded range with a range that does not
+have the same sign stride.
 
-Indefinite arithmetic sequences can be used to index into arithmetic
-sequences, sequences, arrays, and strings.  In thesse cases, the
-elided bound conforms to the expression being indexed.
+Unbounded ranges can be used to index into ranges, domains, arrays,
+and strings.  In thesse cases, the elided bound conforms to the
+expression being indexed.
 \begin{status}
-Indexing by indefinite arithmetic sequences is not yet supported.
+Indexing by unbounded ranges is not yet supported.
 \end{status}

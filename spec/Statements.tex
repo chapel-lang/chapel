@@ -396,12 +396,12 @@ variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
 param-for-statement:
-  `for' `param' identifier `in' arithmetic-sequence `do' statement
-  `for' `param' identifier `in' arithmetic-sequence block-level-statement
+  `for' `param' identifier `in' range-literal `do' statement
+  `for' `param' identifier `in' range-literal block-level-statement
 \end{syntax}
-Parameter for loops are restricted to iteration over arithmetic
-sequence literals the bounds of which must also be parameters.  The
-loop is then unrolled for each iteration.
+Parameter for loops are restricted to iteration over range literals
+the bounds of which must also be parameters.  The loop is then
+unrolled for each iteration.
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}

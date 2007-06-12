@@ -8,12 +8,12 @@ These names are referred to as the {\em indices} of the domain.  All
 indices for a particular domain are values with some common type.
 Valid types for indices are primitive types and class references or
 unions, tuples or records whose fields are valid types for indices.
-This excludes sequences, domains, and arrays.  Like sequences, domains
-have a rank and a total order on their elements.  An {\em array} is
-generically a function that maps from a {\em domain} to a collection
-of variables.  Chapel supports a variety of kinds of domains and
-arrays defined over those domains as well as a mechanism to allow
-application specific implementations of arrays.
+This excludes ranges, domains, and arrays.  Domains have a rank and a
+total order on their elements.  An {\em array} is generically a
+function that maps from a {\em domain} to a collection of variables.
+Chapel supports a variety of kinds of domains and arrays defined over
+those domains as well as a mechanism to allow application specific
+implementations of arrays.
 
 Arrays abstract mappings from sets of values to variables.  This key
 use of data structures coupled with the generic syntactic support for
@@ -36,9 +36,8 @@ have an arbitrary rank.
 Sparse domains are subsets of indices in arithmetic domains.
 \item
 Indefinite domains are sets of indices where the type of the index is
-some type that is not an array, domain, or sequence.  Indefinite
-domains define dictionaries or associative arrays implemented via hash
-tables.
+some type that is not an array, domain, or range.  Indefinite domains
+define dictionaries or associative arrays implemented via hash tables.
 \item
 Opaque domains are sets of anonymous indices.  Opaque domains define
 graphs and unspecified sets.
@@ -143,9 +142,6 @@ returned by iterating over a domain is the index type of the domain.
 
 Domain promotion of a scalar function is defined over the domain type
 and the type of the indices of the domain (not the index type).
-Domain promotion has the same semantics as sequence promotion where
-the scalar type is the indices of the domain and the promotion type is
-the domain type.
 
 \begin{example}
 Given an array \chpl{A} with element type \chpl{int} declared over a
@@ -244,17 +240,17 @@ the interior of \chpl{A}.
 \end{example}
 
 Arithmetic arrays also support slicing by indexing into them with
-arithmetic sequences or tuples of arithmetic sequences as described
+ranges or tuples of ranges as described
 in~\rsec{Arithmetic_Array_Slicing}.
 
 \subsubsection{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
 
-Array assignment is by value.  Arrays can be assigned arrays,
-sequences, or domains.  If \chpl{A} is an lvalue of array type
-and \chpl{B} is an expression of either array, sequence, or domain
-type, then the assignment
+Array assignment is by value.  Arrays can be assigned arrays, ranges,
+domains, iterators, or tuples.  If \chpl{A} is an lvalue of array type
+and \chpl{B} is an expression of either array, range, or domain type,
+or an iterator, then the assignment
 \begin{chapel}
 A = B;
 \end{chapel}
@@ -266,6 +262,13 @@ forall (i,e) in (A.domain,B) do
 If the zipper iteration is illegal, then the assignment is illegal.
 Notice that the assignment is implemented with the semantics of
 a \chpl{forall} loop.
+
+Arrays can be assigned tuples of values of their element type if the
+tuple contains the same number of elements as the array.  For
+multidimensional arrays, the tuple must be a nested tuple such that
+the nesting depth is equal to the rank of the array and the shape of
+this nested tuple must match the shape of the array.  The values are
+assigned elementwise.
 
 Arrays can also be assigned single values of their element type.  In
 this case, each element in the array is assigned this value.
@@ -312,19 +315,17 @@ elements mapped to by the indices in the array's domain.
 \index{arrays!promotion}
 
 Array promotion of a scalar function is defined over the array type
-and the element type of the array.  Array promotion has the same
-semantics as sequence promotion where the scalar type is the element
-type of the array and the promotion type is the array type.  The only
-difference between sequence promotion and array promotion is that if a
-function returns a value, the promoted function returns an array of
-those values rather than a sequence of those values.  The array is
-defined over the same domain as the array that was passed to the
-function.  In the event of zipper promotion over multiple arrays or
-both arrays and sequences, the promoted function returns a value based
-on the first argument to the function that enables promotion.
+and the element type of the array.  The domain of the returned array,
+if an array is captured by the promotion, is the domain of the array
+that promoted the function.  In the event of zipper promotion over
+multiple arrays, the promoted function returns an array with a domain
+that is equal to the domain of the first argument to the function that
+enables promotion.  If the first argument is an iterator or a range,
+the result is a one-based one-dimensional array.
 
 \begin{status}
-In the current implementation, promotion always returns sequences.
+In the current implementation, promotion always returns
+one-dimensional arrays.
 \end{status}
 
 \begin{example}
@@ -428,8 +429,8 @@ equivalent to \chpl{A(3,3)}.
 \index{arrays!arithmetic}
 
 An arithmetic domain is a rectilinear set of Cartesian indices.
-Arithmetic domains are specified as a tuple of arithmetic sequences
-enclosed in square brackets.
+Arithmetic domains are specified as a tuple of ranges enclosed in
+square brackets.
 
 \subsubsection{Arithmetic Domain Literals}
 \label{Arithmetic_Domain_Literals}
@@ -438,13 +439,13 @@ enclosed in square brackets.
 An arithmetic domain literal is specified by the following syntax:
 \begin{syntax}
 arithmetic-domain-literal:
-  [ arithmetic-sequence-expression-list ]
+  [ range-expression-list ]
 
-arithmetic-sequence-expression-list:
-  arithmetic-sequence-expression
-  arithmetic-sequence-expression , arithmetic-sequence-expression-list
+range-expression-list:
+  range-expression
+  range-expression , range-expression-list
 
-arithmetic-sequence-expression:
+range-expression:
   expression
 \end{syntax}
 
@@ -457,12 +458,11 @@ domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
 \label{Arithmetic_Domain_Types}
 
 The type of an arithmetic domain is determined from the rank of the
-arithmetic domain (the number of arithmetic sequences that define it)
-and by an underlying integeral type called the {\em dimensional index
-type} which must be identical to each of the integral element types of
-the arithmetic sequences that define the arithmetic domain.  By
-default, the dimensional index type of an arithmetic domain
-is \chpl{int}.
+arithmetic domain (the number of ranges that define it) and by an
+underlying integeral type called the {\em dimensional index type}
+which must be identical to each of the integral element types of the
+ranges that define the arithmetic domain.  By default, the dimensional
+index type of an arithmetic domain is \chpl{int}.
 
 The arithmetic domain type is specified by the syntax of a function
 call to the keyword \chpl{domain} that takes at least an argument
@@ -479,26 +479,24 @@ type \chpl{domain(2,int)}.
 \index{domains!arithmetic, strided}
 \index{arrays!arithmetic, strided}
 
-If the arithmetic sequences that define an arithmetic domain are
-strided, then the arithmetic domain is said to be strided.
+If the ranges that define an arithmetic domain are strided, then the
+arithmetic domain is said to be strided.
 
 The \chpl{by} operator can be applied to any arithmetic domain to
 create a strided arithmetic domain.  It is predefined over an
 arithmetic domain and an integer or a tuple of integers.  In the
-integer case, the arithmetic sequences in each dimension are strided
-by the integer.  In the tuple of integers case, the size of the tuple
-must match the rank of the domain; the integers stride each dimension
-of the domain.  If the arithmetic sequences are already strided, the
-strides applied by the \chpl{by} operator are multiplied to the
-strides of the arithmetic sequneces.
+integer case, the ranges in each dimension are strided by the integer.
+In the tuple of integers case, the size of the tuple must match the
+rank of the domain; the integers stride each dimension of the domain.
+If the ranges are already strided, the strides applied by
+the \chpl{by} operator are multiplied to the strides of the ranges.
 
 \subsubsection{Arithmetic Domain Indexing}
 \label{Arithmetic_Domain_Indexing}
 
 Arithmetic domains support indexing by a value of type \chpl{int} that
 is at least one and no more than the rank of the array.  Indexing into
-an arithmetic domain returns the arithmetic sequence associated with
-that dimension.
+an arithmetic domain returns the range associated with that dimension.
 
 \begin{example}
 In the code
@@ -535,18 +533,17 @@ equivalent.
 \index{arrays!slice}
 
 In addition to slicing an arithmetic array by an arithmetic domain,
-arithmetic arrays also support slicing by arithmetic sequences
-directly.  If each dimension is indexed by an arithmetic sequence,
-this is equivalent to slicing the domain by an arithmetic domain
-defined by those arithmetic sequences.
+arithmetic arrays also support slicing by ranges directly.  If each
+dimension is indexed by an range, this is equivalent to slicing the
+domain by an arithmetic domain defined by those ranges.
 
 \begin{status}
-It is currently required that each dimension be indexed by an
-arithmetic sequence.  There is an expectation that indexing some
-dimensions directly by values of integral type will result in an array
-slice of a different rank.  In the current implementation, doing so
-would result in a promotion of the array indexing function and would
-have similar semantics though with more restrictions.
+It is currently required that each dimension be indexed by an range.
+There is an expectation that indexing some dimensions directly by
+values of integral type will result in an array slice of a different
+rank.  In the current implementation, doing so would result in a
+promotion of the array indexing function and would have similar
+semantics though with more restrictions.
 \end{status}
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
@@ -786,9 +783,8 @@ reassigned.  The indices in a subdomain are known to be indices in a
 domain, allowing for fast bounds-checking.
 
 In the case of arithmetic domains, the subdomain literal may be
-composed of indefinite arithmetic sequences.  In such cases, the
-omitted bounds of the indefinite arithmetic sequences are taken from
-the bounds of the base domain.
+composed of indefinite ranges.  In such cases, the omitted bounds of
+the indefinite ranges are taken from the bounds of the base domain.
 
 \subsection{Predefined Functions and Methods on Domains}
 \index{domains!predefined functions}
