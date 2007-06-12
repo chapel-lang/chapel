@@ -105760,3 +105760,18 @@ Added files:
 	                            modifyDomainArg.future 
 	                            modifyDomainArg.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 11:44:11 -- bradc
+
+Log message:
+	The Linux fix for piping input into gdb didn't work
+	on the Mac, and no newer version of gdb was availble
+	via MacPorts, so I created a Mac-specific .good file
+	for this test.
+
+Modified files:
+	chapel/test/compflags/bradc/gdbddash/: .cvsignore 
+Added files:
+	chapel/test/compflags/bradc/gdbddash/: declint.darwin.good 
+
