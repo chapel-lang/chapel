@@ -6,6 +6,7 @@ void inlineCall(CallExpr* call);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);
+void localReferencePropagation(FnSymbol* fn);
 void globalCopyPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);

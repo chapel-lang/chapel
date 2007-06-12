@@ -89,8 +89,7 @@ void deadCodeElimination(FnSymbol* fn) {
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIMITIVE_MOVE) ||
-              call->isPrimitive(PRIMITIVE_REF))
+          if (call->isPrimitive(PRIMITIVE_MOVE))
             if (SymExpr* se = dynamic_cast<SymExpr*>(call->get(1)))
               if (!DU.get(se) || // DU chain only contains locals
                   !se->var->type->refType) // reference issue

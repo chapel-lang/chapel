@@ -329,13 +329,9 @@ static void insert_call_temps(CallExpr* call) {
   if (call->primitive && !(call->isPrimitive(PRIMITIVE_GET_REF)))
     return;
 
-  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
-    if (parentCall->isPrimitive(PRIMITIVE_MOVE) ||
-        parentCall->isPrimitive(PRIMITIVE_REF))
+  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
+    if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
-    //    if (parentCall->isNamed("_init"))
-    //      call = parentCall;
-  }
 
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_VAR);

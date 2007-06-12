@@ -18,7 +18,7 @@ unifyClassInstances(ClassType* ct, Symbol* sym) {
   bool change = false;
   if (sym->defs.n == 1) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(sym->defs.v[0]->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE) || call->isPrimitive(PRIMITIVE_REF)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
           forv_Vec(SymExpr, se, sym->uses) {
             se->var = rhs->var;
@@ -92,7 +92,7 @@ scalarReplaceClassVars(ClassType* ct, Symbol* sym) {
   bool change = false;
   if (sym->defs.n == 1) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(sym->defs.v[0]->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE) || call->isPrimitive(PRIMITIVE_REF)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
           if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
             change = true;

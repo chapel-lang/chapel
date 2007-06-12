@@ -145,9 +145,12 @@ void compute_sym_uses(BaseAST* base) {
     if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
       if (a->var->defPoint && def_set.set_in(a->var->defPoint)) {
         if (CallExpr* call = dynamic_cast<CallExpr*>(a->parentExpr)) {
-          if ((call->isPrimitive(PRIMITIVE_MOVE) ||
-               call->isPrimitive(PRIMITIVE_REF)) &&
-              call->get(1) == a) {
+          if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == a) {
+            a->var->defs.add(a);
+            continue;
+          } else if (call->primitive &&
+                     !strcmp(call->primitive->name, "fscanf") &&
+                     call->get(3) == a) {
             a->var->defs.add(a);
             continue;
           } else if (call->isResolved()) {

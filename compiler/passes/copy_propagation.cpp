@@ -15,6 +15,8 @@ void copyPropagation(void) {
   if (unoptimized)
     return;
   forv_Vec(FnSymbol, fn, gFns) {
+    //    if (!fDisableReferencePropagation)
+      localReferencePropagation(fn);
     if (!fDisableCopyPropagation)
       localCopyPropagation(fn);
     deadVariableElimination(fn);

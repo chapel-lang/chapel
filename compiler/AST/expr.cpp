@@ -786,25 +786,14 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       break;
     case PRIMITIVE_SET_REF:
-      fprintf(outfile, "/* SET REF */ &(");
+      fprintf(outfile, "&(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_REF:
-      fprintf(outfile, "/* GET REF */ *(");
+      fprintf(outfile, "*(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
-      break;
-    case PRIMITIVE_REF:
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf(outfile, "%s = ", sym->var->cname);
-        if (!dynamic_cast<CallExpr*>(get(2)))
-          fprintf(outfile, "&(");
-        get(2)->codegen(outfile);
-        if (!dynamic_cast<CallExpr*>(get(2)))
-          fprintf(outfile, ")");
-      } else
-        INT_FATAL(this, "bad primitive ref in codegen");
       break;
     case PRIMITIVE_RETURN:
       fprintf(outfile, "return");

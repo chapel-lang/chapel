@@ -2430,8 +2430,7 @@ resolveFns(FnSymbol* fn) {
 
   for_exprs_postorder(expr, fn->body) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE) ||
-          call->isPrimitive(PRIMITIVE_REF)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
           if (sym->var == ret) {
             if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2)))
@@ -2881,8 +2880,7 @@ pruneResolvedTree() {
           call->remove();
         else
           call->get(2)->replace(new SymExpr(sym));
-      } else if (call->isPrimitive(PRIMITIVE_MOVE) ||
-                 call->isPrimitive(PRIMITIVE_REF)) {
+      } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         // Remove types to enable --unoptimized
         SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
         if (sym && dynamic_cast<TypeSymbol*>(sym->var))

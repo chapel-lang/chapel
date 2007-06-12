@@ -391,3 +391,100 @@ void globalCopyPropagation(FnSymbol* fn) {
   forv_Vec(Vec<bool>, out, OUT)
     delete out;
 }
+
+
+//
+// Apply local reference propagation to basic blocks of function
+//
+void localReferencePropagation(FnSymbol* fn) {
+  buildBasicBlocks(fn);
+  compute_sym_uses(fn);
+
+  //
+  // locals: a vector of local variables in function fn that are
+  // candidates for copy propagation
+  //
+  Vec<Symbol*> locals;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    forv_Vec(Expr, expr, bb->exprs) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+          if (var != fn->getReturnSymbol() && !var->isConcurrent)
+            locals.add(def->sym);
+    }
+  }
+
+  //
+  // useSet: a set of SymExprs that are uses of local variables
+  // defSet: a set of SymExprs that are defs of local variables
+  //
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+  forv_Vec(Symbol, local, locals) {
+    forv_Vec(SymExpr, se, local->defs) {
+      defSet.set_add(se);
+    } 
+    forv_Vec(SymExpr, se, local->uses) {
+      useSet.set_add(se);
+    }
+  }
+
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+    AvailableMap available;
+
+    forv_Vec(Expr, expr, bb->exprs) {
+
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, expr);
+
+      //
+      // replace dereferences with available references
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (useSet.set_in(se) && !defSet.set_in(se)) {
+            if (Symbol* sym = available.get(se->var)) {
+              if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
+                if (call->isPrimitive(PRIMITIVE_GET_REF))
+                  call->replace(new SymExpr(sym));
+                else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+                  SymExpr* use = new SymExpr(sym);
+                  se->replace(new CallExpr(PRIMITIVE_SET_REF, use));
+                  useSet.set_add(use);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      //
+      // invalidate available references based on defs
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (defSet.set_in(se)) {
+            Vec<Symbol*> keys;
+            available.get_keys(keys);
+            forv_Vec(Symbol, key, keys) {
+              if (key == se->var || available.get(key) == se->var)
+                available.del(key);
+            }
+          }
+        }
+      }
+
+      //
+      // insert pairs into available copies map
+      //
+      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+        if (call->isPrimitive(PRIMITIVE_MOVE))
+          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
+            if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
+              if (rhs->isPrimitive(PRIMITIVE_SET_REF))
+                if (SymExpr* rse = dynamic_cast<SymExpr*>(rhs->get(1)))
+                  if (defSet.set_in(lhs) && useSet.set_in(rse))
+                    available.put(lhs->var, rse->var);
+    }
+  }
+}
