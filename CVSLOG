@@ -105831,3 +105831,23 @@ Modified files:
 Removed files:
 	chapel/test/domains/bradc/: modifyDomainArg.future 
 
+---------------------------------------------------------------------------
+
+06/12/07 13:48:30 -- bradc
+
+Log message:
+	Added a memory file for the Mac so that the memory
+	related tests would work as expected.
+	
+	Fixed a 32-bit integer assumption in computeProbSize.pl
+	which showed up on the Macintosh due to its 2G memory
+	and 32-bit Perl implementation.  Fixed this by removing
+	"use integer" and putting in explicit casts to integers
+	when computing divisions.
+
+Modified files:
+	chapel/test/studies/hpcc/common/: computeProbSize.pl 
+Added files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.macchapel-mac.good 
+
