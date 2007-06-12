@@ -105655,3 +105655,25 @@ Modified files:
 Removed files:
 	chapel/spec/: Sequences.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 10:46:07 -- deitz
+
+Log message:
+	Fixed all undefined references.
+	
+	Added Range Assignment section (no content).
+	
+	Removed all references to # and #=.
+	
+	Removed Class Promotion section.
+	
+	Removed discussion of casts between tuples and sequences.
+	
+	Removed discussion of C-style format string casts.
+
+Modified files:
+	chapel/spec/: Classes.tex Expressions.tex Iterators.tex 
+	              Lexical_Structure.tex Organization.tex Ranges.tex 
+	              Statements.tex Types.tex 
+
