@@ -110,9 +110,9 @@ else
 endif
 
 if (-r ./COMPSTDIN) then
-    set compstdin = "cat ./COMPSTDIN | "
+    set compstdin = "./COMPSTDIN"
 else
-    set compstdin = ""
+    set compstdin = "/dev/null"
 endif
 
 # get all the source files
@@ -252,8 +252,8 @@ foreach chplsrc ($testsrc)
         continue;
     endif
 
-    echo \[Executing: \"$compstdin$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts\"\]
-    $timedexec $timeout "$compstdin$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts" >& $complog
+    echo \[Executing: \"$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts \< $compstdin\"\]
+    $timedexec $timeout "$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
     set compstatus = $status
     if ( $compstatus != 0 || $executebin == "no") then
