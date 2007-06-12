@@ -105741,3 +105741,22 @@ Log message:
 Modified files:
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/12/07 11:14:03 -- bradc
+
+Log message:
+	Adding new future bug showing that domains are currently
+	treated as though passed by const rather than by reference.
+	Updated the STATUS and FUTURES file (also to include
+	Steve's error message improvements from this morning).
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+	chapel/test/studies/hpcc/RA/performance/: .cvsignore 
+Added files:
+	chapel/test/domains/bradc/: modifyDomainArg.chpl 
+	                            modifyDomainArg.future 
+	                            modifyDomainArg.good 
+
