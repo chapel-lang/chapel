@@ -105862,3 +105862,16 @@ Log message:
 Modified files:
 	chapel/spec/: Modules.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 14:46:22 -- marybeth
+
+Log message:
+	More edits to Language Overview.  I wanted to capture this snapshot with
+	a table of Statements and Expressions.  I'm not liking the format of the
+	table, so I will remove it.  I wanted a version of the overview with the
+	table in case I ever wanted to go back to it.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
