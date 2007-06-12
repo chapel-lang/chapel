@@ -40,7 +40,7 @@ module~(\rsec{Nested_Modules}).
 Chapel programs start by executing the main
 function~(\rsec{The_main_Function}).  The main function takes no
 arguments but command-line arguments can be passed to a program via a
-global sequence of strings
+global array of strings
 called \chpl{argv}~(\rsec{Command_Line_Arguments}).  Command-line
 flags can be passed to a program via configuration variables, as
 discussed in~\rsec{Configuration_Variables}.
@@ -64,15 +64,12 @@ in~\rsec{Programs_with_a_Single_Module}.
 \index{command-line arguments}
 
 \index{argv@\chpl{argv}}
-A predefined variable is used to capture arguments to the execution of
-a program.  It has this declaration:
-\begin{chapel}
-var argv: seq of string;
-\end{chapel}
+A predefined array of strings called \chpl{argv} is used to capture
+arguments to the execution of a program.
 The number of arguments passed to the program execution can be queried
-with the sequence \chpl{length} function as in
+with the array \chpl{numElements} function as in
 \begin{chapel}
-argv.length
+argv.numElements
 \end{chapel}
 
 \begin{status}
