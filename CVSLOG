@@ -105601,3 +105601,17 @@ Removed files:
 	chapel/test/functions/bradc/: weirdMessage.future 
 	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
 
+---------------------------------------------------------------------------
+
+06/12/07 09:25:28 -- deitz
+
+Log message:
+	Removed conditional expressions and let expressions from the list of
+	valid lvalues.  Calling this out separately since I forgot to mention
+	this change in my setter->ref log message.  Previously, conditional
+	expressions were valid lvalues, though I don't think let expressions
+	ever were.
+
+Modified files:
+	chapel/spec/: Expressions.tex 
+
