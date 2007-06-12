@@ -120,6 +120,7 @@ static void codegen_header(void) {
   cnames.put("clone", 1);
   cnames.put("new", 1);
   cnames.put("register", 1);
+  cnames.put("signal", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
