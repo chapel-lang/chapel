@@ -446,6 +446,7 @@ while ( $#argv > 0 )
                 echo "          -onetest"
 		echo "          -startdir ."
                 echo "          -norecurse"
+                echo "          -performance"
                 echo "          -futures"
                 echo "          -futuresonly"
 		echo "          -valgrind"
@@ -599,7 +600,7 @@ endif
 #   Take off : with sed
 #
 if ($recurse == 1) then
-    set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | sed 's/://g'`
+    set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | grep -v perfdat | sed 's/://g'`
     # gotta add ./ on in case -startdir is specified
     set dirs = (./ $dirs)
 else
