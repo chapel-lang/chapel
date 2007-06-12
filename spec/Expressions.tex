@@ -179,14 +179,9 @@ variable function.  Valid lvalue expressions include the following:
 \item
  Member access expressions.
 \item
- Call expressions that are either setters or variable functions.
+ Call expressions of variable functions.
 \item
  Indexing expressions.
-\item
- Let expressions where the inner expression is an lvalue expression.
-\item
- Conditional expressions where the then- and else-expressions are
- lvalue expressions.
 \end{itemize}
 
 LValue expressions are given by the following syntax:
@@ -195,8 +190,6 @@ lvalue-expression:
   variable-expression
   member-access-expression
   call-expression
-  let-expression
-  conditional-expression.
 \end{syntax}
 The syntax is more relaxed than the definition above.  For example, not
 all \sntx{call-expression}s are lvalues.
