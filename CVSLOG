@@ -105720,3 +105720,24 @@ Modified files:
 Removed files:
 	chapel/test/compflags/bradc/gdbddash/: gdb.in 
 
+---------------------------------------------------------------------------
+
+06/12/07 11:04:35 -- bradc
+
+Log message:
+	Hmm, last change caused a symmetric problem to the
+	one I was trying to fix on Linux, so I switched to
+	piping in COMPSTDIN using "<" rather than piping the
+	file it named through cat.
+	
+	Sorry for not testing that last change before committing.
+	It only affected one test, and patching from the Mac to
+	Linux was awkward enough that I was lazy about it.
+	Need to test whether this approach works on Mac or not.
+	If not, can try a newer version of gdb and/or make a
+	specialized output file for the Mac once it has a static
+	name.
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+
