@@ -105625,3 +105625,18 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex MODS 
 
+---------------------------------------------------------------------------
+
+06/12/07 10:29:04 -- deitz
+
+Log message:
+	Added a Ranges section and copied the Arithmetic Sequences section
+	into this new file.
+	
+	Added the beginning of a promotion section to Iterators.
+
+Modified files:
+	chapel/spec/: Iterators.tex Sequences.tex spec.tex 
+Added files:
+	chapel/spec/: Ranges.tex 
+
