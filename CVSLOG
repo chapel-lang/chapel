@@ -105775,3 +105775,16 @@ Modified files:
 Added files:
 	chapel/test/compflags/bradc/gdbddash/: declint.darwin.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 11:52:40 -- bradc
+
+Log message:
+	Similar gdb fix to the previous for debugging
+	the executable.
+
+Modified files:
+	chapel/test/execflags/bradc/gdbddash/: .cvsignore 
+Added files:
+	chapel/test/execflags/bradc/gdbddash/: declint.darwin.good 
+
