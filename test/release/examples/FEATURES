@@ -1,0 +1,210 @@
+==================================
+Feature Charts for Chapel Examples
+==================================
+
+-------------------------------------------------------------------------------
+               |              I/O and program control features
+               |
+test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  read  = uses read() statements to do input
+  write = uses write() statements to do output
+  files = uses files for I/O
+  halt  = uses the halt statement for abnormal program termination
+-------------------------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------------------------
+               |              High-level program structure
+               |
+test           | modls | stdmd | funcs | iters | confg | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  modls = uses modules to organize user code
+  stdmd = uses standard modules
+  funcs = uses functions to define user code
+  iters = uses iterators
+  confg = uses configuration variables for program parameters
+-------------------------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------------------------
+               |                         Basic Types
+               |
+test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  strng = uses string types and operators
+  tuple = uses tuple types and operators
+  recrd = uses record types
+  class = uses classes
+  gener = uses generic types
+  infer = uses type inference
+  query = uses type queries
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+               |               Domain/Array Types/Operations
+               |
+test           | arith | enum  | assoc | opque | spars | index | subdm | reall
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  arith = uses arithmetic domains/arrays
+  enum  = uses enumerated domains/arrays
+  assoc = uses associative domains/arrays
+  opque = uses opaque domains/arrays
+  spars = uses sparse domains/arrays
+  index = uses index types
+  subdm = uses subdomains
+  reall = uses array reallocation
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+               |                   Data Parallel Features
+               |
+test           | foral | whole | slice | reind | reduc | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  foral = uses forall loops
+  whole = uses whole-array assignment
+  slice = uses array slices
+  reind = uses array reindexing
+  reduc = uses reductions
+-------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------
+               |                Task Parallel Features
+               |
+test           | begin | cobeg | srial | sync  | xxxxx | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  begin = uses begin statements
+  cobeg = uses cobegin statements
+  srial = uses the serial statement
+  sync  = uses sync variables
+-------------------------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------------------------
+               |              
+               |
+test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+genericStack2  |       |       |       |       |       |       |       |
+hello          |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+quickSort      |       |       |       |       |       |       |       |
+prod-cons      |       |       |       |       |       |       |       |
+tree_construct |       |       |       |       |       |       |       |
+hpcc06/stream  |       |       |       |       |       |       |       |
+hpcc06/ra      |       |       |       |       |       |       |       |
+hpcc06/fft     |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+-------------------------------------------------------------------------------
