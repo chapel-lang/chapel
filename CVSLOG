@@ -105875,3 +105875,30 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 15:09:13 -- bradc
+
+Log message:
+	Macintoshes are case-insensitive when it comes to
+	filenames, so when we have two modules with the
+	same name but different cases, it causes the same
+	file to get overwritten twice on the Macintosh.
+	For example, a program containing a user module
+	"sort" and the standard module "Sort" would cause
+	the second file to overwrite the first.
+	
+	This change uniquifies our output filenames when
+	they would be the same in a case-insensitive
+	OS by concatenating integers to the filename
+	until a unique filename is found.  Thus, in the
+	example above, one file would be generated with
+	the name sort/Sort and the second with the name
+	Sort2/sort2 (depending on which was generated
+	first).
+	
+	Haven't tested this on the Mac yet, only on Linux.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
