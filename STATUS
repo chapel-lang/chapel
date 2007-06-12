@@ -50,6 +50,7 @@ Modules
 
 Unimplemented Features:
 * The argv array
+* User-level initialize() routines are not yet supported
 * Using modules in files not named on the compiler's command-line
 
 Bugs:

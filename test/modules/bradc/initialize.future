@@ -1,0 +1,4 @@
+unimplemented feature: module initializers
+
+User module-level initialize() routines are not yet supported in the
+implementation.

@@ -177,3 +177,6 @@ unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithD
 
 * a mechanism for controlling the precision/width of scalar values
 feature request: output formatting [io/bradc/formatoutput]
+
+* User-level initialize() routines are not yet supported
+unimplemented feature: module initializers [modules/bradc/initialize]
