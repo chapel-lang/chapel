@@ -105918,3 +105918,19 @@ Removed files:
 	chapel/test/release/examples/: genericStack2.chpl 
 	                               genericStack2.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 16:18:55 -- bradc
+
+Log message:
+	Added linkedList example to Makefile, README,
+	and .cvsignore (David, I could've sworn you
+	did this but can't find it in any of the logs).
+	
+	Alphabetized the tests in the Makefile.
+	
+	Fixed the description of hello.chpl in the README.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore Makefile README 
+
