@@ -105976,3 +105976,28 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+06/12/07 16:46:36 -- deitz
+
+Log message:
+	Added a localReferencePropagation optimization run before
+	localCopyPropagation in the copyPropagation pass.  This is similar to
+	copy propagation except the available copies are from values to
+	references.  This decreases the generated code count of Jacobi from
+	2066 to 1328, which is still probably much higher than before the
+	setter->ref change.  There is more low-hanging fruit.
+	
+	Handled fscanf primitive as a def of the third argument.  Ugh.
+	
+	Removed obsolete primitive PRIMITIVE_REF.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	chapel/compiler/include/: optimizations.h primitive.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	                                deadCodeElimination.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         scalarReplace.cpp 
+
