@@ -105688,3 +105688,35 @@ Log message:
 Modified files:
 	chapel/util/pastPerformance/: MS3-ra.dat 
 
+---------------------------------------------------------------------------
+
+06/12/07 10:56:56 -- bradc
+
+Log message:
+	Changed the way that COMPSTDIN is handled by the
+	testing system in two ways:
+	
+	(1) made it so that COMPSTDIN contains the input
+	to be piped in rather than redirecting to a separate
+	file (why did I ever do that?!?);
+	
+	(2) piped it into the compiler using:
+	      cat COMPSTDIN | chpl ...
+	    rather than piping it back into the compiler using:
+	      chpl ... < `cat COMPSTDIN`
+	
+	This fixes a regression on the Mac in which its
+	copy of gdb complains about certain ways of piping
+	in stdin, and should also be more portable across
+	versions of gdb for the purposes of testing.
+	
+	Had the PREDIFF script pipe out one more line that
+	gdb on the Mac prints out during debugging.
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+	chapel/test/compflags/bradc/gdbddash/: COMPSTDIN PREDIFF 
+Removed files:
+	chapel/test/compflags/bradc/gdbddash/: gdb.in 
+
