@@ -1,7 +1,0 @@
-error message: prints statement instead of call
-
-I was surprised that this test printed out my whole statement as the
-unresolved call.  Is this implying that the "=" is the unresolved
-call?  Seems like "=" doesn't have a hope of being resolved unless a()
-is first resolved, so I would've guessed that either a() would result
-in the unresolved call or that a would've been an unresolved symbol.
