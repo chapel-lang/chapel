@@ -105589,3 +105589,15 @@ Log message:
 Added files:
 	chapel/test/release/examples/: FEATURES 
 
+---------------------------------------------------------------------------
+
+06/12/07 09:15:25 -- deitz
+
+Log message:
+	Removed two futures that now show better error messages due to the
+	setter->ref change.
+
+Removed files:
+	chapel/test/functions/bradc/: weirdMessage.future 
+	chapel/test/studies/hpcc/RA/marybeth/: ra-uint-test1.future 
+
