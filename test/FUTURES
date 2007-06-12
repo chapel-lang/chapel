@@ -177,6 +177,3 @@ unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithD
 
 * a mechanism for controlling the precision/width of scalar values
 feature request: output formatting [io/bradc/formatoutput]
-
-* Domains arguments are passed by const rather than by reference
-bug: domains passed by const rather than ref [domains/bradc/modifyDomainArg]

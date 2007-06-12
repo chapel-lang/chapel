@@ -1,5 +1,0 @@
-bug: domains passed by const rather than ref
-
-The compiler currently prevents domains that are passed as arguments
-from being reassigned.  Domains should be passed by reference by
-default and therefore modifiable.

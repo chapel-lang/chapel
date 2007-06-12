@@ -1591,6 +1591,7 @@ insertFormalTemps(FnSymbol* fn) {
       VarSymbol* tmp = new VarSymbol(stringcat("_formal_tmp_", formal->name));
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
+          !formal->type->symbol->hasPragma("domain") &&
           !formal->type->symbol->hasPragma("array"))
         tmp->consClass = VAR_CONST;
       tmp->isCompilerTemp = true;
