@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include "astutil.h"
 #include "beautify.h"
@@ -370,15 +371,47 @@ void codegen(void) {
 
   codegen_config(mainfile.fptr);
 
+  ChainHashMap<char*, StringHashFns, int> filenames;
   forv_Vec(ModuleSymbol, currentModule, allModules) {
     mysystem(stringcat("# codegen-ing module", currentModule->name),
              "generating comment for --print-commands option");
 
+    // Macs are case-insensitive when it comes to files, so
+    // the following bit of code creates a unique filename
+    // with case-insensitivity taken into account
+
+    // create the lowercase filename
+    char lowerFilename[FILENAME_MAX];
+    sprintf(lowerFilename, "%s", currentModule->name);
+    for (unsigned int i=0; i<strlen(lowerFilename); i++) {
+      lowerFilename[i] = tolower(lowerFilename[i]);
+    }
+
+    // create a filename by bumping a version number until we get a
+    // filename we haven't seen before
+    char filename[FILENAME_MAX];
+    sprintf(filename, lowerFilename);
+    int version = 1;
+    while (filenames.get(filename)) {
+      version++;
+      sprintf(filename, "%s%d", lowerFilename, version);
+    }
+    filenames.put(filename, 1);
+
+    // build the real filename using that version number -- preserves
+    // case by default by going back to currentModule->name rather
+    // than using the lowercase filename
+    if (version == 1) {
+      sprintf(filename, "%s", currentModule->name);
+    } else {
+      sprintf(filename, "%s%d", currentModule->name, version);
+    }
+    
     fileinfo modulefile;
-    openCFile(&modulefile, currentModule->name, "c");
+    openCFile(&modulefile, filename, "c");
     currentModule->codegenDef(modulefile.fptr);
     closeCFile(&modulefile);
-    fprintf(mainfile.fptr, "#include \"%s%s\"\n", currentModule->name, ".c");
+    fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     beautify(&modulefile);
   }
 
