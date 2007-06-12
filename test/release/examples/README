@@ -7,9 +7,10 @@ This directory contains the following example codes:
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
      genericStack.chpl      : generic stack classes (list- and array-based)
-     hello.chpl             : "Hello, world!" program using a config variable
+     hello.chpl             : simple Chapel "Hello, world!" program
      iterators.chpl         : sample iterators
      jacobi.chpl            : Jacobi iteration
+     linkedList.chpl        : generic linked list example
      norm.chpl              : sample module for computing array norms
      parallelQuickSort.chpl : parallel quick sort using cobegin and serial
      prod-cons.chpl         : producer-consumer using a sync variable

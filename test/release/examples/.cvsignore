@@ -3,11 +3,11 @@ a.out
 beer
 blockLU
 genericStack
-genericStack2
 hello
 iterators
 jacobi
 jacobi-routine
+linkedList
 norm
 parallelQuickSort
 prod-cons

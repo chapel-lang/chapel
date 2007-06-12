@@ -7,13 +7,15 @@ TARGETS = \
 	hello \
 	beer \
         blockLU \
-	jacobi \
 	genericStack \
+	iterators \
+	jacobi \
+	linkedList \
 	norm \
 	parallelQuickSort \
 	prod-cons \
 	tree_construct \
-	iterators
+
 
 default: all hpcc06
 
