@@ -149,6 +149,21 @@ expressions.
 Forall expressions are evaluated serially.
 \end{status}
 
+\subsubsection{Filtering Predicates}
+\label{Filtering_Predicates}
+\index{forall expressions!and conditional expressions}
+
+An if expression that is immediately enclosed by a forall expression
+does not require an else part.  The result of the forall expression is
+a sequence of rank one.
+\begin{example}
+The following expression returns every other element in a sequence
+starting with the first:
+\begin{chapel}
+[i in 1..s.length] if i % 2 == 1 then s(i)
+\end{chapel}
+\end{example}
+
 \subsection{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
