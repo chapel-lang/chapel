@@ -105788,3 +105788,15 @@ Modified files:
 Added files:
 	chapel/test/execflags/bradc/gdbddash/: declint.darwin.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 11:55:22 -- bradc
+
+Log message:
+	Added "signal" to the list of C identifiers that should
+	be munged if used in Chapel.  This fixes
+	parallel/single/waynew/sarray.chpl on the Mac.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
