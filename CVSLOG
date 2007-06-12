@@ -105902,3 +105902,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+06/12/07 15:26:08 -- bradc
+
+Log message:
+	Combined both genericStack examples into a single
+	example to share the test code.
+
+Modified files:
+	chapel/test/release/examples/: FEATURES Makefile README 
+	                               genericStack.chpl 
+	                               genericStack.good 
+Removed files:
+	chapel/test/release/examples/: genericStack2.chpl 
+	                               genericStack2.good 
+
