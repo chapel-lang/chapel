@@ -105934,3 +105934,19 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: .cvsignore Makefile README 
 
+---------------------------------------------------------------------------
+
+06/12/07 16:20:09 -- bradc
+
+Log message:
+	Adding future for module initialize routines
+	as an unimplemented feature and updated the
+	STATUS and FUTURES files to reflect this.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+Added files:
+	chapel/test/modules/bradc/: initialize.chpl initialize.future 
+	                            initialize.good 
+
