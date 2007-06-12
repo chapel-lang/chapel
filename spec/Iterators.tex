@@ -36,8 +36,9 @@ yield-statement:
 
 Iterator functions can be called within for or forall loops, in which
 case they are executed in an interleaved manner with the body of the
-loop, or can be called in any expression context, in which case they
-evaluate to an array of values.
+loop, can be captured in new variable declarations or arrays, in which
+case they evaluate to an array of values, or can be passed to a
+generic function argument.
 
 \subsubsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
@@ -50,11 +51,10 @@ iteration, the iterator yields a value and the body is executed.
 \label{Iterators_as_Arrays}
 \index{iterators!and arrays}
 
-If an iterator function is accessed outside of the context of a for or
-forall loop iterator expression, then the iterator is iterated over in
-total and the expression evaluates to a one-dimensional arithmetic
-array that contains the values returned by the iterator on each
-iteration.
+If an iterator function is captured into a new variable declaration or
+assigned to an array, the iterator is iterated over in total and the
+expression evaluates to a one-dimensional arithmetic array that
+contains the values returned by the iterator on each iteration.
 \begin{example}
 Given an iterator
 \begin{chapel}
@@ -64,4 +64,104 @@ iterator squares(n: int): int {
 }
 \end{chapel}
 the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
+\end{example}
+
+\subsubsection{Iterators and Generics}
+\label{Iterators_and_Generics}
+\index{iterators!and generics}
+
+If an iterator call expression is passed to a function argument that
+is generic, the iterator is passed without being evaluated and is
+treated as a closure within the generic function.
+
+\subsection{Scalar Promotion}
+\label{Scalar Promotion}
+
+A function requires scalar promotion if an iterator (or array, domain,
+or range) is passed to a formal argument with a type that allows the
+yielded type of the iterator to dispatch to the formal argument.  In
+the case of arrays, the yielded type is the element type.  In the case
+of domains and ranges, the yielded type is the index type.  The rules
+of when an overloaded function is promoted are discussed
+in~\rsec{Function_Resolution}.  If a promoted function returns a
+value, the promoted function becomes an iterator that is controlled by
+a loop over the iterator (or array, domain, or range) that it is
+promoted by.
+\begin{example}
+Given an iterator
+\begin{chapel}
+iterator oneToFive() {
+  for i in 1..5 do
+    yield i;
+}
+\end{chapel}
+and a function
+\begin{chapel}
+def square(x: int) return x**2;
+\end{chapel}
+then the call \chpl{square(oneToFive())} results in the promotion of
+the \chpl{square} function over the values returned by
+the \chpl{oneToFive} iterator.  The result is an iterator that returns
+the values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
+Instead of using the \chpl{oneToFive} iterator to promote
+the \chpl{square} function, the range \chpl{1..5} could be used
+directly as in \chpl{square(1..5)}.  Also note that operator
+invocations are treated as function calls in terms of promotion
+so \chpl{(1..5)**2} is also equivalent.
+\end{example}
+
+\subsubsection{Zipper Promotion}
+\label{Zipper_Promotion}
+\index{scalar promotion!zipper iteration}
+
+Consider a function \chpl{f} with formal
+arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
+arguments \chpl{a1}, \chpl{a2},~... that are not promoted.  The call
+\begin{chapel}
+f(s1, s2, ..., a1, a2, ...)
+\end{chapel}
+is equivalent to
+\begin{chapel}
+[(e1, e2, ...) in (s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
+\end{chapel}
+The usual constraints of zipper iteration apply to zipper promotion so
+the promoted actuals must have the same shape.
+
+\begin{example}
+Given a function defined as
+\begin{chapel}
+def foo(i: int, j: int) {
+  write(i, " ", j, " ");
+}
+\end{chapel}
+and a call to this function written
+\begin{chapel}
+foo(1..3, 4..6);
+\end{chapel}
+then the output is ``1 4 2 5 3 6 ''.
+\end{example}
+
+\subsubsection{Tensor Product Promotion}
+\label{Tensor_Product_Promotion}
+\index{scalar promotion!tensor product iteration}
+
+If the function \chpl{f} were called by using square brackets instead
+of parentheses, the equivalent rewrite would be
+\begin{chapel}
+[(e1, e2, ...) in [s1, s2, ...]] f(e1, e2, ..., a1, a2, ...)
+\end{chapel}
+There are no constraints on tensor product promotion.
+
+\begin{example}
+Given a function defined as
+\begin{chapel}
+def foo(i: int, j: int) {
+  write(i, " ", j, " ");
+}
+\end{chapel}
+and a call to this function written
+\begin{chapel}
+foo[1..3, 4..6];
+\end{chapel}
+then the output is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''.
 \end{example}
