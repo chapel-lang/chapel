@@ -17,7 +17,7 @@ BLC    added "range" type to language to replace old "arithmetic sequence" conce
        - +, -, *, / operators on range/scalar combinations
        discuss stridable parameter for ranges and domains
 
-SJD    added support for creating array aliases
+CLOSED SJD added support for creating array aliases
        e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
 DMI    support for standard math, bitwise, and comparison operators for tuples
        e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"

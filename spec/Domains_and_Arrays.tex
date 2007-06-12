@@ -382,6 +382,46 @@ var A: [D] t = [i in D] e;
 The scope of the forall expression is as in the rewritten part so the
 expression \chpl{e} can include references to index \chpl{i}.
 
+\subsubsection{Array Aliases}
+\label{Array_Aliases}
+\index{=>@\chpl{=>}}
+
+Array slices alias the data in arrays rather than copying it.  Such
+array aliases can be captured and optionally reindexed with the array
+alias operator \chpl{=>}.  The syntax for capturing an alias to an
+array requires a new variable declaration:
+\begin{syntax}
+array-alias-declaration:
+  `var' identifier reindexing-expression[OPT] => array-expression ;
+
+reindexing-expression:
+  [ domain-expression ]
+
+array-expression:
+  expression
+\end{syntax}
+The identifier is an alias to the array specified in
+the \sntx{array-expression}.
+
+The optional \sntx{reindexing-expression} allows the domain of the
+array alias to be reindexed.  The shape of the domain in
+the \sntx{reindexing-expression} must match the shape of the domain of
+the \sntx{array-expression}.  Indexing via the alias is governed by
+the new indices.
+
+\begin{example}
+In the code
+\begin{chapel}
+var A: [1..5, 1..5] int;
+var AA: [0..2, 0..2] => A[2..4, 2..4];
+\end{chapel}
+an array alias \chpl{AA} is created to alias the interior of
+array \chpl{A} given by the slice \chpl{A[2..4, 2..4]}.  The
+reindexing expression changes the indices defined by the domain of the
+alias to be zero-based in both dimensions.  Thus \chpl{AA(1,1)} is
+equivalent to \chpl{A(3,3)}.
+\end{example}
+
 \subsection{Arithmetic Domains and Arrays}
 \label{Arithmetic_Domains_and_Arrays}
 \index{domains!arithmetic}
@@ -504,7 +544,9 @@ defined by those arithmetic sequences.
 It is currently required that each dimension be indexed by an
 arithmetic sequence.  There is an expectation that indexing some
 dimensions directly by values of integral type will result in an array
-slice of a different rank.
+slice of a different rank.  In the current implementation, doing so
+would result in a promotion of the array indexing function and would
+have similar semantics though with more restrictions.
 \end{status}
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
