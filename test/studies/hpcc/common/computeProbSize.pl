@@ -1,14 +1,12 @@
 #!/usr/bin/perl
 
-use integer;
-
 $memoryInBytes = @ARGV[0];
 
 $memoryTarget = $memoryInBytes / 4;
 
-$streamProbSize = $memoryTarget / (3*8);
-$raProbSize = $memoryTarget / (1*8);
-$fftProbSize = $memoryTarget / (2*8);
+$streamProbSize = int($memoryTarget / (3*8));
+$raProbSize = int($memoryTarget / (1*8));
+$fftProbSize = int($memoryTarget / (2*8));
 
 printf "For default settings:\n";
 printf "  Stream = $streamProbSize\n";
