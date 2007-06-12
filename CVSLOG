@@ -105677,3 +105677,14 @@ Modified files:
 	              Lexical_Structure.tex Organization.tex Ranges.tex 
 	              Statements.tex Types.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 10:53:50 -- bradc
+
+Log message:
+	Removed a spurious performance spike from
+	these numbers that went away upon retesting.
+
+Modified files:
+	chapel/util/pastPerformance/: MS3-ra.dat 
+
