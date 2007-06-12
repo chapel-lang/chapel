@@ -329,20 +329,6 @@ one of the base classes contains fields either directly or from base
 classes that it is derived from.  The methods defined by the other
 base classes can be overridden.
 
-\subsection{Class Promotion of Scalar Functions}
-\label{Scalar Promotion}
-\index{classes!promotion}
-
-\index{this@\chpl{this}}
-A class can be defined to promote scalar functions by defining an
-iterator in the class named \chpl{this} and specifying a return type.
-The return type indicates the type that the class promotes.  The body
-of the \chpl{this} iterator is ignored.  The class must also implement
-the iterator interface as described in~\rsec{Iterator_Interface}.
-
-There is an expectation that class promotion will be implemented in a
-different way in the future.
-
 \subsection{Nested Classes}
 \label{Nested_Classes}
 \index{classes!nested}

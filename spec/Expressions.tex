@@ -144,25 +144,15 @@ The expression is converted to the specified type.  Except for the
 casts listed below, casts are restricted to valid explicit
 conversions~(\rsec{Explicit_Conversions}).
 
-The following casts have special meanings and do not correspond to an
+The following cast has a special meaning and does not correspond to an
 explicit conversion:
 \begin{itemize}
-\item \index{tuples!cast to sequences}
-  A cast to the keyword \chpl{seq} converts a tuple to a sequence as
-  described in~\rsec{Conversions_Between_Sequences_and_Tuples}.
-\item \index{sequences!cast to tuples}
-  A cast to a parameter expression of integral type converts a
-  sequence to a tuple as described
-  in~\rsec{Conversions_Between_Sequences_and_Tuples}.
 \item \index{complex!casts from tuples}
   A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
   complex where the first component becomes the real part and the
   second component becomes the imaginary part.  The size of the
   complex is determined from the size of the components based on
   implicit conversions.
-\item \index{strings!format string casts}
-  A cast from any primitive type to a string literal that is a C-style
-  format string creates a formatted string based on that format.
 \end{itemize}
 
 \subsection{LValue Expressions}
@@ -223,7 +213,6 @@ unary \verb@+ - ~@ & right & sign and bitwise negation \\
 \verb@!@ & right & logical negation \\
 \verb@&&@ & left & logical and \\
 \verb@||@ & left & logical or \\
-\verb@#@ & left & sequence concatenation \\
 \verb@..@ & left & arithmetic sequences \\
 \verb@in@ & left & forall expressions \\
 \verb@by@ & left & striding sequences \\
@@ -254,7 +243,7 @@ binary-expression:
   expression binary-operator expression
 
 binary-operator: one of
-  + - * / % ** & | ^ << >> && || == != <= >= < > #
+  + - * / % ** & | ^ << >> && || == != <= >= < >
 \end{syntax}
 
 The operators are defined in subsequent sections.
@@ -951,13 +940,6 @@ where \chpl{i} is an integer appends the value of \chpl{i} to the
 string literal.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
 \end{example}
-
-\subsubsection{The Sequence Concatenation Operator}
-\label{The_Sequence_Concatenation_Operator}
-\index{\#@\chpl{\#}}
-
-The operator \chpl{#} is predefined on sequences and their element
-types.  It is described in~\rsec{Sequence_Concatenation}.
 
 \subsubsection{The Arithmetic Domain By Operator}
 \label{The_Arithmetic_Domain_By_Operator}

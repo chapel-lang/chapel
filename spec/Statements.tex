@@ -131,7 +131,6 @@ example, a variable.  Assignment statements are given by
 \index{^=@\chpl{^=}}
 \index{||=@\chpl{||=}}
 \index{&&=@\chpl{&&=}}
-\index{\#=@\chpl{\#=}}
 \index{<<=@\chpl{<<=}}
 \index{>>=@\chpl{>>=}}
 \begin{syntax}
@@ -139,7 +138,7 @@ assignment-statement:
   lvalue-expression assignment-operator expression
 
 assignment-operator: one of
-   = += -= *= /= %= **= &= |= ^= &&= ||= #= <<= >>=
+   = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
 \end{syntax}
 
 The expression on the right-hand side of the assignment operator is
@@ -177,7 +176,7 @@ those types~(\rsec{Implicit_Conversions}).
 The validity and semantics of assigning between
 classes~(\rsec{Class_Assignment}), records~(\rsec{Record_Assignment}),
 unions~(\rsec{Union_Assignment}), tuples~(\rsec{Tuple_Assignment}),
-sequences~(\rsec{Sequence_Assignment}),
+ranges~(\rsec{Range_Assignment}),
 domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
 is discussed in these later sections.
 
@@ -314,7 +313,7 @@ unconditionally the first time.
 \index{for@\chpl{for}}
 \index{for loops}
 
-The for loop iterates over sequences, domains, arrays, iterators, or
+The for loop iterates over ranges, domains, arrays, iterators, or
 any class that implements the structural iterator interface.  The
 syntax of the for loop is given by:
 \begin{syntax}

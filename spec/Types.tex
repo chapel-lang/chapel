@@ -3,7 +3,7 @@
 
 Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
-classes, records, unions, tuples, sequences, domains, and arrays.
+classes, records, unions, tuples, ranges, domains, and arrays.
 This section defines the primitive types, enumerated types, and type
 aliases.
 
@@ -21,9 +21,8 @@ type-declaration-statement:
 
 Classes are discussed in~\rsec{Classes}.  Records are discussed
 in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
-discussed in~\rsec{Tuples}.  Sequences are discussed
-in~\rsec{Sequences}.  Domains and arrays are discussed
-in~\rsec{Domains_and_Arrays}.
+discussed in~\rsec{Tuples}.  Ranges are discussed in~\rsec{Ranges}.
+Domains and arrays are discussed in~\rsec{Domains_and_Arrays}.
 
 
 \subsection{Primitive Types}
@@ -313,11 +312,11 @@ A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
 is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
-\subsection{Sequence Types}
-\label{Sequence_Types}
+\subsection{Range Types}
+\label{Range_Types}
 
-A sequence defines an ordered set of values of some type.  Sequences
-are defined in~\rsec{Sequences}.
+A range defines an integral sequence of some integral type.  Ranges
+are defined in~\rsec{Ranges}.
 
 \subsection{Domain and Array Types}
 \label{Domain_and_Array_Types}
