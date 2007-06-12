@@ -105950,3 +105950,14 @@ Added files:
 	chapel/test/modules/bradc/: initialize.chpl initialize.future 
 	                            initialize.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 16:28:53 -- marybeth
+
+Log message:
+	More edits to the overview.  I removed the table format for the statements
+	and expressions subsection.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
