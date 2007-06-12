@@ -582,238 +582,196 @@ to an array or an array slice.
 A11 => A(block1,block1);
 \end{chapel}
 
-\paragraph{Scans and Reductions}
+%\paragraph{Scans and Reductions}
 
-\subsubsection{Statements and Expressions}
+\subsubsection{Statements}
+The Chapel language supports serial and parallel statements.  In the
+following paragraphs, the serial statements are discussed first, followed
+by the parallel statements.
 
-\paragraph{Serial Statements}
-\begin{center}
-\begin{tabular}{|l|l|l|}
-%\begin{longtable}{|l|l|l|}
-\hline
- & & \\
-{\bf Statement} & {\bf Description} & {\bf Example} \\
- & & \\
-\hline
-%\endhead
-%\hline
-%\endfoot
- & & \\
-Block Statement & 
-\begin{minipage}[t]{2in}
+\paragraph{Block Statement}  
 A block statement is delimited by braces, \{ \} and it
 contains a set of Chapel statements separated by semi-colons.  
 Variables declared within a block statement are local to that block.
-\end{minipage}
-&
-\begin{minipage}[t]{3in}
-\begin{chapel0}
-// Block statement to compute Givens rotation
+
+\begin{example}
+The following code shows a block of statements for computing
+a Givens rotation.
+\begin{chapel}
 {
 tau = -a/b;
 s = 1/sqrt(1 + tau*tau);
 c = s*tau;
 }
-\end{chapel0} 
-\end{minipage} \\
- & & \\
-\hline
- & & \\
-For Loop Statements &
-\begin{minipage}[t]{2in}
-In Chapel, a for loop defines an index and
+\end{chapel} 
+\end{example} 
+
+\paragraph{For Loop Statements} 
+In Chapel, a \chpl{for} loop statement defines an index and
 specifies either a function, expression or a variable to
 iterate over.  For loops may be nested.  They
 may also be defined with more than one index variable.
-\end{minipage}
-&
-\begin{minipage}[t]{2in}
-\begin{chapel0}
+
+\begin{example}
+The following code gives three examples of \chpl{for} loops. 
+\begin{chapel}
 for (i,j) in [1..n,1..n] {
   sum += x(i,j);
 }
+
 for index in userDefinedIterator(n) {
   sum += y(index);
 }
-\end{chapel0}
-\end{minipage}\\
- & & \\
-\hline
- & & \\
-Conditional Statement &
-\begin{minipage}[t]{2in}
+
+for ij in D do sum += z(ij);
+\end{chapel}
+The first \chpl{for} loop defines a tuple of integers for the
+index of the loop and iterates over the tensor product promotion
+of the two arithmetic ranges from \chpl{1} to \chpl{n}.  For
+more information about tensor product promotion 
+see~\rsec{Tensor_Product_Promotion}.   
+
+The second \chpl{for} loop demonstrates the use of 
+an iterator function.  The third \chpl{for} loop iterates over a
+domain D and shows the alternative definition of a \chpl{for} loop
+using the \chpl{do} keyword when the loop body is a single statement.
+\end{example}
+
+\paragraph{Conditional Statement} 
 The Chapel conditional statement uses the standard
 \chpl{if}--\chpl{then}--\chpl{else} structure.  When
 the then clause is a block of statements, delimited with
 `\{' and `\}', the \chpl{then} keyword may be omitted.
-\end{minipage}
-&
-\begin{minipage}[t]{2in}
-\begin{chapel0}
-if (a == 0.0) then x = 0.0;
-else x = a*y;
+
+\begin{example}
+\begin{chapel}
+if (a == 0.0) then 
+  x = 0.0;
+else 
+  x = a*y;
 if (b != 0.0) {
   z = b*x;
 }
-\end{chapel0}
-\end{minipage}\\
-& & \\
-\hline
- & & \\
-Select Statement &
-\begin{minipage}[t]{2in}
+\end{chapel}
+The example demonstrates two conditional statements, one with
+both \chpl{then} and \chpl{else} clauses, and one with just a
+\chpl{then} clause.
+\end{example}
+
+\paragraph{Select Statement} 
 Chapel provides a \chpl{select} statement that allows the option of
 executing different statement blocks, depending on the value of the
 select variable.
-\end{minipage}
-&
-\begin{minipage}[t]{2in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 select pos {
   when "first" do x = y(1);
   when "last" do x = y(n);
   when "middle" do x = y(((n/2):int) + n%2);
   otherwise writeln("invalid position");
 }
-\end{chapel0}
-\end{minipage}\\
-& & \\
-\hline
- & & \\
-Type Select Statement &
-\begin{minipage}[t]{2in}
+\end{chapel}
+In the above example, the \chpl{select} statement specifies
+four possible statements to execute, depending on the value of
+the string, \chpl{pos}.
+\end{example}
+
+\paragraph{Type Select Statement} 
 The \chpl{type select} statement allows the choice of
 executing different statement blocks depending on the type
 of the select variable.
-\end{minipage}
-&
-\begin{minipage}[t]{2in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 type select ind {
   when int do y = x(ind);
   when real, uint do y = x(ind:int);
   otherwise y = 0.0;
 }
-\end{chapel0}
-\end{minipage}
-%\end{longtable}
-\\
-\hline
-\end{tabular}
-\end{center}
+\end{chapel}
+In the above example, the variable \chpl{ind} is used
+to index into the array \chpl{x} if it has the appropriate
+type.
+\end{example}
 
-\paragraph{Parallel Statements}
-\begin{center}
-\begin{tabular}{|l|l|l|}
-\hline
- & & \\
-{\bf Statement} & {\bf Description} & {\bf Example} \\
- & & \\
-\hline
-& & \\
-Begin Statement &
-\begin{minipage}[t]{2in}
+\paragraph{Begin Statement} 
 The \chpl{begin} statement spawns a computation to execute a
 statement.
-\end{minipage}
-&
-\begin{minipage}[t]{3in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 begin {
   while(!done) do work(x);
 }
 otherwork(x);
 done = true;
-\end{chapel0}
-\end{minipage} \\
-& & \\
-\hline
-& & \\
-Co-begin Statement &
-\begin{minipage}[t]{2in}
+\end{chapel}
+\end{example}
+
+\paragraph{Co-begin Statement} 
 The cobegin statement is used to create parallelism within
 a block statement.  All statements within the block statement
 are executed concurrently.
-\end{minipage}
-&
-\begin{minipage}[t]{3in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 cobegin {
   init(A);
   init(B);
 }
-\end{chapel0}
-\end{minipage} \\
-& & \\
-\hline
-& & \\
-Parallel For Loops &
-\begin{minipage}[t]{2in}
+\end{chapel}
+\end{example}
+
+\paragraph{Parallel For Loops} 
 Parallel loops are specified using \chpl{forall} or
 the shorthand bracket notation.
-\end{minipage}
-&
-\begin{minipage}[t]{3in}
-\begin{chapel0}
-//Parallel for loop:
+
+\begin{example}
+\begin{chapel}
 forall ind in D {
   A(ind) = x*y;
 }
-//Equivalent parallel loop:
-[ind in D] A(ind) = x*y; 
-\end{chapel0}
-\end{minipage} \\
-\hline
-\end{tabular}
-\end{center}
 
-\paragraph{Expressions}
-\begin{center}
-\begin{tabular}{|l|l|l|}
-\hline
-& & \\
-Query Expression &
-\begin{minipage}[t]{2in}
+[ind in D] A(ind) = x*y; 
+\end{chapel}
+The above example shows two equivalent definitions for a parallel
+loop. 
+\end{example}
+
+\subsubsection{Expressions}
+\paragraph{Query Expression} 
 The query expression uses a \chpl{?} to indicate that the type of the
 preceding variable be queried and assigned to the following variable.
-\end{minipage} &
-\begin{minipage}[t]{3in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 def sumOfThree(x: ?t, y:t, z:t):t {
    return x + y + z;
 }
-\end{chapel0}
-\end{minipage} \\
-& & \\
-\hline
-& & \\
-Let Expression &
-\begin{minipage}[t]{2in}
+\end{chapel}
+\end{example}
+
+\paragraph{Let Expression} 
 The \chpl{let}--\chpl{in} expression defines variables to
 be used only in the expression following the \chpl{in} keyword.
-\end{minipage} &
-\begin{minipage}[t]{3in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
     in ((-b + t1)/t2, (-b - t1)/t2);
-\end{chapel0}
-\end{minipage} \\
-& & \\
-\hline
-& & \\
-Conditional Expression &
-\begin{minipage}[t]{2in}
+\end{chapel}
+\end{example}
+
+\paragraph{Conditional Expression} 
 Chapel provides a conditional expression that can be evaluated
 and then assigned.
-\end{minipage} &
-\begin{minipage}[t]{3in}
-\begin{chapel0}
+
+\begin{example}
+\begin{chapel}
 var half = if (i % 2) then i/2 +1 else i/2;
-\end{chapel0}
-\end{minipage} \\
-\hline
-\end{tabular}
-\end{center}
+\end{chapel}
+\end{example}
 
 \subsubsection{Functions and Iterators}
 \paragraph{Function Definitions}
