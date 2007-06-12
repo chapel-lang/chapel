@@ -105817,3 +105817,17 @@ Modified files:
 	              Reductions_and_Scans.tex Standard_Modules.tex 
 	              Statements.tex Variables.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 13:40:36 -- deitz
+
+Log message:
+	Fixed a bug in which domains were not passed by reference.  Removed a .future.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/domains/bradc/: modifyDomainArg.future 
+
