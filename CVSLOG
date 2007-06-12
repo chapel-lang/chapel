@@ -105640,3 +105640,18 @@ Modified files:
 Added files:
 	chapel/spec/: Ranges.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 10:34:30 -- deitz
+
+Log message:
+	Moved "filtering predicates" section into Parallelism section under
+	forall expressions discussion.
+	
+	Removed Sequences section.
+
+Modified files:
+	chapel/spec/: Parallelism_and_Synchronization.tex spec.tex 
+Removed files:
+	chapel/spec/: Sequences.tex 
+
