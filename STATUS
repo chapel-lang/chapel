@@ -148,6 +148,8 @@ Bugs:
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 
+* Domains arguments are passed by const rather than by reference
+
 * Sparse arrays can't be sliced with dense domains
 
 * Associative domain index additions/deletions can result in an infinite loop

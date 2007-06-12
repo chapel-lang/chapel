@@ -51,11 +51,9 @@ error message: domain dimensional type [arrays/deitz/test_domain_mixed_dim_types
 error message: formal argument missing parameterized tuple type [types/tuple/deitz/test_param_tuple_arg1-error]
 error message: formal array argument w/ query domain element type [arrays/bradc/errors/badArrArgErrMsg]
 error message: generic types [classes/bradc/genericTypes]
-error message: improve clarity of array access problem [studies/hpcc/RA/marybeth/ra-uint-test1]
 error message: iterator sugaring [arrays/bradc/slices/icError]
 error message: iterator sugaring [arrays/marybeth/test_arrayops]
 error message: iterator sugaring [domains/marybeth/test_compare_range]
-error message: prints statement instead of call [functions/bradc/weirdMessage]
 error message: internal/impossible candidate functions [sparse/bradc/denseIRV]
 
 
@@ -179,3 +177,6 @@ unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithD
 
 * a mechanism for controlling the precision/width of scalar values
 feature request: output formatting [io/bradc/formatoutput]
+
+* Domains arguments are passed by const rather than by reference
+bug: domains passed by const rather than ref [domains/bradc/modifyDomainArg]
