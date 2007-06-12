@@ -105575,3 +105575,17 @@ Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+06/11/07 17:12:45 -- bradc
+
+Log message:
+	Put together a skeleton for a feature table concept for the
+	examples directory.  Before fleshing it out realized that it
+	would make more sense for me to take my editor's pass over
+	the example codes to minimize the number of times I need to
+	edit this table.
+
+Added files:
+	chapel/test/release/examples/: FEATURES 
+
