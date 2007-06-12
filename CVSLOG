@@ -105851,3 +105851,14 @@ Added files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.macchapel-mac.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 13:49:56 -- diten
+
+Log message:
+	Change the definition of the argv variable to array an array of strings instead
+	of a sequence of strings.
+
+Modified files:
+	chapel/spec/: Modules.tex 
+
