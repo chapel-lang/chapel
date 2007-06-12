@@ -10,7 +10,6 @@ test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -40,7 +39,6 @@ test           | modls | stdmd | funcs | iters | confg | xxxxx | xxxxx | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -71,7 +69,6 @@ test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -102,7 +99,6 @@ test           | arith | enum  | assoc | opque | spars | index | subdm | reall
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -134,7 +130,6 @@ test           | foral | whole | slice | reind | reduc | xxxxx | xxxxx | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -164,7 +159,6 @@ test           | begin | cobeg | srial | sync  | xxxxx | xxxxx | xxxxx | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -194,7 +188,6 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-genericStack2  |       |       |       |       |       |       |       |
 hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |

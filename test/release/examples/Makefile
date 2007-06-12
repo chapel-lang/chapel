@@ -9,7 +9,6 @@ TARGETS = \
         blockLU \
 	jacobi \
 	genericStack \
-	genericStack2 \
 	norm \
 	parallelQuickSort \
 	prod-cons \

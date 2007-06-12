@@ -6,8 +6,7 @@ This directory contains the following example codes:
 
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
-     genericStack.chpl      : a generic stack class (linked list implementation)
-     genericStack2.chpl     : another generic stack class (array implementation)
+     genericStack.chpl      : generic stack classes (list- and array-based)
      hello.chpl             : "Hello, world!" program using a config variable
      iterators.chpl         : sample iterators
      jacobi.chpl            : Jacobi iteration
