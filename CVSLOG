@@ -105961,3 +105961,18 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/12/07 16:39:18 -- bradc
+
+Log message:
+	Added the -performance flag to the start_test
+	script's usage message.
+	
+	Made the start_test script filter out any
+	perfdat/ directories that may linger in a
+	user's directory.
+
+Modified files:
+	chapel/test/: start_test 
+
