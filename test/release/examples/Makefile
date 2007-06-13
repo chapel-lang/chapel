@@ -14,9 +14,9 @@ TARGETS = \
 	jacobi \
 	linkedList \
 	norm \
-	parallelQuickSort \
-	prod-cons \
-	tree_construct \
+	prodCons \
+	quicksort \
+	tree \
 
 
 default: all hpcc06

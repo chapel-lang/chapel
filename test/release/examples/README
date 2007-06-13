@@ -19,9 +19,9 @@ demonstrate various Chapel features:
      jacobi.chpl            : Jacobi iteration
      linkedList.chpl        : generic linked list example
      norm.chpl              : sample module for computing array norms
-     parallelQuickSort.chpl : parallel quick sort using cobegin and serial
-     prod-cons.chpl         : producer-consumer using a sync variable
-     tree_construct.chpl    : construct and walk a tree in parallel
+     produceConsume.chpl    : producer-consumer using a sync variable
+     quicksort.chpl         : parallel quick sort using cobegin and serial
+     tree.chpl              : constructs and walks a tree in parallel
 
 The hpcc06 directory contains Chapel versions of the HPC Challenge
 benchmarks:

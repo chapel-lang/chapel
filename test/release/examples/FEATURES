@@ -2,21 +2,42 @@
 Feature Charts for Chapel Examples
 ==================================
 
+test             Primary features it was designed to demonstrate
+---------------+---------------------------------------------------------------
+hello          : string output
+hello-config   : configuration variables
+hello-module   : module structure; main() entry point
+beer           : 1D domains and arrays; string manipulation; functions
+blockLU        : 2D domains and arrays; iterators; domain/array slicing
+genericStack   : generic classes; nested classes
+iterators      : iterators of various styles
+jacobi         : 2D domains and arrays; stencil operations; reductions
+norm           : reductions; where clauses; modules
+prodCons       : synchronization variables; task parallelism using begin
+quicksort      : bounded task parallelism using cobegin and serial
+tree           : task parallelism using cobegin
+hpcc06/stream  : whole-array operators; standard modules
+hpcc06/ra      : iterators; atomic statements
+hpcc06/fft     : array slicing; iterators; complex and imaginary values
+
+
 -------------------------------------------------------------------------------
                |              I/O and program control features
                |
 test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -36,16 +57,18 @@ key:
                |
 test           | modls | stdmd | funcs | iters | confg | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -66,16 +89,18 @@ key:
                |
 test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -96,16 +121,18 @@ key:
                |
 test           | arith | enum  | assoc | opque | spars | index | subdm | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -127,16 +154,18 @@ key:
                |
 test           | foral | whole | slice | reind | reduc | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -156,16 +185,18 @@ key:
                |
 test           | begin | cobeg | srial | sync  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
@@ -185,16 +216,18 @@ key:
                |
 test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-config   |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
-hello          |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
-quickSort      |       |       |       |       |       |       |       |
-prod-cons      |       |       |       |       |       |       |       |
-tree_construct |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
 hpcc06/fft     |       |       |       |       |       |       |       |
