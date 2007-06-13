@@ -106112,3 +106112,51 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/07 10:42:31 -- bradc
+
+Log message:
+	Changed file open and close methods to take parenthesis.
+	Updated tests.
+	Updated spec.
+
+Modified files:
+	chapel/modules/standard/: ChapelIO.chpl 
+	chapel/spec/: Input_and_Output.tex 
+	chapel/test/arrays/marybeth/: test_arrayops.chpl testinit.chpl 
+	chapel/test/release/examples/: Adata.dat blockLU.chpl 
+	chapel/test/studies/cholesky/marybeth/: blockChol.chpl 
+	                                        blockCholChoice.chpl 
+	                                        chol.chpl 
+	chapel/test/studies/lu/marybeth/: blockLU.chpl blocks.chpl 
+	                                  nopivlu.chpl 
+	                                  nopivlublock-alias.chpl 
+	                                  nopivlublock.chpl pivlu.chpl 
+	                                  pivlublock-alias.chpl 
+	                                  pivlublock.chpl 
+	chapel/test/trivial/diten/lcs/: lcs.chpl 
+	chapel/test/types/file/: closeStdin.chpl closedWithoutOpen.chpl 
+	                         fileIO.chpl fileIO2.chpl 
+	                         freadBoolean.chpl freadClass.chpl 
+	                         freadComplex.chpl freadEnum.chpl 
+	                         freadIntFailed.chpl freadIntFloat.chpl 
+	                         freadNoFloat.chpl freadNoInt.chpl 
+	                         freadNotABoolean.chpl freadString.chpl 
+	                         freadToClassDataMember.chpl 
+	                         fwriteIntFailed.chpl fwriteIntFile.chpl 
+	                         fwriteMultipleInts.chpl 
+	                         fwritelnBooleanFile.chpl 
+	                         fwritelnClassFile.chpl 
+	                         fwritelnComplexFile.chpl 
+	                         fwritelnEnumFile.chpl 
+	                         fwritelnFloatFile.chpl 
+	                         fwritelnIntFile.chpl 
+	                         fwritelnIntFloatString.chpl 
+	                         fwritelnStringFile.chpl 
+	                         invalidMode.chpl openStdout.chpl 
+	                         unableToOpenFile.chpl 
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.chpl 
+	                               changeModeWhileOpen.chpl 
+	                               changePathWhileOpen.chpl 
+
