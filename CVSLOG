@@ -106369,3 +106369,18 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: norm.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:18:42 -- deitz
+
+Log message:
+	Removed global currentTraversal string that stored the pass name.  It
+	is used only in the html view and run passes routines.  Removed extra
+	gettimeofday calls when -t and --print-passes is used.  It is not
+	needed when just -t is used.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h view.h 
+	chapel/compiler/main/: runpasses.cpp 
+
