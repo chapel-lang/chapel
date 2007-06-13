@@ -106313,3 +106313,25 @@ Added files:
 Removed files:
 	chapel/test/release/examples/: Adata.dat 
 
+---------------------------------------------------------------------------
+
+06/13/07 14:20:49 -- bradc
+
+Log message:
+	Adding a future that declares config vars at non-module
+	scope -- this should result in an error message but is
+	currently permitted by the compiler.  See .future file
+	for details.  I put a sample error message in
+	localConfig.good, though different wordings could be
+	used (and if both illegal config vars can be reported,
+	even better).
+	
+	This allows me to delete the oldest mail in my inbox --
+	from Shannon, January 2005 -- reminding me that she had
+	not implemented it at some point when Eldorado or
+	someone was taking her away from Chapel.  :)
+
+Added files:
+	chapel/test/trivial/bradc/: localConfig.chpl localConfig.future 
+	                            localConfig.good 
+
