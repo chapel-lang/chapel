@@ -808,4 +808,3 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
   }
   return where;
 }
-
