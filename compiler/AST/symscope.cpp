@@ -41,7 +41,6 @@ void SymScope::define(Symbol* sym) {
   } else {
     table.put(sym->name, sym);
     sym->setParentScope(this);
-    symbols.add(sym);
   }
 }
 
@@ -51,26 +50,22 @@ void SymScope::undefine(Symbol* sym) {
     rootScope->removeVisibleFunction(fn);
     removeVisibleFunction(fn);
   }
-  for (int i = 0; i < symbols.n; i++) {
-    if (symbols.v[i]) {
-      if (symbols.v[i] == sym) {
-        symbols.v[i] = sym->overload;
-        table.del(sym->name);
-        if (symbols.v[i])
-          table.put(sym->name, symbols.v[i]);
+  Symbol* tmp = table.get(sym->name);
+  if (tmp == sym) {
+    tmp = sym->overload;
+    table.del(sym->name);
+    if (tmp)
+      table.put(sym->name, tmp);
+    sym->overload = NULL;
+    return;
+  } else {
+    while (tmp->overload) {
+      if (tmp->overload == sym) {
+        tmp->overload = sym->overload;
         sym->overload = NULL;
         return;
-      } else {
-        Symbol* tmp = symbols.v[i];
-        while (tmp->overload) {
-          if (tmp->overload == sym) {
-            tmp->overload = sym->overload;
-            sym->overload = NULL;
-            return;
-          }
-          tmp = tmp->overload;
-        }
       }
+      tmp = tmp->overload;
     }
   }
   INT_FATAL(sym, "Symbol not found in scope from which deleted");
@@ -165,6 +160,8 @@ void SymScope::print() {
 
 
 void SymScope::print(bool number, int indent) {
+  Vec<Symbol*> symbols;
+  table.get_values(symbols);
   if (!symbols.n && (!astParent || !getModuleUses()->n))
     return;
   for (int i = 0; i < indent; i++)
@@ -217,6 +214,8 @@ void SymScope::print(bool number, int indent) {
 
 
 void SymScope::codegen(FILE* outfile, char* separator) {
+  Vec<Symbol*> symbols;
+  table.get_values(symbols);
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload)
       if (!dynamic_cast<TypeSymbol*>(tmp))
@@ -239,6 +238,8 @@ static int compareLineno(const void* v1, const void* v2) {
 
 void SymScope::codegenFunctions(FILE* outfile) {
   Vec<FnSymbol*> fns;
+  Vec<Symbol*> symbols;
+  table.get_values(symbols);
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp)) {

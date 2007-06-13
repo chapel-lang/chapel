@@ -7,7 +7,6 @@ class SymScope {
  public:
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
-  Vec<Symbol*> symbols;
   Map<char*,Vec<FnSymbol*>*> visibleFunctions;
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 

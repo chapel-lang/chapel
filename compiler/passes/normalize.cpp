@@ -862,7 +862,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
-  fn->name = canonicalize_string(stringcat("_construct_", fn->name));
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->symbol)));
   fn->insertAtHead(new DefExpr(fn->_this));
@@ -872,5 +871,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals->get(2)->remove();
   fn->formals->get(1)->remove();
   update_symbols(fn, &map);
-  ct->symbol->defPoint->insertBefore(fn->defPoint->remove());
+  fn->defPoint->remove();
+  fn->name = canonicalize_string(stringcat("_construct_", fn->name));
+  ct->symbol->defPoint->insertBefore(fn->defPoint);
 }
