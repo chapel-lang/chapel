@@ -106101,3 +106101,14 @@ Modified files:
 	chapel/spec/: Conversions.tex MODS Modules.tex 
 	              Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+06/13/07 10:11:02 -- deitz
+
+Log message:
+	Made further improvements to cleanAST to avoid the need for second
+	vectors of asts, functions, and types.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+
