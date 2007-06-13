@@ -106359,3 +106359,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:16:44 -- bradc
+
+Log message:
+	Updated comments for norm example a bit.
+
+Modified files:
+	chapel/test/release/examples/: norm.chpl 
+
