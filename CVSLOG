@@ -106160,3 +106160,17 @@ Modified files:
 	                               changeModeWhileOpen.chpl 
 	                               changePathWhileOpen.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 10:46:28 -- bradc
+
+Log message:
+	Adding in some blank line additions/deletions to try and reproduce
+	David's cvslock issue.
+	.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/spec/: Types.tex 
+
