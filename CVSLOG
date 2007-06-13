@@ -106199,3 +106199,14 @@ Added files:
 	chapel/test/trivial/diten/: fold_cond_stmt.chpl 
 	                            fold_cond_stmt.good 
 
+---------------------------------------------------------------------------
+
+06/13/07 12:20:00 -- diten
+
+Log message:
+	Remove a mention of the initialize function for modules from the spec.  Add the
+	syntax for listing multiple modules in a single use statement.
+
+Modified files:
+	chapel/spec/: Modules.tex Statements.tex 
+
