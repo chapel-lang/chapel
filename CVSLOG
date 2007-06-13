@@ -106384,3 +106384,14 @@ Modified files:
 	chapel/compiler/include/: baseAST.h view.h 
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:44:11 -- marybeth
+
+Log message:
+	Checking in comments for BlockLU.  These are adding to Brad's comments,
+	and refining a few of his.
+
+Modified files:
+	chapel/test/release/examples/: blockLU.chpl 
+
