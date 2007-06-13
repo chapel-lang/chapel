@@ -14,12 +14,11 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
-  `def' function-name argument-list[OPT] var-clause[OPT]
+  `def' function-name argument-list[OPT] var-param-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
 
 function-name:
   identifier
-  = identifier
   operator-name
 
 operator-name: one of
@@ -50,8 +49,9 @@ variable-argument-expression:
 formal-tag: one of
   in out inout param type
 
-var-clause:
+var-param-clause:
   `var'
+  `param'
 
 where-clause:
   `where' expression
@@ -78,11 +78,9 @@ functions are described in~\rsec{Functions_without_Parentheses}.
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
-The optional var clause defines a variable function discussed
-in~\rsec{Variable_Functions}.  A variable setter function can be
-defined explicitly by prefixing the function's name with the
-assignment operator.  This type of variable function is discussed
-in~\rsec{Explicit_Setter_Functions}.
+The optional \sntx{var-param-clause} defines a variable function,
+discussed in~\rsec{Variable_Functions}, or a parameter function,
+discussed in~\rsec{Parameter_Functions}.
 
 The optional where clause is only applicable if the function is
 generic.  It is discussed in~\rsec{Where_Expressions}.
@@ -255,16 +253,18 @@ that a variable function does not return a reference.  That is, the
 reference cannot be captured.
 
 A variable function is specified by following the argument list with
-the \chpl{var} keyword.  A variable function must return an expression
-that can be assigned.
+the \chpl{var} keyword.  A variable function must return an lvalue.
 
 When a variable function is called on the left-hand side of an
-assignment statement, the expression that is normally returned is
-instead assigned the result of the expression on the right-hand side
-of the assignment statement.  Note that the right-hand side expression
-is evaluated before the variable function is called.  Otherwise a
-variable function evaluates normally and returns the result of the
-expression that it returns.
+assignment statement or in the context of a call to a formal argument
+by out or inout intent, the lvalue that is returned by the function is
+assigned a value.
+
+Variable functions support an implicit argument \chpl{setter} of type
+bool.  If the variable function is called in a context such that the
+returned lvalue is assigned a value, the argument \chpl{setter}
+is \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
+for controlling different behaviour depending on the call site.
 
 \begin{example}
 The following code creates a function that can be interpreted as a
@@ -290,56 +290,43 @@ It can be called as an expression to access the ``elements'' as in
 writeln(A(0) + A(1));
 \end{chapel}
 This code outputs the number \chpl{3}.
+
+The implicit \chpl{setter} argument can be used to ensure, for
+example, that the second element in the pseudo-array is only assigned
+a value if the first argument is positive.  To do this, the line
+\begin{chapel}
+if setter && i == 1 && x <= 0 then
+  halt("cannot assign value to A(1) if A(0) <= 0");
+\end{chapel}
 \end{example}
 
-\subsubsection{Explicit Setter Functions}
-\label{Explicit_Setter_Functions}
-\index{functions!setters}
-\index{functions!as lvalues}
+\subsection{Parameter Functions}
+\label{Parameter_Functions}
+\index{functions!as parameters}
 
-Variable functions can be created by overloading a normal function
-with an explicit setter function.  Alternatively, an explicit setter
-function can be defined without a normal counterpart to create a
-function that can only be assigned values.
+A parameter function is a function that returns a parameter
+expression.  It is specified by following the function's argument list
+by the keyword \chpl{param}.  It is often, but not necessarily,
+generic.
 
-An explicit setter function is defined by prepending the assignment
-operator to the function name.  Setter functions can only be called
-from the left-hand side of an assignment statement.
-
-Setter functions require an extra formal argument (that must be the
-last argument).  This argument is passed the value on the right-hand
-side of the assignment statement.
+It is a compile-time error if a parameter function does not return a
+parameter expression.  The result of a parameter function is computed
+during compilation and the result is inlined at the call site.
 
 \begin{example}
-The following code defines a function \chpl{A} and a setter
-function \chpl{A}.  These two definitions of \chpl{A} are equivalent
-to the single definition in the previous section.
+In the code
 \begin{chapel}
-var x, y = 0;
+def sumOfSquares(param a: int, param b: int) param
+  return a**2 + b**2;
 
-def A(i: int) {
-  if i < 0 || i > 1 then
-    halt("array access out of bounds");
-  return if i == 0 then x else y;
-}
-
-def =A(i: int, value: int) {
-  if i < 0 || i > 1 then
-    halt("array access out of bounds");
-  (if i == 0 then x else y) = value;
-}
+var x: sumOfSquares(2, 3)*int;
 \end{chapel}
-This code has the extra constraint that the expression on the
-right-hand side of the assignment statement needs to be able to be
-passed to an argument of type \chpl{int}.  For type \chpl{int}, the
-constraints between assignment and argument passing are the same, so
-these functions are equivalent to in the previous section.
-
-In the variable function, there is no type constraint on the
-expression other than any constraint placed on it by the assignment
-statement.  The equivalent setter function would be generic in respect
-to the last argument.
-\end{example}
+the function \chpl{sumOfSquares} is a parameter function that takes
+two parameters as arguments.  Calls to this function can be used in
+places where a parameter expression is required.  In this example, the
+call is used in the declaration of a homogeneous and so is required to
+be a parameter.
+\end{example}.
 
 \subsection{Function Overloading}
 \label{Function_Overloading}

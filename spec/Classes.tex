@@ -236,32 +236,32 @@ constructor as follows:
 \end{itemize}
 \end{example}
 
-\subsection{Getters and Setters}
-\label{Getters_and_Setters}
+\subsection{Variable Getter Methods}
+\label{Getter_Methods}
 \index{classes!getters}
 \index{classes!setters}
 
-All field accesses are resolved via getter and setter methods that are
-defined in the class with the same name as the field.  A setter is
-defined as an explicit setter
-function~(\rsec{Explicit_Setter_Functions}).  Default getters and
-setters are defined that simply access or set the field if the user
-does not define their own.
+All field accesses are resolved via getters that are variable
+methods~(\rsec{Variable_Functions}) defined in the class with the same
+name as the field.  The default getter is defined to simply return the
+field if the user does not define their own.
 
 \begin{example}
 In the code
 \begin{chapel}
 class C {
+  var setCount: int;
   var x: int;
-  def =x(value: int) {
-    if value < 0 then
-      halt("x assigned negative value");
-    x = value;
+  def x var {
+    if setter then
+      setCount += 1;
+    return x;
   }
 }
 \end{chapel}
-a setter is defined for field \chpl{x} that ensures that \chpl{x} is
-never assigned a negative value.
+an explicit variable getter method is defined for field \chpl{x}.  It
+returns the field \chpl{x} and increments another field that records
+the number of times x was assigned a value.
 \end{example}
 
 \subsection{Inheritance}

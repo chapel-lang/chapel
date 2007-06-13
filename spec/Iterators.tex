@@ -86,7 +86,13 @@ of when an overloaded function is promoted are discussed
 in~\rsec{Function_Resolution}.  If a promoted function returns a
 value, the promoted function becomes an iterator that is controlled by
 a loop over the iterator (or array, domain, or range) that it is
-promoted by.
+promoted by.  If the function does not return a value, the function is
+controlled by a loop over the iterator that it is promoted by, but the
+promotion does not become an iterator.
+
+In addition to scalar promotion of functions, operators and casts are
+also promoted.
+
 \begin{example}
 Given an iterator
 \begin{chapel}

@@ -2,7 +2,7 @@
 *** BLC: STOPPED AT 05/18/07 11:01:37 -- deitz ***
 
 Changes to Chapel Language:
-SJD    eliminated sequences
+CLOSED SJD    eliminated sequences
        - in the future, a standard List library will provide similar functionality
        - removed # and #= operators, since they were supported for sequences
        - removed support for sequence literals; use tuples in their place
@@ -37,9 +37,9 @@ BLC    arithmetic domains and arrays support low and high methods that return bo
        e.g., var loInd = A.low();
 BLC    support for range, domain, and array slicing via bounded or unbounded ranges
        e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
-SJD    support for promoting casts across array elements
+CLOSED SJD    support for promoting casts across array elements
        e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
-SJD    added support for param functions that support compile-time evaluation
+CLOSED SJD    added support for param functions that support compile-time evaluation
        e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
 SJD    support for default values for param members of classes
        e.g., class C { param bitWidth = 32; ... }
