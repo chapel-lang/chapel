@@ -106252,3 +106252,64 @@ Modified files:
 	chapel/compiler/include/: symscope.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/07 14:14:10 -- bradc
+
+Log message:
+	Added a read() method to the file type that takes a type
+	as an argument and returns a value of this type.  Updated
+	the spec to describe this method and show an example.
+	Added a test.
+	
+	Note that there is no equivalent top-level standalone
+	read() function -- there should eventually be, but that
+	required more than a 15-minute change and was easy to
+	separate in the spec since file read methods are handled
+	separately from top-level read functions.  Added a feature
+	request future of this top-level read function.
+	
+	Finished my edits to the release example blockLU.chpl test,
+	which I partially checked in accidentally during my previous
+	check-in.  My changes are as follows:
+	
+	- added additional comments to help user through the code,
+	  trying to use descriptions that would make sense for a
+	  Chapel novice rather than a linear algebra expert.
+	
+	- switched to Steve's preferred commenting style (approximately)
+	
+	- made the config vars module-level variables (config vars aren't
+	  meant to be legal at the function level, but the compiler still
+	  doesn't check for this)
+	
+	- moved declarations closer to use points, converted vars to
+	  consts, used comma-separated declarations where appropriate.
+	
+	- renamed and simplified where it seemed helpful
+	
+	- changed the name of the default input filename to make it more
+	  obviously related to the test for users browsing the directory
+	
+	- changed the file format to store the # of rows and columns to
+	  make it more general; removed the block size from the file
+	  since it seems related to the function call rather than the
+	  matrix being factored.
+	
+	- removed some helper I/O functions that seemed extraneous and
+	  in one case replaced them with the file.read() method described
+	  above.
+
+Modified files:
+	chapel/modules/standard/: ChapelIO.chpl 
+	chapel/spec/: Input_and_Output.tex 
+	chapel/test/release/examples/: blockLU.chpl 
+Added files:
+	chapel/test/io/bradc/: readType.chpl readType.future 
+	                       readType.good readType.stdin 
+	                       readTypeStdin.chpl readTypeStdin.good 
+	                       readTypeStdin.stdin 
+	chapel/test/release/examples/: blockLU-Mat.dat 
+Removed files:
+	chapel/test/release/examples/: Adata.dat 
+
