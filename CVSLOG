@@ -106395,3 +106395,21 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: blockLU.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:44:22 -- deitz
+
+Log message:
+	Made the check that ensures that a symbol is defined in the scope for
+	the AST where it appears more efficient.  Rather than traversing the
+	overloaded symbol list, it simply checks the scope that verify is
+	maintaining for checking expressions.
+	
+	This speeds up compilation of compSampler from 136s to 105s with all
+	of the improvement in the time between passes (35s to 3s) within the
+	verification of symbol scopes.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: verify.cpp 
+
