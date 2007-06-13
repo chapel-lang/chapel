@@ -222,28 +222,21 @@ void cleanAst() {
           delete sym->type;
         delete sym;
       }
-    } else if (dynamic_cast<Expr*>(ast)) {
-      asts.add(ast);
-    }
-  }
-  gAsts.clear();
-  forv_Vec(BaseAST, ast, asts) {
-    if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
       if (expr->parentSymbol) {
-        gAsts.add(expr);
-        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        asts.add(ast);
+        if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
           if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
             gFns.add(fn);
           if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
             gTypes.add(type);
         }
-      } else {
+      } else
         delete expr;
-      }
-    } else {
-      gAsts.add(ast);
     }
   }
+  gAsts.clear();
+  gAsts.copy(asts);
   forv_Vec(BaseAST, ast, gAsts)
     ast->clean();
 }
