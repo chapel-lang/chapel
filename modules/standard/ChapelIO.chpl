@@ -14,7 +14,7 @@ class file: Writer {
   var _fp : _file;
   var _lock : sync uint(64);    // for serializing output
 
-  def open {
+  def open() {
     if this == stdin || this == stdout || this == stderr then
       halt("***Error: It is not necessary to open \"", filename, "\"***");
 
@@ -58,7 +58,7 @@ class file: Writer {
     return openStatus;
   }
 
-  def close {
+  def close() {
     if (this == stdin || this == stdout || this == stderr) {
       halt("***Error: You may not close \"", filename, "\"***");
     }

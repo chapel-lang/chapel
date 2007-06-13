@@ -10,14 +10,14 @@ var a: myClass = myClass(x = 1, y = 2.3);
 var myInt: int = 9;
 var myFile: file = file(filename = "_test_freadToClassDataMember.txt", mode = "w");
 
-myFile.open;
+myFile.open();
 myFile.writeln(myInt);
-myFile.close;
+myFile.close();
 
 myFile.mode = "r";
-myFile.open;
+myFile.open();
 myFile.read(a.x);
-myFile.close;
+myFile.close();
 
 writeln("a.x should be equal to 9");
 writeln("a.x = ", a.x);

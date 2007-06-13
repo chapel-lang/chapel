@@ -96,11 +96,11 @@ def initA(A,filename:string){
 var Adat = file(filename,path='./',mode='r');
 var P, temp: [A.domain] real;
 
-Adat.open;
+Adat.open();
 for ij in A.domain {
   Adat.read(A(ij));
 }
-Adat.close;
+Adat.close();
 
 P = 0.0;
 P(1,2) = 1.0;

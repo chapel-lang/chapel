@@ -4,7 +4,7 @@ var mySecondInt: int;
 
 var f: file = file(filename = "freadIntFloat.txt", mode = "r");
 
-f.open;
+f.open();
 f.read(myFirstInt, myFirstFloat, mySecondInt);
 
 writeln(myFirstInt);

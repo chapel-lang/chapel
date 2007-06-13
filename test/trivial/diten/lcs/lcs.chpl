@@ -32,10 +32,10 @@ def main() {
 def get_strings(out s1: string, out s2: string) {
   var infile = file(filename, "r", ".");
 
-  infile.open;
+  infile.open();
   infile.read(s1);
   infile.read(s2);
-  infile.close;
+  infile.close();
 }
 
 def lcs_length(s1: string, s2: string, b, c) {

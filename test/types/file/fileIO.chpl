@@ -21,10 +21,10 @@ if (numErrors > 0) {
 
 def writeArray(n, X, filename) {
   var outfile = file(filename, "w");
-  outfile.open;
+  outfile.open();
   outfile.writeln(n, " ", n);
   outfile.writeln(X);
-  outfile.close;
+  outfile.close();
 }
 
 
@@ -32,7 +32,7 @@ def readArray(filename) {
   var m, n: int;
 
   var infile = file(filename, "r");
-  infile.open;
+  infile.open();
   infile.read(m, n);
 
   const XDom = [1..m, 1..n];
@@ -40,7 +40,7 @@ def readArray(filename) {
 
   infile.read(X);
 
-  infile.close;
+  infile.close();
 
   return X;
 }

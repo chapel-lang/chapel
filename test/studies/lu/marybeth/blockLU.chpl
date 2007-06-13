@@ -4,7 +4,7 @@ use MatrixOps;
 def main() {
   config const inputfile = "Amagic10.dat";
   var Adat = file(inputfile,path='./',mode='r');
-  Adat.open;
+  Adat.open();
 
   const n = readSize(Adat);
   config var blk = readBlk(Adat);
@@ -18,7 +18,7 @@ def main() {
   const A2D = [A1D,A1D]; 
   var A: [A2D] real;
   initA(A,Adat);
-  Adat.close;
+  Adat.close();
 
   var piv: [A1D] int;
 
