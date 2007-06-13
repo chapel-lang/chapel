@@ -4,14 +4,14 @@
  *
  * The test matrix is read in from blockLU-Mat.dat by default, but a
  * different input file can be specified on the command line using
- * --inputfile=<filename>.  The default block size is 5, but this can
+ * --inputfile=<filename>.  The default block size is 2, but this can
  * be overridden on the command line using --block=<blocksize>.
  *
  * This blockLU function is written for a single locale.  It uses an
  * iterator to define blocks of indices that make expressing the block
  * algorithm easier and less error-prone.  Array aliases are defined
  * with these block indices at each iteration, so that the submatrices
- * involved in the diagonal block factorization and subsequent updates
+ * involved in the block factorization and in the subsequent updates
  * are easily referenced and modified.
  */ 
 
@@ -22,7 +22,7 @@
 //   block:     the block size to use for the block-LU factorization
 //
 config const inputfile = "blockLU-Mat.dat";
-config var block = 5;
+config var block = 2;
 
 //
 // blockLU: Computes block-LU with pivoting.  The arguments are as follows:
@@ -62,53 +62,83 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
     //
     // Create array aliases for various submatrices of current block
-    // iteration
+    // iteration as follows:
     //
+    //     |Factored    |   |Factored   |   
+    //     |  _ _ _ _ _ |   |    _ _ _ _|  
+    // A = | |Unfactored| = |   |A1  A2 | 
+    //     | |          |   |   |       |
+    //
+    // where A1 = |A11| 
+    //            |A21| is the current rectangular block that
+    //                  is factored in this iteration
+    //
+    //       A2 = |A12| 
+    //            |A22| is updated after the LU factorization
+    //                  of A1
+  
     var A1  => A[UnfactoredInds, CurrentBlockInds],
         A2  => A[UnfactoredInds, TrailingBlockInds],
+        A11 => A[CurrentBlockInds, CurrentBlockInds],
         A21 => A[TrailingBlockInds, CurrentBlockInds],
         A12 => A[CurrentBlockInds, TrailingBlockInds],
         A22 => A[TrailingBlockInds, TrailingBlockInds];
 
+    // First compute the LU factorization of A1...
     //
-    // LU factorization of A1
-    //
-    for k in CurrentBlockInds {  // loop over the current index block
+    // We loop over the rows of A11, but we eliminate the
+    // the full rectangular A1 block.
+    for k in CurrentBlockInds {  
 
       //
-      // find the location of the largest remaining unfactored index
-      // in the k-th column and store that value
+      // Find pivot for kth column:
+      //   identify largest element in kth column (pivot), 
+      //     from the diagonal element downward 
+      //     through all rows of A1
       //
       const pivotRow = computePivotRow(A[k.., k..k]),
-            pivot = A[pivotRow, k];
-
       //
-      // perform the pivot using the swap operator and array slicing
+      //    store row and value of pivot 
+      //
+            pivot = A[pivotRow, k];
+      
+      //
+      // If kth row is not row of pivot, swap rows:
       //
       if (pivotRow != k) {
+        //
+        // store row permutation in piv array
+        //
         piv(k) <=> piv(pivotRow);
+        //
+        // swap values in rows k and pivotRow of A
+        //
         A[k..k, ..] <=> A[pivotRow..pivotRow, ..];
       }
 
-      //
-      // abort on zero pivot
-      //
+      // 
+      // If pivot is zero, halt.  Matrix is singular and 
+      // cannot be factored.  
+      // 
       if (pivot == 0) then halt("zero pivot encountered");
 
       //
-      // Compute the k-th elimination step: store multipliers...
+      // Compute the k-th elimination step: 
+      //   store multipliers...
       //
       A1[k+1.., k..k] /= pivot;
 
       //
-      //   ...and subtract scaled kth row from remaining unfactored rows
+      //   ..and subtract scaled kth row from remaining 
+      //   unfactored rows of A1
       //
       forall (i,j) in [UnfactoredInds(k+1..), CurrentBlockInds(k+1..)] do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
     //
-    // Update A12
+    // ... and now update A2. 
+    // First update A12.
     //
     forall j in TrailingBlockInds do
       for k in CurrentBlockInds do
@@ -116,26 +146,39 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
           A12(i,j) -= A1(i,k) * A12(k,j);
 
     //
-    // Update of A22 -= A21*A12.
-    // MMIterator is used to generate the indices.  The loop
-    // nesting order is not specified here, but in the iterator.
-    // The iterator could also return tuple values for any of
-    // indices, for loop unrolling, and the following code would
-    // remain the same.
+    // And then update A22 -= A21*A12.
+    //
+    // MMIterator is used to generate the indices for this
+    // matrix-matrix multiplication step.  MMIterator can
+    // optimized (e.g., for the loop nesting order and loop 
+    // unrolling) separately from this blockLU routine.
     //
     for (i,j,k1,k2) in MMIterator(A21.domain, A12.domain) do
       A22(i,j) -= A21(i,k1) * A12(k2,j);
   }
 }
 
-
 //
-// The following iterator returns a 3-tuple of the ranges to be used
-// in each iteration of block LU: all unfactored indices, those in the
-// current block, and those following the current block.  It takes
-// care of the end cases, so that testing for them is not necessary in
-// the block LU code itself.
+// The generateBlockLURanges iterator returns a 3-tuple of 
+// the ranges to be used in each iteration of block LU:
+//   (UnfactoredInds, CurrentBlockInds, TrailingBlockInds).
+// By defining these ranges, the blockLU code is cleaner. It
+// eliminates the need to test for the last iteration where a full-sized
+// block may not be possible and only the factorization step (and not
+// the update step) is required. 
 //
+// The range UnfactoredInds is equivalent to the range 
+// CurrentBlockInds concatenated with the range TrailingBlockInds. 
+//
+// The range CurrentBlockInds has the length of blksize, except
+// for the end case when the last block may not be of full size.
+// This iterator takes care of this end case so that testing for
+//  it is not necessary in the blockLU code itself. 
+//
+// The range TrailingBlockInds will be an empty range for the
+// the last block iteration.  When it is empty, the loops in
+// the blockLU code will not execute, so testing for this case is
+// not necessary.
 iterator generateBlockLURanges(D:range, blksize) {
   const end = D.high;
 
@@ -147,7 +190,11 @@ iterator generateBlockLURanges(D:range, blksize) {
 
 
 //
-// This iterator generates indices for a matrix multiplication loop.
+// The MMIterator generates indices for a matrix multiplication loop.
+// This iterator can be tuned for loop nesting order or loop unrolling,
+// isolating these optimizations from the blockLU code (or any other
+// code in a complete linear algebra library that uses matrix-matrix
+// multiplication).
 //
 iterator MMIterator(D1, D2) {
   for j in D2.dim(2) do
