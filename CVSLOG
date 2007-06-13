@@ -106348,3 +106348,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: iterators.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:08:09 -- bradc
+
+Log message:
+	Updated comments in jacobi a bit and switched to
+	tuple-style indexing (you're off the hook David :)
+
+Modified files:
+	chapel/test/release/examples/: jacobi.chpl 
+
