@@ -194,9 +194,6 @@ isLive(Symbol* sym) {
 }
 
 void cleanAst() {
-  gFns.clear();
-  gTypes.clear();
-  Vec<BaseAST*> asts;
   forv_Vec(BaseAST, ast, gAsts) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
       for(int i = 0; i < ts->type->methods.n; i++) {
@@ -211,12 +208,11 @@ void cleanAst() {
       }
     }
   }
+  int iasts = 0, ifn = 0, itypes = 0;
   forv_Vec(BaseAST, ast, gAsts) {
     if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
       if (isLive(sym)) {
-        if (sym->astType == SYMBOL_TYPE)
-          asts.add(sym->type);
-        asts.add(sym);
+        gAsts.v[iasts++] = ast;
       } else {
         if (sym->astType == SYMBOL_TYPE)
           delete sym->type;
@@ -224,19 +220,20 @@ void cleanAst() {
       }
     } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
       if (expr->parentSymbol) {
-        asts.add(ast);
+        gAsts.v[iasts++] = ast;
         if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
           if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
-            gFns.add(fn);
+            gFns.v[ifn++] = fn;
           if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
-            gTypes.add(type);
+            gTypes.v[itypes++] = type;
         }
       } else
         delete expr;
     }
   }
-  gAsts.clear();
-  gAsts.copy(asts);
+  gAsts.n = iasts;
+  gFns.n = ifn;
+  gTypes.n = itypes;
   forv_Vec(BaseAST, ast, gAsts)
     ast->clean();
 }
