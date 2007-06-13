@@ -106022,3 +106022,17 @@ Added files:
 	                               hello-config.good 
 	                               hello-module.good 
 
+---------------------------------------------------------------------------
+
+06/12/07 18:19:57 -- marybeth
+
+Log message:
+	Checking in feature design documents for the MS4 SW design document.
+	These documents are currently in html, but the final documents don't
+	have to be.  This the template that all of the SW design components
+	are using initially.
+
+Added files:
+	chapel/doc/internal/MS4DesignDocs/: ChapelCompiler.html 
+	                                    ChapelForGranite.html 
+
