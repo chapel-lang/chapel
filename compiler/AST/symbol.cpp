@@ -143,15 +143,6 @@ void Symbol::verify() {
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
-  if (parentScope && strcmp(name, "")) {
-    bool found = false;
-    Symbol* match = parentScope->lookupLocal(name);
-    for (Symbol* tmp = match; tmp; tmp = tmp->overload)
-      if (this == tmp)
-        found = true;
-    if (!found)
-      INT_FATAL(this, "Incorrect Symbol::parentScope for '%s'", name);
-  }
 }
 
 

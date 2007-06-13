@@ -7,14 +7,21 @@
 
 static void
 verify_ast(BaseAST* ast,
-               Expr* parentExpr,
-               Symbol* parentSymbol,
-               SymScope* parentScope) {
+           Expr* parentExpr,
+           Symbol* parentSymbol,
+           SymScope* parentScope) {
   ast->verify();
 
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+    if (sym->parentScope != parentScope)
+      INT_FATAL(sym, "Symbol's parentScope is incorrect");
     parentSymbol = sym;
     parentExpr = NULL;
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
+      parentScope = fn->argScope;
+    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym))
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
+        parentScope = ct->structScope;
   }
 
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
@@ -31,20 +38,13 @@ verify_ast(BaseAST* ast,
     if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(expr))
       if (blockStmt->blockTag != BLOCK_SCOPELESS)
         parentScope = blockStmt->blkScope;
-    if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym))
-        parentScope = fn->argScope;
-      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym))
-        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type))
-          parentScope = type->structScope;
-    }
     parentExpr = expr;
   }
 
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    verify_ast(ast, parentExpr, parentSymbol, parentScope);
+  forv_Vec(BaseAST, child, asts)
+    verify_ast(child, parentExpr, parentSymbol, parentScope);
 }
 
 
