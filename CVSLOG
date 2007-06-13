@@ -106335,3 +106335,16 @@ Added files:
 	chapel/test/trivial/bradc/: localConfig.chpl localConfig.future 
 	                            localConfig.good 
 
+---------------------------------------------------------------------------
+
+06/13/07 15:02:51 -- bradc
+
+Log message:
+	Added a few comments to identify tuple-style declaration and
+	assignment.  Since these are the first code lines in the file
+	a user will read, want to make sure they realize what's going
+	on and that it's not directly related to using iterators.
+
+Modified files:
+	chapel/test/release/examples/: iterators.chpl 
+
