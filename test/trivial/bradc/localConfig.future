@@ -1,0 +1,6 @@
+bug: non-global config vars allowed
+
+The current compiler allows config vars to be declared at scopes other
+than the module scope.  We've decided to make this illegal in order to
+avoid confusion about what it means to re-assign such variables for
+code blocks that may be called/entered more than once.
