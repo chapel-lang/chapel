@@ -106068,3 +106068,19 @@ Log message:
 Modified files:
 	chapel/doc/internal/MS4DesignDocs/: ChapelForGranite.html 
 
+---------------------------------------------------------------------------
+
+06/13/07 09:56:46 -- deitz
+
+Log message:
+	Removed discussion of explicit setter functions.  Added discussion of
+	implicit setter argument on variable functions.
+	
+	Added note on promotion of casts.
+	
+	Added discussion of parameter functions.
+
+Modified files:
+	chapel/spec/: Classes.tex Functions.tex Iterators.tex MODS 
+	              Variables.tex 
+
