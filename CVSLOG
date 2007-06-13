@@ -106413,3 +106413,43 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+06/13/07 16:04:58 -- bradc
+
+Log message:
+	Renamed a bunch of tests and updated the various README,
+	Makefile, etc. files to reflect the changes.  All tests
+	are now named consistently:
+	
+	    mixedCaseName[-variation].chpl
+	
+	where mixedCaseName describes the test succinctly and
+	-variation is used to call out different variations
+	of the test.  (for example, if we introduce other
+	approaches for jacobi using an array of offsets or
+	sparse array of offsets, those could be variations on
+	jacobis).
+	
+	Prepended the FEATURES file with a list of tests and the
+	main Chapel features that they demonstrate.
+	
+	Did some massaging of comments and code, but mostly this
+	was meant to be related to the file renaming.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore FEATURES Makefile 
+	                               README 
+Added files:
+	chapel/test/release/examples/: prodCons.chpl prodCons.good 
+	                               quicksort.chpl quicksort.execopts 
+	                               quicksort.good tree.chpl 
+	                               tree.good 
+Removed files:
+	chapel/test/release/examples/: parallelQuickSort.chpl 
+	                               parallelQuickSort.execopts 
+	                               parallelQuickSort.good 
+	                               prod-cons.chpl prod-cons.good 
+	                               tree_construct.chpl 
+	                               tree_construct.good 
+
