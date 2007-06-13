@@ -2,23 +2,30 @@
  *
  *  Matrix and Vector Norms Example
  *
- *  Norm module for computing matrix and vector norms:
- *  1-norm, 2-norm, infinity norm and Frobenius norm for vectors
- *  1-norm, infinity norm and Frobenius norm for matrices
- * 
- *  normType specifies the type of norm to use
- *  norm function may be called without specifying normType
+ *  This example defines a module, Norm for computing matrix and
+ *  vector norms, and a second module, TestNorm that tests the
+ *  Norm module for 1D and 2D arrays:
  *
- *  TestNorm module tests norm function for 1-D and 2-D arrays 
+ *  The Norm module defines:
+ *  - 1-norm, 2-norm, infinity norm and Frobenius norm for vectors
+ *  - 1-norm, infinity norm and Frobenius norm for matrices
+ * 
+ *  The normType argument for the first few overloads of norm() is an
+ *  enumeration indicating the norm to compute.
+
+ * The norm function may also be called without specifying normType,
+ * in which case the default norm for that array rank will be used.
  *
  */
+
+
 module Norm{
 
   // normType specifies the type of norm to compute
   enum normType {norm1, norm2, normInf, normFrob};
 
-  def norm(x: [], p: normType) where x.rank == 1 {
   // vector norms
+  def norm(x: [], p: normType) where x.rank == 1 {
     select (p) {
       when norm1 do return + reduce abs(x);
       when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
@@ -28,8 +35,8 @@ module Norm{
     }
   }
 
-  def norm(x: [?D], p: normType) where x.rank == 2 {
   // matrix norms
+  def norm(x: [?D], p: normType) where x.rank == 2 {
     select (p) {
       when norm1 do
         return max reduce [j in D.dim(2)] (+ reduce abs(x[D.dim(1), j]));
@@ -46,13 +53,14 @@ module Norm{
     }
   }
 
+  // this module doesn't implement norms for > 2D arrays, so generate
+  // a compile-timem error if the user tries to call one
   def norm(x: [], p: normType) where x.rank > 2 {
-  // norms not implemented for > 2D arrays
     compilerError("Norms not implemented for array ranks > 2D");
   }
 
-  def norm(x: []) {
   //  default norms
+  def norm(x: []) {
     select (x.rank) {
       when 1 do return norm(x, norm2);
       when 2 do return norm(x, normFrob);
