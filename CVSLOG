@@ -106174,3 +106174,28 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/spec/: Types.tex 
 
+---------------------------------------------------------------------------
+
+06/13/07 11:14:45 -- diten
+
+Log message:
+	Start using canParam on FnSymbols for functions generated for conditional
+	expressions.  In postFold, where param functions are folded, attempt to fold
+	functions marked canParam as well as functions marked isParam.  Don't issue
+	an error if a canParam function couldn't be folded.
+	
+	Add a test using a conditional expression to initialize a parameter.
+	
+	Remove point about destructuring tuple arguments disabling overloading from
+	STATUS, folding logicals fixed this.
+	
+	Remove an extra ";\n" from the code generated for some GC primitives.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/spec/: Types.tex 
+Added files:
+	chapel/test/trivial/diten/: fold_cond_stmt.chpl 
+	                            fold_cond_stmt.good 
+
