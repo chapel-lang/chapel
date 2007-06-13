@@ -91,9 +91,8 @@ used via a \sntx{use-statement}.
 
 To aid in exploratory programming, if a program is defined in a single
 module that uses only standard modules, the module need not define a
-main function.  A default main function is created in this case.  This
-main function sole executable statement is to call the initialize
-function of that module.
+main function.  In this case, a default main function is created to
+execute the module code.
 \begin{example}
 The code
 \begin{chapel}

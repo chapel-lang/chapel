@@ -408,19 +408,23 @@ unrolled for each iteration.
 \index{use@\chpl{use}}
 \index{modules!using}
 
-The use statement makes symbols in a module available without accessing
+The use statement makes symbols in modules available without accessing
 them via the module name.  The syntax of the use statement is given
 by:
 \begin{syntax}
 use-statement:
-  `use' module-name ;
+  `use' module-name-list ;
+
+module-name-list:
+  module-name
+  module-name , module-name
 
 module-name:
   identifier
   module-name . module-name
 \end{syntax}
-The use statement makes symbols in the module's scope available in the
-scope where the use statement occurs.
+The use statement makes symbols in each listed module's scope available
+in the scope where the use statement occurs.
 
 It is an error for a variable, type or module to be defined both by a
 \chpl{use} statement and by a declaration in the same scope.
