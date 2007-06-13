@@ -12,10 +12,10 @@
 // fibonacci - generates the first n Fibonacci numbers
 //
 iterator fibonacci(n: int) {
-  var (current, next) = (0, 1);
+  var (current, next) = (0, 1); // create two ints using tuple declaration style
   for 1..n {
     yield current;
-    (current, next) = (next, current + next);
+    (current, next) = (next, current + next); // update using tuple assignment
   }
 }
 
