@@ -106001,3 +106001,24 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+06/12/07 18:07:44 -- bradc
+
+Log message:
+	Continuing pass over examples directory:
+	
+	* refactored README file into README and README.testing; updated
+	  contents
+	* created ramp of increasingly interesting hello world examples
+	* took pass over beer example
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore Makefile README 
+	                               beer.chpl 
+Added files:
+	chapel/test/release/examples/: README.testing hello-config.chpl 
+	                               hello-module.chpl 
+	                               hello-config.good 
+	                               hello-module.good 
+
