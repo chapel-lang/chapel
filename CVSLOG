@@ -106046,3 +106046,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+06/12/07 19:47:27 -- deitz
+
+Log message:
+	Improved the speed of the collapseBlocks optimization.
+
+Modified files:
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/optimizations/: collapseBlocks.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp lowerIterators.cpp 
+
