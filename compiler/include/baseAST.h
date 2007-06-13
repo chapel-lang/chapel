@@ -137,7 +137,6 @@ void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 
 extern int currentLineno;
 extern char* currentFilename;
-extern char* currentTraversal;
 
 extern SymScope* rootScope; // contains intrinsics and all modules
 

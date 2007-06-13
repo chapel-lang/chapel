@@ -549,7 +549,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
   }
 }
 
-void html_view() {
+void html_view(char* passName) {
   static int uid = 1;
   FILE* html_file;
   char* filename;
@@ -559,15 +559,15 @@ void html_view() {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(stringcat(log_dir, filename), "w");
-    fprintf(html_file, "<CHPLTAG=\"%s\">\n", currentTraversal);
+    fprintf(html_file, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(html_file, "<HTML>\n");
     fprintf(html_file, "<HEAD>\n");
-    fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, currentTraversal);
+    fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, passName);
     fprintf(html_file, "<SCRIPT SRC=\"%s/compiler/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", chplhome);
     fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/compiler/etc/www/mktree.css\">", chplhome);
     fprintf(html_file, "</HEAD>\n");
     fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
-    fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, currentTraversal);
+    fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, passName);
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
     fprintf(html_file, "<B>module %s</B>\n", mod->name);
     for_alist(Expr, stmt, mod->block->body)

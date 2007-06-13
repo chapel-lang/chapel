@@ -35,10 +35,6 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval stopTime;
   struct timezone timezone;
 
-  currentTraversal = stringcpy(passName);
-  if (fdump_html) {
-    gettimeofday(&startTime, &timezone);
-  }
   if (printPasses) {
     gettimeofday(&stopTimeBetweenPasses, &timezone);
     if (timeBetweenPasses < 0.0)
@@ -74,18 +70,16 @@ static void runPass(char *passName, void (*pass)(void)) {
   }
   if (strlen(fPrintStatistics))
     printStatistics(passName);
-  if (printPasses) {
-    gettimeofday(&startTimeBetweenPasses, &timezone);
-  }
-
   if (fdump_html) {
-    gettimeofday(&stopTime, &timezone);
     fprintf(html_index_file, "<TR><TD>");
     fprintf(html_index_file, "%s", passName);
     fprintf(html_index_file, "</TD><TD>");
-    html_view();
+    html_view(passName);
     fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
+  }
+  if (printPasses) {
+    gettimeofday(&startTimeBetweenPasses, &timezone);
   }
   cleanAst();
   verify();

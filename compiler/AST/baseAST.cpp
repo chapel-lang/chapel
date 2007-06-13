@@ -457,7 +457,6 @@ char* astTypeName[AST_TYPE_END+1] = {
 
 int currentLineno = 0;
 char* currentFilename = NULL;
-char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m) for_asts(tmp, ((_t*)a)->_m) asts.add(tmp)
