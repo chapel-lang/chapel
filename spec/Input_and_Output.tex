@@ -164,6 +164,20 @@ arbitrary number of arguments.  Each argument is read in turn by
 calling a method also bound to the \chpl{file} type that takes a
 single argument of that type.
 
+The \chpl{file} type also supports an overloaded method \chpl{read}
+that has a single generic type argument.  It reads a single value of
+the specified type from the file and returns it.
+
+\begin{example}
+The following line of code reads a value of type \chpl{int} from
+\chpl{stdin} and uses it to initialize variable \chpl{x} (causing
+\chpl{x} to have an inferred type of \chpl{int}):
+\begin{chapel}
+var x = stdin.read(int);
+\end{chapel}
+\end{example}
+
+
 \subsection{Default {\em read} and {\em write} methods}
 \index{write!default methods}
 \index{read!default methods}

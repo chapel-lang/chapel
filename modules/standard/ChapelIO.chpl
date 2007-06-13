@@ -218,6 +218,12 @@ def file.read(inout val: bool) {
   }
 }
 
+def file.read(type t) {
+  var val: t;
+  this.read(val);
+  return val;
+}
+
 def string.writeThis(f: Writer) {
   f.writeIt(this);
 }
