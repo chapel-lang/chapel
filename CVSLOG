@@ -106084,3 +106084,20 @@ Modified files:
 	chapel/spec/: Classes.tex Functions.tex Iterators.tex MODS 
 	              Variables.tex 
 
+---------------------------------------------------------------------------
+
+06/13/07 10:07:23 -- deitz
+
+Log message:
+	Cleaned up dynamic cast discussion slightly.
+	
+	Mentioned that main function does not require parentheses.
+	
+	Removed status note on serial statement.
+	
+	Updated MODS.
+
+Modified files:
+	chapel/spec/: Conversions.tex MODS Modules.tex 
+	              Parallelism_and_Synchronization.tex 
+
