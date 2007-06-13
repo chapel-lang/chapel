@@ -1352,15 +1352,15 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);
-      fprintf(outfile, ");\n");
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_GC_ADD_ROOT:
       fprintf(outfile, "_addRoot(&");
       get(1)->codegen(outfile);
-      fprintf(outfile, ");\n");
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_GC_DELETE_ROOT:
-      fprintf(outfile, "_deleteRoot();\n");
+      fprintf(outfile, "_deleteRoot()");
       break;
     case PRIMITIVE_GC_INIT:
       get(1)->codegen(outfile);

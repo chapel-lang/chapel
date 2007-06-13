@@ -2029,19 +2029,22 @@ preFold(Expr* expr) {
                call->argList->length() == 2) {
       result = expand_for_loop(call);
     } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
+      bool removed = false;
       SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
       if (VarSymbol* sym = dynamic_cast<VarSymbol*>(sym1->var)) {
         if (sym->immediate || paramMap.get(sym)) {
           CallExpr* mvCall = dynamic_cast<CallExpr*>(call->parentExpr);
           SymExpr* sym = dynamic_cast<SymExpr*>(mvCall->get(1));
           VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+          removed = true;
           var->canParam = true;
           result = call->get(2)->remove();
           call->replace(result);
-        } else {
-          result = call->get(2)->remove();
-          call->replace(result);
         }
+      }
+      if (!removed) {
+        result = call->get(2)->remove();
+        call->replace(result);
       }
     } else if (call->isPrimitive(PRIMITIVE_SET_REF)) {
       // remove set ref if already a reference
@@ -2184,12 +2187,12 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->isParam) {
+      if (fn->isParam || fn->canParam) {
         VarSymbol* ret = dynamic_cast<VarSymbol*>(fn->getReturnSymbol());
         if (ret->immediate) {
           result = new SymExpr(ret);
           expr->replace(result);
-        } else {
+        } else if (fn->isParam) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
@@ -2643,6 +2646,7 @@ build_ddf() {
   }
 }
 
+void normalize_nested_logical_function_expressions(DefExpr* def);
 
 void
 resolve() {

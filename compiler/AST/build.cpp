@@ -215,17 +215,37 @@ CallExpr* build_primitive_call(AList* exprs) {
 
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
-  //  fn->retRef = true;
-  fn->addPragma("inline");
-  if (e2)
-    fn->insertAtTail(
-      new CondStmt(e,
-        new CallExpr(PRIMITIVE_RETURN, e1),
-        new CallExpr(PRIMITIVE_RETURN, e2)));
-  else
+
+  if (!e2)
     USR_FATAL("if-then expressions currently require an else-clause");
-  return fn;
+
+  FnSymbol* ifFn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
+  ifFn->addPragma("inline");
+  VarSymbol* tmp1 = new VarSymbol("_if_tmp1");
+  VarSymbol* tmp2 = new VarSymbol("_if_tmp2");
+
+  tmp1->isCompilerTemp = true;
+  tmp2->isCompilerTemp = true;
+  tmp1->canParam = true;
+
+  ifFn->canParam = true;
+  ifFn->insertAtHead(new DefExpr(tmp1));
+  ifFn->insertAtHead(new DefExpr(tmp2));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), e));
+  ifFn->insertAtTail(new CondStmt(
+    new SymExpr(tmp1),
+    new CallExpr(PRIMITIVE_MOVE,
+                 new SymExpr(tmp2),
+                 new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                              new SymExpr(tmp1),
+                              new CallExpr(PRIMITIVE_GET_REF, e1))),
+    new CallExpr(PRIMITIVE_MOVE,
+                 new SymExpr(tmp2),
+                 new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                              new SymExpr(tmp1),
+                              new CallExpr(PRIMITIVE_GET_REF, e2)))));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp2));
+  return ifFn;
 }
 
 
