@@ -1,13 +1,20 @@
-============================================
-Chapel Examples Directory and Testing System
-============================================
+=========================
+Chapel Examples Directory
+=========================
 
-This directory contains the following example codes:
+This directory contains a few simple "Hello, world!" example codes to
+get started with Chapel program structure:
+
+     hello.chpl             : simplest Chapel "Hello, world!" program
+     hello-config.chpl      : variation with a configurable message
+     hello-module.chpl      : variation using a structured module
+
+It also contains a number of more interesting examples that
+demonstrate various Chapel features:
 
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
      genericStack.chpl      : generic stack classes (list- and array-based)
-     hello.chpl             : simple Chapel "Hello, world!" program
      iterators.chpl         : sample iterators
      jacobi.chpl            : Jacobi iteration
      linkedList.chpl        : generic linked list example
@@ -27,6 +34,10 @@ benchmarks:
      fft-mta.chpl           : a port of the 2005 Konecny, Kahan, Feo entry
      fft-testPow4.chpl      : an empty test used to exercise fft.chpl in our
                               testing system for non-powers-of-two
+
+------------------
+Building the tests
+------------------
 
 Most of the examples can be compiled in a standalone manner, for
 example, the canonical "Hello, world!" program can be compiled as
@@ -53,44 +64,19 @@ or to build all tests in that directory and its subdirectories:
      make all
 
 
---------------------------------
-Files related to the test system
---------------------------------
+-----------
+Other files
+-----------
 
-In addition to the code files themselves, this directory contains
-files used by our regression testing infrastructure to automatically
-compile, run, and test sample codes.  For a test foo.chpl, the
-following files may also exist:
-
-     foo.compopts   : command-line options to be used when compiling the test
-     foo.execopts   : command-line options to be used when executing the test
-     foo.good       : the expected output for the test
-     foo.notest     : indicates that foo.chpl should not be tested 
-                      (e.g., because it is a helper module)
-
-
----------------------
-Using the test system
----------------------
-
-To launch the test system, cd into the examples directory and use:
-
-     start_test
-
-This will cause all of the tests in this directory to be compiled and
-executed, printing out a summary at the end and creating log files of
-the test run in a Logs/ subdirectory.  Some other useful ways to run
-the test system are:
-
-     start_test -startdir <dir>
-     start_test -onetest <foo.chpl>
-
-These commands run the test system starting from a single directory,
-or on a single test, respectively.  For a list of other test system
-options, use:
-
-     start_test -help
-
-And for complete documentation on the testing system, refer to the
-comments at the top of the start_test file.
-
+./
+  FEATURES       : maps out which tests use which Chapel features
+  README.testing : provides an introduction to using the Chapel testing system
+  start_test     : the main script for the Chapel testing system
+  start_clean    : cleans up the result of a run of the testing system
+  Bin/           : contains helper scripts for the testing system
+  *.good         : these files are used by the Chapel testing system
+  *.compopts     : "
+  *.execopts     : "
+  *.good         : "
+  *.notest       : "
+  *.perfkeys     : "

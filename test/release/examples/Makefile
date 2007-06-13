@@ -5,6 +5,8 @@ CHPL = chpl
 
 TARGETS = \
 	hello \
+	hello-config \
+	hello-module \
 	beer \
         blockLU \
 	genericStack \
@@ -24,6 +26,7 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS)
 	cd hpcc06 && $(MAKE) clean
+	./start_clean
 
 hpcc06: FORCE
 	cd hpcc06 && $(MAKE) all
