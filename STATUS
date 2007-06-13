@@ -31,7 +31,6 @@ Variables, Types and Expressions
 Unimplemented Features:
 * Non-ASCII strings
 * Conversions from strings to other primitive types
-* Parameter folding of conditional expressions
 * Configuration variables of tuple types
 
 Bugs:
@@ -72,9 +71,6 @@ Bugs:
 * Analysis to find return statements along all paths in a function is incomplete
 
 * Return statements in type select statements are not recognized correctly
-
-* Destructuring tuple arguments disables overloads of that function name
-    e.g., def foo((a,b), c) breaks ability to create other overloads of foo()
 
 * Actual arguments passed using inout intents are not checked for legality
 
@@ -156,7 +152,7 @@ Bugs:
 * Associative domains of explicit heterogeneous tuple types don't work
     e.g., var td: domain((int, int));
   Workaround: name the tuple type
-    e.g., type td_d = (int, int);  var td: domain(td_t);
+    e.g., type td_t = (int, int);  var td: domain(td_t);
 
 * Mixing dimensional index types in a domain specification yields poor errors
     e.g., var m: uint, n: int;  ... [1..m, 1..n]
