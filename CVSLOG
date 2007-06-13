@@ -106221,3 +106221,14 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+06/13/07 13:29:48 -- diten
+
+Log message:
+	Remove point about destructuring tuple arguments disabling overloading from
+	STATUS.
+
+Modified files:
+	./: STATUS 
+
