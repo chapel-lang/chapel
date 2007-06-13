@@ -106210,3 +106210,14 @@ Log message:
 Modified files:
 	chapel/spec/: Modules.tex Statements.tex 
 
+---------------------------------------------------------------------------
+
+06/13/07 13:14:15 -- bradc
+
+Log message:
+	IS killed CVS process gone astray.  Mods to top-level
+	files should now work.
+
+Modified files:
+	./: STATUS 
+
