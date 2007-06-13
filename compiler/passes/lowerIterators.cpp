@@ -65,7 +65,7 @@ void lowerIterators() {
   if (!unoptimized) {
     forv_Vec(FnSymbol, fn, gFns) {
       if (fn->fnClass == FN_ITERATOR) {
-        collapseBlocks(fn);
+        collapseBlocks(fn->body);
         removeUnnecessaryGotos(fn);
         localCopyPropagation(fn);
         deadVariableElimination(fn);

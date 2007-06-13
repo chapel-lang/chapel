@@ -9,7 +9,7 @@
 
 void copyPropagation(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-    collapseBlocks(fn);
+    collapseBlocks(fn->body);
     removeUnnecessaryGotos(fn);
   }
   if (unoptimized)

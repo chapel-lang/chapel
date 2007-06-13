@@ -6,25 +6,48 @@
 //
 // Removes unnecessary nested and/or empty block statements.
 //
-void collapseBlocks(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+void collapseBlocksHelp(Expr* outer, BlockStmt* inner) {
+  for_alist(Expr, expr, inner->body) {
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(expr)) {
       if (block->body->length() == 0) {
         block->remove();
-        continue;
-      }
-      if (block->loopInfo ||
-          block->blockTag == BLOCK_COBEGIN ||
-          block->blockTag == BLOCK_BEGIN)
-        continue;
-      if (block->list) {
-        for_alist(Expr, stmt, block->body)
-          block->insertBefore(stmt->remove());
+      } else if (block->list &&
+                 !block->loopInfo &&
+                 block->blockTag != BLOCK_COBEGIN &&
+                 block->blockTag != BLOCK_BEGIN) {
+        collapseBlocksHelp(outer, block);
         block->remove();
-        continue;
+      } else {
+        collapseBlocks(block);
+        outer->insertBefore(block->remove());
       }
+    } else {
+      if (CondStmt* cond = dynamic_cast<CondStmt*>(expr)) {
+        if (cond->thenStmt) collapseBlocks(cond->thenStmt);
+        if (cond->elseStmt) collapseBlocks(cond->elseStmt);
+      }
+      outer->insertBefore(expr->remove());
+    }
+  }
+}
+
+void collapseBlocks(BlockStmt* block) {
+  for_alist(Expr, expr, block->body) {
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(expr)) {
+      if (block->body->length() == 0) {
+        block->remove();
+      } else if (block->list &&
+                 !block->loopInfo &&
+                 block->blockTag != BLOCK_COBEGIN &&
+                 block->blockTag != BLOCK_BEGIN) {
+        collapseBlocksHelp(block, block);
+        block->remove();
+      } else {
+        collapseBlocks(block);
+      }
+    } else if (CondStmt* cond = dynamic_cast<CondStmt*>(expr)) {
+      if (cond->thenStmt) collapseBlocks(cond->thenStmt);
+      if (cond->elseStmt) collapseBlocks(cond->elseStmt);
     }
   }
 }

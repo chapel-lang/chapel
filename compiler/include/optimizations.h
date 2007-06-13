@@ -1,7 +1,7 @@
 #ifndef _OPTIMIZATIONS_H_
 #define _OPTIMIZATIONS_H_
 
-void collapseBlocks(FnSymbol* fn);
+void collapseBlocks(BlockStmt* block);
 void inlineCall(CallExpr* call);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
