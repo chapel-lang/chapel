@@ -50,10 +50,11 @@ discussed in~\rsec{Configuration_Variables}.
 
 \index{main@\chpl{main}}
 The main function must be called \chpl{main} and must have zero
-arguments.  There can be only one main function in all of the modules
-that make up a program.  Every main function starts by using the
-module that it is defined in, and thus executing the top-level code in
-that module~(\rsec{Module_Execution}).
+arguments.  It can be specified with or without parentheses.  There
+can be only one main function in all of the modules that make up a
+program.  Every main function starts by using the module that it is
+defined in, and thus executing the top-level code in that
+module~(\rsec{Module_Execution}).
 
 The main function can be omitted if there is only a single module in
 the program other than the standard modules, as discussed

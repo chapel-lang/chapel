@@ -41,9 +41,9 @@ CLOSED SJD    support for promoting casts across array elements
        e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
 CLOSED SJD    added support for param functions that support compile-time evaluation
        e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
-SJD    support for default values for param members of classes
+CLOSED SJD    support for default values for param members of classes
        e.g., class C { param bitWidth = 32; ... }
-SJD    support for functions without parentheses
+CLOSED SJD    support for functions without parentheses
        e.g., def f { writeln("In function f"); }
        - allow "main" function to be declared with or without parentheses
          e.g., def main { writeln("Program will start here"); ... }
@@ -57,14 +57,14 @@ BLC    support for sparse domains/arrays
        - accumulation of indices into sparse domains using +=
 BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 BLC    enumerated domains and arrays
-SJD    support for nested classes, records, and iterators
-SJD    serial statement
+CLOSED SJD    support for nested classes, records, and iterators
+CLOSED SJD    serial statement
 CLOSED (MBH) added support for using "_" to ignore elements during tuple destructuring
        e.g., var t: (int, real) = ...;   (t1, _) = t;
 DMI    added support for nested tuple destructuring in variable decls/formal args
 DMI    support for config params of primitive and enumerated types
 DMI    initial support for accessing a module's member via modname.membername
-SJD    implemented dynamic casts between class types
+CLOSED SJD    implemented dynamic casts between class types
 DMI    turned reference counting garbage collection off by default
        - added initial support for copy collection garbage collection
 BLC    subdomain keyword is now supported, though subset relationship is not checked

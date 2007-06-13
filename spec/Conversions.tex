@@ -141,11 +141,12 @@ numeric type, bool, or string, and vice versa.
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
 
-An expression of class type \chpl{C} can be explicitly converted to
-another class type \chpl{D} provided that \chpl{C} is derived
+An expression of static class type \chpl{C} can be explicitly
+converted to a class type \chpl{D} provided that \chpl{C} is derived
 from \chpl{D} or \chpl{D} is derived from \chpl{C}.  In the event
-that \chpl{D} is derived from \chpl{C}, the runtime type of \chpl{D}
-must be a \chpl{C}.
+that \chpl{D} is derived from \chpl{C}, it is a runtime error if the
+the dynamic class type of \chpl{C} is not derived from or equal
+to \chpl{D}.
 
 \subsubsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}

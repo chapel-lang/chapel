@@ -238,10 +238,6 @@ to inhibit parallelism within \chpl{f}.
 \label{Serial}
 \index{serial@\chpl{serial}}
 
-\begin{status}
-The serial statement is not yet implemented.
-\end{status}
-
 The \chpl{serial} statement can be used to dynamically control the
 degree of parallelism.  The syntax is:
 \begin{syntax}
@@ -249,13 +245,13 @@ serial-statement:
   `serial' expression block-level-statement
 \end{syntax}
 where the expression evaluates to a bool type.  Independent of that
-value, the block-level statement is evaluated. If the expression is
-true, any dynamically encountered forall loop or cobegin statement is
-executed serially within the current computation.  Any dynamically
-encountered begin-statement is executed serially with the current
-computation; no new computation is spawned.  Control continues to the
-statement following the begin-statement after the begin-statement
-finishes.
+value, the \sntx{block-level-statement} is evaluated. If the
+expression is true, any dynamically encountered forall loop or cobegin
+statement is executed serially within the current computation.  Any
+dynamically encountered begin-statement is executed serially with the
+current computation; no new computation is spawned.  Control continues
+to the statement following the begin-statement after the
+begin-statement finishes.
 
 \begin{example}
 In the code
