@@ -106036,3 +106036,13 @@ Added files:
 	chapel/doc/internal/MS4DesignDocs/: ChapelCompiler.html 
 	                                    ChapelForGranite.html 
 
+---------------------------------------------------------------------------
+
+06/12/07 18:30:39 -- deitz
+
+Log message:
+	Tightened up the cleanAST code run between passes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+
