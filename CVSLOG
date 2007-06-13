@@ -106058,3 +106058,13 @@ Modified files:
 	chapel/compiler/optimizations/: collapseBlocks.cpp 
 	chapel/compiler/passes/: copy_propagation.cpp lowerIterators.cpp 
 
+---------------------------------------------------------------------------
+
+06/12/07 23:28:31 -- marybeth
+
+Log message:
+	Adding more information to the Chapel support in Granite PE feature document.
+
+Modified files:
+	chapel/doc/internal/MS4DesignDocs/: ChapelForGranite.html 
+
