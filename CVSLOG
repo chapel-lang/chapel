@@ -106232,3 +106232,23 @@ Log message:
 Modified files:
 	./: STATUS 
 
+---------------------------------------------------------------------------
+
+06/13/07 14:13:08 -- deitz
+
+Log message:
+	Removed the "unordered" symbols vector from the Symboltable.  This is
+	only used during code generation in which case it can easily be
+	created from the hash table.  Maintaining this vector during
+	compilation creates an n^2 complexity when we remove an element from
+	the vector since we need to search it to find the element.
+	
+	This speeds up compilation of compSampler from 210s to 134s with all
+	of the improvement in the copyPropagation pass (101s to 25s) and most
+	of it in removeUnnecessaryGotos.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/passes/: normalize.cpp 
+
