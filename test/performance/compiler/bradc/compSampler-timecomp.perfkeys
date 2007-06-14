@@ -1,0 +1,26 @@
+total time :
+time between passes :
+parse :
+checkParsed :
+parallel1 :
+cleanup :
+scopeResolve :
+flattenClasses :
+normalize :
+checkNormalized :
+buildDefaultFunctions :
+resolve :
+checkResolved :
+flattenFunctions :
+cullOverReferences :
+parallel2 :
+lowerIterators :
+inlineFunctions :
+cullOverReferences :
+scalarReplace :
+copyPropagation :
+deadCodeElimination :
+prune :
+copyCollection :
+insertLineNumbers :
+codegen :
