@@ -106503,3 +106503,43 @@ Modified files:
 	chapel/compiler/AST/: bb.cpp 
 	chapel/compiler/include/: bb.h 
 
+---------------------------------------------------------------------------
+
+06/14/07 10:42:55 -- bradc
+
+Log message:
+	Here is an interesting future that actually raises
+	two different puzzles:
+	
+	- awhile ago I implemented member() for arithmetic
+	  domains and arrays; like the access function, I
+	  needed to specialize the 1D case to work on
+	  integers rather than 1-tuples of integers.
+	
+	- I initially tried to use a where clause to specialize
+	  the 1D future, but this resulted in a seg fault in
+	  the compiler (that line is still in the source code,
+	  commented out on SingleLocaleArithmetic.chpl:74).
+	
+	- As a workaround, I used a conditional in the routine,
+	  generating a compilerError() if rank != 1.  This has
+	  worked on all my tests to date.
+	
+	- However, this test shows that if a 1D membership test
+	  is used within a test code that uses higher-dimensional
+	  domains and arrays, the compilerError() is triggered,
+	  even though it seems like it shouldn't be.
+	
+	So far I haven't had a chance to debug this, so am marking
+	it as a bug in the STATUS and FUTURES files.  Any help
+	figuring out either the seg fault or the mis-called compiler
+	error would be appreciated.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+Added files:
+	chapel/test/sparse/bradc/: sparse1Daccess.chpl 
+	                           sparse1Daccess.future 
+	                           sparse1Daccess.good 
+
