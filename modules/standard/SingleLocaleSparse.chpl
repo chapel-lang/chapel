@@ -148,6 +148,10 @@ class SingleLocaleSparseArray: BaseArray {
       return irv;
   }
 
+  iterator ault() var {
+    for e in data[1..dom.nnz] yield e;
+  }
+
   def IRV var {
     return irv;
   }

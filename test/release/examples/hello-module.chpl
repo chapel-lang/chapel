@@ -1,6 +1,6 @@
 //
 // define a module named "Hello".  If a source file defines no
-// modules, the filename minus the .chpl extension serves as the
+// modules, the filename minus its .chpl extension serves as the
 // module name for the code it contains.
 //
 module Hello {
@@ -8,9 +8,9 @@ module Hello {
   //
   // the message to be printed out, defined as a configuration
   // constant named "message".  The type is inferred to be a string
-  // due to the initializing expression.  This message can be
-  // over-ridden by using --message="new message" on the executable's
-  // command line
+  // due to the initializing expression.  Like any configuration
+  // variable, this message can be over-ridden by using --message="new
+  // message" on the executable's command line
   //
   config const message = "Hello, world!";
 

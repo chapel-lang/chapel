@@ -16,6 +16,7 @@ TARGETS = \
 	norm \
 	prodCons \
 	quicksort \
+	sparse \
 	tree \
 
 

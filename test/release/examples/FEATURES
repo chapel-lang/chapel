@@ -15,6 +15,7 @@ jacobi         : 2D domains and arrays; stencil operations; reductions
 norm           : reductions; where clauses; modules
 prodCons       : synchronization variables; task parallelism using begin
 quicksort      : bounded task parallelism using cobegin and serial
+sparse         : sparse domains and arrays, and operations on them
 tree           : task parallelism using cobegin
 hpcc06/stream  : whole-array operators; standard modules
 hpcc06/ra      : iterators; atomic statements
@@ -37,6 +38,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -68,6 +70,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -100,6 +103,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -132,6 +136,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -165,6 +170,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -196,6 +202,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
@@ -227,6 +234,7 @@ jacobi         |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
 hpcc06/ra      |       |       |       |       |       |       |       |
