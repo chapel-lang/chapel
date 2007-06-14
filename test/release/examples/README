@@ -18,7 +18,7 @@ demonstrate various Chapel features:
      jacobi.chpl            : Jacobi iteration
      linkedList.chpl        : generic linked list example
      norm.chpl              : sample module for computing array norms
-     produceConsume.chpl    : producer-consumer using a sync variable
+     prodCons.chpl          : producer-consumer example using circular buffer
      quicksort.chpl         : parallel quick sort using cobegin and serial
      sparse.chpl            : sparse domain/array tutorial example
      tree.chpl              : constructs and walks a tree in parallel

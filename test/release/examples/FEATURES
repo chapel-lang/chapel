@@ -12,7 +12,7 @@ genericStack   : generic classes; nested classes
 iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
 norm           : reductions; where clauses; modules
-prodCons       : synchronization variables; task parallelism using begin
+prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
 sparse         : sparse domains and arrays, and operations on them
 tree           : task parallelism using cobegin
