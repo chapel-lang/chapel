@@ -106453,3 +106453,24 @@ Removed files:
 	                               tree_construct.chpl 
 	                               tree_construct.good 
 
+---------------------------------------------------------------------------
+
+06/13/07 17:27:22 -- marybeth
+
+Log message:
+	Checking in more changes to the comments:
+	
+	 - I fixed a comment about the pivot calculation according to
+	   Brad's suggestion
+	
+	 - I removed a TODO comment
+	
+	 - I tried to eliminate unnecessary whitespace and apply comments+
+	   spacing consistently throughout code
+	
+	I also made a change to the code that Brad caught.  I referred to
+	A instead of A1 when finding the pivot.
+
+Modified files:
+	chapel/test/release/examples/: blockLU.chpl 
+
