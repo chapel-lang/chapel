@@ -5,7 +5,6 @@ CHPL = chpl
 
 TARGETS = \
 	hello \
-	hello-config \
 	hello-module \
 	beer \
         blockLU \

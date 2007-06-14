@@ -1,7 +1,6 @@
 a.out
 *.tmp
 hello
-hello-config
 hello-module
 beer
 blockLU

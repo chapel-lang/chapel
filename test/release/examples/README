@@ -6,7 +6,6 @@ This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
      hello.chpl             : simplest Chapel "Hello, world!" program
-     hello-config.chpl      : variation with a configurable message
      hello-module.chpl      : variation using a structured module
 
 It also contains a number of more interesting examples that

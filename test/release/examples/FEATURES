@@ -5,8 +5,7 @@ Feature Charts for Chapel Examples
 test             Primary features it was designed to demonstrate
 ---------------+---------------------------------------------------------------
 hello          : string output
-hello-config   : configuration variables
-hello-module   : module structure; main() entry point
+hello-module   : configuration vars; module structure; main() entry point
 beer           : 1D domains and arrays; string manipulation; functions
 blockLU        : 2D domains and arrays; iterators; domain/array slicing
 genericStack   : generic classes; nested classes
@@ -28,7 +27,6 @@ hpcc06/fft     : array slicing; iterators; complex and imaginary values
 test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -60,7 +58,6 @@ key:
 test           | modls | stdmd | funcs | iters | confg | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -93,7 +90,6 @@ key:
 test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -126,7 +122,6 @@ key:
 test           | arith | enum  | assoc | opque | spars | index | subdm | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -160,7 +155,6 @@ key:
 test           | foral | whole | slice | reind | reduc | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -192,7 +186,6 @@ key:
 test           | begin | cobeg | srial | sync  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -224,7 +217,6 @@ key:
 test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
-hello-config   |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
