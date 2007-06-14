@@ -12,6 +12,9 @@ This directory contains the following documentation:
   README.prereqs   : prerequisites for using Chapel
   README.cygwin    : notes for Cygwin users
 
+  quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
+                       for quick reference
+
   hpcc06.pdf : our report for the 2006 HPC Challenge competition
                (http://www.hpcchallenge.org), which also serves as a
                tutorial to Chapel via three of the HPCC benchmarks:

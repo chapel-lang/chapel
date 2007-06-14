@@ -80,6 +80,10 @@ system("cd chapel && mkdir man");
 system("cd chapel/man && mkdir man1");
 system("cp chapel/doc/man/chpl.1 chapel/man/man1/");
 
+print "Building the quick reference sheet...\n";
+system("cd chapel/doc/internal/quickReference && make");
+system("cp chapel/doc/internal/quickReference/reference.pdf chapel/doc/release/quickReference.pdf");
+
 print "Creating the docs directory...\n";
 system("cd chapel && mv doc doctmp");
 system("cd chapel && mv doctmp/release doc");
