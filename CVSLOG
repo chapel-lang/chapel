@@ -106578,3 +106578,16 @@ Added files:
 	chapel/test/release/examples/: sparse.chpl sparse.good 
 	chapel/test/sparse/bradc/: arrIter.chpl arrIter.good 
 
+---------------------------------------------------------------------------
+
+06/14/07 13:38:10 -- bradc
+
+Log message:
+	Made the gen_release script build and include the quick
+	reference document and added it to the list of documents
+	in the README of the release's doc directory.
+
+Modified files:
+	chapel/doc/release/: README 
+	chapel/util/: gen_release 
+
