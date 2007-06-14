@@ -2182,6 +2182,19 @@ isSubType(Type* sub, Type* super) {
   return false;
 }
 
+static void
+insertValueTemp(Expr* insertPoint, Expr* actual) {
+  if (SymExpr* se = dynamic_cast<SymExpr*>(actual)) {
+    if (!se->var->type->refType) {
+      VarSymbol* tmp = new VarSymbol("tmp", getValueType(se->var->type));
+      tmp->isCompilerTemp = true;
+      insertPoint->insertBefore(new DefExpr(tmp));
+      insertPoint->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, se->var)));
+      se->var = tmp;
+    }
+  }
+}
+
 static Expr*
 postFold(Expr* expr) {
   Expr* result = expr;
@@ -2335,6 +2348,10 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIMITIVE_RSH)) {
       FOLD_CALL2(P_prim_rsh);
+    } else if (call->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
+      insertValueTemp(call->parentExpr, call->get(2));
+      insertValueTemp(call->parentExpr, call->get(3));
+      insertValueTemp(call->parentExpr, call->get(4));
     }
   } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
     if (Symbol* val = paramMap.get(sym->var)) {
