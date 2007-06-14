@@ -106591,3 +106591,42 @@ Modified files:
 	chapel/doc/release/: README 
 	chapel/util/: gen_release 
 
+---------------------------------------------------------------------------
+
+06/14/07 14:06:34 -- bradc
+
+Log message:
+	Based on conversation with Steve yesterday, decided
+	that too many hello world examples could be too much,
+	and that what might be an appropriate ramp for a talk
+	could be too slow of a ramp for an examples directory.
+	So, I'm removing the middle hello-config.chpl which,
+	after a night's sleep, seemed particularly redundant.
+	Leaving hello-module.chpl in for now because I think
+	it's an interesting counterpoint to hello.chpl in
+	terms of showing what a structured Chapel program
+	would look like (as opposed to a quick-and-dirty example).
+	
+	To show the actual ramp that I had hoped to, I'm now
+	thinking the better thing to do would be to create a
+	"basics.chpl" example that essentially walks through
+	language concepts in a tutorial top-to-bottom commentary
+	as in the sparse example (assuming that others like this
+	format as much as I now do).  Think of it as being
+	similar to the quick reference document in terms of
+	covering the language completely and quickly, but in
+	program form.  Or, we could have a "basics" directory
+	containing many such codes that took one concept at a
+	time and as a whole described the majority of the
+	basics of language structure, operators, statements,
+	etc.
+	
+	Not for this release, though.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore FEATURES Makefile 
+	                               README 
+Removed files:
+	chapel/test/release/examples/: hello-config.chpl 
+	                               hello-config.good 
+
