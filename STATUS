@@ -136,6 +136,8 @@ Unimplemented Features:
 * Index type bounds checking is not implemented
 * Checking that subdomain are index subsets is not implemented
 * Slicing strided domains and arrays is not implemented
+* Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
+
 
 Bugs:
 
@@ -144,8 +146,6 @@ Bugs:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
-
-* Sparse arrays can't be sliced with dense domains
 
 * Associative domain index additions/deletions can result in an infinite loop
 
@@ -156,6 +156,9 @@ Bugs:
 
 * Mixing dimensional index types in a domain specification yields poor errors
     e.g., var m: uint, n: int;  ... [1..m, 1..n]
+
+* 1D sparse arrays can't be accessed in programs using domains of other rank
+
 
 
 --------

@@ -172,7 +172,7 @@ unimplemented feature: zipper reference iterators [test/functions/deitz/iterator
 unimplemented feature: slicing strided domains/arrays [domains/bradc/slices/sliceStridedDomain]
 unimplemented feature: slicing strided domains/arrays [arrays/bradc/slices/sliceStridedArray]
 
-* Sparse arrays can't be sliced with dense domains
+* Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
 unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithDense]
 
 * a mechanism for controlling the precision/width of scalar values
@@ -180,3 +180,6 @@ feature request: output formatting [io/bradc/formatoutput]
 
 * User-level initialize() routines are not yet supported
 unimplemented feature: module initializers [modules/bradc/initialize]
+
+* 1D sparse arrays can't be accessed in programs using domains of other rank
+bug: sparse 1D access in presence of multidimensional domain [sparse/bradc/sparse1Daccess]

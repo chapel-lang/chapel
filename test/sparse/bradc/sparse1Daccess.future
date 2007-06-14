@@ -1,0 +1,9 @@
+bug: sparse 1D access in presence of multidimensional domain
+
+For some reason, accessing a sparse 1D array when the code contains
+domains of other dimensions causes the member() functions to resolve
+as I would expect.  Note that removing D3 from this code causes things
+to work.
+
+Related, note that adding a where clause to the member() function for
+the 1D sparse case causes the compiler to seg fault.
