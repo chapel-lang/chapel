@@ -106630,3 +106630,16 @@ Removed files:
 	chapel/test/release/examples/: hello-config.chpl 
 	                               hello-config.good 
 
+---------------------------------------------------------------------------
+
+06/14/07 14:14:54 -- deitz
+
+Log message:
+	Reenabled the code generation of C for loops by inserting value temps
+	(temporary variables that dereference a reference) before the C for
+	loop primitive.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelRange.chpl 
+
