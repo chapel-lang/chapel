@@ -106543,3 +106543,38 @@ Added files:
 	                           sparse1Daccess.future 
 	                           sparse1Daccess.good 
 
+---------------------------------------------------------------------------
+
+06/14/07 10:51:34 -- bradc
+
+Log message:
+	Added a sparse example to the release -- feedback
+	desired.  I took an approach to this that I really
+	liked which was to make it like a tutorial which
+	is meant to be read from top-to-bottom, with lots
+	of comments separating code segments.  I thought
+	this was an enjoyable way to write the test and
+	hope it's a useful way to read it as well.  I don't
+	think this makes sense for all examples (esp. those
+	like HPCC that are meant to be structured like a
+	real code), but for a tutorial-like example, it was
+	really nice and conversational.  I would enjoy writing
+	more of these (also fun to imagine a Chapel interpreter
+	which could be run in tutorial mode on such an example,
+	having the user hit some key to advance after every
+	statement or block of comments).
+	
+	In writing this tutorial, realized that I'd never
+	written an ault() iterator for the sparse array
+	class, so added it along with an example, and made
+	it a var iterator to take advantage of Steve's recent
+	advances.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleSparse.chpl 
+	chapel/test/release/examples/: .cvsignore FEATURES Makefile 
+	                               README hello-module.chpl 
+Added files:
+	chapel/test/release/examples/: sparse.chpl sparse.good 
+	chapel/test/sparse/bradc/: arrIter.chpl arrIter.good 
+
