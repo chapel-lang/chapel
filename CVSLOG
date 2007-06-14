@@ -106671,3 +106671,18 @@ Added files:
 	                                         compSampler-timecomp.perfcompopts 
 	                                         compSampler-timecomp.perfkeys 
 
+---------------------------------------------------------------------------
+
+06/14/07 15:35:36 -- bradc
+
+Log message:
+	Rewrote the producer/consumer example from scratch to
+	use a circular buffer of synchronization variables.
+	This is close to what Wayne had originally envisioned
+	for this benchmark, but at the time it wasn't possible
+	due to lack of array of syncs support.
+
+Modified files:
+	chapel/test/release/examples/: FEATURES README prodCons.chpl 
+	                               prodCons.good 
+
