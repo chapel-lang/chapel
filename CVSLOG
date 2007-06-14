@@ -106474,3 +106474,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: blockLU.chpl 
 
+---------------------------------------------------------------------------
+
+06/13/07 20:14:48 -- deitz
+
+Log message:
+	Minor refactor of forward flow analysis in preparation for more.
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp 
+
