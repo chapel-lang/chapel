@@ -106484,3 +106484,22 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: bb.cpp 
 
+---------------------------------------------------------------------------
+
+06/14/07 10:35:51 -- deitz
+
+Log message:
+	Refactored the forward flow analysis used by copy propagation and dead
+	code elimination so that the IN sets are computed before the OUT sets
+	for each basic block.  This has a dramatic effect on performance for
+	the compSampler test case.  The next step is to implement a textbook
+	queue of basic blocks.
+	
+	This speeds up compilation of compSampler from 103s to 44s with the
+	improvement in global copy propagation (24s to 20s) and dead code
+	elimination (60s to 4s).
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp 
+	chapel/compiler/include/: bb.h 
+
