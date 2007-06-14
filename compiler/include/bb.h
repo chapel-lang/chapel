@@ -46,7 +46,7 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& KILL,
                          Vec<Vec<bool>*>& IN,
                          Vec<Vec<bool>*>& OUT,
-                         bool intersection = true);
+                         bool intersect = true);
 
 void printBasicBlocks(FnSymbol* fn);
 

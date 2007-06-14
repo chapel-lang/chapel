@@ -205,36 +205,19 @@ void backwardFlowAnalysis(FnSymbol* fn,
 }
 
 
-//
-// compute OUT set for ith basic block for forward flow analysis
-//
-static bool
-forwardComputeOUT(FnSymbol* fn,
-                  Vec<Vec<bool>*>& GEN,
-                  Vec<Vec<bool>*>& KILL,
-                  Vec<Vec<bool>*>& IN,
-                  Vec<Vec<bool>*>& OUT,
-                  bool intersection,
-                  int i) {
-  bool iterate = false;
-  for (int j = 0; j < IN.v[i]->n; j++) {
-    bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
-    if (new_out != OUT.v[i]->v[j]) {
-      OUT.v[i]->v[j] = new_out;
-      iterate = true;
-    }
-  }
-  return iterate;
-}
-
-
 void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& GEN,
                          Vec<Vec<bool>*>& KILL,
                          Vec<Vec<bool>*>& IN,
                          Vec<Vec<bool>*>& OUT,
-                         bool intersection) {
-  forwardComputeOUT(fn, GEN, KILL, IN, OUT, intersection, 0);
+                         bool intersect) {
+  assert(fn->basicBlocks->v[0]->ins.n == 0);
+  for (int j = 0; j < IN.v[0]->n; j++) {
+    bool new_out = (IN.v[0]->v[j] & !KILL.v[0]->v[j]) | GEN.v[0]->v[j];
+    if (new_out != OUT.v[0]->v[j]) {
+      OUT.v[0]->v[j] = new_out;
+    }
+  }
   bool iterate = true;
   while (iterate) {
     iterate = false;
@@ -243,31 +226,23 @@ void forwardFlowAnalysis(FnSymbol* fn,
     printf("OUT\n"); debug_flow_print_set(OUT);
 #endif
     for (int i = 1; i < fn->basicBlocks->n; i++) {
-      iterate |= forwardComputeOUT(fn, GEN, KILL, IN, OUT, intersection, i);
-    }
-    for (int i = 1; i < fn->basicBlocks->n; i++) {
       BasicBlock* bb = fn->basicBlocks->v[i];
-      if (intersection) {
-        for (int j = 0; j < IN.v[i]->n; j++) {
-          bool new_in = true;
-          forv_Vec(BasicBlock, inbb, bb->ins) {
+      for (int j = 0; j < IN.v[i]->n; j++) {
+        bool new_in = intersect;
+        forv_Vec(BasicBlock, inbb, bb->ins) {
+          if (intersect)
             new_in = new_in & OUT.v[inbb->id]->v[j];
-          }
-          if (new_in != IN.v[i]->v[j]) {
-            IN.v[i]->v[j] = new_in;
-            iterate = true;
-          }
-        }
-      } else {
-        for (int j = 0; j < IN.v[i]->n; j++) {
-          bool new_in = false;
-          forv_Vec(BasicBlock, inbb, bb->ins) {
+          else
             new_in = new_in | OUT.v[inbb->id]->v[j];
-          }
-          if (new_in != IN.v[i]->v[j]) {
-            IN.v[i]->v[j] = new_in;
-            iterate = true;
-          }
+        }
+        if (new_in != IN.v[i]->v[j]) {
+          IN.v[i]->v[j] = new_in;
+          iterate = true;
+        }
+        bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
+        if (new_out != OUT.v[i]->v[j]) {
+          OUT.v[i]->v[j] = new_out;
+          iterate = true;
         }
       }
     }
