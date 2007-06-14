@@ -106655,3 +106655,19 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: iterators.chpl 
 
+---------------------------------------------------------------------------
+
+06/14/07 15:12:40 -- bradc
+
+Log message:
+	Added compSampler as a third test to look at the
+	performance of the compiler as discussed in today's
+	meeting.
+
+Added files:
+	chapel/test/performance/compiler/bradc/: 
+	                                         compSampler-timecomp.chpl 
+	                                         compSampler-timecomp.good 
+	                                         compSampler-timecomp.perfcompopts 
+	                                         compSampler-timecomp.perfkeys 
+
