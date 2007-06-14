@@ -106643,3 +106643,15 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+06/14/07 14:19:07 -- deitz
+
+Log message:
+	Changed comment in iterators example to show equivalent "more
+	traditional" code instead of mentioning tuple concept which would
+	presumably be of little help if the reader does not understand tuples.
+
+Modified files:
+	chapel/test/release/examples/: iterators.chpl 
+
