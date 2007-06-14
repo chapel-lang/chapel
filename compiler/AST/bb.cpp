@@ -205,12 +205,36 @@ void backwardFlowAnalysis(FnSymbol* fn,
 }
 
 
+//
+// compute OUT set for ith basic block for forward flow analysis
+//
+static bool
+forwardComputeOUT(FnSymbol* fn,
+                  Vec<Vec<bool>*>& GEN,
+                  Vec<Vec<bool>*>& KILL,
+                  Vec<Vec<bool>*>& IN,
+                  Vec<Vec<bool>*>& OUT,
+                  bool intersection,
+                  int i) {
+  bool iterate = false;
+  for (int j = 0; j < IN.v[i]->n; j++) {
+    bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
+    if (new_out != OUT.v[i]->v[j]) {
+      OUT.v[i]->v[j] = new_out;
+      iterate = true;
+    }
+  }
+  return iterate;
+}
+
+
 void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& GEN,
                          Vec<Vec<bool>*>& KILL,
                          Vec<Vec<bool>*>& IN,
                          Vec<Vec<bool>*>& OUT,
                          bool intersection) {
+  forwardComputeOUT(fn, GEN, KILL, IN, OUT, intersection, 0);
   bool iterate = true;
   while (iterate) {
     iterate = false;
@@ -218,14 +242,8 @@ void forwardFlowAnalysis(FnSymbol* fn,
     printf("IN\n"); debug_flow_print_set(IN);
     printf("OUT\n"); debug_flow_print_set(OUT);
 #endif
-    for (int i = 0; i < fn->basicBlocks->n; i++) {
-      for (int j = 0; j < IN.v[i]->n; j++) {
-        bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
-        if (new_out != OUT.v[i]->v[j]) {
-          OUT.v[i]->v[j] = new_out;
-          iterate = true;
-        }
-      }
+    for (int i = 1; i < fn->basicBlocks->n; i++) {
+      iterate |= forwardComputeOUT(fn, GEN, KILL, IN, OUT, intersection, i);
     }
     for (int i = 1; i < fn->basicBlocks->n; i++) {
       BasicBlock* bb = fn->basicBlocks->v[i];
