@@ -106686,3 +106686,15 @@ Modified files:
 	chapel/test/release/examples/: FEATURES README prodCons.chpl 
 	                               prodCons.good 
 
+---------------------------------------------------------------------------
+
+06/14/07 15:43:14 -- bradc
+
+Log message:
+	Added comments to tree test and made use of
+	default parameters to clean up the recursive
+	buildTree() routine a bit.
+
+Modified files:
+	chapel/test/release/examples/: tree.chpl 
+
