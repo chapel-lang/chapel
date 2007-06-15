@@ -106798,3 +106798,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: sparse.chpl 
 
+---------------------------------------------------------------------------
+
+06/15/07 13:39:18 -- deitz
+
+Log message:
+	Reenabled scalar replacement of iterator classes.
+
+Modified files:
+	chapel/compiler/passes/: scalarReplace.cpp 
+
