@@ -106740,3 +106740,14 @@ Modified files:
 	                                                  countMemory.chap08.good 
 	chapel/test/trivial/bradc/: localConfig.good localConfig.chpl 
 
+---------------------------------------------------------------------------
+
+06/15/07 10:23:24 -- bradc
+
+Log message:
+	Finished pass over READMEs in the release doc directory.
+
+Modified files:
+	chapel/doc/release/: README README.chplenv README.compiling 
+	                     README.cygwin README.executing 
+
