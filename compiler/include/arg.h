@@ -47,6 +47,7 @@ typedef void ArgumentFunction(struct ArgumentState *arg_state, char *arg);
 typedef struct {
   char *name;
   char key;
+  char *argumentOptions;
   char *description;
   char *type;
   void *location;

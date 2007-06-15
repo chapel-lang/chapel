@@ -1,51 +1,54 @@
-Usage: chpl [flags|source files]
+Usage: chpl [flags] [source files]
 
-Compilation Traces:       default   type     description
--------------------       --------  -------  --------------------------------
-      --print-passes      false     ->true   Print compiler passes
-      --print-commands    false     ->true   Print system commands
+Compilation Traces:
+      --print-commands  Print system commands
+      --print-passes    Print compiler passes
 
 Code Size Statistics:
----------------------
-      --print-code-size   false     ->true   Print code size statistics
-      --count-tokens      false     ->true   Count tokens
+      --count-tokens    Count tokens
+      --print-code-size Print code size statistics
 
 Optimization Control:
----------------------
-      --no-bounds-checks  false     ->true   Disable bounds checking
-      --no-inline         false     ->true   Do not inline functions
-      --unoptimized       false     ->true   Generate naive code (many temps)
-      --no-single-loop-iterator-opt false     ->true   Disable the optimization of iterators composed of a single loop
-      --no-expand-iterators-inline-opt false     ->true   Disable the expansion of iterators inlined around loop bodies
-      --no-copy-propagation false     ->true   Disable copy propagation
+      --no-bounds-checks
+                        Disable bounds checking
+      --no-copy-propagation
+                        Disable copy propagation
+      --no-expand-iterators-inline-opt
+                        Disable the expansion of iterators inlined around loop bodies
+      --no-inline       Do not inline functions
+      --no-single-loop-iterator-opt
+                        Disable the optimization of iterators composed of a single loop
+      --unoptimized     Generate naive code (many temps)
 
 Code Generation:
-----------------
-      --savec                       path     Save generated C code in directory
-  -g, --[no-]debug        false     ->true   Allow debugging of generated C code
-  -O, --[no-]optimize     false     ->true   Optimize generated C code
-      --[no-]cg-cpp-lines false     ->true   Generate #line annotations
-  -p, --parallel          true      toggle   Toggle threaded code generation
+      --[no-]cg-cpp-lines
+                        Generate #line annotations
+  -g, --[no-]debug      Allow debugging of generated C code
+  -O, --[no-]optimize   Optimize generated C code
+  -p, --parallel        Toggle threaded code generation
+      --savec <path>    Save generated C code in directory
 
 Linker Control:
----------------
-  -o, --output            a.out     path     Name output executable
-  -L, --lib-search-path             path     C library search path
-  -l, --lib-linkage                 path     C library linkage
-      --ccflags                     string   Back-end C compiler flags
+      --ccflags <flags> Back-end C compiler flags
+  -l, --lib-linkage <path>
+                        C library linkage
+  -L, --lib-search-path <path>
+                        C library search path
+  -o, --output <name>   Name output executable
 
 Miscellaneous Flags:
---------------------
-      --no-warnings       false     ->true   Disable output of warnings
-      --instantiate-max   256       int      Limit number of instantiations
-      --chplhome          .         path     Over-ride $CHPL_HOME
-      --[no-]devel        false     ->true   Compile as developer
-  -s, --set                         string   Set config param value
-      --explain-call                string   Explain resolution of call
+      --chplhome <path> Over-ride $CHPL_HOME
+      --[no-]devel      Compile as developer
+      --explain-call <call>[:<module>][:<line>]
+                        Explain resolution of call
+      --instantiate-max <max>
+                        Limit number of instantiations
+      --no-warnings     Disable output of warnings
+  -s, --set <name>[=<value>]
+                        Set config param value
 
 Compiler Information:
----------------------
-      --version                              Show Version
-      --copyright                            Show Copyright
-      --license                              Show License
-  -h, --help                                 Help (show this list)
+      --copyright       Show Copyright
+  -h, --help            Help (show this list)
+      --license         Show License
+      --version         Show Version

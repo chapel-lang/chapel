@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "arg.h"
 #include "chpl.h"
 
+/*
 static char *SPACES = "                                                                               ";
 static char *arg_types_keys = (char *)"IPSDfF+TLN";
 static char *arg_types_desc[] = {
@@ -47,7 +48,7 @@ static char *arg_types_desc[] = {
   (char *)"->true  ",
   (char *)"        "
 };
-
+*/
 
 static void 
 bad_flag(char* flag) {
@@ -201,18 +202,25 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
   }
 }
 
-void 
-usage(ArgumentState *arg_state, char *arg_unused) {
-  ArgumentDescription *desc = arg_state->desc;
+void print_n_spaces(int n) {
   int i;
+  for (i = 0; i < n; i++)
+    fprintf(stderr, " ");
+}
+
+void usage(ArgumentState* arg_state, char* arg_unused) {
+  ArgumentDescription *desc = arg_state->desc;
+  const int desc_start_col = 25;
+  int i, nprinted;
 
   (void)arg_unused;
-  fprintf(stderr,"Usage: %s [flags|source files]\n",arg_state->program_name);
+  fprintf(stderr,"Usage: %s [flags] [source files]\n",arg_state->program_name);
+
   for (i = 0;; i++) {
     if (!desc[i].name)
       break;
     if (desc[i].name[0] == '\0') {
-      if (strcmp(desc[i].description, "Developer Flags") == 0) {
+      if (!strcmp(desc[i].description, "Developer Flags")) {
         if (developer) {
           fprintf(stderr, "\n\n%s\n", desc[i].description);
           fprintf(stderr, "===============\n");
@@ -221,76 +229,28 @@ usage(ArgumentState *arg_state, char *arg_unused) {
           break;
         }
       } else {
-        int len = strlen(desc[i].description);
-        int j;
-        static bool firstDesc = true;
-        fprintf(stderr, "\n%s:", desc[i].description);
-        if (firstDesc) {
-          fprintf(stderr, "       default   type     description");
-        }
-        fprintf(stderr, "\n");
-        for (j=0; j<= len; j++) {
-          fprintf(stderr, "-");
-        }
-        if (firstDesc) {
-          fprintf(stderr, "       --------  -------  --------------------------------");
-          firstDesc = false;
-        }
-        fprintf(stderr, "\n");
-        //        fprintf(stderr, "-------------------------\n");
+        fprintf(stderr, "\n%s:\n", desc[i].description);
         continue;
       }
     }
-    int isNoFlag = (desc[i].type && desc[i].type[0] == 'N') ? 5 : 0;
-    fprintf(stderr,"  %c%c%c %s%s%s%s ", 
-            desc[i].key != ' ' ? '-' : ' ', desc[i].key, 
-            (desc[i].key != ' ' && desc[i].name && desc[i].name[0]) ? ',' : ' ', 
-            (desc[i].name && desc[i].name[0] != '\0') ? "--" : "  ",
-            (isNoFlag) ? "[no-]" : "",
-            desc[i].name,
-            (strlen(desc[i].name) + isNoFlag + 62 < 79) ?
-            &SPACES[strlen(desc[i].name) + isNoFlag + 62] : "");
-    switch(desc[i].type?desc[i].type[0]:0) {
-      case 0: fprintf(stderr, "         "); break;
-      case 'L':
-        fprintf(stderr,
-#ifdef __alpha
-                "%-9ld",
-#elifdef FreeBSD
-                "%-9qd",
-#else
-                "%-9lld",
-#endif
-                *(int64*)desc[i].location);
-        break;
-      case 'P':
-      case 'S':
-        if (*(char*)desc[i].location) {
-          if (strlen((char*)desc[i].location) < 10)
-            fprintf(stderr, "%-9s", (char*)desc[i].location);
-          else {
-            ((char*)desc[i].location)[7] = 0;
-            fprintf(stderr, "%-7s..", (char*)desc[i].location);
-          }
-        } else
-          fprintf(stderr, "         ");
-        break;
-      case 'D':
-        fprintf(stderr, "%-9.3e", *(double*)desc[i].location);
-        break;
-      case '+': 
-      case 'I':
-        fprintf(stderr, "%-9d", *(int *)desc[i].location);
-        break;
-    case 'T': case 'f': case 'F': case 'N':
-        fprintf(stderr, "%-9s", *(bool *)desc[i].location?"true ":"false");
-        break;
+    if (desc[i].key != ' ') {
+      nprinted = fprintf(stderr, "  -%c, --", desc[i].key);
+    } else {
+      nprinted = fprintf(stderr, "      --");
     }
-    fprintf(stderr, " %s", 
-            arg_types_desc[desc[i].type?strchr(arg_types_keys,desc[i].type[0])-
-                           arg_types_keys : strlen(arg_types_keys)]);
+    if (desc[i].type && !strcmp(desc[i].type, "N"))
+      nprinted += fprintf(stderr, "[no-]");
+    nprinted += fprintf(stderr, "%s", desc[i].name);
 
-    fprintf(stderr," %s\n",desc[i].description);
+    if (desc[i].argumentOptions)
+      nprinted += fprintf(stderr, " %s", desc[i].argumentOptions);
+    if (nprinted > (desc_start_col - 2)) {
+      fprintf(stderr, "\n");
+      print_n_spaces(desc_start_col - 1);
+    } else {
+      print_n_spaces(desc_start_col - nprinted - 1);
+    }
+    fprintf(stderr, "%s\n", desc[i].description);
   }
   exit(1);
 }
