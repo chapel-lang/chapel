@@ -106866,3 +106866,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex spec.tex 
 
+---------------------------------------------------------------------------
+
+06/15/07 15:34:36 -- deitz
+
+Log message:
+	Cleaned and refactored code after copy and paste development.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
