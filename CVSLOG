@@ -106751,3 +106751,24 @@ Modified files:
 	chapel/doc/release/: README README.chplenv README.compiling 
 	                     README.cygwin README.executing 
 
+---------------------------------------------------------------------------
+
+06/15/07 11:36:22 -- bradc
+
+Log message:
+	Finished my pass over the release examples README files
+	and examples.
+
+Modified files:
+	chapel/test/release/examples/: README README.testing beer.chpl 
+	                               norm.chpl 
+	chapel/test/release/examples/hpcc06/: .cvsignore Makefile README 
+Added files:
+	chapel/test/release/examples/: README.features 
+Removed files:
+	chapel/test/release/examples/: FEATURES 
+	chapel/test/release/examples/hpcc06/: fft-mta.chpl 
+	                                      fft-mta.compopts 
+	                                      fft-mta.execopts 
+	                                      fft-mta.good 
+
