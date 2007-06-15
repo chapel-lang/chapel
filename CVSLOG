@@ -106772,3 +106772,17 @@ Removed files:
 	                                      fft-mta.execopts 
 	                                      fft-mta.good 
 
+---------------------------------------------------------------------------
+
+06/15/07 11:52:10 -- deitz
+
+Log message:
+	Removed references from within the iterator classes with the exception
+	of the returned symbol for var iterators in preparation for reenabling
+	scalar replacement of iterator classes.  This code is in need of
+	cleaning via the introduction of several helper functions.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/passes/: lowerIterators.cpp scalarReplace.cpp 
+
