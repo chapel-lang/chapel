@@ -136,6 +136,13 @@ This summary is not intended to give a complete description of each feature.
 Rather, it should give the reader a map to the rest of the specification
 document.  
 
+\begin{TODO}
+Need to add references to other sections in the spec so that this does
+function as a map to the rest of the document.
+
+Also add references to the examples in this section?
+\end{TODO}
+
 \subsubsection{Chapel Programming Basics}
 \paragraph{Hello World} 
 A Chapel version of the standard ``hello world'' computation is given
@@ -194,14 +201,84 @@ The following output will be printed to the console:
 > Hello, world!
 \end{commandline}
 
-\subsubsection{Types}
+\subsubsection{Variables}
+There are three kinds of Chapel variables: \chpl{var},
+\chpl{const} (runtime constants), \chpl{param} (compile time constants).
+
+\paragraph{Variable Declarations}
 Chapel is a strongly typed language.  Each variable declaration
 must include a type specification or an assignment to an initial value 
 from which the type can be inferred.  
+Variable declarations include the kind of variable, a type specification,
+and an assignment to an initial value.  The type specification can be
+omitted if the type can be inferred from the initial value.  If the
+variable is not initialized in its declaration, then it contains a
+default initial value according to its type.
 
-In addition, when each variable is declared, it is also initialized.
-If an initial value is not specified, then the variable
-is initialized to a default value according to its type. 
+\begin{example}
+The following code gives examples of variable declarations in Chapel.
+\begin{chapel}
+var x: real = 1.0; //x is real, init to 1.0
+var y, z: real; //y, z are real, init to 0.0
+
+var n = 10; //n inferred to be int, init to 10
+const size = n; //size is runtime constant int,
+                //set to 10
+\end{chapel}
+\end{example}
+
+\paragraph{Configuration Variables}
+The keyword \chpl{config} may precede any global variable
+declaration, indicating that the variable may be set at
+compile time or runtime.
+To set configuration variables at runtime, use ``\chpl{--}''
+followed by the variable name and value on the execution
+command line.
+To set configuration variables at compile time, use
+``\chpl{-s}'' followed by the variable name and value on the
+compiler command line.
+
+\begin{example}
+The following code gives an example of a configuration
+runtime constant, \chpl{n} and a configuration compile time constant,
+\chpl{debug}.
+\begin{chapel}
+config const n = 100;
+config param debug:bool;
+\end{chapel}
+
+To set \chpl{n} at runtime, the following command is used.
+\begin{commandline}
+> ./a.out --n=1000
+\end{commandline}
+
+To set \chpl{debug} at compile time, the following compile commmand
+and flag is used.
+\begin{commandline}
+> chpl testprogram.chpl -s debug=true
+\end{commandline}
+\end{example}
+
+\paragraph{Synchronization Variables}
+Single variables are assigned once.  Using a single variable
+before it is assigned, suspends the computation until another
+task assigns a value to it.
+Sync variables are similar to single variables,
+but permit multiple assignments to that variable. Sync
+variables have a {\em full} or {\em empty} state associated
+with them that is modified when read and written to and control
+access to these variables between threads of computation.
+\begin{chapel}
+var x: single int;
+var y: sync real;
+\end{chapel}
+
+\subsubsection{Types}
+Chapel supports primitive numeric, logical and string types.  In
+addition, Chapel provides many non-primitive types such as classes,
+records, ranges, domains and arrays.  The paragraphs in this
+section describe all of the Chapel types.
+
 \paragraph{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
 real, imaginary and complex floating point numbers, booleans and strings.
@@ -460,75 +537,6 @@ type elemType = real(32);
 var alpha: elemType; //alpha is 32-bit real
 \end{chapel}
 
-\subsubsection{Variables}
-There are three kinds of Chapel variables: \chpl{var},
-\chpl{const} (runtime constants), \chpl{param} (compile time constants).
-
-\paragraph{Variable Declarations}
-Variable declarations include the kind of variable, a type specification,
-and an assignment to an initial value.  The type specification can be
-omitted if the type can be inferred from the initial value.  If the
-variable is not initialized in its declaration, then it contains a
-default initial value according to its type.
-
-\begin{example}
-The following code gives examples of variable declarations in Chapel. 
-\begin{chapel}
-var x: real = 1.0; //x is real, init to 1.0
-var y, z: real; //y, z are real, init to 0.0
-
-var n = 10; //n inferred to be int, init to 10
-const size = n; //size is runtime constant int,
-                //set to 10
-\end{chapel}
-\end{example}
-
-\paragraph{Configuration Variables}
-The keyword \chpl{config} may precede any global variable
-declaration, indicating that the variable may be set at
-compile time or runtime.
-To set configuration variables at runtime, use ``\chpl{--}''
-followed by the variable name and value on the execution
-command line.
-To set configuration variables at compile time, use
-``\chpl{-s}'' followed by the variable name and value on the
-compiler command line.
-
-\begin{example}
-The following code gives an example of a configuration
-runtime constant, \chpl{n} and a configuration compile time constant,
-\chpl{debug}.
-\begin{chapel}
-config const n = 100;
-config param debug:bool;
-\end{chapel}
-
-To set \chpl{n} at runtime, the following command is used.
-\begin{commandline}
-> ./a.out --n=1000
-\end{commandline}
-
-To set \chpl{debug} at compile time, the following compile commmand
-and flag is used.
-\begin{commandline}
-> chpl testprogram.chpl -s debug=true
-\end{commandline}
-\end{example}
-
-\paragraph{Synchronization Variables}
-Single variables are assigned once.  Using a single variable
-before it is assigned, suspends the computation until another
-task assigns a value to it.
-Sync variables are similar to single variables,
-but permit multiple assignments to that variable. Sync
-variables have a {\em full} or {\em empty} state associated
-with them that is modified when read and written to and control
-access to these variables between threads of computation.
-\begin{chapel}
-var x: single int;
-var y: sync real;
-\end{chapel}
-
 \subsubsection{Operators}
 \paragraph{Operator Precedence}
 \begin{center}
@@ -579,15 +587,12 @@ x <=> y; //swaps the value in x with the value in y
 The array alias operator, \chpl{=>}, creates an alias
 to an array or an array slice.
 \begin{chapel}
-A11 => A(block1,block1);
+var A11 => A(block1,block1);
 \end{chapel}
 
 %\paragraph{Scans and Reductions}
 
-\subsubsection{Statements}
-The Chapel language supports serial and parallel statements.  In the
-following paragraphs, the serial statements are discussed first, followed
-by the parallel statements.
+\subsubsection{Serial Statements and Expressions}
 
 \paragraph{Block Statement}  
 A block statement is delimited by braces, \{ \} and it
@@ -695,51 +700,11 @@ to index into the array \chpl{x} if it has the appropriate
 type.
 \end{example}
 
-\paragraph{Begin Statement} 
-The \chpl{begin} statement spawns a computation to execute a
-statement.
+\begin{TODO}
+New example in Quick Reference Guide will be replace this
+example as well.
+\end{TODO}
 
-\begin{example}
-\begin{chapel}
-begin {
-  while(!done) do work(x);
-}
-otherwork(x);
-done = true;
-\end{chapel}
-\end{example}
-
-\paragraph{Co-begin Statement} 
-The cobegin statement is used to create parallelism within
-a block statement.  All statements within the block statement
-are executed concurrently.
-
-\begin{example}
-\begin{chapel}
-cobegin {
-  init(A);
-  init(B);
-}
-\end{chapel}
-\end{example}
-
-\paragraph{Parallel For Loops} 
-Parallel loops are specified using \chpl{forall} or
-the shorthand bracket notation.
-
-\begin{example}
-\begin{chapel}
-forall ind in D {
-  A(ind) = x*y;
-}
-
-[ind in D] A(ind) = x*y; 
-\end{chapel}
-The above example shows two equivalent definitions for a parallel
-loop. 
-\end{example}
-
-\subsubsection{Expressions}
 \paragraph{Query Expression} 
 The query expression uses a \chpl{?} to indicate that the type of the
 preceding variable be queried and assigned to the following variable.
@@ -751,6 +716,10 @@ def sumOfThree(x: ?t, y:t, z:t):t {
 }
 \end{chapel}
 \end{example}
+
+\begin{TODO}
+Move to function subsection.
+\end{TODO}
 
 \paragraph{Let Expression} 
 The \chpl{let}--\chpl{in} expression defines variables to
@@ -822,6 +791,12 @@ with non-blank intents are handled according to definition, being copied
 to and from the formal arguments.  Actual arguments of domain types can
 only have a blank intent.
 
+\begin{TODO}
+This section may be replaced by a table.  I will be creating a table
+that summarizes intents for the Quick Reference Guide and it may be 
+substituted for the text here.
+\end{TODO}
+
 \paragraph{Generic Functions}
 The Chapel language supports generic functions, allowing the user
 to define a function without specifying the types of the formal arguments
@@ -876,6 +851,10 @@ and whether the file is to be read or written.  Methods to open, to close,
 to read and to write from that file can be invoked with this file
 variable.
 
+\begin{TODO}
+Add file reading/writing example.
+\end{TODO}
+
 \paragraph{Chapel Standard I/O Functions}
 Chapel provides built-in functions \chpl{write} and \chpl{writeln}
 to write to \chpl{stdout}, and the built-in function \chpl{read}
@@ -915,13 +894,152 @@ Writing a variable of array type:
 \end{example}
 
 \subsubsection{Parallel Features}
+The Chapel language is designed ease the challenges of parallel 
+programming.  Since the language has specific constructs to support
+parallel computations, the user can easily express the parallel 
+work, and the compiler can easily identify it.
+
+Chapel supports both data parallelism and task
+parallelism.  To efficiently manage both types of parallelism 
+a multi-processor system, users can specify how data and
+work is to be distributed across processors by using
+distribution and locality features.
+
+\begin{status}
+Currently, the Chapel compiler supports only single-locale features.
+Task parallel features will spawn computations only on one locale.
+Data parallel features execute sequentially on one locale.  
+
+More examples and discussion of parallel features will be added to
+the language specification when they are available in the compiler.
+\end{status}
+
 \paragraph{Data Parallelism}
+Data parallelism refers to work where the same operations can be executed 
+concurrently on a set of data.  
+To support data parallel work, the Chapel language provides the parallel 
+{forall} loop statement.  The iterations of a \chpl{forall} 
+loop execute concurrently, as determined by the compiler and the runtime
+library.
+
+The Chapel language provides an alternative, short-hand notation for 
+defining a parallel loop.  This notation omits the \chpl{forall} keyword
+and uses brackets to delimit the rest of the loop statement which includes
+the index and iterator expressions.  This notation is convenient to use
+when the loop body is a single statement. 
+
+The compiler will also parallelize whole array and domain statements, 
+where possible.
+
+\begin{example}
+The following code demonstrates three different ways to assign,
+in parallel, the scaled elements of the array \chpl{B} to the 
+elements of the array \chpl{A}.  
+\begin{chapel}  
+D = [1..m, 1..n];
+A, B: [D] real;
+alpha: real;
+(*\vdots*)
+
+//Three equivalent definitions of a parallel loop
+forall ij in D do {
+  A(ij) = alpha*B(ij);
+} 
+
+[ij in D] A(ij) = alpha*B(ij);
+
+A = alpha*B;
+\end{chapel}
+The first loop uses the \chpl{forall} loop statement.  The second
+loop uses the short-hand bracketed notation and the third loop expresses
+the computation using whole-array operations.  All three loops will
+execute concurrently in the same manner, as determined by the compiler
+and runtime library.
+\end{example}
+
+\begin{TODO}
+Add forall expression.
+\end{TODO}
+
 \paragraph{Task Parallelism}
+The Chapel language also supports parallelism where different types of
+operations are being executed concurrently with different data sets.
+In this case, computations are spawned through the use of the \chpl{begin}
+or \chpl{co-begin} statements.  Synchronization between these computations
+is managed through the use of \chpl{sync} and
+\chpl{single} variables.
+
+The \chpl{begin} statement spawns a computation to execute a
+statement. Control continues simultaneously with the statement following
+the begin statement.  A begin statement cannot contain break,
+yield, or return statements.  
+
+The \chpl{cobegin} statement is used to create parallelism within
+a block statement.  All statements within the block statement
+are executed concurrently.  Any variable declared within the cobegin
+statement is a \chpl{single} variable.
+
+\begin{example}
+\begin{chapel}
+var done: sync bool;
+ 
+begin 
+  while(!done) do work(x);
+
+otherwork(x);
+done = true;
+
+cobegin {
+  init(A);
+  init(B);
+}
+\end{chapel}
+\end{example}
+
+\begin{TODO}
+Add readXX, etc. functions?
+\end{TODO}
+
+\paragraph{Suppressing Parallelism}
+It is often necessary to suppress concurrency during sections of
+parallel programs.  Chapel offers two constructs to accomplish this:
+the \chpl{ordered} keyword and the \chpl{serial} statement.
+
+\begin{TODO}
+Add example.
+\end{TODO}
+
+\paragraph{Scans and Reductions}
+Chapel supports operations that execute over multiple locales through
+the use of \chpl{scan} and \chpl{reduce} expressions.  The language
+provides built-in \chpl{scan} and \chpl{reduce} operators. 
+
+\begin{TODO}
+Add example.
+\end{TODO}
+
 \paragraph{Data Distributions and Locality}
+Chapel manages the distribution of data through the use of domains
+and distributions.  A distribution is a mapping of a domain's indices to 
+locales.  When a domain is declared with a distribution, then any iteration
+over that domain or its associated arrays will execute in parallel across the 
+locales according to how the data is distributed.
+
+The \chpl{on} statement controls on which locale a computation or data
+should be placed.
+
+\begin{TODO}
+Not sure what to include here for now.  
+\end{TODO}
 
 \subsection{Example Chapel Programs}
 
-To introduce the Chapel language, four short example codes are presented and
+\begin{TODO}
+Review discussion of example programs to see what can be deleted because
+of previous introduction of Chapel features.
+\end{TODO}
+
+To illustrate Chapel language features, four short example codes are presented and
 discussed.  Each example highlights certain Chapel features, showing how they are used
 in the context of a program.  These examples do not cover all of Chapel's features.
 They are intended to introduce the user to many of the basic serial features that are
