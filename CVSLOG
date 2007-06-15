@@ -106820,3 +106820,22 @@ Modified files:
 	chapel/compiler/main/: arg.cpp 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+06/15/07 14:48:25 -- diten
+
+Log message:
+	Change the start column for argument descriptions attempting to minimize the
+	number of lines printed for --help.  The ideal starting column is currently
+	42 (Really!).
+	
+	Also, as suggested by Brad:
+	* -o: change <name> to <filename>
+	* --savec: change <path> to <directory>
+	* -l: change <path> to <library>
+	* --chplhome: change <path> to <directory>
+
+Modified files:
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
