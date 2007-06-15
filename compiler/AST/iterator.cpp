@@ -133,6 +133,62 @@ void prototypeIteratorClass(FnSymbol* fn) {
 }
 
 
+//
+// insert "v = &ic.f" or "v = ic.f" at head of fn
+//
+static void
+insertGetMember(FnSymbol* fn, BaseAST* v, Symbol* ic, Symbol* f) {
+  Symbol* local = dynamic_cast<Symbol*>(v);
+  assert(local);
+
+  PrimitiveTag primitiveGetMemberTag;
+  if (local->type == f->type->refType)
+    primitiveGetMemberTag = PRIMITIVE_GET_MEMBER;
+  else
+    primitiveGetMemberTag = PRIMITIVE_GET_MEMBER_VALUE;
+  
+  fn->insertAtHead(
+    new CallExpr(PRIMITIVE_MOVE, local,
+      new CallExpr(primitiveGetMemberTag, ic, f)));
+}
+
+
+//
+// when ast is a function fn
+//   insert "ic.f = v" or "t = &v; ic.f = t" at tail of fn
+// when ast is an expression expr
+//   insert "ic.f = v" or "t = &v; ic.f = t" after expr
+//
+static void
+insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
+  Symbol* local = dynamic_cast<Symbol*>(v);
+  assert(local);
+  
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+    if (local->type == f->type->refType) {
+      Symbol* tmp = newTemp(fn, f->type);
+      fn->insertAtTail(
+        new CallExpr(PRIMITIVE_MOVE, tmp,
+          new CallExpr(PRIMITIVE_GET_REF, local)));
+      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, tmp));
+    } else
+      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, local));
+  } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (local->type == f->type->refType) {
+      Symbol* tmp = newTemp(expr->getFunction(), f->type);
+      expr->getStmtExpr()->insertAfter(
+        new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, tmp));
+      expr->getStmtExpr()->insertAfter(
+        new CallExpr(PRIMITIVE_MOVE, tmp,
+          new CallExpr(PRIMITIVE_GET_REF, local)));
+    } else
+      expr->getStmtExpr()->insertAfter(
+        new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, local));
+  } else
+    INT_FATAL(ast, "unexpected case in insertSetMember");
+}
+
+
 static void
 buildGetNextCursor(FnSymbol* fn,
                    Vec<BaseAST*>& asts,
@@ -188,31 +244,13 @@ buildGetNextCursor(FnSymbol* fn,
       update_symbols(ii->getNextCursor, &map);
       local = newlocal;
     }
-    if (local->type == field->type->refType)
-      ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
-    else
-      ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
+    insertGetMember(ii->getNextCursor, local, iterator, field);
     if (isRecordType(local->type)) {
-      SymExpr* newuse = new SymExpr(local);
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getNextCursor, field->type);
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, newuse)));
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
-      } else
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
-      local->uses.add(newuse);
+      insertSetMember(ii->getNextCursor, iterator, field, local);
     } else {
       forv_Vec(SymExpr, se, local->defs) {
-        if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-          SymExpr* newuse = new SymExpr(local);
-          if (local->type == field->type->refType) {
-            Symbol* tmp = newTemp(se->getFunction(), field->type);
-            parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
-            parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, newuse)));
-          } else
-            parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, newuse));
-          local->uses.add(newuse);
-        }
+        if (dynamic_cast<CallExpr*>(se->parentExpr))
+          insertSetMember(se, iterator, field, local);
       }
 
       // update based on indirect writes via references
@@ -223,14 +261,8 @@ buildGetNextCursor(FnSymbol* fn,
               if (move->isPrimitive(PRIMITIVE_MOVE))
                 if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
                   forv_Vec(SymExpr, se, lhs->var->defs) {
-                    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
-                      if (local->type == field->type->refType) {
-                        Symbol* tmp = newTemp(se->getFunction(), field->type);
-                        parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
-                        parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-                      } else
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, local));
+                    if (dynamic_cast<CallExpr*>(se->parentExpr))
+                      insertSetMember(se, iterator, field, local);
                   }
       }
     }
@@ -417,14 +449,13 @@ buildSingleLoopMethods(FnSymbol* fn,
   Symbol* zip3Iterator = ii->getZipCursor3->getFormal(1);
   Symbol* zip4Iterator = ii->getZipCursor4->getFormal(1);
 
-  ASTMap headCopyMap; // copy map of iterator to getHeadCursor
-  ASTMap zip1Map;     // copy map of iterator to getZipCursor1
-  ASTMap zip2Map;     // copy map of iterator to getZipCursor2
-  ASTMap zip3Map;     // copy map of iterator to getZipCursor3
-  ASTMap zip4Map;     // copy map of iterator to getZipCursor4
-                      // note: there is no map for getNextCursor since
-                      // the asts are moved (not copied) to
-                      // getNextCursor
+  ASTMap headMap; // copy map of iterator to getHeadCursor
+  ASTMap zip1Map; // copy map of iterator to getZipCursor1
+  ASTMap zip2Map; // copy map of iterator to getZipCursor2
+  ASTMap zip3Map; // copy map of iterator to getZipCursor3
+  ASTMap zip4Map; // copy map of iterator to getZipCursor4
+                  // note: there is no map for getNextCursor since the
+                  // asts are moved (not copied) to getNextCursor
 
   //
   // add local variable defs to iterator methods that need them
@@ -434,7 +465,7 @@ buildSingleLoopMethods(FnSymbol* fn,
       if (dynamic_cast<ArgSymbol*>(def->sym))
         continue;
       ii->getNextCursor->insertAtHead(def->remove());
-      ii->getHeadCursor->insertAtHead(def->copy(&headCopyMap));
+      ii->getHeadCursor->insertAtHead(def->copy(&headMap));
       ii->getZipCursor1->insertAtHead(def->copy(&zip1Map));
       ii->getZipCursor2->insertAtHead(def->copy(&zip2Map));
       ii->getZipCursor3->insertAtHead(def->copy(&zip3Map));
@@ -449,7 +480,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   for_alist(Expr, expr, fn->body->body) {
     if (expr == loop)
       break;
-    ii->getHeadCursor->insertAtTail(expr->copy(&headCopyMap));
+    ii->getHeadCursor->insertAtTail(expr->copy(&headMap));
     ii->getZipCursor1->insertAtTail(expr->copy(&zip1Map));
     expr->remove();
   }
@@ -482,8 +513,8 @@ buildSingleLoopMethods(FnSymbol* fn,
     ii->getNextCursor->insertAtTail(new DefExpr(cloopNextCond));
     ii->getZipCursor2->insertAtTail(new DefExpr(cloopZip2Cond));
     ii->getZipCursor4->insertAtTail(new DefExpr(cloopZip4Cond));
-    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(2)->copy(&headCopyMap)));
-    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopHeadCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&headCopyMap), loop->loopInfo->get(3)->copy(&headCopyMap))));
+    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&headMap), loop->loopInfo->get(2)->copy(&headMap)));
+    ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopHeadCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&headMap), loop->loopInfo->get(3)->copy(&headMap))));
 
     Symbol* counter = dynamic_cast<SymExpr*>(loop->loopInfo->get(1))->var;
     ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_MOVE, zip1Map.get(counter), loop->loopInfo->get(2)->copy(&zip1Map)));
@@ -507,7 +538,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   for_alist(Expr, expr, loop->body) {
     if (expr == yield)
       break;
-    headThen->insertAtTail(expr->copy(&headCopyMap));
+    headThen->insertAtTail(expr->copy(&headMap));
     nextThen->insertAtTail(expr->remove());
     ii->getZipCursor2->insertAtTail(expr->copy(&zip2Map));
   }
@@ -522,7 +553,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   for_alist(Expr, expr, fn->body->body) {
     if (!expr->next) // ignore return statement
       break;
-    headElse->insertAtTail(expr->copy(&headCopyMap));
+    headElse->insertAtTail(expr->copy(&headMap));
     nextElse->insertAtTail(expr->remove());
     ii->getZipCursor4->insertAtTail(expr->copy(&zip4Map));
   }
@@ -530,7 +561,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   //
   // add conditional to getHeadCursor and getNextCursor methods
   //
-  Expr* headCond = loop->loopInfo->get(1)->copy(&headCopyMap);
+  Expr* headCond = loop->loopInfo->get(1)->copy(&headMap);
   Expr* zip1Cond = loop->loopInfo->get(1)->copy(&zip1Map);
   Expr* zip2Cond;
   Expr* zip3Cond = loop->loopInfo->get(1)->copy(&zip3Map);
@@ -565,148 +596,63 @@ buildSingleLoopMethods(FnSymbol* fn,
 
       newlocal2 = newTemp(ii->getHeadCursor, local->type, local->name);
       updateOneSymbol(ii->getHeadCursor, local, newlocal2);
-      headCopyMap.put(newlocal, newlocal2);
-      if (local->type == field->type->refType)
-        ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, headIterator, field)));
-      else
-        ii->getHeadCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, headIterator, field)));
+      headMap.put(newlocal, newlocal2);
+      insertGetMember(ii->getHeadCursor, newlocal2, headIterator, field);
 
       newlocal2 = newTemp(ii->getZipCursor1, local->type, local->name);
       updateOneSymbol(ii->getZipCursor1, local, newlocal2);
       zip1Map.put(newlocal, newlocal2);
-      if (local->type == field->type->refType)
-        ii->getZipCursor1->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip1Iterator, field)));
-      else
-        ii->getZipCursor1->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip1Iterator, field)));
+      insertGetMember(ii->getZipCursor1, newlocal2, zip1Iterator, field);
 
       newlocal2 = newTemp(ii->getZipCursor2, local->type, local->name);
       updateOneSymbol(ii->getZipCursor2, local, newlocal2);
       zip2Map.put(newlocal, newlocal2);
-      if (local->type == field->type->refType)
-        ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip2Iterator, field)));
-      else
-        ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip2Iterator, field)));
+      insertGetMember(ii->getZipCursor2, newlocal2, zip2Iterator, field);
 
       newlocal2 = newTemp(ii->getZipCursor3, local->type, local->name);
       updateOneSymbol(ii->getZipCursor3, local, newlocal2);
       zip3Map.put(newlocal, newlocal2);
-      if (local->type == field->type->refType)
-        ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip3Iterator, field)));
-      else
-        ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip3Iterator, field)));
+      insertGetMember(ii->getZipCursor3, newlocal2, zip3Iterator, field);
 
       newlocal2 = newTemp(ii->getZipCursor4, local->type, local->name);
       updateOneSymbol(ii->getZipCursor4, local, newlocal2);
       zip4Map.put(newlocal, newlocal2);
-      if (local->type == field->type->refType)
-        ii->getZipCursor4->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER, zip4Iterator, field)));
-      else
-        ii->getZipCursor4->insertAtHead(new CallExpr(PRIMITIVE_MOVE, newlocal2, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip4Iterator, field)));
+      insertGetMember(ii->getZipCursor4, newlocal2, zip4Iterator, field);
 
       local = newlocal;
     } else {
-      if (local->type == field->type->refType)
-        ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip2Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER, zip2Iterator, field)));
-      else
-        ii->getZipCursor2->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip2Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip2Iterator, field)));
-      if (local->type == field->type->refType)
-        ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip3Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER, zip3Iterator, field)));
-      else
-        ii->getZipCursor3->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip3Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip3Iterator, field)));
-      if (local->type == field->type->refType)
-        ii->getZipCursor4->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip4Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER, zip4Iterator, field)));
-      else
-        ii->getZipCursor4->insertAtHead(new CallExpr(PRIMITIVE_MOVE, dynamic_cast<Symbol*>(zip4Map.get(local)), new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, zip4Iterator, field)));
+      insertGetMember(ii->getZipCursor2, zip2Map.get(local), zip2Iterator, field);
+      insertGetMember(ii->getZipCursor3, zip3Map.get(local), zip3Iterator, field);
+      insertGetMember(ii->getZipCursor4, zip4Map.get(local), zip4Iterator, field);
     }
-    if (local->type == field->type->refType)
-      ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER, nextIterator, field)));
-    else
-      ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, local, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, nextIterator, field)));
+    insertGetMember(ii->getNextCursor, local, nextIterator, field);
     if (isRecordType(local->type)) {
-      ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field, dynamic_cast<Symbol*>(headCopyMap.get(local))));
-
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getNextCursor, field->type);
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, tmp));
-      } else
-        ii->getNextCursor->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, new SymExpr(local)));
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getZipCursor1, field->type);
-        ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field, tmp));
-      } else
-        ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field, dynamic_cast<Symbol*>(zip1Map.get(local))));
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getZipCursor2, field->type);
-        ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field, tmp));
-      } else
-        ii->getZipCursor2->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field, dynamic_cast<Symbol*>(zip2Map.get(local))));
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getZipCursor3, field->type);
-        ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field, tmp));
-      } else
-        ii->getZipCursor3->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field, dynamic_cast<Symbol*>(zip3Map.get(local))));
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(ii->getZipCursor4, field->type);
-        ii->getZipCursor4->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        ii->getZipCursor4->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip4Iterator, field, tmp));
-      } else
-        ii->getZipCursor4->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip4Iterator, field, dynamic_cast<Symbol*>(zip4Map.get(local))));
+      insertSetMember(ii->getHeadCursor, headIterator, field, headMap.get(local));
+      insertSetMember(ii->getNextCursor, nextIterator, field, local);
+      insertSetMember(ii->getZipCursor1, zip1Iterator, field, zip1Map.get(local));
+      insertSetMember(ii->getZipCursor2, zip2Iterator, field, zip2Map.get(local));
+      insertSetMember(ii->getZipCursor3, zip3Iterator, field, zip3Map.get(local));
+      insertSetMember(ii->getZipCursor4, zip4Iterator, field, zip4Map.get(local));
     } else {
       forv_Vec(SymExpr, se, local->defs) {
-        if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
-          parent->getStmtExpr()->insertAfter(
-            new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, local));
+        if (dynamic_cast<CallExpr*>(se->parentExpr))
+          insertSetMember(se, nextIterator, field, local);
         SymExpr* se2;
-        if ((se2 = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-            parent->getStmtExpr()->insertAfter(
-              new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field,
-                new SymExpr(dynamic_cast<Symbol*>(headCopyMap.get(local)))));
+        if ((se2 = dynamic_cast<SymExpr*>(headMap.get(se))))
+          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+            insertSetMember(se2, headIterator, field, headMap.get(local));
         if ((se2 = dynamic_cast<SymExpr*>(zip1Map.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr)) {
-            if (local->type == field->type->refType) {
-              Symbol* tmp = newTemp(parent->getFunction(), field->type);
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field, tmp));
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, dynamic_cast<Symbol*>(zip1Map.get(local)))));
-            } else
-              parent->getStmtExpr()->insertAfter(
-                new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field,
-                  new SymExpr(dynamic_cast<Symbol*>(zip1Map.get(local)))));
-          }
+          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+            insertSetMember(se2, zip1Iterator, field, zip1Map.get(local));
         if ((se2 = dynamic_cast<SymExpr*>(zip2Map.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-            if (local->type == field->type->refType) {
-              Symbol* tmp = newTemp(parent->getFunction(), field->type);
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field, tmp));
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, dynamic_cast<Symbol*>(zip2Map.get(local)))));
-            } else
-              parent->getStmtExpr()->insertAfter(
-                new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field,
-                  new SymExpr(dynamic_cast<Symbol*>(zip2Map.get(local)))));
+          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+            insertSetMember(se2, zip2Iterator, field, zip2Map.get(local));
         if ((se2 = dynamic_cast<SymExpr*>(zip3Map.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-            if (local->type == field->type->refType) {
-              Symbol* tmp = newTemp(parent->getFunction(), field->type);
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field, tmp));
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, dynamic_cast<Symbol*>(zip3Map.get(local)))));
-            } else
-              parent->getStmtExpr()->insertAfter(
-                new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field,
-                  new SymExpr(dynamic_cast<Symbol*>(zip3Map.get(local)))));
+          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+            insertSetMember(se2, zip3Iterator, field, zip3Map.get(local));
         if ((se2 = dynamic_cast<SymExpr*>(zip4Map.get(se))))
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-            if (local->type == field->type->refType) {
-              Symbol* tmp = newTemp(parent->getFunction(), field->type);
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, zip4Iterator, field, tmp));
-              parent->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, dynamic_cast<Symbol*>(zip4Map.get(local)))));
-            } else
-              parent->getStmtExpr()->insertAfter(
-                new CallExpr(PRIMITIVE_SET_MEMBER, zip4Iterator, field,
-                  new SymExpr(dynamic_cast<Symbol*>(zip4Map.get(local)))));
+          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+            insertSetMember(se2, zip4Iterator, field, zip4Map.get(local));
       }
 
       // update based on indirect writes via references
@@ -717,35 +663,24 @@ buildSingleLoopMethods(FnSymbol* fn,
               if (move->isPrimitive(PRIMITIVE_MOVE))
                 if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
                   forv_Vec(SymExpr, se, lhs->var->defs) {
-                    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr))
-                      parent->getStmtExpr()->insertAfter(
-                        new CallExpr(PRIMITIVE_SET_MEMBER, nextIterator, field, local));
+                    if (dynamic_cast<CallExpr*>(se->parentExpr))
+                      insertSetMember(se, nextIterator, field, local);
                     SymExpr* se2;
-                    if ((se2 = dynamic_cast<SymExpr*>(headCopyMap.get(se))))
-                      if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, headIterator, field,
-                            new SymExpr(dynamic_cast<Symbol*>(headCopyMap.get(local)))));
+                    if ((se2 = dynamic_cast<SymExpr*>(headMap.get(se))))
+                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                        insertSetMember(se2, headIterator, field, headMap.get(local));
                     if ((se2 = dynamic_cast<SymExpr*>(zip1Map.get(se))))
-                      if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, field,
-                            new SymExpr(dynamic_cast<Symbol*>(zip1Map.get(local)))));
+                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                        insertSetMember(se2, zip1Iterator, field, zip1Map.get(local));
                     if ((se2 = dynamic_cast<SymExpr*>(zip2Map.get(se))))
-                      if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, zip2Iterator, field,
-                            new SymExpr(dynamic_cast<Symbol*>(zip2Map.get(local)))));
+                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                        insertSetMember(se2, zip2Iterator, field, zip2Map.get(local));
                     if ((se2 = dynamic_cast<SymExpr*>(zip3Map.get(se))))
-                      if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, zip3Iterator, field,
-                            new SymExpr(dynamic_cast<Symbol*>(zip3Map.get(local)))));
+                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                        insertSetMember(se2, zip3Iterator, field, zip3Map.get(local));
                     if ((se2 = dynamic_cast<SymExpr*>(zip4Map.get(se))))
-                      if (CallExpr* parent = dynamic_cast<CallExpr*>(se2->parentExpr))
-                        parent->getStmtExpr()->insertAfter(
-                          new CallExpr(PRIMITIVE_SET_MEMBER, zip4Iterator, field,
-                            new SymExpr(dynamic_cast<Symbol*>(zip4Map.get(local)))));
+                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                        insertSetMember(se2, zip4Iterator, field, zip4Map.get(local));
                   }
       }
     }
@@ -929,12 +864,7 @@ void lowerIterator(FnSymbol* fn) {
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (dynamic_cast<ArgSymbol*>(local)) {
-      if (local->type == field->type->refType) {
-        Symbol* tmp = newTemp(fn, field->type);
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, local)));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, field, tmp));
-      } else
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, field, local));
+      insertSetMember(fn, t1, field, local);
     }
   }
   fn->addPragma("first member sets");
