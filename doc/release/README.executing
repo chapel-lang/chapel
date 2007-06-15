@@ -11,9 +11,8 @@ example:
 
 This flag lists all of the standard flags that can be used with a
 Chapel program, as well as a list of the configuration variables
-defined in the program and their types.  If the configuration variable
+defined by the program and their types.  If the configuration variable
 is set on the command line, its value is also shown.
-
 
 
 -------------------------------
@@ -22,26 +21,49 @@ Setting Configuration Variables
 
 Configuration constants and variables defined in a Chapel program can
 have their default values overridden on the command line using the -s
-or -- flags.  Either flag takes the name of the configuration
-variable, an "=" character, and the value to assign to it, which must
-be a legal Chapel literal for the type of variable.  In our current
-implementation, no extra spaces may appear between these elements.
+or -- flags.  Either flag takes the name of the configuration variable
+followed by an equals ("=") character and the value to assign to it.
+This value must be a legal Chapel literal for the type of variable.
+In our current implementation, no extra spaces may appear between
+these elements.
 
 
 As an example, compile the beer.chpl example which prints the lyrics
 to "99 bottles of beer":
 
-     chpl -o beer $CHPLHOME/examples/beer.chpl
+     chpl -o beer $CHPL_HOME/examples/beer.chpl
 
 This program defines a configuration constant indicating the number of
 bottles of beer that should start on the wall, set to 99 by default.
 To override the default and only start with a 6-pack on the wall, you
-could use:
+can use:
 
      ./beer --numBottles=6
 or:
      ./beer -snumBottles=6
 
+
+--------------
+Running in gdb
+--------------
+
+The compiler-generated executable also has a --gdb flag that can be
+used to launch the program within a gdb session.  For best results,
+make sure that your program has been compiled using the chpl
+compiler's -g flag.
+
+The utility of this feature depends greatly on your familiarity with
+the Chapel generated code.  However, if your program is crashing or
+running into a runtime error, you can often determine where that is
+taking place by looking at a stack trace after the crash.  In
+addition, scalar Chapel variables can often be inspected using 
+"p <name>" (or "p _<name><TAB>" in cases where the compiler has had to
+rename the variable).
+
+Over time, we plan to improve our ability to debug the generated C
+code for a Chapel program.  If you find yourself debugging the
+generated code a lot and need help or have requests for better
+support, please let us know so that we can prioritize accordingly.
 
 
 -------------------------
@@ -50,11 +72,10 @@ Flags for Tracking Memory
 
 Chapel supports a number of flags related to dynamic memory allocation
 for the compiler-generated executable, currently used by the
-development team to use when tracking memory usage.
-
-NOTE: The current Chapel compiler generates programs that are
-extremely wasteful of memory and rarely reclaim it, simply because we
-haven't put any focus into this area to date.
+development team to track memory usage in tests.  Please note that we
+have done little to optimize Chapel's memory utilization, so you
+should not be surprised if your program requires more memory than it
+seems it should.
 
 The flags are as follows:
 
@@ -81,19 +102,3 @@ The flags are as follows:
 
   --memthreshold=<n>    : for use with the --memtrace flag; only print
                           events for objects larger than 'n' bytes
-
-
---------------
-Running in gdb
---------------
-
-The compiler-generated executable also has a --gdb flag that can be
-used to launch the program within a gdb session.  The utility of this
-feature depends somewhat on your familiarity with the Chapel generated
-code.  However, if your program is crashing or running into a runtime
-error, you can often determine where that is taking place, especially
-if compiling with the --cg-cpp-lines flag.  Over time, we hope to
-improve our ability to debug the generated C code for a Chapel
-program.  If you find yourself debugging the generated code a lot and
-have requests for better support, please let us know so that we can
-prioritize accordingly.

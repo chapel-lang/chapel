@@ -8,13 +8,14 @@ you should be able to see the Chapel compiler's help message using:
 
      chpl --help
 
-This displays the compiler's command-line flags sorted by categories,
-in four columns: (1) the flag, (2) the current or default value of the
-flag, (3) the kind of argument it takes, (4) a brief description of
-the flag.
+This displays the compiler's command-line flags sorted by category.
+For each flag, the short one-letter form is given (if available)
+followed by the long form of the flag.  Next, the pattern for any
+arguments to the flag are given.  And finally a brief description of
+the flag is provided.
 
 More detailed information about the compiler is also available on its
-man page, which is available if your environment is set up via:
+man page, which is available via:
 
      man chpl
 
@@ -28,44 +29,27 @@ We note some of the most useful flags here:
      -o <filename> : specify the filename of the generated executable,
                      otherwise ./a.out is used by default
 
+     -s <name>[=<value>] : set the value of a config param
+
+     --no-bounds-checks : turns off runtime bounds checks
+
+     -O : turns on optimization of the generated C code
+
+     --savec <dir> : saves the generated C code in the specified
+                     directory
+
+     -g : support debugging of the generated C code
+
+     --ccflags <flags> : specify flags that should be used with the
+                         back-end C compiler
+
      --print-passes : print the compiler passes as they execute
 
      --print-commands : print the system commands that the compiler
                         executes
 
-     --cg-chpl-lineno : causes certain runtime error messages to
-                        provide better information about the source
-                        line that caused the problem
-
-     --ccflags <flags> : specify flags that should be used with the
-                         back-end C compiler
-
-     --gdb : run the compiler in a gdb debugging session (use "halt"
-             to exit the session if "quit" ever fails you)
-
-     --cg-cpp-lines : add #line directives to the generated C code
-                      (supports some degree of breakpointing and
-                      debugging the target executable within gdb)
-
-     --savec <dir> : saves the generated C code in the specified
-                     directory
-
      --print-code-size : prints some code size statistics about the
                          number of lexical tokens per line, as well as
                          the number of code, comment, and blank lines
 
-
-----------
-Flag Types
-----------
-
-The flag types as indicated by the help message are as follows:
-
-  ->true  = takes no arguments and sets the flag to true
-  ->false = takes no arguments and sets the flag to false
-  toggle  = takes no arguments and toggles the flag's value
-  path    = takes a path or filename argument
-  int     = takes an integer argument
-  incr    = increments an integer value
-  string  = takes a string argument
-  double  = takes a floating-point value
+     --version : print the Chapel compiler version number

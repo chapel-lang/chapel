@@ -23,8 +23,12 @@ This directory contains the following documentation:
   spec.pdf : the current draft of the Chapel language specification
 
 
+--------------------
+For more Information
+--------------------
+
 For further information about Chapel, please refer to the pre-print of
-"Parallel Programmability and the Chapel Language" (to appear in the
+"Parallel Programmability and the Chapel Language" (to appear in an
 upcoming special issue of IJHPCA on High Productivity Programming
 Languages and Models), available at:
 

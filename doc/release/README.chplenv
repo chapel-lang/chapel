@@ -11,6 +11,7 @@ make in order to use this release effectively:
 
         setenv CHPL_HOME ~/chapel
 
+
 2) Set the CHPL_PLATFORM environment variable to the string returned
    by the $CHPL_HOME/util/platform script.  For example:
 
@@ -22,25 +23,27 @@ make in order to use this release effectively:
    storing binaries during the build process.  The strings for our
    currently-supported platforms are as follows:
 
+        cygwin  : Cygwin (Windows) platforms
+        darwin  : Macintosh OS X platforms
         linux   : 32-bit Linux platforms
         linux64 : 64-bit Linux platforms
-        cygwin  : Cygwin Windows platforms
         sunos   : SunOS platforms
-        darwin  : Macintosh OS X platforms
         unknown : other platforms
 
    The Chapel Makefiles and sources are designed to work for any
    UNIX-compatible environment that supports a GNU-compatible make
    utility.  The list above represents those platforms that we have
-   access to and test.  We are interested in help with making our code
-   architecture portable to other platforms -- if you are working on
-   porting Chapel to a new platform, please contact us at:
+   access to and test.  We are interested in making our code framework
+   portable to other platforms -- if you are working on a platform
+   other than the ones listed above, please contact us at:
    chapel_info@cray.com
+
 
 3) Set your path to include the directory $CHPL_HOME/bin/$CHPL_PLATFORM
    which is created when you build the compiler.  For example:
 
         set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
+
 
 4) Set your man path to include the directory $CHPL_HOME/man.  For
    example:
@@ -48,10 +51,9 @@ make in order to use this release effectively:
         setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
 
 
-
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-lines that make these settings for various shells when executed from
-the $CHPL_HOME directory.  For long-time Chapel users, these lines can
-be inserted into a shell's dotfile by hard-coding the definition of
-$CHPL_HOME and removing the check to see that the script is being
-sourced from the chapel/ directory.
+lines that make these settings for various shells when they are
+sourced from the $CHPL_HOME directory.  For frequent Chapel users,
+these lines can be inserted into a shell's dotfile by hard-coding the
+definition of $CHPL_HOME and removing the check to see that the script
+is being run from the chapel/ directory.
