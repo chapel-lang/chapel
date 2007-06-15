@@ -252,7 +252,7 @@ word_wrap_print(const char* text, int start_column, int end_column) {
 void
 usage(ArgumentState* arg_state, char* arg_unused) {
   ArgumentDescription *desc = arg_state->desc;
-  const int desc_start_col = 29, end_col = 79;
+  const int desc_start_col = 42, end_col = 79;
   int i, nprinted;
 
   (void)arg_unused;
