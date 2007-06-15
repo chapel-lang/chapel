@@ -72,6 +72,9 @@ OPTIONS
 
   Optimization Control Options
 
+  --baseline        Turns off almost all optimizations and generates naive C
+                    code with many temporary variables.
+
   --no-bounds-checks   Turns off dynamic bounds checking within the
                     generated Chapel program. Currently using this option
                     is typically necessary in order to have any hope of 
@@ -85,6 +88,10 @@ OPTIONS
                     the invocation of an iterator to control a loop by
                     inlining the iterator's definition around the loop 
                     body. This option turns off this optimization.
+
+  --no-flow-analysis   Disables optimizations that require a flow
+                    analysis, e.g., global copy propagation and dead
+                    code elimination.
 
   --no-inline       Turns off the inlining of functions.
 
