@@ -3,18 +3,20 @@ Building the Chapel Compiler and Runtime Support Libraries
 ==========================================================
 
 To build the Chapel compiler, set up your environment as described in
-the top-level README file, cd to $CHPL_HOME, and type:
+the top-level README file or (README.chplenv), cd to $CHPL_HOME, and
+type:
 
      gmake
 
-(or simply "make" if your make utility is gmake-compatible).  
+(or simply "make" if your make utility is gmake-compatible, as on
+Cygwin platforms).
 
 
 If everything works as intended, you ought to see:
 
 1) each of the compiler source subdirectories being compiled,
 
-2) the compiler binary getting linked and ending up at:
+2) the compiler binary getting linked and stored as:
 
         $CHPL_HOME/bin/$CHPL_PLATFORM/chpl
 
@@ -22,13 +24,13 @@ If everything works as intended, you ought to see:
    in $CHPL_HOME/lib/$CHPL_PLATFORM/
 
 Otherwise, if you get an error or failure during the make process,
-please let us know about it (as well as any workaround that you might
-come up with) at: chapel_bugs@cray.com
+please let us know about it at: chapel_bugs@cray.com (as well as
+information about your system as described in README.bugs and any
+workaround that you might come up with)
 
 
-If you have set up your environment as described in the top-level
-README, you should now be able to run the compiler and display its
-help message using:
+You should now be able to run the compiler and display its help
+message using:
 
         chpl --help
 
@@ -42,11 +44,12 @@ users or developers of Chapel.
 Platform Support
 ----------------
 
-Platform is currently supported for 32- and 64-bit Linux, Cygwin
-(Windows), SunOS, and Mac OS X.  Other UNIX-based environments ought
-to work, but may not be supported by our current Makefile structure.
-See the section below on platform-specific settings for more
-information on adding support for another UNIX-compatible environment.
+Ccurrently supported platforms include 32- and 64-bit Linux, Mac OS X,
+Cygwin (Windows), and SunOS.  Other UNIX-based environments ought to
+work (subject to the assumptions in README.prereqs), but may not be
+supported by our current Makefile structure.  See the section below on
+platform-specific settings for more information on adding support for
+another UNIX-compatible environment.
 
 Note that a single Chapel installation can simultaneously support
 Chapel for multiple platforms because all platform-specific files and
@@ -77,10 +80,18 @@ Makefiles support the following targets:
 Platform-specific Settings
 --------------------------
 
-The architecture of Chapel's Makefiles is designed to set any
+The structure of Chapel's Makefiles is designed to factor any
 architecture-specific settings in $CHPL_HOME/Makefile.$CHPL_PLATFORM.
+If you try making the compiler and runtime for an unsupported
+platform, you will be asked by the Makefile whether the platform
+supports a gnu toolsuite or not.  Based on your answer, a default
+$CHPL_HOME/Makefile.$CHPL_PLATFORM will be created for you.  For
+non-gnu platforms, t is likely that you will need to edit that file by
+hand to get the correct suite of tools and settings.
+
 We have been factoring architectural-specific assumptions out of the
 Makefiles as we run into them, so it is likely that additional changes
 will be required as Chapel starts getting used on a wider variety of
 platforms and architectures.  We welcome your contributions to making
 our make environment more portable at: chapel_info@cray.com
+

@@ -2,17 +2,18 @@
 Chapel Prerequisites and Assumptions
 ====================================
 
-The following are prerequisites and assumptions for using Chapel:
+The following are prerequisites and assumptions about your environment
+for using Chapel:
 
-1) You are using an environment that supports standard UNIX commands
-   such as: cd, mkdir, rm, echo
+* You are using an environment that supports standard UNIX commands
+  such as: cd, mkdir, rm, echo
 
-2) You have Perl available at /usr/bin/perl and C-shell available at
-   /bin/csh
+* You have Perl available at /usr/bin/perl and the C-shell available
+  at /bin/csh
 
-3) You have access to gmake or a GNU-compatible version of make.
+* You have access to gmake or a GNU-compatible version of make.
 
-4) You have access to standard C and C++ compilers.  We typically
-   compile our code using gcc/g++, and have used the following
-   versions at various times on various platforms: egcs-2.91.66,
-   3.3.4, 3.4.4
+* You have access to standard C and C++ compilers.  We typically
+  compile our code using gcc/g++, and have used the following versions
+  at various times on various platforms: egcs-2.91.66, 3.3.4, 3.4.4,
+  4.0.1, 4.1.1

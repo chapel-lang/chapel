@@ -8,22 +8,22 @@ This directory contains the following documentation:
   README.building  : information about building the Chapel compiler
   README.chplenv   : setting up your shell environment to use Chapel
   README.compiling : how to use the Chapel compiler to compile code
+  README.cygwin    : notes for Cygwin users
   README.executing : execution options for Chapel programs
   README.prereqs   : prerequisites for using Chapel
-  README.cygwin    : notes for Cygwin users
-
-  quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
-                       for quick reference
 
   hpcc06.pdf : our report for the 2006 HPC Challenge competition
                (http://www.hpcchallenge.org), which also serves as a
                tutorial to Chapel via three of the HPCC benchmarks:
                STREAM Triad, Random Access, and FFT
 
+  quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
+                       for quick reference
+
   spec.pdf : the current draft of the Chapel language specification
 
 
-For more information about Chapel, please refer to the pre-print of
+For further information about Chapel, please refer to the pre-print of
 "Parallel Programmability and the Chapel Language" (to appear in the
 upcoming special issue of IJHPCA on High Productivity Programming
 Languages and Models), available at:

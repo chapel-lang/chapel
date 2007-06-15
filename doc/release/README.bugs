@@ -2,22 +2,28 @@
 Reporting Bugs for Chapel
 =========================
 
-The Chapel compiler is tested against a suite of over 1400 tests on a
-nightly basis.  However, these tests do not offer very high coverage
-over the entire set of possible Chapel programs.  If you encounter a
-bug or problem using the Chapel compiler, please do not hesitate to
-contact the Chapel development team at the following address:
+The Chapel compiler is tested against a suite of over 1850 tests on a
+nightly basis on five platforms.  While these tests help us make
+monotonic progress in implementing the language, we know that there
+are still many bugs in our implementation.  If you encounter a bug or
+problem using the Chapel compiler, please do not hesitate to contact
+the Chapel development team at the following address:
 
   chapel_bugs@cray.com
 
-Please send as much information as possible in an email.  If possible,
-please include the Chapel program and the version number of the Chapel
-compiler that you are using.  The version number can be obtained by
-running `chpl --version' at the command prompt.
+Please include as much information as possible in your email.  For
+example:
 
-An incomplete list of unimplemented features and bugs can be found in
-the STATUS file at the top-level of this release.  Please feel free to
-check this file to see what features are not listed or what bugs are
-known issues.  However, do not feel a need to read this file before
-sending a bug report.  We are more than happy to suggest work-arounds
-or reprioritize our implementation effort.
+  * the behavior you are seeing
+  * the version number of your Chapel compiler (chpl --version)
+  * the platform you are running on
+  * the values of any CHPL variables in your environment
+  * the version of gcc/g++ you are using (gcc --version)
+  * the Chapel program that caused the problem (if possible)
+
+A partial list of unimplemented features and known bugs can be found
+in the STATUS file in your $CHPL_HOME directory.  Feel free to check
+any unexpected behavior against this file.  However, please also feel
+encouraged to email us with a report even if you run into a known
+issue.  We are more than happy to suggest workarounds or to prioritize
+a feature/bug that is holding you back.

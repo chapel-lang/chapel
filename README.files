@@ -2,9 +2,9 @@
 Chapel Compiler Release Directory Structure and Files
 =====================================================
 
-The following list gives an overview of $CHPL_HOME's structure.
-Several subdirectories contain files named README to further describe
-the files and directories that they contain.
+The following list gives an overview of $CHPL_HOME's structure.  Many
+subdirectories contain additional README files to provide further
+descriptions for the files and directories that they contain.
 
 ./
   README            : top-level README with quick-start information
@@ -18,15 +18,15 @@ the files and directories that they contain.
   Makefile          : top-level Makefile for building the compiler and runtime
   bin/
     $CHPL_PLATFORM/ : location of the compiler (chpl) after it has been built
-  compiler/         : compiler sources
-  doc/              : documentation
+  compiler/         : source code for the compiler
+  doc/              : additional user documentation and READMEs
   examples/         : example Chapel codes
     hpcc06/         : source code for 2006 HPC Challenge competition
   lib/
-    $CHPL_PLATFORM/ : runtime library location, once they've been built
+    $CHPL_PLATFORM/ : runtime library location, once it has been built
   make/             : Makefile settings for various platforms
-  man/              : Stores man pages for the Chapel compiler (chpl)
-  modules/          : standard Chapel modules
+  man/              : man pages for the Chapel compiler (chpl)
+  modules/          : standard and internal Chapel modules
   runtime/          : source files for Chapel's runtime support libraries
     etc/            : Makefiles for compiler-generated code
     include/        : header files for runtime support libraries
