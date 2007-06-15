@@ -106896,3 +106896,15 @@ Added files:
 Removed files:
 	chapel/doc/release/: spec.pdf 
 
+---------------------------------------------------------------------------
+
+06/15/07 15:56:12 -- marybeth
+
+Log message:
+	A few minor edits, changing the order in which the types are presented.
+	Since domains and arrays are a big part of the language, I wanted to move
+	them to the start of the non-primitive types section.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
