@@ -106876,3 +106876,23 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/07 15:53:05 -- bradc
+
+Log message:
+	Bumped spec version number, copied over to
+	release docs directory, renamed file based
+	on feedback from last release, updated
+	README.
+
+Modified files:
+	chapel/doc/release/: README 
+	chapel/spec/: spec.tex 
+Added files:
+	chapel/doc/internal/quickReference/: .cvsignore 
+	chapel/doc/release/: chapelLanguageSpec.pdf 
+	chapel/test/studies/beer/: .cvsignore 
+Removed files:
+	chapel/doc/release/: spec.pdf 
+
