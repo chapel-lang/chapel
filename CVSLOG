@@ -106908,3 +106908,26 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/15/07 16:26:25 -- deitz
+
+Log message:
+	Added a new flag --baseline that is intended to disable all compiler
+	optimizations including inlining and the high-level iterator
+	optimizations.  I intend for this to eventually replace --unoptimized
+	but want to test it first.
+	
+	Added a new flag --no-flow-analysis that disables all compiler
+	optimizations that require a flow analysis.  Currently, this includes
+	global copy propagation, dead code elimination, and live variables.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         inlineFunctions.cpp scalarReplace.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
