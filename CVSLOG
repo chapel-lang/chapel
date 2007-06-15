@@ -106851,3 +106851,18 @@ Log message:
 Modified files:
 	chapel/doc/man/: Makefile chpl.txt 
 
+---------------------------------------------------------------------------
+
+06/15/07 15:34:20 -- marybeth
+
+Log message:
+	Checking in edits to Language Overview.  This section is now in shape
+	for review.
+	
+	I have added a newenvironment called TODO to note changes that
+	I plan to do before releasing.  All TODO comments will be removed before
+	releasing.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex spec.tex 
+
