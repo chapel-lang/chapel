@@ -106710,3 +106710,33 @@ Modified files:
 	chapel/doc/release/: README README.bugs README.building 
 	                     README.prereqs 
 
+---------------------------------------------------------------------------
+
+06/15/07 09:12:44 -- diten
+
+Log message:
+	Update the format of the --help message.  The descriptions now all start in
+	the same column, starting with a newline if necessary.  Also, added an
+	argumentOptions field to the ArgumentDescription struct to hold the text of
+	any options that go with the argument.  Also, within each category of options,
+	sort the options alphebetically by their long names.  I haven't done nice word
+	wrapping yet.  The format of each option now looks like, for example:
+	      --explain-call <call>[:<module>][:<line>]
+	                        Explain resolution of call
+	
+	Update countMemory compare files for chap07 and chap08.  Both machines are
+	reporting about 3 MB more memory than was in their compare files.
+	
+	Fix two problems in Brad's localConfig test so it does what was intended -
+	removed an undefined use of "zzz" symbol, and fixed the spelling of "function"
+	in the .good.
+
+Modified files:
+	chapel/compiler/include/: arg.h 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap07.good 
+	                                                  countMemory.chap08.good 
+	chapel/test/trivial/bradc/: localConfig.good localConfig.chpl 
+
