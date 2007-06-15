@@ -329,8 +329,8 @@ void scalarReplace() {
         if (false) change |= scalarReplaceRecordVars(ct, def->sym);
       }
     }
-
   }
+
   // note: disabled on inlining because scalar replace does not work
   // with inlining, fix when intent_ref and references work
   if (!fDisableScalarReplaceArrayWrappers && !no_inline) {
