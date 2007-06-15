@@ -36,11 +36,13 @@ bool ignore_errors = false;
 bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
+bool fBaseline = false;
 bool fDisableCopyPropagation = false;
 bool fDisableScalarReplaceArrayWrappers = false;
 bool fDisableSingleLoopIteratorOpt = false;
 bool fDisableExpandIteratorsInlineOpt = false;
 bool fDisableLiveVariablesIteratorClassOpt = false;
+bool fNoFlowAnalysis = false;
 bool unoptimized = false;
 bool no_bounds_checking = false;
 bool no_inline = false;
@@ -71,9 +73,11 @@ static ArgumentDescription arg_desc[] = {
  {"print-code-size", ' ', NULL, "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
  {"", ' ', NULL, "Optimization Control", NULL, NULL, NULL, NULL},
+ {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
  {"no-bounds-checks", ' ', NULL, "Disable bounds checking", "F", &no_bounds_checking, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fDisableCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fDisableExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
+ {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &no_inline, NULL, NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fDisableSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"unoptimized", ' ', NULL, "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
@@ -100,10 +104,10 @@ static ArgumentDescription arg_desc[] = {
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show Copyright", NULL, NULL, NULL, printCopyrightAndExit},
+ {"copyright", ' ', NULL, "Show copyright", NULL, NULL, NULL, printCopyrightAndExit},
  {"help", 'h', NULL, "Help (show this list)", NULL, NULL, NULL, printHelpAndExit},
- {"license", ' ', NULL, "Show License", NULL, NULL, NULL, printLicenseAndExit},
- {"version", ' ', NULL, "Show Version", NULL, NULL, NULL, printVersionAndExit},
+ {"license", ' ', NULL, "Show license", NULL, NULL, NULL, printLicenseAndExit},
+ {"version", ' ', NULL, "Show version", NULL, NULL, NULL, printVersionAndExit},
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},

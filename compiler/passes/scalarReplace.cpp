@@ -289,7 +289,7 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
 }
 
 void scalarReplace() {
-  if (unoptimized)
+  if (unoptimized || fBaseline)
     return;
 
   bool change = true;

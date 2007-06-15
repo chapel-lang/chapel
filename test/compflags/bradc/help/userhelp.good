@@ -9,10 +9,13 @@ Code Size Statistics:
       --print-code-size                  Print code size statistics
 
 Optimization Control:
+      --baseline                         Disable almost all optimizations
       --no-bounds-checks                 Disable bounds checking
       --no-copy-propagation              Disable copy propagation
       --no-expand-iterators-inline-opt   Disable the expansion of iterators
                                          inlined around loop bodies
+      --no-flow-analysis                 Disable optimizations requiring flow
+                                         analysis
       --no-inline                        Do not inline functions
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
@@ -41,7 +44,7 @@ Miscellaneous Flags:
   -s, --set <name>[=<value>]             Set config param value
 
 Compiler Information:
-      --copyright                        Show Copyright
+      --copyright                        Show copyright
   -h, --help                             Help (show this list)
-      --license                          Show License
-      --version                          Show Version
+      --license                          Show license
+      --version                          Show version

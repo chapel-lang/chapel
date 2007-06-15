@@ -142,10 +142,11 @@ void deadCodeElimination(FnSymbol* fn) {
 }
 
 void deadCodeElimination() {
-  if (unoptimized)
+  if (unoptimized || fBaseline)
     return;
   forv_Vec(FnSymbol, fn, gFns) {
-    deadCodeElimination(fn);
+    if (!fNoFlowAnalysis)
+      deadCodeElimination(fn);
     deadVariableElimination(fn);
   }
 }
