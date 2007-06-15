@@ -330,17 +330,17 @@ with their default initial values for variables of that type.
 \hline
 {\bf Type} & {\bf Default Initial Value}\\
 \hline
-\chpl{enum} & first enum constant \\
-\hline
-\chpl{class} & {\tt nil} \\
-\hline
-\chpl{record} & default constructed record \\
-\hline
 \chpl{range} & empty range:  \chpl{(1..0)} \\
 \hline
 \chpl{domain} & empty range for each dimension \\
 \hline
 \chpl{array} & default initial values of element types \\
+\hline
+\chpl{class} & {\tt nil} \\
+\hline
+\chpl{record} & default constructed record \\
+\hline
+\chpl{enum} & first enum constant \\
 \hline
 \chpl{tuple} & default initial values of component types \\
 \hline
@@ -353,96 +353,6 @@ with their default initial values for variables of that type.
 
 The paragraphs below give a brief description and example for each
 type.
-
-\paragraph{Enumerated Types}
-An enumerated type defines an ordered set of named constants.
-By default, these constants can be coerced to an 
-integral value, starting with one for the first constant. 
-An integral value may be assigned to one or more of the constants
-to override the default behavior. 
-
-\begin{example}
-\begin{chapel}
-enum day {sun, mon, tue, wed, thu, fri, sat};
-var d: day = wed;
-
-writeln(d, " is day number ", d:int, " of the week");
-\end{chapel}
-
-This example would output:
-\begin{commandline}
-wed is day number 4 of the week
-\end{commandline}
-\end{example}
-
-\paragraph{Classes}
-Classes are data structures defined with fields and methods, and
-they are assigned by reference.  A class may inherit fields and
-methods from another class.  
-
-An instance of a class is created by calling its constructor
-in a variable declaration.  Each call to the constructor
-instantiates a new object of the class and returns a reference to 
-the object.  Chapel provides a default class constructor for each class.
-
-\begin{example}
-The following code gives an example of the circle class.  
-The variable, \chpl{x}, is an instance of the circle class with
-a radius of \chpl{1.0}.
-\begin{chapel}
-class circle {
-  var radius: real;
-  def area {
-    param pi = 3.14;
-    return pi*(radius**2);
-  }
-}
-var x = circle(radius=1.0);
-\end{chapel}
-\end{example}
-
-\paragraph{Records}
-Records are similar to classes.  They contain fields and methods
-and can inherit fields and methods from other records.  A record,
-however, directly contains the data associated with the fields
-in the record.  A record is not a reference to storage location as
-classes are.  Thus, records are assigned by value.  
-
-\begin{example}
-In the example code below, \chpl{p} and \chpl{q} are both
-variables of the record \chpl{point}.  They are distinct storage
-locations that are updated independently of each other.
-
-\begin{chapel}
-record point {
-  var x,y: real;
-}
-var p = point(0.0,1.0);
-var q = p;
-\end{chapel}
-\end{example}
-
-\paragraph{Tuple Types}
-Tuples are lightweight records with anonymous fields.
-The fields can be all of the same type or of multiple types, and
-they are indexed in the order in which they were declared.
-\begin{example}
-The following variable declarations give an example of a mixed tuple,
-\chpl{pt} and a homogeneous tuple \chpl{x}.
-\begin{chapel}
-var pt: (int,real);
-var x: 3*int;
-\end{chapel}
-
-Among their many uses, tuples may be used in the assignment to a
-complex variable.
-\begin{chapel}
-var x, y: real;
-var z: complex;
-(*\vdots*)
-z = (x,y):complex;
-\end{chapel}
-\end{example}
 
 \paragraph{Ranges}
 Ranges represent bounded and unbounded strided sequences of integral
@@ -506,6 +416,96 @@ arithmetic domain and arrays.
 \begin{chapel}
 const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
 var A, B, C: [DistD2] real;
+\end{chapel}
+\end{example}
+
+\paragraph{Classes}
+Classes are data structures defined with fields and methods, and
+they are assigned by reference.  A class may inherit fields and
+methods from another class.  
+
+An instance of a class is created by calling its constructor
+in a variable declaration.  Each call to the constructor
+instantiates a new object of the class and returns a reference to 
+the object.  Chapel provides a default class constructor for each class.
+
+\begin{example}
+The following code gives an example of the circle class.  
+The variable, \chpl{x}, is an instance of the circle class with
+a radius of \chpl{1.0}.
+\begin{chapel}
+class circle {
+  var radius: real;
+  def area {
+    param pi = 3.14;
+    return pi*(radius**2);
+  }
+}
+var x = circle(radius=1.0);
+\end{chapel}
+\end{example}
+
+\paragraph{Records}
+Records are similar to classes.  They contain fields and methods
+and can inherit fields and methods from other records.  A record,
+however, directly contains the data associated with the fields
+in the record.  A record is not a reference to storage location as
+classes are.  Thus, records are assigned by value.  
+
+\begin{example}
+In the example code below, \chpl{p} and \chpl{q} are both
+variables of the record \chpl{point}.  They are distinct storage
+locations that are updated independently of each other.
+
+\begin{chapel}
+record point {
+  var x,y: real;
+}
+var p = point(0.0,1.0);
+var q = p;
+\end{chapel}
+\end{example}
+
+\paragraph{Enumerated Types}
+An enumerated type defines an ordered set of named constants.
+By default, these constants can be coerced to an 
+integral value, starting with one for the first constant. 
+An integral value may be assigned to one or more of the constants
+to override the default behavior. 
+
+\begin{example}
+\begin{chapel}
+enum day {sun, mon, tue, wed, thu, fri, sat};
+var d: day = wed;
+
+writeln(d, " is day number ", d:int, " of the week");
+\end{chapel}
+
+This example would output:
+\begin{commandline}
+wed is day number 4 of the week
+\end{commandline}
+\end{example}
+
+\paragraph{Tuple Types}
+Tuples are lightweight records with anonymous fields.
+The fields can be all of the same type or of multiple types, and
+they are indexed in the order in which they were declared.
+\begin{example}
+The following variable declarations give an example of a mixed tuple,
+\chpl{pt} and a homogeneous tuple \chpl{x}.
+\begin{chapel}
+var pt: (int,real);
+var x: 3*int;
+\end{chapel}
+
+Among their many uses, tuples may be used in the assignment to a
+complex variable.
+\begin{chapel}
+var x, y: real;
+var z: complex;
+(*\vdots*)
+z = (x,y):complex;
 \end{chapel}
 \end{example}
 
@@ -584,8 +584,9 @@ x <=> y; //swaps the value in x with the value in y
 \end{chapel}
 
 \paragraph{The Array Alias Operator}
-The array alias operator, \chpl{=>}, creates an alias
-to an array or an array slice.
+The array alias operator, \chpl{=>}, used within a
+variable declaration, creates an alias to an array or 
+an array slice.
 \begin{chapel}
 var A11 => A(block1,block1);
 \end{chapel}
