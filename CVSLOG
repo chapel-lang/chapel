@@ -106698,3 +106698,15 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: tree.chpl 
 
+---------------------------------------------------------------------------
+
+06/14/07 17:17:31 -- bradc
+
+Log message:
+	Began my pass on the READMEs.  Got about halfway through.
+
+Modified files:
+	./: CONTRIBUTORS README README.files 
+	chapel/doc/release/: README README.bugs README.building 
+	                     README.prereqs 
+
