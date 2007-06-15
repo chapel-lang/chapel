@@ -106839,3 +106839,15 @@ Modified files:
 	chapel/compiler/main/: arg.cpp driver.cpp 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+06/15/07 14:50:51 -- bradc
+
+Log message:
+	Initial version of man page.  Some formatting of
+	the arguments to an option could be improved, but
+	for the most part this should be above the bar.
+
+Modified files:
+	chapel/doc/man/: Makefile chpl.txt 
+
