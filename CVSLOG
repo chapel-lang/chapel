@@ -106931,3 +106931,13 @@ Modified files:
 	                         inlineFunctions.cpp scalarReplace.cpp 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+06/15/07 16:43:34 -- deitz
+
+Log message:
+	Updated man page with new flags.
+
+Modified files:
+	chapel/doc/man/: chpl.txt 
+
