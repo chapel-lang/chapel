@@ -12,6 +12,9 @@ This directory contains the following documentation:
   README.executing : execution options for Chapel programs
   README.prereqs   : prerequisites for using Chapel
 
+  chapelLanguageSpec.pdf : the current draft of the Chapel language
+                           specification
+
   hpcc06.pdf : our report for the 2006 HPC Challenge competition
                (http://www.hpcchallenge.org), which also serves as a
                tutorial to Chapel via three of the HPCC benchmarks:
@@ -19,8 +22,6 @@ This directory contains the following documentation:
 
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
-
-  spec.pdf : the current draft of the Chapel language specification
 
 
 --------------------
