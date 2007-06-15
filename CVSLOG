@@ -106808,3 +106808,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/07 13:59:57 -- diten
+
+Log message:
+	Do word wrapping for argument descriptions in the --help message that require
+	more than one line.
+
+Modified files:
+	chapel/compiler/main/: arg.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
