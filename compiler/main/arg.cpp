@@ -202,15 +202,57 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
   }
 }
 
-void print_n_spaces(int n) {
+
+static void
+print_n_spaces(int n) {
   int i;
   for (i = 0; i < n; i++)
     fprintf(stderr, " ");
 }
 
-void usage(ArgumentState* arg_state, char* arg_unused) {
+
+static void
+word_wrap_print(const char* text, int start_column, int end_column) {
+  /*
+   * Print the buffer "text" to stderr with all non-whitespace text at or
+   * after start_column, and print at most end_column characters per line.
+   * Do not break lines in the middle of words. When this function is called,
+   * stderr must be in a state such that the next character fprintf will print
+   * is in start_column.
+   */
+  int space_left = 1 + end_column - start_column;
+  bool first = true;
+  const char* delims = " ";
+  char* save_ptr, *text_dup, *word;
+  text_dup = strdup(text);
+  word = strtok_r(text_dup, delims, &save_ptr);
+
+  while (word) {
+    int wordlength = strlen(word);
+    if (first) {
+      space_left -= fprintf(stderr, "%s", word);
+      first = false;
+    } else {
+      if (wordlength + 1 < space_left) {
+        space_left -= fprintf(stderr, " %s", word);
+      } else {
+        fprintf(stderr, "\n");
+        print_n_spaces(start_column - 1);
+        space_left = 1 + end_column - start_column;
+        space_left -= fprintf(stderr, "%s", word);
+      }
+    }
+    word = strtok_r(NULL, delims, &save_ptr);
+  }
+  free(text_dup);
+  fprintf(stderr, "\n");
+}
+
+
+void
+usage(ArgumentState* arg_state, char* arg_unused) {
   ArgumentDescription *desc = arg_state->desc;
-  const int desc_start_col = 25;
+  const int desc_start_col = 29, end_col = 79;
   int i, nprinted;
 
   (void)arg_unused;
@@ -250,7 +292,7 @@ void usage(ArgumentState* arg_state, char* arg_unused) {
     } else {
       print_n_spaces(desc_start_col - nprinted - 1);
     }
-    fprintf(stderr, "%s\n", desc[i].description);
+    word_wrap_print(desc[i].description, desc_start_col, end_col);
   }
   exit(1);
 }

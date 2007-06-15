@@ -1,54 +1,52 @@
 Usage: chpl [flags] [source files]
 
 Compilation Traces:
-      --print-commands  Print system commands
-      --print-passes    Print compiler passes
+      --print-commands      Print system commands
+      --print-passes        Print compiler passes
 
 Code Size Statistics:
-      --count-tokens    Count tokens
-      --print-code-size Print code size statistics
+      --count-tokens        Count tokens
+      --print-code-size     Print code size statistics
 
 Optimization Control:
-      --no-bounds-checks
-                        Disable bounds checking
-      --no-copy-propagation
-                        Disable copy propagation
+      --no-bounds-checks    Disable bounds checking
+      --no-copy-propagation Disable copy propagation
       --no-expand-iterators-inline-opt
-                        Disable the expansion of iterators inlined around loop bodies
-      --no-inline       Do not inline functions
+                            Disable the expansion of iterators inlined around
+                            loop bodies
+      --no-inline           Do not inline functions
       --no-single-loop-iterator-opt
-                        Disable the optimization of iterators composed of a single loop
-      --unoptimized     Generate naive code (many temps)
+                            Disable the optimization of iterators composed of
+                            a single loop
+      --unoptimized         Generate naive code (many temps)
 
 Code Generation:
-      --[no-]cg-cpp-lines
-                        Generate #line annotations
-  -g, --[no-]debug      Allow debugging of generated C code
-  -O, --[no-]optimize   Optimize generated C code
-  -p, --parallel        Toggle threaded code generation
-      --savec <path>    Save generated C code in directory
+      --[no-]cg-cpp-lines   Generate #line annotations
+  -g, --[no-]debug          Allow debugging of generated C code
+  -O, --[no-]optimize       Optimize generated C code
+  -p, --parallel            Toggle threaded code generation
+      --savec <path>        Save generated C code in directory
 
 Linker Control:
-      --ccflags <flags> Back-end C compiler flags
-  -l, --lib-linkage <path>
-                        C library linkage
+      --ccflags <flags>     Back-end C compiler flags
+  -l, --lib-linkage <path>  C library linkage
   -L, --lib-search-path <path>
-                        C library search path
-  -o, --output <name>   Name output executable
+                            C library search path
+  -o, --output <name>       Name output executable
 
 Miscellaneous Flags:
-      --chplhome <path> Over-ride $CHPL_HOME
-      --[no-]devel      Compile as developer
+      --chplhome <path>     Over-ride $CHPL_HOME
+      --[no-]devel          Compile as developer
       --explain-call <call>[:<module>][:<line>]
-                        Explain resolution of call
+                            Explain resolution of call
       --instantiate-max <max>
-                        Limit number of instantiations
-      --no-warnings     Disable output of warnings
+                            Limit number of instantiations
+      --no-warnings         Disable output of warnings
   -s, --set <name>[=<value>]
-                        Set config param value
+                            Set config param value
 
 Compiler Information:
-      --copyright       Show Copyright
-  -h, --help            Help (show this list)
-      --license         Show License
-      --version         Show Version
+      --copyright           Show Copyright
+  -h, --help                Help (show this list)
+      --license             Show License
+      --version             Show Version
