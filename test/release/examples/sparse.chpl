@@ -5,13 +5,41 @@
  */
 
 
-config var n = 9;                       // Problem size;
+//
+// First, we declare a configuration variable, n, which defines the
+// problem size for this example.  It's given a default value of 9,
+// which can be over-ridden on the executable's command line using:
+// --n=<value>
+//
+config var n = 9;
 
 
-const dnsDom = [1..n, 1..n];            // Dense bounding domain
+//
+// Sparse domains in Chapel are defined in terms of a bounding domain.
+// The role of this bounding domain is to define the range of legal
+// indices for the sparse domain.  Here we declare a dense 2D
+// arithmetic bounding domain of n x n indices which will serve as the
+// index space for the sparse domain/array in our example.  As we will
+// see, it will also be useful for operations that want to treat our
+// sparse domain as though it was a dense n x n set of values.
+//
+const dnsDom = [1..n, 1..n];
 
-var spsDom: sparse subdomain(dnsDom);   // 2D sparse subdomain of D
-var spsArr: [spsDom] real;              // 2D sparse array
+//
+// Here we declare our sparse domain.  The sparse keyword indicates
+// that it will be used to only represent a subset of its bounding
+// domain's indices, and that arrays declared using it will store a
+// "zero" value (described further below) for all indices in the set
+// dnsDom - spsDom.  Because we don't initialize the sparse domain, it
+// is initially an empty set of indices.
+//
+var spsDom: sparse subdomain(dnsDom);
+
+//
+// Next, we use the sparse domain to declare a sparse array.  This
+// uses Chapel's normal array declaration syntax.
+//
+var spsArr: [spsDom] real;
 
 
 //
