@@ -67,12 +67,8 @@ Other changes to date are:
     accurately, but at least makes small numLocales cases much less
     ridiculous.
 
-  * fixed a bug in cftmd2() in fft-mta.chpl in which a wk2 value was
-    declared to be const, but then modified which the compiler wasn't
-    catching.
-
   * removed the Temp array in the bitReverseShuffle() routine of
-    fft.chpl and fft-mta.chpl to reduce memory requirements.
+    fft.chpl to reduce memory requirements.
 
   * changed the RAStream iterator to take a range/domain as its
     argument rather than two integers.  This makes good use of

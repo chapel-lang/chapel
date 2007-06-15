@@ -19,7 +19,7 @@
  */
 
 
-module Norm{
+module Norm {
 
   // normType specifies the type of norm to compute
   enum normType {norm1, norm2, normInf, normFrob};

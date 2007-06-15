@@ -2,10 +2,6 @@
 Chapel Testing System
 =====================
 
---------------------------------
-Files related to the test system
---------------------------------
-
 In addition to the code files themselves, this directory contains
 files used by our regression testing infrastructure to automatically
 compile, run, and test sample codes.  For a test foo.chpl, the
@@ -17,16 +13,17 @@ following files may also exist:
      foo.notest     : indicates that foo.chpl should not be tested 
                       (e.g., because it is a helper module)
      foo.perfkeys   : indicates keys that are used to identify values of
-                      interest to performance-oriented runs
+                      interest in performance-oriented runs
 
 
 ---------------------
 Using the test system
 ---------------------
 
-To launch the test system, cd into the examples directory and use:
+To launch the test system, make sure you're in the examples directory
+and run:
 
-     start_test
+     ./start_test
 
 This will cause all of the tests in this directory to be compiled and
 executed in a correctness-testing mode, printing out a summary at the
@@ -35,15 +32,15 @@ end and creating log files for the test run in a Logs/ subdirectory.
 You can also run the testing system in a performance-oriented mode
 using:
 
-     start_test -performance
+     ./start_test -performance
 
-This mode looks for tests with a .perfkeys file and places the results
-in a file under the test's directory named
-perfdat/<machine_name>/<test_name>.dat.
+This executes tests that have a .perfkeys file and places the
+performance results flagged by the list of keys into a file under the
+test's directory named perfdat/<machine_name>/<test_name>.dat.
 
 Some other useful ways to run the test system are:
 
-     start_test -startdir <dir>
+     start_test -startdir <directory>
      start_test -onetest <foo.chpl>
 
 These commands run the test system starting from a single directory,

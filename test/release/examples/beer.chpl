@@ -41,7 +41,7 @@ def main {
   //   "forall verse in LyricsSpace, Lyrics(verse) = ..."
   [verse in LyricsSpace] Lyrics(verse) = computeLyric(verse, numVerses);
 
-  // as in any good parallel language, I/O to stdout is serialized.
+  // as in any good parallel language, I/O to stdout is serialized.  ;)
   // (Note that I/O to a file could be parallelized using a parallel
   // prefix computation on the verse strings' lengths with file seeking)
   writeln(Lyrics);

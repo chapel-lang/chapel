@@ -7,7 +7,6 @@ TARGETS = \
 	stream \
 	ra \
 	fft \
-	fft-mta
 
 default: all
 
@@ -23,9 +22,6 @@ ra: probSize.chpl ra-randstream.chpl ra.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
 fft: probSize.chpl fft.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $^
-
-fft-mta: probSize.chpl fft-mta.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
 FORCE:

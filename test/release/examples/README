@@ -23,17 +23,22 @@ demonstrate various Chapel features:
      sparse.chpl            : sparse domain/array tutorial example
      tree.chpl              : constructs and walks a tree in parallel
 
-The hpcc06 directory contains Chapel versions of the HPC Challenge
+The hpcc06 directory contains Chapel versions of three HPC Challenge
 benchmarks:
 
-     stream.chpl            : our global STREAM Triad entry
-     ra.chpl                : our global Random Access entry
-     ra-randstream.chpl     : the random stream generator for our RA entry
-     fft.chpl               : our global 1D FFT entry
+     stream.chpl            : the STREAM Triad benchmark
+     ra.chpl                : the global Random Access benchmark
+     fft.chpl               : the global 1D FFT benchmark
+
+as well as helper modules for these benchmarks:
+
      probSize.chpl          : a common module for computing problem sizes
-     fft-mta.chpl           : a port of the 2005 Konecny, Kahan, Feo entry
-     fft-testPow4.chpl      : an empty test used to exercise fft.chpl in our
-                              testing system for non-powers-of-two
+     ra-randstream.chpl     : the random stream generator for ra.chpl
+     fft-testPow4.chpl      : an empty test used to exercise fft.chpl for
+                              powers-of-4 in our testing system (since
+                              it's a radix-4 algorithm, the final
+                              phase differs)
+
 
 ------------------
 Building the tests
@@ -52,7 +57,6 @@ commands:
      chpl -o stream probSize.chpl stream.chpl
      chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
      chpl -o fft probSize.chpl fft.chpl
-     chpl -o fft-mta probSize.chpl fft-mta.chpl
 
 We provide Makefiles in each directory that can be used to build a
 single test in that directory by name:
@@ -69,14 +73,16 @@ Other files
 -----------
 
 ./
-  FEATURES       : maps out which tests use which Chapel features
-  README.testing : provides an introduction to using the Chapel testing system
-  start_test     : the main script for the Chapel testing system
-  start_clean    : cleans up the result of a run of the testing system
-  Bin/           : contains helper scripts for the testing system
-  *.good         : these files are used by the Chapel testing system
-  *.compopts     : "
-  *.execopts     : "
-  *.good         : "
-  *.notest       : "
-  *.perfkeys     : "
+  Makefile        : Makefile for compiling the examples
+  README.features : maps out which tests use which Chapel features
+  README.testing  : provides an introduction to using the Chapel testing system
+  start_test      : the main script for the Chapel testing system
+  start_clean     : cleans up the result of a run of the testing system
+  Bin/            : contains helper scripts for the testing system
+  Logs/           : directory created by the test system to store logs
+  *.good          : these files are used by the Chapel testing system
+  *.compopts      : "
+  *.execopts      : "
+  *.good          : "
+  *.notest        : "
+  *.perfkeys      : "
