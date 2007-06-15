@@ -106786,3 +106786,15 @@ Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 	chapel/compiler/passes/: lowerIterators.cpp scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+06/15/07 11:55:10 -- bradc
+
+Log message:
+	Updated declarations in sparse example to implement
+	Steve's suggestion to make them more conversational
+	like the rest of the example.
+
+Modified files:
+	chapel/test/release/examples/: sparse.chpl 
+
