@@ -71,6 +71,12 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
         SymExpr* use = new SymExpr(syms.v[id]);
         call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
         syms.v[id]->uses.add(use);
+      } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+        SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
+        int id = field2id.get(member->var);
+        SymExpr* use = new SymExpr(syms.v[id]);
+        call->replace(use);
+        syms.v[id]->uses.add(use);
       } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
         int id = field2id.get(member->var);
@@ -101,7 +107,8 @@ scalarReplaceClassVars(ClassType* ct, Symbol* sym) {
                 CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
                 if (!call ||
                     !(call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-                      call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
+                      call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                      call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) ||
                     !(call->get(1) == se))
                   change = false;
               }
@@ -324,7 +331,7 @@ void scalarReplace() {
     forv_Vec(DefExpr, def, defs) {
       ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
       if (ct->symbol->hasPragma("iterator class")) {
-        if (false) change |= scalarReplaceClassVars(ct, def->sym);
+        change |= scalarReplaceClassVars(ct, def->sym);
       } else if (ct->symbol->hasPragma("tuple")) {
         if (false) change |= scalarReplaceRecordVars(ct, def->sym);
       }
