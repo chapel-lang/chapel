@@ -106941,3 +106941,19 @@ Log message:
 Modified files:
 	chapel/doc/man/: chpl.txt 
 
+---------------------------------------------------------------------------
+
+06/15/07 17:34:53 -- marybeth
+
+Log message:
+	Decided to capture Baker in feature for supporting Chapel in Cray's PE.
+	Renamed file and deleted ChapelForGranite.html.
+	
+	Added outline of detail for feature and outlines for interfaces and
+	dependencies.
+
+Added files:
+	chapel/doc/internal/MS4DesignDocs/: ChapelForCascade.html 
+Removed files:
+	chapel/doc/internal/MS4DesignDocs/: ChapelForGranite.html 
+
