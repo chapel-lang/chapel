@@ -106957,3 +106957,15 @@ Added files:
 Removed files:
 	chapel/doc/internal/MS4DesignDocs/: ChapelForGranite.html 
 
+---------------------------------------------------------------------------
+
+06/17/07 14:49:44 -- marybeth
+
+Log message:
+	Adding "range" to list of keywords in chapel_listing file.
+	
+	(This change was made in my local copy, but I forgot to check it in.)
+
+Modified files:
+	chapel/doc/internal/quickReference/: chapel_listing.tex 
+
