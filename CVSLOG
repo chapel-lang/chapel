@@ -107067,3 +107067,14 @@ Log message:
 Modified files:
 	chapel/test/: start_opt_test 
 
+---------------------------------------------------------------------------
+
+06/18/07 13:35:42 -- deitz
+
+Log message:
+	Fixed the opt nightly script so that it prints out the correct number
+	of errors.  It was counting each error twice.
+
+Modified files:
+	chapel/test/: start_opt_test 
+
