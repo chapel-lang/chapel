@@ -106995,3 +106995,25 @@ Log message:
 Added files:
 	chapel/test/: OPT_TESTING_FLAGS start_opt_test 
 
+---------------------------------------------------------------------------
+
+06/18/07 10:49:34 -- diten
+
+Log message:
+	Issue errors for configuration variables that are defined deeper than module
+	level.  Fix some studies that defined config variables in functions by moving
+	them to module scope, or in some cases removing the config keyword.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/trivial/bradc/: localConfig.good 
+	chapel/test/studies/cholesky/marybeth/: blockChol.chpl 
+	                                        blockCholChoice.chpl 
+	                                        chol.chpl 
+	chapel/test/studies/hpcc/RA/marybeth/: ra2-param-test.chpl 
+	                                       ra2.chpl ra3.chpl 
+	                                       ra3.good 
+	chapel/test/studies/lu/marybeth/: blockLU.chpl 
+Removed files:
+	chapel/test/trivial/bradc/: localConfig.future 
+
