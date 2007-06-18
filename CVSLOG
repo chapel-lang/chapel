@@ -107017,3 +107017,28 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/: localConfig.future 
 
+---------------------------------------------------------------------------
+
+06/18/07 11:17:37 -- deitz
+
+Log message:
+	Renamed optimization flags (internally) to make them consistent.
+	
+	Removed --unoptimized flag and updated tests and cron to use
+	--baseline.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp iterator.cpp type.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         copy_propagation.cpp filesToAST.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp lowerIterators.cpp 
+	                         scalarReplace.cpp 
+	chapel/doc/man/: chpl.txt 
+	chapel/test/Bin/: nightly 
+	chapel/test/arrays/deitz/: jacobi-unoptimized.compopts 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
