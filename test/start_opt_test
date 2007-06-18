@@ -5,7 +5,7 @@
 #             OPT_TESTING_FLAGS
 #
 # -cron: check out a new copy of chapel, make it, run tests as above,
-#        and mail results to chapel_cron@cray.com
+#        and mail results to chapel_cronmail@cray.com
 #
 
 if (@ARGV) {
@@ -41,12 +41,19 @@ foreach $opt (@OPTS) {
 
 @lines = `cat $home/.opt_testing.tmp`;
 
+foreach $line (@lines) {
+    if ($line =~ /\[Error/) {
+        $nerror++;
+    }
+}
+
 if ($cron) {
-    open(FILE, "| mail -s \"Chapel Opts Nightly: $nerror errors\" chapel_cron\@cray.com");
+    open(FILE, "| mail -s \"Chapel Opts Nightly: $nerror errors\" chapel_cronmail\@cray.com");
 } else {
     open(FILE, ">&STDOUT");
 }
 
+$nerror = 0;
 $first = 1;
 foreach $line (@lines) {
     chomp $line;
