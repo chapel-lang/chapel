@@ -1,0 +1,8 @@
+--no-copy-propagation
+--no-expand-iterators-inline-opt
+--no-flow-analysis
+--no-inline
+--no-single-loop-iterator-opt
+--no-scalar-replace-array-wrappers
+--no-live-variables-iterator-class-opt
+--no-single-loop-iterator-opt --no-expand-iterators-inline-opt
