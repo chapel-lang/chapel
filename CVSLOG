@@ -107094,3 +107094,25 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         copyCollect.cpp 
 
+---------------------------------------------------------------------------
+
+06/18/07 16:50:13 -- deitz
+
+Log message:
+	Factored reference propagation out of the copy propagation and into
+	its own pass.
+	
+	Reenabled scalar replacement of records at the expense of compilation
+	time.  We now run reference propagation multiple times during scalar
+	replacement.  A better way would be to scalar replace references which
+	I will attempt.
+	
+	Enhanced reference propagation to deal directly with member accesses.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	                                deadCodeElimination.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         inlineFunctions.cpp scalarReplace.cpp 
+
