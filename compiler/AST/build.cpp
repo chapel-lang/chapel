@@ -789,7 +789,12 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     count++;
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(count));
-      fn->insertAtHead(def->remove());
+      if (strcmp(def->sym->name, "_")) {
+        fn->insertAtHead(def->remove());
+      } else {
+        // Ignore values in places marked with an underscore
+        def->remove();
+      }
     } else if (BlockStmt* subtuple = dynamic_cast<BlockStmt*>(expr)) {
       /* newClause is:
          (& IS_TUPLE(base(count)) (build_tuple_arg's where clause)) */
