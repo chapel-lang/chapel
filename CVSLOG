@@ -107042,3 +107042,17 @@ Modified files:
 	chapel/test/arrays/deitz/: jacobi-unoptimized.compopts 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+06/18/07 11:28:02 -- diten
+
+Log message:
+	Ignore values named "_" in destructured tuple formals.  Add a simple test that
+	uses underscores in formal tuples.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+Added files:
+	chapel/test/types/tuple/diten/: tupleFunctionUnderscore.chpl 
+	                                tupleFunctionUnderscore.good 
+
