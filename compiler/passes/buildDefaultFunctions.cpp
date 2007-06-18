@@ -206,8 +206,6 @@ static void build_chpl_main(void) {
   currentLineno = -1;
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
   chpl_main->insertAtHead(new CallExpr(compilerModule->initFn));
-  if (copyCollect)
-    chpl_main->insertAtHead(new CallExpr(PRIMITIVE_GC_CC_INIT, new_IntSymbol(2097152)));
 }
 
 

@@ -75,7 +75,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
                                            new SymExpr(field)));
         } else if (classfield->classTag == CLASS_RECORD) {
           buildRootSetForFunction(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                                   base,
+                                                   base->copy(),
                                                    new SymExpr(field)),
                                   field->defPoint);
         }
@@ -99,9 +99,13 @@ void buildRootSetForModule(ModuleSymbol* module) {
   }
 }
 
+
 void copyCollection(void) {
   if (!copyCollect)
     return;
+
+  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_GC_CC_INIT,
+                                       new_IntSymbol(2097152)));
 
   forv_Vec(FnSymbol, fn, gFns) {
     buildRootSetForFunction(fn, NULL, NULL);
