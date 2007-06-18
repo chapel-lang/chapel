@@ -106981,3 +106981,17 @@ Log message:
 Modified files:
 	chapel/doc/man/: chpl.txt 
 
+---------------------------------------------------------------------------
+
+06/18/07 10:28:21 -- deitz
+
+Log message:
+	Added new testing script test/start_opt_test that runs start_test in
+	the release/examples directory on every combination of flag as listed
+	in OPT_TESTING_FLAGS.  Use -cron to run this as a cron job, checking
+	out a fresh copy of the compiler, and emailing the results to
+	chapel_cron.
+
+Added files:
+	chapel/test/: OPT_TESTING_FLAGS start_opt_test 
+
