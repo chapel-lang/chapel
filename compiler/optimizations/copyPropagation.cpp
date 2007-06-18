@@ -431,6 +431,7 @@ void localReferencePropagation(FnSymbol* fn) {
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     AvailableMap available;
+    Map<Symbol*,Symbol*> fieldMap;
 
     forv_Vec(Expr, expr, bb->exprs) {
 
@@ -445,11 +446,28 @@ void localReferencePropagation(FnSymbol* fn) {
           if (useSet.set_in(se) && !defSet.set_in(se)) {
             if (Symbol* sym = available.get(se->var)) {
               if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
-                if (call->isPrimitive(PRIMITIVE_GET_REF))
-                  call->replace(new SymExpr(sym));
-                else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+                if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+                  if (fieldMap.get(se->var))
+                    call->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, sym, fieldMap.get(se->var)));
+                  else
+                    call->replace(new SymExpr(sym));
+                } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER) && call->get(1) == se) {
+                  if (!fieldMap.get(se->var)) {
+                    se->var = sym;
+                  }
+                } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) && call->get(1) == se) {
+                  if (!fieldMap.get(se->var)) {
+                    se->var = sym;
+//                     SymExpr* use = new SymExpr(sym);
+//                     se->replace(use);
+//                     useSet.set_add(use);
+                  }
+                } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
                   SymExpr* use = new SymExpr(sym);
-                  se->replace(new CallExpr(PRIMITIVE_SET_REF, use));
+                  if (fieldMap.get(se->var))
+                    se->replace(new CallExpr(PRIMITIVE_GET_MEMBER, use, fieldMap.get(se->var)));
+                  else
+                    se->replace(new CallExpr(PRIMITIVE_SET_REF, use));
                   useSet.set_add(use);
                 }
               }
@@ -480,11 +498,64 @@ void localReferencePropagation(FnSymbol* fn) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
         if (call->isPrimitive(PRIMITIVE_MOVE))
           if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
-            if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2)))
+            if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
               if (rhs->isPrimitive(PRIMITIVE_SET_REF))
                 if (SymExpr* rse = dynamic_cast<SymExpr*>(rhs->get(1)))
-                  if (defSet.set_in(lhs) && useSet.set_in(rse))
+                  if (defSet.set_in(lhs) && useSet.set_in(rse)) {
                     available.put(lhs->var, rse->var);
+                    fieldMap.put(lhs->var, NULL);
+                  }
+              if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER))
+                if (SymExpr* rse = dynamic_cast<SymExpr*>(rhs->get(1)))
+                  if (defSet.set_in(lhs) && useSet.set_in(rse)) {
+                    available.put(lhs->var, rse->var);
+                    fieldMap.put(lhs->var, dynamic_cast<SymExpr*>(rhs->get(2))->var);
+                  }
+            }
     }
+  }
+}
+
+
+void refPropagation() {
+  if (fBaseline)
+    return;
+  compute_sym_uses();
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
+      if (var->defs.n == 1) {
+        if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
+          if (move->isPrimitive(PRIMITIVE_MOVE)) {
+            if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
+              if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+                if (SymExpr* val = dynamic_cast<SymExpr*>(rhs->get(1))) {
+                  bool stillAlive = false;
+                  forv_Vec(SymExpr, se, var->uses) {
+                    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+                      if (parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                        parent->replace(new SymExpr(val->var));
+                      } else if (parent->isPrimitive(PRIMITIVE_MOVE)) {
+                        parent->get(2)->replace(rhs->copy());
+                      } else
+                        stillAlive = true;
+                    }
+                  }
+                  if (!stillAlive) {
+                    var->defPoint->remove();
+                    var->defs.v[0]->getStmtExpr()->remove();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  forv_Vec(FnSymbol, fn, gFns) {
+    //    if (!fNoReferencePropagation)
+    localReferencePropagation(fn);
+    deadVariableElimination(fn);
+    deadExpressionElimination(fn);
   }
 }

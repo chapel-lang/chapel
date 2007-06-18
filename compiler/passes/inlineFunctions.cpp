@@ -3,6 +3,7 @@
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "optimizations.h"
 
 
 static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
@@ -110,6 +111,12 @@ void inlineFunctions(void) {
           fn->defPoint->remove();
         }
       }
+    }
+  }
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint->parentSymbol) {
+      collapseBlocks(fn->body);
+      removeUnnecessaryGotos(fn);
     }
   }
 }

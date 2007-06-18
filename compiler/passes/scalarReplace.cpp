@@ -52,7 +52,7 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
   //
   Vec<Symbol*> syms;
   for_fields(field, ct) {
-    Symbol* clone = new VarSymbol(sym->name, field->type);
+    Symbol* clone = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     syms.add(clone);
     sym->defPoint->insertBefore(new DefExpr(clone));
     clone->isCompilerTemp = sym->isCompilerTemp;
@@ -143,7 +143,7 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
   //
   Vec<Symbol*> syms;
   for_fields(field, ct) {
-    Symbol* clone = new VarSymbol(sym->name, field->type);
+    Symbol* clone = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     syms.add(clone);
     sym->defPoint->insertBefore(new DefExpr(clone));
     clone->isCompilerTemp = sym->isCompilerTemp;
@@ -163,7 +163,7 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
           SymExpr* use = new SymExpr(syms.v[field2id.get(field)]);
           call->insertBefore(
             new CallExpr(PRIMITIVE_MOVE, use,
-              new CallExpr(PRIMITIVE_GET_MEMBER, rhsCopy, field)));
+              new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhsCopy, field)));
           use->var->uses.add(use);
           rhsCopy->var->uses.add(rhsCopy);
         }
@@ -186,6 +186,12 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
         }
         call->remove();
       } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
+        int id = field2id.get(member->var);
+        SymExpr* use = new SymExpr(syms.v[id]);
+        call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
+        syms.v[id]->uses.add(use);
+      } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
         SymExpr* member = dynamic_cast<SymExpr*>(call->get(2));
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
@@ -221,6 +227,7 @@ scalarReplaceRecordVars(ClassType* ct, Symbol* sym) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr))
       if ((call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
           call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIMITIVE_MOVE))
         continue;
     change = false;
@@ -250,6 +257,11 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
             call->getStmtExpr()->remove();
         } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
           if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType)
+            call->replace(call->get(1)->remove());
+        } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+          if (call->get(1)->typeInfo() == ct->refType)
+            call->replace(new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove()));
+          else if (call->get(1)->typeInfo() == ct)
             call->replace(call->get(1)->remove());
         } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType) {
@@ -288,12 +300,15 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
   }
 }
 
+extern void refPropagation();
+
 void scalarReplace() {
   if (fBaseline)
     return;
 
   bool change = true;
   while (change) {
+    refPropagation();
     Vec<DefExpr*> defs;
     forv_Vec(BaseAST, ast, gAsts) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
@@ -325,6 +340,40 @@ void scalarReplace() {
       }
     }
 
+//     forv_Vec(BaseAST, ast, gAsts) {
+//       if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
+//         if (var->defs.n == 1) {
+//           if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
+//             if (move->isPrimitive(PRIMITIVE_MOVE)) {
+//               if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
+//                 if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+//                   if (SymExpr* val = dynamic_cast<SymExpr*>(rhs->get(1))) {
+//                     bool stillAlive = false;
+//                     forv_Vec(SymExpr, se, var->uses) {
+//                       if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+//                         if (parent->isPrimitive(PRIMITIVE_GET_REF)) {
+//                           parent->replace(new SymExpr(val->var));
+//                         } else if (parent->isPrimitive(PRIMITIVE_MOVE)) {
+//                           parent->get(2)->replace(rhs->copy());
+//                         } else {
+//                           stillAlive = true;
+//                         }
+//                       }
+//                     }
+//                     if (!stillAlive) {
+//                       var->defPoint->remove();
+//                       var->defs.v[0]->getStmtExpr()->remove();
+//                       change |= true;
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+
     //
     // NOTE - reenable scalar replacement
     //
@@ -333,7 +382,7 @@ void scalarReplace() {
       if (ct->symbol->hasPragma("iterator class")) {
         change |= scalarReplaceClassVars(ct, def->sym);
       } else if (ct->symbol->hasPragma("tuple")) {
-        if (false) change |= scalarReplaceRecordVars(ct, def->sym);
+        change |= scalarReplaceRecordVars(ct, def->sym);
       }
     }
   }

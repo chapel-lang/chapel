@@ -57,7 +57,10 @@ void deadExpressionElimination(FnSymbol* fn) {
         expr->remove();
     } else if (CallExpr* expr = dynamic_cast<CallExpr*>(ast)) {
       if (expr->isPrimitive(PRIMITIVE_CAST) ||
-          expr->isPrimitive(PRIMITIVE_GET_MEMBER))
+          expr->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+          expr->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+          expr->isPrimitive(PRIMITIVE_GET_REF) ||
+          expr->isPrimitive(PRIMITIVE_SET_REF))
         if (expr->parentExpr && expr == expr->getStmtExpr())
           expr->remove();
       if (expr->isPrimitive(PRIMITIVE_MOVE))

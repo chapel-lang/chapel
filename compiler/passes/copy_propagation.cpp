@@ -8,10 +8,6 @@
 #include "symscope.h"
 
 void copyPropagation(void) {
-  forv_Vec(FnSymbol, fn, gFns) {
-    collapseBlocks(fn->body);
-    removeUnnecessaryGotos(fn);
-  }
   if (fBaseline)
     return;
   forv_Vec(FnSymbol, fn, gFns) {
