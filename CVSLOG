@@ -106969,3 +106969,15 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/18/07 08:03:42 -- diten
+
+Log message:
+	Remove double blank lines that cause the html version of the man page to
+	have all option descriptions except the first indented.  This doesn't seem to
+	have any effect on other viewing formats.
+
+Modified files:
+	chapel/doc/man/: chpl.txt 
+
