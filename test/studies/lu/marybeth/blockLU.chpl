@@ -1,13 +1,14 @@
 // This program tests the blockLU routine in the MatrixOps module.
 use MatrixOps;
 
+config const inputfile = "Amagic10.dat";
+
 def main() {
-  config const inputfile = "Amagic10.dat";
   var Adat = file(inputfile,path='./',mode='r');
   Adat.open();
 
   const n = readSize(Adat);
-  config var blk = readBlk(Adat);
+  var blk = readBlk(Adat);
 
   // The blocksize cannot be less than 1.  Reset to 1 if this happens.
   // The blocksize cannot exceed the size of n.  Reset to n if this happens.

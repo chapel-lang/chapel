@@ -1,14 +1,15 @@
 //Blocked Cholesky method.  Default test matrix is generated
 //from the Matlab gallery - the lehmer matrix of order 10.
 
+config const inputfile = "lehmer10.dat";
+config const upper = true;
+
 def main() {
-  config const inputfile = "lehmer10.dat";
   var Adat = file(inputfile,path='./',mode='r');
   Adat.open();
 
   const n = readSize(Adat);
-  config var blk = readBlk(Adat);
-  config const upper = true;
+  var blk = readBlk(Adat);
   var factor: string;
 
   // The blocksize cannot be less than 1.  Reset to 1 if this happens.

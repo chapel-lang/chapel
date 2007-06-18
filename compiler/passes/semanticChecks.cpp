@@ -81,6 +81,17 @@ check_parsed_vars(VarSymbol* var) {
          dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
         !dynamic_cast<FnSymbol*>(var->defPoint->parentScope->astParent))
       USR_FATAL(var, "Top-level params must be initialized.");
+  if (var->varClass == VAR_CONFIG &&
+      var->defPoint->parentSymbol != var->getModule()->initFn) {
+    char *varType;
+    switch (var->consClass) {
+      case VAR_VAR:   varType = "variables"; break;
+      case VAR_CONST: varType = "constants"; break;
+      case VAR_PARAM: varType = "parameters"; break;
+    }
+    USR_FATAL_CONT(var->defPoint,
+                   "Configuration %s only allowed at module scope.", varType);
+  }
 }
 
 

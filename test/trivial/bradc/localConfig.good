@@ -1,2 +1,2 @@
-localConfig.chpl:3: In function 'main':
-localConfig.chpl:4: error: configuration variables only legal at module scope
+localConfig.chpl:4: error: Configuration variables only allowed at module scope.
+localConfig.chpl:7: error: Configuration variables only allowed at module scope.

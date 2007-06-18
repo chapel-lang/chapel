@@ -4,6 +4,7 @@
 param POLY:uint(64) = 7;
 
 config const verify = true;
+config const ErrorTolerance = 0.01;
 config const showtiming = false;
 
 config const TotalMemSize:int = 100000;
@@ -98,7 +99,6 @@ def InitRandomSteps() {
 }
 
 def VerifyResults() {
-  config const ErrorTolerance = 0.01;
 
   var temp: uint(64) = 1;  
   for i in UpdateDomain {

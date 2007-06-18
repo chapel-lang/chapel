@@ -6,6 +6,7 @@
 param POLY:uint(64) = 7;
 
 config const verify = true;
+config const errorTolerance = 0.01;
 config const doIO = true;
 config const showTiming = false;
 
@@ -106,7 +107,6 @@ def initRandomSteps() {
 }
 
 def verifyResults() {
-  config const errorTolerance = 0.01;
 
   var temp: uint(64) = 1;  
   for i in UpdateDomain {
