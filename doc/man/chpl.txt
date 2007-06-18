@@ -39,7 +39,6 @@ OPTIONS
 
   --version       Print the version number of the compiler.
 
-
   Compilation Trace Options
 
   --print-commands  Prints the system commands that the compiler 
@@ -47,7 +46,6 @@ OPTIONS
 
   --print-passes    Prints the compiler passes during compilation and the
                     amount of wall clock time required for the pass.
-
 
   Code Size Options
 
@@ -68,7 +66,6 @@ OPTIONS
                     After this information is printed for each file, a
                     grand total of the number of tokens across all the
                     files is displayed.
-
 
   Optimization Control Options
 
@@ -102,7 +99,6 @@ OPTIONS
   --unoptimized     Causes the compiler to generate much more naive C
                     code, which utilizes many more temporary variables.
 
-
   Code Generation Options
 
   --[no-]cg-cpp-lines   Causes the compiler to emit cpp #line directives
@@ -133,7 +129,6 @@ OPTIONS
                     directory, creating the directory if it does not already
                     exist.
 
-
   Linker Control Options
 
   --ccflags <flags>   Add the specified flags to the C compiler command line
@@ -147,7 +142,6 @@ OPTIONS
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
-
 
   Miscellaneous Options
 
