@@ -166,7 +166,7 @@ static void createInitFn(ModuleSymbol* mod) {
     mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
 
     if (strcmp(mod->name, "ChapelStandard")) {
-      if (fnostdincs) {
+      if (fNoStdIncs) {
         mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_compiler")));
         mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelBase")));
       } else

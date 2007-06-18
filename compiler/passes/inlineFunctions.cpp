@@ -99,7 +99,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
 
 
 void inlineFunctions(void) {
-  if (no_inline || fBaseline)
+  if (fNoInline || fBaseline)
     return;
   forv_Vec(ModuleSymbol, mod, allModules)
     inline_calls(mod);

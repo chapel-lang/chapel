@@ -533,7 +533,7 @@ void initPrimitiveTypes(void) {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gBoundsChecking);
-  if (no_bounds_checking) {
+  if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gFalse->immediate;
   } else {

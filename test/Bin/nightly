@@ -26,8 +26,8 @@ while (@ARGV) {
         $examples = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
-    } elsif ($flag eq "-unoptimized") {
-        $unoptimized = 1;
+    } elsif ($flag eq "-baseline") {
+        $baseline = 1;
     } else {
         $printusage = 1;
         last;
@@ -49,7 +49,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-unoptimized : run unoptimized tests\n";
+    print "\t-baseline : run baseline tests\n";
     exit 1;
 }
 
@@ -112,16 +112,16 @@ if ($logdir eq "" || $statdir eq "") {
 if ($debug == 1) {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$platform-debug.dat";
-    } elsif ($unoptimized == 1) {
-        $statfile = "$statdir/nightly-unopt.$platform-debug.dat";
+    } elsif ($baseline == 1) {
+        $statfile = "$statdir/nightly-baseline.$platform-debug.dat";
     } else {
         $statfile = "$statdir/nightly.$platform-debug.dat";
     }
 } else {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$platform-cron.dat";
-    } elsif ($unoptimized == 1) {
-        $statfile = "$statdir/nightly-unopt.$platform-cron.dat";
+    } elsif ($baseline == 1) {
+        $statfile = "$statdir/nightly-baseline.$platform-cron.dat";
     } else {
         $statfile = "$statdir/nightly.$platform-cron.dat";
     }
@@ -135,9 +135,9 @@ if ($valgrind == 1) {
     } elsif ($performance == 1) {
         $threechars = "vgp";
         $morechars = "perf+vgrnd";
-    } elsif ($unoptimized == 1) {
+    } elsif ($baseline == 1) {
         $threechars = "vgn";
-        $morechars + "unopt+vgrnd";
+        $morechars + "baseline+vgrnd";
     } else {
         $threechars = "vgr";
         $morechars = "valgrind";
@@ -148,9 +148,9 @@ if ($valgrind == 1) {
 } elsif ($performance == 1) {
     $threechars = "prf";
     $morechars = "performance";
-} elsif ($unoptimized == 1) {
+} elsif ($baseline == 1) {
     $threechars = "npt";
-    $morechars = "unoptimized";
+    $morechars = "baseline";
 } else {
     $threechars = "std";
     $morechars = "standard";
@@ -270,8 +270,8 @@ if ($examples == 1) {
 if ($performance == 1) {
     $testflags = "$testflags -performance";
 }
-if ($unoptimized == 1) {
-    $testflags = "$testflags -compopts --unoptimized";
+if ($baseline == 1) {
+    $testflags = "$testflags -compopts --baseline";
 }
 
 if ($runtests == 1) {
@@ -336,16 +336,16 @@ if ($runtests == 1) {
     if ($debug == 1) {
         if ($performance == 1) {
             $mailsubject = "Chapel Debug Perf ($platform): $shortstatus";
-        } elsif ($unoptimized == 1) {
-            $mailsubject = "Chapel Debug Unopt ($platform): $shortstatus";
+        } elsif ($baseline == 1) {
+            $mailsubject = "Chapel Debug Baseline ($platform): $shortstatus";
         } else {
             $mailsubject = "Chapel Debug ($platform): $shortstatus";
         }
     } else {
         if ($performance == 1) {
             $mailsubject = "Chapel Perf Nightly ($platform): $shortstatus";
-        } elsif ($unoptimized == 1) {
-            $mailsubject = "Chapel Unopt Nightly ($platform): $shortstatus";
+        } elsif ($baseline == 1) {
+            $mailsubject = "Chapel Baseline Nightly ($platform): $shortstatus";
         } else {
             $mailsubject = "Chapel Nightly ($platform): $shortstatus";
         }

@@ -13,20 +13,21 @@ extern Map<char*, char*> configParamMap;
 extern int instantiation_limit;
 
 extern int fdump_html;
-extern int fnostdincs;
+extern int fNoStdIncs;
 
 extern int trace_level;
 
-extern bool unoptimized;
-extern bool no_bounds_checking;
-extern bool no_inline;
+// optimization control flags
 extern bool fBaseline;
-extern bool fDisableScalarReplaceArrayWrappers;
-extern bool fDisableSingleLoopIteratorOpt;
-extern bool fDisableExpandIteratorsInlineOpt;
-extern bool fDisableLiveVariablesIteratorClassOpt;
-extern bool fDisableCopyPropagation;
+extern bool fNoBoundsChecks;
+extern bool fNoCopyPropagation;
+extern bool fNoExpandIteratorsInlineOpt;
 extern bool fNoFlowAnalysis;
+extern bool fNoInline;
+extern bool fNoLiveVariablesIteratorClassOpt;
+extern bool fNoScalarReplaceArrayWrappers;
+extern bool fNoSingleLoopIteratorOpt;
+
 extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
 extern char fExplainCall[256];

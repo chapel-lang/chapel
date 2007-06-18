@@ -96,9 +96,6 @@ OPTIONS
                     optimizes iterators that are defined in terms of a 
                     single loop. This option turns off this optimization.
 
-  --unoptimized     Causes the compiler to generate much more naive C
-                    code, which utilizes many more temporary variables.
-
   Code Generation Options
 
   --[no-]cg-cpp-lines   Causes the compiler to emit cpp #line directives

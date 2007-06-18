@@ -825,7 +825,7 @@ void lowerIterator(FnSymbol* fn) {
 
   for_formals(formal, fn)
     locals.add(formal);
-  if (fDisableLiveVariablesIteratorClassOpt || fNoFlowAnalysis || fBaseline)
+  if (fNoLiveVariablesIteratorClassOpt || fNoFlowAnalysis || fBaseline)
     addLocalVariables(locals, fn);
   else
     addLocalVariablesLiveAtYields(locals, fn);
@@ -843,7 +843,7 @@ void lowerIterator(FnSymbol* fn) {
 
   Symbol* value = local2field.get(fn->getReturnSymbol());
   CallExpr* yield = isSingleLoopIterator(fn, asts);
-  if (!fBaseline && !fDisableSingleLoopIteratorOpt && yield) {
+  if (!fBaseline && !fNoSingleLoopIteratorOpt && yield) {
     buildSingleLoopMethods(fn, asts, local2field, locals, value, yield);
   } else {
     buildGetNextCursor(fn, asts, local2field, locals);

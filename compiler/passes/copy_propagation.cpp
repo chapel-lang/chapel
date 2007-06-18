@@ -12,16 +12,16 @@ void copyPropagation(void) {
     collapseBlocks(fn->body);
     removeUnnecessaryGotos(fn);
   }
-  if (unoptimized || fBaseline)
+  if (fBaseline)
     return;
   forv_Vec(FnSymbol, fn, gFns) {
-    //    if (!fDisableReferencePropagation)
+    //    if (!fNoReferencePropagation)
     localReferencePropagation(fn);
-    if (!fDisableCopyPropagation)
+    if (!fNoCopyPropagation)
       localCopyPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
-    if (!fDisableCopyPropagation && !fNoFlowAnalysis) {
+    if (!fNoCopyPropagation && !fNoFlowAnalysis) {
       globalCopyPropagation(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);

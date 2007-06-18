@@ -19,7 +19,6 @@ Optimization Control:
       --no-inline                        Do not inline functions
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
-      --unoptimized                      Generate naive code (many temps)
 
 Code Generation:
       --[no-]cg-cpp-lines                Generate #line annotations

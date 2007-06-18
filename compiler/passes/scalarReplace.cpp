@@ -289,7 +289,7 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
 }
 
 void scalarReplace() {
-  if (unoptimized || fBaseline)
+  if (fBaseline)
     return;
 
   bool change = true;
@@ -340,7 +340,7 @@ void scalarReplace() {
 
   // note: disabled on inlining because scalar replace does not work
   // with inlining, fix when intent_ref and references work
-  if (!fDisableScalarReplaceArrayWrappers && !no_inline) {
+  if (!fNoScalarReplaceArrayWrappers && !fNoInline) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("domain") || ts->hasPragma("array")) {
         scalarReplaceSingleFieldRecord(dynamic_cast<ClassType*>(ts->type));

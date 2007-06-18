@@ -18,7 +18,7 @@ static ModuleSymbol* parseStandardModule(char* name) {
 
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
-  if (!fnostdincs) {
+  if (!fNoStdIncs) {
     standardModule = parseStandardModule("ChapelStandard.chpl");
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
@@ -62,7 +62,7 @@ void parse(void) {
   }
   finishCountingTokens();
 
-  if (!fnostdincs) {
+  if (!fNoStdIncs) {
     chpl_array = domainModule->lookupType("_array");
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");

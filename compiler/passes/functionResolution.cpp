@@ -1701,7 +1701,7 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* iterator = dynamic_cast<VarSymbol*>(se2->var);
   if (!index || !iterator)
     INT_FATAL(call, "bad for loop primitive");
-  if (!fDisableExpandIteratorsInlineOpt) {
+  if (!fNoExpandIteratorsInlineOpt) {
     if (canExpandIterator(iterator->type->defaultConstructor)) {
       result = call;
       call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
@@ -2902,7 +2902,7 @@ pruneResolvedTree() {
         else
           call->get(2)->replace(new SymExpr(sym));
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        // Remove types to enable --unoptimized
+        // Remove types to enable --baseline
         SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
         if (sym && dynamic_cast<TypeSymbol*>(sym->var))
           call->remove();

@@ -48,7 +48,7 @@ void buildDefaultFunctions(void) {
       }
       if (type->hasPragma("no default functions"))
         continue;
-      if (!fnostdincs) {
+      if (!fNoStdIncs) {
         if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
           buildDefaultReadFunction(et);
           buildDefaultWriteFunction(et);

@@ -62,7 +62,7 @@ void lowerIterators() {
       }
     }
   }
-  if (!unoptimized) {
+  if (!fBaseline) {
     forv_Vec(FnSymbol, fn, gFns) {
       if (fn->fnClass == FN_ITERATOR) {
         collapseBlocks(fn->body);

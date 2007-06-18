@@ -37,15 +37,14 @@ bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
 bool fBaseline = false;
-bool fDisableCopyPropagation = false;
-bool fDisableScalarReplaceArrayWrappers = false;
-bool fDisableSingleLoopIteratorOpt = false;
-bool fDisableExpandIteratorsInlineOpt = false;
-bool fDisableLiveVariablesIteratorClassOpt = false;
+bool fNoCopyPropagation = false;
+bool fNoScalarReplaceArrayWrappers = false;
+bool fNoSingleLoopIteratorOpt = false;
+bool fNoExpandIteratorsInlineOpt = false;
+bool fNoLiveVariablesIteratorClassOpt = false;
 bool fNoFlowAnalysis = false;
-bool unoptimized = false;
-bool no_bounds_checking = false;
-bool no_inline = false;
+bool fNoBoundsChecks = false;
+bool fNoInline = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fExplainCall[256] = "";
@@ -53,7 +52,7 @@ char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool copyCollect = false;
-int fnostdincs = 0;
+int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
@@ -74,13 +73,12 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Optimization Control", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
- {"no-bounds-checks", ' ', NULL, "Disable bounds checking", "F", &no_bounds_checking, "CHPL_NO_BOUNDS_CHECKING", NULL},
- {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fDisableCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
- {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fDisableExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
+ {"no-bounds-checks", ' ', NULL, "Disable bounds checking", "F", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
+ {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
- {"no-inline", ' ', NULL, "Do not inline functions", "F", &no_inline, NULL, NULL},
- {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fDisableSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
- {"unoptimized", ' ', NULL, "Generate naive code (many temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
+ {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
+ {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
 
  {"", ' ', NULL, "Code Generation", NULL, NULL, NULL, NULL},
  {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
@@ -126,9 +124,9 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
- {"no-live-variables-iterator-class-opt", ' ', NULL, "Do not use live variable analysis for iterator class construction", "F", &fDisableLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
- {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fDisableScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
- {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
+ {"no-live-variables-iterator-class-opt", ' ', NULL, "Do not use live variable analysis for iterator class construction", "F", &fNoLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
+ {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fNoScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
+ {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}
 };
