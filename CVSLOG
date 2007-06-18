@@ -107056,3 +107056,14 @@ Added files:
 	chapel/test/types/tuple/diten/: tupleFunctionUnderscore.chpl 
 	                                tupleFunctionUnderscore.good 
 
+---------------------------------------------------------------------------
+
+06/18/07 11:39:13 -- deitz
+
+Log message:
+	Changed chapel_cron@cray to chapel_cronmail@cray.
+	Fixed error count for mail subject.
+
+Modified files:
+	chapel/test/: start_opt_test 
+
