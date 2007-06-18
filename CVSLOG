@@ -107078,3 +107078,19 @@ Log message:
 Modified files:
 	chapel/test/: start_opt_test 
 
+---------------------------------------------------------------------------
+
+06/18/07 14:05:57 -- diten
+
+Log message:
+	Move the insertion of an initialization call for copying collection from the
+	buildDefaultFunctions pass to copyCollection where it logically belongs. Thanks
+	Steve for questioning how it was getting eliminated as dead code.
+	
+	Make a copy of an AST when building a new CallExpr with it so it isn't in the tree
+	multiple times.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         copyCollect.cpp 
+
