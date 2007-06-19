@@ -107194,3 +107194,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/07 15:58:52 -- deitz
+
+Log message:
+	Implemented a queue for the forward flow analysis.  No speedup...
+
+Modified files:
+	chapel/compiler/AST/: bb.cpp 
+
