@@ -61,8 +61,8 @@ PassInfo passlist[] = {
 
   // Optimizations
   RUN(inlineFunctions),     // function inlining
-  RUN(refPropagation),      // reference propagation
   RUN(scalarReplace),       // scalar replace all tuples
+  RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
   RUN(deadCodeElimination), // eliminate dead code
   RUN(prune),               // prune AST of dead functions and types

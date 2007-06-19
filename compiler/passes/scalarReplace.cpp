@@ -300,15 +300,13 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
   }
 }
 
-extern void refPropagation();
-
 void scalarReplace() {
   if (fBaseline)
     return;
 
   bool change = true;
   while (change) {
-    refPropagation();
+    singleAssignmentRefPropagation();
     Vec<DefExpr*> defs;
     forv_Vec(BaseAST, ast, gAsts) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
@@ -339,40 +337,6 @@ void scalarReplace() {
         change |= unifyClassInstances(ct, def->sym);
       }
     }
-
-//     forv_Vec(BaseAST, ast, gAsts) {
-//       if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
-//         if (var->defs.n == 1) {
-//           if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
-//             if (move->isPrimitive(PRIMITIVE_MOVE)) {
-//               if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
-//                 if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
-//                   if (SymExpr* val = dynamic_cast<SymExpr*>(rhs->get(1))) {
-//                     bool stillAlive = false;
-//                     forv_Vec(SymExpr, se, var->uses) {
-//                       if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-//                         if (parent->isPrimitive(PRIMITIVE_GET_REF)) {
-//                           parent->replace(new SymExpr(val->var));
-//                         } else if (parent->isPrimitive(PRIMITIVE_MOVE)) {
-//                           parent->get(2)->replace(rhs->copy());
-//                         } else {
-//                           stillAlive = true;
-//                         }
-//                       }
-//                     }
-//                     if (!stillAlive) {
-//                       var->defPoint->remove();
-//                       var->defs.v[0]->getStmtExpr()->remove();
-//                       change |= true;
-//                     }
-//                   }
-//                 }
-//               }
-//             }
-//           }
-//         }
-//       }
-//     }
 
     //
     // NOTE - reenable scalar replacement

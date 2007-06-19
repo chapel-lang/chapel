@@ -517,9 +517,7 @@ void localReferencePropagation(FnSymbol* fn) {
 }
 
 
-void refPropagation() {
-  if (fBaseline)
-    return;
+void singleAssignmentRefPropagation() {
   compute_sym_uses();
   forv_Vec(BaseAST, ast, gAsts) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
@@ -528,22 +526,40 @@ void refPropagation() {
           if (move->isPrimitive(PRIMITIVE_MOVE)) {
             if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
               if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
-                if (SymExpr* val = dynamic_cast<SymExpr*>(rhs->get(1))) {
-                  bool stillAlive = false;
-                  forv_Vec(SymExpr, se, var->uses) {
-                    if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
-                      if (parent->isPrimitive(PRIMITIVE_GET_REF)) {
-                        parent->replace(new SymExpr(val->var));
-                      } else if (parent->isPrimitive(PRIMITIVE_MOVE)) {
-                        parent->get(2)->replace(rhs->copy());
-                      } else
-                        stillAlive = true;
-                    }
-                  }
-                  if (!stillAlive) {
-                    var->defPoint->remove();
-                    var->defs.v[0]->getStmtExpr()->remove();
-                  }
+                bool stillAlive = false;
+                forv_Vec(SymExpr, se, var->uses) {
+                  CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                  if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                    parent->replace(rhs->get(1)->copy());
+                  } else if (parent &&
+                             (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+                              parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
+                    parent->get(1)->replace(rhs->get(1)->copy());
+                  } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                    parent->get(2)->replace(rhs->copy());
+                  } else
+                    stillAlive = true;
+                }
+                if (!stillAlive) {
+                  var->defPoint->remove();
+                  var->defs.v[0]->getStmtExpr()->remove();
+                }
+              } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+                bool stillAlive = false;
+                forv_Vec(SymExpr, se, var->uses) {
+                  CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                  if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                    parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                                 rhs->get(1)->copy(),
+                                                 rhs->get(2)->copy()));
+                  } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                    parent->get(2)->replace(rhs->copy());
+                  } else
+                    stillAlive = true;
+                }
+                if (!stillAlive) {
+                  var->defPoint->remove();
+                  var->defs.v[0]->getStmtExpr()->remove();
                 }
               }
             }
@@ -552,6 +568,13 @@ void refPropagation() {
       }
     }
   }
+}
+
+
+void refPropagation() {
+  if (fBaseline)
+    return;
+  singleAssignmentRefPropagation();
   forv_Vec(FnSymbol, fn, gFns) {
     //    if (!fNoReferencePropagation)
     localReferencePropagation(fn);

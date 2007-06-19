@@ -8,6 +8,7 @@ void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);
 void localReferencePropagation(FnSymbol* fn);
 void globalCopyPropagation(FnSymbol* fn);
+void singleAssignmentRefPropagation();
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
 void deadCodeElimination(FnSymbol* fn);
