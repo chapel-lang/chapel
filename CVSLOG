@@ -107116,3 +107116,21 @@ Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp 
 	                         inlineFunctions.cpp scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+06/18/07 17:15:57 -- marybeth
+
+Log message:
+	Making changes that were suggested by Brad.  There are still a
+	few more I plan to make.
+	
+	In this commit,
+	
+	- I added a table to describe function intents
+	- I moved the Variables section before the Types section
+	- I changed the order of the types
+	- Made several small changes and fixes
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
