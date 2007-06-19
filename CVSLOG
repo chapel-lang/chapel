@@ -107146,3 +107146,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/07 08:07:52 -- diten
+
+Log message:
+	Now that general conditional expressions are folded, use regular conditional
+	expressions for && and ||. Then, the big inline early kludge that was used to
+	push logicals out of their (non-parameter) functions to attempt folding can be
+	removed, so remove it.
+	
+	var x = a && b;
+	is now back to being exactly the same as:
+	var x = if isTrue(a) then isTrue(b) else false;
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/passes/: cleanup.cpp 
+
