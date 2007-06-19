@@ -107164,3 +107164,17 @@ Modified files:
 	chapel/compiler/AST/: build.cpp 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/07 13:39:53 -- deitz
+
+Log message:
+	Moved reference propagation after scalar replacement and simplified
+	the reference propagation that is done within scalar replacement.
+
+Modified files:
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	chapel/compiler/passes/: scalarReplace.cpp 
+
