@@ -107178,3 +107178,19 @@ Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 	chapel/compiler/passes/: scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/07 15:20:15 -- diten
+
+Log message:
+	Remember to copy the canParam field when copying functions since it is now used.
+	This fixes:
+	types/tuple/diten/destructure_arg_tuples
+	types/tuple/diten/overload_destructure_args
+	types/tuple/diten/tupleFunctionUnderscore
+	
+	But not: sparse/bradc/assignIRV
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
