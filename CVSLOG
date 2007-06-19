@@ -107134,3 +107134,15 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/19/07 07:26:19 -- diten
+
+Log message:
+	Fix the build warning I caused.  A variable was initialized in a switch clause
+	over an enum's values. Set it to NULL at its declaration and give the switch
+	a default fatal error case.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
