@@ -100,6 +100,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TBREAK
 %token TCLASS
 %token TCOBEGIN
+%token TCOFORALL
 %token TCONFIG
 %token TCONST
 %token TCONTINUE
@@ -1546,6 +1547,8 @@ for_tag:
     { $$ = BLOCK_FORALL; }
 | TORDERED TFORALL
     { $$ = BLOCK_ORDERED_FORALL; }
+| TCOFORALL
+    { $$ = BLOCK_COFORALL; }
 ;
 
 

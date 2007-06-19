@@ -42,6 +42,7 @@ break           processToken(TBREAK);
 by              processToken(TBY);
 class           processToken(TCLASS);
 cobegin         processToken(TCOBEGIN);
+coforall        processToken(TCOFORALL);
 compilerError   processToken(TCOMPILERERROR);
 config          processToken(TCONFIG);
 const           processToken(TCONST);

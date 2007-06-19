@@ -315,11 +315,27 @@ destructureIndices(BlockStmt* block,
   }
 }
 
-
 BlockStmt* build_for_block(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body) {
+  if (tag == BLOCK_COFORALL) {
+    BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
+    VarSymbol* ss = new VarSymbol("_ss");
+    VarSymbol* me = new VarSymbol("_me");
+    block->insertAtHead(new DefExpr(ss, NULL, new SymExpr("_syncStack")));
+    BlockStmt* beginBlk = new BlockStmt();
+    beginBlk->blockTag = BLOCK_BEGIN;
+    body->insertBefore(beginBlk);
+    beginBlk->insertAtHead(body->remove());
+    beginBlk->insertBefore(new DefExpr(me, new CallExpr("_pushSyncStack", ss)));
+    beginBlk->insertAtTail(new CallExpr("=",
+                             new CallExpr(".", me,
+                               new_StringSymbol("v")), gTrue));
+    beginBlk->insertAfter(new CallExpr("=", ss, me));
+    block->insertAtTail(new CallExpr("_waitSyncStack", ss));
+    return block;
+  }
   body = new BlockStmt(body);
   body->blockTag = tag;
   BlockStmt* stmts = build_chpl_stmt();
