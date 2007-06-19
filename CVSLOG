@@ -107204,3 +107204,34 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: bb.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/07 16:01:28 -- deitz
+
+Log message:
+	Implemented idiomatic sugar coforall with a stack of sync variables
+	and a couple small helper functions in the base module and a little
+	bit of compiler generated code during parsing.  This is not a
+	particularly scalable or speedy implementation but it is correct.
+	
+	Added three tests.  Test 1 shows what the sugar looks like when it is
+	all stamped out.  Test 2 shows the sugar for test 1.  Test 3 makes
+	sure that the iterations are run in parallel (or at least not in
+	forward order).
+	
+	I didn't use an array of syncs because I don't believe resizing the
+	array will work.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/modules/standard/: ChapelBase.chpl 
+Added files:
+	chapel/test/parallel/begin/deitz/: test_coforall_sugar1.chpl 
+	                                   test_coforall_sugar1.good 
+	                                   test_coforall_sugar2.chpl 
+	                                   test_coforall_sugar2.good 
+	                                   test_coforall_sugar3.chpl 
+	                                   test_coforall_sugar3.good 
+
