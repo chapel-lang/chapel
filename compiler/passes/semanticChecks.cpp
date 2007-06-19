@@ -83,11 +83,12 @@ check_parsed_vars(VarSymbol* var) {
       USR_FATAL(var, "Top-level params must be initialized.");
   if (var->varClass == VAR_CONFIG &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
-    char *varType;
+    char *varType = NULL;
     switch (var->consClass) {
       case VAR_VAR:   varType = "variables"; break;
       case VAR_CONST: varType = "constants"; break;
       case VAR_PARAM: varType = "parameters"; break;
+      default: INT_FATAL("Illegal constant class.");
     }
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s only allowed at module scope.", varType);
