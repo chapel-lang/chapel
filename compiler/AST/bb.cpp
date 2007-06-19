@@ -187,8 +187,8 @@ void backwardFlowAnalysis(FnSymbol* fn,
           iterate = true;
         }
         bool new_out = false;
-        forv_Vec(BasicBlock, outbb, bb->outs) {
-          new_out = new_out | IN.v[outbb->id]->v[j];
+        forv_Vec(BasicBlock, bbout, bb->outs) {
+          new_out = new_out | IN.v[bbout->id]->v[j];
         }
         if (new_out != OUT.v[i]->v[j]) {
           OUT.v[i]->v[j] = new_out;
@@ -211,38 +211,52 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& IN,
                          Vec<Vec<bool>*>& OUT,
                          bool intersect) {
-  assert(fn->basicBlocks->v[0]->ins.n == 0);
-  for (int j = 0; j < IN.v[0]->n; j++) {
-    bool new_out = (IN.v[0]->v[j] & !KILL.v[0]->v[j]) | GEN.v[0]->v[j];
-    if (new_out != OUT.v[0]->v[j]) {
-      OUT.v[0]->v[j] = new_out;
-    }
+  int nbbq = fn->basicBlocks->n; // size of bb queue
+  int bbq[nbbq];                 // bb queue
+  bool bbs[nbbq];                // bb set (bbs[i]: is ith bb in bbq?)
+  int iq = -1, nq = nbbq-1;      // index to first and last bb in bbq
+  for (int i = 0; i < fn->basicBlocks->n; i++) {
+    bbq[i] = i;
+    bbs[i] = true;
   }
-  bool iterate = true;
-  while (iterate) {
-    iterate = false;
+  while (iq != nq) {
+    iq = (iq + 1) % nbbq;
+    int i = bbq[iq];
+    bbs[i] = false;
 #ifdef DEBUG_FLOW
-    printf("IN\n"); debug_flow_print_set(IN);
-    printf("OUT\n"); debug_flow_print_set(OUT);
+    if (iq == 0) {
+      printf("IN\n"); debug_flow_print_set(IN);
+      printf("OUT\n"); debug_flow_print_set(OUT);
+    }
 #endif
-    for (int i = 1; i < fn->basicBlocks->n; i++) {
-      BasicBlock* bb = fn->basicBlocks->v[i];
-      for (int j = 0; j < IN.v[i]->n; j++) {
+    BasicBlock* bb = fn->basicBlocks->v[i];
+    bool change = false;
+    for (int j = 0; j < IN.v[i]->n; j++) {
+      if (bb->ins.n > 0) {
         bool new_in = intersect;
-        forv_Vec(BasicBlock, inbb, bb->ins) {
+        forv_Vec(BasicBlock, bbin, bb->ins) {
           if (intersect)
-            new_in = new_in & OUT.v[inbb->id]->v[j];
+            new_in = new_in & OUT.v[bbin->id]->v[j];
           else
-            new_in = new_in | OUT.v[inbb->id]->v[j];
+            new_in = new_in | OUT.v[bbin->id]->v[j];
         }
         if (new_in != IN.v[i]->v[j]) {
           IN.v[i]->v[j] = new_in;
-          iterate = true;
+          change = true;
         }
-        bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
-        if (new_out != OUT.v[i]->v[j]) {
-          OUT.v[i]->v[j] = new_out;
-          iterate = true;
+      }
+      bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
+      if (new_out != OUT.v[i]->v[j]) {
+        OUT.v[i]->v[j] = new_out;
+        change = true;
+      }
+    }
+    if (change) {
+      forv_Vec(BasicBlock, bbout, bb->outs) {
+        if (!bbs[bbout->id]) {
+          nq = (nq + 1) % nbbq;
+          bbs[bbout->id] = true;
+          bbq[nq] = bbout->id;
         }
       }
     }
