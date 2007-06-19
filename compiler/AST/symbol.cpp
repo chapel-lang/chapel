@@ -608,6 +608,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->visible = visible;
   copy->global = global;
   copy->isParam = isParam;
+  copy->canParam = canParam;
   return copy;
 }
 
