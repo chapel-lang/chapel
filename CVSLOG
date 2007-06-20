@@ -107235,3 +107235,16 @@ Added files:
 	                                   test_coforall_sugar3.chpl 
 	                                   test_coforall_sugar3.good 
 
+---------------------------------------------------------------------------
+
+06/19/07 18:13:38 -- marybeth
+
+Log message:
+	Making more changes suggested by Brad.
+	
+	This is where I am leaving this document for this release,
+	unless I get more comments to address.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
