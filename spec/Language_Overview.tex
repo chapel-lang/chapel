@@ -671,16 +671,18 @@ select variable.
 
 \begin{example}
 \begin{chapel}
-select pos {
-  when "first" do x = y(1);
-  when "last" do x = y(n);
-  when "middle" do x = y(((n/2):int) + n%2);
-  otherwise writeln("invalid position");
+enum day {sun, mon, tue, wed, thu, fri, sat};
+var today: day;
+
+select today {
+  when fri, sat do peakRate = 250;
+  when sun do peakRate = 180;
+  otherwise peakRate = 140;
 }
 \end{chapel}
-In the above example, the \chpl{select} statement specifies
-four possible statements to execute, depending on the value of
-the string, \chpl{pos}.
+In the above example, the \chpl{select} statement assigns
+a value to \chpl{peakRate} depending on the value of the 
+variable \chpl{today}.
 \end{example}
 
 \paragraph{Type Select Statement} 
@@ -700,27 +702,6 @@ In the above example, the variable \chpl{ind} is used
 to index into the array \chpl{x} if it has the appropriate
 type.
 \end{example}
-
-\begin{TODO}
-New example in Quick Reference Guide will be replace this
-example as well.
-\end{TODO}
-
-\paragraph{Query Expression} 
-The query expression uses a \chpl{?} to indicate that the type of the
-preceding variable be queried and assigned to the following variable.
-
-\begin{example}
-\begin{chapel}
-def sumOfThree(x: ?t, y:t, z:t):t {
-   return x + y + z;
-}
-\end{chapel}
-\end{example}
-
-\begin{TODO}
-Move to function subsection.
-\end{TODO}
 
 \paragraph{Let Expression} 
 The \chpl{let}--\chpl{in} expression defines variables to
@@ -792,12 +773,6 @@ with non-blank intents are handled according to definition, being copied
 to and from the formal arguments.  Actual arguments of domain types can
 only have a blank intent.
 
-\begin{TODO}
-This section may be replaced by a table.  I will be creating a table
-that summarizes intents for the Quick Reference Guide and it may be 
-substituted for the text here.
-\end{TODO}
-
 \paragraph{Generic Functions}
 The Chapel language supports generic functions, allowing the user
 to define a function without specifying the types of the formal arguments
@@ -810,9 +785,9 @@ domain or element type unspecified or queried.
 
 \begin{example}
 \begin{chapel}
-def absSum(x:[?D]) {
+def absSum(x) {
   var sum: x.eltType;
-  for i in D do sum += abs(x(i));
+  for i in x.domain do sum += abs(x(i));
   return sum;
 }
 \end{chapel}
@@ -822,8 +797,39 @@ defined.  Further, this routine can be called with arrays of
 any domain type, so it can be called with arrays of arbitrary dimension.
 \end{example}
 
+Generic functions use {\em query expressions} to query the types
+or domains of arguments.
+The query expression uses a \chpl{?} to indicate that the type of the
+preceding variable be queried and assigned to the following variable.
+
+\begin{example}
+The following definition of the generic function \chpl{sumOfThree} 
+ensures that all arguments and the return value are of the same type, 
+without specifying the type.
+The type of the first argument in the \chpl{sumOfThree}
+function is queried and assigned to the variable \chpl{t}.  The remaining
+arguments and the return value are then specified to also be of type \chpl{t}.
+\begin{chapel}
+def sumOfThree(x:?t, y:t, z:t):t {
+   return x + y + z;
+}
+\end{chapel}
+
+The following code gives another definition for the generic function
+\chpl{absSum}.  In this definition, the domain of \chpl{x} is queried
+and assigned to the variable \chpl{D}.  
+\begin{chapel}
+def absSum(x: [?D]) {
+  var sum: x.eltType;
+  for i in D do sum += abs(x(i));
+  return sum;
+}
+\end{chapel}
+\end{example}
+
 \paragraph{Iterators}
-Iterators are defined similarly to functions, except that
+Iterators generate sequences of values.
+They are defined similarly to functions, except that
 they are defined with the keyword \chpl{iterator} and they
 contain a \chpl{yield} statement.
 Iterators may be called in \chpl{for} and \chpl{forall} loop
@@ -852,9 +858,18 @@ and whether the file is to be read or written.  Methods to open, to close,
 to read and to write from that file can be invoked with this file
 variable.
 
-\begin{TODO}
-Add file reading/writing example.
-\end{TODO}
+\begin{example}
+In the following example, the array \chpl{A} is initialized with
+values read from the file \chpl{inMatrix.dat}.
+\begin{chapel}
+var A: [D] real;
+
+var inputFile = file("inMatrix.dat");
+inputFile.open();
+for (i, j) in D do inputFile.read(A(i,j));
+inputFile.close();
+\end{chapel}
+\end{example}
 
 \paragraph{Chapel Standard I/O Functions}
 Chapel provides built-in functions \chpl{write} and \chpl{writeln}
