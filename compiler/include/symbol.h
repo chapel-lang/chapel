@@ -152,6 +152,7 @@ class TypeSymbol : public Symbol {
 class FnSymbol : public Symbol {
  public:
   AList* formals;
+  DefExpr* setter; // implicit setter argument to var functions
   Type* retType;
   BlockStmt* where;
   Expr* retExprType;
@@ -277,7 +278,6 @@ extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
 extern Symbol *gNil;
-extern Symbol *gSetter;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;

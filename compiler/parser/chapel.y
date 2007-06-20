@@ -686,6 +686,8 @@ fn_decl_stmt:
       $2->fnClass = $1;
       $2->isParam = $4;
       $2->retRef = $5;
+      if ($5)
+        $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
       $2->retExprType = $6;
       if ($7)
         $2->where = new BlockStmt($7);

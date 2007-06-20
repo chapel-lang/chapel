@@ -528,9 +528,6 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
-  gSetter = new VarSymbol("setter", dtBool, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gSetter);
-
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gBoundsChecking);
   if (fNoBoundsChecks) {

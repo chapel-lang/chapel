@@ -20,7 +20,6 @@ extern Map<Symbol*,Symbol*> paramMap;
 FnSymbol *chpl_main = NULL;
 
 Symbol *gNil = NULL;
-Symbol *gSetter = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
@@ -520,6 +519,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 FnSymbol::FnSymbol(char* initName) :
   Symbol(SYMBOL_FN, initName),
   formals(new AList()),
+  setter(NULL),
   retType(dtUnknown),
   where(NULL),
   retExprType(NULL),
@@ -594,6 +594,7 @@ FnSymbol::copyInner(ASTMap* map) {
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
+  copy->setter = COPY_INT(setter);
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
@@ -618,6 +619,8 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     body = dynamic_cast<BlockStmt*>(new_ast);
   } else if (old_ast == where) {
     where = dynamic_cast<BlockStmt*>(new_ast);
+  } else if (old_ast == setter) {
+    setter = dynamic_cast<DefExpr*>(new_ast);
   } else if (old_ast == retExprType) {
     retExprType = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -656,8 +659,11 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
-  if (fn->fnClass != FN_ITERATOR) // getValue is ref, not iterator
+  if (fn->fnClass != FN_ITERATOR) { // getValue is ref, not iterator
     wrapper->retRef = fn->retRef;
+    if (fn->setter)
+      wrapper->setter = fn->setter->copy();
+  }
   wrapper->isParam = fn->isParam;
   wrapper->isMethod = fn->isMethod;
   return wrapper;

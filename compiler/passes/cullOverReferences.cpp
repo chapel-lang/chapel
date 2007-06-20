@@ -67,8 +67,8 @@ void cullOverReferences() {
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-      if (se->var == gSetter) {
-        FnSymbol* fn = dynamic_cast<FnSymbol*>(se->parentSymbol);
+      FnSymbol* fn = dynamic_cast<FnSymbol*>(se->parentSymbol);
+      if (fn && fn->setter && fn->setter->sym == se->var) {
         if (!fn)
           INT_FATAL(se, "unexpected case");
         se->var = fn->retRef ? gTrue : gFalse;

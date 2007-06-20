@@ -156,15 +156,17 @@ static void build_getter(ClassType* ct, Symbol *field) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
+  if (field->isParam())
+    fn->isParam = true;
+  else {
+    fn->retRef = true;
+    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+  }
   if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CondStmt(new SymExpr(gSetter), new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)), new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access")))));
+    fn->insertAtTail(new CondStmt(new SymExpr(fn->setter->sym), new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)), new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access")))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  if (field->isParam())
-    fn->isParam = true;
-  else
-    fn->retRef = true;
   reset_file_info(fn, field->lineno, field->filename);
   normalize(fn);
   ct->methods.add(fn);

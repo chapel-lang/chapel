@@ -509,6 +509,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     break;
   case SYMBOL_FN:
     AST_ADD_LIST(FnSymbol, formals);
+    AST_ADD_CHILD(FnSymbol, setter);
     AST_ADD_CHILD(FnSymbol, body);
     AST_ADD_CHILD(FnSymbol, where);
     AST_ADD_CHILD(FnSymbol, retExprType);
