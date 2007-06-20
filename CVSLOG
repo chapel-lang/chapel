@@ -107294,3 +107294,14 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 09:21:56 -- deitz
+
+Log message:
+	Added coforall to the spec.  Added range to the Chapel lstlisting.
+
+Modified files:
+	chapel/spec/: Parallelism_and_Synchronization.tex 
+	              chapel_listing.tex 
+
