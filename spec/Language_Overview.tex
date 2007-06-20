@@ -703,6 +703,23 @@ to index into the array \chpl{x} if it has the appropriate
 type.
 \end{example}
 
+\paragraph{Query Expression}
+The query expression is used to query the type of a generic function argument
+and assign that type to a variable.
+\begin{example}
+The following definition of the generic function \chpl{sumOfThree} 
+ensures that all arguments and the return value are of the same type, 
+without specifying the type.
+The type of the first argument in the \chpl{sumOfThree}
+function is queried and assigned to the variable \chpl{t}.  The remaining
+arguments and the return value are then specified to also be of type \chpl{t}.
+\begin{chapel}
+def sumOfThree(x:?t, y:t, z:t):t {
+   return x + y + z;
+}
+\end{chapel}
+\end{example}
+
 \paragraph{Let Expression} 
 The \chpl{let}--\chpl{in} expression defines variables to
 be used only in the expression following the \chpl{in} keyword.
@@ -803,18 +820,6 @@ The query expression uses a \chpl{?} to indicate that the type of the
 preceding variable be queried and assigned to the following variable.
 
 \begin{example}
-The following definition of the generic function \chpl{sumOfThree} 
-ensures that all arguments and the return value are of the same type, 
-without specifying the type.
-The type of the first argument in the \chpl{sumOfThree}
-function is queried and assigned to the variable \chpl{t}.  The remaining
-arguments and the return value are then specified to also be of type \chpl{t}.
-\begin{chapel}
-def sumOfThree(x:?t, y:t, z:t):t {
-   return x + y + z;
-}
-\end{chapel}
-
 The following code gives another definition for the generic function
 \chpl{absSum}.  In this definition, the domain of \chpl{x} is queried
 and assigned to the variable \chpl{D}.  
@@ -933,31 +938,35 @@ the language specification when they are available in the compiler.
 Data parallelism refers to work where the same operations can be executed 
 concurrently on a set of data.  
 To support data parallel work, the Chapel language provides the parallel 
-{forall} loop statement.  The iterations of a \chpl{forall} 
-loop execute concurrently, as determined by the compiler and the runtime
-library.
+\chpl{forall} and \chpl{coforall} loop statements.  The iterations of 
+a \chpl{forall} loop execute concurrently, as determined by the compiler 
+and the runtime library.  The iterations of a \chpl{coforall} loop
+guarantee that each iteration is executed concurrently.
 
 The Chapel language provides an alternative, short-hand notation for 
 defining a parallel loop.  This notation omits the \chpl{forall} keyword
 and uses brackets to delimit the rest of the loop statement which includes
 the index and iterator expressions.  This notation is convenient to use
-when the loop body is a single statement. 
+when the loop body is a single statement.  
 
 The compiler will also parallelize whole array and domain statements, 
 where possible.
 
 \begin{example}
-The following code demonstrates three different ways to assign,
-in parallel, the scaled elements of the array \chpl{B} to the 
-elements of the array \chpl{A}.  
+The following code demonstrates four ways to assign, in parallel, 
+the scaled elements of the array \chpl{B} to the elements of 
+the array \chpl{A}.  
 \begin{chapel}  
 D = [1..m, 1..n];
 A, B: [D] real;
 alpha: real;
 (*\vdots*)
 
-//Three equivalent definitions of a parallel loop
-forall ij in D do {
+forall ij in D {
+  A(ij) = alpha*B(ij);
+} 
+
+coforall ij in D {
   A(ij) = alpha*B(ij);
 } 
 
@@ -966,10 +975,13 @@ forall ij in D do {
 A = alpha*B;
 \end{chapel}
 The first loop uses the \chpl{forall} loop statement.  The second
-loop uses the short-hand bracketed notation and the third loop expresses
-the computation using whole-array operations.  All three loops will
-execute concurrently in the same manner, as determined by the compiler
-and runtime library.
+loop uses the \chpl{coforall} loop statement.  The third 
+loop uses the short-hand bracketed notation and the fourth loop expresses
+the computation using whole-array operations.  The first, third and
+fourth loops will execute concurrently in the same manner, as 
+determined by the compiler and runtime library.  Only the second loop,
+using the \chpl{coforall} loop statement, is guaranteed to run each 
+iteration of the loop concurrently.
 \end{example}
 
 \begin{TODO}
