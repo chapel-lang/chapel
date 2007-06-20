@@ -107305,3 +107305,138 @@ Modified files:
 	chapel/spec/: Parallelism_and_Synchronization.tex 
 	              chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 10:22:12 -- deitz
+
+Log message:
+	Removed "iterator" keyword from the implementation and the spec.  An
+	iterator is now defined as a function that contains a yield statement.
+	A function's class tag is changed to FN_ITERATOR in cleanup if the
+	function contains a yield statement.
+	
+	Changed the name of the default iterator from "ault" (as in def ault)
+	to "these" as suggested by Brad.  Though I think he may have been
+	joking at the time, "these" for iterators nicely parallels "this" for
+	functions.  I'm open to changing the name but I think this is the best
+	suggested name so far.  Added a subsection to the spec on the "these"
+	method.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	                          ChapelRange.chpl ChapelTuple.chpl 
+	                          DistCSR.chpl List.chpl Schedules.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleAssociative.chpl 
+	                          SingleLocaleEnum.chpl 
+	                          SingleLocaleSparse.chpl 
+	chapel/spec/: Classes.tex Iterators.tex Language_Overview.tex 
+	              Lexical_Structure.tex 
+	              Locality_and_Distribution.tex MODS 
+	              Organization.tex 
+	              Parallelism_and_Synchronization.tex 
+	              chapel_listing.tex 
+	chapel/test/arrays/bradc/workarounds/: 
+	                                       arrayOfSpsArray-workaround-generictype.chpl 
+	                                       arrayOfSpsArray-workaround.chpl 
+	                                       fakeSpsArr.chpl 
+	                                       fakeSpsArr2.chpl 
+	chapel/test/arrays/deitz/domains/: test_domain2.chpl 
+	                                   test_domain3.chpl 
+	chapel/test/arrays/marybeth/: CMO_array.chpl 
+	chapel/test/classes/deitz/infer/: infer_field2.chpl 
+	                                  infer_field2a.chpl 
+	                                  infer_field2b.chpl 
+	                                  infer_field2c.chpl 
+	chapel/test/demo/review_060130/: iterators.chpl 
+	chapel/test/functions/deitz/: test_iterator1.chpl 
+	                              test_iterator2.chpl 
+	                              test_iterator3.chpl 
+	                              test_iterator4.chpl 
+	                              test_iterator5.chpl 
+	                              test_iterator6.chpl 
+	chapel/test/functions/deitz/hips06/: fibonacci_squares.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.chpl 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator2a.chpl 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3a.chpl 
+	                                        test_iterator_in_class.chpl 
+	                                        test_iterator_in_class2.chpl 
+	                                        test_iterator_local_vars_same_name.chpl 
+	                                        test_iterator_over_classes.chpl 
+	                                        test_iterator_side_effect.chpl 
+	                                        test_iterator_side_effect2.chpl 
+	                                        test_iterator_side_effect3.chpl 
+	                                        test_iterator_transform.chpl 
+	                                        test_nested_iterator.chpl 
+	                                        test_tuple_in_iterator.chpl 
+	                                        test_var_iterator.chpl 
+	                                        test_var_iterator2.chpl 
+	                                        test_var_iterator3.chpl 
+	                                        test_var_iterator4.chpl 
+	                                        test_zip_loop_iterator.chpl 
+	                                        tree.chpl 
+	chapel/test/functions/deitz/iterators/temps/: 
+	                                              test_iterator_temp1.chpl 
+	                                              test_iterator_temp2.chpl 
+	                                              test_iterator_temp3.chpl 
+	                                              test_iterator_temp4.chpl 
+	                                              test_iterator_temp7.chpl 
+	                                              test_iterator_temp8.chpl 
+	chapel/test/functions/iterators/bradc/: arrayInIterator.chpl 
+	                                        captureIterator.chpl 
+	                                        iteratorBadError.chpl 
+	                                        iteratorInClass.chpl 
+	                                        iteratorInferReturn.chpl 
+	                                        paramInIterator.chpl 
+	                                        topLevelIteratorNoParens.chpl 
+	chapel/test/functions/waynew/: iterator2.chpl iterator4a.chpl 
+	                               iterator4b.chpl iterator5a.chpl 
+	                               iterator5b.chpl iterator6.chpl 
+	                               iterator7.chpl iterator8.chpl 
+	chapel/test/modules/bradc/helperModules/: ra-randstream.chpl 
+	chapel/test/modules/standard/Schedules/bradc/: schedules.chpl 
+	chapel/test/npb/cg/bradc/: cg-makea-commented.chpl cg-makea.chpl 
+	                           cg.chpl 
+	chapel/test/performance/compiler/bradc/: cg-makea.chpl 
+	                                         fft-timecomp.chpl 
+	chapel/test/puzzles/deitz/: digits2.chpl digits3.chpl 
+	chapel/test/release/examples/: blockLU.chpl iterators.chpl 
+	                               linkedList.chpl prodCons.chpl 
+	                               sparse.chpl 
+	chapel/test/release/examples/hpcc06/: fft.chpl 
+	                                      ra-randstream.chpl 
+	chapel/test/sparse/bradc/assignDom/: 
+	                                     sparseDomainAssignIterator.chpl 
+	                                     sparseDomainInitIterator.chpl 
+	chapel/test/spec/marybeth/: iterator.chpl iterator2.chpl 
+	chapel/test/ssca/ssca1/bradc/: excerpt.chpl excerpt2.chpl 
+	chapel/test/studies/cholesky/marybeth/: blockChol.chpl 
+	                                        blockCholChoice.chpl 
+	chapel/test/studies/hpcc/RA/: ra-randstream-hpcc06.chpl 
+	                              ra-randstream.chpl 
+	chapel/test/studies/hpcc/RA/bradc/: ra-constInIterator.chpl 
+	                                    ra-domainInIterator.chpl 
+	                                    ra-iter.chpl ra-iter2.chpl 
+	chapel/test/studies/lu/marybeth/: nopivlublock-alias.chpl 
+	                                  pivlublock-alias.chpl 
+	chapel/test/studies/matrixlib/: MatrixMult.chpl MatrixOps.chpl 
+	chapel/test/trivial/mjoyner/iterators/: nest_func_iterator1.chpl 
+	                                        nest_func_iterator2.chpl 
+	                                        nest_func_iterator2a.chpl 
+	                                        nest_func_iterator2b.chpl 
+	                                        nest_func_iterator3.chpl 
+	                                        nest_func_iterator4.chpl 
+	                                        nest_func_iterator5.chpl 
+	                                        nest_func_iterator6.chpl 
+	                                        nest_func_iterator7.chpl 
+	chapel/test/types/range/bradc/: degenRange.chpl 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+	chapel/test/users/shetag/: shareIterator-blc-register.chpl 
+	                           shareIterator-blc-release.chpl 
+	                           shareIterator-blc.chpl 
+
