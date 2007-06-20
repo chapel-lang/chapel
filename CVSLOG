@@ -107248,3 +107248,13 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/19/07 18:37:13 -- marybeth
+
+Log message:
+	A few more edits, removing a few TODO's.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
