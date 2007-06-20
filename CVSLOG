@@ -107258,3 +107258,18 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/19/07 21:54:42 -- deitz
+
+Log message:
+	Made setter an implicit argument stored in new DefExpr field
+	FnSymbol::setter.  This field is NULL for non-var functions.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         cullOverReferences.cpp 
+
