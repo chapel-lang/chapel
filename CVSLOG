@@ -107283,3 +107283,14 @@ Log message:
 Modified files:
 	chapel/spec/: Lexical_Structure.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 09:11:14 -- marybeth
+
+Log message:
+	Changed the file i/o example slightly to eliminate the use
+	of a domain.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
