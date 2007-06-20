@@ -107273,3 +107273,13 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         cullOverReferences.cpp 
 
+---------------------------------------------------------------------------
+
+06/20/07 09:10:28 -- deitz
+
+Log message:
+	Added coforall and range to the list of keywords.
+
+Modified files:
+	chapel/spec/: Lexical_Structure.tex chapel_listing.tex 
+
