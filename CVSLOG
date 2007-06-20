@@ -107452,3 +107452,13 @@ Log message:
 Modified files:
 	chapel/spec/: Iterators.tex MODS 
 
+---------------------------------------------------------------------------
+
+06/20/07 13:41:58 -- marybeth
+
+Log message:
+	Added coforall to quick reference guide.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
