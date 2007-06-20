@@ -180,6 +180,34 @@ ranges~(\rsec{Range_Assignment}),
 domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
 is discussed in these later sections.
 
+\subsection{The Swap Statement}
+\label{The_Swap_Statement}
+\index{swap!statement}
+\index{swap!operator}
+The swap statement indicates to swap the values in the expressions
+on either side of the swap operator.  Since both expressions are assigned
+to, each must be a valid lvalue expression~(\rsec{lvalue}).
+\begin{syntax}
+swap-statement:
+  lvalue-expression swap-operator lvalue-expression
+
+swap-operator:
+  <=>
+\end{syntax}
+
+\begin{example}
+The following swap statement
+\begin{chapel}
+a <=> b;
+\end{chapel}
+is semantically equivalent to:
+\begin{chapel}
+const t = b;
+b = a;
+a = t;
+\end{chapel}
+\end{example}
+
 \subsection{The Conditional Statement}
 \label{The_Conditional_Statement}
 
