@@ -188,6 +188,35 @@ yield statements are allowed.
 Variables declared in the cobegin statement are {\em single variables},
 described in~\rsec{Single_Variables}.
 
+\subsection{The Coforall Loop}
+\label{Coforall}
+\index{coforall@\chpl{coforall}}
+\index{coforall loops}
+
+The coforall loop is a variant of the cobegin statement and the forall
+loop.  The syntax for the coforall loop is given by
+\begin{syntax}
+forall-statement:
+   `coforall' index-expression `in' iterator-expression `do' statement
+   `coforall' index-expression `in' iterator-expression block-level-statement
+\end{syntax}
+
+The semantics of the \chpl{coforall} loop are identical to
+the \chpl{forall} loop except that each iteration is guaranteed to run
+concurrently.  It thus has potentially higher overhead than a forall
+loop, but in cases where concurrency is required for correctness, it
+is essential.
+
+The semantics of the \chpl{coforall} loop are also identical to
+a \chpl{cobegin} statement where each iteration of the \chpl{coforall}
+loop is equivalent to a separate statement in a \chpl{cobegin} block.
+
+Control continues with the statement following the \chpl{coforall}
+loop only after each iteration has been completely evaluated.  Control
+transfers out of a loop body via \chpl{break}, \chpl{continue},
+and \chpl{return} are not permitted.  Control can be transferred out
+of the loop via a \chpl{yield} statement.
+
 \subsection{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
