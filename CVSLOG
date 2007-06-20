@@ -107472,3 +107472,50 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 15:20:51 -- diten
+
+Log message:
+	Support for dots in use statements to import inner modules without importing
+	the modules they are nested within.
+	
+	Make "use" non-transitive for user modules. Otherwise, the statement:
+	use outermost.middlemost.innermost;
+	would implicitly be converted into:
+	use outermost;
+	use outermost.middlemost;
+	use outermost.middlemost.innermost;
+	
+	A few of the npb/cg tests were written expecting that using a module also uses
+	all the modules it uses, for example getting the Time module by using Random.
+	Fix them by adding the proper use statements.
+	
+	Add tests that use inner modules including some to make sure errors result in
+	reasonable messages.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symscope.cpp 
+	chapel/compiler/include/: symbol.h symscope.h 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/npb/cg/bradc/: cg-dense.chpl cg-makea.chpl 
+	                           cg-makea1-sparse-sort.chpl 
+	                           cg-sparse.chpl 
+	chapel/test/performance/compiler/bradc/: cg-makea.chpl 
+	                                         cg-sparse-timecomp.chpl 
+Added files:
+	chapel/test/modules/diten/usemodule/: check_symbol_accesses.chpl 
+	                                      check_symbol_accesses.good 
+	                                      check_symbol_accesses2.chpl 
+	                                      check_symbol_accesses2.good 
+	                                      test_nested_use1.chpl 
+	                                      test_nested_use1.good 
+	                                      test_nested_use2.chpl 
+	                                      test_nested_use2.good 
+	                                      test_nested_use3.chpl 
+	                                      test_nested_use3.good 
+	                                      test_nested_use4.chpl 
+	                                      test_nested_use4.good 
+	                                      test_nested_use_outer.chpl 
+	                                      test_nested_use_outer.good 
+
