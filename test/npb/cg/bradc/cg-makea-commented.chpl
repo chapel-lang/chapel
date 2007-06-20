@@ -20,7 +20,7 @@ module CGMakeA {
   // produced, the problem size, an indication of the number of
   // nonzeroes to compute, and r condition and shift factors
   //
-  iterator makea(type elemType, n, nonzer, shift) {
+  def makea(type elemType, n, nonzer, shift) {
     //
     // temporary storage space for the computation
     //

@@ -1,4 +1,4 @@
-iterator basic() : int {
+def basic() : int {
   var a : int;
   while a < 4 {
     yield a * 4;
@@ -6,7 +6,7 @@ iterator basic() : int {
   }
 }
 
-iterator simple() : int {
+def simple() : int {
   var b : int;
   while b < 6 {
     yield b * 10;
@@ -14,7 +14,7 @@ iterator simple() : int {
   }
 }
 
-iterator easy() : int {
+def easy() : int {
   var c : int;
   while c < 4 {
     yield c * 2;
@@ -22,7 +22,7 @@ iterator easy() : int {
   }
 }
 
-iterator trivial() : int {
+def trivial() : int {
   var d : int;
   while d < 4 {
     yield d * 3;

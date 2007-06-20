@@ -202,7 +202,7 @@ writeSpsArr();
 // indices:
 //
 
-iterator antiDiag(n) {
+def antiDiag(n) {
   for i in 1..n do
     yield (i, n-i+1);
 }

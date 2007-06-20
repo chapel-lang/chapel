@@ -7,18 +7,15 @@ rather than simply a single value.
 
 \subsection{Iterator Functions}
 \label{Iterator_Functions}
-\index{iterator@\chpl{iterator}}
 
 The syntax of an iterator declaration is identical to that of a
-function declaration except that the keyword \chpl{def} is replaced
-with the keyword \chpl{iterator}.  The body of the iterator may
-include yield statements alongside return statements.  When a yield is
-encountered, the value is returned, but the iterator is not finished
-evaluating when called within a loop.  It will continue from the point
-after the yield and can yield or return more values.  When a return is
-encountered, the value is returned and the iterator finishes.  An
-iterator also completes after the last statement in the iterator
-function is executed.
+function declaration.  A function is an iterator if it includes yield
+statements.  When a yield is encountered, the value is returned, but
+the iterator is not finished evaluating when called within a loop.  It
+will continue from the point after the yield and can yield or return
+more values.  When a return is encountered, the value is returned and
+the iterator finishes.  An iterator also completes after the last
+statement in the iterator function is executed.
 
 \subsection{The Yield Statement}
 \label{The_Yield_Statement}
@@ -58,7 +55,7 @@ contains the values returned by the iterator on each iteration.
 \begin{example}
 Given an iterator
 \begin{chapel}
-iterator squares(n: int): int {
+def squares(n: int): int {
   for i in 1..n do
     yield i * i;
 }
@@ -96,7 +93,7 @@ also promoted.
 \begin{example}
 Given an iterator
 \begin{chapel}
-iterator oneToFive() {
+def oneToFive() {
   for i in 1..5 do
     yield i;
 }

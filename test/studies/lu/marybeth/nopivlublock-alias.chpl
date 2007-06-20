@@ -76,7 +76,7 @@ writeln();
 writeln("Factored Matrix:");
 writeln(A);
 
-iterator IterateByBlocks(D:range,blksize) {
+def IterateByBlocks(D:range,blksize) {
   var n = D.length;
   var lo,hi: int;
 

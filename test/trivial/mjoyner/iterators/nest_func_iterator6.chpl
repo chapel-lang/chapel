@@ -1,4 +1,4 @@
-pragma "inline" iterator basic() : int {
+pragma "inline" def basic() : int {
   var i : int;
   while i < 10 {
     yield i * 4;

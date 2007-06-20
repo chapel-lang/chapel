@@ -4,7 +4,7 @@ record R {
 
 var r = R(x=((1, 2), (3, 4), (5, 6)));
 
-iterator R.foo() {
+def R.foo() {
   for param i in 1..3 do
     yield x(i)(1);
 }

@@ -28,7 +28,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
                                     parentDom = BaseArithmeticDomain());
 
-  iterator ault() {
+  def these() {
     for i in 1..nnz {
       yield indices(i);
     }
@@ -97,7 +97,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     nnz = 0;
   }
 
-  iterator dimIter(param d, ind) {
+  def dimIter(param d, ind) {
     if (d != rank-1) {
       compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
     }
@@ -148,7 +148,7 @@ class SingleLocaleSparseArray: BaseArray {
       return irv;
   }
 
-  iterator ault() var {
+  def these() var {
     for e in data[1..dom.nnz] yield e;
   }
 

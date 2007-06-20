@@ -94,7 +94,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
 }
 
 
-iterator makea() {
+def makea() {
   var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
       iv: [1..nonzer+1] int;
   

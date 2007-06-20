@@ -371,9 +371,12 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_USE))
         process_import_expr(call);
+      if (call->isPrimitive(PRIMITIVE_YIELD))
+        call->getFunction()->fnClass = FN_ITERATOR;
+    }
   }
 
   // handle forall's in array type declaration with initialization

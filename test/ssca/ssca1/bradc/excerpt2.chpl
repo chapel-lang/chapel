@@ -47,7 +47,7 @@ while (SWtab(loc) != 0) {
 -- this iterator returns all indices in the 0th row and column (and,
 -- due to laziness, returns (0,0) twice)
 
-iterator NorthwestBoundary(D: domain(2)) {
+def NorthwestBoundary(D: domain(2)) {
   cobegin {
     forall r in D(*,0) {
       yield (r,0);
@@ -61,7 +61,7 @@ iterator NorthwestBoundary(D: domain(2)) {
 
 -- this iterator iterates over a rectangular domain by antidiagonals
 
-iterator AntiDiagonals(D: domain(2) {
+def AntiDiagonals(D: domain(2) {
   const numDiags = D.extent(1) + D.extent(2) - 1;
   for d in 1..numDiags {
     forall i in 1..lenDiag(d) {

@@ -1,4 +1,4 @@
-iterator fibonacci(n):int {
+def fibonacci(n):int {
   var i1 = 0, i2 = 1;
   var i = 0;
   while i <= n {
@@ -10,7 +10,7 @@ iterator fibonacci(n):int {
   }
 }
 
-iterator squares(n):int {
+def squares(n):int {
   var i = 0;
   while i <= n {
     yield i * i;

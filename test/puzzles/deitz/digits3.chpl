@@ -32,7 +32,7 @@ def biggest(n: int) {
   return tuple2number(nn);
 }
 
-iterator sortedNumbers(param p: int = 1, start: int = 0) {
+def sortedNumbers(param p: int = 1, start: int = 0) {
   if p == digits {
     for i in max(start,1)..9 do
       yield i;

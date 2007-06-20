@@ -41,7 +41,7 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
     halt("tuple indexing out-of-bounds error");
   }
 
-  iterator ault() {
+  def these() {
     if size == 1 {
       for i in this(1) {
         var t: 1*i.type;
@@ -826,24 +826,24 @@ record _square_tuple {
   param size: int;
   var tuple;
 
-  iterator ault_help(param dim: int) {
+  def these_help(param dim: int) {
     if dim == size - 1 {
       for i in tuple(dim) do
         for j in tuple(size) do
           yield (i, j);
     } else {
       for i in tuple(dim) do
-        for j in ault_help(dim+1) do
+        for j in these_help(dim+1) do
           yield (i, (...j));
     }
   }
 
-  iterator ault() {
+  def these() {
     if size == 1 {
       for i in tuple(1) do
         yield i;
     } else {
-      for i in ault_help(1) do
+      for i in these_help(1) do
         yield i;
     }
   }

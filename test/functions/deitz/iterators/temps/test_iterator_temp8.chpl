@@ -1,11 +1,11 @@
-iterator i1() {
+def i1() {
   yield 1;
   yield 2;
   yield 3;
   yield 4;
 }
 
-iterator i2() {
+def i2() {
   yield 4;
   yield 3;
   yield 2;

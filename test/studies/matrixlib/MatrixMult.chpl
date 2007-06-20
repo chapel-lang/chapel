@@ -9,7 +9,7 @@ def *(A:[?D1],B:[?D2]) {
     C(i,j) += A(i,k1)*B(k2,j);
   }
 
-  iterator MMIterator(D1,D2) {
+  def MMIterator(D1,D2) {
     for j in D2.dim(2) do 
       for (k1,k2) in (D1.dim(2),D2.dim(1)) do 
         for i in D1.dim(1) do 

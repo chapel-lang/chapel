@@ -10,7 +10,7 @@ record list {
   var last: listNode(eltType);
   var length: int;
 
-  iterator ault() {
+  def these() {
     var tmp = first;
     while tmp != nil {
       yield tmp.data;

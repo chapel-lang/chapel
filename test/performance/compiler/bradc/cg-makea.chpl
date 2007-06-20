@@ -6,7 +6,7 @@ module CGMakeA {
 
   config const rcond = 0.1;
 
-  iterator makea(type elemType, n, nonzer, shift) {
+  def makea(type elemType, n, nonzer, shift) {
     var v: [1..nonzer+1] elemType, // BLC: insert domains? or grow as necessary?
         iv: [1..nonzer+1] int;
 
@@ -43,14 +43,14 @@ module CGMakeA {
   }
 
 
-  iterator genAInds(type elemType, n, nonzer, shift) {
+  def genAInds(type elemType, n, nonzer, shift) {
     for (ind, val) in makea(elemType, n, nonzer, shift) {
       yield ind;
     }
   }
 
 
-  iterator genAIndsSorted(type elemType, n, nonzer, shift) {
+  def genAIndsSorted(type elemType, n, nonzer, shift) {
     // build associative domain of indices
     var Inds: domain(index(2));
     for i in genAInds(elemType, n, nonzer, shift) {

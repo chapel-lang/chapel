@@ -1,4 +1,4 @@
-iterator BlockSchedule(D: ?DT, numBlocks): DT {
+def BlockSchedule(D: ?DT, numBlocks): DT {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
@@ -11,7 +11,7 @@ iterator BlockSchedule(D: ?DT, numBlocks): DT {
 }
 
 
-iterator FixedBlockSchedule(D: ?DT, blockSize): DT {
+def FixedBlockSchedule(D: ?DT, blockSize): DT {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;

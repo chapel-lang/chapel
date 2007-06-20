@@ -1,4 +1,4 @@
-iterator foo(param rank : int) : int {
+def foo(param rank : int) : int {
   for i in 1..5 do
     yield i + rank;
 }

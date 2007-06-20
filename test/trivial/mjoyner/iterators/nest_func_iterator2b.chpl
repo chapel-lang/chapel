@@ -1,4 +1,4 @@
-iterator basic(inout z: int) : int {
+def basic(inout z: int) : int {
   var i : int;
   z += 1;
   while i < 10 {

@@ -792,7 +792,7 @@ pragma "inline" def _getIterator(ic: _iteratorClass)
   return ic;
 
 pragma "inline" def _getIterator(x)
-  return x.ault();
+  return x.these();
 
 def =(ic: _iteratorClass, xs) {
   pragma "internal var" var xsic;

@@ -1,4 +1,4 @@
-iterator foo(param rank : int, n : int) : rank*int {
+def foo(param rank : int, n : int) : rank*int {
   if rank > 2 {
     for i in 0..n-1 do
       for x in foo(rank-1, n) {

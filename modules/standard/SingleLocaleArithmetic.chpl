@@ -49,24 +49,24 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return x;
   }
 
-  iterator ault_help(param d: int) {
+  def these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
         for j in ranges(rank) do
           yield (i, j);
     } else {
       for i in ranges(d) do
-        for j in ault_help(d+1) do
+        for j in these_help(d+1) do
           yield (i, (...j));
     }
   }
 
-  iterator ault() {
+  def these() {
     if rank == 1 {
       for i in ranges(1) do
         yield i;
     } else {
-      for i in ault_help(1) do
+      for i in these_help(1) do
         yield i;
     }
   }
@@ -183,7 +183,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   // this should eventually...
   //  ...be in the distribtion's implementation of the blocked domain
   // ...yield a subBlock of the domain per thread per locale
-  iterator subBlocks {
+  def subBlocks {
     yield this;
   }
 
@@ -220,7 +220,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  iterator ault() var {
+  def these() var {
     for i in dom do
       yield this(i);
   }

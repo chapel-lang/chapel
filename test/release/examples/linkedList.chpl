@@ -34,7 +34,7 @@ class List {
     }
   }
 
-  iterator ault() {
+  def these() {
     var current = head;
     while current != nil {
       yield current.val;
@@ -42,7 +42,7 @@ class List {
     }
   }
 
-  iterator backward() {
+  def backward() {
     var current = tail;
     while current != nil {
       yield current.val;

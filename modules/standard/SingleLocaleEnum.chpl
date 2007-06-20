@@ -15,7 +15,7 @@ class SingleLocaleEnumDomain: BaseDomain {
     adomain.setIndices(b);
   }
 
-  iterator ault() {
+  def these() {
     for i in adomain do
       yield i;
   }
@@ -55,7 +55,7 @@ class SingleLocaleEnumArray: BaseArray {
   def this(ind : dim_type) var : eltType
     return anarray(ind);
 
-  iterator ault() {
+  def these() {
     for e in anarray do
       yield e;
   }

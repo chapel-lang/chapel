@@ -1,16 +1,16 @@
-iterator foo(): int {
+def foo(): int {
   for i in 0..4 {
     yield i;
   }
 }
 
-iterator bar(): int {
+def bar(): int {
   for i in [0..4] {
     yield i;
   }
 }
 
-iterator baz(): int {
+def baz(): int {
   for i in [0..4) {
     yield i;
   }

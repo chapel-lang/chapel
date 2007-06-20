@@ -100,7 +100,7 @@ In the code
 ordered forall i in walk(root) do
   work(i);
 
-iterator walk(n: node) {
+def walk(n: node) {
   yield n;
   forall c in 0..n.numOfChildren {
       yield n.child[c];
@@ -141,7 +141,7 @@ The code
 \end{chapel}
 is equivalent to
 \begin{chapel}
-iterator ff() {
+def ff() {
   for i in S do
     yield f(i);
 }
@@ -288,7 +288,7 @@ In the code
 ordered forall i in walk(root) do
   work(i);
 
-iterator walk(n: node) {
+def walk(n: node) {
   yield n;
   serial n.depth > 4 forall c in 0..n.numOfChildren {
       yield n.child[c];

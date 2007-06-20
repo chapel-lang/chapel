@@ -74,7 +74,7 @@ record range {
     }
   }
 
-  pragma "expand inline" iterator ault() {
+  def these() {
     if boundedType != bounded {
       if stridable {
         var i = if _stride > 0 then _low else _high;

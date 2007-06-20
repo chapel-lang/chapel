@@ -7,7 +7,7 @@ module RARandomStream {
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
 
-  iterator RAStream(numvals, start = 0:randType): randType {
+  def RAStream(numvals, start = 0:randType): randType {
     var val = getNthRandom(start);
     for i in 1..numvals {
       getNextRand(val);
@@ -43,7 +43,7 @@ module RARandomStream {
   }
 
 
-  iterator computeM2Vals(numVals): randType {
+  def computeM2Vals(numVals): randType {
     var nextVal = 0x1: randType;
     for i in 1..numVals {
       yield nextVal;

@@ -28,24 +28,24 @@ class CMODomain: BaseDomain {
     return x;
   }
 
-  iterator ault_help(param dim: int) {
+  def these_help(param dim: int) {
     if dim == rank - 1 {
       for i in ranges(dim) do
         for j in ranges(rank) do
           yield (i, j);
     } else {
       for i in ranges(dim) do
-        for j in ault_help(dim+1) do
+        for j in these_help(dim+1) do
           yield (i, (...j));
     }
   }
 
-  iterator ault() {
+  def these() {
     if rank == 1 {
       for i in ranges(1) do
         yield i;
     } else {
-      for i in ault_help(1) do
+      for i in these_help(1) do
         yield i;
     }
   }
@@ -134,7 +134,7 @@ class CMODomain: BaseDomain {
   // this should eventually...
   //  ...be in the distribtion's implementation of the blocked domain
   // ...yield a subBlock of the domain per thread per locale
-  iterator subBlocks {
+  def subBlocks {
     yield this;
   }
 
@@ -183,7 +183,7 @@ class CMOArray:BaseArray {
     data = 0:eltType;
   }
 
-  iterator ault() {
+  def these() {
     for i in dom do
       yield this(i);
   }

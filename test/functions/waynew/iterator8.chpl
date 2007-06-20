@@ -1,5 +1,5 @@
 // Test iterator without using explicitly _to_seq(iterator)
-iterator simple() : int {
+def simple() : int {
   var i : int;
   while i < 10 {
     yield i * 4;
@@ -9,7 +9,7 @@ iterator simple() : int {
 writeln( "test1: ", simple());
 
 // Test with argument to iterator
-iterator simple2( max: int) : int {
+def simple2( max: int) : int {
   var i : int;
   while i < max {
     yield i * 4;
@@ -24,7 +24,7 @@ record R {
   var max: int;
 }
 
-iterator simple3( r: R) : int {
+def simple3( r: R) : int {
   var i : int;
   while i < r.max {
     yield i * 4;
@@ -42,7 +42,7 @@ class C {
   var max: int;
 }
 
-iterator simple4( c: C) : int {
+def simple4( c: C) : int {
   var i : int;
   while i < c.max {
     yield i * 4;

@@ -141,7 +141,7 @@ nodes as defined in the following code:
 \begin{chapel}
 class Tree {
   var left, right: Tree;
-  iterator nodes {
+  def nodes {
     on this yield this;
     if left then
       forall t in left.nodes do

@@ -1,4 +1,4 @@
-iterator basic() : int {
+def basic() : int {
   var i : int;
   while i < 10 {
     yield i * 4;

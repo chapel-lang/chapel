@@ -3,7 +3,7 @@ config var n: int = 5;
 const D = [0..n+1, 0..n+1];
 const S: sparse subdomain(D) = genSparseInds(n);
 
-iterator genSparseInds(n) {
+def genSparseInds(n) {
   for i in 1..n {
     yield (i,i);
   }

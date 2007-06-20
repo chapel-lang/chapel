@@ -1,4 +1,4 @@
-iterator blockByCol(m,n) {
+def blockByCol(m,n) {
   for i in 1..n by 2 yield [1..n, i..i+1];
 }  
 

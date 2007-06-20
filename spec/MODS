@@ -81,13 +81,13 @@ BLC    array element type identifier changed from elt_type to eltType
 Semantic Changes:
 MBH    changed relative precedence of casts and unary +/- (unary +/- is now tighter)
        e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
-CLOSED (SJD) removed support for structural iterator interface (getHeadCursor, etc.)
-SJD    added support for defining default iterators for classes and records
+CLOSED SJD removed support for structural iterator interface (getHeadCursor, etc.)
+CLOSED SJD added support for defining default iterators for classes and records
 SJD    initial support for querying parameters/types in a formal class argument
        - similar support for variable-length argument lists of generics
 SJD    where clauses can now compare against formal generic types
-SJD    short-circuiting operators only require isTrue rather than true? & false?
-SJD    compilerError() can now take multiple arguments like a halt()
+CLOSED SJD short-circuiting operators only require isTrue rather than true? & false?
+CLOSED SJD compilerError() can now take multiple arguments like a halt()
 
 Standard Modules:
 BLC    Search: new standard module

@@ -157,7 +157,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
 
-iterator generateBlockLURanges(D:range, blksize) {
+def generateBlockLURanges(D:range, blksize) {
   const end = D.high;
 
   for i in D by blksize {
@@ -173,7 +173,7 @@ iterator generateBlockLURanges(D:range, blksize) {
 // code in a complete linear algebra library that uses matrix-matrix
 // multiplication).
 
-iterator MMIterator(D1, D2) {
+def MMIterator(D1, D2) {
   for j in D2.dim(2) do
     for (k1, k2) in (D1.dim(2), D2.dim(1)) do
       for i in D1.dim(1) do

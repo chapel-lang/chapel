@@ -6,7 +6,7 @@ def main() {
 }
 
 
-iterator testme() {
+def testme() {
   for i in 1..10 do
     yield i: real;
 

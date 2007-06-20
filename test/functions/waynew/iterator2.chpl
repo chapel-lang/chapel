@@ -1,6 +1,6 @@
 // Test iterator->class transformation with more than 1 argument.
 
-iterator jam( min: int, max: int): int {
+def jam( min: int, max: int): int {
   var i, j: int;
   i = min;
   while (i <= max) {

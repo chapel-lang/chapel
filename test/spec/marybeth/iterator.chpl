@@ -1,4 +1,4 @@
-iterator evens(n): int {
+def evens(n): int {
   for i in 1..n do yield 2*i;
 }
 

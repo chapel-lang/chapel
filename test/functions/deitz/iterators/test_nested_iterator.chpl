@@ -1,6 +1,6 @@
 def foo() {
   var n = 4;
-  iterator bar() {
+  def bar() {
     for i in 1..n do
       yield i;
   }

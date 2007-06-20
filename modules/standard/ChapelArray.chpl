@@ -111,8 +111,8 @@ record _domain {
     }
   }
 
-  iterator ault() {
-    for i in _value.ault() do
+  def these() {
+    for i in _value.these() do
       yield i;
   }
 
@@ -139,7 +139,7 @@ record _domain {
   def dim(d : int)
     return _value.dim(d);
 
-  iterator dimIter(param d, ind) {
+  def dimIter(param d, ind) {
     for i in _value.dimIter(d, ind) do yield i;
   }
 
@@ -224,7 +224,7 @@ record _domain {
     return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  iterator subBlocks {
+  def subBlocks {
     for d in _value.subBlocks do
       yield d;
   }
@@ -314,8 +314,8 @@ record _array {
   def this(i: _dim_index_type ...rank) var where rank > 1
     return _value(i);
 
-  iterator ault() var {
-    for i in _value.ault() do
+  def these() var {
+    for i in _value.these() do
       yield i;
   }
 
@@ -337,7 +337,7 @@ pragma "inline" def =(a: _array, b) {
   return a;
 }
 
-iterator _tupleIterate(param rank: int, b: _tuple) {
+def _tupleIterate(param rank: int, b: _tuple) {
   if rank == 1 {
     for param i in 1..b.size do
       yield b(i);

@@ -1,4 +1,4 @@
-iterator foo(n: int = 8) {
+def foo(n: int = 8) {
   for i in 1..n do
     yield i;
 }

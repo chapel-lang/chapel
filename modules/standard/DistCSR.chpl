@@ -58,7 +58,7 @@ class CSRDomain: BaseSparseArithmeticDomain {
     return CSRDomain(rank=rank, dim_type=dim_type, 
                                     parentDom = BaseArithmeticDomain());
 
-  iterator ault() {
+  def these() {
     var cursorRow = rowRange.low;
     for i in 1..nnz {
       while (rowStart(cursorRow+1) <= i) {
@@ -139,7 +139,7 @@ class CSRDomain: BaseSparseArithmeticDomain {
     nnz = 0;
   }
 
-  iterator dimIter(param d, ind) {
+  def dimIter(param d, ind) {
     if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CSR domains");
     }

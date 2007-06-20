@@ -88,7 +88,7 @@ def blockChol(A:[?D],blk) where (D.rank == 2) {
   }
 }
 
-iterator IterateByBlocks(D:range,blksize) {
+def IterateByBlocks(D:range,blksize) {
   var start = D.low;
   var end = D.high;
   var hi: int;

@@ -69,7 +69,7 @@ def consumer() {
 // buffer starting at the 0th position and yields them.  Once it finds
 // the sentinel value of -1, it exits.
 //
-iterator readFromBuff() {
+def readFromBuff() {
   var ind = 0,              
       nextVal = buff(0);
 

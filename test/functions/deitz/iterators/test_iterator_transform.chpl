@@ -6,7 +6,7 @@
 //
 // BEFORE
 //
-iterator foo(n: int) {
+def foo(n: int) {
   var i = 0;
   while i < n {
     yield i;

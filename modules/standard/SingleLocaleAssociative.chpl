@@ -78,7 +78,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     deleted_seen = _EMPTY;
   }
 
-  iterator ault() {
+  def these() {
     for i in 0..num_inds-1 do
       yield inds(i).data;
   }
@@ -329,7 +329,7 @@ class SingleLocaleAssociativeArray: BaseArray {
   def this(ind : ind_type) var : eltType
     return data(dom._get_index(ind));
 
-  iterator ault() var {
+  def these() var {
     for i in 0..dom.num_inds-1 do
       yield data(i);
   }

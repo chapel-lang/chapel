@@ -60,7 +60,6 @@ if              processToken(TIF);
 in              processToken(TIN);
 index           processToken(TINDEX);
 inout           processToken(TINOUT);
-iterator        processToken(TITERATOR);
 label           processToken(TLABEL);
 let             processToken(TLET);
 module          processToken(TMODULE);

@@ -830,14 +830,13 @@ def absSum(x: [?D]) {
 \paragraph{Iterators}
 Iterators generate sequences of values.
 They are defined similarly to functions, except that
-they are defined with the keyword \chpl{iterator} and they
-contain a \chpl{yield} statement.
+they contain at least one \chpl{yield} statement.
 Iterators may be called in \chpl{for} and \chpl{forall} loop
 statements.  For each iteration of the loop, a value from the
 iterator is yielded and the body of the loop executed.
 \begin{example}
 \begin{chapel}
-iterator evens(n) {
+def evens(n) {
   for i in 1..n do yield (i,2*i);
 }
 

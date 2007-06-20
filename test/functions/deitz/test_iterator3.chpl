@@ -2,7 +2,7 @@ def foo(inout x: int) {
   x = x + 1;
 }
 
-iterator bar(n: int) {
+def bar(n: int) {
   var x = 0;
   for i in 1..n {
     foo(x);

@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  iterator foo() {
+  def foo() {
     yield this;
   }
 }

@@ -7,7 +7,7 @@ var A: [D] int;
 
 var currIndex: sync int = 1;
 
-iterator count() {
+def count() {
   var done = false;
     
   while (!done) {

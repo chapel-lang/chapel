@@ -98,7 +98,7 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-iterator IterateByBlocks(D:range,blksize) {
+def IterateByBlocks(D:range,blksize) {
   var n = D.length;
   var lo,hi: int;
 

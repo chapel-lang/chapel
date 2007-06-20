@@ -24,7 +24,7 @@ record sps33 {
   }
 }
 
-iterator SpsStencDom() {
+def SpsStencDom() {
   for (i,j) in [-1..1, -1..1] do
     if (i != j) then
       yield (i,j);

@@ -109,8 +109,6 @@ Methods are declared with the following syntax:
 method-declaration-statement:
   `def' type-binding function-name argument-list[OPT] var-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
-  `iterator' type-binding function-name argument-list[OPT] var-clause[OPT]
-    return-type[OPT] where-clause[OPT] block-level-statement
 
 type-binding:
   identifier .
@@ -189,6 +187,33 @@ class ThreeArray {
       when 3 do return x3;
     }
     halt("ThreeArray index out of bounds: ", i);
+  }
+}
+\end{chapel}
+\end{example}
+
+\subsubsection{The {\em these} Method}
+\label{The_these_Method}
+\index{these@\chpl{these}}
+\index{classes!iterating}
+
+A method declared with the name \chpl{these} allows a class to be
+``iterated over'' similarly to how a domain or array is iterated over.
+Using a class in the context of a loop where
+an \sntx{iterator-expression} is expected has the semantics of calling
+a method on the class named \chpl{these}.
+
+\begin{example}
+In the following code, the \chpl{these} method is used to create a
+class that acts like a simple array that can be iterated over and
+contains three integers.
+\begin{chapel}
+class ThreeArray {
+  var x1, x2, x3: int;
+  def these() var {
+    yield x1;
+    yield x2;
+    yield x3;
   }
 }
 \end{chapel}

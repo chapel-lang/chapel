@@ -34,7 +34,7 @@ for i in RAStream(NUPDATE/4, 3*NUPDATE/4) {
 }
 
 
-iterator RAStream(numvals, start=0): indexType {
+def RAStream(numvals, start=0): indexType {
   const POLY = 0x7:indexType;
   const hibit = 0x1:indexType << (numBits(indexType)-1);
   var val = getNthRandom(start);

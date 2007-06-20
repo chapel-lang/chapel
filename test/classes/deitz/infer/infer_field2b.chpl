@@ -1,6 +1,6 @@
 // infer return type of iterator with state transform
 
-iterator bar() : int {
+def bar() : int {
   var i = 1;
   while i < 5 {
     yield i;

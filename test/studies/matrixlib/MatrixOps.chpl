@@ -1,4 +1,4 @@
-iterator MMIterator(D1, D2) {
+def MMIterator(D1, D2) {
   for j in D2.dim(2) do 
     for (k1,k2) in (D1.dim(2),D2.dim(1)) do 
       for i in D1.dim(1) do 
@@ -86,7 +86,7 @@ def blockLU(A: [?D], piv: [D.dim(1)], blk) where (D.rank == 2){
   }
 }
 
-iterator IterateByBlocks(D:range,blksize) {
+def IterateByBlocks(D:range,blksize) {
   var end = D.high;
   var hi: int;
 

@@ -34,7 +34,7 @@ def foo() {
 
 writeln(foo());
 
-iterator bar() : int {
+def bar() : int {
   var i = 1;
   while i < 5 {
     yield i;

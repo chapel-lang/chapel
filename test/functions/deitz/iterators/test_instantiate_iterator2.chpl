@@ -1,4 +1,4 @@
-iterator foo(param rank : int, n : int) : rank*int {
+def foo(param rank : int, n : int) : rank*int {
   var result : rank*int;
   for i in 1..n {
     for j in 1..rank {

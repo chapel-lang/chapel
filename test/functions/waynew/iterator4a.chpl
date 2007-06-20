@@ -1,4 +1,4 @@
-iterator foo_while( rank: int) : int {
+def foo_while( rank: int) : int {
   var j: int;
   j = 1;
   while (j <= rank) {
