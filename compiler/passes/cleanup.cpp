@@ -25,19 +25,51 @@ flatten_scopeless_block(BlockStmt* block) {
   block->remove();
 }
 
+
+//
+// Return the module imported by a use call.  The module returned could be
+// nested: e.g. "use outermost.middle.innermost;"
+//
+ModuleSymbol* getUsedModule(CallExpr* call) {
+  ModuleSymbol* mod = NULL;
+  char* name = NULL;
+
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+    name = sym->var->name;
+    mod = dynamic_cast<ModuleSymbol*>(sym->lookup(name));
+
+    if (mod && call->argList->length() == 2) {
+      SymExpr* sym2 = dynamic_cast<SymExpr*>(call->get(2));
+      VarSymbol* sym2var = dynamic_cast<VarSymbol*>(sym2->var);
+      name = sym2var->immediate->v_string;
+      mod = dynamic_cast<ModuleSymbol*>(sym->lookup(name));
+    }
+  } else if (CallExpr* c = dynamic_cast<CallExpr*>(call->get(1))) {
+    if (c->isNamed(".")) {
+      mod = getUsedModule(c);
+      if (mod && call->argList->length() == 2) {
+        SymExpr* sym2 = dynamic_cast<SymExpr*>(call->get(2));
+        VarSymbol* sym2var = dynamic_cast<VarSymbol*>(sym2->var);
+        name = sym2var->immediate->v_string;
+        mod = dynamic_cast<ModuleSymbol*>(mod->lookup(name));
+      }
+    }
+  }
+  if (!mod)
+    USR_FATAL(call, "Cannot find module '%s'", name);
+  return mod;
+}
+
+
 //
 // Transform module uses into calls to initialize functions; store the
 // relevant scoping information in BlockStmt::modUses
 //
 static void
 process_import_expr(CallExpr* call) {
-  ModuleSymbol* mod = NULL;
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-    mod = dynamic_cast<ModuleSymbol*>(sym->lookup(sym->var->name));
-    if (!mod)
-      USR_FATAL(call, "Cannot find module '%s'", sym->var->name);
-  } else
-    INT_FATAL(call, "Use primitive has no module");
+  ModuleSymbol* mod = getUsedModule(call);
+  if (!mod)
+    USR_FATAL(call, "Cannot find module"); // '%s'", sym->var->name);
   if (mod != compilerModule)
     call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
 

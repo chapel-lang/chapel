@@ -1,4 +1,4 @@
-use CGMakeA;
+use CGMakeA, Time;
 
 type elemType = real(64);
 

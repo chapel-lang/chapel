@@ -244,6 +244,7 @@ class ModuleSymbol : public Symbol {
   modType modtype;
   BlockStmt* block;
   FnSymbol* initFn;
+  Vec<ModuleSymbol*> subModules;
 
   ModuleSymbol(char* init_name, modType init_modtype);
   ~ModuleSymbol();

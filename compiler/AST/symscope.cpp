@@ -73,12 +73,12 @@ void SymScope::undefine(Symbol* sym) {
 
 
 Symbol*
-SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
+SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse) {
   Symbol* sym;
 
   if (!alreadyVisited) {
     Vec<SymScope*> scopes;
-    return lookupLocal(name, &scopes);
+    return lookupLocal(name, &scopes, nestedUse);
   }
 
   if (alreadyVisited->set_in(this))
@@ -93,15 +93,16 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
 
   if (astParent && astParent->getModule()->block == astParent) {
     ModuleSymbol* mod = astParent->getModule();
-    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited);
+    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, nestedUse);
     if (sym)
       return sym;
   }
 
   Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (modUses) {
+  if (modUses && !nestedUse) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      sym = module->block->blkScope->lookupLocal(name, alreadyVisited);
+      bool mynestedUse = nestedUse || (module->modtype == MOD_USER);
+      sym = module->block->blkScope->lookupLocal(name, alreadyVisited, mynestedUse);
       if (sym)
         return sym;
     }
@@ -279,7 +280,8 @@ void SymScope::removeVisibleFunction(FnSymbol* fn) {
 
 void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
                                    char* name,
-                                   bool recursed) {
+                                   bool recursed,
+                                   bool nestedUse) {
 
   // to avoid infinite loop because of cyclic module uses
   static Vec<SymScope*> visited;
@@ -293,21 +295,21 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   if (fs)
     allVisibleFunctions->append(*fs);
   Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (modUses) {
+  if (modUses && !nestedUse) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
+      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true, module->modtype == MOD_USER);
     }
   }
   if (astParent) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
-        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
+        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
     }
     if (astParent->getModule()->block == astParent) {
       ModuleSymbol* mod = astParent->getModule();
-      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
+      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
     }
   }
   if (parent)
-    parent->getVisibleFunctions(allVisibleFunctions, name, true);
+    parent->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
 }

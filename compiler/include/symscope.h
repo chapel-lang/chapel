@@ -16,7 +16,7 @@ class SymScope {
   void define(Symbol* sym);
   void undefine(Symbol* sym);
 
-  Symbol* lookupLocal(char* name, Vec<SymScope*>* alreadyVisited = NULL);
+  Symbol* lookupLocal(char* name, Vec<SymScope*>* alreadyVisited = NULL, bool nestedUse = false);
   Symbol* lookup(char* name);
 
   void addModuleUse(ModuleSymbol* mod);
@@ -31,7 +31,7 @@ class SymScope {
   void addVisibleFunction(FnSymbol* fn);
   void removeVisibleFunction(FnSymbol* fn);
   void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, char* name,
-                           bool recursed = false);
+                           bool recursed = false, bool nestedUse = false);
 }; 
 
 #endif

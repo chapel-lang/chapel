@@ -278,6 +278,14 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
 }
 
 
+void addUseCalls(ModuleSymbol* mod, ModuleSymbol* outer) {
+  mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
+  forv_Vec(ModuleSymbol, submodule, mod->subModules) {
+    addUseCalls(submodule, outer);
+  }
+}
+
+
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
                  Symbol* parentSymbol,
@@ -315,7 +323,8 @@ void insert_help(BaseAST* ast,
         parentExpr->remove();
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
-        mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
+        outer->subModules.add(mod);
+        addUseCalls(mod, outer);
         parentScope = mod->block->blkScope;
       } else {
         if (def_expr->sym && !dynamic_cast<UnresolvedSymbol*>(def_expr->sym)) {

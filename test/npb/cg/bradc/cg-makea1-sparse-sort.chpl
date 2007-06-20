@@ -1,4 +1,4 @@
-use CGMakeA;
+use CGMakeA, Sort;
 
 enum classVals {S, W, A, B, C, D, O};
 

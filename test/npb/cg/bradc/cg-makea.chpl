@@ -1,8 +1,6 @@
-use Sort;
-
 module CGMakeA {
 
-  use Random;
+  use Random, Sort;
 
   config const rcond = 0.1;
 
