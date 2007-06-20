@@ -107519,3 +107519,23 @@ Added files:
 	                                      test_nested_use_outer.chpl 
 	                                      test_nested_use_outer.good 
 
+---------------------------------------------------------------------------
+
+06/20/07 15:58:19 -- marybeth
+
+Log message:
+	Added swap operator to the specification:
+	
+	- Added a swap statement subsection to the statements chapter.
+	- In that swap statement subsection, I defined the swap operator
+	and gave an example.  I also included index information and a reference
+	to lvalue expresions.
+	- I added the swap operator to the table of symbols in the lexical
+	structure chapter.
+	- I slightly modified the lvalue expressions subsection to cover
+	the swap statement case.
+
+Modified files:
+	chapel/spec/: Lexical_Structure.tex Statements.tex 
+	              Expressions.tex 
+
