@@ -107440,3 +107440,15 @@ Modified files:
 	                           shareIterator-blc-release.chpl 
 	                           shareIterator-blc.chpl 
 
+---------------------------------------------------------------------------
+
+06/20/07 13:24:21 -- deitz
+
+Log message:
+	Added a note on the lack of temporaries inserted during promotion.
+	
+	Finished my modifications to the spec.  Many I had already done.
+
+Modified files:
+	chapel/spec/: Iterators.tex MODS 
+
