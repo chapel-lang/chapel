@@ -21,8 +21,7 @@ concurrent execution of the loop body. The for loop is described
 in~\rsec{The_For_Loop}. The syntax for the forall loop is given by
 \begin{syntax}
 forall-statement:
-   `forall' index-expression `in' iterator-expression `do' statement
-   `forall' index-expression `in' iterator-expression block-level-statement
+   `forall' loop-control-part loop-body-part
 \end{syntax}
 
 The forall loop evaluates the loop body once for each element in
@@ -64,7 +63,7 @@ The forall loop may be alternatively specified with a more concise
 syntax given by:
 \begin{syntax}
 alternative-forall-statement:
-  [index-expression `in' iterator-expression] statement
+  [loop-control-part] statement
 \end{syntax}
 The semantics are unchanged.
 
@@ -90,8 +89,7 @@ semantics as with the ordered expression which is explained
 in \rsec{Ordered_Expressions}.  The syntax is:
 \begin{syntax}
 ordered-forall-statement:
-   `ordered' `forall' index-expression `in' iterator-expression `do' statement
-   `ordered' `forall' index-expression `in' iterator-expression block-level-statement
+   `ordered' `forall' loop-control-part loop-body-part
 \end{syntax}
 
 \begin{example}
@@ -128,7 +126,7 @@ element in the iterator expression.  The syntax of a forall expression
 is given by
 \begin{syntax}
 forall-expression:
-   [index-expression `in' iterator-expression] expression
+   [loop-control-part] expression
 \end{syntax}
 
 A forall expression is semantically equivalent to an iterator that
@@ -196,9 +194,8 @@ described in~\rsec{Single_Variables}.
 The coforall loop is a variant of the cobegin statement and the forall
 loop.  The syntax for the coforall loop is given by
 \begin{syntax}
-forall-statement:
-   `coforall' index-expression `in' iterator-expression `do' statement
-   `coforall' index-expression `in' iterator-expression block-level-statement
+coforall-statement:
+   `coforall' loop-control-part loop-body-part
 \end{syntax}
 
 The semantics of the \chpl{coforall} loop are identical to

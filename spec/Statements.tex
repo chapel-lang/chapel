@@ -346,8 +346,15 @@ any class that implements the structural iterator interface.  The
 syntax of the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' index-expression `in' iterator-expression `do' statement
-  `for' index-expression `in' iterator-expression block-level-statement
+  `for' loop-control-part loop-body-part
+
+loop-control-part:
+  index-expression `in' iterator-expression
+  iterator-expression
+
+loop-body-part:
+  `do' statement
+  block-level-statement
 
 index-expression:
   expression
@@ -358,7 +365,7 @@ iterator-expression:
 
 The index-expression can be an identifier or a tuple of identifiers.
 The identifiers are declared to be new variables for the scope of this
-statement.
+statement.  A for loop can be defined without an index expression.
 
 If the iterator-expression is a tuple, the components of the tuple
 must support iteration, e.g., a tuple of arrays, and those components
