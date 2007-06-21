@@ -107621,3 +107621,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+06/21/07 12:07:47 -- deitz
+
+Log message:
+	Added chaptermake to build a chapter of the spec.  Use
+	
+	  chaptermake Modules
+	
+	to make a file Modules.dvi in stand-alone form for xdvi.  This should
+	be very useful for writing, but the references will not be right.
+
+Modified files:
+	chapel/spec/: .cvsignore 
+Added files:
+	chapel/spec/: chaptermake 
+
