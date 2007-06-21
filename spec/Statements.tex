@@ -195,9 +195,14 @@ swap-operator:
   <=>
 \end{syntax}
 
+To implement the swap operation, the compiler uses temporary variables
+as necessary.
+
 \begin{example}
 The following swap statement
 \begin{chapel}
+var a, b: real;
+
 a <=> b;
 \end{chapel}
 is semantically equivalent to:
