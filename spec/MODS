@@ -22,7 +22,7 @@ CLOSED SJD added support for creating array aliases
 DMI    support for standard math, bitwise, and comparison operators for tuples
        e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
 
-MBH    swap operator: <=>
+CLOSED MBH    swap operator: <=>
        e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
 BLC    better support for writing output
        - enabled strings to be written to using a write() method
@@ -47,7 +47,7 @@ CLOSED SJD    support for functions without parentheses
        e.g., def f { writeln("In function f"); }
        - allow "main" function to be declared with or without parentheses
          e.g., def main { writeln("Program will start here"); ... }
-MBH    allow "<index> in" to be elided in for/forall loops/expressions
+CLOSED MBH    allow "<index> in" to be elided in for/forall loops/expressions
        e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
 DMI    support for multiple modules to be listed within a single "use" statement
 
@@ -71,15 +71,15 @@ BLC    subdomain keyword is now supported, though subset relationship is not che
 BLC    initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
-MBH    removed support for using "?" in identifiers
+CLOSED MBH    removed support for using "?" in identifiers
        - changed standard method member? to member
        - changed standard method true? to isTrue
-MBH    removed support for "--" as a single-line comment style
+CLOSED MBH    removed support for "--" as a single-line comment style
 BLC    an array's domain should now be accessed via A.domain rather than A.dom
 BLC    array element type identifier changed from elt_type to eltType
 
 Semantic Changes:
-MBH    changed relative precedence of casts and unary +/- (unary +/- is now tighter)
+CLOSED MBH    changed relative precedence of casts and unary +/- (unary +/- is now tighter)
        e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
 CLOSED SJD removed support for structural iterator interface (getHeadCursor, etc.)
 CLOSED SJD added support for defining default iterators for classes and records
