@@ -4,7 +4,7 @@ def foo(s: sync int) {
 
 var s: sync int;
 
-s = 2; // first write
+s = 1; // first write
 foo(s); // pass sync by reference
 
 def bar(s: int) {
@@ -14,4 +14,3 @@ def bar(s: int) {
 s = 2; // second write
 bar(s); // second read
 
-foo(2); // create a new sync, inside foo is only read
