@@ -57,11 +57,6 @@ error message: iterator sugaring [domains/marybeth/test_compare_range]
 error message: internal/impossible candidate functions [sparse/bradc/denseIRV]
 
 
-* Setter functions should not be permitted to return anything, but currently can
-error message: illegal setter return [functions/bradc/setterFns/setterReturns2]
-error message: illegal setter return [functions/bradc/setterFns/setterReturns]
-
-
 * Actual arguments passed using inout intents are not checked for legality
 error message: inout [functions/jplevyak/intent-8-error]
 error message: inout [trivial/deitz/test_coerce_inout]

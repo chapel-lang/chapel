@@ -1,8 +1,0 @@
-error message: illegal setter return
-
-I'd like to have the compiler throw an error when
-setters declare return types and/or try to return
-values.  Given that var functions return the thing
-being assigned, I think this will help people like
-me who write setters to also return the lvalue
-catch their thinko more quickly.

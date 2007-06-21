@@ -78,8 +78,6 @@ Bugs:
 
 * Var functions should not be permitted to return locals or literals but can
 
-* Setter functions should not be permitted to return anything, but currently can
-
 
 ----------------------------
 Classes, Records, and Unions
