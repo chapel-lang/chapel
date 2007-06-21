@@ -107756,3 +107756,15 @@ Log message:
 Modified files:
 	chapel/test/classes/bradc/: genericTypes.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 16:25:54 -- deitz
+
+Log message:
+	Updated future, changing bug to error message.
+
+Modified files:
+	chapel/test/arrays/deitz/promotion/: 
+	                                     test_scalar_promote10.future 
+	                                     test_scalar_promote10.good 
+
