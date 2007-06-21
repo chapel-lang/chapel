@@ -107746,3 +107746,13 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: emptySeq3.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 16:22:37 -- deitz
+
+Log message:
+	Updated future message; changed from error message to bug.
+
+Modified files:
+	chapel/test/classes/bradc/: genericTypes.future 
+
