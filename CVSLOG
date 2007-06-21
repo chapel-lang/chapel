@@ -107638,3 +107638,35 @@ Modified files:
 Added files:
 	chapel/spec/: chaptermake 
 
+---------------------------------------------------------------------------
+
+06/21/07 14:14:58 -- deitz
+
+Log message:
+	Added checking to ensure that a non-lvalue expression is not used as
+	an lvalue.  With the setter->ref change, non-var functions could be
+	used on the left-hand side of an assignment statement with no effect.
+	It is now an error.  Same for non-var iterators.
+	
+	Added Symbol::isExprTemp to flag temporaries that store expressions
+	and thus are not valid lvalues.  This flag is turned to false during
+	function resolution if the temp is used to capture var functions, var
+	iterators, or functions with the "valid lvalue" pragma.  The "valid
+	lvalue" pragma is used for array and domain wrapper routines that
+	result in valid lvalues even though they are not var functions (since
+	arrays are references).
+	
+	Added two test cases to check for these error messages.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: ChapelArray.chpl 
+Added files:
+	chapel/test/functions/deitz/: test_nonvar1_error.chpl 
+	                              test_nonvar1_error.good 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_var_iterator5_error.chpl 
+	                                        test_var_iterator5_error.good 
+
