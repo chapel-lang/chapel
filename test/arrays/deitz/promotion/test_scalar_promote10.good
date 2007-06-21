@@ -1,6 +1,1 @@
-1 2 3 4
-2 4 1 3
-4 3 2 1
-0 0 0 0
-2 4 1 3
-4 3 2 1
+error indexing into iterator invocation

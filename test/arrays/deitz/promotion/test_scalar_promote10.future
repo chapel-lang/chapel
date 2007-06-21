@@ -1,4 +1,7 @@
-bug: promoted var function
+error message: indexing into iterator call
+
+A better error message to say that you cannot index into an interator.
+This can be captured in a temporary array though.
 
 deitz
 
