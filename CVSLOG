@@ -107539,3 +107539,13 @@ Modified files:
 	chapel/spec/: Lexical_Structure.tex Statements.tex 
 	              Expressions.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 17:05:10 -- marybeth
+
+Log message:
+	Made change for definition of iterators.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
