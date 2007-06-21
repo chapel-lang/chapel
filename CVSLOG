@@ -107768,3 +107768,17 @@ Modified files:
 	                                     test_scalar_promote10.future 
 	                                     test_scalar_promote10.good 
 
+---------------------------------------------------------------------------
+
+06/21/07 16:59:12 -- deitz
+
+Log message:
+	Removed future I attached to this test when I checked it in while I
+	was still working on it (accidentally).
+
+Modified files:
+	chapel/test/parallel/sync/deitz/: test_sync_formal.chpl 
+	                                  test_sync_formal.good 
+Removed files:
+	chapel/test/parallel/sync/deitz/: test_sync_formal.future 
+
