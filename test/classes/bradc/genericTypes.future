@@ -1,4 +1,11 @@
-error message: generic types
+bug: generic types
+
+The problem is that the second argument's default expression is
+evaluated before the substitution of type1.  This can be fixed by
+cascading instantiation so that we instantiate functions one formal
+argument at a time.
+
+WAS:
 
 Seems like this test ought to work, but it doesn't seem 
 to be.  The error message isn't very good either (doesn't
