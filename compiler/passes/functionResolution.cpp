@@ -2067,6 +2067,8 @@ preFold(Expr* expr) {
             assert(ret);
             if (ret->var->defPoint->getFunction() == move->getFunction())
               USR_FATAL(ret, "illegal return expression in var function");
+            if (ret->var->isConst() || ret->var->isParam())
+              USR_FATAL(ret, "var function returns constant value");
           }
         }
       }

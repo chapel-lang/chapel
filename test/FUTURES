@@ -35,6 +35,8 @@ bug: promoted var function [arrays/deitz/promotion/test_scalar_promote10]
 * Return statements in type select statements are not recognized correctly
 bug: return in type select [trivial/marybeth/typeselect]
 
+* Var functions should be able to return array slices but cannot
+bug: var fn returns slice [test/functions/deitz/test_var_function_return_slice]
 
 
 * Const arrays can currently be assigned -- should result in a compiler error
@@ -80,10 +82,6 @@ error message: uninstantiated generic parent [classes/jplevyak/inherit-2-fixed]
 error message: uninstantiated generic parent [classes/jplevyak/inherit-2]
 error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate2]
 error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate4]
-
-* Var functions should not be permitted to return locals or literals but can
-error message: var fn illegal return [functions/bradc/varFns/retLitFromVarFn]
-error message: var fn illegal return [functions/bradc/varFns/retLocFromVarFn]
 
 
 * Requested features
