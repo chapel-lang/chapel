@@ -38,18 +38,6 @@ check_redefinition(Symbol* sym) {
 
 static void
 check_functions(FnSymbol* fn) {
-
-  if (fn->fnClass == FN_ITERATOR) {
-    for_formals(formal, fn) {
-      if (formal->intent == INTENT_IN ||
-          formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_REF) {
-        USR_FATAL(formal, "formal argument of iterator cannot have intent");
-      }
-    }
-  }
-
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
   collect_asts(&asts, fn);
@@ -149,6 +137,17 @@ checkParsed(void) {
 void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->fnClass == FN_ITERATOR) {
+      for_formals(formal, fn) {
+        if (formal->intent == INTENT_IN ||
+            formal->intent == INTENT_INOUT ||
+            formal->intent == INTENT_OUT ||
+            formal->intent == INTENT_REF) {
+          USR_FATAL(formal, "formal argument of iterator cannot have intent");
+        }
+      }
+    }
+
     // do not check body of nested function (would be again)
     if (fn->defPoint->parentSymbol->astType == SYMBOL_FN)
       continue;
