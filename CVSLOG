@@ -107729,3 +107729,20 @@ Added files:
 Removed files:
 	chapel/test/functions/bradc/varFns/: retLitFromVarFn.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 15:31:09 -- deitz
+
+Log message:
+	Improved error message encountered when assigning nil to a record.
+	
+	Removed a .future.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: FUTURES 
+	chapel/test/types/seq/bradc/: emptySeq3.good 
+Removed files:
+	chapel/test/types/seq/bradc/: emptySeq3.future 
+
