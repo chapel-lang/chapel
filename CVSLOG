@@ -107701,3 +107701,31 @@ Removed files:
 	                                        setterReturns.good 
 	                                        setterReturns.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 15:00:32 -- deitz
+
+Log message:
+	Added checking to ensure that a constant value is not return by a var
+	function.  Removed a .future.
+	
+	Added a test to check that an error is generated if a var function
+	returns an expression that is not a valid lvalue.
+	
+	Added a new future to show an issue if a var function tries to return
+	a slice of a global array.  This should be allowed but is not.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: FUTURES 
+	chapel/test/functions/bradc/varFns/: retLitFromVarFn.good 
+Added files:
+	chapel/test/functions/deitz/: test_var_function_return_expr.chpl 
+	                              test_var_function_return_expr.good 
+	                              test_var_function_return_slice.chpl 
+	                              test_var_function_return_slice.future 
+	                              test_var_function_return_slice.good 
+Removed files:
+	chapel/test/functions/bradc/varFns/: retLitFromVarFn.future 
+
