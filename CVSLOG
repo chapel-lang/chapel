@@ -107584,3 +107584,15 @@ Log message:
 Modified files:
 	chapel/spec/: Statements.tex Parallelism_and_Synchronization.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 17:27:55 -- marybeth
+
+Log message:
+	Added a sentence to the Swap Statement subsection to say that
+	the compiler will create temporary variables as necessary to implement
+	the swap statement.
+
+Modified files:
+	chapel/spec/: Statements.tex 
+
