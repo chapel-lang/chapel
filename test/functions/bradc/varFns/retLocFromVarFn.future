@@ -1,9 +1,0 @@
-error message: var fn illegal return
-
-My sense is that one shouldn't be able to return a
-local from a var function.  If this is accurate,
-we should generate an error message for this test.
-I've put in a sample error message, but I suspect
-we may want to use a different wording.  (We
-actually do currently generate an error message, but
-it's a poor one).

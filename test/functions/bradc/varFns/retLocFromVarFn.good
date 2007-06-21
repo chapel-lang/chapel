@@ -1,1 +1,2 @@
-retLitFromVarFn.chpl:6: error: can't return a local from a var function
+retLocFromVarFn.chpl:4: In function 'this':
+retLocFromVarFn.chpl:8: error: illegal return expression in var function
