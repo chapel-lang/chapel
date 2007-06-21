@@ -107610,3 +107610,14 @@ Log message:
 Modified files:
 	chapel/spec/: MODS 
 
+---------------------------------------------------------------------------
+
+06/21/07 09:14:32 -- deitz
+
+Log message:
+	Moved check of formal arguments of iterators after functions are
+	turned into iterators.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
