@@ -336,6 +336,7 @@ static void insert_call_temps(CallExpr* call) {
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_VAR);
   tmp->isCompilerTemp = true;
+  tmp->isExprTemp = true;
   tmp->canParam = true;
   tmp->canType = true;
   call->replace(new SymExpr(tmp));

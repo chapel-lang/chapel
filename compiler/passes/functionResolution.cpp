@@ -131,6 +131,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     fn->retExprType->remove();
     if (fn->fnClass == FN_ITERATOR) {
       prototypeIteratorClass(fn);
+      makeRefType(fn->retType);
       resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
       resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
       resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
@@ -1530,9 +1531,15 @@ resolveCall(CallExpr* call) {
       if (t == dtVoid) {
         USR_FATAL(call->get(2), "illegal use of function that does not return a value");
       }
-      if (t == dtUnknown) {
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
-          if (FnSymbol* rhsfn = rhs->isResolved()) {
+      if (isReference(sym->var->type))
+        sym->var->isExprTemp = false;
+      if (sym->var->type->symbol->hasPragma("ref iterator class"))
+        sym->var->isExprTemp = false;
+      if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
+        if (FnSymbol* rhsfn = rhs->isResolved()) {
+          if (rhsfn->hasPragma("valid lvalue"))
+            sym->var->isExprTemp = false;
+          if (t == dtUnknown) {
             USR_FATAL_CONT(rhsfn, "unable to resolve return type of function '%s'", rhsfn->name);
             USR_FATAL(rhs, "called recursively at this point");
           }
@@ -2209,6 +2216,13 @@ postFold(Expr* expr) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
+      if (!strcmp("=", fn->name) && !call->getFunction()->isWrapper) {
+        SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1));
+        if (!lhs)
+          INT_FATAL(call, "unexpected case");
+        if (lhs->var->isExprTemp)
+          USR_FATAL(call, "illegal lvalue in assignment");
+      }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
       bool set = false;
       if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -2495,6 +2509,7 @@ resolveFns(FnSymbol* fn) {
 
   if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo) {
     prototypeIteratorClass(fn);
+    makeRefType(fn->retType);
     resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
     resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
     resolvedFns.set_add(fn->iteratorInfo->isValidCursor);

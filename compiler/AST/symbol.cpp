@@ -125,6 +125,7 @@ Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   overload(NULL),
   isUserAlias(false),
   isCompilerTemp(false),
+  isExprTemp(false),
   isTypeVariable(false),
   canParam(false),
   canType(false),
@@ -320,6 +321,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->cname = cname;
   newVarSymbol->isUserAlias = isUserAlias;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
+  newVarSymbol->isExprTemp = isExprTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;

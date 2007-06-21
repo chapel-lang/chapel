@@ -61,6 +61,8 @@ void prototypeIteratorClass(FnSymbol* fn) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
   TypeSymbol* cts = new TypeSymbol(className, ii->classType);
   cts->addPragma("iterator class");
+  if (fn->retRef)
+    cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
   Type* cursorType = dtInt[INT_SIZE_32];

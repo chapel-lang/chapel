@@ -43,6 +43,7 @@ class Symbol : public BaseAST {
   Symbol* overload;
   bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
+  bool isExprTemp;
   bool isTypeVariable;
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)

@@ -292,17 +292,20 @@ record _array {
   var _value : _array_type;
   var _promotionType : eltType;
 
+  pragma "valid lvalue"
   def _dom {
     var x : _domain(_value.dom.type, _index_type, _dim_index_type, rank, _value.dom);
     //    x._value = _value.dom;
     return x;
   }
 
+  pragma "valid lvalue"
   def this(d: _domain) {
     var x = _value.slice(d._value);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
+  pragma "valid lvalue"
   def this(i: range(_dim_index_type,?bnd,?stridable) ...rank) {
     var d = _dom[(...i)];
     return this(d);
