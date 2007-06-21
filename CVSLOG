@@ -107670,3 +107670,16 @@ Added files:
 	                                        test_var_iterator5_error.chpl 
 	                                        test_var_iterator5_error.good 
 
+---------------------------------------------------------------------------
+
+06/21/07 14:23:08 -- deitz
+
+Log message:
+	Removed future regarding returning a local variable from a var
+	function.  This has been working for a while now.
+
+Modified files:
+	chapel/test/functions/bradc/varFns/: retLocFromVarFn.good 
+Removed files:
+	chapel/test/functions/bradc/varFns/: retLocFromVarFn.future 
+
