@@ -107549,3 +107549,38 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/20/07 17:25:04 -- marybeth
+
+Log message:
+	Made change for eliding "<index> in" for for and forall loops and expressions.
+	
+	I changed the definition for the for-statement which is then referenced
+	by all parallel loop statements (ordered and unordered).  I noted in
+	the text description that a for loop does not need an index expression.
+	(I didn't say more than that.)
+	
+	The for-statement is now:
+	
+	afor-statement:
+	  `for' loop-control-part loop-body-part
+	
+	loop-control-part:
+	  index-expression `in' iterator-expression
+	  iterator-expression
+	
+	loop-body-part:
+	  `do' statement
+	  block-level-statement
+	
+	That means that the shorthand, bracket notation for a forall loop is:
+	
+	alternative-forall-statement:
+	  [loop-control-part] statement
+	
+	I changed all instances of the parallel for loop definitions.
+
+Modified files:
+	chapel/spec/: Statements.tex Parallelism_and_Synchronization.tex 
+
