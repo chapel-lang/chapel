@@ -107683,3 +107683,21 @@ Modified files:
 Removed files:
 	chapel/test/functions/bradc/varFns/: retLocFromVarFn.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 14:41:35 -- deitz
+
+Log message:
+	Removed setter futures and line in status file as setters no longer exist.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/functions/bradc/setterFns/: setterReturns2.chpl 
+	                                        setterReturns2.good 
+	                                        setterReturns2.future 
+	                                        setterReturns.chpl 
+	                                        setterReturns.good 
+	                                        setterReturns.future 
+
