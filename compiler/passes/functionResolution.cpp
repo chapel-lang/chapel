@@ -1339,6 +1339,12 @@ resolveCall(CallExpr* call) {
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                 type2string(atypes.v[3]), type2string(elt_type));
     }
+    if (resolvedFn &&
+        !strcmp("=", resolvedFn->name) &&
+        isRecordType(resolvedFn->getFormal(1)->type) &&
+        resolvedFn->getFormal(2)->type == dtNil)
+      USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
+                type2string(resolvedFn->getFormal(1)->type));
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (!strcmp("_cast", name)) {

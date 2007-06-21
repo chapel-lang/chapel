@@ -42,9 +42,6 @@ bug: var fn returns slice [test/functions/deitz/test_var_function_return_slice]
 * Const arrays can currently be assigned -- should result in a compiler error
 error message: assigning const arrays [arrays/bradc/constArray]
 
-* Assigning nil to a list/record results in unuseful error messages
-error message: assigning nil to a list/record [types/seq/bradc/emptySeq3]
-
 * Mixing dimensional index types in a domain specification yields poor errors
 error message: domain dimensional type [arrays/deitz/test_domain_mixed_dim_types]
 

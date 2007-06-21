@@ -40,8 +40,6 @@ Bugs:
 * Parameters in branches of conditional expressions are not implicitly coerced
   e.g., var x:uint;  if (t) then x else 1;  // 1 should be coerced to uint
 
-* Assigning nil to a list/record results in confusing error messages
-
 
 -------
 Modules
