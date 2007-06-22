@@ -107830,3 +107830,31 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/22/07 10:36:21 -- deitz
+
+Log message:
+	Fixed a bug in which a default initialization expression of a generic
+	field or formal argument referenced another generic field or formal
+	argument by making generic subsitutions with default expressions only
+	if no other substitutions are being made.  This results in some
+	partial instantiations.
+	
+	Fixed an unseen bug (an incorrect negation) in instantiating generic
+	functions via dynamic dispatch.  It didn't show up possibly because
+	the extra substitutions may have been handled via partial
+	instantiations.
+	
+	Made dynamic dispatch instantiations robust in the presence of partial
+	instantiations by traversing the instantiatedTo vectors to find all
+	full instantiations.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/classes/bradc/: genericTypes.future 
+
