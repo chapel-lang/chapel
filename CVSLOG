@@ -107969,3 +107969,17 @@ Added files:
 	chapel/test/types/tuple/dinan/: oobIndex.chpl oobIndex.future 
 	                                oobIndex.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 16:10:27 -- dinan
+
+Log message:
+	Added a couple tests:
+	 * nestedFun: A nested function with some tricky scoping
+	 * paramFibonacci: Computes the Fibonacci sequence at compile time.
+
+Added files:
+	chapel/test/functions/dinan/: nestedFun.chpl nestedFun.good 
+	                              paramFibonacci.chpl 
+	                              paramFibonacci.good 
+
