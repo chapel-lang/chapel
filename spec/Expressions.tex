@@ -748,15 +748,15 @@ a && b
 \end{chapel}
 is evaluated as the expression
 \begin{chapel}
-if a.isTrue then b.isTrue else false
+if isTrue(a) then isTrue(b) else false
 \end{chapel}
 
-The method \chpl{isTrue} is predefined over bool type as follows:
+The function \chpl{isTrue} is predefined over bool type as follows:
 \begin{chapel}
-def bool.isTrue return this;
+def isTrue(a:bool) return a;
 \end{chapel}
 Overloading the logical and operator over other types is accomplished
-by overloading the \chpl{isTrue} method over other types.
+by overloading the \chpl{isTrue} function over other types.
 
 \subsubsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
@@ -770,17 +770,17 @@ evaluated and the result is true.
 The logical or operator over expressions \chpl{a} and \chpl{b} given
 by
 \begin{chapel}
-a && b
+a || b
 \end{chapel}
 is evaluated as the expression
 \begin{chapel}
-if a.isTrue then true else b.isTrue
+if isTrue(a) then true else isTrue(b)
 \end{chapel}
 
-The method \chpl{isTrue} is predefined over bool type as described
+The function \chpl{isTrue} is predefined over bool type as described
 in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
-method over other types.
+function over other types.
 
 \subsection{Relational Operators}
 \label{Relational_Operators}

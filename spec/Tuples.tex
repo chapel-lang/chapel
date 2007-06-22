@@ -64,6 +64,58 @@ the tuple on the right-hand side of the assignment.  The assignments
 are simultaneous so that each component expression on the right-hand
 side is fully evaluated before being assigned to the left-hand side.
 
+\subsection{Tuple Operators}
+\label{Tuple_Operators}
+\index{tuples!operators}
+
+The arithmetic ~(\rsec{Arithmetic_Operators}), bitwise
+~(\rsec{Bitwise_Operators}), shift ~(\rsec{Shift_Operators}), and
+relational ~(\rsec{Relational_Operators}) operators are also defined
+over tuples.  There are versions for scalar op tuple and tuple op tuple.
+
+\subsubsection{Tuple op Scalar}
+\label{Tuple_Scalar_Operators}
+\index{tuple!scalar}
+With the exception of relational operators, when an operation is applied
+to a scalar value \chpl{s} and a tuple \chpl{t}, the result is a tuple
+\chpl{r} with each element \chpl{r(i)} defined by applying the operation
+to \chpl{s} and \chpl{r(i)}.
+
+\begin{example}
+The result of the multiply:
+\begin{chapel}
+3.0 * (1, 2, 3);
+\end{chapel}
+is the value:
+\begin{chapel}
+(3.0, 6.0, 9.0)
+\end{chapel}
+\end{example}
+
+\subsubsection{Tuple op Tuple}
+\label{Tuple_Tuple_Operations}
+\index{tuple!tuple}
+With the exception of relational operators, operations applied to two
+tuples result in element-by-element application of the operation.
+Relational operators are defined in ~(\rsec{Tuple_Relational_Operators}).
+The tuples must match each other in shape.
+
+\subsubsection{Tuple Relational Operators}
+\label{Tuple_Relational_Operators}
+\index{tuples!relational}
+Relational operators over tuples apply in an "alphebetical" manner.  Each
+component is compared to the corresponding component or to the scalar
+value until the relation is found to be true or false.
+\begin{example}
+In the code:
+\begin{chapel}
+var x = ("c", "h", "p", "l") > ("c", "h", "a", "t"); 
+\end{chapel}
+The value of \chpl{x} is \chpl{true}. After comparing \chpl{"c"} to
+\chpl{"c"}, and \chpl{"h"} to \chpl{"h"}, \chpl{"p"} is found to be
+greater than \chpl{"a"}, so the expression is \chpl{true}. 
+\end{example}
+
 \subsection{Tuple Destructuring}
 \label{Tuple_Destructuring}
 \index{tuples!destructuring}
@@ -115,7 +167,7 @@ ignored, though it is still evaluated.
 \index{tuples!homogeneous}
 
 A homogeneous tuple is a special-case of a general tuple where the
-types of the components are identical.  Homogeneous tuples have less
+types of the components are identical.  Homogeneous tuples have fewer
 restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
 
 \subsubsection{Declaring Homogeneous Tuples}
@@ -172,9 +224,13 @@ Conversions are not applied to the components.
 
 \subsubsection{Formal Argument Declarations in a Tuple}
 \label{Formal_Argument_Declarations_in_a_Tuple}
-
 \index{formal arguments!tuples}
 
-\begin{status}
-Formal arguments cannot be grouped together in a tuple.
+Formal arguments declarations can be grouped into a tuple similarily to
+variable declarations to facilitate passing the result of a function that
+returns a tuple directly to another function.
+
+\begin{status}Formal arguments grouped in a tuple cannot be explicitly
+typed. A function with formal arguments grouped in a tuple is
+therefore generic.
 \end{status}
