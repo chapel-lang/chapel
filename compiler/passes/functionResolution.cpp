@@ -463,6 +463,13 @@ computeGenericSubs(ASTMap &subs,
             subs.put(formal, vt);
         }
       } else if (formal->defaultExpr) {
+
+        // break because default expression may reference generic
+        // arguments earlier in formal list; make those substitutions
+        // first (test/classes/bradc/genericTypes)
+        if (subs.n)
+          break;
+
         Type* defaultType = resolve_type_expr(formal->defaultExpr);
         if (canInstantiate(defaultType, formal->type) ||
             defaultType == gNil->type) { // constructor default
@@ -2583,21 +2590,38 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 }
 
 
+//
+// add to vector icts all types instantiated from ct
+//
+static void
+collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
+  forv_Vec(FnSymbol, fn, *ct->defaultConstructor->instantiatedTo) {
+    Type* ict = fn->retType;
+    if (ict->isGeneric)
+      collectInstantiatedClassTypes(icts, ict);
+    else
+      icts.add(ict);
+  }
+}
+
+
 static void
 add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (cfn && possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
         ASTMap subs;
-        forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {
-          subs.put(cfn->getFormal(2), cons->retType);
+        Vec<Type*> icts;
+        collectInstantiatedClassTypes(icts, ct);
+        forv_Vec(Type, ict, icts) {
+          subs.put(cfn->getFormal(2), ict);
           for (int i = 3; i <= cfn->formals->length(); i++) {
             ArgSymbol* arg = cfn->getFormal(i);
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
             } else if (arg->type->isGeneric) {
-              if (!pfn->getFormal(i))
-              subs.put(arg, pfn->getFormal(i)->type);
+              if (pfn->getFormal(i))
+                subs.put(arg, pfn->getFormal(i)->type);
             }
           }
           FnSymbol* icfn = instantiate(cfn, &subs);
