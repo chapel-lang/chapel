@@ -9,6 +9,7 @@ test             Primary features it was designed to demonstrate
 ---------------+---------------------------------------------------------------
 hello          : write() function; string literals; unstructured coding
 hello-module   : configuration vars; module structure; main() entry point
+arraySlices    : array slicing and reindexing; iterators
 beer           : 1D domains and arrays; string manipulation; generic functions
 blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
 genericStack   : generic classes; nested classes; array reallocation
@@ -48,6 +49,7 @@ test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
+arraySlices    |       |   *   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
 blockLU        |   *   |   x   |   *   |   *   |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
@@ -80,6 +82,7 @@ test           | modls | stdmd | main  | funcs | iters | confg | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
+arraySlices    |       |       |   x   |   x   |   x   |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 blockLU        |       |       |   x   |   x   |   x   |   x   |       |
 genericStack   |       |       |       |   x   |       |       |       |
@@ -114,6 +117,7 @@ test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
+arraySlices    |       |       |       |       |       |   *   |       |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
@@ -147,6 +151,7 @@ test           | arith | spars | enum  | assoc | opque | subdm | index | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arraySlices    |   x   |       |       |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
@@ -181,6 +186,7 @@ test           | frall | prmte | slice | reind | reduc | scan  | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arraySlices    |   *   |   *   |   x   |   x   |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |   x   |   *   |   x   |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -214,6 +220,7 @@ test           | begin | cobeg | srial | sync  | atomc | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arraySlices    |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -247,6 +254,7 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arraySlices    |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
