@@ -1,0 +1,4 @@
+bug: Handling out-of-bound tuple indexes (eg: var x = (0,1);  writeln(x(3));)
+
+The compiler presently seg faults when a tuple is indexed with an out-of-bound
+index.  This should generate an error message instead.
