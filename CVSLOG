@@ -107796,3 +107796,13 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: arraySlices.chpl arraySlices.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 09:03:12 -- deitz
+
+Log message:
+	Changed checkout chapel to checkout nightly to avoid security check.
+
+Modified files:
+	chapel/test/: start_opt_test 
+
