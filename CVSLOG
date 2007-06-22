@@ -107890,3 +107890,13 @@ Log message:
 Added files:
 	chapel/test/release/examples/: reductions.chpl reductions.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 11:45:31 -- diten
+
+Log message:
+	Add comments to the reductions example look more like the other examples.
+
+Modified files:
+	chapel/test/release/examples/: reductions.chpl 
+
