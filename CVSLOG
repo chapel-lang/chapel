@@ -107816,3 +107816,17 @@ Log message:
 Modified files:
 	chapel/test/classes/bradc/: genericTypes.chpl genericTypes.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 10:28:08 -- marybeth
+
+Log message:
+	Made changes suggested by Steve.
+	
+	I had to add a vspace before the Types select section in order
+	to have the column break in the right place.  If more edits are needed
+	later, this space will probably have to be removed.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
