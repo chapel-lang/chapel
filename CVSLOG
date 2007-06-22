@@ -107916,3 +107916,20 @@ Log message:
 Modified files:
 	chapel/spec/: Expressions.tex Tuples.tex chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/22/07 13:43:54 -- marybeth
+
+Log message:
+	Changes name of arraySlices test to slices.  Updated Makefile, README
+	and README.features to reflect this change.  Added slices test to list
+	in .cvsignore.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README README.features 
+	                               .cvsignore 
+Added files:
+	chapel/test/release/examples/: slices.chpl slices.good 
+Removed files:
+	chapel/test/release/examples/: arraySlices.chpl arraySlices.good 
+
