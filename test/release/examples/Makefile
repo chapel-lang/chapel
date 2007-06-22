@@ -6,7 +6,6 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
-	arraySlices \
 	beer \
         blockLU \
 	genericStack \
@@ -16,6 +15,7 @@ TARGETS = \
 	norm \
 	prodCons \
 	quicksort \
+	slices \
 	sparse \
 	tree \
 

@@ -9,7 +9,6 @@ test             Primary features it was designed to demonstrate
 ---------------+---------------------------------------------------------------
 hello          : write() function; string literals; unstructured coding
 hello-module   : configuration vars; module structure; main() entry point
-arraySlices    : array slicing and reindexing; iterators
 beer           : 1D domains and arrays; string manipulation; generic functions
 blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
 genericStack   : generic classes; nested classes; array reallocation
@@ -19,6 +18,7 @@ linkedList     : nested generic classes; iterators
 norm           : reductions; function overloading and where clauses; modules
 prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
+slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 tree           : unbounded task parallelism using cobegin
 hpcc06/stream  : whole-array operators; standard modules; time/random routines
@@ -49,7 +49,6 @@ test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
-arraySlices    |       |   *   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
 blockLU        |   *   |   x   |   *   |   *   |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
@@ -59,6 +58,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
+slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 hpcc06/stream  |       |   x   |       |   x   |       |       |       |
@@ -82,7 +82,6 @@ test           | modls | stdmd | main  | funcs | iters | confg | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
-arraySlices    |       |       |   x   |   x   |   x   |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 blockLU        |       |       |   x   |   x   |   x   |   x   |       |
 genericStack   |       |       |       |   x   |       |       |       |
@@ -92,6 +91,7 @@ linkedList     |       |       |   x   |   x   |   x   |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
+slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
 hpcc06/stream  |   x   |   x   |   x   |   x   |       |   x   |       |
@@ -117,7 +117,6 @@ test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
-arraySlices    |       |       |       |       |       |   *   |       |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
@@ -127,6 +126,7 @@ linkedList     |       |       |       |   *   |   *   |   x   |       |
 norm           |       |       |       |       |       |   x   |   x   |
 prodCons       |       |       |       |       |       |   x   |       |
 quicksort      |       |       |       |       |       |   x   |       |
+slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 tree           |       |       |       |   x   |       |   x   |       |
 hpcc06/stream  |       |       |       |       |       |   x   |   x   |
@@ -151,7 +151,6 @@ test           | arith | spars | enum  | assoc | opque | subdm | index | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
-arraySlices    |   x   |       |       |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
@@ -161,6 +160,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |   x   |       |       |       |       |       |       |
 prodCons       |   x   |       |       |       |       |       |       |
 quicksort      |   x   |       |       |       |       |       |       |
+slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |   x   |       |       |       |       |       |       |
@@ -186,7 +186,6 @@ test           | frall | prmte | slice | reind | reduc | scan  | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
-arraySlices    |   *   |   *   |   x   |   x   |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |   x   |   *   |   x   |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -196,6 +195,7 @@ linkedList     |       |       |       |       |   *   |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
+slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |   x   |   *   |       |       |   x   |       |       |
@@ -220,7 +220,6 @@ test           | begin | cobeg | srial | sync  | atomc | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
-arraySlices    |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -230,6 +229,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |   *   |       |       |       |
 quicksort      |       |   *   |   *   |       |       |       |       |
+slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |
@@ -254,7 +254,6 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
-arraySlices    |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -264,6 +263,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 hpcc06/stream  |       |       |       |       |       |       |       |

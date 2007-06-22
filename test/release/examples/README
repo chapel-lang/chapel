@@ -11,7 +11,6 @@ get started with Chapel program structure:
 It also contains a number of more interesting examples that
 demonstrate various Chapel features:
 
-     arraySlices.chpl       : examples of array slicing and reindexing
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
      genericStack.chpl      : generic stack classes (list- and array-based)
@@ -21,6 +20,7 @@ demonstrate various Chapel features:
      norm.chpl              : sample module for computing array norms
      prodCons.chpl          : producer-consumer example using circular buffer
      quicksort.chpl         : parallel quick sort using cobegin and serial
+     slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
      tree.chpl              : constructs and walks a tree in parallel
 
