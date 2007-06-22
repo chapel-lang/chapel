@@ -42,7 +42,8 @@ def main() {
 
   // Each of the following three for loop statements uses the
   // iterator blockIter to yield a range subvec that is then
-  // used to define subvec x subvec slices of A.
+  // used to define (subvec x subvec) blocks along the diagonal 
+  // of A.
 
   //  Case 1:  No reindexing of the diagonal blocks.
   //  The array slice is sent directly to initBlock.
@@ -64,8 +65,8 @@ def main() {
   writeln("Initializing the diagonal blocks of A."); 
   writeln("Reindexing of each diagonal block in alias declaration. ");
   forall subvec in blockIter(vec,blk) {
-    var Ablock1: [D0] => A[subvec,subvec];
-    initBlock(Ablock1);
+    var Ablock: [D0] => A[subvec,subvec];
+    initBlock(Ablock);
   }
 
   writeln(A);
