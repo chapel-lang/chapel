@@ -107957,3 +107957,15 @@ Added files:
 	chapel/test/types/tuple/dinan/: badIndex.chpl badIndex.future 
 	                                badIndex.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 15:30:42 -- dinan
+
+Log message:
+	The compiler also generates an internal error when the tuple index is larger
+	than the length of the tuple.  This should result in an error message.
+
+Added files:
+	chapel/test/types/tuple/dinan/: oobIndex.chpl oobIndex.future 
+	                                oobIndex.good 
+
