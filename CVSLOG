@@ -107806,3 +107806,13 @@ Log message:
 Modified files:
 	chapel/test/: start_opt_test 
 
+---------------------------------------------------------------------------
+
+06/22/07 09:45:48 -- deitz
+
+Log message:
+	Updated future test to be what was clearly intended.
+
+Modified files:
+	chapel/test/classes/bradc/: genericTypes.chpl genericTypes.good 
+
