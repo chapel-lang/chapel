@@ -107858,3 +107858,14 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: genericTypes.future 
 
+---------------------------------------------------------------------------
+
+06/22/07 10:51:58 -- marybeth
+
+Log message:
+	Added arraySlices test to list of targets in Makefile and to
+	list of tests in README file.
+
+Modified files:
+	chapel/test/release/examples/: Makefile README 
+
