@@ -107869,3 +107869,13 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: Makefile README 
 
+---------------------------------------------------------------------------
+
+06/22/07 11:05:22 -- marybeth
+
+Log message:
+	Few minor changes to arraySlices.chpl.
+
+Modified files:
+	chapel/test/release/examples/: arraySlices.chpl 
+
