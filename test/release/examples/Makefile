@@ -15,6 +15,7 @@ TARGETS = \
 	norm \
 	prodCons \
 	quicksort \
+	reductions \
 	slices \
 	sparse \
 	tree \

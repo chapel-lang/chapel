@@ -18,6 +18,7 @@ linkedList     : nested generic classes; iterators
 norm           : reductions; function overloading and where clauses; modules
 prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
+reductions     : minloc and maxloc array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 tree           : unbounded task parallelism using cobegin
@@ -58,6 +59,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
+reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
@@ -91,6 +93,7 @@ linkedList     |       |       |   x   |   x   |   x   |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
+reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
@@ -126,6 +129,7 @@ linkedList     |       |       |       |   *   |   *   |   x   |       |
 norm           |       |       |       |       |       |   x   |   x   |
 prodCons       |       |       |       |       |       |   x   |       |
 quicksort      |       |       |       |       |       |   x   |       |
+reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 tree           |       |       |       |   x   |       |   x   |       |
@@ -160,6 +164,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |   x   |       |       |       |       |       |       |
 prodCons       |   x   |       |       |       |       |       |       |
 quicksort      |   x   |       |       |       |       |       |       |
+reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 tree           |       |       |       |       |       |       |       |
@@ -195,6 +200,7 @@ linkedList     |       |       |       |       |   *   |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
+reductions     |       |       |       |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 tree           |       |       |       |       |       |       |       |
@@ -229,6 +235,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |   *   |       |       |       |
 quicksort      |       |   *   |   *   |       |       |       |       |
+reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
@@ -263,6 +270,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
