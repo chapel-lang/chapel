@@ -107900,3 +107900,19 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: reductions.chpl 
 
+---------------------------------------------------------------------------
+
+06/22/07 12:16:15 -- diten
+
+Log message:
+	Spec updates:
+	Updated isTrue to be function and changed places where it is called a method.
+	Added a tuple operators section. Updated the formal argument declarations
+	grouped into tuples section.
+	
+	I struggled with the wording in the tuple operators section.  Feel free to make
+	suggestions or change it.
+
+Modified files:
+	chapel/spec/: Expressions.tex Tuples.tex chapel_listing.tex 
+
