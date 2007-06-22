@@ -107944,3 +107944,16 @@ Modified files:
 	chapel/test/release/examples/: Makefile .cvsignore README 
 	                               README.features 
 
+---------------------------------------------------------------------------
+
+06/22/07 15:24:43 -- dinan
+
+Log message:
+	Added a future for handling of bad tuple indexes.  The compiler presently seg
+	faults when it encounters a bad tuple index (eg: tuple(0)) rather than
+	generating an error message.
+
+Added files:
+	chapel/test/types/tuple/dinan/: badIndex.chpl badIndex.future 
+	                                badIndex.good 
+
