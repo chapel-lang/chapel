@@ -17,4 +17,4 @@ var c = C(2,int);
 c.foo();
 
 var c2 = C(3,real);
-c.foo();
+c2.foo();
