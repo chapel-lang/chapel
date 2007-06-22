@@ -107879,3 +107879,14 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: arraySlices.chpl 
 
+---------------------------------------------------------------------------
+
+06/22/07 11:33:03 -- diten
+
+Log message:
+	Add a minloc and maxloc reductions example.  Fill an array with random values
+	and find the maximum and minimum values and locations.
+
+Added files:
+	chapel/test/release/examples/: reductions.chpl reductions.good 
+
