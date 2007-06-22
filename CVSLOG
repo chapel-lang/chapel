@@ -107933,3 +107933,14 @@ Added files:
 Removed files:
 	chapel/test/release/examples/: arraySlices.chpl arraySlices.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 13:49:34 -- diten
+
+Log message:
+	Add the reductions example to READMEs, Makefile and .cvsignore.
+
+Modified files:
+	chapel/test/release/examples/: Makefile .cvsignore README 
+	                               README.features 
+
