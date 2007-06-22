@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
+	arraySlices \
 	beer \
         blockLU \
 	genericStack \
