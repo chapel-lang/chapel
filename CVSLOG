@@ -107782,3 +107782,17 @@ Modified files:
 Removed files:
 	chapel/test/parallel/sync/deitz/: test_sync_formal.future 
 
+---------------------------------------------------------------------------
+
+06/21/07 21:43:09 -- marybeth
+
+Log message:
+	Adding a simple test that demonstrates array slicing and reindexing.
+	I updated the REAMDE.features, adding this test and accounting for its
+	features.
+
+Modified files:
+	chapel/test/release/examples/: README.features 
+Added files:
+	chapel/test/release/examples/: arraySlices.chpl arraySlices.good 
+
