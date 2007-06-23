@@ -107983,3 +107983,17 @@ Added files:
 	                              paramFibonacci.chpl 
 	                              paramFibonacci.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 17:11:12 -- deitz
+
+Log message:
+	Added a compilerError to the compiler-generated tuple-indexing
+	function and removed two .futures.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/types/tuple/dinan/: badIndex.good oobIndex.good 
+Removed files:
+	chapel/test/types/tuple/dinan/: badIndex.future oobIndex.future 
+
