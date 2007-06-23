@@ -175,7 +175,7 @@ the program is composed of the single \chpl{hello} module, it need not
 define an entry point.  Thus, when the program is executed, the single
 \chpl{hello} module will be initialized by executing its top-level
 code, invoking the call to \chpl{writeln()}, and printing out the
-message.
+message.  More information about modules can be found in~\rsec{Modules}. 
 
 \paragraph{Comments} 
 There are two ways of providing comments in Chapel source code.
@@ -204,13 +204,14 @@ The following output will be printed to the console:
 \subsubsection{Variables}
 There are three kinds of Chapel variables: \chpl{var},
 \chpl{const} (runtime constants), \chpl{param} (compile time constants).
+Chapel variables are discussed in detail in~\rsec{Variables}.
 
 \paragraph{Variable Declarations}
 Chapel is a strongly typed language.  Each variable declaration
-must include a type specification or an assignment to an initial value 
+must include a type specification or an initialization assignment 
 from which the type can be inferred.  
 Variable declarations include the kind of variable, a type specification,
-and an assignment to an initial value.  The type specification can be
+and an initialization assignment.  The type specification can be
 omitted if the type can be inferred from the initial value.  If the
 variable is not initialized in its declaration, then it contains a
 default initial value according to its type.
@@ -259,25 +260,14 @@ and flag is used.
 \end{commandline}
 \end{example}
 
-\paragraph{Synchronization Variables}
-Single variables are assigned once.  Using a single variable
-before it is assigned, suspends the computation until another
-task assigns a value to it.
-Sync variables are similar to single variables,
-but permit multiple assignments to that variable. Sync
-variables have a {\em full} or {\em empty} state associated
-with them that is modified when read and written to and control
-access to these variables between threads of computation.
-\begin{chapel}
-var x: single int;
-var y: sync real;
-\end{chapel}
-
 \subsubsection{Types}
 Chapel supports primitive numeric, logical and string types.  In
 addition, Chapel provides many non-primitive types such as classes,
-records, ranges, domains and arrays.  The paragraphs in this
-section describe all of the Chapel types.
+records, ranges, domains and arrays.  
+
+Chapel is a strongly typed language.  Some implicit conversions 
+between data types are supported, but many type conversions require
+an explicit cast.  See~\rsec{Conversions} for more information. 
 
 \paragraph{Primitive Types}
 Chapel provides primitive data types for signed and unsigned integers, 
@@ -313,10 +303,10 @@ type is used.
 \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)} &
 \chpl{0.0 + 0.0i} \\
 \hline
-\chpl{bool} & 1 bit & &
+\chpl{bool} &  & &
 \chpl{false} \\
 \hline
-\chpl{string} & unbounded & &
+\chpl{string} &  & &
 \chpl{""} \\
 \hline
 \end{tabular}
@@ -336,17 +326,17 @@ with their default initial values for variables of that type.
 \hline
 \chpl{array} & default initial values of element types \\
 \hline
-\chpl{class} & {\tt nil} \\
-\hline
-\chpl{record} & default constructed record \\
-\hline
 \chpl{enum} & first enum constant \\
 \hline
 \chpl{tuple} & default initial values of component types \\
 \hline
-\chpl{locale} & ordered list of processor ids assigned at job launch \\
+\chpl{class} & {\tt nil} \\
+\hline
+\chpl{record} & default constructed record \\
 \hline
 \chpl{file} &  \chpl{(filename = , path = ., mode = r)}\\
+\hline
+\chpl{locale} & ordered list of processor ids assigned at job launch \\
 \hline
 \end{tabular}
 \end{center}
@@ -355,7 +345,7 @@ The paragraphs below give a brief description and example for each
 type.
 
 \paragraph{Ranges}
-Ranges represent bounded and unbounded strided sequences of integral
+\emph{Ranges} represent bounded and unbounded strided sequences of integral
 types.  Ranges can be specified by the literal expression,
 "\chpl{low..high by stride}" where \chpl{low},
 \chpl{high} and \chpl{stride} are integral expressions.  The bounds
@@ -365,110 +355,88 @@ If \chpl{by stride} is omitted, the default stride of the range is
 one.
 
 Ranges are most commonly used in the definition of arithmetic domains
-and in iterator expressions.
+and in iterator expressions.  For more information about ranges and their
+uses, see~\rsec{Ranges}.  
 
 \begin{example}
 The following example shows the definition of the range \chpl{span1D}
 which is the ordered set \chpl{1} to \chpl{n}.  This range is then
 used in the definition of the arithmetic two-dimensional domain,
-\chpl{D}.
+\chpl{D}, which is then used to declare the $n \times n$ array \chpl{A}.    
+See the following paragraph for an introduction to domain and array 
+types.
  
 \begin{chapel}
-var span1D: range = 1..n;
-var D = [span1D,span1D];
+var span1D: range = 1..n; // span1D represents set of ints 1 to n
+var D = [span1D,span1D];  // D is 2-D, n x n domain
+var A: [D] real;          // A is 2-D, n x n array
 \end{chapel}
 \end{example}
 
 \paragraph{Domains and Arrays}
 In Chapel, the indices and values for a data set are maintained
-in two distinct types of data structures.  Domains specify indices
-and arrays store the values for sets of data.  Arrays and domains may
+in two distinct types of data structures.  \emph{Domains} specify indices
+and \emph{arrays} store the values for sets of data.  Arrays and domains may
 be arithmetic, sparse, indefinite, enumerated or opaque.
+
+\begin{example}
+The code below gives simple examples of how domains and arrays are declared
+and used.
+The variable \chpl{D2} is declared to have type \chpl{domain(2)}
+indicating that it is a two-dimensional domain.  The domain declaration
+also includes an intialization for the domain using the range literal
+expression \chpl{1..n},
+indicating that \chpl{D2} is an arithmetic domain.  The arrays declared
+with \chpl{D2}, \chpl{A}, \chpl{B}, \chpl{C} are two-dimensional
+arithmetic integer arrays.  
+
+The \chpl{for} loop statement demonstrates
+how domains are used to index into and iterate over entries in arrays.
+And, finally the assignment statement, \chpl{C = A + B} shows that
+whole array operations are supported in Chapel.
+
+\begin{chapel}
+const D2: domain(2) = [1..n, 1..n];
+var A, B, C: [D2] int;
+
+for (i,j) in D2 {
+  A(i,j) = j;
+  B(i,j) = i;
+}
+C = A + B;
+\end{chapel}
+\end{example}
 
 An array must be specified with a domain in its variable declaration, and 
 it is linked with this domain during execution.
-When a domain is modified by adding or removing indices, all arrays declared with
-this domain reflect this change.  Values that can be indexed by both the
-old and new domains are preserved in the array.  Values that can only be
-accessed with the old domain are lost, and values that can be accessed by only
-the new domain result in new entries in the array.
+When a domain is modified by adding or removing indices, all arrays 
+declared with this domain reflect this change.  
+Arrays and domains are passed by reference into functions but are
+assigned by value.  
+
 A domain can be declared with a distribution function which indicates how the 
 data values in arrays declared with this domain are to be distributed across
 processors.
 
-Arrays are passed by reference to functions
-where they may be modified, but assignment of arrays is by value.  
-
 \begin{example}
-In the code below, \chpl{D2} is declared with the type \chpl{domain(2)}
-indicating that it is a two-dimensional domain.  The domain declaration
-also includes an intialization for the domain using the range \chpl{1..n},
-indicating that \chpl{D2} is an arithmetic domain.  The arrays declared
-with \chpl{D2}, \chpl{A}, \chpl{B}, \chpl{C} are thus two-dimensional
-arithmetic arrays.
-\begin{chapel}
-const D2: domain(2) = [1..n, 1..n];
-var A, B, C: [D2] real;
-\end{chapel}
-
-The code below shows the declaration for a distributed two-dimensional 
-arithmetic domain and arrays.
+In the code below, the domain \chpl{DistD2} is declared to be a 
+block distributed two-dimensional arithmetic domain.
+The arrays \chpl{A}, \chpl{B}, and \chpl{C} are then block distributed
+two dimensional integer arrays.
 \begin{chapel}
 const DistD2: domain(2) distributed(Block) = [1..n, 1..n];
-var A, B, C: [DistD2] real;
+var A, B, C: [DistD2] int;
 \end{chapel}
 \end{example}
 
-\paragraph{Classes}
-Classes are data structures defined with fields and methods, and
-they are assigned by reference.  A class may inherit fields and
-methods from another class.  
-
-An instance of a class is created by calling its constructor
-in a variable declaration.  Each call to the constructor
-instantiates a new object of the class and returns a reference to 
-the object.  Chapel provides a default class constructor for each class.
-
-\begin{example}
-The following code gives an example of the circle class.  
-The variable, \chpl{x}, is an instance of the circle class with
-a radius of \chpl{1.0}.
-\begin{chapel}
-class circle {
-  var radius: real;
-  def area {
-    param pi = 3.14;
-    return pi*(radius**2);
-  }
-}
-var x = circle(radius=1.0);
-\end{chapel}
-\end{example}
-
-\paragraph{Records}
-Records are similar to classes.  They contain fields and methods
-and can inherit fields and methods from other records.  A record,
-however, directly contains the data associated with the fields
-in the record.  A record is not a reference to storage location as
-classes are.  Thus, records are assigned by value.  
-
-\begin{example}
-In the example code below, \chpl{p} and \chpl{q} are both
-variables of the record \chpl{point}.  They are distinct storage
-locations that are updated independently of each other.
-
-\begin{chapel}
-record point {
-  var x,y: real;
-}
-var p = point(0.0,1.0);
-var q = p;
-\end{chapel}
-\end{example}
-
+The Chapel language also supports constructs that allow 
+access to a specific part of an array or domain through slicing,
+reindexing, and array aliasing.   For more information about 
+domains and arrays see~\rsec{Domains_and_Arrays}.
+ 
 \paragraph{Enumerated Types}
-An enumerated type defines an ordered set of named constants.
-By default, these constants can be coerced to an 
+An \emph{enumerated} type defines an ordered set of named constants.
+By default, these constants have an associated 
 integral value, starting with one for the first constant. 
 An integral value may be assigned to one or more of the constants
 to override the default behavior. 
@@ -488,36 +456,152 @@ wed is day number 4 of the week
 \end{example}
 
 \paragraph{Tuple Types}
-Tuples are lightweight records with anonymous fields.
-The fields can be all of the same type or of multiple types, and
-they are indexed in the order in which they were declared.
+A \emph{tuple} is a ordered collection of types.
 \begin{example}
-The following variable declarations give an example of a mixed tuple,
-\chpl{pt} and a homogeneous tuple \chpl{x}.
+The following code shows two ways of declaring tuples.
+When the tuple contains multiple types, as in the variable
+\chpl{pt}, the tuple declaration specifies the component
+types of the tuple, separated by commas and contained within
+parentheses.  For the homogeneous tuple \chpl{x}, a short-hand
+notation can be used for its declaration.  The number of elements
+of the tuple, followed by \chpl{*} and the type can be used in
+this case.
+
 \begin{chapel}
 var pt: (int,real);
 var x: 3*int;
 \end{chapel}
+\end{example}
 
-Among their many uses, tuples may be used in the assignment to a
-complex variable.
+There are a set of operators defined for variables of tuple type
+and elements of a tuple are accessed through indexing and destructuring.  
+For more detailed information about tuples see~\rsec{Tuples}.
+
+Tuples are very useful constructs.  Two examples of how tuples
+may be used are given below.
+
+\begin{example}
+Tuples may be used in the assignment to a complex variable.
 \begin{chapel}
 var x, y: real;
 var z: complex;
-(*\vdots*)
+
 z = (x,y):complex;
 \end{chapel}
 \end{example}
 
-\paragraph{The Locale Type}
-In Chapel, the term {\em locale} refers to the processing unit in a parallel
-computer system.  The \chpl{locale} type is used to associate 
-computations and data to these processing units.  Chapel provides
-a predefined array \chpl{Locales} where each entry is of the \chpl{locale}
-type.  User-defined variables of \chpl{locale} type can be declared to store 
-entries from this \chpl{Locales} array or the entries can be accessed 
-directly to indicate where data should be reside in memory or where computations
-should be executed.   
+\begin{example}
+Tuples may also be used in the definition of functions that
+take variable length argument lists.  In the code below, 
+the function \chpl{writeLines} is defined to write each string
+argument on a separate line.  The symbol \chpl{...} in the argument
+list indicates the number of arguments is variable.  The notation \chpl{?n} 
+indicates to query the number of arguments and assign that number
+to \chpl{n}.  The variable \chpl{eachLine} is a homogeneous tuple
+that contains \chpl{n} elements of type \chpl{string}.  The
+function contains a \chpl{for} loop that writes each element of
+\chpl{eachLine} on a separate line.
+
+\begin{chapel}
+def writeLines(eachLine:string...?n) {
+  for i in 1..n do 
+    writeln(eachLine(i));
+}
+
+writeLines("Write","one","word","on","each","line"); 
+\end{chapel}
+
+The output of this example is:
+\begin{commandline}
+Write
+one
+word
+on
+each
+line
+\end{commandline}
+For more information about variable length argument lists 
+see~\rsec{Variable_Length_Argument_Lists}.
+\end{example}
+
+
+\paragraph{Classes}
+\emph{Classes} are data structures defined with fields and methods.
+A variable that is declared to be of a class type is a reference
+to an object, or instance, of that class. 
+ 
+An instance of a class is created by calling its constructor
+in a variable declaration.  Each call to the constructor
+instantiates a new object of the class and returns a reference to 
+the object.  Chapel provides a default class constructor for each class.
+For more information about classes, see~\rsec{Classes}.
+
+\begin{example}
+The following code gives an example of the circle class.  
+The variable, \chpl{x}, is an instance of the circle class with
+a radius of \chpl{1.0}.  The variable \chpl{y} is assigned the 
+reference to the same object as \chpl{x}.  When the radius of \chpl{y} is
+modified, the radius of \chpl{x} is modified as well.  Writing the area
+of \chpl{x} and \chpl{y} prints the same value, \chpl{12.56}.
+\begin{chapel}
+class circle {
+  var radius: real;
+  def area {
+    param pi = 3.14;
+    return pi*(radius**2);
+  }
+}
+var x = circle(radius=1.0);
+var y = x;
+
+y.radius = 2.0;
+
+writeln((x.area, y.area));
+\end{chapel}
+
+This program has the output
+\begin{commandline}
+(12.56, 12.56)
+\end{commandline}
+\end{example}
+
+\paragraph{Records}
+\emph{Records} are similar to classes.  They contain fields and methods
+and can inherit fields and methods from other records.  A record,
+however, directly contains the data associated with the fields
+in the record.  A record is not a reference to storage location as
+classes are.  Thus, records are assigned by value.  For more information
+about records, see~\rsec{Records}.
+
+\begin{example}
+In the example code below, \chpl{p} and \chpl{q} are both
+variables of the record \chpl{point}.  They are distinct storage
+locations that are updated independently of each other.
+When \chpl{p} is assigned to \chpl{q}, \chpl{q} then contains the
+same values as \chpl{p}.  But, when \chpl{q} is updated, \chpl{p}
+is not since they are referring to the same storage location.
+
+\begin{chapel}
+record point {
+  var x,y: real;
+  def magnitude {
+    return max(abs(x),abs(y));
+  }
+}
+var p = point(0.0,1.0);
+var q = p;
+
+q.x = 2.0;
+
+writeln((p.magnitude, q.magnitude));
+\end{chapel}
+
+This program has the output:
+
+\begin{commandline}
+(1.0, 2.0)
+\end{commandline}
+\end{example}
 
 \paragraph{The File Type}
 Chapel provides a built-in \chpl{file} type to handle input and
@@ -529,8 +613,18 @@ fields:  \chpl{filename}, \chpl{path}, and \chpl{mode}.
 And, they provide the following methods:
 \chpl{open}, \chpl{close}, \chpl{read}, \chpl{write} and \chpl{writeln}.
 
+\paragraph{The Locale Type}
+In Chapel, the term {\em locale} refers to the processing unit in a parallel
+computer system.  The \chpl{locale} type is used to associate 
+computations and data to these processing units.  Chapel provides
+a predefined array \chpl{Locales} where each entry is of the \chpl{locale}
+type.  User-defined variables of \chpl{locale} type can be declared to store 
+entries from this \chpl{Locales} array or the entries can be accessed 
+directly to indicate where data should be reside in memory or where computations
+should be executed.   
+
 \paragraph{The Type Alias}
-A type alias may defined for any type.  When used, it has the
+A \emph{type alias} may defined for any type.  When used, it has the
 same meaning as using the aliased type directly.
 \begin{chapel}
 type elemType = real(32);
@@ -539,6 +633,9 @@ var alpha: elemType; //alpha is 32-bit real
 
 \subsubsection{Operators}
 \paragraph{Operator Precedence}
+The following table lists Chapel language operators, the associativity
+and use of each.  The operators are listed in precedence order, from higher
+to lower.
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
@@ -576,6 +673,15 @@ Supported assignment operators:
  = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
 \end{chapel}
 
+An assignment statement contains a left hand-side side
+expression followed by an assignment operator and a right-hand
+side expression.
+An assignment operator that has a binary operator
+as a prefix is a short-hand notation for applying the binary
+operator to the left and right-hand side expressions 
+assigning the result to the left-hand side.  For example,
+\chpl{x += 1} is an alternative way of writing \chpl{x = x + 1}.
+
 \paragraph{The Swap Operator}
 The swap operator, \chpl{<=>} swaps the values between
 the left and right-hand side expressions.
@@ -586,7 +692,7 @@ x <=> y; //swaps the value in x with the value in y
 \paragraph{The Array Alias Operator}
 The array alias operator, \chpl{=>}, used within a
 variable declaration, creates an alias to an array or 
-an array slice.
+an array slice.  
 \begin{chapel}
 var A11 => A(block1,block1);
 \end{chapel}
@@ -602,45 +708,55 @@ Variables declared within a block statement are local to that block.
 
 \begin{example}
 The following code shows a block of statements for computing
-a Givens rotation.
+a Givens rotation.  The variables, \chpl{a, b, s, c} are declared
+outside of the block and are, in this case, assumed to be visible
+within the block as well.  The variable \chpl{tau} is declared 
+within the block as is local to this block.
 \begin{chapel}
+
+var a, b: real;
+var s, c: real;
+
 {
-tau = -a/b;
-s = 1/sqrt(1 + tau*tau);
-c = s*tau;
+  var tau = -a/b;
+  s = 1/sqrt(1 + tau*tau);
+  c = s*tau;
 }
+
 \end{chapel} 
 \end{example} 
 
 \paragraph{For Loop Statements} 
 In Chapel, a \chpl{for} loop statement defines an index and
 specifies either a function, expression or a variable to
-iterate over.  For loops may be nested.  They
-may also be defined with more than one index variable.
+iterate over. 
 
 \begin{example}
-The following code gives three examples of \chpl{for} loops. 
+The following code gives an example of a \chpl{for} loop
+statement that reads in data from the files \chpl{xdatain}
+and \chpl{ydatain} to initialize the arrays \chpl{x} and
+\chpl{y}.  
+
+The next \chpl{for} loop writes the indices
+and array elements in a particular way.  This \chpl{for} loop
+body is not a block statement, so the keyword \chpl{do} must
+be used to delimit the loop body.  In this loop, the index
+expression is a destructured tuple so that the \chpl{i} and
+\chpl{j} components of the indices in \chpl{D} can be accessed
+individually within the loop body.    
 \begin{chapel}
-for (i,j) in [1..n,1..n] {
-  sum += x(i,j);
+
+var x, y: [D] real;
+
+for ind in D { 
+  xdatain.read(x(ind));
+  ydatain.read(y(ind));
 }
 
-for index in userDefinedIterator(n) {
-  sum += y(index);
-}
+for (i, j) in D do 
+  writeln((i, j, x(i,j), y(j,i));
 
-for ij in D do sum += z(ij);
 \end{chapel}
-The first \chpl{for} loop defines a tuple of integers for the
-index of the loop and iterates over the tensor product promotion
-of the two arithmetic ranges from \chpl{1} to \chpl{n}.  For
-more information about tensor product promotion 
-see~\rsec{Tensor_Product_Promotion}.   
-
-The second \chpl{for} loop demonstrates the use of 
-an iterator function.  The third \chpl{for} loop iterates over a
-domain D and shows the alternative definition of a \chpl{for} loop
-using the \chpl{do} keyword when the loop body is a single statement.
 \end{example}
 
 \paragraph{Conditional Statement} 
@@ -655,8 +771,10 @@ if (a == 0.0) then
   x = 0.0;
 else 
   x = a*y;
+
 if (b != 0.0) {
   z = b*x;
+  y = z; 
 }
 \end{chapel}
 The example demonstrates two conditional statements, one with
@@ -675,9 +793,9 @@ enum day {sun, mon, tue, wed, thu, fri, sat};
 var today: day;
 
 select today {
-  when fri, sat do peakRate = 250;
-  when sun do peakRate = 180;
-  otherwise peakRate = 140;
+  when fri, sat do rate = 250;
+  when sun do rate = 180;
+  otherwise rate = 140;
 }
 \end{chapel}
 In the above example, the \chpl{select} statement assigns
@@ -733,7 +851,7 @@ x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
 
 \paragraph{Conditional Expression} 
 Chapel provides a conditional expression that can be evaluated
-and then assigned.
+at the expresion level.
 
 \begin{example}
 \begin{chapel}
@@ -747,11 +865,6 @@ Functions are defined with the keyword \chpl{def}, a name and a list of function
 arguments.  Optionally, intents and types for the function arguments, return types and 
 a where clause can be specified.  
 
-The Chapel language supports function overloading.  At compile time, function
-resolution will identify the most specific function for each function call from a set
-of candidate functions depending on the number of function arguments, the types 
-specified for the input and return values, and any where clauses.
-
 \begin{example}
 The example below defines a simple function that computes the area of a rectangle.
 The \chpl{areaRect} function is defined to take two function arguments of type
@@ -764,6 +877,12 @@ def areaRect(x:real, y:real): real {
 }
 \end{chapel}
 \end{example}
+
+The Chapel language supports function overloading.  At compile time, function
+resolution will identify the most specific function for each function call from a set
+of candidate functions depending on the number of function arguments, the types 
+specified for the input and return values, and any where clauses.
+
 
 \paragraph{Function Intents}
 Intents of function arguments specify how an argument can be
@@ -1027,6 +1146,20 @@ cobegin {
 Add readXX, etc. functions?
 \end{TODO}
 
+\paragraph{Synchronization Variables}
+Single variables are assigned once.  Using a single variable
+before it is assigned, suspends the computation until another
+task assigns a value to it.
+Sync variables are similar to single variables,
+but permit multiple assignments to that variable. Sync
+variables have a {\em full} or {\em empty} state associated
+with them that is modified when read and written to and control
+access to these variables between threads of computation.
+\begin{chapel}
+var x: single int;
+var y: sync real;
+\end{chapel}
+
 \paragraph{Suppressing Parallelism}
 It is often necessary to suppress concurrency during sections of
 parallel programs.  Chapel offers two constructs to accomplish this:
@@ -1058,1055 +1191,4 @@ should be placed.
 \begin{TODO}
 Not sure what to include here for now.  
 \end{TODO}
-
-\subsection{Example Chapel Programs}
-
-\begin{TODO}
-Review discussion of example programs to see what can be deleted because
-of previous introduction of Chapel features.
-\end{TODO}
-
-To illustrate Chapel language features, four short example codes are presented and
-discussed.  Each example highlights certain Chapel features, showing how they are used
-in the context of a program.  These examples do not cover all of Chapel's features.
-They are intended to introduce the user to many of the basic serial features that are
-currently supported in the compiler and to demonstrate how to program with 
-these features.  As more features are supported in the Chapel compiler, more 
-examples will be added to this section.
-
-All examples in this section are included with the release of the Chapel compiler.
-
-\subsubsection{Jacobi Method}
-\index{Jacobi method!example}
-
-\paragraph{Description}
-The following example Chapel program solves a system of finite difference
-equations for the Laplace equation using the Jacobi method.  The program uses
-two-dimensional arrays, \chpl{X} and \chpl{XNew}, to store and calculate the approximate
-solution.  At each iteration, the next approximation for the solution at 
-each grid point, \chpl{XNew(i,j)} is calculated by computing the average of 
-the four neighboring grid points,
-\chpl{X(i-1,j)}, \chpl{X(i,j-1)}, \chpl{X(i+1,j)}, and \chpl{X(i,j+1)}.  
-After all entries in \chpl{XNew} are computed, \chpl{X} is assigned \chpl{XNew}
-and convergence is tested.  If convergence has not been reached, the next
-approximation is calculated, and so on until the convergence test is met.
-
-\paragraph{Chapel Features}
-This program demonstrates how {\em arrays} \index{arrays} 
-are declared and used.  In Chapel, 
-arrays are declared using {\em domains} \index{domains}.  
-Domains are sets of indices which may be distributed
-across multiple processors indicating how data and parallel work should
-be divided among the processors.  An array is a mapping from the domain
-to a collection of variables.  An array is thus defined using a domain, distributing
-the entries of the array according to the domain's distribution.
-Domains may also be used to define array {\em slices} and as {\em iterators}.
-There are five kinds of domains in
-the Chapel language:
-\index{domains!types}
-  {\em arithmetic}, {\em sparse}, {\em indefinite},
-{\em opaque} and {\em enumerated}.  This example program uses arithmetic domains
-and arrays.  
-
-\paragraph{Code Listing}
-The Chapel code for this example follows.  
-\begin{numberedchapel}
-config var n = 5,                      // size of nxn grid (*\label{jac_config_start}*)
-           epsilon = 0.00001,          // convergence tolerance
-           verbose = false;            // control for amount of output (*\label{jac_config_end}*)
-
-def main() {                       (*\label{jac_main}*)
-  const ProblemSpace = [1..n, 1..n],   // domain for interior points(*\label{problem_space}*)
-        BigDomain = [0..n+1, 0..n+1];  // domain with boundary points(*\label{big_domain}*)
-
-  var X, XNew: [BigDomain] real = 0.0; // X holds approximate solution (*\label{a_temp_decl}*)
-                                       // XNew is work array
-
-  X[n+1, 1..n] = 1.0;                 (*\label{a_init_last_row}*)
-
-  if (verbose) {                      (*\label{verbose_init_start}*)
-    writeln("Initial configuration:");
-    writeln(X, "\n");
-  }                                   (*\label{verbose_init_end}*)
-
-  var iteration = 0,                  // iteration counter (*\label{jac_var_start}*)
-      delta: real;                    // covergence measure (*\label{jac_var_end}*)
-
-  do {                                (*\label{jac_do_start}*)
-    forall (i,j) in ProblemSpace do   (*\label{jac_forall}*)
-      XNew(i,j) = (X(i-1,j) + X(i+1,j) + X(i,j-1) + X(i,j+1)) / 4.0; (*\label{jac_iter}*)
-
-    delta = max reduce abs(XNew[ProblemSpace] - X[ProblemSpace]); (*\label{jac_reduce}*)
-    X[ProblemSpace] = XNew[ProblemSpace]; (*\label{jac_update_X}*)
-
-    iteration += 1; (*\label{jac_advance_iteration}*)
-
-    if (verbose) {  (*\label{verbose_iter_start}*)
-      writeln("iteration: ", iteration);
-      writeln(X);
-      writeln("delta: ", delta, "\n");
-    }               (*\label{verbose_iter_end}*)
-  } while (delta > epsilon);          (*\label{jac_do_end}*)
-
-  writeln("Jacobi computation complete.");  (*\label{jac_output_start}*)
-  writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
-  writeln("# of iterations: ", iteration); (*\label{jac_output_end}*)
-}
-\end{numberedchapel}
-
-\paragraph{Execution and Output}
-Compiling and running this program gives the following output:
-{\small
-\begin{verbatim}
-> ./a.out
-Jacobi computation complete.
-Delta is 9.92124e-06 (< epsilon = 1e-05)
-# of iterations: 60
-\end{verbatim}}
-
-It is possible to run a different sized problem, to use a different
-convergence tolerance, or enable more output without recompiling this
-program.  There are three variables defined in lines~\ref{jac_config_start} - 
-\ref{jac_config_end}, 
-\chpl{n}, \chpl{epsilon} and \chpl{verbose}, which are {\em configuration variables}
-\index{variables!configuration}
-\index{config@\chpl{config}}
-and can be set at the time of program execution through command line switches.
-Executing the following command line sequence,
-{\small
-\begin{verbatim}
-> ./a.out --verbose=true --n=2 --epsilon=0.01
-\end{verbatim}}
-results in overriding the default values for \chpl{verbose}, \chpl{n} and
-\chpl{epsilon}, producing the following output.
-{\small
-\begin{verbatim}
-Initial configuration:
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 1.0 1.0 0.0
-
-iteration: 1
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.25 0.25 0.0
-0.0 1.0 1.0 0.0
-delta: 0.25
-
-iteration: 2
-0.0 0.0 0.0 0.0
-0.0 0.0625 0.0625 0.0
-0.0 0.3125 0.3125 0.0
-0.0 1.0 1.0 0.0
-delta: 0.0625
-
-iteration: 3
-0.0 0.0 0.0 0.0
-0.0 0.09375 0.09375 0.0
-0.0 0.34375 0.34375 0.0
-0.0 1.0 1.0 0.0
-delta: 0.03125
-
-iteration: 4
-0.0 0.0 0.0 0.0
-0.0 0.109375 0.109375 0.0
-0.0 0.359375 0.359375 0.0
-0.0 1.0 1.0 0.0
-delta: 0.015625
-
-iteration: 5
-0.0 0.0 0.0 0.0
-0.0 0.117188 0.117188 0.0
-0.0 0.367188 0.367188 0.0
-0.0 1.0 1.0 0.0
-delta: 0.0078125
-
-Jacobi computation complete.
-Delta is 0.0078125 (< epsilon = 0.01)
-# of iterations: 5
-\end{verbatim}}
-
-\paragraph{Implementation Details}
-This example program begins with the declaration of the three configuration
-variables.  Note that these variables do not contain a type in their declaration: 
-\begin{chapel}
-config var n = 5,
-           epsilon = 0.00001,
-           verbose = false;
-\end{chapel}
-Instead the types of these variables are inferred \index{type inference} 
-from their initial values: \chpl{n} is an integer, \chpl{epsilon} is a real
-type, and \chpl{verbose} is a boolean type.  In Chapel, if a variable declaration
-contains an initialization expression, it is optional to include a type specification.
-More details about variable declarations are given in~\rsec{Variable_Declarations}.
-
-After the configuration variables are declared, the \chpl{main} function
-is defined.  The first two lines of \chpl{main} define two arithmetic domains:
-\index{domains!arithmetic}
-\begin{chapel}
-def main() {                       
-  const ProblemSpace = [1..n, 1..n],
-        BigDomain = [0..n+1, 0..n+1];
-\end{chapel}
-Both domains are declared to be \chpl{const}, indicating that the
-values for the domains remain constant during the execution of the
-program.  They are defined using ranges, and are, thus, arithmetic
-domains.  Because the domains are initialized in their declaration, it
-is not necessary to specify that they are of domain type.  In this
-case,
-\chpl{: domain(2)} was omitted from both domain declarations.  
-\chpl{BigDomain} is essentially the \chpl{ProblemSpace} 
-domain with additional 
-boundary rows and columns.  By defining \chpl{ProblemSpace} to be the interior
-points of the larger grid, \chpl{BigDomain}, the Jacobi computation can be cleanly 
-specified in one line, line~\ref{jac_iter}, for just the interior points, 
-eliminating the need to write special case computations for the boundary points.
-
-After the domains are declared, the arrays are declared using \chpl{BigDomain},
-and the last row of \chpl{X} is set to one.
-\begin{chapel}
-  var X, XNew: [BigDomain] real = 0.0;
-
-  X[n+1, 1..n] = 1.0;
-\end{chapel}
-Because they are defined using \chpl{BigDomain}, the
-arrays \chpl{X} and \chpl{XNew} are of size \chpl{n+2} $\times$ \chpl{n+2}.  
-They are declared to be of type \chpl{real} and all elements of the arrays
-are initialized to zero.  When an array is assigned a scalar value, as in the
-initialization to zero, each element of the array is assigned
-\index{arrays!assignment} the scalar value.  
-In the following line, the notation \chpl{n+1, 1..n} indicates a {\em slice}
-\index{arrays!slicing}
-of the array \chpl{X} is to be assigned the value one.  Each entry in this slice,
-which is the last row of \chpl{X}, is set to one.
-
-Lines~\ref{verbose_init_start} - \ref{verbose_init_end} print the initial 
-configuration of the problem, if \chpl{verbose}
-is set to true.  
-\begin{chapel}
-  if (verbose) {                      
-    writeln("Initial configuration:");
-    writeln(X, "\n");
-  }                                   
-\end{chapel}
-The \chpl{writeln} \index{writeln@\chpl{writeln}} function outputs strings and values
-of variables that are passed as arguments, followed by a line return.
-When an array is passed as an argument, it is output is row-major order with linefeeds
-after each row.  \index{write!default methods}
-Including the character string, \chpl{"\\n"} inserts an 
-additional line return.
-
-
-Lines~\ref{jac_var_start} - \ref{jac_var_end} 
-contain the remaining variable declarations:
-\begin{chapel}
-  var iteration = 0,
-      delta: real;
-\end{chapel}
-The variable \chpl{delta} must be specified to be of type \chpl{real} since
-it does not have an initialization expression.
-
-The computational loop in lines~\ref{jac_do_start} - \ref{jac_do_end}  
-performs the Jacobi method.
-This loop is executed until \chpl{delta} is less than or equal to \chpl{epsilon}.
-Each iteration of the \chpl{do while} loop computes the next approximate
-solution using a \chpl{forall} loop.   
-\begin{chapel}
-  do{
-    forall (i,j) in ProblemSpace do
-      XNew(i,j) = (X(i-1,j) + X(i+1,j) + X(i,j-1) + X(i,j+1)) / 4.0;
-\end{chapel}
-This loop 
-uses the \chpl{ProblemSpace} domain as an {\em iterator}\index{iterators}.  Iterators
-for loops provide a value or a set of values to be used in each iteration
-of the loop.  In this case, each iteration 
-is indexed by a {\em tuple} \index{tuples} of indices \chpl{(i,j)}, which avoids the use of
-a nest of two loops, one loop for the index \chpl{i} and one loop for the
-index \chpl{j}.  The compiler determines how this loop is made parallel, according
-to the default distribution for the \chpl{ProblemSpace} domain.   
-Note that the \chpl{ProblemSpace} domain is the set of interior points of 
-\chpl{X}'s domain.  All of the references to \chpl{X} in this loop are
-defined, and do not go out of bounds.  
-
-After the next approximate solution is computed and stored in \chpl{XNew},
-the change between \chpl{XNew} and \chpl{X}, for just the interior points, is 
-calculated and stored in \chpl{delta}:  
-\begin{chapel}
-    delta = max reduce abs(XNew[ProblemSpace] - X[ProblemSpace]);
-\end{chapel}
-The {\em built-in reduction}\index{reductions}, \chpl{max reduce}
-computes the maximum value of the expression that follows it.  In this case
-the expression is the computed array of absolute values of the difference
-between the \chpl{XNew} and \chpl{X} arrays.  If
-\chpl{XNew} and \chpl{X} are distributed, then this reduction is computed in 
-parallel accordingly.  The use of \chpl{ProblemSpace} with these two arrays
-indicates that the slice \index{arrays! slicing} of the arrays corresponding 
-to the interior points are to be used in this calculation.
-
-Next, \chpl{X} is updated with the new approximate solution and the iteration
-number is advanced.  
-\begin{chapel}
-    X[ProblemSpace] = XNew[ProblemSpace]; 
-
-    iteration += 1; 
-\end{chapel}
-The domain \chpl{ProblemSpace} is used in the assignment
-of \chpl{XNew} to \chpl{X}, updating only the slice of \chpl{X} corresponding
-to the interior points of the array.
-
-The remaining part of the loop optionally provides output about the iteration.
-\begin{chapel}
-    if (verbose) {  
-      writeln("iteration: ", iteration);
-      writeln(X);
-      writeln("delta: ", delta, "\n");
-    }               
-  } while (delta > epsilon);       
-\end{chapel}
-If \chpl{verbose} is set to true, then information about
-the current approximate solution and \chpl{delta} is output.  Then, \chpl{delta}
-is compared to the convergence tolerance, \chpl{epsilon}.  If \chpl{delta} is
-not small enough, then the \chpl{do
-while} loop continues.  Otherwise, the loop exits.  
-
-The program ends with three lines of output.
-\begin{chapel}
-  writeln("Jacobi computation complete.");  
-  writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
-  writeln("# of iterations: ", iteration); 
-}
-\end{chapel}
-Information about the convergence is given, printing the values
-for \chpl{epsilon} and the iteration counter.
-
-\subsubsection{Matrix and Vector Norms}
-
-\paragraph{Description}
-The following example contains a module \chpl{Norm} which provides  
-\chpl{norm} functions that compute either a vector or matrix norm, depending
-on the rank of the array that is passed as the argument.  There are four
-norm type options:  1-norm, 2-norm, infinity norm and Frobenius norm.  For vectors,  
-all four options are implemented in this module.  
-For matrices, all options but the 2-norm are provided.   
-The module uses a variable of enumerated type \chpl{normType} to 
-indicate the choice of norm.
-
-\paragraph{Chapel Features}
-\index{modules}
-\index{functions}
-\index{functions!generic}
-\index{generics!functions}
-This example demonstrates the definition and use of modules, generic functions
-\index{generics!functions} and function overloading \index{functions!overloading}.
-When the \chpl{Norm} module is used, the user may call 
-\chpl{norm(x)} or \chpl{norm(x,normType)} where
-\chpl{x} is any array and \chpl{normType} is the {\em enumerated type} as defined
-in the \chpl{Norm} module.  The \chpl{norm} function is {\em overloaded} with
-four separate function definitions for \chpl{norm}, based on the
-the rank of the input array, or the number of formal
-arguments used in the \chpl{norm} function call.  Each of these four function
-definitions is a {\em generic} function, not specifying the type of the array
-argument \chpl{x}.  Generic functions allow for code reuse and readability.
-
-\paragraph{Program Listing}
-The following program gives the definition of the \chpl{Norm} module followed
-by a module which tests \chpl{Norm}, demonstrating different calls to the \chpl{norm}
-function.
-
-\begin{numberedchapel}
-module Norm{                                    (*\label{norm_start}*)
-  enum normType {norm1, norm2, normInf, normFrob}; (*\label{norm_enum}*)
-
-  def norm(x: [], p: normType) where x.rank == 1 { (*\label{vec_start}*)
-  // vector norm routine
-    select (p) {                                   (*\label{vec_select_start}*)
-      when norm1 do return + reduce abs(x);        (*\label{vec_norm1}*)
-      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  (*\label{vec_norm2}*)
-      when normInf do return max reduce abs(x);  (*\label{vec_normInf}*)
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));(*\label{vec_normFrob}*)
-      otherwise halt("Unexpected norm type"); (*\label{vec_unexp}*)
-    } (*\label{vec_select_end}*)
-  } (*\label{vec_end}*)
-
-  def norm(x: [?D], p: normType) where x.rank == 2 { (*\label{mat_start}*)
-  // matrix norm routine
-    select (p) {                                     (*\label{mat_select_start}*)
-      when norm1 do                                  (*\label{mat_norm1_1}*)
-        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j])); (*\label{mat_norm1_2}*)
-
-      when norm2 do  (*\label{mat_norm2_1}*)
-        halt("Haven't implemented 2-norm for 2D arrays yet"); (*\label{mat_norm2_2}*)
-
-      when normInf do  (*\label{mat_normInf_1}*)
-        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)])); (*\label{mat_normInf_2}*)
-
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x))); (*\label{mat_normFrob}*)
-
-      otherwise halt("Unexpected norm type"); (*\label{mat_unexp}*)
-    } (*\label{mat_select_end}*)
-  } (*\label{mat_end}*)
-
-  def norm(x: [], p: normType) where x.rank > 2 { (*\label{large_rank_start}*)
-    compilerError("Norms not implemented for array ranks > 2D"); (*\label{comp_err_1}*)
-  } (*\label{large_rank_end}*)
-
-  def norm(x: []) { (*\label{norm_default_start}*)
-  // default norm routine
-    select (x.rank) { (*\label{default_select_start}*)
-      when 1 do return norm(x, norm2);  (*\label{default_vec}*)
-      when 2 do return norm(x, normFrob); (*\label{default_mat}*)
-      otherwise compilerError("Norms not implemented for array ranks > 2D"); (*\label{comp_err_2}*)
-    }   (*\label{default_select_end}*)
-  }  (*\label{norm_default_end}*)
-} (*\label{norm_end}*)
-
-module TestNorm { (*\label{test_mod_start}*)
-  use Norm;  (*\label{use_norm}*)
-
-  def testNorm(arr: []) { (*\label{test_start}*)
-    // test all possible norms of arr
-    var testType = if (arr.rank == 1) then "vector" else "matrix"; 
-    writeln("Test of ", testType, " norms.  Array = ");
-    writeln(arr);
-    writeln("1-norm = ", norm(arr, norm1));
-    if (arr.rank == 1) then
-      writeln("2-norm = " , norm(arr, norm2));
-    writeln("infinity norm = ", norm(arr, normInf));
-    writeln("frobenius norm = ", norm(arr, normFrob));
-    writeln("default norm = ", norm(arr)); (*\label{default_call}*)
-    writeln();
-  } (*\label{test_end}*)
-
-  def main() {  (*\label{test_main_start}*)
-    // test vector norms:
-    const D1 = [1..4];  (*\label{test_d1_def}*)
-    var a:[D1] real;    (*\label{test_a_def}*)
-    a = 2.0;            (*\label{test_a_init}*)
-    testNorm(a);        (*\label{testnorm_a_call}*)
-
-    // test matrix norms:
-    const D2 = [1..2,1..2];  (*\label{test_d2_def}*)
-    var b:[D2] real;         (*\label{test_b_def}*)
-    b = 2.0;                 (*\label{test_b_init}*)
-    testNorm(b);             (*\label{testnorm_b_call}*)
-  }            (*\label{test_main_end}*)
-}              (*\label{test_mod_end}*)
-\end{numberedchapel}
-
-\paragraph{Execution and Output}
-After the definition of the \chpl{Norm} module, a \chpl{TestNorm} module
-is defined in lines~\ref{test_mod_start} - \ref{test_mod_end}, giving 
-an example of how the \chpl{norm} functions can be used in a program.
-
-On line~\ref{use_norm} , \chpl{use Norm}, indicates that the \chpl{Norm} module is to be
-used when resolving functions in the \chpl{TestNorm} module.  A \chpl{testNorm}
-function is defined, taking \chpl{arr} as an argument.  Based on \chpl{arr.rank},
-all of the valid norm options are tested, along with the generic \chpl{norm(arr)}
-function call.  This \chpl{testNorm} function is called to test two arrays, \chpl{a}
-and \chpl{b}.  The array \chpl{a} is a one-dimensional array, as defined by the
-domain \chpl{D1}.  The array \chpl{b} is a two-dimensional array, as defined by
-the domain \chpl{D2}.  Each array has a total of four elements, and each
-is initialized to 2.0.  
-
-The output of this program is given below.  The first set
-of norms is computed for \chpl{a} which is a vector and the second set 
-is computed for \chpl{b} which is
-a matrix. Even though the vector and matrix in this example contain
-the same number of elements with the same values, some of the computed norms
-are different between the vector and the matrix.  Thus, different
-implementations of the norm functions are used to compute the norms, 
-depending on the whether the input is a vector or matrix.
-
-{\small
-\begin{verbatim}
-Test of vector norms.  Array = 
-2.0 2.0 2.0 2.0
-1-norm = 8.0
-2-norm = 4.0
-infinity norm = 2.0
-frobenius norm = 4.0
-default norm = 4.0
-
-Test of matrix norms.  Array = 
-2.0 2.0
-2.0 2.0
-1-norm = 4.0
-infinity norm = 4.0
-frobenius norm = 4.0
-default norm = 4.0
-\end{verbatim}}
-
-\paragraph{Implementation Details}
-The \chpl{Norm} module begins with defining \chpl{normType} to be an
-enumerated type \index{enumerated types} with constant values \chpl{norm1}, \chpl{norm2}, 
-\chpl{normInf}, \chpl{normFrob}.
-For three of the four \chpl{norm} function definitions (see lines~\ref{vec_start},
-\ref{mat_start}, \ref{large_rank_start}), 
-one of the formal arguments is of \chpl{normType}, indicating which type of norm 
-is to be computed.  If \chpl{norm} is called without the \chpl{normType} argument,
-then the default norm for vectors is the 2-norm (see line~\ref{default_vec}) and 
-the default norm for matrices is the Frobenius norm (see line~\ref{default_mat}).  
-
-The first \chpl{norm} function is defined for vectors.  This definition
-begins with line~\ref{vec_start}:
-\begin{chapel}
-  def norm(x: [], p: normType) where x.rank == 1 {
-\end{chapel}
-The function definition contains a \chpl{where x.rank == 1} clause, indicating that
-this version of \chpl{norm} is to be used when the input array \chpl{x}
-has just one dimension, and is thus, a vector.  The arguments for this version
-of \chpl{norm} are \chpl{x} of generic array type and \chpl{p} of \chpl{normType}.  
-Since all norm types for the vector case can be computed with whole array 
-operations, there 
-is no need to specify a domain type for \chpl{x}.  It is good practice to
-specify \chpl{x} as an array type by using \chpl{: []} since the \chpl{norm}
-function is only defined for arrays.  The compiler can detect errors if other,
-non-array types are passed as arguments to \chpl{norm} \index{arrays!as formal arguments}.
-
-The body of the vector version of the \chpl{norm} function is a \chpl{select} 
-statement \index{select@\chpl{select}} on
-\chpl{p} in lines~\ref{vec_select_start} - \ref{vec_select_end}.  
-\begin{chapel}
-select (p) {                                   
-      when norm1 do return + reduce abs(x);   
-      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));  
-      when normInf do return max reduce abs(x);  
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
-      otherwise halt("Unexpected norm type"); 
-    } 
-\end{chapel}
-For the first four cases of the select statement,
-when \chpl{p} is \chpl{norm1}, \chpl{norm2}, \chpl{normInf} or \chpl{normFrob}
-a reduction operator is used along with \chpl{abs(x)} to compute the value 
-that is returned.  The \chpl{abs} function is promoted over the \chpl{x} array, 
-computing the absolute values of each entry of \chpl{x}.  
-The 1-norm of a vector is the sum of the absolute values of the entries of \chpl{x},
-computed with the sum reduction expression, \chpl{ + reduce abs(x)}.  
-The 2-norm of a vector is the sum of the squares of the absolute values of
-the entries of \chpl{x}, computed with the sum reduction expression,
-\chpl{ + reduce (abs(x)*abs(x))}.
-The infinity norm of a vector is the maximum entry of \chpl{x} in absolute value,
-which can be computed with the maximum reduction expression \chpl{max reduce abs(x)}.
-The Frobenius norm of a vector is the same computation as the 2-norm of a vector.
-
-The last case of the select statement, the otherwise clause, results
-in the program halting, outputting the string that is passed to the \chpl{halt}
-function indicating that \chpl{p} has an unexpected value.   
-
-The second \chpl{norm} function is defined for matrices.  This definition begins
-with line~\ref{mat_start}:
-\begin{chapel}
-  def norm(x: [?D], p: normType) where x.rank == 2 {
-\end{chapel}
-This version of the function will be used when \chpl{x} is a matrix,
-that is the \chpl{rank} of the array \chpl{x} is \chpl{2}.  The arguments
-for this version of \chpl{norm} are \chpl{x} of generic array type and \chpl{p}
-of \chpl{normType}.  For this matrix version, the domain of \chpl{x} is
-needed to express the  norm computations.  So, the domain type is {\em queried} 
-and set to \chpl{D} with the expression \chpl{[?D]}.  
-
-The body of the matrix version of \chpl{norm}
-is a select statement on \chpl{p} in lines~\ref{mat_select_start} - \ref{mat_select_end}.
-The \chpl{norm1} case, 
-the 1-norm of a matrix, is the maximum absolute column sum of the matrix. 
-\begin{chapel}
-      when norm1 do           
-        return max reduce [j in D(2)] (+ reduce abs(x[D(1), j])); 
-\end{chapel}
-The return expression is the maximum reduction of a \chpl{forall} loop, which computes
-a sum reduction for each iteration.  
-It uses \chpl{D(1)} and \chpl{D(2)}, which are the first and second dimension,
-respectively, of the domain \chpl{D}.  The shorthand version of a \chpl{forall}
-loop is used, \chpl{[j in D(2)]}, indicating that
-for all \chpl{j in D(2)}, the sum
-of the absolute values across the rows, \chpl{+ reduce abs(x[D(1), j])}, is computed. 
-Then, the maximum value of these \chpl{j} absolute column sums is computed with
-\chpl{max reduce}.  
-
-The \chpl{norm2} case, the 2-norm of a matrix, is not
-implemented.  Since the 2-norm of a matrix $A$ is the square root of the maximum
-eigenvalue of the matrix $A^TA$ (or $A^HA$ in the case where $A$ is complex),
-this norm has not been included in this simple example code.
-This case will halt with a message indicating this unimplemented
-status.  
-
-The \chpl{normInf} case, the infinity norm of a matrix, is the maximum
-absolute row sum.  
-\begin{chapel}
-      when normInf do  
-        return max reduce [i in D(1)] (+ reduce abs(x[i, D(2)])); 
-\end{chapel}
-For all \chpl{i in D(1)}, the sum of the absolute values across columns,
-\chpl{+ reduce abs(x[i, D(2)])} is computed.  Then the maximum value of these
-\chpl{i} absolute row sums is computed with \chpl{max reduce}.  
-
-The \chpl{normFrob}
-case which is the Frobenius norm of a matrix, is the same computation as the
-2-norm of a vector.  
-\begin{chapel}
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x))); 
-\end{chapel}
-The Frobenius norm is the square root of the sum of the
-squares of absolute values of all entries in the matrix.  
-
-The final case of
-the select statement, the \chpl{otherwise} clause, halts with a message that
-the norm type is unexpected.
-
-The third version of the \chpl{norm} function with arguments \chpl{x}
-and \chpl{p}, given in lines~\ref{large_rank_start} - \ref{large_rank_end} 
-is for the case where \chpl{x.rank > 2}.
-The module was designed to only compute norms of vectors and matrices.  
-Calling the \chpl{norm} function with three-dimensional or higher arrays 
-should give an error at compile time.  In this case, an appropriate compiler error 
-is given using the \chpl{compilerError} function.  
-\begin{chapel}
-    compilerError("Norms not implemented for array ranks > 2D"); 
-\end{chapel}
-For more information about 
-user-defined compiler errors, see~\rsec{User-Defined_Compiler_Errors}.
-
-The final version of the \chpl{norm} function is given in 
-lines~\ref{norm_default_start} - \ref{norm_default_end}.
-\begin{chapel}
-  def norm(x: []) { 
-    select (x.rank) { 
-      when 1 do return norm(x, norm2);  
-      when 2 do return norm(x, normFrob); 
-      otherwise compilerError("Norms not implemented for array ranks > 2D"); 
-    }   
-  }  
-\end{chapel}
-This version has one formal argument, \chpl{x}, allowing the user to 
-omit the norm type.  It calls the other \chpl{norm} functions with default values for 
-\chpl{normType}.  For vectors, the default norm is defined to be the 2-norm.
-For matrices, the default norm is defined to be the Frobenius norm.  This 
-version of \chpl{norm} is a select statement on \chpl{x.rank}.  Depending
-on the rank of \chpl{x}, the \chpl{norm} function is called with the
-appropriate default norm type or a compiler error is given.
-
-\subsubsection{Simple Producer-Consumer Program}
-\paragraph{Description}
-The following example demonstrates a simple producer and consumer program.
-The {\em producer computation} sets the value of a sync variable and the 
-{\em consumer computation} prints the value of the same variable.
-
-\paragraph{Chapel Features}
-The program contains a \chpl{begin} statement \index{begin@\chpl{begin}}
-to implement two concurrent computations, and a \chpl{sync} variable 
-\index{synchronization variables}
-to coordinate between the two.
-Sync variables have extra state associated with them to
-indicate whether they are logically {\em full} or {\em empty}.  
-A sync variable
-is intended to be accessed by multiple concurrent computations, each of which may
-change the contents and state of the variable.  A sync variable
-can be read when its state is full.  Attempts to read an empty sync variable from one
-computation will suspend execution until another computation changes its state to full.
-Once a sync variable is able to be read, its state is atomically set to empty.
-Conversely, a sync variable can be written only when its state is empty.  Attempts
-to write to a full sync variable will suspend until its state is empty.  Once the variable
-is written to, the state is atomically set to full.  In addition, there are
-functions that read and write sync variables which override this default behavior.
-More information about sync variables and their functions is in~\rsec{Sync_Variables}
-and~\rsec{Functions_on_Synchronization_Variables}.
-
-\paragraph{Program Listing}
-The Chapel code for this example is given below.
-
-\begin{numberedchapel}
-use Time;                           (*\label{use_time}*)
-
-config var numIterations: int = 5,  (*\label{prodcons_var_1}*)
-           sleepTime: uint = 2;     (*\label{prodcons_var_2}*)
-
-var s: sync int;                    (*\label{prodcons_var_3}*)
-
-begin { // create consumer computation (*\label{consumer_start}*)
-  for c in 1..numIterations do         (*\label{consumer_for_1}*)
-    writeln("consumer got ", s);       (*\label{consumer_for_2}*)
-}                                      (*\label{consumer_end}*)
-
-// producer computation
-for p in 1..numIterations {            (*\label{producer_start}*)
-  sleep(sleepTime);   (*\label{sleep_call}*)
-  s = p;
-}                                      (*\label{producer_end}*)
-\end{numberedchapel}
-
-\paragraph{Execution and Output}
-When this program executes, a consumer computation is created with the \chpl{begin}
-statement.
-However, the consumer computation cannot read \chpl{s} before it has been written
-to.  So, execution begins with the producer computation which assigns the value
-\chpl{1} to \chpl{s} after calling the \chpl{sleep} function\footnote{The call to
-the \chpl{sleep} function 
-is used to mimic some amount of computational time.  It is not necessary to use
-a sleep function when synchronizing between concurrent computations.}.   
-Once \chpl{s} has the
-value \chpl{1}, the consumer computation can read it and print it.  Execution
-switches back and forth between the producer and consumer computation for
-\chpl{numIterations}.
-
-Running the program with the default
-values for \chpl{numIterations} results in:
-{\small
-\begin{verbatim}
-consumer got 1
-consumer got 2
-consumer got 3
-consumer got 4
-consumer got 5
-\end{verbatim}}
-Each line is printed after a delay of \chpl{sleepTime} seconds.
-
-Since the variables \chpl{numIterations} and \chpl{sleepTime} are 
-{\em configuration variables}, \index{configuration variables} they can 
-be reset at execution time.
-For example, to change the number of iterations to 10
-and to change the number of seconds to sleep to 5, the following execution command
-may be used:
-{\small
-\begin{verbatim}
-> a.out --numIterations=10 --sleepTime=5
-\end{verbatim}}
-
-\paragraph{Implementation Details}
-The program uses the \chpl{sleep} function in line~\ref{sleep_call}, which is 
-provided in the
-standard Chapel module, \chpl{Time}.  So, the first line, \chpl{use Time}, 
-is needed to include the \chpl{Time} module when resolving 
-function calls in this program.  
-
-Lines~\ref{prodcons_var_1} - \ref{prodcons_var_2} give the declarations 
-and initial default values
-for the two variables, \chpl{numIterations} and \chpl{sleepTime}.
-The \chpl{config} keyword in front of these two variable declarations 
-indicates that these are configuration variables.  Configuration variables 
-can be set to override their default values at program execution time, through the 
-use of command line switches.  
-
-In line~\ref{prodcons_var_2}, the variable \chpl{s} is 
-declared to be a \chpl{sync} variable 
-of type \chpl{int}.  Since \chpl{s}
-is not initialized, its state is empty at the beginning of the program's execution.
-The variable \chpl{s} will be used
-to synchronize the exchange of data between the producer and consumer computations.
-
-The remainder of the code defines the consumer and producer computations.
-The new computation that is created with the \chpl{begin} statement will
-be referred to as the consumer computation.  The continuing computation
-will be referred to as the
-producer computation.  Execution control switches between the
-producer and consumer computations as the state of the sync variable \chpl{s}
-changes when it is read and written to.
-
-The \chpl{begin} statement in line~\ref{consumer_start} creates a 
-new computation to execute the \chpl{for}
-loop in lines~\ref{consumer_for_1} - \ref{consumer_for_2}.  
-\begin{chapel}
-begin {                                
-  for c in 1..numIterations do        
-    writeln("consumer got ", s);     
-}                                   
-\end{chapel}
-This loop is indexed by \chpl{c}, which iterates over the
-range \chpl{1..numIterations}.  The variable \chpl{c} is a new
-variable defined for the scope of the loop.  Its type is inferred to
-be integer from the integer range that follows.  During each iteration
-of the \chpl{for} loop, the \chpl{writeln} function is called which
-outputs the string literal \chpl{"consumer got "} and the value of the
-sync variable \chpl{s}, followed by a line break.  In order to print
-the value stored in \chpl{s}, the sync variable is read only when its
-state is full.  Once \chpl{s} is successfully read, its state will be
-set to empty.  The next iteration follows, and the consumer
-computation will suspend execution until the state of \chpl{s} is made
-full again.  Since the consumer computation only reads \chpl{s}, it
-will be the producer computation that changes the states of \chpl{s}
-to full.
-
-The producer computation executes the \chpl{for} loop in lines~\ref{producer_start} -
-\ref{producer_end}.  
-\begin{chapel}
-for p in 1..numIterations {            
-  sleep(sleepTime);   
-  s = p;
-}      
-\end{chapel}
-This loop is indexed by \chpl{p} which iterates over the same range as
-the consumer computation.  Like the index \chpl{c}, \chpl{p} is
-inferred to be an integer.  During each iteration of this \chpl{for}
-loop, the \chpl{sleep} function is called with the
-argument\chpl{sleepTime}.  This \chpl{sleep} function is provided in
-the \chpl{Time} standard module, and it causes the producer
-computation to
-\chpl{sleepTime} seconds.  After returning from the \chpl{sleep} function, 
-the producer computation assigns \chpl{s} to be the iteration number \chpl{p}.  
-Because \chpl{s} is a sync variable, this assigment is executed only when the state of 
-\chpl{s} is empty.  Once \chpl{s} is written, its state is changed to full and the
-next iteration of the producer loop follows.  Since the producer computation only
-writes \chpl{s}, it will be the consumer computation that changes the state of
-\chpl{s} to empty allowing the next iteration to write its iteration number
-to \chpl{s}.
-
-The program terminates after \chpl{numIterations} of both the consumer and
-producer loops.
-
-\subsubsection{Generic Stack Implementations}
-\paragraph{Description}
-Two implementations of a generic stack type, \chpl{Stack}, are given below.  The first
-defines \chpl{Stack} to be a linked list of \chpl{MyNode} objects.  In
-the second implementation, \chpl{Stack} is an array.  Both implementations of
-\chpl{Stack} define the methods, \chpl{push}, 
-\chpl{pop} and \chpl{isEmpty}. 
-
-\paragraph{Chapel Features}
-These examples demonstrate {\em classes} \index{classes} and {\em records}\index{record}.  
-Chapel classes and records
-are both structured data types containing fields and methods.
-Classes are reference types while records are value types.
-The examples also
-use the {\em unspecified type alias} \index{type aliases} \chpl{itemType} 
-as the generic type for the items
-in the stack and define generic stack methods.  To use either version,
-a type for \chpl{itemType} must be specified when \chpl{Stack} is instantiated.
-More information about type aliases can be found 
-in~\rsec{Type_Aliases_in_Generic_Types}.  The array implementation of
-the generic stack demonstrates
-the association of arrays to domains \index{arrays! association to domains}.  In this example, the array's size is
-doubled by reassigning its domain to one that is twice in size.
-
-\paragraph{Sample Stack}
-A simple example of how this generic stack can be used:
-\begin{chapel}
-var stack1: Stack(string);
-stack1.push("one");
-stack1.push("two");
-stack1.push("three");
-writeln(stack1.pop());
-writeln(stack1.pop());
-writeln(stack1.pop());
-\end{chapel}
-In this simple example, the variable \chpl{stack1} is declared to be a
-stack of string type.
-By specifying \chpl{string} as an input, the default constructor for \chpl{Stack}
-will initialize the type alias for the generic stack to be a string.
-The strings, \chpl{"one"}, \chpl{"two"} and \chpl{"three"}
-are pushed on \chpl{stack1}, and then three items are popped off of \chpl{stack1},
-in the reverse order from how they were put on the stack.
-The output of this example is:
-{\small
-\begin{verbatim}
-three
-two
-one
-\end{verbatim}}
-
-\paragraph{Linked List Implementation}
-This implementation of a generic stack defines a {\em class},
-\chpl{MyNode} and a {\em record}, \chpl{Stack}.  In the following
-code, the reference pointers of \chpl{MyNode} objects are used to point to
-the top of the stack and to point between items in the stack,
-thus implementing the stack as a linked list.
-
-\begin{numberedchapel}
-class MyNode {                      (*\label{mynode_class_start}*)
-  type itemType;                    (*\label{mynode_itemtype}*)
-  var item: itemType;               (*\label{mynode_item}*)
-  var next: MyNode(itemType);       (*\label{mynode_next}*)
-}                                   (*\label{mynode_class_end}*)
-
-record Stack {                      (*\label{stack_list_start}*)
-  type itemType;                    (*\label{stack_list_itemtype}*)
-  var top: MyNode(itemType);        (*\label{stack_list_top}*)
-
-  def push(item: itemType) {        (*\label{stack_list_push_start}*)
-    top = MyNode(itemType, item, top); (*\label{stack_list_push_top}*)
-  }                                 (*\label{stack_list_push_end}*)
-
-  def pop() {                       (*\label{stack_list_pop_start}*)
-    if isEmpty then                 (*\label{stack_list_pop_empty_1}*)
-      halt("attempt to pop an item off an empty stack"); (*\label{stack_list_empty_2}*)
-    var oldTop = top;               (*\label{stack_list_pop_oldtop}*)
-    top = top.next;                 (*\label{stack_list_pop_newtop}*)
-    return oldTop.item;             (*\label{stack_list_pop_return}*)
-  }                                 (*\label{stack_list_pop_end}*)
-
-  def isEmpty return top == nil;   (*\label{stack_list_isempty}*)
-}                                  (*\label{stack_list_end}*)
-\end{numberedchapel}
-
-\paragraph{Linked List Implementation Details}
-The code begins with a definition of the \chpl{MyNode} class in 
-lines~\ref{mynode_class_start} - \ref{mynode_class_end}.  
-\begin{chapel}
-class MyNode {                      
-  type itemType;                   
-  var item: itemType;             
-  var next: MyNode(itemType);    
-\end{chapel}
-Objects of type \chpl{MyNode} are used to store the generic items in the stack
-as a linked list.  There are three fields in \chpl{MyNode}:  \chpl{itemType}, 
-\chpl{item} and
-\chpl{next}.  \chpl{MyNode} objects are instantiated within \chpl{Stack} to
-have the same \chpl{itemType} as the \chpl{Stack}.  The \chpl{item} field
-holds the data and \chpl{next} is a pointer to the next \chpl{MyNode} object
-in the linked list.
-
-The \chpl{Stack} record contains two fields:
-\begin{chapel}
-record Stack {                      
-  type itemType;                   
-  var top: MyNode(itemType);      
-\end{chapel}
-When \chpl{Stack} is instantiated, a type is specified for the type
-alias, \chpl{itemType}.  The \chpl{top} field is a pointer to the top
-of the stack, which is a \chpl{MyNode} object of \chpl{itemType}.  When
-the stack is first instantiated, \chpl{top} is set to nil.  To 
-add and remove items from the stack, the \chpl{push} and \chpl{pop} 
-methods are used.
-
-The \chpl{push} method is given in lines~\ref{stack_list_push_start} -
-\ref{stack_list_push_end}.  This method adds an item to the top of the stack
-by resetting \chpl{top} to point to a new \chpl{MyNode} object.  This new
-top object stores the added item and sets its \chpl{next} field to the previous
-\chpl{top} object of the stack.
-\begin{chapel}
-  def push(item: itemType) {        
-    top = MyNode(itemType, item, top); 
-  }                                 
-\end{chapel}
-The default constructor for \chpl{MyNode} is called to create a new
-object with \chpl{itemType} and \chpl{top} fields
-of the \chpl{Stack} instance on which \chpl{pop} is called, and the
-formal argument \chpl{item} of the \chpl{pop} function call.
-To reference
-fields of an instance of a structured type, \chpl{this} is used.
-In this case, \chpl{this.top} and \chpl{this.itemType} are 
-implicit in the uses of \chpl{top} and \chpl{itemType}. 
-
-The \chpl{pop} method is given in lines~\ref{stack_list_pop_start} -
-\ref{stack_list_pop_end}.  
-\begin{chapel}
-  def pop() {           
-    if isEmpty then   
-      halt("attempt to pop an item off an empty stack"); 
-    var oldTop = top;               
-    top = top.next;                
-    return oldTop.item;           
-  }                              
-\end{chapel}
-This method returns the item at the top of
-the stack and resets \chpl{top} to point to the next object in the stack.
-First, a call to the \chpl{Stack} method \chpl{isEmpty} is made to 
-determine if the stack is
-empty.  If it is, the program halts with a message indicating that 
-an attempt was made to pop an item off of an empty stack.  Otherwise,
-\chpl{top} is reset, and the appropriate item is returned.
-In this method, \chpl{this.isEmpty} and \chpl{this.top} are implicit when
-\chpl{isEmpty} and \chpl{top} are used.
-The memory of the \chpl{oldTop} object is freed, through automatic
-garbage collection.
-
-The \chpl{isEmpty} method, which is used to check if the stack
-is empty in the \chpl{pop} method, is defined to be:
-\begin{chapel}
-  def isEmpty return top == nil;   
-\end{chapel}
-
-\paragraph{Array Implementation}
-The following implementation of a generic stack uses the array,
-\chpl{data}, to store the generic items in the stack, and the
-counter, \chpl{numItems}, to track the
-number of items in the stack and to indicate the index of
-the top item of the stack.  The number of items in the stack
-and the size of \chpl{data} are checked when a new item is pushed
-on the stack.  If necessary, the size of \chpl{data} is doubled.
-This example demonstrates how the size of an array is increased 
-by increasing its domain.
-
-\begin{numberedchapel}
-record Stack {                     (*\label{stack_array_start}*)
-  type itemType;                   (*\label{stack_array_itemtype}*)
-  var numItems: int = 0;           (*\label{stack_array_numitems}*)
-  var data: [1..2] itemType;       (*\label{stack_array_data}*)
-
-  def push(item: itemType) {       (*\label{stack_array_push_start}*)
-    var height = data.numElements;  (*\label{stack_array_push_height}*)
-    if numItems == height then      (*\label{stack_array_push_check_height}*)
-      data.domain = [1..height*2];  (*\label{stack_array_push_incr_dom}*)
-    data(numItems+1) = item;        (*\label{stack_array_push_new_item}*)
-    numItems += 1;                  (*\label{stack_array_push_num_incr}*)
-  }                                 (*\label{stack_array_push_end}*)
-
-  def pop() {                       (*\label{stack_array_pop_start}*)
-    if isEmpty then                 (*\label{stack_array_pop_empty_1}*)
-      halt("attempt to pop an item off an empty stack"); (*\label{stack_array_pop_empty_2}*)
-    numItems -= 1;                  (*\label{stack_array_pop_num_dec}*)
-    return data(numItems+1);        (*\label{stack_array_pop_return}*)
-  }                                 (*\label{stack_array_pop_end}*)
-
-  def isEmpty return numItems == 0; (*\label{stack_array_isempty}*)
-}                                   (*\label{stack_array_end}*)
-\end{numberedchapel}
-
-\paragraph{Array Implementation Details}
-There are three fields defined for this \chpl{Stack} record, \chpl{itemType},
-an integer variable, \chpl{numItems} and an array \chpl{data} of \chpl{itemType}.
-When first instantiated,
-the stack is empty and \chpl{numItems} is initialized to zero.   The \chpl{data}
-array is declared with an anonymous one-dimensional domain, \chpl{[1..2]}.
-
-The same three methods, \chpl{push}, \chpl{pop}, and \chpl{isEmpty} are
-defined for this array implementation.  Like the linked list implementation,
-there are no explicit references to \chpl{this} when accessing fields and
-methods.
-
-In \chpl{push}, lines~\ref{stack_array_push_start}
-- \ref{stack_array_push_end}, \chpl{item} is stored in the \chpl{data(numItems+1)}
-and the \chpl{numItems} counter is incremented.  
-\begin{chapel}
-  def push(item: itemType) {       
-    var height = data.numElements;  
-    if numItems == height then     
-      data.domain = [1..height*2];
-    data(numItems+1) = item;        
-    numItems += 1;                 
-  }                               
-\end{chapel}
-Before \chpl{item} can be added
-to the stack, the size of \chpl{data} must be checked to determine if the array's size
-needs to be increased to accomodate another item being added to the stack.
-The method \chpl{numElements} is predefined for arrays, returning the total
-number of elements in an array.  The variable \chpl{height} is set to the
-total number of elements in \chpl{data}, which is the size of the current array
-allocated to store items in the stack.
-If the number of items in the stack, \chpl{numItems} equals
-\chpl{height}, then more storage in \chpl{data} is needed.  To increase the
-size of an array, the size of its domain is increased.
-By reseting \chpl{data}'s
-domain to a domain of twice the size, the array \chpl{data} itself is now doubled in size,
-and more items can be pushed onto the stack. 
-
-In \chpl{pop}, the top item in the stack, as indicated by the \chpl{numItem} counter,
-is returned, if the stack is not empty.
-\begin{chapel}
-  def pop() {                       
-    if isEmpty then                
-      halt("attempt to pop an item off an empty stack"); 
-    numItems -= 1;                  
-    return data(numItems+1);       
-  }
-\end{chapel}
-The \chpl{pop} method first checks to see if the stack is empty.  If it is, the program
-halts indicating that there was an attempt to pop an item off of an empty stack.
-Otherwise, the \chpl{numItems} counter is decremented and \chpl{data(numItems+1)}
-is returned as the popped item.  
-
-The \chpl{isEmpty} method checks to see if
-the stack is empty, that is if \chpl{numItems} equals zero.
-\begin{chapel}
-  def isEmpty return numItems == 0; 
-\end{chapel}
 
