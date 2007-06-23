@@ -107997,3 +107997,15 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/dinan/: badIndex.future oobIndex.future 
 
+---------------------------------------------------------------------------
+
+06/22/07 17:47:30 -- dinan
+
+Log message:
+	Checking in coforall version of matrix-vector multiplication.  When compiling,
+	setting the config param 'quiet' to false will give you timing output.
+
+Added files:
+	chapel/test/parallel/begin/dinan/: mvm_coforall.chpl 
+	                                   mvm_coforall.good 
+
