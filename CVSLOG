@@ -108020,3 +108020,14 @@ Log message:
 Added files:
 	chapel/test/arrays/dinan/: mvm.chpl mvm.good 
 
+---------------------------------------------------------------------------
+
+06/23/07 15:20:24 -- marybeth
+
+Log message:
+	Snapshot of overview, with most of Brad's comments addressed.
+	I will be checking in more changes tonight or tomorrow morning.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
