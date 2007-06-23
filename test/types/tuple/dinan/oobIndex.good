@@ -1,1 +1,1 @@
-error message here
+oobIndex.chpl:6: error: tuple index out-of-bounds error (3)

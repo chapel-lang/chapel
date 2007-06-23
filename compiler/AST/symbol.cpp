@@ -995,8 +995,12 @@ instantiate_tuple_get(FnSymbol* fn) {
   if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();
-  char* name = stringcat("x", intstring(index));
-  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
+  if (index <= 0 || index >= dynamic_cast<ClassType*>(fn->_this->type)->fields->length()) {
+    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", intstring(index), ")")))));
+  } else {
+    char* name = stringcat("x", intstring(index));
+    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
+  }
   normalize(fn);
   return fn;
 }

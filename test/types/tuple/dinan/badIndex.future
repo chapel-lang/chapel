@@ -1,4 +1,0 @@
-bug: Handling of bad tuple indexes (eg index <= 0)
-
-The compiler presently seg faults when a tuple is indexed with a bad index
-(index <= 0).  This should generate an error message instead.
