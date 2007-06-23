@@ -108009,3 +108009,14 @@ Added files:
 	chapel/test/parallel/begin/dinan/: mvm_coforall.chpl 
 	                                   mvm_coforall.good 
 
+---------------------------------------------------------------------------
+
+06/22/07 18:04:49 -- dinan
+
+Log message:
+	Checking in sequential matrix-vector test.  I wasn't sure where to put it, so I
+	hope I chose the right spot!
+
+Added files:
+	chapel/test/arrays/dinan/: mvm.chpl mvm.good 
+
