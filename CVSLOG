@@ -108046,3 +108046,14 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/24/07 00:52:52 -- marybeth
+
+Log message:
+	Made a few changes to the quick reference guide based on Brad's
+	comments for the language overview section of the spec.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
