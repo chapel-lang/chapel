@@ -108031,3 +108031,18 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/24/07 00:46:15 -- marybeth
+
+Log message:
+	Last of the commits to the overview before I leave on vacation.
+	
+	This draft is fairly complete, except for the parallel features
+	section.  Thers is a status note there indicating that only single
+	locale support for these features is available in the compiler and
+	that more examples would be coming when more support is in the compiler.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
