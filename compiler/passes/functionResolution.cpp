@@ -618,7 +618,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   if (fn->isGeneric) {
     ASTMap subs;
     computeGenericSubs(subs, fn, num_formals, &formal_actuals, &formal_params);
-    if (subs.n && !fn->isPartialInstantiation(&subs)) {
+    if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
         addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);

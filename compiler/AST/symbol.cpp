@@ -1012,25 +1012,6 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   return clone;
 }
 
-bool
-FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
-  return false;
-  for_formals(formal, this) {
-    if (formal->isGeneric) {
-      bool found = false;
-      for (int i = 0; i < generic_substitutions->n; i++) {
-        if (formal == generic_substitutions->v[i].key) {
-          found = true;
-        }
-      }
-      if (!found) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
@@ -1173,10 +1154,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     }
 
   }
-
-  // check to make sure this fully instantiates
-  if (isPartialInstantiation(generic_substitutions))
-    INT_FATAL(this, "partial instantiation detected");
 
   // return cached if we did this instantiation already
   FnSymbol* root = this;
