@@ -1,0 +1,30 @@
+#
+# Settings for the Cray XT3 and XT4
+#
+
+#
+# tools
+#
+
+CC = cc
+CXX = CC
+
+MAKEDEPEND = $(CXX) -M
+CMAKEDEPEND = $(CC) -M
+
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = 
+
+CFLAGS = -target=linux
+
+COMP_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS) -DNO_BYTES_PER_LOCALE
+GEN_CFLAGS = $(CFLAGS)
+
