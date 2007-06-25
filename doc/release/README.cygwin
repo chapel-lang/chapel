@@ -3,11 +3,12 @@ Cygwin notes
 ============
 
 * For best results on Cygwin, please unpack the release in a directory
-  whose path contains no spaces.  Currently, our compiler-generated
-  Makefiles break when the compiler and runtime have an absolute path
-  containing spaces.  If any Cygwin experts have tips on addressing
-  this issue in a portable way, please let us know at
-  chapel_info@cray.com.
+  whose path contains no spaces.  For example, unpacking the release
+  in your root directory (c:/) to create c:/chapel works very well.
+  Currently, our compiler-generated Makefiles break when the compiler
+  and runtime have an absolute path containing spaces.  If any Cygwin
+  experts have tips on addressing this issue in a portable way, please
+  let us know at chapel_info@cray.com.
 
 
 * In order to get the required tools listed in README.prereqs, Cygwin

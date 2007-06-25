@@ -65,9 +65,9 @@ utility can be used in any source directory to build the sources
 contained in that directory and its subdirectories.  Each of these
 Makefiles support the following targets:
 
-     (nothing)  :
-     default    : Build all targets in subdirectores and this one
-     all        :
+     (nothing)  \
+     default     : Build all targets in subdirectores and this one
+     all        /
 
      depend     : Compute dependences for targets and subdirectories
 

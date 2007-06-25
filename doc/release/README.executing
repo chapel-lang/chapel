@@ -25,7 +25,11 @@ or -- flags.  Either flag takes the name of the configuration variable
 followed by an equals ("=") character and the value to assign to it.
 This value must be a legal Chapel literal for the type of variable.
 In our current implementation, no extra spaces may appear between
-these elements.
+these elements.  Thus, the general form is:
+
+    ./a.out --<cfgVar>=<val>
+or:
+    ./a.out -s<cfgVar>=<val>
 
 
 As an example, compile the beer.chpl example which prints the lyrics
@@ -33,10 +37,10 @@ to "99 bottles of beer":
 
      chpl -o beer $CHPL_HOME/examples/beer.chpl
 
-This program defines a configuration constant indicating the number of
-bottles of beer that should start on the wall, set to 99 by default.
-To override the default and only start with a 6-pack on the wall, you
-can use:
+This program defines a configuration constant "numBottles" indicating
+the number of bottles of beer that should start on the wall, set to 99
+by default.  To override the default and only start with a 6-pack on
+the wall, you can use:
 
      ./beer --numBottles=6
 or:
