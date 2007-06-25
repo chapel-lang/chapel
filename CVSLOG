@@ -108145,3 +108145,18 @@ Log message:
 Modified files:
 	./: CONTRIBUTORS 
 
+---------------------------------------------------------------------------
+
+06/25/07 14:32:28 -- dinan
+
+Log message:
+	Future: Arrays are copied when they are passed into a constructor rather than
+	storing a reference.  This future measures the memory used before and after
+	constructing a class to determine whether or not an array was copied.
+
+Added files:
+	chapel/test/classes/dinan/: array_passed_to_constructor.chpl 
+	                            array_passed_to_constructor.execopts 
+	                            array_passed_to_constructor.future 
+	                            array_passed_to_constructor.good 
+
