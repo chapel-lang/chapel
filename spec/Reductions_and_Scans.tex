@@ -1,30 +1,71 @@
 \sekshun{Reductions and Scans}
 \label{Reductions_and_Scans}
 
-Chapel provides a set of built-in reductions and scans with parallel
-semantics, a mechanism for defining more reductions and scans with
-efficient implementations, and syntact support to make reductions and
-scans easy to use.
+Chapel provides reduction and scan expressions that apply operators to
+aggregate expressions in stylized ways.  Reduction expressions
+collapse the aggregate's values down to a summary value.  Scan
+expressions compute an aggregate of results where each result value
+stores the result of a reduction applied to all of the elements in the
+aggregate up to that expression.  Chapel provides a number of built-in
+reduction and scan operators, and also supports a mechanism for the
+user to define additional reductions and scans.  Chapel reductions and
+scans result in efficient parallel implementations, and enjoy
+syntactic support to make them easy to use.
+
 
 \subsection{Reduction Expressions}
 \label{reduce}
 
+A reduction expression applies a reduction operator to an aggregate
+expression, collapsing the aggregate's dimensions down into a result
+value (typically a scalar or summary expression that is independent of
+the input aggregate's size).  For example, a sum reduction computes
+the sum of all the elements in the input aggregate expression.
+
 The syntax for a reduction expression is given by:
 \begin{syntax}
 reduce-expression:
-  reduce-operator `reduce' expression
+  reduce-scan-operator `reduce' expression
   type `reduce' expression
 
 reduce-scan-operator: one of
-  + * && || & | ^ min max
+  + * && || & | ^ min max minloc maxloc
 \end{syntax}
 
-The expression on the right-hand side of the reduction can be of any
-type that can be iterated over.
+Chapel's built-in reduction operators are defined
+by \sntx{reduce-scan-operator} above.  In order, they are: sum,
+product, logical-and, logical-or, bitwise-and, bitwise-or,
+bitwise-exclusive-or, minimum, maximum, minimum-with-location, and
+maximum-with-location.
 
-The built-in reductions are defined in \sntx{reduce-scan-operator}.  These
-include, in order, sum, product, logical and, logical or, bitwise and,
-bitwise or, bitwise exclusive or, minimum, and maximum.
+The expression on the right-hand side of the \chpl{reduce} keyword
+can be of any type that can be iterated over and to which the
+reduction operator can be applied.  For example, the bitwise-and
+operator can be applied to arrays of boolean or integral types to
+compute the bitwise-and of all the values in the array.
+
+The minimum-with-location and maximum-with-location reductions take a
+2-tuple of arguments where the first tuple element is the collection
+of values for which the minimum/maximum value is to be computed.  The
+second tuple element is a collection of indices with the same size and
+shape that provides names for the locations of the values in the first
+argument.  The reduction returns a tuple containing the
+minimum/maximum value in the first position and the location of the
+value in the second position.
+
+\begin{example}
+
+The first line below computes the smallest element in an array
+\chpl{A} as well as its index, storing the results in \chpl{minA} and
+\chpl{minALoc}, respectively.  It then computes the largest element in
+a forall expression making calls to a function \chpl{foo()}, storing
+the value and its number in \chpl{maxVal} and \chpl{maxValNum}.
+
+\begin{chapel}
+var (minA, minALoc) = minloc reduce (A, A.domain); 
+var (maxVal, maxValNum) = maxloc reduce ([i in 1..n] foo(i), 1..n);
+\end{chapel}
+\end{example}
 
 User-defined reductions are specified by preceding the
 keyword \chpl{reduce} by the class type that implements the reduction
@@ -33,6 +74,12 @@ interface as described in~\rsec{udr}.
 \subsection{Scan Expressions}
 \label{scan}
 
+A scan expression applies a scan operator to an aggregate expression,
+resulting in an aggregate expression of the same size and shape.  The
+output values represent the result of the operator applied to all
+elements up to and including the corresponding element in the input.
+
+
 The syntax for a scan expression is given by:
 \begin{syntax}
 scan-expression:
@@ -40,16 +87,23 @@ scan-expression:
   type `scan' expression
 \end{syntax}
 
-The expression on the right-hand side of the scan can be of any
-type that can be iterated over.
-
 The built-in scans are defined in \sntx{reduce-scan-operator}.  These
 are identical to the built-in reductions and are described
 in~\rsec{reduce}.
 
+The expression on the right-hand side of the scan can be of any type
+that can be iterated over and to which the operator can be applied.
+
 User-defined scans are specified by preceding the keyword \chpl{scan}
 by the class type that implements the scan interface as described
 in~\rsec{udr}.
+
+\begin{status}
+Currently, variables of unspecified type that are initialized using a
+scan of a multidimensional array will cause the variable to be
+inferred to be a 1D array rather than preserving the size and shape of
+the input aggregate expression.
+\end{status}
 
 \subsection{User-Defined Reductions and Scans}
 \label{udr}

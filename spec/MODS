@@ -24,12 +24,12 @@ DMI    support for standard math, bitwise, and comparison operators for tuples
 
 CLOSED MBH    swap operator: <=>
        e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
-BLC    better support for writing output
+CLOSED better support for writing output
        - enabled strings to be written to using a write() method
          e.g., var s: string;  s.write("x is: ", x);
        - added a Writer class that enables user classes to be written to
        - writeThis() methods that define how a type should be written to a Writer
-BLC    added minloc and maxloc reductions that return min/max value and index
+CLOSED added minloc and maxloc reductions that return min/max value and index
        e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
 BLC    changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
        e.g., var rows = D.dim(1);
