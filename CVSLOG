@@ -108086,3 +108086,16 @@ Log message:
 Removed files:
 	chapel/test/reductions/bradc/manual/: threeclasstypes.future 
 
+---------------------------------------------------------------------------
+
+06/25/07 11:25:51 -- bradc
+
+Log message:
+	Some minor changes to release READMEs to improve points
+	that internal release users found confusing or worth
+	revising.
+
+Modified files:
+	chapel/doc/release/: README.building README.cygwin 
+	                     README.executing 
+
