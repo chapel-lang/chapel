@@ -108230,3 +108230,16 @@ Added files:
 	                               minmaxlocscan.chpl 
 	                               minmaxlocscan.good 
 
+---------------------------------------------------------------------------
+
+06/25/07 15:17:32 -- deitz
+
+Log message:
+	Fixed a bug in which the returned symbol in a var iterator was omitted
+	from the iterator class (because it is a reference) when the
+	--no-live-variables-iterator-class-opt flag is used.  This change
+	makes it so that the returned symbol is never omitted.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
