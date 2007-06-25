@@ -108171,3 +108171,34 @@ Log message:
 Added files:
 	chapel/test/reductions/bradc/: minmaxloc.chpl minmaxloc.good 
 
+---------------------------------------------------------------------------
+
+06/25/07 14:42:24 -- deitz
+
+Log message:
+	Fixed a bug in which a default initialization expression of a generic
+	field or formal argument (that is a parameter) referenced another
+	generic field or formal argument by making generic subsitutions with
+	default expressions only if no other substitutions are being made.
+	This results in more partial instantiations.
+	
+	Disabled a check against partial instantiation.  This check was
+	incomplete (many partial instantiations were working) and it was also
+	getting in the way.
+	
+	Fixed the instantiation cache to take into account partial
+	instantiations.  This required revamping what was stored in the cache
+	so that even if a function is instantiated via partial instantiations
+	it would still cache identically to a function that is instantiated
+	via one full instantiation.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: FUTURES 
+	chapel/test/classes/bradc/paramInClass/: weirdParamInit4.good 
+Removed files:
+	chapel/test/classes/bradc/paramInClass/: weirdParamInit4.future 
+
