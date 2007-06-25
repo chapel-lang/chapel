@@ -31,11 +31,11 @@ CLOSED better support for writing output
        - writeThis() methods that define how a type should be written to a Writer
 CLOSED added minloc and maxloc reductions that return min/max value and index
        e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
-BLC    changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
+CLOSED changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
        e.g., var rows = D.dim(1);
-BLC    arithmetic domains and arrays support low and high methods that return bounds
+CLOSED arithmetic domains and arrays support low and high methods that return bounds
        e.g., var loInd = A.low();
-BLC    support for range, domain, and array slicing via bounded or unbounded ranges
+CLOSED support for range, domain, and array slicing via bounded or unbounded ranges
        e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
 CLOSED SJD    support for promoting casts across array elements
        e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;

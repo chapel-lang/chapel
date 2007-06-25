@@ -491,24 +491,37 @@ rank of the domain; the integers stride each dimension of the domain.
 If the ranges are already strided, the strides applied by
 the \chpl{by} operator are multiplied to the strides of the ranges.
 
-\subsubsection{Arithmetic Domain Indexing}
-\label{Arithmetic_Domain_Indexing}
+\subsubsection{Arithmetic Domain Slicing}
+\label{Arithmetic_Domain_Slicing}
 
-Arithmetic domains support indexing by a value of type \chpl{int} that
-is at least one and no more than the rank of the array.  Indexing into
-an arithmetic domain returns the range associated with that dimension.
+Arithmetic domains support slicing by indexing into them specifying a
+range per dimension.  Square brackets should be used for
+multidimensional domains, while either square brackets or parenthesis
+can be used for 1D domains.  
+
+The result is a subdomain of the domain being sliced as described in
+Section~\rsec{Subdomains}.  The indices described by each range must
+be legal indices for accessing the corresponding dimension of the
+domain.  Partially unbounded or completely unbounded ranges may be
+used to specify that the slice should extend to the domain's lower
+and/or upper bound.
 
 \begin{example}
-In the code
+The following code declares a 2D arithmetic domain \chpl{D}, and then
+a number of subdomains of \chpl{D} by slicing into \chpl{D} using
+bounded and unbounded ranges.  The \chpl{InnerD} domain describes the
+inner indices of D, \chpl{Col2OfD} describes the 2nd column of
+\chpl{D}, and \chpl{AllButLastRow} describes all of \chpl{D} except
+for the last row.
+
 \begin{chapel}
-for i in D(1) do
-  for j in D(2) do
-    writeln(A(i,j));
+const D: domain(2) = [1..n, 1..n],
+      InnerD = D[2..n-1, 2..n-1],
+      Col2OfD = D[.., 2..2],
+      AllButLastRow = D[..n-1, ..];
 \end{chapel}
-domain \chpl{D} is iterated over by two nested loops.  The first
-dimension of \chpl{D} is iterated over in the outer loop.  The second
-dimension is iterated over in the inner loop.
 \end{example}
+
 
 \subsubsection{Arithmetic Array Indexing}
 \label{Arithmetic_Array_Indexing}
@@ -545,6 +558,11 @@ rank.  In the current implementation, doing so would result in a
 promotion of the array indexing function and would have similar
 semantics though with more restrictions.
 \end{status}
+
+Array slices may also be expressed using partially unbounded or
+completely unbounded ranges.  This is equivalent to slicing the
+array's defining domain by the specified ranges to create a subdomain
+and then using that subdomain to slice the array.
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
@@ -797,6 +815,53 @@ def $Domain$.numIndices: dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the domain.
+\end{protobody}
+
+\subsubsection{Predefined Functions and Methods on Arithmetic Domains}
+
+We expect that this list of predefined functions and methods will
+grow.
+
+\begin{protohead}
+def $Domain$.dim(d: int): range
+\end{protohead}
+\begin{protobody}
+Returns the range of indices described by dimension \chpl{d} of the
+domain.
+\end{protobody}
+
+\begin{example}
+In the code
+\begin{chapel}
+for i in D.dim(1) do
+  for j in D.dim(2) do
+    writeln(A(i,j));
+\end{chapel}
+domain \chpl{D} is iterated over by two nested loops.  The first
+dimension of \chpl{D} is iterated over in the outer loop.  The second
+dimension is iterated over in the inner loop.
+\end{example}
+
+% BLC: ``integral'' isn't really correct in the two 1D cases below,
+% however, we don't really seem to have a user-level name for the
+% per-dimension index type in the language that I can see.
+
+\begin{protohead}
+def $Domain$.low: $integral$        // for 1D domains
+def $Domain$.low: index($Domain$)   // for multidimensional domains
+\end{protohead}
+\begin{protobody}
+Returns the low index of the domain as a scalar value for 1D domains
+and as an index value for a muldimensional domain.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.high: $integral$        // for 1D domains
+def $Domain$.high: index($Domain$)   // for multidimensional domains
+\end{protohead}
+\begin{protobody}
+Returns the high index of the domain as a scalar value for 1D domains
+and as an index value for a muldimensional domain.
 \end{protobody}
 
 \subsection{Predefined Functions and Methods on Arrays}
