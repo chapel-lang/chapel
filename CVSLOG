@@ -108302,3 +108302,17 @@ Log message:
 Modified files:
 	chapel/test/: start_opt_test 
 
+---------------------------------------------------------------------------
+
+06/25/07 16:14:08 -- bradc
+
+Log message:
+	Added dim(), low, and high methods to domains.  Removed
+	domain indexing discussion.
+	
+	Added domain slicing section and added ability to use
+	unbounded ranges to the array slicing section.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex MODS 
+
