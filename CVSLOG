@@ -108160,3 +108160,14 @@ Added files:
 	                            array_passed_to_constructor.future 
 	                            array_passed_to_constructor.good 
 
+---------------------------------------------------------------------------
+
+06/25/07 14:33:20 -- bradc
+
+Log message:
+	Adding a minloc/maxloc test to try some code
+	I put into the spec.
+
+Added files:
+	chapel/test/reductions/bradc/: minmaxloc.chpl minmaxloc.good 
+
