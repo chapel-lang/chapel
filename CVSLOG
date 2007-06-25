@@ -108132,3 +108132,16 @@ Log message:
 Added files:
 	chapel/make/: Makefile.xt-cnl 
 
+---------------------------------------------------------------------------
+
+06/25/07 13:57:56 -- bradc
+
+Log message:
+	Added Colin Lee and Dick Oswald to the release
+	testers list based on testing and feedback of
+	current release.  Also, used Mack Joyner's
+	full first name.
+
+Modified files:
+	./: CONTRIBUTORS 
+
