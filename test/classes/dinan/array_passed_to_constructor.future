@@ -1,0 +1,3 @@
+semantic: passing arrays into a constructor - should they be copied or not?
+
+Presently they are copied.
