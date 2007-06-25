@@ -108202,3 +108202,15 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/paramInClass/: weirdParamInit4.future 
 
+---------------------------------------------------------------------------
+
+06/25/07 14:46:52 -- deitz
+
+Log message:
+	Removed dead code to detect partial instantiations.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
