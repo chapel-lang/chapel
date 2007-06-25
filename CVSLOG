@@ -108268,3 +108268,13 @@ Modified files:
 	chapel/spec/: MODS Modules.tex Statements.tex Tuples.tex 
 	              Types.tex Variables.tex 
 
+---------------------------------------------------------------------------
+
+06/25/07 15:52:01 -- dinan
+
+Log message:
+	Future: exp2() generated code causes compiler warnings
+
+Added files:
+	chapel/test/functions/dinan/: exp2.chpl exp2.future exp2.good 
+
