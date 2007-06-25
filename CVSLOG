@@ -108214,3 +108214,19 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+06/25/07 15:05:27 -- bradc
+
+Log message:
+	Test of minloc/maxloc scans, and a second test demonstrating
+	that shapes of multidimensional scans are not preserved (not
+	a new future, but another instance of an existing one).
+
+Added files:
+	chapel/test/reductions/bradc/: minmaxlocscan-shape.chpl 
+	                               minmaxlocscan-shape.future 
+	                               minmaxlocscan-shape.good 
+	                               minmaxlocscan.chpl 
+	                               minmaxlocscan.good 
+
