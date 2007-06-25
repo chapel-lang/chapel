@@ -108290,3 +108290,15 @@ Modified files:
 Removed files:
 	chapel/test/functions/dinan/: exp2.future 
 
+---------------------------------------------------------------------------
+
+06/25/07 16:03:51 -- deitz
+
+Log message:
+	Noticed that my baseline cronjob mysteriously stopped running without
+	warning on 6/22, the day after I switched checkout chapel to checkout
+	nightly.  Changed it back to see what happens.
+
+Modified files:
+	chapel/test/: start_opt_test 
+
