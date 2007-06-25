@@ -108255,3 +108255,16 @@ Log message:
 Modified files:
 	chapel/spec/: MODS Reductions_and_Scans.tex 
 
+---------------------------------------------------------------------------
+
+06/25/07 15:31:34 -- diten
+
+Log message:
+	Spec updates.  A few small typo type fixes.  Added syntax for nested tuple
+	variable declarations and mention that the shape of the tuple must match the
+	shape of the type-part or initialization-part.
+
+Modified files:
+	chapel/spec/: MODS Modules.tex Statements.tex Tuples.tex 
+	              Types.tex Variables.tex 
+
