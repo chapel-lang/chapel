@@ -483,12 +483,38 @@ var x: 3*int;
 \end{chapel}
 \end{example}
 
+A tuple expression is a comma-separated list of expressions that
+is enclosed in parantheses.  Tuples can be declared and assigned to with
+tuple expressions.  When a tuple expression appears on the
+left-hand side of an assignment statement, the expression on the right-hand
+side is a \emph{destructured} tuple expression.  
+
+\begin{example}
+
+The example below shows how the tuple variables \chpl{pt} and \chpl{x}
+are declared with tuple expression literals.  
+\begin{chapel}
+var pt = (1, 3.0);
+var x = (1, 1, 1);
+\end{chapel}
+
+The elements of the tuple \chpl{x} can be assigned to integer variables
+through the use of tuple destructuring.
+\begin{chapel}
+var a, b, c: int;
+
+(a, b, c) = x;
+\end{chapel}
+\end{example}
+
 There are a set of operators defined for variables of tuple type
 and elements of a tuple are accessed through indexing and destructuring.  
 For more detailed information about tuples see~\rsec{Tuples}.
 
-Tuples are very useful constructs.  Two examples of how tuples
-may be used are given below.
+Tuples are very useful constructs.  They can be used in 
+functions with variable length argument lists, index expressions
+for \chpl{for} loops and in the assignment to complex variables.
+One such example follows. 
 
 \begin{example}
 Tuples may be used in the assignment to a complex variable.
@@ -499,41 +525,6 @@ var z: complex;
 z = (x,y):complex;
 \end{chapel}
 \end{example}
-
-\begin{example}
-Tuples may also be used in the definition of functions that
-take variable length argument lists.  In the code below, 
-the function \chpl{writeLines} is defined to write each string
-argument on a separate line.  The symbol \chpl{...} in the argument
-list indicates the number of arguments is variable.  The notation \chpl{?n} 
-indicates to query the number of arguments and assign that number
-to \chpl{n}.  The variable \chpl{eachLine} is a homogeneous tuple
-that contains \chpl{n} elements of type \chpl{string}.  The
-function contains a \chpl{for} loop that writes each element of
-\chpl{eachLine} on a separate line.
-
-\begin{chapel}
-def writeLines(eachLine:string...?n) {
-  for i in 1..n do 
-    writeln(eachLine(i));
-}
-
-writeLines("Write","one","word","on","each","line"); 
-\end{chapel}
-
-The output of this example is:
-\begin{commandline}
-Write
-one
-word
-on
-each
-line
-\end{commandline}
-For more information about variable length argument lists 
-see~\rsec{Variable_Length_Argument_Lists}.
-\end{example}
-
 
 \paragraph{Classes}
 \index{classes}
@@ -725,7 +716,19 @@ var A11 => A[block1,block1];
 \end{chapel}
 For more information about array aliasing see~\rsec{Array_Aliases}.
 
-%\paragraph{Scans and Reductions}
+\paragraph{Scan and Reduction Operators}
+Chapel supports standard and user-defined reduction and scan operators.
+These operators precede the keyword \chpl{scan} or \chpl{reduce}, depending
+on the desired operation.
+
+The built-in Chapel scan and reduction operators are;
+
+\begin{chapel}
++ * && || & | ^ min max
+\end{chapel}
+
+For more information about reductions, scans and user-defined operators
+for either see~\rsec{Reductions_and_Scans}.
 
 \subsubsection{Serial Statements and Expressions}
 
@@ -1010,6 +1013,45 @@ This program has the output:
 2.5
 \end{commandline}
 \end{example}
+
+\paragraph{Variable Length Argument Lists}
+Functions in Chapel can take variable length argument lists.
+Tuples can be used in the definition of such functions.
+For more information about variable length argument lists 
+see~\rsec{Variable_Length_Argument_Lists}.
+
+\begin{example}
+In the code below, 
+the function \chpl{writeLines} is defined to write each string
+argument on a separate line.  The symbol \chpl{...} in the argument
+list indicates the number of arguments is variable.  The notation \chpl{?n} 
+indicates to query the number of arguments and assign that number
+to \chpl{n}.  The variable \chpl{eachLine} is a homogeneous tuple
+that contains \chpl{n} elements of type \chpl{string}.  The
+function contains a \chpl{for} loop that writes each element of
+\chpl{eachLine} on a separate line.
+
+\begin{chapel}
+def writeLines(eachLine:string...?n) {
+  for i in 1..n do 
+    writeln(eachLine(i));
+}
+
+writeLines("Write","one","word","on","each","line"); 
+\end{chapel}
+
+The output of this example is:
+\begin{commandline}
+Write
+one
+word
+on
+each
+line
+\end{commandline}
+\end{example}
+
+
 
 \paragraph{Iterators}
 \index{iterators}
