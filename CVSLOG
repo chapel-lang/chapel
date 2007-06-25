@@ -108069,3 +108069,20 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/25/07 07:55:43 -- diten
+
+Log message:
+	Remove a .future that now passes.  I suspect it was fixed by the revision:
+	06/22/07 10:36:21 -- deitz
+	
+	Which has a log message starting with:
+	Fixed a bug in which a default initialization expression of a generic field or
+	formal argument referenced another generic field or formal argument by making
+	generic subsitutions with default expressions only if no other substitutions
+	are being made.
+
+Removed files:
+	chapel/test/reductions/bradc/manual/: threeclasstypes.future 
+
