@@ -108099,3 +108099,25 @@ Modified files:
 	chapel/doc/release/: README.building README.cygwin 
 	                     README.executing 
 
+---------------------------------------------------------------------------
+
+06/25/07 11:50:16 -- dinan
+
+Log message:
+	Checking in several futures for constructors:
+	
+	 * Default initializer we discussed today
+	 * Override the default constructor
+	 * Alloe for generic constructors
+
+Added files:
+	chapel/test/classes/dinan/: default_initializer.chpl 
+	                            default_initializer.future 
+	                            default_initializer.good 
+	                            generic_constructor.chpl 
+	                            generic_constructor.future 
+	                            generic_constructor.good 
+	                            override_default_constructor.chpl 
+	                            override_default_constructor.future 
+	                            override_default_constructor.good 
+
