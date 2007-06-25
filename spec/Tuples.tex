@@ -146,13 +146,23 @@ tuple-variable-declaration-statement:
   `config'[OPT] variable-kind tuple-variable-declaration ;
 
 tuple-variable-declaration:
-  ( identifier-list ) type-part[OPT] initialization-part
-  ( identifier-list ) type-part
+  ( tuple-identifier-list ) type-part[OPT] initialization-part
+  ( tuple-identifier-list ) type-part
+
+tuple-identifier-list:
+  tuple-identifier
+  tuple-identifier , tuple-identifier-list
+
+tuple-identifier:
+  identifier
+  ( tuple-identifier-list )
 \end{syntax}
-The identifiers defined within the \sntx{identifier-list} are declared
+The identifiers defined within the \sntx{tuple-identifier-list} are declared
 to be new variables in the scope of the statement.  The
 \sntx{type-part} and/or \sntx{initialization-part} defines a tuple
-that is destructured when assigned to the new variables.
+that is destructured when assigned to the new variables. The shape of the
+\sntx{tuple-identifier-list} must match the shape of any specified
+\sntx{type-part} or \sntx{initialization-part}.
 
 \subsubsection{Ignoring Values with Underscore}
 \label{Ignoring_Values_with_Underscore}
@@ -226,7 +236,7 @@ Conversions are not applied to the components.
 \label{Formal_Argument_Declarations_in_a_Tuple}
 \index{formal arguments!tuples}
 
-Formal arguments declarations can be grouped into a tuple similarily to
+Formal argument declarations can be grouped into a tuple similarily to
 variable declarations to facilitate passing the result of a function that
 returns a tuple directly to another function.
 

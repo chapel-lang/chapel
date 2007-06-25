@@ -25,7 +25,7 @@ A module is declared with the following syntax:
 module-declaration-statement:
   `module' identifier block-statement
 \end{syntax}
-A module's name is specified after the module keyword.
+A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
 in this block statement are defined in the module's scope.
 
@@ -117,14 +117,18 @@ the use statement as defined in~\rsec{The_Use_Statement}.
 All symbols can be named explicitly with the following syntax:
 \begin{syntax}
 module-named-identifier:
-  module-identifier . identifier
+  module-identifier-list . identifier
+
+module-identifier-list:
+  module-identifier
+  module-identifier . module-identifier-list
 
 module-identifier:
   identifier
 \end{syntax}
 This allows two variables that have the same name to be distinguished
 based on the name of their module.  If code requires using symbols
-from two different modules that have the same name, explicit naming is
+that have the same name from two different modules, explicit naming is
 needed to disambiguate between the two symbols.  Explicit naming can
 also be used instead of using a module.
 

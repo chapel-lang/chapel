@@ -19,7 +19,7 @@ BLC    added "range" type to language to replace old "arithmetic sequence" conce
 
 CLOSED SJD added support for creating array aliases
        e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
-DMI    support for standard math, bitwise, and comparison operators for tuples
+CLOSED DMI standard math, bitwise, and comparison operators for tuples
        e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
 
 CLOSED MBH    swap operator: <=>
@@ -49,7 +49,7 @@ CLOSED SJD    support for functions without parentheses
          e.g., def main { writeln("Program will start here"); ... }
 CLOSED MBH    allow "<index> in" to be elided in for/forall loops/expressions
        e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
-DMI    support for multiple modules to be listed within a single "use" statement
+CLOSED DMI multiple modules listed within a single "use" statement
 
 Newly Implemented Features:
 BLC    support for sparse domains/arrays
@@ -61,9 +61,9 @@ CLOSED SJD    support for nested classes, records, and iterators
 CLOSED SJD    serial statement
 CLOSED (MBH) added support for using "_" to ignore elements during tuple destructuring
        e.g., var t: (int, real) = ...;   (t1, _) = t;
-DMI    added support for nested tuple destructuring in variable decls/formal args
-DMI    support for config params of primitive and enumerated types
-DMI    initial support for accessing a module's member via modname.membername
+CLOSED DMI nested tuple destructuring in variable decls/formal args
+CLOSED DMI support for config params of primitive and enumerated types
+CLOSED DMI initial support for accessing module's member via modname.membername
 CLOSED SJD    implemented dynamic casts between class types
 DMI    turned reference counting garbage collection off by default
        - added initial support for copy collection garbage collection

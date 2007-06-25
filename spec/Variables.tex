@@ -154,7 +154,7 @@ Parameters can be assigned expressions that are parameter expressions.
 Parameter expressions are restricted to the following constructs:
 \begin{itemize}
 \item
- Literals of primitive type.
+ Literals of primitive or enumerated type.
 \item
  Parenthesized parameter expressions.
 \item
@@ -173,18 +173,16 @@ Parameter expressions are restricted to the following constructs:
 \end{itemize}
 
 There is an expectation that parameters will be expanded to more types
-and more operations, and that functions that return parameters will be
-introduced, in the future.
+and more operations.
 
 \subsubsection{Runtime Constants}
 \label{Runtime_Constants}
 \index{constants!runtime}
 \index{const@\chpl{const}}
 
-Constants, as opposed to parameters, do not have the restrictions that
-are associated with parameters.  Constants can be any type.  They
-require an initialization expression and contain the value of that
-expression throughout their lifetime.
+Constants do not have the restrictions that are associated with
+parameters.  Constants can be any type.  They require an initialization
+expression and contain the value of that expression throughout their lifetime.
 
 Variables of class type that are constants are constant references.
 The fields of the class can be modified, but the variable always
