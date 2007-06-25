@@ -108057,3 +108057,15 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/24/07 20:20:16 -- marybeth
+
+Log message:
+	A few more edits.  Added scan and reduction operators.  Moved
+	example in tuples section to new variable function argument section.
+	Added simple tuple destructuring example.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
