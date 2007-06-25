@@ -108243,3 +108243,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+06/25/07 15:29:56 -- bradc
+
+Log message:
+	Took pass over reductions/scans chapter to add minloc/maxloc.
+	Also added a bit more explanation, an example.  But more work
+	is still required on this chapter.
+
+Modified files:
+	chapel/spec/: MODS Reductions_and_Scans.tex 
+
