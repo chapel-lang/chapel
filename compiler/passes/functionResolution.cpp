@@ -446,8 +446,18 @@ computeGenericSubs(ASTMap &subs,
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
       if (formal_params->v[i] && formal_params->v[i]->isParam()) {
-        subs.put(formal, formal_params->v[i]);
+        if (!formal->type->isGeneric ||
+            canInstantiate(formal_actuals->v[i], formal->type))
+          subs.put(formal, formal_params->v[i]);
       } else if (formal->defaultExpr) {
+
+        // break because default expression may reference generic
+        // arguments earlier in formal list; make those substitutions
+        // first (test/classes/bradc/paramInClass/weirdParamInit4)
+        if (subs.n)
+          break;
+
+        resolve_type_expr(formal->defaultExpr);
         if (SymExpr* se = dynamic_cast<SymExpr*>(formal->defaultExpr)) {
           if (se->var->isParam())
             subs.put(formal, se->var);
@@ -2595,13 +2605,14 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 //
 static void
 collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
-  forv_Vec(FnSymbol, fn, *ct->defaultConstructor->instantiatedTo) {
-    Type* ict = fn->retType;
-    if (ict->isGeneric)
-      collectInstantiatedClassTypes(icts, ict);
-    else
-      icts.add(ict);
-  }
+  if (ct->defaultConstructor->instantiatedTo)
+    forv_Vec(FnSymbol, fn, *ct->defaultConstructor->instantiatedTo) {
+      Type* ict = fn->retType;
+      if (ict->isGeneric)
+        collectInstantiatedClassTypes(icts, ict);
+      else
+        icts.add(ict);
+    }
 }
 
 

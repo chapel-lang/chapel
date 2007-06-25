@@ -107,7 +107,6 @@ semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef2]
 semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef]
 semantic: global use before def [studies/blas/marybeth/saxpy2]
 semantic: params in classes [classes/bradc/paramInClass/weirdParamInit3]
-semantic: params in classes [classes/bradc/paramInClass/weirdParamInit4]
 semantic: explicitly typing fields in tuple arguments [types/tuple/diten/tuple_destructure_arg_types.chpl]
 
 

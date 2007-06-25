@@ -71,6 +71,16 @@ removeMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
 */
 static void
 addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
+//   if (oldFn->id == 34813) {
+//     printf("%d -> %d ", oldFn->id, newFn->id);
+//     form_Map(ASTMapElem, e, *subs) {
+//       if (Type* t = dynamic_cast<Type*>(e->value))
+//         printf("%s [%d] ", t->symbol->name, e->value->id);
+//       else
+//         printf("(not a type) [%d] ", e->value->id);
+//     }
+//     printf("\n");
+//   }
   cache->add(new Inst(oldFn, newFn, subs));
 }
 
@@ -546,6 +556,7 @@ FnSymbol::FnSymbol(char* initName) :
   isWrapper(false),
   normalizedOnce(false)
 {
+  substitutions.clear();
   gFns.add(this);
   formals->parent = this;
 }
@@ -885,6 +896,31 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   return wrapper;
 }
 
+static void
+copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST* value) {
+  if (!strcmp("_construct__tuple", root->name)) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(key)) {
+      if (sym->name[0] == 'x') {
+        subs.put((BaseAST*)(atoi(sym->name+1)), value);
+        return;
+      }
+    }
+  }
+  if (dynamic_cast<ArgSymbol*>(key)) {
+    if (root != fn) {
+      int i = 1;
+      for_formals(formal, fn) {
+        if (formal == key) {
+          subs.put(root->getFormal(i), value);
+          return;
+        }
+        i++;
+      }
+    }
+  }
+  subs.put(key, value);
+}
+
 static FnSymbol*
 instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   ASTMap map;
@@ -893,8 +929,28 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   clone->isGeneric = false;
   clone->visible = false;
   clone->instantiatedFrom = fn;
-  clone->substitutions.copy(*generic_subs);
-  addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
+
+  FnSymbol* root = fn;
+  while (root->instantiatedFrom && root->formals->length() == root->instantiatedFrom->formals->length())
+    root = root->instantiatedFrom;
+
+  if (fn->instantiatedFrom)
+    form_Map(ASTMapElem, e, fn->substitutions)
+      copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
+  form_Map(ASTMapElem, e, *generic_subs)
+    copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
+
+//   if (root->id == 53713) {
+//     printf("add %d: ", root->id);
+//     form_Map(ASTMapElem, e, clone->substitutions) {
+//       if (Type* t = dynamic_cast<Type*>(e->value))
+//         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
+//       else
+//         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
+//     }
+//     printf("\n");
+//   }
+  addMapCache(&icache, root, clone, &clone->substitutions);
   fn->defPoint->insertBefore(new DefExpr(clone));
 
   // add parameter instantiations to parameter map for function resolution
@@ -937,6 +993,8 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
       cloneFormal->intent = INTENT_BLANK;
       cloneFormal->isGeneric = false;
       cloneFormal->instantiatedParam = true;
+      if (cloneFormal->type->isGeneric)
+        cloneFormal->type = paramMap.get(cloneFormal)->type;
       if (cloneFormal->defaultExpr)
         cloneFormal->defaultExpr->remove();
       cloneFormal->defaultExpr = new SymExpr(gNil);
@@ -956,6 +1014,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 
 bool
 FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
+  return false;
   for_formals(formal, this) {
     if (formal->isGeneric) {
       bool found = false;
@@ -1120,8 +1179,31 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     INT_FATAL(this, "partial instantiation detected");
 
   // return cached if we did this instantiation already
-  if (FnSymbol* cached = checkMapCache(&icache, this, generic_substitutions))
+  FnSymbol* root = this;
+  while (root->instantiatedFrom && root->formals->length() == root->instantiatedFrom->formals->length())
+    root = root->instantiatedFrom;
+
+  ASTMap all_substitutions;
+  if (instantiatedFrom)
+    form_Map(ASTMapElem, e, substitutions)
+      copyGenericSub(all_substitutions, root, this, e->key, e->value);
+  form_Map(ASTMapElem, e, *generic_substitutions)
+    copyGenericSub(all_substitutions, root, this, e->key, e->value);
+
+//   if (root->id == 53713) {
+//     printf("chk %d: ", root->id);
+//     form_Map(ASTMapElem, e, all_substitutions) {
+//       if (Type* t = dynamic_cast<Type*>(e->value))
+//         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
+//       else
+//         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
+//     }
+//   }
+  if (FnSymbol* cached = checkMapCache(&icache, root, &all_substitutions)) {
+//     if (root->id == 53713) printf("cached\n");
     return cached;
+  }
+//   if (root->id == 53713) printf("\n");
 
   //  static int uid = 1;
   FnSymbol* newfn = NULL;
