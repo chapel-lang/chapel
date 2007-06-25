@@ -108121,3 +108121,14 @@ Added files:
 	                            override_default_constructor.future 
 	                            override_default_constructor.good 
 
+---------------------------------------------------------------------------
+
+06/25/07 13:46:58 -- diten
+
+Log message:
+	Add a Makefile for XT Compute Node Linux cross-compiles.  It is almost identical
+	to the other cross-compile Makefiles. It appears to work fine.
+
+Added files:
+	chapel/make/: Makefile.xt-cnl 
+
