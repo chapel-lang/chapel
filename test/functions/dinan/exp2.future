@@ -1,0 +1,8 @@
+bug: generated code produces warnings when compiled
+
+This produces the following warning from gcc:
+
+$ chpl exp2.chpl
+In file included from /tmp/chpl-dinan-18957.deleteme/_main.c:38:
+/tmp/chpl-dinan-18957.deleteme/exp2.c: In function ‘__init_exp2’:
+/tmp/chpl-dinan-18957.deleteme/exp2.c:13: warning: incompatible implicit declaration of built-in function ‘exp2’
