@@ -797,10 +797,11 @@ addLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn) {
     forv_Vec(Expr, expr, bb->exprs) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
         if (dynamic_cast<VarSymbol*>(def->sym)) {
-          if (def->sym->type->refType) { // references are short-lived
-                                         // and should never need to be
-                                         // stored in an iterator class
-                                         // (hopefully)
+          // references are short-lived and should never need to be
+          // stored in an iterator class (hopefully) except for the
+          // returned reference in the case of var iterators
+          if (!isReference(def->sym->type) ||
+              def->sym == fn->getReturnSymbol()) {
             syms.add(def->sym);
           }
         }
