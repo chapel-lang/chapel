@@ -7,5 +7,8 @@
 #ifndef log2
 double log2(double);
 #endif
+#ifndef exp2
+double exp2(double);
+#endif
 
 #endif
