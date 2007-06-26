@@ -55,7 +55,11 @@ endif
 if (-r ./TIMEOUT) then
     set globalTimeout = "`cat ./TIMEOUT`"
 else
-    set globalTimeout = 300
+    if ($CHPL_TEST_VGRND_COMP == "on" || $CHPL_TEST_VGRND_EXE == "on") then
+	set globalTimeout = 900
+    else
+	set globalTimeout = 300
+    endif
 endif
 set timedexec = "$testdir/Bin/timedexec"
 if ( ! -f $timedexec || ! -x $timedexec ) then
