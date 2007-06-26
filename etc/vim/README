@@ -1,0 +1,33 @@
+This syntax highlighting file is designed for use with Vim versions
+5.08 or newer.
+
+Files:
+-----
+
+ ftdetect/chpl.vim -- Allows vim to auto-detect a syntax highlighting
+                      scheme for chapel files.
+
+ syntax/chpl.vim   -- Syntax highlighting scheme for chapel
+ 
+
+Installation Instructions:
+-------------------------
+
+  - Create a directory in the root of your home directory called ".vim"
+
+    $ mkdir $HOME/.vim
+
+  - Copy the contents of this directory to your ".vim" directory
+
+    $ cp -r * $HOME/.vim
+
+
+Enabling Syntax Highlighting:
+----------------------------
+
+  - From within Vim, issue the command:
+  
+    : syntax on
+
+  - This command can also be entered in your ".vimrc" file to enable
+    syntax highlighting by default.
