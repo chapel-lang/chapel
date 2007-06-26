@@ -108590,3 +108590,17 @@ Added files:
 Removed files:
 	chapel/test/sparse/bradc/: sparse1Daccess.future 
 
+---------------------------------------------------------------------------
+
+06/26/07 15:24:54 -- bradc
+
+Log message:
+	Modernized our code generation of unions to use
+	named unions rather than anonymous unions which
+	gets us within three tests of being able to
+	compile with the -std=c99 flag on our generated
+	code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+
