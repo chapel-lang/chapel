@@ -344,6 +344,9 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
     fprintf(outfile, "->");
   else
     fprintf(outfile, ".");
+  if (ct->classTag == CLASS_UNION) {
+    fprintf(outfile, "_u.");
+  }
   member->codegen(outfile);
 }
 

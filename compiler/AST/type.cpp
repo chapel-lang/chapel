@@ -402,7 +402,7 @@ void ClassType::codegenDef(FILE* outfile) {
   if (classTag == CLASS_UNION) {
     if (!printedSomething)
       fprintf(outfile, "int _emptyUnionPlaceholder;\n");
-    fprintf(outfile, "};\n");
+    fprintf(outfile, "} _u;\n");
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
