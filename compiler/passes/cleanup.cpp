@@ -62,6 +62,21 @@ ModuleSymbol* getUsedModule(CallExpr* call) {
 
 
 //
+// Make all modules nested within outerMod import all the modules outerMod
+// imports. Inner modules have access to all symbols the outer module does.
+//
+static void
+addInnerModuleUses(ModuleSymbol* modUsed, ModuleSymbol* outerMod) {
+  forv_Vec(ModuleSymbol, subModule, outerMod->subModules) {
+    if (!subModule->block->modUses.in(modUsed)) {
+      subModule->block->blkScope->addModuleUse(modUsed);
+      addInnerModuleUses(modUsed, subModule);
+    }
+  }
+}
+
+
+//
 // Transform module uses into calls to initialize functions; store the
 // relevant scoping information in BlockStmt::modUses
 //
@@ -69,7 +84,7 @@ static void
 process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
-    USR_FATAL(call, "Cannot find module"); // '%s'", sym->var->name);
+    USR_FATAL(call, "Cannot find module");
   if (mod != compilerModule)
     call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
 
@@ -408,6 +423,13 @@ void cleanup(void) {
         process_import_expr(call);
       if (call->isPrimitive(PRIMITIVE_YIELD))
         call->getFunction()->fnClass = FN_ITERATOR;
+    }
+  }
+
+  // Make nested modules use all the modules the outer module uses
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    forv_Vec(ModuleSymbol, usedModule, mod->block->modUses) {
+      addInnerModuleUses(usedModule, mod);
     }
   }
 
