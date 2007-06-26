@@ -108425,3 +108425,20 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex MODS 
 
+---------------------------------------------------------------------------
+
+06/26/07 11:06:10 -- deitz
+
+Log message:
+	Extended copy propagation to work on records by invalidating available
+	copies of a record if a field in the record is written or referenced.
+	
+	Abstracted the code to determine if copies should be invalidated into
+	a function.
+	
+	This decreases the number of generated lines of code for Jacobi from
+	8127 to 6881 as counted by wc.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
