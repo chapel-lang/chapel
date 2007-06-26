@@ -108387,3 +108387,14 @@ Modified files:
 Added files:
 	chapel/etc/vim/syntax/: chpl-c.vim 
 
+---------------------------------------------------------------------------
+
+06/26/07 09:12:04 -- deitz
+
+Log message:
+	Changed checkout chapel back to checkout nightly.  This cron was
+	always working; it is my other one that is not.
+
+Modified files:
+	chapel/test/: start_opt_test 
+
