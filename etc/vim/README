@@ -8,6 +8,7 @@ Files:
                       scheme for chapel files.
 
  syntax/chpl.vim   -- Syntax highlighting scheme for chapel
+ syntax/chpl-c.vim
  
 
 Installation Instructions:
