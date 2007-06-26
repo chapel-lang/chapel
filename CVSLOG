@@ -108661,3 +108661,16 @@ Added files:
 	                            array_of_recursive_classes2.future 
 	                            array_of_recursive_classes2.good 
 
+---------------------------------------------------------------------------
+
+06/26/07 16:52:33 -- bradc
+
+Log message:
+	A couple of minor updates I made in a moment of
+	weakness.  Need to take a more complete pass on
+	these in the next day or so.
+
+Modified files:
+	./: STATUS 
+	chapel/test/: FUTURES 
+
