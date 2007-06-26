@@ -15,7 +15,8 @@ BLC    added "range" type to language to replace old "arithmetic sequence" conce
        - open interval syntax supported for ranges
          e.g., "[lo..hi)" is equivalent to lo..hi-1
        - +, -, *, / operators on range/scalar combinations
-       discuss stridable parameter for ranges and domains
+BLC    discuss stridable parameter for ranges 
+CLOSED and domains
 BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 
 CLOSED SJD added support for creating array aliases

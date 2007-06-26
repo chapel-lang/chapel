@@ -3,23 +3,22 @@
 \index{domains}
 \index{arrays}
 
-A {\em domain} is a description of a collection of names for data.
-These names are referred to as the {\em indices} of the domain.  All
-indices for a particular domain are values with some common type.
-Valid types for indices are primitive types and class references or
-unions, tuples or records whose fields are valid types for indices.
-This excludes ranges, domains, and arrays.  Domains have a rank and a
-total order on their elements.  An {\em array} is generically a
-function that maps from a {\em domain} to a collection of variables.
-Chapel supports a variety of kinds of domains and arrays defined over
-those domains as well as a mechanism to allow application specific
-implementations of arrays.
+A \emph{domain} describes a collection of names for data.  These names
+are referred to as the \emph{indices} of the domain.  All indices for
+a particular domain are values with some common type.  Valid types for
+indices are primitive types and class references or unions, tuples or
+records whose fields are valid types for indices.  This excludes
+ranges, domains, and arrays.  Domains have a rank and a total order on
+their elements.  An \emph{array} is a map from a domain's indices to a
+collection of variables.  Chapel supports a variety of kinds of
+domains and arrays defined over those domains as well as a mechanism
+to allow application-specific implementations of arrays.
 
 Arrays abstract mappings from sets of values to variables.  This key
 use of data structures coupled with the generic syntactic support for
 array usage increases software reusability.  By separating the sets of
-values into their own abstraction, domains, distributions can be
-associated with sets rather than variables.  This enables the
+values into their own abstraction, \emph{i.e.}, domains, distributions
+can be associated with sets rather than variables.  This enables the
 orthogonality of data distributions.  Distributions are discussed
 in~\rsec{Locality_and_Distribution}.
 
@@ -74,7 +73,7 @@ such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
 \label{Index_Types}
 \index{domains!index types}
 
-Each domain has a corresponding {\em index} type which is the type of
+Each domain has a corresponding \emph{index} type which is the type of
 the domain's indices qualified by its status as an index.  Variables
 of this type can be declared using the following syntax:
 \begin{syntax}
@@ -470,21 +469,25 @@ domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
 \subsubsection{Arithmetic Domain Types}
 \label{Arithmetic_Domain_Types}
 
-The type of an arithmetic domain is determined from the rank of the
-arithmetic domain (the number of ranges that define it) and by an
-underlying integeral type called the {\em dimensional index type}
-which must be identical to each of the integral element types of the
-ranges that define the arithmetic domain.  By default, the dimensional
-index type of an arithmetic domain is \chpl{int}.
+The type of an arithmetic domain is determined by three components:
+(1) the rank of the arithmetic domain (the number of ranges that
+define it); (2) an underlying integeral type called the
+\emph{dimensional index type} which must be identical to each of the
+integral element types of the ranges that define the arithmetic
+domain; (3) a boolean value indicating whether any of the ranges that
+define the domain are stridable or not.  By default, the dimensional
+index type of an arithmetic domain is \chpl{int} and the stridability
+value is set to false.
 
 The arithmetic domain type is specified by the syntax of a function
 call to the keyword \chpl{domain} that takes at least an argument
 called \chpl{rank} that is a parameter of type \chpl{int} and
-optionally an integral type named \chpl{dim_type}.
+optionally an integral type named \chpl{dim_type} and a boolean value
+named \chpl{stridable}.
 
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
-type \chpl{domain(2,int)}.
+type \chpl{domain(2, int, false)}.
 \end{example}
 
 \subsubsection{Strided Arithmetic Domains}
@@ -493,7 +496,10 @@ type \chpl{domain(2,int)}.
 \index{arrays!arithmetic, strided}
 
 If the ranges that define an arithmetic domain are strided, then the
-arithmetic domain is said to be strided.
+arithmetic domain is said to be strided and the stridable parameter
+must be set to true.  For domains with inferred type, if the
+initializing expression uses stridable ranges, the domain will be
+inferred to have a stridable parameter of true.
 
 The \chpl{by} operator can be applied to any arithmetic domain to
 create a strided arithmetic domain.  It is predefined over an
@@ -632,7 +638,7 @@ sparse-domain-type:
 \end{syntax}
 This syntax specifies that the domain is a sparse subset of the
 indices in the domain specified by the \sntx{domain-expression},
-sometimes called the {\em base domain} or \emph{parent domain}.
+sometimes called the \emph{base domain} or \emph{parent domain}.
 
 \begin{example}
 The following code declares a 2D dense domain \chpl{D}, followed by a
@@ -894,7 +900,7 @@ domain have elements added to the new array and initialized to the
 default value associated with their type.
 
 For performance reasons, there is an expectation that a method will be
-added to domains to allow non-preserving assignment, {\em i.e.}, all
+added to domains to allow non-preserving assignment, \emph{i.e.}, all
 values in the arrays associated with the assigned domain will be lost.
 
 \subsection{Subdomains}
@@ -903,7 +909,7 @@ values in the arrays associated with the assigned domain will be lost.
 \index{domains!subdomains}
 
 A subdomain is a domain whose indices are a subset of those described
-by a {\em base domain}.  A subdomain is specified by the following
+by a \emph{base domain}.  A subdomain is specified by the following
 syntax:
 \begin{syntax}
 subdomain-type:
