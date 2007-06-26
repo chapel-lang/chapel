@@ -14,7 +14,7 @@ blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
 genericStack   : generic classes; nested classes; array reallocation
 iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
-linkedList     : nested generic classes; iterators
+linkedList     : nested generic classes; iterators, writeThis methods
 norm           : reductions; function overloading and where clauses; modules
 prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
@@ -46,7 +46,7 @@ Legend:
 -------------------------------------------------------------------------------
                |              I/O and program control features
                |
-test           | read  | write | files | halt  | xxxxx | xxxxx | xxxxx | xxxxx
+test           | read  | write | files | halt  | frmat | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
@@ -55,7 +55,7 @@ blockLU        |   *   |   x   |   *   |   *   |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
 iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
-linkedList     |       |       |       |       |       |       |       |
+linkedList     |       |   x   |       |       |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
@@ -72,6 +72,7 @@ key:
   write = uses write()/writeln() statements to do output
   files = uses files for I/O
   halt  = uses the halt statement for abnormal program termination
+  frmat = uses the writeThis method to format output
 -------------------------------------------------------------------------------
 
 
@@ -89,7 +90,7 @@ blockLU        |       |       |   x   |   x   |   x   |   x   |       |
 genericStack   |       |       |       |   x   |       |       |       |
 iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
-linkedList     |       |       |   x   |   x   |   x   |   x   |       |
+linkedList     |       |   *   |   x   |   x   |   x   |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
@@ -196,7 +197,7 @@ blockLU        |   x   |       |   x   |   *   |   x   |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
-linkedList     |       |       |       |       |   *   |       |       |
+linkedList     |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
