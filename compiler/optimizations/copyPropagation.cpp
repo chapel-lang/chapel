@@ -31,7 +31,7 @@ bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet) {
   return false;
 }
 
-typedef ChainHashMap<Symbol*,PointerHashFns,Symbol*> AvailableMap;
+typedef Map<Symbol*,Symbol*> AvailableMap;
 
 static void
 localCopyPropagationCore(BasicBlock* bb,
@@ -70,7 +70,7 @@ localCopyPropagationCore(BasicBlock* bb,
           available.get_keys(keys);
           forv_Vec(Symbol, key, keys) {
             if (key == se->var || available.get(key) == se->var)
-              available.del(key);
+              available.put(key, NULL);
           }
         }
       }
