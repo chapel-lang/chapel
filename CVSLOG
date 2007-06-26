@@ -108442,3 +108442,14 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 11:57:06 -- diten
+
+Log message:
+	Move code generated for memory management out of the _main.c file, and into
+	_memory_management.c so _main.c isn't cluttered with GC code.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
