@@ -108316,3 +108316,14 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex MODS 
 
+---------------------------------------------------------------------------
+
+06/25/07 17:25:20 -- bradc
+
+Log message:
+	Finished most of my changes to the domains/arrays
+	section.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex MODS chapel_listing.tex 
+
