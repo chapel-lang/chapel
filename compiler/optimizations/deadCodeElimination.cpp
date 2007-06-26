@@ -9,38 +9,43 @@
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
-static bool isDeadVariable(DefExpr* def) {
-  if (isReference(def->sym->type)) {
-    return def->sym->uses.n == 0 && def->sym->defs.n <= 1;
+static bool isDeadVariable(Symbol* var) {
+  if (isReference(var->type)) {
+    return var->uses.n == 0 && var->defs.n <= 1;
   } else {
-    return def->sym->uses.n == 0;
+    return var->uses.n == 0;
+  }
+}
+
+void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
+  if (var->astType == SYMBOL_VAR &&
+      var->defPoint &&
+      var->defPoint->parentSymbol == fn &&
+      isDeadVariable(var)) {
+    forv_Vec(SymExpr, se, var->defs) {
+      CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+          call->remove();
+          rhs->var->uses.n--;
+          deadVariableEliminationHelp(fn, rhs->var);
+        } else {
+          call->replace(call->get(2)->remove());
+        }
+      } else
+        INT_FATAL("unexpected case");
+    }
+    var->defPoint->remove();
   }
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  bool change = true;
-  while (change) {
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, fn);
-    compute_sym_uses(fn);
-    change = false;
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (def->sym->astType != SYMBOL_VAR || def->parentSymbol != fn)
-          continue; // only variables, no fields of nested types
-        if (isDeadVariable(def)) {
-          forv_Vec(SymExpr, se, def->sym->defs) {
-            CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
-            Expr* rhs = call->get(2);
-            if (rhs->astType == EXPR_SYM)
-              call->remove();
-            else
-              call->replace(rhs->remove());
-          }
-          def->remove();
-          change = true;
-        }
-      }
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  compute_sym_uses(fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      deadVariableEliminationHelp(fn, def->sym);
     }
   }
 }
