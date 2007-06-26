@@ -414,9 +414,15 @@ void codegen(void) {
     fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     beautify(&modulefile);
   }
+  fileinfo memoryfile;
+  openCFile(&memoryfile, "_memory_management", "c");
+  fprintf(mainfile.fptr, "#include \"%s\"\n", memoryfile.filename);
 
-  codegen_cid2offsets(mainfile.fptr);
-  codegen_cid2size(mainfile.fptr);
+  codegen_cid2offsets(memoryfile.fptr);
+  codegen_cid2size(memoryfile.fptr);
+  closeCFile(&memoryfile);
+  beautify(&memoryfile);
+
   closeCFile(&mainfile);
   beautify(&mainfile);
   makeBinary();
