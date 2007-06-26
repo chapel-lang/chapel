@@ -108618,3 +108618,15 @@ Modified files:
 	chapel/test/release/examples/: linkedList.chpl linkedList.good 
 	                               README.features 
 
+---------------------------------------------------------------------------
+
+06/26/07 15:53:04 -- deitz
+
+Log message:
+	Changed the map of available copies from a ChainHashMap to a Map.
+	
+	This improves the compilation time of FFT by about 15%.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
