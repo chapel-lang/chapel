@@ -4,9 +4,7 @@ bug: array fields via type aliases [arrays/jplevyak/simple-4]
 * Array promotion/forall expressions evaluate to 1D arrays
 bug: array type inference [arrays/bradc/inferArrayType]
 bug: array type inference [sparse/bradc/inferSparseArrayType]
-
-* Associative domain index additions/deletions can result in an infinite loop
-bug: associative array infinite loop (bradc) [puzzles/deitz/digits3]
+bug: array type inference [reductions/bradc/minmaxlocscan-shape]
 
 * Associative domains of explicit heterogeneous tuple types don't work
 bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domain]

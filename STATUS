@@ -143,8 +143,6 @@ Bugs:
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 
-* Associative domain index additions/deletions can result in an infinite loop
-
 * Associative domains of explicit heterogeneous tuple types don't work
     e.g., var td: domain((int, int));
   Workaround: name the tuple type
