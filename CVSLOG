@@ -108467,3 +108467,21 @@ Modified files:
 Removed files:
 	chapel/etc/vim/syntax/: chpl-c.vim 
 
+---------------------------------------------------------------------------
+
+06/26/07 12:01:24 -- diten
+
+Log message:
+	Make nested modules import every module the module they are nested within uses.
+	This way, inner modules have access to all the symbols the outer modules do,
+	and use calls are still not transitive.
+	
+	Add a test with a nested module accessing symbols from a module imported by
+	the outermost module.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/modules/diten/usemodule/: inner_uses_all_outer.chpl 
+	                                      inner_uses_all_outer.good 
+
