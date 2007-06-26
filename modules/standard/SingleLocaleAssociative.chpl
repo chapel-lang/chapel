@@ -37,6 +37,7 @@ _ps(_MAX_SIZE) = 1610612741;
 
 param _EMPTY   = -1;
 param _DELETED = -2;
+param _NOPLACE = -3;
 
 
 
@@ -55,7 +56,6 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   var table: _ddata(int);
   var inds: _ddata(_ind_data_t(ind_type));
   var free_inds: _stack(int);
-  var deleted_seen: int;
 
   def getIndices()
     return this; // stopgap measure given old implementation
@@ -75,7 +75,6 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     inds =  _ddata(_ind_data_t(ind_type), _ps(size)/2);
     inds.init();
     free_inds = _stack(int);
-    deleted_seen = _EMPTY;
   }
 
   def these() {
@@ -158,22 +157,35 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def _map(ind: ind_type, 
            itable: _ddata(int) = table, 
-           iinds: _ddata(_ind_data_t(ind_type)) = inds): int {
-    var probe = 0;
-    deleted_seen = _EMPTY;
-    while true {
-      var i = ((_indefinite_hash(ind) + probe**2) % itable.size):int(32);
+           iinds: _ddata(_ind_data_t(ind_type)) = inds,
+           deletedOK: bool = false): int {
+    param debug = false;
+    if debug then writeln("itable.size = ", itable.size);
+    const base = _indefinite_hash(ind);
+    for probe in 0..itable.size {
+      var i = ((base + probe**2) % itable.size):int(32);
+      if debug then writeln("Trying i = ", i);
       var table_i = itable(i);
-      if table_i==_EMPTY then
-        return i;
-      else if table_i==_DELETED then
-        deleted_seen = i;                      
-      else if iinds(table_i).data==ind then
-        return i;
-      probe = probe + 1;
+      if debug then writeln("table_i = ", table_i);
+      select (table_i) {
+        when _EMPTY {
+          if debug then writeln("EMPTY");
+          return i;
+        }
+        when _DELETED {
+          if debug then writeln("DELETED");
+          if deletedOK then
+            return i;
+          if debug then writeln("...but not OK");
+        }
+        otherwise {
+          if debug then writeln("iinds(table_i).data = ", iinds(table_i).data);
+          if iinds(table_i).data==ind then
+            return i;
+        }
+      }
     }
-    halt( "could not map index ", ind);
-    return -1;  // should never get here
+    return _NOPLACE;
   }
 
   def _get_index(ind : ind_type) {
@@ -193,11 +205,9 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   // public routines
 
   def add(ind : ind_type) {
-    var hash = _map(ind);
+    var hash = _map(ind, deletedOK = true);
     var ind_pos = table(hash);
-    if (ind_pos==_EMPTY) {
-      if (deleted_seen > 0) then
-        hash = deleted_seen;
+    if (ind_pos==_EMPTY || ind_pos==_DELETED) {
 
       if (free_inds.length > 0) {      // recycle
         ind_pos = free_inds.pop();            
@@ -206,7 +216,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
           _double();
         }
         ind_pos = num_inds;
-        hash = _map(ind);
+        hash = _map(ind, deletedOK = true);
       }
       table(hash) = ind_pos;
       inds(ind_pos).data = ind;
@@ -217,8 +227,8 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def remove( ind: ind_type) {
     var ind_pos = _map(ind);
+    if (ind_pos >= 0) {
     var table_i = table(ind_pos);
-    // if (table_i!=_EMPTY && table_i!=_DELETED) {
     if (table_i >= 0) {
       inds(table_i).valid = false;
       num_inds -= 1;
@@ -227,6 +237,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
       for ia in _arrs2 do
         ia.purge( table_i);
+    }
     }
 
     if (size > _MIN_SIZE) then
@@ -238,7 +249,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def member( ind: ind_type) {
     var ind_pos = table(_map(ind));
-    return (ind_pos!=_EMPTY && ind_pos!=_DELETED);
+    return (ind_pos >= 0);
   }
 
   def numIndices {
