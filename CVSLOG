@@ -108453,3 +108453,17 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 11:58:34 -- dinan
+
+Log message:
+	Updated to Vim syntax highlighting scheme.  Removed a lot of C/C++
+	highlightings that would have been misleading.  Consolidated to a single file.
+	Corrected many mis-highlightings and missing keywords.
+
+Modified files:
+	chapel/etc/vim/syntax/: chpl.vim 
+Removed files:
+	chapel/etc/vim/syntax/: chpl-c.vim 
+
