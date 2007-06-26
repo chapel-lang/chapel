@@ -108485,3 +108485,15 @@ Added files:
 	chapel/test/modules/diten/usemodule/: inner_uses_all_outer.chpl 
 	                                      inner_uses_all_outer.good 
 
+---------------------------------------------------------------------------
+
+06/26/07 12:10:39 -- bradc
+
+Log message:
+	Made testing system crank timeout to 15 minutes if using
+	valgrind.  This causes everything in the release/examples
+	directory to pass without timing out on chap10.
+
+Modified files:
+	chapel/test/Bin/: sub_test 
+
