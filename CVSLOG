@@ -108565,3 +108565,28 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: deadCodeElimination.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 15:16:25 -- deitz
+
+Log message:
+	Fixed a bug in which generic functions with where clauses, which
+	evaluated to false, would have inherited from other generic functions
+	had the where clause evaluated to true.
+	
+	This is an interesting corner case illustrated in the new test
+	
+	  classes/deitz/dispatch/test_generic_where2.chpl
+	
+	Removed a .future and made the dynamically dispatched member function
+	on sparse domains use a where clause.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+Added files:
+	chapel/test/classes/deitz/dispatch/: test_generic_where2.chpl 
+	                                     test_generic_where2.good 
+Removed files:
+	chapel/test/sparse/bradc/: sparse1Daccess.future 
+
