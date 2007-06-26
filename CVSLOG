@@ -108551,3 +108551,17 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleAssociative.chpl 
 
+---------------------------------------------------------------------------
+
+06/26/07 14:56:03 -- deitz
+
+Log message:
+	Improved the performance of deadVariableElimination greatly.  It is no
+	longer iterative in a general way but rather specifically tries to
+	eliminate other variables as their uses are removed.
+	
+	This improves the compilation time of FFT by about 17%.
+
+Modified files:
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+
