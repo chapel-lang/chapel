@@ -108604,3 +108604,17 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 15:32:13 -- diten
+
+Log message:
+	Improve the linked list example.  Add a default iterator and a writeThis
+	method.  Update the README.features file to reflect this, and added a frmat
+	column under I/O features for using writeThis to format output.  Also, add
+	comments to this example using the somewhat standard comment format.
+
+Modified files:
+	chapel/test/release/examples/: linkedList.chpl linkedList.good 
+	                               README.features 
+
