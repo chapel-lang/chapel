@@ -108497,3 +108497,23 @@ Log message:
 Modified files:
 	chapel/test/Bin/: sub_test 
 
+---------------------------------------------------------------------------
+
+06/26/07 12:12:41 -- bradc
+
+Log message:
+	Hacked some new changes into my getoldperf script to
+	make it work for my current task which is to make up
+	for a range of timings for the past week or so that
+	we hven't.  Unfortunately, this script still needs
+	to be custommized on a use-by-use basis, though the
+	current version is slightly more general than the
+	last.
+	
+	The current version also assumes that the
+	CHPL_TEST_PERF_DIR variable is set in order to work
+	and keep things simple.
+
+Modified files:
+	chapel/util/pastPerformance/: getoldperf 
+
