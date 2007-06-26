@@ -108340,3 +108340,13 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+06/25/07 17:27:49 -- bradc
+
+Log message:
+	Added scan to list of emacs reserved words.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
