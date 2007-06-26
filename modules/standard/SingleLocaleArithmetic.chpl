@@ -71,14 +71,10 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     }
   }
 
-  def member(ind: dim_type) {  // using "where rank == 1" seg faults
-    if (rank == 1) {
-      if !_in(ranges(1), ind) then
-        return false;
-      return true;
-    } else {
-      compilerError("member() requires an index or rank ", rank);
-    }
+  def member(ind: dim_type) where rank == 1 {
+    if !_in(ranges(1), ind) then
+      return false;
+    return true;
   }
 
   def member(ind: rank*dim_type) {

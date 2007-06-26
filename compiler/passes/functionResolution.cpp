@@ -2636,18 +2636,20 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
             }
           }
           FnSymbol* icfn = instantiate(cfn, &subs);
-          resolveFormals(icfn);
-          if (signature_match(pfn, icfn)) {
-            resolveFns(icfn);
-            if (icfn->retType != pfn->retType) {
-              USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
-              USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", fn2string(icfn), icfn->retType->symbol->name);
-              USR_STOP();
+          if (icfn) {
+            resolveFormals(icfn);
+            if (signature_match(pfn, icfn)) {
+              resolveFns(icfn);
+              if (icfn->retType != pfn->retType) {
+                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
+                USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", fn2string(icfn), icfn->retType->symbol->name);
+                USR_STOP();
+              }
+              Vec<FnSymbol*>* fns = ddf.get(pfn);
+              if (!fns) fns = new Vec<FnSymbol*>();
+              fns->add(icfn);
+              ddf.put(pfn, fns);
             }
-            Vec<FnSymbol*>* fns = ddf.get(pfn);
-            if (!fns) fns = new Vec<FnSymbol*>();
-            fns->add(icfn);
-            ddf.put(pfn, fns);
           }
         }
       } else {
@@ -2662,18 +2664,20 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
         }
         if (subs.n)
           cfn = instantiate(cfn, &subs);
-        resolveFormals(cfn);
-        if (signature_match(pfn, cfn)) {
-          resolveFns(cfn);
-          if (cfn->retType != pfn->retType) {
-            USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
-            USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", fn2string(cfn), cfn->retType->symbol->name);
-            USR_STOP();
+        if (cfn) {
+          resolveFormals(cfn);
+          if (signature_match(pfn, cfn)) {
+            resolveFns(cfn);
+            if (cfn->retType != pfn->retType) {
+              USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
+              USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", fn2string(cfn), cfn->retType->symbol->name);
+              USR_STOP();
+            }
+            Vec<FnSymbol*>* fns = ddf.get(pfn);
+            if (!fns) fns = new Vec<FnSymbol*>();
+            fns->add(cfn);
+            ddf.put(pfn, fns);
           }
-          Vec<FnSymbol*>* fns = ddf.get(pfn);
-          if (!fns) fns = new Vec<FnSymbol*>();
-          fns->add(cfn);
-          ddf.put(pfn, fns);
         }
       }
     }
