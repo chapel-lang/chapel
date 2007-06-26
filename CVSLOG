@@ -108360,3 +108360,17 @@ Log message:
 Modified files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+06/25/07 18:04:30 -- dinan
+
+Log message:
+	Vim syntax highlighting scheme for Chapel.  This scheme is by no means complete
+	but it is workable.  Notably, ranges don't highlight correctly yet and they
+	have a tendancy to throw off the existing bracket mathing scheme.
+
+Added files:
+	chapel/etc/vim/: README 
+	chapel/etc/vim/ftdetect/: chpl.vim 
+	chapel/etc/vim/syntax/: chpl.vim 
+
