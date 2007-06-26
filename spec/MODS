@@ -16,6 +16,7 @@ BLC    added "range" type to language to replace old "arithmetic sequence" conce
          e.g., "[lo..hi)" is equivalent to lo..hi-1
        - +, -, *, / operators on range/scalar combinations
        discuss stridable parameter for ranges and domains
+BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 
 CLOSED SJD added support for creating array aliases
        e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
@@ -52,11 +53,10 @@ CLOSED MBH    allow "<index> in" to be elided in for/forall loops/expressions
 CLOSED DMI multiple modules listed within a single "use" statement
 
 Newly Implemented Features:
-BLC    support for sparse domains/arrays
+CLOSED support for sparse domains/arrays
        - assignment of aggregate index expressions to sparse domains
        - accumulation of indices into sparse domains using +=
-BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
-BLC    enumerated domains and arrays
+CLOSED enumerated domains and arrays
 CLOSED SJD    support for nested classes, records, and iterators
 CLOSED SJD    serial statement
 CLOSED (MBH) added support for using "_" to ignore elements during tuple destructuring
@@ -67,7 +67,7 @@ CLOSED DMI initial support for accessing module's member via modname.membername
 CLOSED SJD    implemented dynamic casts between class types
 DMI    turned reference counting garbage collection off by default
        - added initial support for copy collection garbage collection
-BLC    subdomain keyword is now supported, though subset relationship is not checked
+CLOSED subdomain keyword is now supported, though subset relationship is not checked
 BLC    initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
@@ -75,8 +75,8 @@ CLOSED MBH    removed support for using "?" in identifiers
        - changed standard method member? to member
        - changed standard method true? to isTrue
 CLOSED MBH    removed support for "--" as a single-line comment style
-BLC    an array's domain should now be accessed via A.domain rather than A.dom
-BLC    array element type identifier changed from elt_type to eltType
+CLOSED an array's domain should now be accessed via A.domain rather than A.dom
+CLOSED array element type identifier changed from elt_type to eltType
 
 Semantic Changes:
 CLOSED MBH    changed relative precedence of casts and unary +/- (unary +/- is now tighter)

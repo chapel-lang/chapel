@@ -33,17 +33,19 @@ of domains:
 Arithmetic domains are rectilinear sets of Cartesian indices that can
 have an arbitrary rank.
 \item
-Sparse domains are subsets of indices in arithmetic domains.
+Sparse domains are subdomains that support a notion of an implicit
+``zero element'' for array elements described by its base domain but
+not the domain itself.
 \item
 Indefinite domains are sets of indices where the type of the index is
 some type that is not an array, domain, or range.  Indefinite domains
 define dictionaries or associative arrays implemented via hash tables.
 \item
-Opaque domains are sets of anonymous indices.  Opaque domains define
-graphs and unspecified sets.
-\item
 Enumerated domains are sets of constants defined by some enumerated
 type.
+\item
+Opaque domains are sets of anonymous indices.  Opaque domains define
+graphs and unspecified sets.
 \end{itemize}
 
 \subsubsection{Domain Types}
@@ -53,11 +55,10 @@ type.
 Domain types vary based on the kind of the domain.  The type of an
 arithmetic domain is parameterized by the rank of the domain and the
 integral type of the indices.  The type of a sparse domain is
-parameterized by the type of the arithmetic domain that defines the
-superset of its indices.  The type of an indefinite domain is
-parameterized by the type of the index.  The type of an opaque domain
-is unique.  The type of an enumerated domain is parameterized by the
-enumerated type.
+parameterized by the type of the domain that defines its bounding
+index set.  The type of an indefinite domain is parameterized by the
+type of the index.  The type of an opaque domain is unique.  The type
+of an enumerated domain is parameterized by the enumerated type.
 
 \begin{example}
 In the code
@@ -186,6 +187,18 @@ var A: [D] real;
 \end{chapel}
 \chpl{A} is declared to be an array over domain \chpl{D} with
 elements of type \chpl{real}.
+\end{example}
+
+An array's element type can be referred to using the member symbol
+\chpl{eltType}.
+
+\begin{example}
+In the following example, \chpl{x} is declared to be of type
+\chpl{real} since that is the element type of array \chpl{A}.
+\begin{chapel}
+var A: [D] real;
+var x: A.eltType;
+\end{chapel}
 \end{example}
 
 \begin{status}
@@ -562,7 +575,8 @@ semantics though with more restrictions.
 Array slices may also be expressed using partially unbounded or
 completely unbounded ranges.  This is equivalent to slicing the
 array's defining domain by the specified ranges to create a subdomain
-and then using that subdomain to slice the array.
+as described in Section~\ref{Arithmetic_Domain_Slicing} and then using
+that subdomain to slice the array.
 
 \subsubsection{Formal Arguments of Arithmetic Array Type}
 \label{Formal_Arguments_of_Arithmetic_Array_Type}
@@ -595,36 +609,91 @@ indexed by the integers between one and five.
 \index{domains!sparse}
 \index{arrays!sparse}
 
+Sparse domains are used in Chapel to describe irregular index subsets
+and to define sparse arrays.  Sparse arrays are typically used to
+represent data aggregates in which a value occurs so frequently that
+it would be wasteful to store it explicitly for each occurence.  This
+value is commonly described as the ``zero value'', though we refer to
+it as the \emph{implicitly replicated value} or \emph{IRV} since it
+may be a value other than zero.
+
 \begin{status}
-Sparse domains are not yet implemented.
+The Chapel implementation currently only supports sparse arithmetic
+domains and arrays.  One could conceive of wanting sparse indefinite
+and opaque domains and arrays as well.
 \end{status}
 
-A sparse domain type is given by the syntax
+\subsubsection{Sparse Domain Types}
+
+A sparse domain type is specified by the syntax
 \begin{syntax}
 sparse-domain-type:
-  `sparse' `domain' ( domain-expression )
-
-domain-expression:
-  expression
+  `sparse' `subdomain' ( domain-expression )
 \end{syntax}
-A sparse domain is a domain that contains a subset of the indices in
-the domain specified by the \sntx{domain-expression}, sometimes called
-the {\em base domain}.
+This syntax specifies that the domain is a sparse subset of the
+indices in the domain specified by the \sntx{domain-expression},
+sometimes called the {\em base domain} or \emph{parent domain}.
 
-Arrays declared over sparse domains can be indexed by all of the
-indices in the base domain.  If the index is not part of the sparse
-domain, the element returned is called the {\em unrepresented
-element}.  It is an error to assign a value to the unrepresented
-element by indexing into the array and assigning it a value.  The
-unrepresented element can be set to any value but by default contains
-the default value associated with the element type of the array.
+\begin{example}
+The following code declares a 2D dense domain \chpl{D}, followed by a
+2D sparse subdomain of \chpl{D} named \chpl{SpsD}.  Since \chpl{SpsD}
+is uninitialized, it will initially describe the empty set of indices
+from \chpl{D}.
+\begin{chapel}
+const D: domain(2) = [1..n, 1..n];
+var SpsD: sparse subdomain(D);
+\end{chapel}
+\end{example}
 
-\subsubsection{Changing the Indices in Sparse Domains}
 
-Indices can be added to or removed from sparse domains.  Sparse
-domains support a method \chpl{add} that takes an index and adds this
-index to the sparse domain.  All arrays declared over this sparse
-domain can now be assigned values corresponding to this index.
+\subsubsection{Sparse Domain Assignment}
+
+Sparse domains can be assigned aggregates of indices from their parent
+domain.  Common methods for expressing such aggregates are to use a
+tuple of indices, a forall expression that enumerates indices, or an
+iterator that generates indices.
+
+\begin{example}
+The following three assignments show ways of assigning indices to a
+sparse domain, \chpl{SpsD}.  The first assigns the domain two index
+values, \chpl{(1,1)} and \chpl{(n,n)}.  The second assigns the domain
+all of the indices along the diagonal from
+\chpl{(1,1)}$\ldots$\chpl{(n,n)}.  The third invokes an iterator that
+is written to \chpl{yield} indices read from a file named
+``inds.dat''.  Each of these assignments has the effect of replacing
+the previous index set with a completely new set of values.
+\begin{chapel}
+SpsD = ((1,1), (n,n));
+SpsD = [i in 1..n] (i,i);
+SpsD = readIndicesFromFile("inds.dat");
+\end{chapel}
+\end{example}
+
+Sparse domains can be emptied by using a method \chpl{clear} that
+clears out its index set.
+
+\begin{example}
+The following call will cause the sparse domain \chpl{SpsD} to
+describe an empty set of indices as it was when initially declared.
+\begin{chapel}
+SpsD.clear();
+\end{chapel}
+\end{example}
+
+As with other domain types, reassigning a domain's index set will
+cause arrays declared in terms of that domain to store elements
+corresponding to the new indices of the domain.  These elements will
+be initialized to the array's IRV by default.
+
+
+
+\subsubsection{Modifying a Sparse Domain}
+
+Indices can be incremtnally added to or removed from sparse domains.
+Sparse domains support a method \chpl{add} that takes an index and
+adds it to the sparse domain's index set.  All arrays declared over
+this sparse domain will now store an element corresponding to this
+index, initialized to be its IRV.
 
 Sparse domains support a method \chpl{remove} that takes an index and
 removes this index from the sparse domain.  The values in the arrays
@@ -648,6 +717,60 @@ is equivalent to
 \begin{chapel}
 D.remove(i);
 \end{chapel}
+
+As with other methods and operators, the \chpl{add}, \chpl{remove},
+\chpl{+=}, and \chpl{-=} operators can be invoked in a promoted manner
+by specifying an aggregate of indices rather than a single index at a
+time.
+
+\begin{status}
+The \chpl{remove} and \chpl{-=} capabilities are not yet implemented
+for sparse domains.
+\end{status}
+
+
+\subsubsection{Sparse Arrays}
+
+An array declared over a sparse domain can be indexed using all of the
+indices in the domain's parent domain.  If it is read using an index
+that is not part of the sparse domain's index set, the IRV value is
+returned.  Otherwise, the array's unique value corresponding to the
+index is returned.
+
+Sparse arrays can only be written at locations corresponding to
+indices in their domain's index set.  In general, writing to other
+locations will result in a runtime error.
+
+By default a sparse array's IRV is defined as the default value for
+the array's element type.  The IRV can be set to any value of the
+array's element type by assigning to a pseudo-field named ``IRV'' in
+the array.  It is an error to assign a value to the IRV by assigning
+to an array element whose index is not described by the sparse domain.
+
+\begin{example}
+The following code example declares a sparse array, \chpl{SpsA} using
+the sparse domain \chpl{SpsD} (For this example, assume that
+\chpl{n}$>$1).  Lines 2 assigns two indices to \chpl{SpsD}'s index set
+and then lines 3--4 store the values 1.1 and 9.9 to the corresponding
+values of \chpl{SpsA}.  The IRV of \chpl{SpsA} will initially be 0.0
+since its element type is \chpl{real}.  However, the fifth line sets
+the IRV to be the value 5.5, causing \chpl{SpsA} to represent the
+value 1.1 in its low corner, 9.9 in its high corner, and 5.5
+everywhere else.  The final statement is an error since it attempts to
+assign to \chpl{SpsA} at an index not described by its domain,
+\chpl{SpsD}.
+
+\begin{chapel}
+var SpsA: [SpsD] real;
+SpsD = ((1,1), (n,n));
+SpsA(1,1) = 1.1;
+SpsA(n,n) = 9.9;
+SpsA.IRV = 5.5;
+SpsA(1,n) = 0.0;  // ERROR!
+\end{chapel}
+\end{example}
+
+
 
 \subsection{Indefinite Domains and Arrays}
 \label{Indefinite_Domains_and_Arrays}
@@ -738,19 +861,15 @@ is rare.
 \index{domains!enumerated}
 \index{arrays!enumerated}
 
-\begin{status}
-Enumerated domains are not yet implemented.
-\end{status}
-
 Enumerated domains are a special case of indefinite domains where the
 indices are the constants defined by an enumerated type.  Enumerated
 domains do not support the \chpl{add} or \chpl{remove} methods.  All
 of the constants defined by the enumerated type are indices into the
 enumerated domain.
 
-An enumerated domain is specified as an indefinite domain would be
-except the type is an enumerated type rather than some other scalar
-type.
+An enumerated domain is specified indentically to the indefinite
+domain type, except that the type is an enumerated type rather than
+some other value type.
 
 \subsection{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
@@ -783,15 +902,12 @@ values in the arrays associated with the assigned domain will be lost.
 \index{subdomains}
 \index{domains!subdomains}
 
-\begin{status}
-Subdomains are not yet implemented.
-\end{status}
-
-A subdomain is a domain whose indices are indices of a {\em base
-  domain}.  A subdomain is specified by the following syntax:
+A subdomain is a domain whose indices are a subset of those described
+by a {\em base domain}.  A subdomain is specified by the following
+syntax:
 \begin{syntax}
 subdomain-type:
-  `domain' ( domain-expression )
+  `subdomain' ( domain-expression )
 \end{syntax}
 The ordering of the indices in the subdomain is consistent with the
 ordering of the indices in the base domain.
@@ -800,9 +916,12 @@ Subdomains are verified during execution even as domains are
 reassigned.  The indices in a subdomain are known to be indices in a
 domain, allowing for fast bounds-checking.
 
-In the case of arithmetic domains, the subdomain literal may be
-composed of indefinite ranges.  In such cases, the omitted bounds of
-the indefinite ranges are taken from the bounds of the base domain.
+\begin{status}
+The subdomain syntax is implemented, but subdomains are not yet
+semantically checked to ensure that they are proper subdomains
+of their parent domains.
+\end{status}
+
 
 \subsection{Predefined Functions and Methods on Domains}
 \index{domains!predefined functions}
@@ -815,6 +934,14 @@ def $Domain$.numIndices: dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the domain.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.member(i: index($Domain$)): bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not index \chpl{i} is a member of the domain's
+index set.
 \end{protobody}
 
 \subsubsection{Predefined Functions and Methods on Arithmetic Domains}
