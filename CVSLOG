@@ -108374,3 +108374,16 @@ Added files:
 	chapel/etc/vim/ftdetect/: chpl.vim 
 	chapel/etc/vim/syntax/: chpl.vim 
 
+---------------------------------------------------------------------------
+
+06/25/07 18:52:47 -- dinan
+
+Log message:
+	Cleanups to Vim syntax highlighting scheme.
+
+Modified files:
+	chapel/etc/vim/: README 
+	chapel/etc/vim/syntax/: chpl.vim 
+Added files:
+	chapel/etc/vim/syntax/: chpl-c.vim 
+
