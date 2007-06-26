@@ -108517,3 +108517,20 @@ Log message:
 Modified files:
 	chapel/util/pastPerformance/: getoldperf 
 
+---------------------------------------------------------------------------
+
+06/26/07 12:13:57 -- deitz
+
+Log message:
+	Extended single assignment reference propagation to eliminate copies
+	of references.
+	
+	Removed localReferencePropagation since the single assignment version
+	is now sufficient.
+	
+	This decreases the number of generated lines of code for Jacobi from
+	6881 to 6644 as counted by wc.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
