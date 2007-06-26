@@ -108534,3 +108534,20 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 13:05:07 -- bradc
+
+Log message:
+	Fixed infinite loop bug in associative domains
+	and arrays revealed by Steve's puzzles/deitz/digits3.chpl
+	test.  Also fixed another bug demonstrated by that code.
+	I'm not removing the future because I'm not sure if the
+	output the test is generating is what's expected or not.
+	My fixes don't seem to break anything else, though, so
+	I'll check in and see what Steve thinks when he has time
+	to look.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleAssociative.chpl 
+
