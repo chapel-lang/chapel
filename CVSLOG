@@ -108327,3 +108327,16 @@ Log message:
 Modified files:
 	chapel/spec/: Domains_and_Arrays.tex MODS chapel_listing.tex 
 
+---------------------------------------------------------------------------
+
+06/25/07 17:27:15 -- bradc
+
+Log message:
+	Our new chap09/10 boxes need a few extra
+	valgrind suppressions (similar to the
+	current ones, but different because they
+	use a different version of GLIBC it seems).
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
