@@ -108644,3 +108644,20 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 16:20:41 -- dinan
+
+Log message:
+	Two futures having to do with classes that are recursively defined.  In one
+	case, the compiler produces a generic error message even though there are no
+	generic fields.  In the second, the binary that is produced seg faults.
+
+Added files:
+	chapel/test/classes/dinan/: array_of_recursive_classes.chpl 
+	                            array_of_recursive_classes.future 
+	                            array_of_recursive_classes.good 
+	                            array_of_recursive_classes2.chpl 
+	                            array_of_recursive_classes2.future 
+	                            array_of_recursive_classes2.good 
+
