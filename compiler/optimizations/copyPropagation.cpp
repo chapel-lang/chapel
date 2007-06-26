@@ -32,6 +32,7 @@ bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet) {
 }
 
 typedef Map<Symbol*,Symbol*> AvailableMap;
+typedef MapElem<Symbol*,Symbol*> AvailableMapElem;
 
 static void
 localCopyPropagationCore(BasicBlock* bb,
@@ -66,11 +67,9 @@ localCopyPropagationCore(BasicBlock* bb,
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
         if (invalidateCopies(se, defSet)) {
-          Vec<Symbol*> keys;
-          available.get_keys(keys);
-          forv_Vec(Symbol, key, keys) {
-            if (key == se->var || available.get(key) == se->var)
-              available.put(key, NULL);
+          form_Map(AvailableMapElem, pair, available) {
+            if (pair->key == se->var || pair->value == se->var)
+              available.put(pair->key, NULL);
           }
         }
       }
