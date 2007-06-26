@@ -571,6 +571,23 @@ void singleAssignmentRefPropagation() {
 }
 
 
+void copyPropagation(void) {
+  if (fBaseline)
+    return;
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (!fNoCopyPropagation)
+      localCopyPropagation(fn);
+    deadVariableElimination(fn);
+    deadExpressionElimination(fn);
+    if (!fNoCopyPropagation && !fNoFlowAnalysis) {
+      globalCopyPropagation(fn);
+      deadVariableElimination(fn);
+      deadExpressionElimination(fn);
+    }
+  }
+}
+
+
 void refPropagation() {
   if (fBaseline)
     return;
