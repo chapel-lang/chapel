@@ -108350,3 +108350,13 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+06/25/07 17:28:38 -- bradc
+
+Log message:
+	Fixed a typo in the CHANGES file.
+
+Modified files:
+	./: CHANGES 
+
