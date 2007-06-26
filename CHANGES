@@ -47,7 +47,7 @@ Changes to Chapel Language:
 - changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
   e.g., var rows = D.dim(1);
 - arithmetic domains and arrays support low and high methods that return bounds
-  e.g., var loInd = A.low();
+  e.g., var loInd = A.low;
 - support for range, domain, and array slicing via bounded or unbounded ranges
   e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
 - support for promoting casts across array elements
