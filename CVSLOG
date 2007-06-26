@@ -108630,3 +108630,17 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+06/26/07 15:57:41 -- deitz
+
+Log message:
+	Optimized the loop over the available copies.  This loop used to walk
+	the keys and lookup the values.  It now walks the keys and values
+	together (no lookup).
+	
+	This improves the compilation time of FFT by about 15%.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
