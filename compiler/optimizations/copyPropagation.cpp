@@ -11,9 +11,24 @@ bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
   return
     var != fn->getReturnSymbol() &&
     !is_complex_type(var->type) &&
-    !isRecordType(var->type) &&
     var->type->refType &&
     !var->isConcurrent;
+}
+
+bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet) {
+  if (defSet.set_in(se))
+    return true;
+  if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+    if (parent->isPrimitive(PRIMITIVE_SET_REF))
+      return true;
+    if (isRecordType(se->var->type)) {
+      if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
+        return true;
+      if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)
+        return true;
+    }
+  }
+  return false;
 }
 
 typedef ChainHashMap<Symbol*,PointerHashFns,Symbol*> AvailableMap;
@@ -34,15 +49,10 @@ localCopyPropagationCore(BasicBlock* bb,
     //
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-        if (useSet.set_in(se) && !defSet.set_in(se)) {
+        if (useSet.set_in(se)) {
           if (Symbol* sym = available.get(se->var)) {
-
-            // disable on references
-            if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr))
-              if (call->isPrimitive(PRIMITIVE_SET_REF))
-                continue;
-
-            se->var = sym;
+            if (!invalidateCopies(se, defSet))
+              se->var = sym;
           }
         }
       }
@@ -55,9 +65,7 @@ localCopyPropagationCore(BasicBlock* bb,
     //
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-        CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
-        if (defSet.set_in(se) ||
-            (parent && parent->isPrimitive(PRIMITIVE_SET_REF))) {
+        if (invalidateCopies(se, defSet)) {
           Vec<Symbol*> keys;
           available.get_keys(keys);
           forv_Vec(Symbol, key, keys) {
@@ -207,9 +215,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-          CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
-          if (defSet.set_in(se) ||
-              (parent && parent->isPrimitive(PRIMITIVE_SET_REF))) {
+          if (invalidateCopies(se, defSet)) {
             for (int i = start; i < _LHS.n; i++) {
               if (_LHS.v[i]) {
                 if (_LHS.v[i]->var == se->var || _RHS.v[i]->var == se->var) {
@@ -326,9 +332,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-          CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
-          if (defSet.set_in(se) ||
-              (parent && parent->isPrimitive(PRIMITIVE_SET_REF))) {
+          if (invalidateCopies(se, defSet)) {
             for (int j = 0; j < start; j++) {
               if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
                 KILL.v[i]->v[j] = true;
