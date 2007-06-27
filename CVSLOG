@@ -108702,3 +108702,21 @@ Modified files:
 	chapel/make/: Makefile.gnu Makefile.sunos 
 	chapel/runtime/include/: chplmath.h stdchpl.h 
 
+---------------------------------------------------------------------------
+
+06/26/07 17:10:43 -- dinan
+
+Log message:
+	Updated the recursive class future and removed my thinko.  An interesting
+	development: if I change class A's field from "var b: B;" to "var b: B();" then
+	the code compiles and runs correctly.
+
+Modified files:
+	chapel/test/classes/dinan/: array_of_recursive_classes.chpl 
+	                            array_of_recursive_classes.future 
+	                            array_of_recursive_classes.good 
+Removed files:
+	chapel/test/classes/dinan/: array_of_recursive_classes2.chpl 
+	                            array_of_recursive_classes2.future 
+	                            array_of_recursive_classes2.good 
+
