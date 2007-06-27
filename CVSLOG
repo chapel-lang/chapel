@@ -108916,3 +108916,13 @@ Added files:
 	                                      accessLocArray.future 
 	                                      accessLocArray.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 16:00:07 -- bradc
+
+Log message:
+	Added coforall to keywords for emacs mode.
+
+Modified files:
+	chapel/etc/emacs/22.0/: cc-langs.el 
+
