@@ -450,6 +450,7 @@ initPrimitive() {
   prim_def("_now_time", returnInfoFloat, true);
 
   prim_def("_bytesPerLocale", returnInfoUInt64);
+  prim_def("_coresPerLocale", returnInfoInt32);
 
   prim_def("_chpl_memtest_printMemTable", returnInfoVoid, true, true);
   prim_def("_chpl_memtest_printMemStat", returnInfoVoid, true, true);

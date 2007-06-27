@@ -27,3 +27,13 @@ _uint64 _bytesPerLocale(void) {
 #endif
 #endif
 }
+
+
+_int32 _coresPerLocale(void) {
+#ifdef NO_CORES_PER_LOCALE
+  return 1;
+#else
+  _int32 numcores = (_int32)sysconf(_SC_NPROCESSORS_ONLN);
+  return numcores;
+#endif
+}

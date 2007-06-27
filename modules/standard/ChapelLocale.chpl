@@ -23,3 +23,8 @@ def locale.writeThis(f: Writer) {
 //
 const Locale: [LocaleDomain] locale;
 [loc in LocaleDomain] Locale(loc) = locale(id = loc);
+
+
+def locale.numCores {
+  on this do return __primitive("_coresPerLocale");
+}
