@@ -43,25 +43,19 @@ def sortedNumbers(param p: int = 1, start: int = 0) {
   }
 }
 
-var D: domain(int);
 var FD: domain(int);
 
 for i in sortedNumbers() {
-  writeln(i);
-  for j in D do {
-writeln("----", j);
-    D -= j;
-  }
+  var D: domain(int);
   var j = i;
   while !D.member(j) {
-writeln("--", j);
     D += j;
     j = biggest(j) - smallest(j);
   }
   if !FD.member(j) {
     while !FD.member(j) {
       FD += j;
-      writeln(j, " - ");
+      write(j, " ");
       j = biggest(j) - smallest(j);
     }
     writeln();
