@@ -1,0 +1,4 @@
+unimplemented feature: Inheriting inner classes
+
+When inheriting from a class with a nested class, the inner class is not
+inherited.
