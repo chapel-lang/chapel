@@ -108795,3 +108795,29 @@ Log message:
 Added files:
 	chapel/test/modules/standard/machine/: numCores.spruce16.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 12:30:02 -- bradc
+
+Log message:
+	Implemented the numCores query for Macintosh and
+	added a .good file for our Mac.
+	
+	Helpful tip for new Mac users like me:  Using
+	"sysctl hw" or "sysctl machdep" (or I suspect
+	a host of other sysctl keywords) from the
+	command line gives all sorts of useful information
+	about your Macintosh.  You can then query these
+	same pieces of information from within C code as
+	shown in the chplsys.c routines...
+	
+	TODO: Really need to restructure the runtime so
+	that machine-specific routines aren't cluttered
+	by #ifdefs...
+
+Modified files:
+	chapel/runtime/src/: chplsys.c 
+Added files:
+	chapel/test/modules/standard/machine/: 
+	                                       numCores.macchapel-mac.good 
+
