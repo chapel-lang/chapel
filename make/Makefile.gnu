@@ -34,7 +34,7 @@ endif
 
 COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
-GEN_CFLAGS = 
+GEN_CFLAGS = -std=c99
 
 #
 # Flags for turning on warnings for C++/C code

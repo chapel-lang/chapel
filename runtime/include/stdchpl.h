@@ -14,6 +14,7 @@
 #include "config.h"
 #include "chplcast.h"
 #include "chplcopygc.h"
+#include "chplexit.h"
 #include "chplio.h"
 #include "chplmath.h"
 #include "chplmem.h"
