@@ -108896,3 +108896,23 @@ Log message:
 Removed files:
 	chapel/test/puzzles/deitz/: digits3.future 
 
+---------------------------------------------------------------------------
+
+06/27/07 15:59:35 -- bradc
+
+Log message:
+	Ran into a pretty bad showstopper for coforall --
+	accessing a local array within a coforall loop causes
+	the generated code to seg fault during the initialization
+	of the array.  The array is set up via a reference rather
+	than directly, and a NULL pointer is dereferenced early
+	in the initialization.  Seems like it might not be too hard
+	to fix if anyone understands this code (I'm not at all
+	familiar with it).
+
+Added files:
+	chapel/test/parallel/coforall/bradc/: .cvsignore 
+	                                      accessLocArray.chpl 
+	                                      accessLocArray.future 
+	                                      accessLocArray.good 
+
