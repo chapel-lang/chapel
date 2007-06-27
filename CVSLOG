@@ -108821,3 +108821,19 @@ Added files:
 	chapel/test/modules/standard/machine/: 
 	                                       numCores.macchapel-mac.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 12:33:11 -- diten
+
+Log message:
+	Remove an unnecessary branch from the puzzles/diten/roman.chpl.  Add a future
+	that tries to inherit from a class containing an inner class.  The inner class
+	is not inherited.
+
+Modified files:
+	chapel/test/puzzles/diten/: roman.chpl 
+Added files:
+	chapel/test/classes/diten/: nesting_with_inheritance2.chpl 
+	                            nesting_with_inheritance2.future 
+	                            nesting_with_inheritance2.good 
+
