@@ -108785,3 +108785,13 @@ Added files:
 	                            test_nested_modules.future 
 	                            test_nested_modules.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 12:07:16 -- bradc
+
+Log message:
+	Adding expected output for David's machine.
+
+Added files:
+	chapel/test/modules/standard/machine/: numCores.spruce16.good 
+
