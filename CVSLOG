@@ -108720,3 +108720,53 @@ Removed files:
 	                            array_of_recursive_classes2.future 
 	                            array_of_recursive_classes2.good 
 
+---------------------------------------------------------------------------
+
+06/26/07 17:12:16 -- bradc
+
+Log message:
+	Added a numCores pseudo-field on the locale type
+	that allows the number of cores on that locale
+	to be queried.  The idea being that this might be
+	a nice feature for people using coforall loops to
+	create an appropriate amount of parallelism (and
+	eventually for distribution authors to use to
+	determine how much parallelism to create for an
+	array/domain).
+	
+	Added a bunch of machine-specific .good files as
+	I couldn't find a portable way to query this
+	information from the command line (on Linux
+	machines /proc/cpuinfo grepping for processor
+	gives the right answer, but this isn't portable
+	to other operating systems).  If I've missed your
+	machine or you have suggestions for determining
+	this information, please let me know.
+	
+	Still need to implement this for MacOS.  Gotta
+	get a tip from Steve.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: ChapelLocale.chpl 
+	chapel/runtime/include/: chplsys.h 
+	chapel/runtime/src/: chplsys.c 
+Added files:
+	chapel/test/modules/standard/machine/: numCores.chap01.good 
+	                                       numCores.chap02.good 
+	                                       numCores.chap03.good 
+	                                       numCores.chap04.good 
+	                                       numCores.chap05.good 
+	                                       numCores.chap06.good 
+	                                       numCores.chap07.good 
+	                                       numCores.chap08.good 
+	                                       numCores.chap09.good 
+	                                       numCores.chap10.good 
+	                                       numCores.chevy.good 
+	                                       numCores.chpl 
+	                                       numCores.dinan-lnx.good 
+	                                       numCores.good 
+	                                       numCores.sleepingbear.good 
+	                                       numCores.solitary.good 
+	                                       numCores.stemp6.good 
+
