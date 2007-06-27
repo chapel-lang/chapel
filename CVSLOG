@@ -108875,3 +108875,14 @@ Added files:
 	                           test_indefinite_remove.good 
 	                           test_indefinite_remove.future 
 
+---------------------------------------------------------------------------
+
+06/27/07 14:50:19 -- deitz
+
+Log message:
+	Reworked digits3 solution to declare an indefinite domain in a loop
+	and avoid the need of having to clear it out.
+
+Modified files:
+	chapel/test/puzzles/deitz/: digits3.chpl 
+
