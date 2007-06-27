@@ -108837,3 +108837,27 @@ Added files:
 	                            nesting_with_inheritance2.future 
 	                            nesting_with_inheritance2.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 13:56:48 -- deitz
+
+Log message:
+	Made defining and undefining overloaded symbols take constant time
+	(rather than linear time) in the number of overloads.
+	
+	Cleaned up inlining and collapseBlocks.
+	
+	Added collect_stmts utility to collect all statement level
+	expressions.
+	
+	This improves the compilation time of compSampler by about 43%.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp symbol.cpp 
+	                      symscope.cpp 
+	chapel/compiler/include/: astutil.h symbol.h 
+	chapel/compiler/optimizations/: collapseBlocks.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp 
+
