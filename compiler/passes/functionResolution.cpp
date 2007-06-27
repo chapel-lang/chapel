@@ -791,7 +791,7 @@ visibility_distance(SymScope* scope, FnSymbol* fn,
   alreadyVisited->set_add(scope);
 
   if (Symbol* sym = scope->lookupLocal(fn->name)) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
       if (tmp == fn)
         return d;
     }
@@ -1630,11 +1630,9 @@ insertFormalTemps(FnSymbol* fn) {
   }
   if (formals2vars.n > 0) {
     update_symbols(fn->body, &formals2vars);
-    Vec<BaseAST*> formals;
-    formals2vars.get_keys(formals);
-    forv_Vec(BaseAST, ast, formals) {
-      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(ast);
-      VarSymbol* tmp = dynamic_cast<VarSymbol*>(formals2vars.get(formal));
+    form_Map(ASTMapElem, e, formals2vars) {
+      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(e->key);
+      VarSymbol* tmp = dynamic_cast<VarSymbol*>(e->value);
       if (formal->intent == INTENT_OUT) {
         if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));

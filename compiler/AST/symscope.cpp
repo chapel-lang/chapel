@@ -29,17 +29,16 @@ void SymScope::define(Symbol* sym) {
   }
   Symbol* tmp = table.get(sym->name);
   if (tmp) {
-    if (tmp == sym)
-      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-    while (tmp->overload) {
-      tmp = tmp->overload;
-      if (tmp == sym)
-        INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-    }
-    tmp->overload = sym;
+    sym->overloadNext = tmp->overloadNext;
+    sym->overloadPrev = tmp;
+    if (tmp->overloadNext)
+      tmp->overloadNext->overloadPrev = sym;
+    tmp->overloadNext = sym;
     sym->setParentScope(tmp->parentScope);
   } else {
     table.put(sym->name, sym);
+    sym->overloadNext = NULL;
+    sym->overloadPrev = NULL;
     sym->setParentScope(this);
   }
 }
@@ -52,23 +51,20 @@ void SymScope::undefine(Symbol* sym) {
   }
   Symbol* tmp = table.get(sym->name);
   if (tmp == sym) {
-    tmp = sym->overload;
+    tmp = sym->overloadNext;
     table.del(sym->name);
     if (tmp)
       table.put(sym->name, tmp);
-    sym->overload = NULL;
-    return;
   } else {
-    while (tmp->overload) {
-      if (tmp->overload == sym) {
-        tmp->overload = sym->overload;
-        sym->overload = NULL;
-        return;
-      }
-      tmp = tmp->overload;
-    }
+    if (!sym->overloadPrev)
+      INT_FATAL(sym, "Symbol not found in scope from which deleted");
+    if (sym->overloadPrev)
+      sym->overloadPrev->overloadNext = sym->overloadNext;
+    if (sym->overloadNext)
+      sym->overloadNext->overloadPrev = sym->overloadPrev;
   }
-  INT_FATAL(sym, "Symbol not found in scope from which deleted");
+  sym->overloadNext = NULL;
+  sym->overloadPrev = NULL;
 }
 
 
@@ -198,11 +194,11 @@ void SymScope::print(bool number, int indent) {
       for (int i = 0; i < indent; i++)
         printf(" ");
       printf("%s (", sym->name);
-      for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
         printf("%s", tmp->cname);
         if (number)
           printf("[%d]", tmp->id);
-        if (tmp->overload)
+        if (tmp->overloadNext)
           printf(", ");
       }
       printf(")\n");
@@ -218,7 +214,7 @@ void SymScope::codegen(FILE* outfile, char* separator) {
   Vec<Symbol*> symbols;
   table.get_values(symbols);
   forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload)
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext)
       if (!dynamic_cast<TypeSymbol*>(tmp))
         tmp->codegenDef(outfile);
   }
@@ -242,7 +238,7 @@ void SymScope::codegenFunctions(FILE* outfile) {
   Vec<Symbol*> symbols;
   table.get_values(symbols);
   forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp)) {
         fns.add(fn);
       }

@@ -14,16 +14,16 @@ check_redefinition(Symbol* sym) {
     return;
   if (sym->parentScope == rootScope)
     return;
-  if (sym->overload) {
+  if (sym->overloadNext) {
     int count = 0;
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
       if (!tmp->getFnSymbol()) {
         count++;
       }
     }
     if (count >= 2) {
       char* redefinitionLocations = "";
-      for (Symbol* tmp = sym->overload; tmp; tmp = tmp->overload) {
+      for (Symbol* tmp = sym->overloadNext; tmp; tmp = tmp->overloadNext) {
         if (!tmp->getFnSymbol()) {
           redefinitionLocations =
             stringcat(redefinitionLocations, "\n  ", tmp->stringLoc());

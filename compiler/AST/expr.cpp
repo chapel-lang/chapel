@@ -117,7 +117,8 @@ Expr* Expr::remove(void) {
   } else {
     callReplaceChild(NULL);
   }
-  remove_help(this);
+  if (parentSymbol)
+    remove_help(this);
   return this;
 }
 
@@ -168,7 +169,8 @@ void Expr::insertBefore(Expr* new_ast) {
   else
     list->head = new_ast;
   prev = new_ast;
-  sibling_insert_help(this, new_ast);
+  if (parentSymbol)
+    sibling_insert_help(this, new_ast);
 }
 
 
@@ -189,7 +191,8 @@ void Expr::insertAfter(Expr* new_ast) {
   else
     list->tail = new_ast;
   next = new_ast;
-  sibling_insert_help(this, new_ast);
+  if (parentSymbol)
+    sibling_insert_help(this, new_ast);
 }
 
 

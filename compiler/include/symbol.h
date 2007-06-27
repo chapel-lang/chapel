@@ -40,7 +40,8 @@ class Symbol : public BaseAST {
   char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  Symbol* overload;
+  Symbol* overloadNext;
+  Symbol* overloadPrev;
   bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
   bool isExprTemp;

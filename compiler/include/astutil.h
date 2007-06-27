@@ -10,6 +10,7 @@ class FnSymbol;
 class VarSymbol;
 class ArgSymbol;
 class CallExpr;
+class Expr;
 
 void scopeResolve(Symbol* sym);
 void normalize(BaseAST* ast);
@@ -26,6 +27,7 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast);
 void collect_asts_postorder(Vec<BaseAST*>* asts, AList* ast);
 void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast);
 void collect_top_asts(Vec<BaseAST*>* asts, AList* ast);
+void collect_stmts(Vec<Expr*>* exprs, Expr* expr);
 
 // utility routines for clearing and resetting lineno and filename
 void clear_file_info(BaseAST* baseAST);

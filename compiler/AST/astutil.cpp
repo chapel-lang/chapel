@@ -15,6 +15,18 @@ void collect_functions(Vec<FnSymbol*>* fns) {
       fns->add(a);
 }
 
+void collect_stmts(Vec<Expr*>* exprs, Expr* expr) {
+  exprs->add(expr);
+  if (expr->astType == STMT_BLOCK || expr->astType == STMT_COND) {
+    Vec<BaseAST*> next_asts;
+    get_ast_children(expr, next_asts);
+    forv_Vec(BaseAST, next_ast, next_asts) {
+      if (Expr* expr = dynamic_cast<Expr*>(next_ast))
+        collect_stmts(exprs, expr);
+    }
+  }
+}
+
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
   asts->add(ast);
   Vec<BaseAST*> next_asts;
