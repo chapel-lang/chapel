@@ -108886,3 +108886,13 @@ Log message:
 Modified files:
 	chapel/test/puzzles/deitz/: digits3.chpl 
 
+---------------------------------------------------------------------------
+
+06/27/07 14:50:54 -- deitz
+
+Log message:
+	Removed .future
+
+Removed files:
+	chapel/test/puzzles/deitz/: digits3.future 
+
