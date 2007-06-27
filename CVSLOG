@@ -108861,3 +108861,17 @@ Modified files:
 	                         inlineFunctions.cpp scopeResolve.cpp 
 	                         semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+06/27/07 14:45:44 -- deitz
+
+Log message:
+	Added a test of traversing an indefinite domain and removing its
+	elements at the same time.  Should this work?  My digits3 test relies
+	on this.
+
+Added files:
+	chapel/test/arrays/deitz/: test_indefinite_remove.chpl 
+	                           test_indefinite_remove.good 
+	                           test_indefinite_remove.future 
+
