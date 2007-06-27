@@ -33,7 +33,15 @@ _int32 _coresPerLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #else
+#ifdef APPLE
+  _uint64 numcores;
+  size_t len = sizeof(numcores);
+  if (sysctlbyname("hw.physicalcpu", &numcores, &len, NULL, 0))
+    _printInternalError("query of number of cores failed");
+  return (_int32)numcores;
+#else
   _int32 numcores = (_int32)sysconf(_SC_NPROCESSORS_ONLN);
   return numcores;
+#endif
 #endif
 }
