@@ -1,0 +1,4 @@
+bug: nested modules
+
+nested modules should not be flattened before scope resolution;
+relying on use is insufficient.
