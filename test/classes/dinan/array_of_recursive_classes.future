@@ -1,4 +1,4 @@
 bug: Compiler produces a generic error when compiling non-generic recursive classes
 
 The compiler says "error: unable to determine type of field from nil", however
-AFAIK there are no generic fields.
+there are no generic fields.
