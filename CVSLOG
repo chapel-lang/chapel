@@ -108926,3 +108926,14 @@ Log message:
 Modified files:
 	chapel/etc/emacs/22.0/: cc-langs.el 
 
+---------------------------------------------------------------------------
+
+06/27/07 16:02:14 -- bradc
+
+Log message:
+	Added same -U flag for Cygwin makes as used for
+	SunOS makes in order to get clean builds.
+
+Modified files:
+	chapel/make/: Makefile.cygwin 
+
