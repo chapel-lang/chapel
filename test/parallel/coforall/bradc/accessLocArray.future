@@ -1,0 +1,5 @@
+bug: local array access in coforall => seg fault
+
+For some reason that I haven't determined yet, accessing a local array
+within the body of a coforall loop causes the initialization of the
+array to be corrupted, resulting in a seg fault.
