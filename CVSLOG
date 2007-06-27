@@ -108770,3 +108770,18 @@ Added files:
 	                                       numCores.solitary.good 
 	                                       numCores.stemp6.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 09:24:53 -- deitz
+
+Log message:
+	Added a future that I think shows that we should not be flattening
+	modules before scope resolution.  Given are inserts of use statements,
+	I think this should also generate an error instead of print out the
+	wrong value.
+
+Added files:
+	chapel/test/modules/deitz/: test_nested_modules.chpl 
+	                            test_nested_modules.future 
+	                            test_nested_modules.good 
+
