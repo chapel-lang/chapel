@@ -70,8 +70,8 @@ For more detailed information about...      refer to...
   ...changes since the last release           ...CHANGES
   ...reporting bugs                           ...doc/README.bugs
   ...example Chapel programs                  ...examples/README
-  ...an overview of the Chapel language       ...doc/spec.pdf (Chapter 5)
+  ...an overview of the Chapel language       ...doc/chapelLanguageSpec.pdf, Ch5
   ...a quick reference for Chapel syntax      ...doc/quickReference.pdf
   ...a tutorial using three HPCC benchmarks   ...doc/hpcc06.pdf
-  ...the Chapel language specification        ...doc/spec.pdf
+  ...the Chapel language specification        ...doc/chapelLanguageSpec.pdf
   ...notes for Cygwin users                   ...doc/README.cygwin
