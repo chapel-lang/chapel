@@ -36,8 +36,8 @@ Sparse domains are subdomains that support a notion of an implicit
 ``zero element'' for array elements described by its base domain but
 not the domain itself.
 \item
-Indefinite domains are sets of indices where the type of the index is
-some type that is not an array, domain, or range.  Indefinite domains
+Associative domains are sets of indices where the type of the index is
+some type that is not an array, domain, or range.  Associative domains
 define dictionaries or associative arrays implemented via hash tables.
 \item
 Enumerated domains are sets of constants defined by some enumerated
@@ -55,7 +55,7 @@ Domain types vary based on the kind of the domain.  The type of an
 arithmetic domain is parameterized by the rank of the domain and the
 integral type of the indices.  The type of a sparse domain is
 parameterized by the type of the domain that defines its bounding
-index set.  The type of an indefinite domain is parameterized by the
+index set.  The type of an associative domain is parameterized by the
 type of the index.  The type of an opaque domain is unique.  The type
 of an enumerated domain is parameterized by the enumerated type.
 
@@ -625,7 +625,7 @@ may be a value other than zero.
 
 \begin{status}
 The Chapel implementation currently only supports sparse arithmetic
-domains and arrays.  One could conceive of wanting sparse indefinite
+domains and arrays.  One could conceive of wanting sparse associative
 and opaque domains and arrays as well.
 \end{status}
 
@@ -778,12 +778,12 @@ SpsA(1,n) = 0.0;  // ERROR!
 
 
 
-\subsection{Indefinite Domains and Arrays}
-\label{Indefinite_Domains_and_Arrays}
-\index{domains!indefinite}
-\index{arrays!indefinite}
+\subsection{Associative Domains and Arrays}
+\label{Associative_Domains_and_Arrays}
+\index{domains!associative}
+\index{arrays!associative}
 
-An indefinite domain type can be defined over any scalar type and is
+An associative domain type can be defined over any scalar type and is
 given by the following syntax:
 \begin{syntax}
 sparse-domain-type:
@@ -796,23 +796,23 @@ A scalar type is any primitive type, tuple of scalar types, or class,
 record, or union where all of the fields have scalar types.
 Enumerated types are scalar types but domains declared over enumerated
 types are described in~\rsec{Enumerated_Domains_and_Arrays}.  Arrays
-declared over indefinite domains are dictionaries mapping from values
+declared over associative domains are dictionaries mapping from values
 to variables.
 
-\subsubsection{Changing the Indices in Indefinite Domains}
+\subsubsection{Changing the Indices in Associative Domains}
 
 Like with sparse domains, indices can be added or removed to
-indefinite domains.  Indefinite domains support a method \chpl{add}
-that takes an index and adds this index to the indefinite domain.  All
-arrays declared over this indefinite domain can now access elements
+associative domains.  Associative domains support a method \chpl{add}
+that takes an index and adds this index to the associative domain.  All
+arrays declared over this associative domain can now access elements
 corresponding to this index.
 
-Indefinite domains support a method \chpl{remove} that takes an index
-and removes this index from the indefinite domain.  The values in the
+Associative domains support a method \chpl{remove} that takes an index
+and removes this index from the associative domain.  The values in the
 arrays indexed by the removed index are lost.
 
 The operators \chpl{+=} and \chpl{-=} have special semantics for
-indefinite domains; they are interpreted as calls to the \chpl{add}
+associative domains; they are interpreted as calls to the \chpl{add}
 and \chpl{remove} methods respectively.  The statement
 \begin{chapel}
 D += i;
@@ -830,11 +830,11 @@ is equivalent to
 D.remove(i);
 \end{chapel}
 
-\subsubsection{Testing Membership in Indefinite Domains}
+\subsubsection{Testing Membership in Associative Domains}
 
-An indefinite domain supports a \chpl{member} method that can test
+An associative domain supports a \chpl{member} method that can test
 whether a particular value is part of the index set. It
-returns \chpl{true} if the index is in the indefinite domain and
+returns \chpl{true} if the index is in the associative domain and
 otherwise returns \chpl{false}.
 
 \subsection{Opaque Domains and Arrays}
@@ -846,7 +846,7 @@ otherwise returns \chpl{false}.
 Opaque domains are not yet implemented.
 \end{status}
 
-An opaque domain is a form of indefinite domain where there is no
+An opaque domain is a form of associative domain where there is no
 algebra on the types of the indices.  The indices are, in essence,
 opaque.  The opaque domain type is given by the following syntax:
 \begin{syntax}
@@ -858,7 +858,7 @@ New index values for opaque domains are explicitly requested via a
 method called \chpl{new}.  Indices can be removed by a method
 called \chpl{remove}.
 
-Opaque domains permit more efficient implementations than indefinite
+Opaque domains permit more efficient implementations than associative
 domains under the assumption that creation of new domain index values
 is rare.
 
@@ -867,13 +867,13 @@ is rare.
 \index{domains!enumerated}
 \index{arrays!enumerated}
 
-Enumerated domains are a special case of indefinite domains where the
+Enumerated domains are a special case of associative domains where the
 indices are the constants defined by an enumerated type.  Enumerated
 domains do not support the \chpl{add} or \chpl{remove} methods.  All
 of the constants defined by the enumerated type are indices into the
 enumerated domain.
 
-An enumerated domain is specified indentically to the indefinite
+An enumerated domain is specified indentically to the associative
 domain type, except that the type is an enumerated type rather than
 some other value type.
 
