@@ -108985,3 +108985,14 @@ Modified files:
 Added files:
 	chapel/test/release/examples/: fileIO.chpl fileIO.good 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:18:55 -- bradc
+
+Log message:
+	Removed dead code from this test that I forgot to kill
+	before committing.
+
+Modified files:
+	chapel/test/parallel/coforall/bradc/: accessLocArray.chpl 
+
