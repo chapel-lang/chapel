@@ -108937,3 +108937,25 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.cygwin 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:05:30 -- deitz
+
+Log message:
+	Fixed a bug in which the type of a formal argument, having been
+	omitted, was not taken from the default initializer.
+	
+	Made generic candidate functions over "any" type print out with no
+	type as opposed to with the string "_any".
+	
+	Removed a .future.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/: FUTURES 
+	chapel/test/functions/deitz/: test_default_type.good 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+Removed files:
+	chapel/test/functions/deitz/: test_default_type.future 
+
