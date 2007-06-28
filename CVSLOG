@@ -109277,3 +109277,13 @@ Modified files:
 	./: STATUS 
 	chapel/spec/: MODS 
 
+---------------------------------------------------------------------------
+
+06/28/07 15:40:50 -- bradc
+
+Log message:
+	Fixed some filenames in the top-level README.
+
+Modified files:
+	./: README 
+
