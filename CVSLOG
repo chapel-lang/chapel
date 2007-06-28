@@ -109214,3 +109214,13 @@ Removed files:
 	                                      stream.perfcompopts 
 	                                      stream.perfkeys 
 
+---------------------------------------------------------------------------
+
+06/28/07 12:17:41 -- bradc
+
+Log message:
+	Somehow missed this Makefile in last checkin...
+
+Removed files:
+	chapel/test/release/examples/hpcc06/: Makefile 
+
