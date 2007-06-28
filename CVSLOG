@@ -109224,3 +109224,13 @@ Log message:
 Removed files:
 	chapel/test/release/examples/hpcc06/: Makefile 
 
+---------------------------------------------------------------------------
+
+06/28/07 12:20:32 -- bradc
+
+Log message:
+	Updated one README I missed.
+
+Modified files:
+	./: README.files 
+
