@@ -1,13 +1,5 @@
 config var n = 9;
 
-def loopit(t) {
-  for i in t..n by 2 {
-    for j in 1..n {
-      yield (i,j);
-    }
-  }
-}
-
 def main() {
   const D = [1..n, 1..n];
 
