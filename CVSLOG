@@ -108959,3 +108959,29 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_default_type.future 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:07:40 -- bradc
+
+Log message:
+	Adding a simple file I/O example that has been
+	sitting in my local release/examples directory
+	since the last release.  Switched the whole-array
+	read that I tried to use that time around for
+	the element-by-element read that David suggested.
+	Updated the standard files.
+	
+	Also made some small adjustments to labels
+	categorization for the linkedList example (changed
+	writeThis label from frmat to wrths since formatting
+	implies to me that we have some way to do %10.3f style
+	formatting...).  Also added a these column since
+	that is the first test to demonstrate the these
+	iterator.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore Makefile README 
+	                               README.features 
+Added files:
+	chapel/test/release/examples/: fileIO.chpl fileIO.good 
+
