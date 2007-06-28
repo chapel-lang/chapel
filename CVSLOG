@@ -109138,3 +109138,14 @@ Modified files:
 	chapel/spec/: Domains_and_Arrays.tex Language_Overview.tex 
 	              Language_Overview_OLD.tex 
 
+---------------------------------------------------------------------------
+
+06/28/07 11:51:26 -- deitz
+
+Log message:
+	Changed a reference to the structural iterator interface to reference
+	the these iterator.
+
+Modified files:
+	chapel/spec/: Statements.tex 
+
