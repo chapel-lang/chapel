@@ -1,0 +1,4 @@
+bug: using conflicting symbols
+
+This should generate an error because two x's are used in the same scope.
+
