@@ -15,13 +15,10 @@ General
 -------
 
 Unimplemented Features:
-
-* Many error messages continue to be incorrect/confusing/unhelpful
+- Many error messages continue to be incorrect/confusing/unhelpful
   Workaround: Please ask us for help interpreting any that you struggle with
-
-* Compiler and runtime errors don't always report useful line numbers
-
-* Generated executable's command-line parsing is not as robust as one would like
+- Compiler and runtime errors don't always report useful line numbers
+- Generated executable's command-line parsing is not as robust as one would like
 
 
 --------------------------------
@@ -29,15 +26,11 @@ Variables, Types and Expressions
 --------------------------------
 
 Unimplemented Features:
-* Non-ASCII strings
-* Conversions from strings to other primitive types
-* Configuration variables of tuple types
+- Configuration variables of tuple types
 
 Bugs:
-
-* Const arrays can currently be assigned -- should result in a compiler error
-
-* Parameters in branches of conditional expressions are not implicitly coerced
+- Const arrays can currently be assigned -- should result in a compiler error
+- Parameters in branches of conditional expressions are not implicitly coerced
   e.g., var x:uint;  if (t) then x else 1;  // 1 should be coerced to uint
 
 
@@ -46,12 +39,11 @@ Modules
 -------
 
 Unimplemented Features:
-* The argv array
-* User-level initialize() routines are not yet supported
-* Using modules in files not named on the compiler's command-line
+- The argv array is unimplemented
+- Using modules in files not named on the compiler's command-line is unsupported
 
 Bugs:
-* Two modules sharing the same name break compilation (whether legal or illegal)
+- Two modules sharing the same name break compilation (whether legal or illegal)
 
 
 ---------
@@ -59,21 +51,16 @@ Functions
 ---------
 
 Unimplemented Features:
-* Functions as variables and/or arguments to functions
-* Array arguments cannot have both their domain and element types queried
-* Coercions of tuple argument components to match formals
+- Functions as variables and/or arguments to functions
+- Array arguments cannot have both their domain and element types queried
+- Coercions of tuple argument components to match formals
 
 Bugs:
-
-* Analysis to find return statements along all paths in a function is incomplete
-
-* Return statements in type select statements are not recognized correctly
-
-* Actual arguments passed using inout intents are not checked for legality
-
-* Promoting var functions can result in a compilation error
-
-* Var functions should be able to return array slices but cannot
+- Analysis to find return statements along all paths in a function is incomplete
+- Return statements in type select statements are not recognized correctly
+- Illegal actual arguments to inout intents are not always caught
+- Promoting var functions can result in a compilation error
+- Var functions should be able to return array slices but cannot
 
 
 ----------------------------
@@ -81,34 +68,23 @@ Classes, Records, and Unions
 ----------------------------
 
 Unimplemented Features:
-
-* Constructors are not particularly well-supported
+- Constructors are not particularly well-supported
   - chained constructors for derived classes are not implemented
   - constructors for generic classes cause problems
   - constructing nested classes does not work consistently
-
-* Multiple inheritance is not implemented
-
-* Shadowing base class fields is not implemented
-
-* Garbage collection is implemented only at a prototype level
-
-* Anonymous record literals are not supported
-
-* Type select on unions is not implemented
-
-* Assignment between classes and records is unimplemented
+- Multiple inheritance is not implemented
+- Shadowing base class fields is not implemented
+- Garbage collection is implemented only at a prototype level
+- Anonymous record literals are not supported
+- Type select on unions is not implemented
+- Assignment between classes and records is unimplemented
 
 Bugs:
-
-* Class fields of array type specified using a type alias don't work
-
-* Class fields of array types that are initialized can cause compile error
+- Class fields of array type specified using a type alias don't work
+- Class fields of array types that are initialized can cause compile error
   Workaround: initialize field in initialize() method
-
-* Class fields initialized with conditional expressions fail to compile
-
-* Subclassing uninstantiated generic classes should be prohibited but is not
+- Class fields initialized with conditional expressions fail to compile
+- Subclassing uninstantiated generic classes should be prohibited but is not
 
 
 -----------------------------
@@ -116,42 +92,38 @@ Tuples, Ranges, and Iterators
 -----------------------------
 
 Unimplemented Features:
-* Slicing strided ranges is not yet supported
-* Zipper iteration over var iterators is not yet supported
+- Slicing strided ranges is not yet supported
+- Zipper iteration over var iterators is not yet supported
+
 
 ------------------
 Arrays and Domains
 ------------------
 
 Unimplemented Features:
-* The transpose, spread, and reshape functions
-* Short-circuiting functions and conditional expressions cannot be promoted
-* Arrays of arrays are not implemented
-* Opaque domains and arrays are not implemented
-* Index type bounds checking is not implemented
-* Checking that subdomain are index subsets is not implemented
-* Slicing strided domains and arrays is not implemented
-* Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
-
+- The transpose, spread, and reshape functions
+- Short-circuiting functions and conditional expressions cannot be promoted
+- Arrays of arrays are not implemented
+- Opaque domains and arrays are not implemented
+- Index type bounds checking is not implemented
+- Checking that subdomain are index subsets is not implemented
+- Slicing strided domains and arrays is not implemented
+- Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
+- Sparse domains don't support remove/-= methods
 
 Bugs:
-
-* Array promotion/forall expressions evaluate to 1D arrays
+- Array promotion/forall expressions evaluate to 1D arrays
     e.g., foo(A) where A promotes foo() should result in an array of type:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
-
-* Associative domains of explicit heterogeneous tuple types don't work
+- Associative domains of explicit heterogeneous tuple types don't work
     e.g., var td: domain((int, int));
   Workaround: name the tuple type
     e.g., type td_t = (int, int);  var td: domain(td_t);
-
-* Mixing dimensional index types in a domain specification yields poor errors
+- Mixing dimensional index types in a domain specification yields poor errors
     e.g., var m: uint, n: int;  ... [1..m, 1..n]
-
-* 1D sparse arrays can't be accessed in programs using domains of other rank
-
+- Declaring an array using "var A: [i in D] real;" causes seg fault
 
 
 --------
@@ -159,7 +131,7 @@ Generics
 --------
 
 Bugs:
-* Type members in generic class defined by instantiated types
+- Type members in generic class defined by instantiated types
 
 
 -------------------------------
@@ -167,20 +139,18 @@ Parallelism and Synchronization
 -------------------------------
 
 Unimplemented Features:
-* Atomic statements
-* Whole-array assignment to sync arrays does not work
-* User-defined reductions and scans
-* Forall loops and ordered forall loops are serialized
-* Reductions and scans are serialized
-* Array operations and assignment are serialized
-* If there are insufficient threads to spawn a task, the program halts
+- Atomic statements
+- Whole-array assignment does not work for arrays of sync variables
+- User-defined reductions and scans
+- Many concepts that should be parallel are executed sequentially:
+  - forall loops, promoted calls, reductions, and scans
+- If there are insufficient threads to spawn a task, the program halts
 
 Bugs:
-
-* Applying op= style assignments to sync vars does not work
-    e.g., var x: sync int = 0;   x += 1;
+- Applying += and -= operators to sync vars does not work
+  e.g., var x: sync int = 0;   x += 1;
   Workaround: expand operator manually
-    e.g., x = x + 1;
+  e.g., x = x + 1;
 
 
 --------------------------
@@ -188,8 +158,8 @@ Locality and Distributions
 --------------------------
 
 Unimplemented Features:
-* Executing using multiple locales
-* Distributions
+- Executing using multiple locales
+- Distributions
 
 
 ----------------
@@ -197,13 +167,13 @@ Input and Output
 ----------------
 
 Unimplemented Features:
-* a mechanism for controlling the precision/width of scalar values
+- a mechanism for controlling the precision/width of scalar values
 
 Bugs:
-* read()s of whole arrays are not working
-    e.g., read(A);
+- read()s of whole arrays are not working
+  e.g., read(A);
   Workaround: use a loop and read in the elements one at a time
-    e.g., for i in A.domain read(A(i));
+  e.g., for i in A.domain read(A(i));
 
 
 -----------------
@@ -211,5 +181,4 @@ Standard Library
 -----------------
 
 Unimplemented Features:
-* 32-bit math routines are unimplemented, causing coercion to 64-bit versions
-
+- 32-bit math routines are unimplemented, causing coercion to 64-bit versions

@@ -99,3 +99,8 @@ BLC    Random: some new functionality
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 CLOSED SJD removed the insertion of all large sequence/array temporaries
+
+
+BLC
+  - support for a numCores() function on the locale type to query # of cores
+  - made file open/close methods take parenthesis
