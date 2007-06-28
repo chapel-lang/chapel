@@ -267,7 +267,7 @@ Enumerated types are declared with the following syntax:
 enum-declaration-statement:
   `enum' identifier { enum-constant-list } ;
 
-enum-constant-list
+enum-constant-list:
   enum-constant
   enum-constant , enum-constant-list
 
@@ -280,7 +280,9 @@ init-part:
 
 An enumerated type defines a set of named constants.  These are
 associated with parameters of integral type.  Each enumerated type is
-a distinct type.
+a distinct type. If the \sntx{init-part} is omitted, the
+\sntx{enum-constant} has an integral value one higher than the previous
+\sntx{enum-constant} in the enum, with the first having the value \chpl{1}.
 
 \subsection{Class Types}
 \label{Class_Types}
