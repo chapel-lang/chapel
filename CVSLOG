@@ -109104,3 +109104,26 @@ Removed files:
 	                              ra-randstream.chpl 
 	                              ra-randstream.notest 
 
+---------------------------------------------------------------------------
+
+06/28/07 11:42:05 -- bradc
+
+Log message:
+	Using a similar trick to what I just did for RA, moved
+	the fft-testPow4 test out of the release directory and
+	into the studies directory, but making its .compopts
+	file refer back to the source files in the release
+	directory to avoid having to maintain duplicate copies
+	of the code.
+
+Added files:
+	chapel/test/studies/hpcc/FFT/: fft-testPow4.chpl 
+	                               fft-testPow4.compopts 
+	                               fft-testPow4.execopts 
+	                               fft-testPow4.good 
+Removed files:
+	chapel/test/release/examples/hpcc06/: fft-testPow4.chpl 
+	                                      fft-testPow4.compopts 
+	                                      fft-testPow4.execopts 
+	                                      fft-testPow4.good 
+
