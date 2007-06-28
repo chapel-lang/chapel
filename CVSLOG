@@ -109287,3 +109287,17 @@ Log message:
 Modified files:
 	./: README 
 
+---------------------------------------------------------------------------
+
+06/28/07 15:46:04 -- diten
+
+Log message:
+	Change the spec Makefile to build the document using pdflatex instead of going
+	through a dvi.  The old way is still there as the target "usedvi".  When built
+	with pdflatex, add bookmarks for the title page and the table of contents.
+	Also, I moved the usepackage for hyperref down be the latest usepackage command,
+	as every web page I've seen about it says it should be the latest.
+
+Modified files:
+	chapel/spec/: Makefile spec.tex 
+
