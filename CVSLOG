@@ -109266,3 +109266,14 @@ Log message:
 Modified files:
 	chapel/spec/: Types.tex 
 
+---------------------------------------------------------------------------
+
+06/28/07 15:28:25 -- bradc
+
+Log message:
+	Updated STATUS file -- should be ready to go.
+
+Modified files:
+	./: STATUS 
+	chapel/spec/: MODS 
+
