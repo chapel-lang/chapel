@@ -62,7 +62,6 @@ Unimplemented Features:
 * Functions as variables and/or arguments to functions
 * Array arguments cannot have both their domain and element types queried
 * Coercions of tuple argument components to match formals
-* Formal arguments of inferred type should be constrained by their default value
 
 Bugs:
 

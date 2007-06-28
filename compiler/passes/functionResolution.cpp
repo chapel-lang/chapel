@@ -70,7 +70,7 @@ static void pruneResolvedTree();
 // build reference type
 //
 static void makeRefType(Type* type) {
-  if (type == dtMethodToken)
+  if (type == dtMethodToken || type == dtUnknown)
     return;
 
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
@@ -1018,6 +1018,8 @@ char* fn2string(FnSymbol* fn) {
         str = stringcat(str, arg->name, ": ", sym->var->name);
       else
         str = stringcat(str, arg->name);
+    } else if (arg->type == dtAny) {
+      str = stringcat(str, arg->name);
     } else
       str = stringcat(str, arg->name, ": ", type2string(arg->type));
   }

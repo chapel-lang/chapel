@@ -502,11 +502,21 @@ fix_def_expr(VarSymbol* var) {
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-      if (arg->type == dtUnknown && def->exprType) {
-        Type* type = def->exprType->typeInfo();
-        if (type != dtUnknown && type != dtAny) {
-          arg->type = type;
-          def->exprType->remove();
+      if (arg->type == dtUnknown) {
+        if (!arg->isTypeVariable && !def->exprType && arg->defaultExpr) {
+          SymExpr* se = dynamic_cast<SymExpr*>(arg->defaultExpr);
+          if (!se || se->var != gNil) {
+            def->exprType = arg->defaultExpr->copy();
+            FnSymbol* fn = def->getFunction();
+            insert_help(def->exprType, def, fn, fn->argScope);
+          }
+        }
+        if (def->exprType) {
+          Type* type = def->exprType->typeInfo();
+          if (type != dtUnknown && type != dtAny) {
+            arg->type = type;
+            def->exprType->remove();
+          }
         }
       }
     }

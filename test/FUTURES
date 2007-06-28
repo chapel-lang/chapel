@@ -130,9 +130,6 @@ unimplemented feature: array reads [types/file/fileIO]
 * Configuration variables of tuple types
 unimplemented feature: configs of tuples (string-to-value) [execflags/bradc/tupleConfig]
 
-* Formal arguments of inferred type should be constrained by their default value
-unimplemented feature: formal type constrained by default value [functions/deitz/test_default_type]
-
 
 * Array arguments cannot have both their domain and element types queried
 unimplemented feature: query formal array domain and element type [functions/bradc/querydomelem]
