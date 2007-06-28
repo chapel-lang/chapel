@@ -1,3 +1,5 @@
+use Schedules;
+
 class SingleLocaleDistribution {
   param stridable: bool = false;
 
@@ -180,7 +182,10 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   //  ...be in the distribtion's implementation of the blocked domain
   // ...yield a subBlock of the domain per thread per locale
   def subBlocks {
-    yield this;
+    if (rank != 1) then halt("subBlocks not yet implemented for >1D domains");
+    for block in BlockSchedule(this, Locale(0).numCores) {
+      yield block;
+    }
   }
 
   def strideBy(str : rank*int) {

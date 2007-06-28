@@ -1,8 +1,8 @@
-def BlockSchedule(D: ?DT, numBlocks): DT {
+def BlockSchedule(D, numBlocks) {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
-  const nbAsIndexType = numBlocks:D._index_type;
+  const nbAsIndexType = numBlocks:D.dim_type;
   forall i in 0..nbAsIndexType-1 {
     const blo = lo + (i*numelems) / nbAsIndexType;
     const bhi = lo + (((i+1)*numelems) / nbAsIndexType) - 1;
@@ -11,7 +11,7 @@ def BlockSchedule(D: ?DT, numBlocks): DT {
 }
 
 
-def FixedBlockSchedule(D: ?DT, blockSize): DT {
+def FixedBlockSchedule(D, blockSize) {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
