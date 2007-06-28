@@ -502,7 +502,7 @@ fix_def_expr(VarSymbol* var) {
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-      if (arg->type == dtUnknown) {
+      if (arg->type == dtUnknown || arg->type == dtAny) {
         if (!arg->isTypeVariable && !def->exprType && arg->defaultExpr) {
           SymExpr* se = dynamic_cast<SymExpr*>(arg->defaultExpr);
           if (!se || se->var != gNil) {
