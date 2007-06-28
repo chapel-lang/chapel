@@ -109031,3 +109031,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:24:54 -- deitz
+
+Log message:
+	Fixed a bug in which scalar replacement of array and domain wrappers
+	would remove the heap allocation statement for arrays and domains used
+	in begin blocks (and coforall sugar).
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: scalarReplace.cpp 
+Removed files:
+	chapel/test/parallel/coforall/bradc/: accessLocArray.future 
+
