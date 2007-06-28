@@ -109047,3 +109047,21 @@ Modified files:
 Removed files:
 	chapel/test/parallel/coforall/bradc/: accessLocArray.future 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:49:51 -- bradc
+
+Log message:
+	Switching forall in RA to coforall to take
+	advantage of multiple cores, thanks to Steve's
+	bug fix.  On 1-core processors, this seems to
+	add negligible overhead to spawn the thread.
+	On the 2x2-core chap09 machine, it results in
+	some improvement, but nowhere near the 4x I
+	was expecting.  On chap01 I'm not seeing any
+	real improvement.  Not sure why.  Worth some
+	investigation tomorrow.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: ra.chpl 
+
