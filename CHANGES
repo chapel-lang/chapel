@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** BLC: STOPPED AT 05/18/07 11:01:37 -- deitz ***
-
 -----------
 version 0.5
 -----------
@@ -31,6 +29,10 @@ Changes to Chapel Language:
   - open interval syntax supported for ranges
     e.g., "[lo..hi)" is equivalent to lo..hi-1
   - +, -, *, / operators on range/scalar combinations
+- added coforall loop construct for expressing explicit task parallelism
+  e.g., "coforall 1..Locale(0).numCores do ..."
+- removed "iterator" keyowrd -- iterators are now functions that contain yields
+- renamed "indefinite domains/arrays" to "associative domains/arrays"
 - added support for creating array aliases
   e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
 - support for standard math, bitwise, and comparison operators for tuples
@@ -63,11 +65,18 @@ Changes to Chapel Language:
 - allow "<index> in" to be elided in for/forall loops/expressions
   e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
 - support for multiple modules to be listed within a single "use" statement
+- added support for reading a value of a specified type from a file
+  e.g., "var myint = infile.read(int);"
 
 Newly Implemented Features:
 - support for sparse domains/arrays
   - assignment of aggregate index expressions to sparse domains
   - accumulation of indices into sparse domains using +=
+  - re-assignment of a sparse array's "zero" value using the .IRV field
+  - clear() method for emptying a sparse domain's index set
+- support for a numCores() function on the locale type to query # of cores
+- subBlocks iterator on domains now generates a sub-block per core
+- arrays of sync variables are now supported
 - added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 - enumerated domains and arrays
 - support for nested classes, records, and iterators
@@ -89,33 +98,50 @@ Syntactic/Naming Changes:
 - removed support for "--" as a single-line comment style
 - an array's domain should now be accessed via A.domain rather than A.dom
 - array element type identifier changed from elt_type to eltType
+- made file open/close methods take parenthesis
 
 Semantic Changes:
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
+- for/forall loops over arrays now result in references to elements, not copies
+  e.g., "for e in A do e = 0;" could be used to zero out an array
+- enumerated types now start counting at "1" rather than "0" by default
+- conditional expressions are no longer valid l-values
+- improved semantics of module use transitivity, nested modules
 - removed support for structural iterator interface (getHeadCursor, etc.)
-- added support for defining default iterators for classes and records
+- added support for defining a default ("these") iterator for classes/records
+- nested classes can refer to their outer class using the identifier "outer"
 - initial support for querying parameters/types in a formal class argument
   - similar support for variable-length argument lists of generics
 - where clauses can now compare against formal generic types
 - short-circuiting operators only require isTrue rather than true? & false?
 - in x op=y, a cast to x.type is used in assigning back to x if it is primitive
 - compilerError() can now take multiple arguments like a halt()
+- replaced setter/getter functions with richer support for var functions
 
 Documentation:
+- added man page for Chapel compiler (chpl)
 - added CHANGES file
-- added Quick Reference document (TODO: ???)
-- updated HPCC tutorial document and broke into two docs: overview and tutorial (TODO:???)
+- added Quick Reference document
+- updated HPCC tutorial document and broke into two docs: overview and tutorial
 - updated STATUS file
 
 Example Codes:
 - several improvements to the HPCC benchmarks due to bug fixes, new features
-- added iterators.chpl example to demonstrate use of iterators
-- added parallelQuickSort.chpl example to demonstrate serial/cobegin statements
-- added blockLU.chpl example to demonstrate domain slicing, array aliases, swap
-- added fft-testPow4.chpl test to test fft.chpl for power-of-4 problem sizes
-- removed stream-nopromote.chpl example, which had become largely redundant
+- added iterators example to demonstrate use of iterators
+- added linkedList example for nested, generic, iteratable, printable classes
+- added parallelQuickSort example to demonstrate serial/cobegin statements
+- added blockLU example to demonstrate domain slicing, array aliases, swap
+- added sparse example to demonstrate sparse domains and arrays
+- added slices example to demonstrate array slicing and reindexing
+- added reductions example to demonstrate minloc/maxloc reductions
+- added fileIO example to demonstrate simple use of file I/O
+- rewrote the producer-consumer example to use a buffer of sync variables
+- added hello-module example to demonstrate Chapel program structure
+- improved comments for several tests
+- removed stream-nopromote.chpl example, which had become redundant
 - added performance testing support of stream.chpl and ra.chpl
+- combined the two genericStack examples into a single file
 
 Standard Modules:
 - Search: new standard module
@@ -125,8 +151,11 @@ Standard Modules:
 - Random: some new functionality
 
 Compiler Flags:
+- improved the formatting of the --help message
 - removed --cg-chpl-lineno flag; this capability is now always on
 - removed --no-gc used for a stopgap reference counting scheme
+- added --baseline flag to disable all compiler optimizations
+- added --no-flow-analysis flag that disables all flow-based optimizations
 - added -s/--set for setting config params
 - added -g flag for debugging generated code; turns on --cg-cpp-lines by default
 - added -O flag for optimizing generated code
@@ -135,6 +164,7 @@ Compiler Flags:
 - added --scalar-replace-tuples flag: replaces tuples with scalars
 - added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
 - added --no-expand-iterators-inline-opt flag to disable iterator inlining
+- removed --unoptimized flag
 
 Generated Code Flags:
 -- added a --gdb flag to make it easier to debug generated code
@@ -145,6 +175,7 @@ New Semantic Checks (for old Semantics):
 
 Bug Fixes:
 - fixed portability issues in flex lexer file, chapel.lex
+- domains are now passed by reference by default
 - implemented bytesPerLocale for Macintosh
 - classes can now have iterator methods
 - recursive iterators now work
@@ -155,6 +186,7 @@ Bug Fixes:
 - modules can now refer to param values and types from other modules correctly
 - disabled parameter folding of floating point values
 - parameter folding of relational operators on enum types
+- parameter folding of short-circuiting &&, ||, and conditional expressions
 - type aliases can now be created for array types
 - fixed numerical bugs in array slicing and reindexing
 - config variable initializers are no longer evaluated if set on command-line
@@ -164,9 +196,13 @@ Bug Fixes:
 - improved thread safety of generated code
 - made creation of too many threads result in halt() rather than lost work
   - eventually we'll need to queue up tasks; this is a stopgap
+- passing unions to out/inout intents now works
+- better semantic checking of legal l-values
+- fixed an infinite loop bug in associative domains/arrays
 
 Error Message Improvements:
 - added message to compiler warning that "atomic" is unimplemented when used
+- caused compiler to complain about non-module scope configuration variables
 - unified runtime and compiler error message formats
 - runtime errors identify source file/line#
 - improved quality of compilerError() error message output
@@ -191,6 +227,8 @@ Compiler Performance and Cleanup:
 - made compiler build with debugging off and optimizations on for non-developers
 - removed unused scalar replacement code
 - renamed and refactored internal modules
+- removed old reference counting code
+- optimized several passes to improve compile time
 
 Generated Code:
 - now generating structured loops rather than gotos and labels
@@ -199,6 +237,7 @@ Generated Code:
 - _chpl_header.h file is generated in a cleaner manner
 - changed munging of variable names to improve gdb support and readability
 - using pragmas, generated code has been shown to vectorize on X1/thread on MTA
+- initial support for cross-compiling to the XT
 
 Testing System:
 - added support for doing performance-tracking experiments
@@ -214,6 +253,7 @@ Internal:
 - removed ability to cast primitives to strings by casting to "%<format>"
 - new mechanism for indicating that a class is promotable
 - added AND_EXPAND and PRIMITIVE_TUPLE_AND_EXPAND
+- added reference types
 
 
 -----------
