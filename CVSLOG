@@ -109065,3 +109065,42 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc06/: ra.chpl 
 
+---------------------------------------------------------------------------
+
+06/28/07 11:36:19 -- bradc
+
+Log message:
+	Some re-arrangement of RA testing:
+	
+	- made the release/examples copy of RA no longer
+	  print the array since it uses a coforall which
+	  can cause the array to have nondeterministic
+	  data.  Also increased its problem size to reduce
+	  the odds of conflicts.
+	
+	- added a new test ra-seq.chpl that performs the
+	  RA updates sequentially and prints the table to
+	  ensure that our random numbers are generated
+	  correctly.
+	
+	- removed ra-latest.chpl which was a snapshot of
+	  the release/examples ra.chpl that had fallen
+	  out of date and used a forall loop (so didn't
+	  test the sequential case correctly, once
+	  we parallelize foralls)
+	
+	- removed ra-randstream.chpl from the studies
+	  directory, which was unused.
+
+Modified files:
+	chapel/test/release/examples/hpcc06/: ra.compopts ra.execopts 
+	                                      ra.good 
+Added files:
+	chapel/test/studies/hpcc/RA/: ra-seq.chpl ra-seq.compopts 
+	                              ra-seq.execopts ra-seq.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/: ra-latest.chpl ra-latest.compopts 
+	                              ra-latest.execopts ra-latest.good 
+	                              ra-randstream.chpl 
+	                              ra-randstream.notest 
+
