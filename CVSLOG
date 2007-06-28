@@ -109254,3 +109254,15 @@ Log message:
 Modified files:
 	./: CHANGES 
 
+---------------------------------------------------------------------------
+
+06/28/07 14:59:43 -- diten
+
+Log message:
+	Add a little more info about the values of enum constants. Mention that if the
+	init-part is omitted, the first constant defined in an enum has integral value
+	1, and following constants increase in value by 1.
+
+Modified files:
+	chapel/spec/: Types.tex 
+
