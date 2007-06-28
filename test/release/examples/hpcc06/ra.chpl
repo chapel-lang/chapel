@@ -34,7 +34,7 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  forall block in UpdateSpace.subBlocks do
+  coforall block in UpdateSpace.subBlocks do
     for r in RAStream(block) do
       T(r & indexMask) ^= r;
 
