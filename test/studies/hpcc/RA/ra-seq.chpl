@@ -1,7 +1,6 @@
 use Time;
 
-use HPCCProblemSize;
-use RARandomStream;
+use HPCCProblemSize, RARandomStream;
 
 
 param numTables = 1;
@@ -15,7 +14,7 @@ config const n = computeProblemSize(elemType, numTables,
 const m = 2**n,                // probSize
       indexMask = m-1;
 
-config const sequentialVerify = false,
+config const sequentialVerify = (numLocales < log2(m)),
              errorTolerance = 1.0e-2;
 
 config const printParams = true,
@@ -35,8 +34,8 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  forall block in UpdateSpace.subBlocks do
-    for r in RAStream(block.numIndices, block.low) do
+  for block in UpdateSpace.subBlocks do
+    for r in RAStream(block) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;
@@ -58,7 +57,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (sequentialVerify) then
-    for r in RAStream(N_U) do
+    for r in RAStream([0..N_U)) do
       T(r & indexMask) ^= r;
   else
     forall i in UpdateSpace {
