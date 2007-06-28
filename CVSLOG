@@ -109149,3 +109149,17 @@ Log message:
 Modified files:
 	chapel/spec/: Statements.tex 
 
+---------------------------------------------------------------------------
+
+06/28/07 11:55:45 -- deitz
+
+Log message:
+	Added a new .future that should result in an error for importing
+	multiple symbols with the same name into the same scope.  It currently
+	just takes the first one.
+
+Added files:
+	chapel/test/modules/deitz/: test_use_error.chpl 
+	                            test_use_error.future 
+	                            test_use_error.good 
+
