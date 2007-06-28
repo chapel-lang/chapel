@@ -26,40 +26,26 @@ demonstrate various Chapel features:
      sparse.chpl            : sparse domain/array tutorial example
      tree.chpl              : constructs and walks a tree in parallel
 
-The hpcc06 directory contains Chapel versions of three HPC Challenge
+The hpcc subdirectory contains Chapel versions of three HPC Challenge
 benchmarks:
 
      stream.chpl            : the STREAM Triad benchmark
      ra.chpl                : the global Random Access benchmark
      fft.chpl               : the global 1D FFT benchmark
 
-as well as helper modules for these benchmarks:
-
-     probSize.chpl          : a common module for computing problem sizes
-     ra-randstream.chpl     : the random stream generator for ra.chpl
-     fft-testPow4.chpl      : an empty test used to exercise fft.chpl for
-                              powers-of-4 in our testing system (since
-                              it's a radix-4 algorithm, the final
-                              phase differs)
-
 
 ------------------
 Building the tests
 ------------------
 
-Most of the examples can be compiled in a standalone manner, for
-example, the canonical "Hello, world!" program can be compiled as
+The examples in this directory can be compiled in a standalone manner,
+for example, the canonical "Hello, world!" program can be compiled as
 follows:
 
      chpl -o hello hello.chpl
 
-The hpcc06 tests are an exception -- they use multiple modules defined
-using multiple source files.  They can be compiled using the following
-commands:
-
-     chpl -o stream probSize.chpl stream.chpl
-     chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
-     chpl -o fft probSize.chpl fft.chpl
+The hpcc benchmarks each use multiple source files -- see hpcc/README
+for details.
 
 We provide Makefiles in each directory that can be used to build a
 single test in that directory by name:

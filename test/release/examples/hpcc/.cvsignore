@@ -1,0 +1,7 @@
+*.tmp
+a.out
+stream
+ra
+fft
+output
+perfdat

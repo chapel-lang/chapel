@@ -22,17 +22,17 @@ TARGETS = \
 	tree \
 
 
-default: all hpcc06
+default: all hpcc
 
 all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS)
-	cd hpcc06 && $(MAKE) clean
+	cd hpcc && $(MAKE) clean
 	./start_clean
 
-hpcc06: FORCE
-	cd hpcc06 && $(MAKE) all
+hpcc: FORCE
+	cd hpcc && $(MAKE) all
 
 %: %.chpl
 	$(CHPL) -o $@ $<

@@ -23,9 +23,9 @@ reductions     : minloc and maxloc array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 tree           : unbounded task parallelism using cobegin
-hpcc06/stream  : whole-array operators; standard modules; time/random routines
-hpcc06/ra      : iterators; atomic statements
-hpcc06/fft     : array slicing; iterators; complex and imaginary values
+hpcc/stream    : whole-array operators; standard modules; time/random routines
+hpcc/ra        : iterators; atomic statements
+hpcc/fft       : array slicing; iterators; complex and imaginary values
 
 
 --------------
@@ -65,9 +65,9 @@ reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
-hpcc06/stream  |       |   x   |       |   x   |       |       |       |
-hpcc06/ra      |       |   x   |       |   x   |       |       |       |
-hpcc06/fft     |       |   x   |       |   x   |       |       |       |
+hpcc/stream    |       |   x   |       |   x   |       |       |       |
+hpcc/ra        |       |   x   |       |   x   |       |       |       |
+hpcc/fft       |       |   x   |       |   x   |       |       |       |
 -------------------------------------------------------------------------------
 key:
   read  = uses read() statements to do input
@@ -101,9 +101,9 @@ reductions     |       |   x   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
-hpcc06/stream  |   x   |   x   |   x   |   x   |       |   x   |       |
-hpcc06/ra      |   *   |   x   |   x   |   x   |   x   |   x   |       |
-hpcc06/fft     |   x   |   x   |   x   |   x   |   x   |   x   |       |
+hpcc/stream    |   x   |   x   |   x   |   x   |       |   x   |       |
+hpcc/ra        |   *   |   x   |   x   |   x   |   x   |   x   |       |
+hpcc/fft       |   x   |   x   |   x   |   x   |   x   |   x   |       |
 -------------------------------------------------------------------------------
 key:
   modls = uses modules to organize user code
@@ -139,9 +139,9 @@ reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 tree           |       |       |       |   x   |       |   x   |       |
-hpcc06/stream  |       |       |       |       |       |   x   |   x   |
-hpcc06/ra      |       |       |       |       |       |   x   |   x   |
-hpcc06/fft     |       |   x   |       |       |       |   x   |   *   |
+hpcc/stream    |       |       |       |       |       |   x   |   x   |
+hpcc/ra        |       |       |       |       |       |   x   |   x   |
+hpcc/fft       |       |   x   |       |       |       |   x   |   *   |
 -------------------------------------------------------------------------------
 key:
   strng = uses variables of string type and/or operators on strings
@@ -175,9 +175,9 @@ reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 tree           |       |       |       |       |       |       |       |
-hpcc06/stream  |   x   |       |       |       |       |       |       |
-hpcc06/ra      |   x   |       |       |       |       |       |       |
-hpcc06/fft     |   x   |       |       |       |       |       |       |
+hpcc/stream    |   x   |       |       |       |       |       |       |
+hpcc/ra        |   x   |       |       |       |       |       |       |
+hpcc/fft       |   x   |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   arith = uses arithmetic domains/arrays
@@ -212,9 +212,9 @@ reductions     |       |       |       |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 tree           |       |       |       |       |       |       |       |
-hpcc06/stream  |   x   |   *   |       |       |   x   |       |       |
-hpcc06/ra      |   x   |       |       |       |   x   |       |       |
-hpcc06/fft     |   x   |   x   |   x   |       |   x   |       |       |
+hpcc/stream    |   x   |   *   |       |       |   x   |       |       |
+hpcc/ra        |   x   |       |       |       |   x   |       |       |
+hpcc/fft       |   x   |   x   |   x   |       |   x   |       |       |
 -------------------------------------------------------------------------------
 key:
   frall = uses forall loops
@@ -248,9 +248,9 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
-hpcc06/stream  |       |       |       |       |       |       |       |
-hpcc06/ra      |       |       |       |       |   x   |       |       |
-hpcc06/fft     |       |       |       |       |       |       |       |
+hpcc/stream    |       |       |       |       |       |       |       |
+hpcc/ra        |       |       |       |       |   x   |       |       |
+hpcc/fft       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   begin = uses begin statements
@@ -284,9 +284,9 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
-hpcc06/stream  |       |       |       |       |       |       |       |
-hpcc06/ra      |       |       |       |       |       |       |       |
-hpcc06/fft     |       |       |       |       |       |       |       |
+hpcc/stream    |       |       |       |       |       |       |       |
+hpcc/ra        |       |       |       |       |       |       |       |
+hpcc/fft       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
 -------------------------------------------------------------------------------
