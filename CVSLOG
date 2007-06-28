@@ -109127,3 +109127,14 @@ Removed files:
 	                                      fft-testPow4.execopts 
 	                                      fft-testPow4.good 
 
+---------------------------------------------------------------------------
+
+06/28/07 11:42:57 -- deitz
+
+Log message:
+	Renamed indefinite domains and arrays to associative domains and arrays.
+
+Modified files:
+	chapel/spec/: Domains_and_Arrays.tex Language_Overview.tex 
+	              Language_Overview_OLD.tex 
+
