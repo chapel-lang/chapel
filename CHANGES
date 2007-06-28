@@ -5,21 +5,21 @@ Release Changes List
 -----------
 version 0.5
 -----------
-Second preliminary release of Chapel Compiler, June 2007
+Second preliminary release of Chapel Compiler, June 29, 2007
 
 High-Level Themes:
 - single-locale, multiple threads
 - support for additional serial features
 - improved single-threaded performance, memory utilization
-- improved multi-threaded correctness
+- improved multi-threaded correctness, features
 - target audience: HPLS evaluation team, HPCS mission partners, 
   select HPC users and centers
 
 Changes to Chapel Language:
-- eliminated sequences
+- eliminated Chapel's sequence type
   - in the future, a standard List library will provide similar functionality
-  - removed # and #= operators, since they were supported for sequences
-  - removed support for sequence literals; use tuples in their place
+  - removed # and #= operators, since they were designed for sequences
+  - removed support for sequence literals; use tuple syntax instead
     e.g., var A: [1..3] real = (0.1, 2.3, 4.5);
   - removed support for casting sequences to tuples and tuples to sequences
   - iterators in an expression context now result in a 1D, 1-based array
@@ -28,22 +28,22 @@ Changes to Chapel Language:
   e.g., "lo..hi" or "lo..hi by str" are ranges
   - open interval syntax supported for ranges
     e.g., "[lo..hi)" is equivalent to lo..hi-1
-  - +, -, *, / operators on range/scalar combinations
+  - +, -, *, / operators supported for range/scalar combinations
 - added coforall loop construct for expressing explicit task parallelism
-  e.g., "coforall 1..Locale(0).numCores do ..."
+  e.g., "coforall 1..4 do ..." will create four explicit tasks
 - removed "iterator" keyowrd -- iterators are now functions that contain yields
-- renamed "indefinite domains/arrays" to "associative domains/arrays"
+- added support for defining a default ("these") iterator for classes/records
 - added support for creating array aliases
   e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
 - support for standard math, bitwise, and comparison operators for tuples
   e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
-- swap operator: <=>
+- added a swap operator: <=>
   e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
 - better support for writing output
-  - enabled strings to be written to using a write() method
+  - enabled support for writing to strings using a write() method
     e.g., var s: string;  s.write("x is: ", x);
   - added a Writer class that enables user classes to be written to
-  - writeThis() methods that define how a type should be written to a Writer
+  - added writeThis() method to specify how a type should be written to a Writer
 - added minloc and maxloc reductions that return min/max value and index
   e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
 - changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
@@ -58,7 +58,7 @@ Changes to Chapel Language:
   e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
 - support for default values for param members of classes
   e.g., class C { param bitWidth = 32; ... }
-- support for functions without parentheses
+- support for top-level 0-argument functions without parentheses
   e.g., def f { writeln("In function f"); }
   - allow "main" function to be declared with or without parentheses
     e.g., def main { writeln("Program will start here"); ... }
@@ -74,31 +74,32 @@ Newly Implemented Features:
   - accumulation of indices into sparse domains using +=
   - re-assignment of a sparse array's "zero" value using the .IRV field
   - clear() method for emptying a sparse domain's index set
-- support for a numCores() function on the locale type to query # of cores
-- subBlocks iterator on domains now generates a sub-block per core
 - arrays of sync variables are now supported
 - added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 - enumerated domains and arrays
+- support for a numCores() function on the locale type to query # of cores
+- subBlocks iterator on domains now generates a sub-block per processor core
 - support for nested classes, records, and iterators
 - serial statement
 - added support for using "_" to ignore elements during tuple destructuring
   e.g., var t: (int, real) = ...;   (t1, _) = t;
 - added support for nested tuple destructuring in variable decls/formal args
 - support for config params of primitive and enumerated types
-- initial support for accessing a module's member via modname.membername
+- initial support for accessing a module's members via modname.membername
 - implemented dynamic casts between class types
-- added initial support for copy collection garbage collection
+- added initial support for copy collection-based garbage collection
 - subdomain keyword is now supported, though subset relationship is not checked
 - initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
-- removed support for using "?" in identifiers
+- removed support for using "?" in identifier names
   - changed standard method member? to member
   - changed standard method true? to isTrue
-- removed support for "--" as a single-line comment style
+- removed support for "--" as a single-line comment style;  use "//"
 - an array's domain should now be accessed via A.domain rather than A.dom
 - array element type identifier changed from elt_type to eltType
 - made file open/close methods take parenthesis
+- renamed "indefinite domains/arrays" to "associative domains/arrays"
 
 Semantic Changes:
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
@@ -109,7 +110,6 @@ Semantic Changes:
 - conditional expressions are no longer valid l-values
 - improved semantics of module use transitivity, nested modules
 - removed support for structural iterator interface (getHeadCursor, etc.)
-- added support for defining a default ("these") iterator for classes/records
 - nested classes can refer to their outer class using the identifier "outer"
 - initial support for querying parameters/types in a formal class argument
   - similar support for variable-length argument lists of generics
@@ -123,57 +123,59 @@ Documentation:
 - added man page for Chapel compiler (chpl)
 - added CHANGES file
 - added Quick Reference document
+- added language overview chapter to the specification
 - updated HPCC tutorial document and broke into two docs: overview and tutorial
 - updated STATUS file
+- cleaned up README files a bit
 
 Example Codes:
+- added README.features file to map Chapel features to examples that use them
 - several improvements to the HPCC benchmarks due to bug fixes, new features
-- added iterators example to demonstrate use of iterators
-- added linkedList example for nested, generic, iteratable, printable classes
-- added parallelQuickSort example to demonstrate serial/cobegin statements
-- added blockLU example to demonstrate domain slicing, array aliases, swap
-- added sparse example to demonstrate sparse domains and arrays
-- added slices example to demonstrate array slicing and reindexing
-- added reductions example to demonstrate minloc/maxloc reductions
-- added fileIO example to demonstrate simple use of file I/O
+- added several new examples:
+  - iterators example to demonstrate use of iterators
+  - linkedList example for nested, generic, iteratable, printable classes
+  - parallelQuickSort example to demonstrate serial/cobegin statements
+  - blockLU example to demonstrate domain slicing, array aliases, swap
+  - sparse example to demonstrate sparse domains and arrays
+  - slices example to demonstrate array slicing and reindexing
+  - reductions example to demonstrate minloc/maxloc reductions
+  - fileIO example to demonstrate simple use of file I/O
 - rewrote the producer-consumer example to use a buffer of sync variables
-- added hello-module example to demonstrate Chapel program structure
-- improved comments for several tests
+- added a hello-module example to demonstrate simple Chapel program structure
+- improved the comments for several tests
 - removed stream-nopromote.chpl example, which had become redundant
-- added performance testing support of stream.chpl and ra.chpl
 - combined the two genericStack examples into a single file
+- added performance testing support for stream.chpl and ra.chpl
 
 Standard Modules:
 - Search: new standard module
 - Sort: new standard module
 - Types: numBits() and numBytes() are now param functions
 - Random: fillRandom() routines now work for arrays of arbitrary rank
-- Random: some new functionality
 
 Compiler Flags:
 - improved the formatting of the --help message
-- removed --cg-chpl-lineno flag; this capability is now always on
-- removed --no-gc used for a stopgap reference counting scheme
-- added --baseline flag to disable all compiler optimizations
-- added --no-flow-analysis flag that disables all flow-based optimizations
-- added -s/--set for setting config params
 - added -g flag for debugging generated code; turns on --cg-cpp-lines by default
 - added -O flag for optimizing generated code
+- added -s/--set for setting config params
 - added --explain-call flag that helps determine how a function call is resolved
+- added --baseline flag to disable all compiler optimizations
+- added --no-flow-analysis flag that disables all flow-based optimizations
 - added --no-warnings flag to diable all compiler warnings
-- added --scalar-replace-tuples flag: replaces tuples with scalars
 - added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
 - added --no-expand-iterators-inline-opt flag to disable iterator inlining
 - removed --unoptimized flag
+- removed --cg-chpl-lineno flag; this capability is now always on
+- removed --no-gc used for a stopgap reference counting scheme
 
 Generated Code Flags:
 -- added a --gdb flag to make it easier to debug generated code
 
-New Semantic Checks (for old Semantics):
+
+
+Bug Fixes/New Semantic Checks (for old Semantics):
 - test expressions in loops, conditionals restricted to bools, classes, integers
 - runtime checks added to ensure that zippered iterations are of equal size
-
-Bug Fixes:
 - fixed portability issues in flex lexer file, chapel.lex
 - domains are now passed by reference by default
 - implemented bytesPerLocale for Macintosh
@@ -232,7 +234,8 @@ Compiler Performance and Cleanup:
 
 Generated Code:
 - now generating structured loops rather than gotos and labels
-- 25% reduction in lines of generated code for jacobi example (11259 -> 8311)
+- large reduction in lines of generated code
+  e.g., ~40% reduction in lines of code for jacobi example (13275 -> 7753)
 - module functions generated in order, with comments to identify source location
 - _chpl_header.h file is generated in a cleaner manner
 - changed munging of variable names to improve gdb support and readability
