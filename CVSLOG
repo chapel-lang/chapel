@@ -109020,3 +109020,14 @@ Modified files:
 	                          SingleLocaleArithmetic.chpl 
 	chapel/test/modules/standard/Schedules/bradc/: schedules.chpl 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:24:34 -- deitz
+
+Log message:
+	Really fixed a bug in which the type of a formal argument, having been
+	omitted, was not taken from the default initializer.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
