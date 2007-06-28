@@ -1,15 +1,21 @@
 \documentclass[10pt,twoside,titlepage]{article}
 \usepackage{times}
-\usepackage{hyperref}
 \usepackage{fullpage}
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage{longtable}
+\usepackage[nottoc]{tocbibind}
 \input{chapel_listing}
 \input{syntax_listing}
 
 %% High section numbers require different number widths
 \usepackage[titles]{tocloft}
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,bookmarks,plainpages=false]{hyperref}
+\else
+\usepackage[ps2pdf]{hyperref}
+\fi
 \setlength{\cftsecnumwidth}{1.7em}
 \setlength{\cftsubsecnumwidth}{2.6em}
 \setlength{\cftsubsubsecnumwidth}{3.4em}
@@ -87,7 +93,6 @@
 \textheight 8.5in
 
 \makeindex
-
 \title{Chapel Language Specification 0.703 (internal)}
 
 \author{Cray Inc\\
@@ -101,7 +106,11 @@ Seattle, WA 98104}
 \begin{document}
 
 \pagestyle{empty}
+\pagenumbering{alph}
 
+\ifpdf
+\pdfbookmark[1]{Title}{titlepage}
+\fi
 \maketitle
 
 \cleardoublepage
@@ -112,6 +121,9 @@ Seattle, WA 98104}
 \markboth{Chapel Language Specification}{Chapel Language Specification}
 \pagenumbering{roman}
 
+\ifpdf
+\pdfbookmark[1]{Table of Contents}{tablecontents}
+\fi
 \tableofcontents
 
 \cleardoublepage

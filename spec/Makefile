@@ -1,4 +1,9 @@
 all:
+	pdflatex spec
+	makeindex spec
+	pdflatex spec
+
+usedvi:
 	latex spec
 	makeindex spec
 	latex spec
@@ -8,7 +13,7 @@ all:
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log
 
-clobber:
+clobber: clean
 	rm -f spec.ps spec.pdf
 
 #
