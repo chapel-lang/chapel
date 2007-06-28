@@ -21,7 +21,7 @@ descriptions for the files and directories that they contain.
   compiler/         : source code for the compiler
   doc/              : additional user documentation and READMEs
   examples/         : example Chapel codes
-    hpcc06/         : source code for 2006 HPC Challenge competition
+    hpcc/           : source code for HPC Challenge benchmarks
   lib/
     $CHPL_PLATFORM/ : runtime library location, once it has been built
   make/             : Makefile settings for various platforms
