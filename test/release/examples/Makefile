@@ -8,6 +8,7 @@ TARGETS = \
 	hello-module \
 	beer \
         blockLU \
+	fileIO \
 	genericStack \
 	iterators \
 	jacobi \

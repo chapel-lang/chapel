@@ -11,6 +11,7 @@ hello          : write() function; string literals; unstructured coding
 hello-module   : configuration vars; module structure; main() entry point
 beer           : 1D domains and arrays; string manipulation; generic functions
 blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
+fileIO         : file I/O of scalars and arrays
 genericStack   : generic classes; nested classes; array reallocation
 iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
@@ -46,16 +47,17 @@ Legend:
 -------------------------------------------------------------------------------
                |              I/O and program control features
                |
-test           | read  | write | files | halt  | frmat | xxxxx | xxxxx | xxxxx
+test           | read  | write | files | halt  | wrths | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
-blockLU        |   *   |   x   |   *   |   *   |       |       |       |
+blockLU        |   x   |   x   |   *   |   *   |       |       |       |
+fileIO         |   *   |   *   |   *   |       |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
 iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
-linkedList     |       |   x   |       |       |       |       |       |
+linkedList     |       |   x   |       |       |   *   |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
@@ -72,7 +74,7 @@ key:
   write = uses write()/writeln() statements to do output
   files = uses files for I/O
   halt  = uses the halt statement for abnormal program termination
-  frmat = uses the writeThis method to format output
+  wrths = defines a writeThis method to specialize output format
 -------------------------------------------------------------------------------
 
 
@@ -81,20 +83,21 @@ key:
 -------------------------------------------------------------------------------
                |              High-level program structure
                |
-test           | modls | stdmd | main  | funcs | iters | confg | xxxxx | xxxxx
+test           | modls | stdmd | main  | funcs | iters | confg | these | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 blockLU        |       |       |   x   |   x   |   x   |   x   |       |
+fileIO         |       |       |   x   |   x   |       |   x   |       |
 genericStack   |       |       |       |   x   |       |       |       |
 iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
-linkedList     |       |   *   |   x   |   x   |   x   |   x   |       |
+linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
 norm           |   *   |       |   x   |   x   |       |       |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
-reductions     |       |   *   |       |       |       |   x   |       |
+reductions     |       |   x   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
@@ -109,6 +112,7 @@ key:
   funcs = uses functions (other than main) and/or methods to define user code
   iters = uses iterators
   confg = uses configuration variables for program parameters
+  these = uses a these iterator to make a class iteratable
 -------------------------------------------------------------------------------
 
 
@@ -123,6 +127,7 @@ hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
+fileIO         |       |       |       |       |       |   x   |       |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
 iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
@@ -158,6 +163,7 @@ hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |       |       |       |       |       |
+fileIO         |   x   |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |       |       |       |       |       |
@@ -194,6 +200,7 @@ hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |   x   |   *   |   x   |       |       |
+fileIO         |       |       |       |       |   x   |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
@@ -229,6 +236,7 @@ hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
+fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -264,6 +272,7 @@ hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
+fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |

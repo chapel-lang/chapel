@@ -13,6 +13,7 @@ demonstrate various Chapel features:
 
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
+     fileIO.chpl            : simple file I/O example using arrays
      genericStack.chpl      : generic stack classes (list- and array-based)
      iterators.chpl         : sample iterators
      jacobi.chpl            : Jacobi iteration
