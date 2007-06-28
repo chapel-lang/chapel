@@ -108996,3 +108996,27 @@ Log message:
 Modified files:
 	chapel/test/parallel/coforall/bradc/: accessLocArray.chpl 
 
+---------------------------------------------------------------------------
+
+06/27/07 17:21:45 -- bradc
+
+Log message:
+	Made the subBlocks iterator return a number of blocks
+	proportional to the number of cores on the processor,
+	to pave the way towards an ra.chpl implementation that
+	uses multicore processors.  Previous bug about
+	accessing a local array within a coforall is the current
+	limiting factor.
+	
+	Hacked the schedules.chpl test so that it continues to
+	test the Schedule module, but it currently relies on
+	access to an internal field.  Unifying the name of
+	_dim_index_type and index_type in the domain wrapper
+	and implementation classes would help with this, but
+	that was too scary this close to the release.
+
+Modified files:
+	chapel/modules/standard/: Schedules.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/modules/standard/Schedules/bradc/: schedules.chpl 
+
