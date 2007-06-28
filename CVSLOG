@@ -109163,3 +109163,54 @@ Added files:
 	                            test_use_error.future 
 	                            test_use_error.good 
 
+---------------------------------------------------------------------------
+
+06/28/07 12:11:02 -- bradc
+
+Log message:
+	Renamed release examples hpcc06 directory to hpcc
+	to shed the connection to our hpcc06 entry since
+	the codes have changed a lot since then and will
+	likely continue to evolve.  Updated documentation
+	that refers to hpcc06 and made gen_release script
+	blow old hpcc06 directory away (not yet tested
+	since the script uses the CVS tree to build the
+	release).
+
+Modified files:
+	chapel/test/release/examples/: Makefile README README.features 
+	chapel/test/studies/hpcc/FFT/: fft-testPow4.compopts 
+	chapel/test/studies/hpcc/RA/: ra-seq.compopts 
+	chapel/util/: gen_release 
+Added files:
+	chapel/test/release/examples/hpcc/: .cvsignore Makefile README 
+	                                    fft.chpl fft.compopts 
+	                                    fft.execopts fft.good 
+	                                    probSize.chpl 
+	                                    probSize.notest 
+	                                    ra-randstream.chpl 
+	                                    ra-randstream.notest ra.chpl 
+	                                    ra.compopts ra.execopts 
+	                                    ra.good ra.perfcompopts 
+	                                    ra.perfkeys stream.chpl 
+	                                    stream.compopts 
+	                                    stream.execopts stream.good 
+	                                    stream.perfcompopts 
+	                                    stream.perfkeys 
+Removed files:
+	chapel/test/release/examples/hpcc06/: README fft.chpl 
+	                                      fft.compopts fft.execopts 
+	                                      fft.good probSize.chpl 
+	                                      probSize.notest 
+	                                      ra-randstream.chpl 
+	                                      ra-randstream.notest 
+	                                      ra.chpl ra.compopts 
+	                                      ra.execopts ra.good 
+	                                      ra.perfcompopts 
+	                                      ra.perfkeys stream.chpl 
+	                                      stream.compopts 
+	                                      stream.execopts 
+	                                      stream.good 
+	                                      stream.perfcompopts 
+	                                      stream.perfkeys 
+
