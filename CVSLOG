@@ -109381,3 +109381,17 @@ Log message:
 Modified files:
 	chapel/spec/: spec.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 09:36:09 -- diten
+
+Log message:
+	Add a few additional reductions to the reductions release example. It now
+	uses a + reduction over slices of the array to compute norms of the colums and
+	uses an && reduction to compute a bool that is true if all values in the array
+	are larger than 0.25.
+
+Modified files:
+	chapel/test/release/examples/: reductions.chpl reductions.good 
+	                               README README.features 
+
