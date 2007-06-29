@@ -109461,3 +109461,13 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 15:40:51 -- deitz
+
+Log message:
+	Updated spec for release.
+
+Modified files:
+	chapel/doc/release/: chapelLanguageSpec.pdf 
+
