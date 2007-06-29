@@ -109325,3 +109325,14 @@ Added files:
 	chapel/test/trivial/dinan/: bad_index.chpl bad_index.future 
 	                            bad_index.good 
 
+---------------------------------------------------------------------------
+
+06/28/07 17:50:13 -- bradc
+
+Log message:
+	My stopping point for today on Ranges.  I still have more
+	to do, so this is just a checkpoint.
+
+Modified files:
+	chapel/spec/: Ranges.tex 
+
