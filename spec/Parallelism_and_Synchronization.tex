@@ -105,7 +105,7 @@ def walk(n: node) {
   }
 }
 \end{chapel}
-there is a contraint on the parallel execution such that the
+there is a constraint on the parallel execution such that the
 function \chpl{work} is evaluated on a node before any of its
 immediate children nodes.  The work on sibling nodes can be executed
 concurrently.
@@ -316,7 +316,7 @@ The normal use of and assignment to a synchronization variable is well
 suited for producer-consumer data sharing.  Additional functions on
 synchronization variable are provided such that other traditional
 synchronization primitives, such as semaphores and mutexes, can be
-contructed.
+constructed.
 
 \subsubsection{Single Variables}
 \label{Single_Variables}
@@ -327,7 +327,7 @@ A single (assignment) variable can only be assigned once during its
 lifetime.  A use of a single variable before it is assigned causes the
 computation's execution to be suspended until the variable is
 assigned. Otherwise, the use proceeds as with normal variables and the
-computation continues.  After a single assigment variable is assigned,
+computation continues.  After a single assignment variable is assigned,
 all computations with pending uses resume in an unspecified order.  A
 single variable is specified with a single type given by the following
 syntax:
@@ -404,7 +404,7 @@ def sum() {
 the computation with assignment to \chpl{z} waits for the other
 computations to assign to \chpl{x} and \chpl{y} before it
 references \chpl{x} and \chpl{y} in order to assign to \chpl{z}.  The
-variables \chpl{x} and \chpl{y} are impliclty single.
+variables \chpl{x} and \chpl{y} are implicitly single.
 \end{example}
 
 \subsubsection{Sync Variables}
@@ -427,7 +427,7 @@ assignment.
 If a computation attempts to assign to a sync variable that is full,
 the computation is suspended and the assignment is delayed. When the
 sync variable becomes empty, the computation is resumed and the
-assignment proceeds, transistioning the state back to full. If there
+assignment proceeds, transitioning the state back to full. If there
 are multiple computations attempting such an assignment, one is
 non-deterministically selected to proceed and the other assignments
 continue to wait until the sync variable is emptied again.
@@ -471,7 +471,7 @@ For single variables \chpl{s} only \chpl{readFF} is defined.
 A variable of record or class type can be a single or sync
 variable. The semantics of single and sync variables are applied only
 to the variable and not to accesses of individual fields.  A record or
-class type may have sychronization variable fields to get
+class type may have synchronization variable fields to get
 synchronization semantics on individual field accesses.
 
 \subsection{Memory Consistency Model}

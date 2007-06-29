@@ -280,7 +280,7 @@ tuple contains the same number of elements as the array.  For
 multidimensional arrays, the tuple must be a nested tuple such that
 the nesting depth is equal to the rank of the array and the shape of
 this nested tuple must match the shape of the array.  The values are
-assigned elementwise.
+assigned element-wise.
 
 Arrays can also be assigned single values of their element type.  In
 this case, each element in the array is assigned this value.
@@ -471,7 +471,7 @@ domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
 
 The type of an arithmetic domain is determined by three components:
 (1) the rank of the arithmetic domain (the number of ranges that
-define it); (2) an underlying integeral type called the
+define it); (2) an underlying integral type called the
 \emph{dimensional index type} which must be identical to each of the
 integral element types of the ranges that define the arithmetic
 domain; (3) a boolean value indicating whether any of the ranges that
@@ -618,7 +618,7 @@ indexed by the integers between one and five.
 Sparse domains are used in Chapel to describe irregular index subsets
 and to define sparse arrays.  Sparse arrays are typically used to
 represent data aggregates in which a value occurs so frequently that
-it would be wasteful to store it explicitly for each occurence.  This
+it would be wasteful to store it explicitly for each occurrence.  This
 value is commonly described as the ``zero value'', though we refer to
 it as the \emph{implicitly replicated value} or \emph{IRV} since it
 may be a value other than zero.
@@ -695,7 +695,7 @@ be initialized to the array's IRV by default.
 
 \subsubsection{Modifying a Sparse Domain}
 
-Indices can be incremtnally added to or removed from sparse domains.
+Indices can be incrementally added to or removed from sparse domains.
 Sparse domains support a method \chpl{add} that takes an index and
 adds it to the sparse domain's index set.  All arrays declared over
 this sparse domain will now store an element corresponding to this
@@ -873,7 +873,7 @@ domains do not support the \chpl{add} or \chpl{remove} methods.  All
 of the constants defined by the enumerated type are indices into the
 enumerated domain.
 
-An enumerated domain is specified indentically to the associative
+An enumerated domain is specified identically to the associative
 domain type, except that the type is an enumerated type rather than
 some other value type.
 
@@ -985,7 +985,7 @@ def $Domain$.low: index($Domain$)   // for multidimensional domains
 \end{protohead}
 \begin{protobody}
 Returns the low index of the domain as a scalar value for 1D domains
-and as an index value for a muldimensional domain.
+and as an index value for a multidimensional domain.
 \end{protobody}
 
 \begin{protohead}
@@ -994,7 +994,7 @@ def $Domain$.high: index($Domain$)   // for multidimensional domains
 \end{protohead}
 \begin{protobody}
 Returns the high index of the domain as a scalar value for 1D domains
-and as an index value for a muldimensional domain.
+and as an index value for a multidimensional domain.
 \end{protobody}
 
 \subsection{Predefined Functions and Methods on Arrays}

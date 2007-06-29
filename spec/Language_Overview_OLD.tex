@@ -228,7 +228,7 @@ the program other than the standard modules, as discussed
 in~\rsec{Programs_with_a_Single_Module}.
 
 Chapel provides standard modules for bit level operations, computing
-random numbers and quering the system time.  See~\rsec{Standard_Modules}
+random numbers and querying the system time.  See~\rsec{Standard_Modules}
 for more details about these modules and how to use them.
 
 \subsubsection{Data Types and Variables}
@@ -250,7 +250,7 @@ type \chpl{int} from this integer default value.  Similarly, \chpl{x} and
 is initialized to \chpl{1.0} and the variable \chpl{y} is initialized to
 the value of \chpl{n}, converted from an integer value to a real value.
 The variable \chpl{z} has an explicit type declaration.  
-Because \chpl{z} is not initialized, it has a default intial value of \chpl{0.0}.
+Because \chpl{z} is not initialized, it has a default initial value of \chpl{0.0}.
 
 Variable declarations in Chapel include the kind of variable, the variable's
 name, type and initial value.  A variable's initialization may be omitted, 
@@ -780,11 +780,11 @@ This domain is initialized to be an \chpl{n} $\times$ \chpl{n}
 square.  The two-dimensional real arrays \chpl{A, B, C} are declared using
 \chpl{D2}.
 
-The final line uses whole-array syntax to specify the elementwise 
+The final line uses whole-array syntax to specify the element-wise 
 multiplications, additions, and assignments.  In this case since
 all three arrays are declared with the same domain, the compiler
 knows that the arrays are the right shape and size to successfully
-compute the array addition and can generate the appropriate elementwise
+compute the array addition and can generate the appropriate element-wise
 additions.
 
 Whole-array operations like this one are implicitly parallel, if the \chpl{D2}

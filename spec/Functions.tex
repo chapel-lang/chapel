@@ -150,7 +150,7 @@ formal arguments.  The two function calls are equivalent.
 Named arguments are sometimes necessary to disambiguate calls or
 ignore arguments with default values.  For a function that has many
 arguments, it is sometimes good practice to name the arguments at the
-callsite for compiler-checked documentation.
+call-site for compiler-checked documentation.
 
 \subsubsection{Default Values}
 \label{Default_Values}
@@ -264,7 +264,7 @@ Variable functions support an implicit argument \chpl{setter} of type
 bool.  If the variable function is called in a context such that the
 returned lvalue is assigned a value, the argument \chpl{setter}
 is \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
-for controlling different behaviour depending on the call site.
+for controlling different behavior depending on the call site.
 
 \begin{example}
 The following code creates a function that can be interpreted as a
@@ -384,7 +384,7 @@ in~\rsec{Determining_More_Specific_Functions}.
 
 \subsubsection{Identifying Visible Functions}
 \label{Identifying_Visible_Functions}
-\index{functions!visibile}
+\index{functions!visible}
 
 A function is a visible function to a function call if the name of the
 function is the same as the name of the function call and the function
