@@ -109314,3 +109314,14 @@ Added files:
 	                            test_plusassign_error.good 
 	                            test_plusassign_error.future 
 
+---------------------------------------------------------------------------
+
+06/28/07 17:32:55 -- dinan
+
+Log message:
+	Added a future regarding [i,j] in a loop index.
+
+Added files:
+	chapel/test/trivial/dinan/: bad_index.chpl bad_index.future 
+	                            bad_index.good 
+
