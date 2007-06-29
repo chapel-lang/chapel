@@ -109336,3 +109336,15 @@ Log message:
 Modified files:
 	chapel/spec/: Ranges.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 08:18:41 -- diten
+
+Log message:
+	Add options to the spec Makefile to get better syntax error messages and to
+	halt on errors.  Add pdf options to fill in title, author, subject when you
+	press ctrl+d in Acrobat.
+
+Modified files:
+	chapel/spec/: Makefile spec.tex 
+
