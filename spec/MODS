@@ -17,7 +17,7 @@ CLOSED    added "range" type to language to replace old "arithmetic sequence" co
        - +, -, *, / operators on range/scalar combinations
 CLOSED    discuss stridable parameter for ranges 
 CLOSED and domains
-BLC    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
+CLOSED    added support for partially and fully unbounded ranges ("lo..", "..hi", "..")
 
 CLOSED SJD added support for creating array aliases
        e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice

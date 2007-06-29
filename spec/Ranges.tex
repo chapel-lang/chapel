@@ -130,7 +130,7 @@ It is an error to zip an unbounded range with a range that does not
 have a stride with the same sign.
 
 Unbounded ranges can also be used to index into ranges, domains,
-arrays, and strings.  In thesse cases, elided bounds are inherited
+arrays, and strings.  In these cases, elided bounds are inherited
 from the bounds of the expression being indexed.
 
 
@@ -162,8 +162,8 @@ In order for range assignment to be legal, the element type of the
 source range must be implicitly coercible to the element type of the
 destination range.  The two range types must have the same boundedness
 parameter.  It is legal to assign a non-stridable range to a stridable
-range, but illegal to asssign a stridable range to a non-stridable
-range.
+range, but illegal to assign a stridable range to a non-stridable
+range unless the stridable range has a stride value of 1.
 
 
 \subsection{Range Operators}
