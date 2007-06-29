@@ -1,49 +1,69 @@
 \sekshun{Language Overview}
 \label{Language_Overview}
 
-\subsection{Motivating Principles}
+Chapel is a new programming language under development at Cray Inc. as
+part of the DARPA High Productivity Computing Systems (HPCS) program
+to improve the productivity of parallel programmers.
 
-Chapel is a new programming language being developed by
-Cray Inc. as part of DARPA's High Productivity Computing Systems 
-(HPCS) program to improve the productivity
-of programming parallel systems.  There are four main motivating
-principles for the design of the Chapel language.
+This section provides a brief overview of the Chapel language by first
+discussing the guiding principles behind the design of the language
+and then providing introductory discussions of the main language
+features.  These discussions are written at an intuitive level of
+detail.  They are neither formal nor complete, but rather are intended
+as starting points for the beginning Chapel programmer.
 
-\paragraph{General Parallel Programming}
+\subsection{Guiding Principles}
 
-Chapel's first motivating principle is to support general parallel
-programming through the use of high-level language abstractions
-for expressing parallelism.  Chapel supports a 
-\emph{global-view programming model} that raises the level of
-abstraction for the expression of both data and control flow as
+The following four main principles have guided the design of the
+Chapel language since conception:
+\begin{enumerate}
+\item General parallel programming
+\item Control of locality
+\item Object oriented programming
+\item Generic programming
+\end{enumerate}
+The first two principles were motivated by a desire to support
+general, performance-oriented parallel programming through high-level
+abstractions.  The second two principles were motivated by a desire to
+narrow the gulf between high-performance parallel programming
+languages and mainstream programming and scripting languages.
+
+\subsubsection{General Parallel Programming}
+
+First and foremost, Chapel is designed to support general parallel
+programming through the use of high-level language abstractions.
+Chapel supports a \emph{global-view programming model} that raises the
+level of abstraction of expressing both data and control flow when
 compared to parallel programming models currently used in production.
-
-In Chapel, a \emph{locale} is an abstraction for the processing
-unit of the target architecture.  Locales are to be defined such that
-a locale's threads will all have similar access times to any
-specific memory address.  For example, a locale in a commodity cluster 
-could be defined to be a single core of a processor, a multicore
-processor or an SMP node of multiple processors.
+A global-view programming model is best defined in terms
+of \emph{global-view data structures} and a \emph{global view of
+control}.
 
 \emph{Global-view data structures} are arrays and other data
-aggregates whose sizes and indices are expressed globally in spite of
-the fact that their implementations may distribute them across the
-memories of multiple locales.  This
-contrasts with most parallel languages used in practice, which tend to
-require users to partition distributed data aggregates into
-per-processor chunks, either manually or using language abstractions.
-As a simple example, to create a 0-based vector with $n$ elements
-distributed between $p$ locales, a language like Chapel that supports
-global-view data structures allows the user to declare the array to
-contain $n$ elements and to refer to the array using the indices $0
-\ldots n-1$.  In contrast, most traditional approaches require the
-user to declare the array as $p$ chunks of $n/p$ elements each and to
-specify and manage inter-processor communication and synchronization
-explicitly (and the details can be messy if $p$ does not divide $n$
-evenly).  Moreover, the chunks are typically accessed using local
-indices on each processor (\eg,~$0..n/p$), requiring the user to
-explicitly translate between logical indices and those used by the
-implementation.
+aggregates whose sizes and indices are expressed globally even though
+their implementations may distribute them across the \emph{locales} of
+a parallel system.  A locale is an abstraction of a unit of uniform
+memory access on a target architecture.  That is, within a locale, all
+threads exhibit similar access times to any specific memory address.
+For example, a locale in a commodity cluster could be defined to be a
+single core of a processor, a multicore processor or an SMP node of
+multiple processors.
+
+Such a global view of data contrasts with most parallel languages
+which tend to require users to partition distributed data aggregates
+into per-processor chunks either manually or using language
+abstractions.  As a simple example, consider creating a 0-based vector
+with $n$ elements distributed between $p$ locales.  A language like
+Chapel that supports global-view data structures allows the user to
+declare the array to contain $n$ elements and to refer to the array
+using the indices $0 \ldots n-1$.  In contrast, most traditional
+approaches require the user to declare the array as $p$ chunks of
+$n/p$ elements each and to specify and manage inter-processor
+communication and synchronization explicitly (and the details can be
+messy if $p$ does not divide $n$ evenly).  Moreover, the chunks are
+typically accessed using local indices on each processor
+(\eg,~$0..n/p$), requiring the user to explicitly translate between
+logical indices and those used by the implementation.
 
 A \emph{global view of control} means that a user's program commences
 execution with a single logical thread of control and then introduces
@@ -57,7 +77,6 @@ Program, Multiple Data~(SPMD) model that today's most common parallel
 programming approaches use as the basis for their programming and
 execution models.  Chapel's general support for parallelism does not
 preclude users from coding in an SPMD style if they wish.
-
 
 Supporting general parallel programming also means targeting a broad
 range of parallel architectures.  Chapel is designed to target a wide
@@ -73,31 +92,31 @@ more closely match a particular machine's characteristics, though
 doing so may cause the program to be a poorer match for other
 architectures.
 
-\paragraph{Control of Locality}
+\subsubsection{Control of Locality}
 
 A second principle in Chapel is to allow the user to optionally and
 incrementally specify where data and computation should be placed on
-the physical machine.  We consider this control over program locality
-to be essential for achieving scalable performance on large machine
-sizes.  Such control contrasts with shared-memory programming models
-which present the user with a flat memory model.  It also contrasts
-with SPMD-based programming models in which such details are
-explicitly specified by the programmer on a process-by-process basis
-via the multiple cooperating program instances.
+the physical machine.  Such control over program locality is essential
+to achieve scalable performance on large machine sizes.  Such control
+contrasts with shared-memory programming models which present the user
+with a flat memory model.  It also contrasts with SPMD-based
+programming models in which such details are explicitly specified by
+the programmer on a process-by-process basis via the multiple
+cooperating program instances.
 
-\paragraph{Object-Oriented Programming (OOP)}
+\subsubsection{Object-Oriented Programming}
 
 A third principle in Chapel is support for object-oriented
-programming.  OOP has been instrumental in raising productivity in the
-mainstream programming community due to its encapsulation of related
-data and functions into a single software component, its support for
-specialization and reuse, and its use as a clean mechanism for
-defining and implementing interfaces.  Chapel supports objects in
-order to make these benefits available in a parallel language setting,
-and to provide a familiar paradigm for members of the mainstream
-programming community.  Chapel supports traditional reference-based
-classes as well as value classes that are assigned and passed by
-value.
+programming.  Object-oriented programming has been instrumental in
+raising productivity in the mainstream programming community due to
+its encapsulation of related data and functions into a single software
+component, its support for specialization and reuse, and its use as a
+clean mechanism for defining and implementing interfaces.  Chapel
+supports objects in order to make these benefits available in a
+parallel language setting, and to provide a familiar paradigm for
+members of the mainstream programming community.  Chapel supports
+traditional reference-based classes as well as value classes that are
+assigned and passed by value.
 
 Chapel does not require the programmer to use an object-oriented style
 in their code, so that traditional Fortran and C programmers in the
@@ -106,9 +125,9 @@ use Chapel effectively.  Many of Chapel's standard library
 capabilities are implemented using objects, so such programmers may
 need to utilize a method-invocation style of syntax to use these
 capabilities.  However, using such libraries does not necessitate
-broader adoption of OOP methodologies.
+broader adoption of object-oriented methodologies.
 
-\paragraph{Generic Programming}
+\subsubsection{Generic Programming}
 
 Chapel's fourth principle is support for generic programming and
 polymorphism.  These features allow code to be written in a style that
@@ -122,166 +141,132 @@ the compiler create versions of the code for each required type
 signature rather than by relying on dynamic typing which would result
 in unacceptable runtime overheads for the HPC community.
 
-Chapel's first two principles are designed to provide support for
-general, performance-oriented parallel programming through high-level
-abstractions.  The second two principles are supported to help narrow
-the gulf that exists between parallel programming languages and
-mainstream programming and scripting languages.
+\subsection{Getting Started}
 
-
-\subsection{Summary of Chapel Language Features}
-
-This following section provides a summary of Chapel language features.  
-This summary is not intended to give a complete description of each feature.
-Rather, it should give the reader a map to the rest of the specification
-document.  
-
-\subsubsection{Chapel Programming Basics}
-\paragraph{Hello World} 
-A Chapel version of the standard ``hello world'' computation is given
-here:
+A Chapel version of the standard ``hello, world'' computation is as
+follows:
+\vspace{0.5pc}
 \begin{chapel}
-writeln("Hello, world!"); //writes Hello, world! to stdout
+writeln("hello, world");
 \end{chapel}
-\noindent This program contains a single line of code that makes a
-call to the standard \chpl{writeln} subroutine, passing it a string
-literal argument, \chpl{"Hello, world\!"}.  This call causes the string
-to be printed to the console when the program is executed.
+This complete Chapel program contains a single line of code that makes
+a call to the standard \chpl{writeln} function.
 
-\paragraph{Chapel Programs}
 \index{modules}
 \index{main@\chpl{main}}
 
 In general, Chapel programs define code using one or more named
 \emph{modules}, each of which supports top-level initialization code
 that is invoked the first time the module is used.  Programs also
-define a single entry point via a subroutine named \chpl{main}.  To
+define a single entry point via a function named \chpl{main}.  To
 facilitate exploratory programming, Chapel allows programmers to
-define modules using files rather than an explicit module declaration,
+define modules using files rather than an explicit module declaration
 and to omit the program entry point when the program only has a single
-user module.  
+user module.
 
 Chapel code is stored in files with the extension \chpl{.chpl}.
-Assuming the ``hello world'' program is stored in a file called 
-\chpl{hello.chpl}, it
-would define a single user module, \chpl{hello}, whose name is taken
-from the filename.  Since the file defines a module, the top-level
-code in the file defines the module's initialization code.  And since
-the program is composed of the single \chpl{hello} module, it need not
-define an entry point.  Thus, when the program is executed, the single
-\chpl{hello} module will be initialized by executing its top-level
-code, invoking the call to \chpl{writeln()}, and printing out the
-message.  More information about modules can be found in~\rsec{Modules}. 
+Assuming the ``hello, world'' program is stored in a file
+called \chpl{hello.chpl}, it would define a single user
+module, \chpl{hello}, whose name is taken from the filename.  Since
+the file defines a module, the top-level code in the file defines the
+module's initialization code.  And since the program is composed of
+the single \chpl{hello} module, the \chpl{main} function is omitted.
+Thus, when the program is executed, the single \chpl{hello} module
+will be initialized by executing its top-level code thus invoking the
+call to the \chpl{writeln} function.  Modules are described in more
+detail in~\rsec{Modules}.
 
-\paragraph{Comments} 
-\index{comments}
-There are two ways of providing comments in Chapel source code.
-Inserting ``\chpl{//}'' indicates that a comment follows, through to  
-the end of that line.  Using ``\chpl{/*}'' indicates the start of a comment that
-may span multiple lines.  In this case, the comment must be
-explicitly ended with ``\chpl{*/}''.
-\begin{chapel}
-// Comments on a single line
-/* Comments
-   between lines */
-\end{chapel}
-
-\paragraph{Compiling and Running} 
-To compile and run the ``hello world'' program, execute the 
-following commands at the system prompt:
+To compile and run the ``hello world'' program, execute the following
+commands at the system prompt:
 \begin{commandline} 
 > chpl -o hello hello.chpl
 > ./hello
 \end{commandline}
 The following output will be printed to the console:
 \begin{commandline}
-> Hello, world!
+hello, world
 \end{commandline}
 
-\subsubsection{Variables}
+\subsection{Variables}
 \index{param@\chpl{param}}
 \index{const@\chpl{const}}
 
 There are three kinds of Chapel variables: \chpl{var},
-\chpl{const} (runtime constants), \chpl{param} (compile time constants).
+\chpl{const} (runtime constants), and \chpl{param} (compile time constants).
 Chapel variables are discussed in detail in~\rsec{Variables}.
 
-\paragraph{Variable Declarations}
 \index{variables!declarations}
-Chapel is a strongly typed language.  Each variable declaration
-must include a type specification or an initialization assignment 
-from which the type can be inferred.  
-Variable declarations include the kind of variable, a type specification,
-and an initialization assignment.  The type specification can be
-omitted if the type can be inferred from the initial value.  If the
-variable is not initialized in its declaration, then it contains a
-default initial value according to its type.
+Chapel is a strongly typed language.  Each variable declaration must
+include a type specification or an initialization assignment from
+which the type can be inferred.  Variable declarations include the
+kind of variable, a type specification, and an initialization
+assignment.  The type specification can be omitted if the type can be
+inferred from the initial value.  If the variable is not initialized
+in its declaration, then it contains a default initial value according
+to its type.
 
 \begin{example}
-The following code gives examples of variable declarations in Chapel.
+The following code gives examples of variable declarations in Chapel:
 \begin{chapel}
-var x: real = 1.0; //x is real, init to 1.0
-var y, z: real; //y, z are real, init to 0.0
+var x: real = 1.0; // x is real, init to 1.0
+var y, z: real;    // y, z are real, init to 0.0
 
-var n = 10; //n inferred to be int, init to 10
-const size = n; //size is runtime constant int,
-                //set to 10
+var n = 10; // n inferred to be int, init to 10
+const size = n; // size is runtime constant int,
+                // set to 10
 \end{chapel}
 \end{example}
 
-\paragraph{Configuration Variables}
 \index{variables!configuration}
-The keyword \chpl{config} may precede any global variable
-declaration, indicating that the variable may be set at
-compile time or runtime.
-To set configuration variables at runtime, use ``\chpl{--}''
-followed by the variable name and value on the execution
-command line.
-To set configuration variables at compile time, use
-``\chpl{-s}'' followed by the variable name and value on the
-compiler command line.  More details about configuration
-variables is given in~\rsec{Configuration_Variables}.
+The keyword \chpl{config} may precede any global variable declaration,
+indicating that the variable may be set at compile time or runtime.
+To set configuration variables at compile time, use ``\chpl{-s}''
+followed by the variable name and value on the compiler command line.
+To set configuration variables at runtime, use ``\chpl{--}'' followed
+by the variable name and value on the execution command line.  More
+details about configuration variables are given
+in~\rsec{Configuration_Variables}.
 
 \begin{example}
-The following code gives an example of a configuration
-runtime constant, \chpl{n} and a configuration compile time constant,
-\chpl{debug}.
+The following code gives an example of a configuration compile time
+constant \chpl{debug} and a configuration runtime constant \chpl{n}:
 \begin{chapel}
+config param debug: bool;
 config const n = 100;
-config param debug:bool;
 \end{chapel}
 
-To set \chpl{n} at runtime, the following command is used.
+If the program is stored in a file called ``test.chpl,'' then to
+set \chpl{debug} at compile time, use the following command:
+\begin{commandline}
+> chpl test.chpl -s debug=true
+\end{commandline}
+
+To set \chpl{n} at runtime, use the following command:
 \begin{commandline}
 > ./a.out --n=1000
 \end{commandline}
-
-To set \chpl{debug} at compile time, the following compile command
-and flag is used.
-\begin{commandline}
-> chpl testprogram.chpl -s debug=true
-\end{commandline}
 \end{example}
 
-\subsubsection{Types}
-Chapel supports primitive numeric, logical and string types.  In
-addition, Chapel provides many non-primitive types such as classes,
-records, ranges, domains and arrays.  
+\subsection{Types}
 
 Chapel is a strongly typed language.  Some implicit conversions 
 between data types are supported, but many type conversions require
 an explicit cast.  See~\rsec{Conversions} for more information. 
 
-\paragraph{Primitive Types}
+Type aliases and generics are unified by the syntax of Chapel.  Type
+aliases are described in more detail in~\rsec{Type_Aliases}.
+
+\subsubsection{Primitive Types}
 \index{types!primitive}
-Chapel provides primitive data types for signed and unsigned integers, 
-real, imaginary and complex floating point numbers, booleans and strings.
-The following table provides information about the names of these data
-types in Chapel, and their default sizes and initial values.
-If the size of the integer and floating point data types are not specified, 
-then the default size is used.  When declaring variables, if an initial
-value is not supplied then the default initial value for that variable's 
-type is used. 
+
+Chapel provides primitive data types for signed and unsigned integers,
+real, imaginary and complex floating-point numbers, logical values,
+strings, files, and locales.  The following table provides information
+about the names of these data types in Chapel, and their default sizes
+and initial values.  If the size of the integer and floating point
+data types are not specified, then the default size is used.  When
+declaring variables, if an initial value is not supplied, then the
+default initial value for that variable's type is used.
 \begin{center}
 \begin{tabular}{|l|l|l|l|}
 \hline
@@ -313,63 +298,36 @@ type is used.
 \chpl{string} &  & &
 \chpl{""} \\
 \hline
-\end{tabular}
-\end{center}
-
-\paragraph{Non-Primitive Types}
-The non-primitive types are listed in the table below, along
-with their default initial values for variables of that type. 
-\begin{center}
-\begin{tabular}{|l|l|}
+\chpl{file}  & & &
+\emph{closed file with no name} \\
 \hline
-{\bf Type} & {\bf Default Initial Value}\\
-\hline
-\chpl{range} & empty range:  \chpl{(1..0)} \\
-\hline
-\chpl{domain} & empty range for each dimension \\
-\hline
-\chpl{array} & default initial values of element types \\
-\hline
-\chpl{enum} & first enum constant \\
-\hline
-\chpl{tuple} & default initial values of component types \\
-\hline
-\chpl{class} & {\tt nil} \\
-\hline
-\chpl{record} & default constructed record \\
-\hline
-\chpl{file} &  \chpl{(filename = , path = ., mode = r)}\\
-\hline
-\chpl{locale} & ordered list of processor ids assigned at job launch \\
+\chpl{locale} & & &
+\emph{predefined} \\
 \hline
 \end{tabular}
 \end{center}
 
-The paragraphs below give a brief description and example for each
-type.
-
-\paragraph{Ranges}
+\subsubsection{Ranges}
 \index{ranges}
-\emph{Ranges} represent bounded and unbounded strided sequences of integral
-types.  Ranges can be specified by the literal expression,
-"\chpl{low..high by stride}" where \chpl{low},
-\chpl{high} and \chpl{stride} are integral expressions.  The bounds
-of the range, \chpl{low} and \chpl{high}, can be left unspecified to
-indicate an unbounded range.  The stride is also optional.
-If \chpl{by stride} is omitted, the default stride of the range is
-one.
+
+Ranges are bounded and unbounded strided sequences of integral types.
+Ranges can be specified by the literal expression, \chpl{low..high by
+stride} where \chpl{low}, \chpl{high} and \chpl{stride} are integral
+expressions.  The bounds of the range, \chpl{low} and \chpl{high}, can
+be left unspecified to indicate an unbounded range.  The stride is
+also optional.  If \chpl{by stride} is omitted, the default stride of
+the range is one.
 
 Ranges are most commonly used in the definition of arithmetic domains
-and in iterator expressions.  For more information about ranges and their
-uses see~\rsec{Ranges}.  
+and in iterator expressions.  Ranges are described further
+in~\rsec{Ranges}.
 
 \begin{example}
-The following example shows the definition of the range \chpl{span1D}
-which is the ordered set \chpl{1} to \chpl{n}.  This range is then
-used in the definition of the arithmetic two-dimensional domain,
-\chpl{D}, which is then used to declare the $n \times n$ array \chpl{A}.    
-See the following paragraph for an introduction to domain and array 
-types.
+The following example defines a range \chpl{span1D} which is the
+ordered set \chpl{1} to \chpl{n}.  This range is then used in the
+definition of the arithmetic two-dimensional domain, \chpl{D}, which
+is then used to declare the $n \times n$ array \chpl{A}.  See the
+following paragraph for an introduction to domain and array types.
  
 \begin{chapel}
 var span1D: range = 1..n; // span1D represents set of ints 1 to n
@@ -378,7 +336,7 @@ var A: [D] real;          // A is 2-D, n x n array
 \end{chapel}
 \end{example}
 
-\paragraph{Domains and Arrays}
+\subsubsection{Domains and Arrays}
 \index{domains}
 \index{arrays}
 In Chapel, the indices and values for a data set are maintained
@@ -387,20 +345,19 @@ and \emph{arrays} store the values for sets of data.  Arrays and domains may
 be arithmetic, sparse, associative, enumerated or opaque.
 
 \begin{example}
-The code below gives simple examples of how domains and arrays are declared
-and used.
-The variable \chpl{D2} is declared to have type \chpl{domain(2)}
-indicating that it is a two-dimensional domain.  The domain declaration
-also includes an initialization for the domain using the range literal
-expression \chpl{1..n},
-indicating that \chpl{D2} is an arithmetic domain.  The arrays declared
+The code below gives simple examples of how domains and arrays are
+declared and used.  The variable \chpl{D2} is declared to have
+type \chpl{domain(2)} indicating that it is a two-dimensional domain.
+The domain declaration also includes an initialization for the domain
+using the range literal expression \chpl{1..n}, indicating
+that \chpl{D2} is an arithmetic domain.  The arrays declared
 with \chpl{D2}, \chpl{A}, \chpl{B}, \chpl{C} are two-dimensional
-arithmetic integer arrays.  
+arithmetic integer arrays.
 
-The \chpl{for} loop statement demonstrates
-how domains are used to index into and iterate over entries in arrays.
-And, finally the assignment statement, \chpl{C = A + B} shows that
-whole array operations are supported in Chapel.
+The \chpl{for} loop statement demonstrates how domains are used to
+index into and iterate over entries in arrays.  And, finally the
+assignment statement, \chpl{C = A + B} shows that whole array
+operations are supported in Chapel.
 
 \begin{chapel}
 const D2: domain(2) = [1..n, 1..n];
@@ -414,16 +371,15 @@ C = A + B;
 \end{chapel}
 \end{example}
 
-An array must be specified with a domain in its variable declaration, and 
-it is linked with this domain during execution.
-When a domain is modified by adding or removing indices, all arrays 
-declared with this domain reflect this change.  
-Arrays and domains are passed by reference into functions but are
-assigned by value.  
+An array must be specified with a domain in its variable declaration,
+and it is linked with this domain during execution.  When a domain is
+modified by adding or removing indices, all arrays declared with this
+domain reflect this change.  Arrays and domains are passed by
+reference into functions but are assigned by value.
 
-A domain can be declared with a distribution function which indicates how the 
-data values in arrays declared with this domain are to be distributed across
-processors.
+A domain can be declared with a distribution function which indicates
+how the data values in arrays declared with this domain are to be
+distributed across processors.
 
 \begin{example}
 In the code below, the domain \chpl{DistD2} is declared to be a 
@@ -441,7 +397,7 @@ access to a specific part of an array or domain through slicing,
 reindexing, and array aliasing.   For more information about 
 domains and arrays see~\rsec{Domains_and_Arrays}.
  
-\paragraph{Enumerated Types}
+\subsubsection{Enumerations}
 \index{enum@\chpl{enum}}
 An \emph{enumerated} type defines an ordered set of named constants.
 By default, these constants have an associated 
@@ -464,18 +420,18 @@ wed is day number 4 of the week
 \end{commandline}
 \end{example}
 
-\paragraph{Tuple Types}
+\subsubsection{Tuples}
+
 \index{tuples}
-A \emph{tuple} is a ordered collection of types.
+A \emph{tuple} is an ordered collection of types.
 \begin{example}
-The following code shows two ways of declaring tuples.
-When the tuple contains multiple types, as in the variable
-\chpl{pt}, the tuple declaration specifies the component
-types of the tuple, separated by commas and contained within
-parentheses.  For the homogeneous tuple \chpl{x}, a short-hand
-notation can be used for its declaration.  The number of elements
-of the tuple, followed by \chpl{*} and the type can be used in
-this case.
+The following code shows two ways of declaring tuples.  When the tuple
+contains multiple types, as in the variable \chpl{pt}, the tuple
+declaration specifies the component types of the tuple, separated by
+commas and contained within parentheses.  For the homogeneous
+tuple \chpl{x}, a short-hand notation can be used for its declaration.
+The number of elements of the tuple, followed by \chpl{*} and the type
+can be used in this case.
 
 \begin{chapel}
 var pt: (int,real);
@@ -483,16 +439,16 @@ var x: 3*int;
 \end{chapel}
 \end{example}
 
-A tuple expression is a comma-separated list of expressions that
-is enclosed in parentheses.  Tuples can be declared and assigned to with
-tuple expressions.  When a tuple expression appears on the
-left-hand side of an assignment statement, the expression on the right-hand
-side is a \emph{destructured} tuple expression.  
+A tuple expression is a comma-separated list of expressions that is
+enclosed in parentheses.  Tuples can be declared and assigned to with
+tuple expressions.  When a tuple expression appears on the left-hand
+side of an assignment statement, the expression on the right-hand side
+is a \emph{destructured} tuple expression.
 
 \begin{example}
 
 The example below shows how the tuple variables \chpl{pt} and \chpl{x}
-are declared with tuple expression literals.  
+are declared with tuple expression literals.
 \begin{chapel}
 var pt = (1, 3.0);
 var x = (1, 1, 1);
@@ -511,10 +467,9 @@ There are a set of operators defined for variables of tuple type
 and elements of a tuple are accessed through indexing and destructuring.  
 For more detailed information about tuples see~\rsec{Tuples}.
 
-Tuples are very useful constructs.  They can be used in 
-functions with variable length argument lists, index expressions
-for \chpl{for} loops and in the assignment to complex variables.
-One such example follows. 
+Tuples are very useful constructs.  They can be used in functions with
+variable length argument lists, index expressions for \chpl{for} loops
+and in the assignment to complex variables.  One such example follows.
 
 \begin{example}
 Tuples may be used in the assignment to a complex variable.
@@ -526,25 +481,25 @@ z = (x,y):complex;
 \end{chapel}
 \end{example}
 
-\paragraph{Classes}
+\subsubsection{Classes}
 \index{classes}
 \emph{Classes} are data structures defined with fields and methods.
-A variable that is declared to be of a class type is a reference
-to an object, or instance, of that class. 
+A variable that is declared to be of a class type is a reference to an
+object, or instance, of that class.
  
-An instance of a class is created by calling its constructor
-in a variable declaration.  Each call to the constructor
-instantiates a new object of the class and returns a reference to 
-the object.  Chapel provides a default class constructor for each class.
-For more information about classes see~\rsec{Classes}.
+An instance of a class is created by calling its constructor in a
+variable declaration.  Each call to the constructor instantiates a new
+object of the class and returns a reference to the object.  Chapel
+provides a default class constructor for each class.  For more
+information about classes see~\rsec{Classes}.
 
 \begin{example}
-The following code gives an example of the circle class.  
-The variable, \chpl{x}, is an instance of the circle class with
-a radius of \chpl{1.0}.  The variable \chpl{y} is assigned the 
-reference to the same object as \chpl{x}.  When the radius of \chpl{y} is
-modified, the radius of \chpl{x} is modified as well.  Writing the area
-of \chpl{x} and \chpl{y} prints the same value, \chpl{12.56}.
+The following code gives an example of the circle class.  The
+variable, \chpl{x}, is an instance of the circle class with a radius
+of \chpl{1.0}.  The variable \chpl{y} is assigned the reference to the
+same object as \chpl{x}.  When the radius of \chpl{y} is modified, the
+radius of \chpl{x} is modified as well.  Writing the area of \chpl{x}
+and \chpl{y} prints the same value, \chpl{12.56}.
 \begin{chapel}
 class circle {
   var radius: real;
@@ -567,22 +522,22 @@ This program has the output
 \end{commandline}
 \end{example}
 
-\paragraph{Records}
+\subsubsection{Records}
 \index{records}
 \emph{Records} are similar to classes.  They contain fields and methods
 and can inherit fields and methods from other records.  A record,
-however, directly contains the data associated with the fields
-in the record.  A record is not a reference to storage location as
-classes are.  Thus, records are assigned by value.  For more information
-about records see~\rsec{Records}.
+however, directly contains the data associated with the fields in the
+record.  A record is not a reference to storage location as classes
+are.  Thus, records are assigned by value.  For more information about
+records see~\rsec{Records}.
 
 \begin{example}
-In the example code below, \chpl{p} and \chpl{q} are both
-variables of the record \chpl{point}.  They are distinct storage
-locations that are updated independently of each other.
-When \chpl{p} is assigned to \chpl{q}, \chpl{q} then contains the
-same values as \chpl{p}.  But, when \chpl{q} is updated, \chpl{p}
-is not since they are referring to the same storage location.
+In the example code below, \chpl{p} and \chpl{q} are both variables of
+the record \chpl{point}.  They are distinct storage locations that are
+updated independently of each other.  When \chpl{p} is assigned
+to \chpl{q}, \chpl{q} then contains the same values as \chpl{p}.  But,
+when \chpl{q} is updated, \chpl{p} is not since they are referring to
+the same storage location.
 
 \begin{chapel}
 record point {
@@ -606,50 +561,41 @@ This program has the output:
 \end{commandline}
 \end{example}
 
-\paragraph{The File Type}
-\index{file type}
-Chapel provides a built-in \chpl{file} type to handle input and
-output to files.  Variables declared to be of this type store
-information about the files that are to be accessed or created during
-execution, and they provide methods for reading and writing to these
-files.  Variables of the \chpl{file} type contain the
-fields:  \chpl{filename}, \chpl{path}, and \chpl{mode}.
-And, they provide the following methods:
-\chpl{open}, \chpl{close}, \chpl{read}, \chpl{write} and \chpl{writeln}.
-For more information about file input and output see~\rsec{Intro_Input_and_Output} and~\rsec{Input_and_Output}.
+\subsubsection{Summary of Non-Primitive Types}
 
-\paragraph{The Locale Type}
-\index{locale@\chpl{locale}}
-In Chapel, the term {\em locale} refers to the processing unit in a parallel
-computer system.  The \chpl{locale} type is used to associate 
-computations and data to these processing units.  Chapel provides
-a predefined array \chpl{Locales} where each entry is of the \chpl{locale}
-type.  User-defined variables of \chpl{locale} type can be declared to store 
-entries from this \chpl{Locales} array or the entries can be accessed 
-directly to indicate where data should be reside in memory or where computations
-should be executed.  For more information about how locale types are defined
-and used see~\rsec{Locales} and~\rsec{Specifying_Locales_for_Computation}. 
+The non-primitive types are listed in the table below, along
+with their default initial values for variables of that type. 
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+{\bf Type} & {\bf Default Initial Value}\\
+\hline
+\chpl{range} & \chpl{1..0} \\
+\hline
+\chpl{domain} & \emph{empty range for each dimension} \\
+\hline
+\chpl{array} & \emph{each element has its default initial value} \\
+\hline
+\chpl{enum} & \emph{first enumeration constant} \\
+\hline
+\chpl{tuple} & \emph{each component has its default initial value} \\
+\hline
+\chpl{class} & \chpl{nil} \\
+\hline
+\chpl{record} & \emph{default constructor with zero arguments} \\
+\hline
+\end{tabular}
+\end{center}
 
-\paragraph{The Type Alias}
-\index{type aliases}
-A \emph{type alias} may defined for any type.  When used, it has the
-same meaning as using the aliased type directly.
-\begin{chapel}
-type elemType = real(32);
-var alpha: elemType; //alpha is 32-bit real
-\end{chapel}
-For more information about type aliases see~\rsec{Type_Aliases}.
+\subsection{Expressions}
 
-\subsubsection{Operators}
-Chapel provides a rich set of operators.  For more information about
-operators that are supported in the Chapel language 
-see~ \rsec{Arithmetic_Operators}~--~\rsec{Miscellaneous_Operators}.
+Chapel provides a rich set of expressions described
+in~\rsec{Expressions}.
 
-\paragraph{Operator Precedence}
 \index{operators!precedence}
-The following table lists Chapel language operators, the associativity
-and use of each.  The operators are listed in precedence order, from higher
-to lower.
+The following table provides a summary of Chapel's expressions.  They
+are listed in order of precedence (high to low) and with an
+associativity:
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
@@ -681,28 +627,88 @@ unary \verb@+ - ~@ & right & sign and bitwise negation \\
 \end{tabular}
 \end{center}
 
-\paragraph{Assignment Operators}
+\paragraph{Scans and Reductions}
+Chapel supports standard and user-defined reduction and scan
+operators.  These operators precede the keyword \chpl{scan}
+or \chpl{reduce}, depending on the desired operation.
+
+The built-in Chapel scan and reduction operators are;
+\begin{chapel}
++ * && || & | ^ min max
+\end{chapel}
+For more information about reductions, scans and user-defined
+operators for either see~\rsec{Reductions_and_Scans}.
+
+\paragraph{Query Expression}
+\index{query expression}
+The query expression is used to query the type of a generic function argument
+and assign that type to a variable.  For more information about
+query expressions and generic functions see~\chpl{The_Query_Expression} 
+and~\rsec{Generic_Functions}.
+
+\begin{example}
+The following definition of the generic function \chpl{sumOfThree} 
+ensures that all arguments and the return value are of the same type, 
+without specifying the type.
+The type of the first argument in the \chpl{sumOfThree}
+function is queried and assigned to the variable \chpl{t}.  The remaining
+arguments and the return value are then specified to also be of type \chpl{t}.
+\begin{chapel}
+def sumOfThree(x:?t, y:t, z:t):t {
+   return x + y + z;
+}
+\end{chapel}
+\end{example}
+
+\paragraph{Let Expression} 
+\index{let@\chpl{let}}
+The \chpl{let}--\chpl{in} expression defines variables to
+be used only in the expression following the \chpl{in} keyword.
+For more information about the \chpl{let} expression 
+see~\rsec{Let_Expressions}.
+
+\begin{example}
+\begin{chapel}
+x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
+    in ((-b + t1)/t2, (-b - t1)/t2);
+\end{chapel}
+\end{example}
+
+\paragraph{Conditional Expression} 
+\index{conditional expressions}
+Chapel provides a conditional expression that can be evaluated
+at the expression level.  For more information about conditional
+expressions see~\rsec{Conditional_Expressions}.
+
+\begin{example}
+\begin{chapel}
+var half = if (i % 2) then i/2 +1 else i/2;
+\end{chapel}
+\end{example}
+
+\subsection{Statements}
+
+\paragraph{Assignment}
 \index{operators!assignment}
-Supported assignment operators:
+Assignment in Chapel is supported by the following operators:
 \begin{chapel}
  = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
 \end{chapel}
 
-An assignment statement contains a left hand-side side
-expression followed by an assignment operator and a right-hand
-side expression.
-An assignment operator that has a binary operator
-as a prefix is a short-hand notation for applying the binary
-operator to the left and right-hand side expressions 
-assigning the result to the left-hand side.  For example,
+An assignment statement contains a left hand-side side expression
+followed by an assignment operator and a right-hand side expression.
+An assignment operator that has a binary operator as a prefix is a
+short-hand notation for applying the binary operator to the left and
+right-hand side expressions assigning the result to the left-hand
+side.  For example,
 \chpl{x += 1} is an alternative way of writing \chpl{x = x + 1}.
 
-\paragraph{The Swap Operator}
+\paragraph{Swap}
 \index{operators!swap}
 The swap operator, \chpl{<=>} swaps the values between
 the left and right-hand side expressions.
 \begin{chapel}
-x <=> y; //swaps the value in x with the value in y
+x <=> y; // swaps the value in x with the value in y
 \end{chapel}
 
 \paragraph{The Array Alias Operator}
@@ -716,22 +722,6 @@ var A11 => A[block1,block1];
 \end{chapel}
 For more information about array aliasing see~\rsec{Array_Aliases}.
 
-\paragraph{Scan and Reduction Operators}
-Chapel supports standard and user-defined reduction and scan operators.
-These operators precede the keyword \chpl{scan} or \chpl{reduce}, depending
-on the desired operation.
-
-The built-in Chapel scan and reduction operators are;
-
-\begin{chapel}
-+ * && || & | ^ min max
-\end{chapel}
-
-For more information about reductions, scans and user-defined operators
-for either see~\rsec{Reductions_and_Scans}.
-
-\subsubsection{Serial Statements and Expressions}
-
 \paragraph{Block Statement}  
 \index{block level statement}
 A block statement is delimited by braces, \{ \} and it
@@ -739,9 +729,9 @@ contains a set of Chapel statements separated by semi-colons.
 Variables declared within a block statement are local to that block.
 
 \begin{example}
-The following code shows a block of statements for computing
-a Givens rotation.  The variable \chpl{tau} is declared 
-within the block as is local to this block.
+The following code shows a block of statements for computing a Givens
+rotation.  The variable \chpl{tau} is declared within the block as is
+local to this block.
 \begin{chapel}
 
 var a, b: real;
@@ -776,7 +766,6 @@ than a domain.  Also, since the body of this loop is not a block
 statement, the keyword \chpl{do} is needed to delimit the loop
 body. 
 \begin{chapel}
-
 var x, y: [D] real;
 
 for ind in D { 
@@ -786,7 +775,6 @@ for ind in D {
 
 for (ex, ey) in (x, y) do 
   writeln((ex, ey));
-
 \end{chapel}
 \end{example}
 
@@ -858,64 +846,19 @@ to index into the array \chpl{x} if it has the appropriate
 type.
 \end{example}
 
-\paragraph{Query Expression}
-\index{query expression}
-The query expression is used to query the type of a generic function argument
-and assign that type to a variable.  For more information about
-query expressions and generic functions see~\chpl{The_Query_Expression} 
-and~\rsec{Generic_Functions}.
-
-\begin{example}
-The following definition of the generic function \chpl{sumOfThree} 
-ensures that all arguments and the return value are of the same type, 
-without specifying the type.
-The type of the first argument in the \chpl{sumOfThree}
-function is queried and assigned to the variable \chpl{t}.  The remaining
-arguments and the return value are then specified to also be of type \chpl{t}.
-\begin{chapel}
-def sumOfThree(x:?t, y:t, z:t):t {
-   return x + y + z;
-}
-\end{chapel}
-\end{example}
-
-\paragraph{Let Expression} 
-\index{let@\chpl{let}}
-The \chpl{let}--\chpl{in} expression defines variables to
-be used only in the expression following the \chpl{in} keyword.
-For more information about the \chpl{let} expression 
-see~\rsec{Let_Expressions}.
-
-\begin{example}
-\begin{chapel}
-x = let t1 = sqrt(b*b - 4.0*a*c), t2 = 2.0*a
-    in ((-b + t1)/t2, (-b - t1)/t2);
-\end{chapel}
-\end{example}
-
-\paragraph{Conditional Expression} 
-\index{conditional expressions}
-Chapel provides a conditional expression that can be evaluated
-at the expression level.  For more information about conditional
-expressions see~\rsec{Conditional_Expressions}.
-
-\begin{example}
-\begin{chapel}
-var half = if (i % 2) then i/2 +1 else i/2;
-\end{chapel}
-\end{example}
-
-\subsubsection{Functions and Iterators}
+\subsection{Functions and Iterators}
 \paragraph{Function Definitions}
-\emph{Functions} are defined with the keyword \chpl{def}, a name and a list of function
-arguments.  Optionally, intents and types for the function arguments, return types and 
-a where clause can be specified.  
+
+Functions are defined with the keyword \chpl{def}, a name and a list
+of function arguments.  Optionally, intents and types for the function
+arguments, return types and a where clause can be specified.
 
 \begin{example}
-The example below defines a simple function that computes the area of a rectangle.
-The \chpl{areaRect} function is defined to take two function arguments of type
-\chpl{real} and return a value of type \chpl{real}.  If this function is called with 
-function arguments that have a type other than \chpl{real}, it will result in a function
+The example below defines a simple function that computes the area of
+a rectangle.  The \chpl{areaRect} function is defined to take two
+function arguments of type \chpl{real} and return a value of
+type \chpl{real}.  If this function is called with function arguments
+that have a type other than \chpl{real}, it will result in a function
 resolution error at compile time.
 \begin{chapel}
 def areaRect(x:real, y:real): real {
@@ -924,11 +867,11 @@ def areaRect(x:real, y:real): real {
 \end{chapel}
 \end{example}
 
-The Chapel language supports function overloading.  At compile time, function
-resolution will identify the most specific function for each function call from a set
-of candidate functions depending on the number of function arguments, the types 
-specified for the input and return values, and any where clauses.
-
+The Chapel language supports function overloading.  At compile time,
+function resolution will identify the most specific function for each
+function call from a set of candidate functions depending on the
+number of function arguments, the types specified for the input and
+return values, and any where clauses.
 
 \paragraph{Function Intents}
 \index{functions!intents}
@@ -945,15 +888,15 @@ call the formal argument is assigned to the actual argument at the call site.
 The \chpl{inout} intent indicates that the actual argument be copied to 
 the formal argument and then copied back after the call.
 
-If the intent is omitted, then the
-argument has a blank intent, copying in the value using the assignment 
-operator.  Arguments with a blank intent cannot be assigned within a function.
-Actual arguments of array and domain types are handled differently when
-they have a blank intent.  In this case, array and domain arguments are 
-passed by reference.  Thus, they can be modified within the function and 
-those modifications are reflected at the call site.  Arrays arguments 
-with non-blank intents are handled according to definition, being copied 
-to and from the formal arguments.  Actual arguments of domain types can
+If the intent is omitted, then the argument has a blank intent,
+copying in the value using the assignment operator.  Arguments with a
+blank intent cannot be assigned within a function.  Actual arguments
+of array and domain types are handled differently when they have a
+blank intent.  In this case, array and domain arguments are passed by
+reference.  Thus, they can be modified within the function and those
+modifications are reflected at the call site.  Arrays arguments with
+non-blank intents are handled according to definition, being copied to
+and from the formal arguments.  Actual arguments of domain types can
 only have a blank intent.
 
 Further information about function intents is in~\rsec{Intents}.
@@ -981,11 +924,11 @@ defined.  Further, this routine can be called with arrays of
 any domain type, so it can be called with arrays of arbitrary dimension.
 \end{example}
 
-Generic functions use \emph{query expressions} to query the types
-or domains of arguments.
-The query expression uses a \chpl{?} to indicate that the type of the
-preceding variable be queried and assigned to the following variable.
-For more information about generic functions, see~\rsec{Generic_Functions}.
+Generic functions use \emph{query expressions} to query the types or
+domains of arguments.  The query expression uses a \chpl{?} to
+indicate that the type of the preceding variable be queried and
+assigned to the following variable.  For more information about
+generic functions, see~\rsec{Generic_Functions}.
 
 \begin{example}
 The generic function \chpl{average2} returns the average of the
@@ -1021,14 +964,14 @@ For more information about variable length argument lists
 see~\rsec{Variable_Length_Argument_Lists}.
 
 \begin{example}
-In the code below, 
-the function \chpl{writeLines} is defined to write each string
-argument on a separate line.  The symbol \chpl{...} in the argument
-list indicates the number of arguments is variable.  The notation \chpl{?n} 
-indicates to query the number of arguments and assign that number
-to \chpl{n}.  The variable \chpl{eachLine} is a homogeneous tuple
-that contains \chpl{n} elements of type \chpl{string}.  The
-function contains a \chpl{for} loop that writes each element of
+In the code below, the function \chpl{writeLines} is defined to write
+each string argument on a separate line.  The symbol \chpl{...} in the
+argument list indicates the number of arguments is variable.  The
+notation \chpl{?n} indicates to query the number of arguments and
+assign that number to \chpl{n}.  The variable \chpl{eachLine} is a
+homogeneous tuple that contains \chpl{n} elements of
+type \chpl{string}.  The function contains a \chpl{for} loop that
+writes each element of
 \chpl{eachLine} on a separate line.
 
 \begin{chapel}
@@ -1055,13 +998,12 @@ line
 
 \paragraph{Iterators}
 \index{iterators}
-\emph{Iterators} generate sequences of values.
-They are defined similarly to functions, except that
-they contain at least one \chpl{yield} statement.
-Iterators may be called in \chpl{for} and \chpl{forall} loop
-statements.  For each iteration of the loop, a value from the
-iterator is yielded and the body of the loop executed.
-More information about iterators is in~\rsec{Iterators}.
+Iterators generate sequences of values.  They are defined similarly to
+functions, except that they contain at least one \chpl{yield}
+statement.  Iterators may be called in \chpl{for} and \chpl{forall}
+loop statements.  For each iteration of the loop, a value from the
+iterator is yielded and the body of the loop executed.  More
+information about iterators is in~\rsec{Iterators}.
 \begin{example}
 \begin{chapel}
 def evens(n) {
@@ -1076,7 +1018,7 @@ The above code gives an example of an iterator definition and use.
 The iterator, \chpl{evens} yields a tuple of integers at each iteration.
 \end{example}
 
-\subsubsection{Input and Output}
+\subsection{Input and Output}
 \label{Intro_Input_and_Output}
 
 \paragraph{File I/O}
@@ -1188,17 +1130,17 @@ This code produces the output:
 \end{example}
 
 
-\subsubsection{Parallel Features}
-The Chapel language is designed ease the challenges of parallel 
-programming.  Since the language has specific constructs to support
-parallel computations, the user can easily express the parallel 
-work, and the compiler can easily identify it.
+\subsection{Parallelism}
 
-Chapel supports both data parallelism and task
-parallelism.  To efficiently manage both types of parallelism 
-a multi-processor system, users can specify how data and
-work is to be distributed across processors by using
-distribution and locality features.
+The Chapel language is designed to ease the challenges of parallel
+programming.  Since the language has specific constructs to support
+parallel computations, the user can easily express the parallel work,
+and the compiler can easily identify it.
+
+Chapel supports both data parallelism and task parallelism.  To
+efficiently manage both types of parallelism a multi-processor system,
+users can specify how data and work is to be distributed across
+processors by using distribution and locality features.
 
 \begin{status}
 Currently, the Chapel compiler supports only single-locale features.
@@ -1210,13 +1152,12 @@ the language specification when they are available in the compiler.
 \end{status}
 
 \paragraph{Data Parallelism}
-Data parallelism refers to work where the same operations can be executed 
-concurrently on a set of data.  
-To support data parallel work, the Chapel language provides the parallel 
-\chpl{forall} statement.  The iterations of 
-a \chpl{forall} loop execute concurrently, as determined by the compiler 
-and the runtime library.  For more information about \chpl{forall}
-loops see~\rsec{Forall}.
+Data parallelism refers to work where the same operations can be
+executed concurrently on a set of data.  To support data parallel
+work, the Chapel language provides the parallel \chpl{forall}
+statement.  The iterations of a \chpl{forall} loop execute
+concurrently, as determined by the compiler and the runtime library.
+For more information about \chpl{forall} loops see~\rsec{Forall}.
 
 The Chapel language provides an alternative, short-hand notation for 
 defining a parallel loop.  This notation omits the \chpl{forall} keyword
@@ -1289,10 +1230,10 @@ cobegin {
 \end{chapel}
 \end{example}
 
-In addition, the \chpl{coforall} loop statement is provided in
-order to express the concurrent statements within a \chpl{cobegin}
-in a more efficient way.  For more details about the \chpl{coforall}
-loop statement see~\rsec{Coforall}.
+In addition, the \chpl{coforall} loop statement is provided in order
+to express the concurrent statements within a \chpl{cobegin} in an
+easier way.  For more details about the \chpl{coforall} loop statement
+see~\rsec{Coforall}.
 
 \begin{example}
 If three consumer computations needed to be started, a \chpl{cobegin}
@@ -1307,7 +1248,6 @@ cobegin {
 
 By using a \chpl{coforall} statement instead, the code is shorter
 and less redundant.
-
 \begin{chapel}
 coforall i in 1..3 do
   runConsumer();
@@ -1315,15 +1255,14 @@ coforall i in 1..3 do
 \end{example}
 
 \paragraph{Synchronization Variables}
-Synchronization between computations is managed through
-\chpl{sync} and \chpl{single} variables.
-Sync variables have a {\em full} or {\em empty} state associated
-with them that is modified when read and written to and control
-access to these variables between threads of computation.
-Single variables are similar to sync variables, but they are assigned once.  
-Using a single variable before it is assigned, 
+Synchronization between computations is managed through \chpl{sync}
+and \chpl{single} variables.  Sync variables have a {\em full} or {\em
+empty} state associated with them that is modified when read and
+written to and control access to these variables between threads of
+computation.  Single variables are similar to sync variables, but they
+are assigned once.  Using a single variable before it is assigned,
 suspends the computation until another task assigns a value to it.
-For more information about synchronization variables 
+For more information about synchronization variables
 see~\rsec{Synchronization_Variables}.
 \begin{chapel}
 var x: single int;
@@ -1332,8 +1271,8 @@ var y: sync real;
 
 \paragraph{Suppressing Parallelism}
 It is often necessary to suppress concurrency during sections of
-parallel programs.   Chapel provides a \chpl{serial} statement
-to serialize statements within a parallel region.  For more information
+parallel programs.  Chapel provides a \chpl{serial} statement to
+serialize statements within a parallel region.  For more information
 about the \chpl{serial} statement see~\rsec{Serial}.
 
 
@@ -1343,8 +1282,18 @@ the use of \chpl{scan} and \chpl{reduce} expressions.  The language
 provides built-in \chpl{scan} and \chpl{reduce} operators.  For more
 information about scans and reductions see~\rsec{Reductions_and_Scans}.
 
-
 \paragraph{Data Distributions and Locality}
+
+\index{locale@\chpl{locale}}
+In Chapel, the term {\em locale} refers to the processing unit in a
+parallel computer system.  Chapel provides a predefined
+array \chpl{Locales} where each entry is of the \chpl{locale} type.
+User-defined variables of \chpl{locale} type can be declared to store
+entries from this \chpl{Locales} array or the entries can be accessed
+directly to indicate where data should be reside in memory or where
+computations should be executed.  For more information about locales,
+see~\rsec{Locales} and~\rsec{Specifying_Locales_for_Computation}.
+
 Chapel manages the distribution of data through the use of domains
 and distributions.  A distribution is a mapping of a domain's indices to 
 locales.  When a domain is declared with a distribution, then any iteration
