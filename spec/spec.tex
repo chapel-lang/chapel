@@ -12,7 +12,14 @@
 \usepackage[titles]{tocloft}
 \usepackage{ifpdf}
 \ifpdf
-\usepackage[pdftex,bookmarks,plainpages=false]{hyperref}
+\usepackage[pdftex,
+            bookmarks,
+            plainpages=false,
+            breaklinks,
+            pdftitle={Chapel Language Specification},
+            pdfauthor={Cray Inc, 411 First Ave S Suite 600, Seattle, WA 98104},
+            pdfsubject={Cascade High Productivity Language}
+           ]{hyperref}
 \else
 \usepackage[ps2pdf]{hyperref}
 \fi

@@ -1,7 +1,7 @@
 all:
-	pdflatex spec
+	pdflatex -file-line-error -halt-on-error spec
 	makeindex spec
-	pdflatex spec
+	pdflatex -file-line-error -halt-on-error spec
 
 usedvi:
 	latex spec
