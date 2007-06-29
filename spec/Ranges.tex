@@ -18,7 +18,7 @@ omitted.  Unbounded ranges conceptually represent a countably infinite
 number of values.
 
 \subsection{Range Types}
-
+\label{Range_Types}
 \index{ranges!types}
 
 The type of a range in Chapel is characterized by three things:
@@ -66,7 +66,8 @@ var r: range(int(64), bounded, stridable=true);
 \end{chapel}
 \end{example}
 
-\subsection{Bounded Range Literal Values}
+\subsection{Literal Range Values}
+\label{Range_Literals}
 \index{ranges!literals} 
 
 Range literals are specified as follows:
@@ -75,6 +76,10 @@ range-literal:
   bounded-range-literal
   unbounded-range-literal
 \end{syntax}
+
+\subsubsection{Bounded Range Literals}
+\label{Bounded_Ranges}
+\index{ranges!bounded}
 
 A bounded range is specified by the syntax
 \begin{syntax}
@@ -94,11 +99,81 @@ conceptually adding the low and high bounds together.  The boundedness
 of such a range is \chpl{bounded}.  The stridability of the range is
 \chpl{false}.
 
+\subsubsection{Unbounded Range Literals}
+\label{Unbounded_Ranges}
+\index{ranges!unbounded}
+
+An unbounded range is specified by the syntax
+\begin{syntax}
+unbounded-range-literal:
+  expression ..
+  .. expression
+  ..
+\end{syntax}
+
+The first form results in a \chpl{boundedLow} range, the second in a
+\chpl{boundedHigh} range, and the third in a \chpl{boundedNone} range.
+
+Unbounded ranges can be iterated over with zipper iteration and their
+shape conforms to the shape of the other iterators they are being
+iterated over with.
+\begin{example}
+The code
+\begin{chapel}
+for i in (1..5, 3..) do
+  write(i, "; ");
+\end{chapel}
+produces the output ``(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); ''.
+\end{example}
+
+It is an error to zip an unbounded range with a range that does not
+have a stride with the same sign.
+
+Unbounded ranges can also be used to index into ranges, domains,
+arrays, and strings.  In thesse cases, elided bounds are inherited
+from the bounds of the expression being indexed.
+
+
+\subsection{Range Methods}
+\index{low@\chpl{low}}
+\index{high@\chpl{high}}
+\index{stride@\chpl{stride}}
+
+\begin{protohead}
+def range.low: eltType
+def range.high: eltType
+def range.stride: int
+\end{protohead}
+\begin{protobody}
+These routines respectively return the low bound, the high bound, and
+the stride of the range.  The type of the returned low and high bound
+is the element type of the range.
+\end{protobody}
+
+
+\subsection{Range Assignment}
+\label{Range_Assignment}
+\index{ranges!assignment}
+
+Assigning one range to another results in its low, high, and stride
+values being copied from the source range to the destination range.
+
+In order for range assignment to be legal, the element type of the
+source range must be implicitly coercible to the element type of the
+destination range.  The two range types must have the same boundedness
+parameter.  It is legal to assign a non-stridable range to a stridable
+range, but illegal to asssign a stridable range to a non-stridable
+range.
+
+
 \subsection{Range Operators}
+\label{Range_Operators}
+\index{ranges!operators}
 
 \subsubsection{By Operator}
 \label{Strided_Ranges}
 \index{ranges!strided}
+\index{ranges!by operator}
 
 The \chpl{by} operator can be applied to any range to create a strided
 range.  Its syntax is as follows:
@@ -110,6 +185,96 @@ expression `by' expression
 The by operator takes a range and an integer to yield a new range that
 is strided by the integer.  Striding a strided range results in a
 stride whose value is the product of the two strides.
+
+\subsubsection{Arithmetic Operators}
+\label{Range_Arithmetic}
+\index{ranges!arithmetic operators}
+
+The following arithmetic operators are defined on ranges and integral
+types:
+
+\begin{chapel}
+def +(r: range, s: integral): range
+def +(s: integral, s: range): range
+def -(r: range, s: integral): range
+def -(s: integral, s: range): range
+def *(r: range, s: integral): range
+def *(s: integral, s: range): range
+def /(r: range, s: integral): range
+def /(s: integral, s: range): range
+\end{chapel}
+
+The \chpl{+} and \chpl{-} operators apply the scalar via the operator
+to the range's low and high bounds, producing a shifted version of the
+range.  The element type of the resulting range is based on the
+element type of applying the operator to the input range's element
+type and the scalar type.  The bounded and stridable parameters for
+the result range are the same as for the input range.
+
+The \chpl{*} and \chpl{/} operators apply the scalar via the operator
+to the range's low and high bounds as well as to its stride value,
+producing a shifted and scaled version of the range.  The element type
+of the resulting range is based on the element type of applying the
+operator to the range's element type and the scalar type.  The bounded
+parameter for the result range is the same as for the input range.
+The stridable parameter for the result range is always set to
+\chpl{true}.
+
+\begin{example}
+The following code creates a bounded, non-stridable range \chpl{r}
+which has an element type of \chpl{int} representing the values ${0,
+  1, 2, 3}$.  It then uses the \chpl{*} and \chpl{+} operators to
+create a second range \chpl{r2} representing the values ${1, 3, 5,
+  7}$.  The \chpl{r2} range is bounded, stridable, and represents
+values of type \chpl{int}
+\begin{chapel}
+var r = 0..3;
+var r2 = (r * 2) + 1;
+\end{chapel}
+\end{example}
+
+
+\subsubsection{Range Slicing}
+\label{Range_Slicing}
+\index{ranges!slicing}
+
+Ranges can be \emph{sliced} using other ranges to create new
+sub-ranges.  Range slicing is accomplished using either square
+brackets or parenthesis using the following syntax:
+
+\begin{syntax}
+slice-expr:
+  expression [ expression ]
+  expression ( expression )
+\end{syntax}
+
+Where the first expression is the range being sliced and the second
+expression is the range expressing the slice.  The resulting range
+represents the intersection between the two ranges.  If the slicing
+range is unbounded in one or both dimensions, it inherits its upper
+and lower bounds from the range being sliced.
+
+\begin{example}
+In the following example, \chpl{r} represents the integers from 1 to
+10 inclusive.  Ranges \chpl{r2} and \chpl{r2} are defined using range
+slices and represent the indices from 3 to 10 and the odd integers
+between 1 and 10 respectively.
+\begin{chapel}
+var r = 1..10;
+var r2 = r[3..];
+var r3 = r[1.. by 2];
+\end{chapel}
+\end{example}
+
+
+\begin{status}
+Slicing strided ranges is not currently supported.
+\end{status}
+
+
+
+
+
 
 \subsubsection{Open Interval Notation}
 \label{Open_Interval}
@@ -141,55 +306,4 @@ combined with the fact that these cases are not as important as the
 above for 0-based programming.
 \end{rationale}
 
-\subsection{Range Assignment}
-\label{Range_Assignment}
-\index{ranges!assignment}
 
-\subsection{Querying the Bounds and Stride of a Range}
-\index{low@\chpl{low}}
-\index{high@\chpl{high}}
-\index{stride@\chpl{stride}}
-
-\begin{protohead}
-def range.low: eltType
-def range.high: eltType
-def range.stride: int
-\end{protohead}
-\begin{protobody}
-These routines respectively return the low bound, the high bound, and
-the stride of the range.  The type of the returned low and high bound
-is the element type of the range.
-\end{protobody}
-
-\subsection{Unbounded Ranges}
-\label{Unbounded_Ranges}
-\index{ranges!unbounded}
-
-An unbounded range is specified by the syntax
-\begin{syntax}
-unbounded-range-literal:
-  expression ..
-  .. expression
-\end{syntax}
-
-Unbounded ranges can be iterated over with zipper iteration and their
-shape conforms to the shape of the other iterators they are being
-iterated over with.
-\begin{example}
-The code
-\begin{chapel}
-for i in (1..5, 3..) do
-  write(i);
-\end{chapel}
-produces the output ``(1, 3)(2, 4)(3, 5)(4, 6)(5, 7)''.
-\end{example}
-
-It is an error to zip an unbounded range with a range that does not
-have the same sign stride.
-
-Unbounded ranges can be used to index into ranges, domains, arrays,
-and strings.  In thesse cases, the elided bound conforms to the
-expression being indexed.
-\begin{status}
-Indexing by unbounded ranges is not yet supported.
-\end{status}
