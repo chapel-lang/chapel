@@ -109438,3 +109438,16 @@ Modified files:
 	              Parallelism_and_Synchronization.tex 
 	              Standard_Modules.tex Tuples.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 11:25:57 -- bradc
+
+Log message:
+	Wrapped up my edits to the spec.  Finished updating standard
+	module capabilities and added methods for locale types.
+	Spell checked these changes.
+
+Modified files:
+	chapel/spec/: Locality_and_Distribution.tex MODS 
+	              Standard_Modules.tex 
+
