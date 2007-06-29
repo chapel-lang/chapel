@@ -19,7 +19,7 @@ linkedList     : nested generic classes; iterators, writeThis methods
 norm           : reductions; function overloading and where clauses; modules
 prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
-reductions     : minloc and maxloc array reductions
+reductions     : minloc, maxloc, + and && array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 tree           : unbounded task parallelism using cobegin
@@ -97,7 +97,7 @@ linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
 norm           |   *   |       |   x   |   x   |       |       |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
-reductions     |       |   x   |       |       |       |   x   |       |
+reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
@@ -208,7 +208,7 @@ linkedList     |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
-reductions     |       |       |       |       |   x   |       |       |
+reductions     |       |   *   |   *   |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 tree           |       |       |       |       |       |       |       |

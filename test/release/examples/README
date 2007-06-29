@@ -20,7 +20,7 @@ demonstrate various Chapel features:
      linkedList.chpl        : generic linked list example
      norm.chpl              : sample module for computing array norms
      prodCons.chpl          : producer-consumer example using circular buffer
-     reductions.chpl        : finds the minimum and maximum values in an array
+     reductions.chpl        : applies several array reductions on a 2D array
      quicksort.chpl         : parallel quick sort using cobegin and serial
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example

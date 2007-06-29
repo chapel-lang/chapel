@@ -1,4 +1,4 @@
-A is:
+A is: 
 0.544963 0.949846 0.690166 0.134349 0.237489
 0.639805 0.0408904 0.919889 0.811542 0.251317
 0.146763 0.917578 0.806463 0.677173 0.662934
@@ -7,3 +7,5 @@ A is:
 The maximum value in A is: A(4, 3) = 0.967948
 The minimum value in A is: A(2, 2) = 0.0408904
 The difference is: 0.927058
+The Euclidean norms of each column are: 0.990725 1.65929 1.73932 1.32467 1.24645
+Some values in A are less than 0.25
