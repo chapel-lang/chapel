@@ -109395,3 +109395,15 @@ Modified files:
 	chapel/test/release/examples/: reductions.chpl reductions.good 
 	                               README README.features 
 
+---------------------------------------------------------------------------
+
+06/29/07 10:31:34 -- bradc
+
+Log message:
+	Finished my pass on the Ranges chapter for this release.
+	It's not amazingly pristine, but it covers the necessary
+	material acceptably I think.
+
+Modified files:
+	chapel/spec/: MODS Ranges.tex Types.tex spec.tex 
+
