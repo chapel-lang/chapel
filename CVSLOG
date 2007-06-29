@@ -109348,3 +109348,23 @@ Log message:
 Modified files:
 	chapel/spec/: Makefile spec.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 09:25:59 -- deitz
+
+Log message:
+	Added one test that shows assigning a local variable via a nested
+	function call correctly disables copy propagation.
+	
+	Added a future of a nested var iterator that attempts to return a
+	variable local to the outer function but does not return a reference
+	to it.
+
+Added files:
+	chapel/test/functions/deitz/nested/: 
+	                                     test_nested_var_iterator.chpl 
+	                                     test_nested_var_iterator.future 
+	                                     test_nested_var_iterator.good 
+	                                     test_nested_write.chpl 
+	                                     test_nested_write.good 
+
