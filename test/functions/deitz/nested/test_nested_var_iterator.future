@@ -1,0 +1,1 @@
+bug: nested var iterator returns outer locals
