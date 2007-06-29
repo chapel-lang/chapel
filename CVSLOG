@@ -109451,3 +109451,13 @@ Modified files:
 	chapel/spec/: Locality_and_Distribution.tex MODS 
 	              Standard_Modules.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 15:11:28 -- deitz
+
+Log message:
+	Cleanup pass over language overview in preparation for release.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
