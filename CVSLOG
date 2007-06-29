@@ -109301,3 +109301,16 @@ Log message:
 Modified files:
 	chapel/spec/: Makefile spec.tex 
 
+---------------------------------------------------------------------------
+
+06/28/07 17:17:17 -- deitz
+
+Log message:
+	Added a .future that shows that illegal compound assignments are not
+	reported and ignored via an implicit unsafe cast.
+
+Added files:
+	chapel/test/trivial/deitz/: test_plusassign_error.chpl 
+	                            test_plusassign_error.good 
+	                            test_plusassign_error.future 
+
