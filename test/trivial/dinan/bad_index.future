@@ -1,0 +1,1 @@
+bug: compiler allows [i,j] in index expression of a for loop
