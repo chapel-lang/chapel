@@ -109421,3 +109421,20 @@ Log message:
 Modified files:
 	chapel/spec/: MODS Ranges.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 10:53:01 -- deitz
+
+Log message:
+	Spell-checked and fixed the spec.  The major misspellings were
+	integeral and muldimensional.
+
+Modified files:
+	chapel/spec/: Conversions.tex Domains_and_Arrays.tex 
+	              Functions.tex Generics.tex Language_Overview.tex 
+	              Language_Overview_OLD.tex 
+	              Locality_and_Distribution.tex Modules.tex 
+	              Notation.tex Organization.tex 
+	              Parallelism_and_Synchronization.tex 
+	              Standard_Modules.tex Tuples.tex 
+
