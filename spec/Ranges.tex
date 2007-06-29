@@ -2,40 +2,144 @@
 \label{Ranges}
 \index{ranges}
 
-Ranges contain a sequence of values of integral type that can be
-specified with a low bound $l$, a high bound $h$, and a stride $s$.
-If the stride is negative, the values contained by the range are $h,
-h-s, h-2s, h-3s, ...$ such that all of the values in the sequence are
-greater than $l$.  If the stride is positive, the values contained by
-the range are $l, l+s, l+2s, l+3s, ...$ such that all of the values in
-the sequence are less than $h$.
+Chapel's ranges represent a sequence of integral values.  Ranges are
+either \emph{bounded} or \emph{unbounded}.
 
-\index{ranges!literals}
-A range is specified by the syntax
+Bounded ranges are characterized by a low bound~$l$, a high bound~$h$,
+and a stride~$s$.  If the stride is positive, the values described by
+the range are $l, l+s, l+2s, l+3s, ...$ such that all of the values in
+the sequence are less than $h$.  If the stride is negative, the values
+described by the range are $h, h-s, h-2s, h-3s, ...$ such that all of
+the values in the sequence are greater than $l$.  If $l > h$, the
+range is considered degenerate and represents an empty sequence.
+
+Unbounded ranges are those in which the low and/or high bounds are
+omitted.  Unbounded ranges conceptually represent a countably infinite
+number of values.
+
+\subsection{Range Types}
+
+\index{ranges!types}
+
+The type of a range in Chapel is characterized by three things:
+(1)~the type of the values being represented, (2)~the boundedness of
+the range, and (3)~whether or not the range is \emph{stridable}.
+
+The type of the range's values is represented using a type parameter
+named \emph{eltType}.  This must be one of Chapel's \chpl{int} or
+\chpl{uint} types.
+
+\begin{openissue}
+It has been hypothesized that ranges of other types, such as floating
+point values, might also be of interest to represent a range of legal
+tolerances, for example.  If you believe such support would be of
+interest to you, please let us know.
+\end{openissue}
+
+The boundedness of the range is represented using an enumerated
+parameter named \emph{boundedType} of type \chpl{BoundedRangeType}.
+Legal values are \chpl{bounded}, \chpl{boundedLow},
+\chpl{boundedHigh}, and \chpl{boundedNone}.  The first value specifies
+a bounded range while the other three values specify a range in which
+the high bound is omitted, the low bound is omitted, or both bounds
+are omitted, respectively.
+
+The stridability of a range is represented by a boolean parameter
+named \emph{stridable}.  If this parameter is set to true, the range
+can represent any stride.  If set to false, the range's stride is
+fixed to be the value 1.
+
+\begin{rationale}
+The \emph{boundedType} and \emph{stridable} values of a range are used
+to optimize the generated code for common cases of ranges, as well as
+to optimize the implementation of domains and arrays defined using
+ranges.
+\end{rationale}
+
+\begin{example}
+As an example, the following declaration declares a variable \chpl{r}
+of range type that can represent ranges of 64-bit integers, with both
+high and low bounds specified, and the ability to have a stride other
+than 1.
+\begin{chapel}
+var r: range(int(64), bounded, stridable=true);
+\end{chapel}
+\end{example}
+
+\subsection{Bounded Range Literal Values}
+\index{ranges!literals} 
+
+Range literals are specified as follows:
 \begin{syntax}
 range-literal:
+  bounded-range-literal
+  unbounded-range-literal
+\end{syntax}
+
+A bounded range is specified by the syntax
+\begin{syntax}
+bounded-range-literal:
   expression .. expression
 \end{syntax}
-The first expression is taken to be the lower bound, the second
-expression is taken to be the upper bound.  The stride of the
-range is 1 and can be modified with the \chpl{by}
-operator.
+The first expression is taken to be the lower bound $l$ and the second
+expression is taken to be the upper bound $h$.  The stride of the
+range is 1 and can be modified with the \chpl{by} operator as described
+in~\rsec{Strided_Ranges}.
 
 \index{ranges!integral element type}
-The element type of the range type is determined by the
-type of the low and high bound.  It is
-either \chpl{int}, \chpl{uint}, \chpl{int(64)}, or \chpl{uint64}.  The
-type is determined by conceptually adding the low and high bounds
-together.
+The element type of the range type is determined by the type of the
+low and high bound.  It is either \chpl{int}, \chpl{uint},
+\chpl{int(64)}, or \chpl{uint(64)}.  The type is determined by
+conceptually adding the low and high bounds together.  The boundedness
+of such a range is \chpl{bounded}.  The stridability of the range is
+\chpl{false}.
 
-\subsection{Strided Ranges}
+\subsection{Range Operators}
+
+\subsubsection{By Operator}
 \label{Strided_Ranges}
 \index{ranges!strided}
 
 The \chpl{by} operator can be applied to any range to create a strided
-range.  It is predefined over a range and an integer to yield a new
-range that is strided by the integer.  Striding of strided ranges is
-accomplished by multiplying the strides.
+range.  Its syntax is as follows:
+
+\begin{syntax}
+expression `by' expression
+\end{syntax}
+
+The by operator takes a range and an integer to yield a new range that
+is strided by the integer.  Striding a strided range results in a
+stride whose value is the product of the two strides.
+
+\subsubsection{Open Interval Notation}
+\label{Open_Interval}
+\index{ranges!open interval}
+
+Chapel's \emph{open interval notation} uses the following syntax:
+
+\begin{syntax}
+open-interval-expr:
+  [ expression )
+\end{syntax}
+
+This notation is a loose adaptation of mathematical notation for open
+(upper) intervals in which the upper bound is not included in the
+range.  For an argument range expression characterized by $l$, $h$,
+and $s$, this syntax produces a range characterized by $l$, $h-1$ and
+$s$.
+
+\begin{rationale}
+While this operator is pure syntactic sugar for subtracting one from a
+range's upper bound, it is provided as a concession to C programmers
+and others who prefer 0-based indexing to avoid having to write
+declare ranges (and domains) using \chpl{0..n-1} all the time.  In its
+place, [0..n) can be used.
+
+Open intervals are not supported on lower bounds or on both upper and
+lower bounds due to the syntactic ambiguities that they can result in
+combined with the fact that these cases are not as important as the
+above for 0-based programming.
+\end{rationale}
 
 \subsection{Range Assignment}
 \label{Range_Assignment}
