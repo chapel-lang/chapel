@@ -1,6 +1,4 @@
 
-*** BLC: STOPPED AT 05/18/07 11:01:37 -- deitz ***
-
 Changes to Chapel Language:
 CLOSED SJD    eliminated sequences
        - in the future, a standard List library will provide similar functionality
@@ -69,7 +67,7 @@ CLOSED SJD    implemented dynamic casts between class types
 DMI    turned reference counting garbage collection off by default
        - added initial support for copy collection garbage collection
 CLOSED subdomain keyword is now supported, though subset relationship is not checked
-BLC    initial support for specifying a distribution class; interface still in flux
+CLOSED    initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
 CLOSED MBH    removed support for using "?" in identifiers
@@ -91,16 +89,15 @@ CLOSED SJD short-circuiting operators only require isTrue rather than true? & fa
 CLOSED SJD compilerError() can now take multiple arguments like a halt()
 
 Standard Modules:
-BLC    Search: new standard module
-BLC    Sort: new standard module
-BLC    Types: numBits() and numBytes() are now param functions
-BLC    Random: fillRandom() routines now work for arrays of arbitrary rank
-BLC    Random: some new functionality
+CLOSED    Search: new standard module
+CLOSED    Sort: new standard module
+CLOSED    Types: numBits() and numBytes() are now param functions
+CLOSED    Random: fillRandom() routines now work for arrays of arbitrary rank
+CLOSED    Random: some new functionality
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 CLOSED SJD removed the insertion of all large sequence/array temporaries
 
 
-BLC
-  - support for a numCores() function on the locale type to query # of cores
-  - made file open/close methods take parenthesis
+CLOSED support for a numCores() function on the locale type to query # of cores
+CLOSED made file open/close methods take parenthesis
