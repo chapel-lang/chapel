@@ -109368,3 +109368,16 @@ Added files:
 	                                     test_nested_write.chpl 
 	                                     test_nested_write.good 
 
+---------------------------------------------------------------------------
+
+06/29/07 09:32:49 -- deitz
+
+Log message:
+	Bumped spec # to 0.750.
+	
+	Changed pdf subject to Cray High Productivity Language to use this as
+	a subject in case there is not further discussion.
+
+Modified files:
+	chapel/spec/: spec.tex 
+
