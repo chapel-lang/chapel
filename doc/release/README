@@ -15,10 +15,14 @@ This directory contains the following documentation:
   chapelLanguageSpec.pdf : the current draft of the Chapel language
                            specification
 
-  hpcc06.pdf : our report for the 2006 HPC Challenge competition
-               (http://www.hpcchallenge.org), which also serves as a
-               tutorial to Chapel via three of the HPCC benchmarks:
-               STREAM Triad, Random Access, and FFT
+  hpccOverview.pdf : a high-level overview of our implementations of
+                     the HPC Challenge benchmarks for STREAM Triad,
+                     Random Access, and FFT in Chapel
+
+  hpccTutorial.pdf : a companion paper to the previous that provides a
+                     detailed walkthrough of our Chapel
+                     implementations of the HPCC benchmarks to serve
+                     as a tutorial to Chapel and our implementations
 
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
