@@ -109488,3 +109488,13 @@ Added files:
 Removed files:
 	chapel/doc/release/: hpcc06.pdf 
 
+---------------------------------------------------------------------------
+
+06/29/07 17:22:19 -- bradc
+
+Log message:
+	Removed draft notice from quick reference doc.
+
+Modified files:
+	chapel/doc/internal/quickReference/: reference.tex 
+
