@@ -109508,3 +109508,16 @@ Log message:
 Modified files:
 	chapel/test/release/examples/: README 
 
+---------------------------------------------------------------------------
+
+06/29/07 17:28:44 -- bradc
+
+Log message:
+	Setting version number to 0.5 and resetting
+	build version number in an attempt to create
+	version 0.5.0.
+
+Modified files:
+	./: BUILD_VERSION 
+	chapel/compiler/main/: version_num.h 
+
