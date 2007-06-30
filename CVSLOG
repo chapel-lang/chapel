@@ -109521,3 +109521,13 @@ Modified files:
 	./: BUILD_VERSION 
 	chapel/compiler/main/: version_num.h 
 
+---------------------------------------------------------------------------
+
+06/30/07 09:51:46 -- bradc
+
+Log message:
+	Updated version test to reflect that we are now on version 0.5
+
+Modified files:
+	chapel/test/compflags/bradc/noexec/: version.goodstart 
+
