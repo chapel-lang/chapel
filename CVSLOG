@@ -109498,3 +109498,13 @@ Log message:
 Modified files:
 	chapel/doc/internal/quickReference/: reference.tex 
 
+---------------------------------------------------------------------------
+
+06/29/07 17:26:27 -- bradc
+
+Log message:
+	Fixed alphabetizing of release examples.
+
+Modified files:
+	chapel/test/release/examples/: README 
+
