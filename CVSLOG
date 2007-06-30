@@ -109471,3 +109471,20 @@ Log message:
 Modified files:
 	chapel/doc/release/: chapelLanguageSpec.pdf 
 
+---------------------------------------------------------------------------
+
+06/29/07 17:15:53 -- bradc
+
+Log message:
+	Replaced old HPCC tutorial with two papers: an overview
+	(update of our CUG paper) and a tutorial walkthrough
+	(taking the stuff that went into the CUG paper out).
+
+Modified files:
+	./: README 
+	chapel/doc/release/: README 
+Added files:
+	chapel/doc/release/: hpccOverview.pdf hpccTutorial.pdf 
+Removed files:
+	chapel/doc/release/: hpcc06.pdf 
+
