@@ -509,11 +509,11 @@ assign_stmt:
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = buildPlusAssignment($1, $3);
+      $$ = buildCompoundAssignment("+", $1, $3);
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = buildMinusAssignment($1, $3);
+      $$ = buildCompoundAssignment("-", $1, $3);
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {

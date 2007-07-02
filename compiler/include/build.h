@@ -35,8 +35,6 @@ BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride
 BlockStmt* buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildPlusAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildMinusAssignment(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);
 BlockStmt* build_type_select(AList* s, BlockStmt* whenstmts);
 FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);

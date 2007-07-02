@@ -413,74 +413,6 @@ BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride
 }
 
 
-static Expr*
-buildCompoundAssignmentHelp(char* op, Symbol* ltmp, Symbol* rtmp) {
-  return
-    new CondStmt(
-      new CallExpr("_isPrimitiveType",
-        new CallExpr(PRIMITIVE_GET_REF, ltmp)),
-      new CallExpr("=", ltmp,
-        new CallExpr("_cast", ltmp,
-          new CallExpr(op,
-            new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp))),
-      new CallExpr("=", ltmp,
-        new CallExpr(op,
-          new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp)));
-}
-
-
-BlockStmt* buildPlusAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
-
-  VarSymbol* ltmp = new VarSymbol("_ltmp");
-  ltmp->isCompilerTemp = true;
-  ltmp->canParam = true;
-  stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
-
-  VarSymbol* rtmp = new VarSymbol("_rtmp");
-  rtmp->isCompilerTemp = true;
-  rtmp->canParam = true;
-  stmt->insertAtTail(new DefExpr(rtmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
-
-  stmt->insertAtTail(
-    new CondStmt(
-      new CallExpr("_isDomain", ltmp),
-      new CallExpr(
-        new CallExpr(".", ltmp, new_StringSymbol("add")), rtmp),
-      buildCompoundAssignmentHelp("+", ltmp, rtmp)));
-
-  return stmt;
-}
-
-
-BlockStmt* buildMinusAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
-
-  VarSymbol* ltmp = new VarSymbol("_ltmp");
-  ltmp->isCompilerTemp = true;
-  ltmp->canParam = true;
-  stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
-
-  VarSymbol* rtmp = new VarSymbol("_rtmp");
-  rtmp->isCompilerTemp = true;
-  rtmp->canParam = true;
-  stmt->insertAtTail(new DefExpr(rtmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
-
-  stmt->insertAtTail(
-    new CondStmt(
-      new CallExpr("_isDomain", ltmp),
-      new CallExpr(
-        new CallExpr(".", ltmp, new_StringSymbol("remove")), rtmp),
-      buildCompoundAssignmentHelp("-", ltmp, rtmp)));
-
-  return stmt;
-}
-
-
 BlockStmt*
 buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = build_chpl_stmt();
@@ -489,7 +421,8 @@ buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs) {
   ltmp->isCompilerTemp = true;
   ltmp->canParam = true;
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp,
+                       new CallExpr(PRIMITIVE_SET_REF, lhs)));
 
   VarSymbol* rtmp = new VarSymbol("_rtmp");
   rtmp->isCompilerTemp = true;
@@ -497,7 +430,44 @@ buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs) {
   stmt->insertAtTail(new DefExpr(rtmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
 
-  stmt->insertAtTail(buildCompoundAssignmentHelp(op, ltmp, rtmp));
+  BlockStmt* cast =
+    new BlockStmt(
+      new CallExpr("=", ltmp,
+        new CallExpr("_cast", ltmp,
+          new CallExpr(op,
+            new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp))));
+
+  if (strcmp(op, "<<") && strcmp(op, ">>"))
+    cast->insertAtHead(
+      new BlockStmt(new CallExpr("=", ltmp, rtmp), BLOCK_TYPE));
+
+  CondStmt* inner =
+    new CondStmt(
+      new CallExpr("_isPrimitiveType",
+        new CallExpr(PRIMITIVE_GET_REF, ltmp)),
+      cast,
+      new CallExpr("=", ltmp,
+        new CallExpr(op,
+          new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp)));
+
+  if (!strcmp(op, "+")) {
+    stmt->insertAtTail(
+      new CondStmt(
+        new CallExpr("_isDomain", ltmp),
+        new CallExpr(
+          new CallExpr(".", ltmp, new_StringSymbol("add")), rtmp),
+        inner));
+  } else if (!strcmp(op, "-")) {
+    stmt->insertAtTail(
+      new CondStmt(
+        new CallExpr("_isDomain", ltmp),
+        new CallExpr(
+          new CallExpr(".", ltmp, new_StringSymbol("remove")), rtmp),
+        inner));
+  } else {
+    stmt->insertAtTail(inner);
+  }
+
   return stmt;
 }
 

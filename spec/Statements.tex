@@ -154,20 +154,16 @@ example, \chpl{x += y} is equivalent to \chpl{x = x + y} where the
 expression \chpl{x} is evaluated once.
 
 In a compound assignment, a cast to the type on the left-hand side is
-inserted before the simple assignment if the right-hand side
-expression can be assigned to the left-hand side expression and the
-type of the left-hand side is a primitive type.
+inserted before the simple assignment if the operator is a shift or
+both the right-hand side expression can be assigned to the left-hand
+side expression and the type of the left-hand side is a primitive
+type.
 
 \begin{rationale}
 This cast is necessary to handle \chpl{+=} where the type of the
 left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
 operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 \end{rationale}
-
-\begin{status}
-Currently, there is no verification that the right-hand side
-expression can be assigned to the left-hand side expression.
-\end{status}
 
 Values of one primitive or enumerated type can be assigned to another
 primitive or enumerated type if an implicit coercion exists between
