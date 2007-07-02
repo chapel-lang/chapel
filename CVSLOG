@@ -109710,3 +109710,19 @@ Modified files:
 Removed files:
 	chapel/test/trivial/dinan/: bad_index.future 
 
+---------------------------------------------------------------------------
+
+07/02/07 11:55:07 -- deitz
+
+Log message:
+	Made scalar replacement, which is iterative, work on individual
+	functions rather than on the whole program.
+	
+	This improves the compilation speed of stream by 15%, fft by 3%, and
+	compSampler by 13% (all approximately).
+
+Modified files:
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	chapel/compiler/passes/: scalarReplace.cpp 
+
