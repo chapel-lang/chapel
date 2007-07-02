@@ -141,7 +141,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
 static void
 insertGetMember(FnSymbol* fn, BaseAST* v, Symbol* ic, Symbol* f) {
   Symbol* local = dynamic_cast<Symbol*>(v);
-  assert(local);
+  INT_ASSERT(local);
 
   PrimitiveTag primitiveGetMemberTag;
   if (local->type == f->type->refType)
@@ -164,7 +164,7 @@ insertGetMember(FnSymbol* fn, BaseAST* v, Symbol* ic, Symbol* f) {
 static void
 insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
   Symbol* local = dynamic_cast<Symbol*>(v);
-  assert(local);
+  INT_ASSERT(local);
   
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
     if (local->type == f->type->refType) {

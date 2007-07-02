@@ -106,21 +106,21 @@ begin_mark_locals() {
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
       if (block->blockTag == BLOCK_BEGIN) {
         CallExpr* call = dynamic_cast<CallExpr*>(block->body->tail);
-        assert(call);
+        INT_ASSERT(call);
         for_alist(Expr, expr, block->body) {
           if (CallExpr* move = dynamic_cast<CallExpr*>(expr)) {
             if (move->isPrimitive(PRIMITIVE_MOVE)) {
               if (CallExpr* ref = dynamic_cast<CallExpr*>(move->get(2))) {
                 if (ref->isPrimitive(PRIMITIVE_SET_REF)) {
                   SymExpr* se = dynamic_cast<SymExpr*>(ref->get(1));
-                  assert(se);
+                  INT_ASSERT(se);
                   VarSymbol* var = dynamic_cast<VarSymbol*>(se->var);
-                  assert(var);
+                  INT_ASSERT(var);
                   DefExpr* def = var->defPoint;
 
                   SymExpr* lse = dynamic_cast<SymExpr*>(move->get(1));
-                  assert(lse->var->uses.n == 1);
-                  assert(lse->var->defs.n == 1);
+                  INT_ASSERT(lse->var->uses.n == 1);
+                  INT_ASSERT(lse->var->defs.n == 1);
  
                   SymExpr* use = lse->var->uses.v[0];
                   lse->var->defPoint->remove();
@@ -128,7 +128,7 @@ begin_mark_locals() {
                   move->remove();
 
                   if (!var->refc) { // no reference counter associated yet
-                    assert(var->type->refType);
+                    INT_ASSERT(var->type->refType);
 
                     forv_Vec(SymExpr, se, var->uses) {
                       if (!se->parentSymbol)

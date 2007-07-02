@@ -1,5 +1,4 @@
 IFA_SRCS = \
-	fail.cpp \
         ifa_vars.cpp \
 	num.cpp \
 

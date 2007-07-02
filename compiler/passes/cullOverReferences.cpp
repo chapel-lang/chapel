@@ -45,7 +45,7 @@ void cullOverReferences() {
       copy->retRef = false;
       fn->defPoint->insertBefore(new DefExpr(copy));
       VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
-      assert(ret->type);
+      INT_ASSERT(ret->type);
       CallExpr* call = dynamic_cast<CallExpr*>(copy->body->body->last());
       if (!call || !call->isPrimitive(PRIMITIVE_RETURN))
         INT_FATAL(fn, "function is not normal");
@@ -86,9 +86,9 @@ void cullOverReferences() {
       if (FnSymbol* fn = call->isResolved()) {
         if (FnSymbol* copy = refMap.get(fn)) {
           if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr)) {
-            assert(move->isPrimitive(PRIMITIVE_MOVE));
+            INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
             SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
-            assert(se);
+            INT_ASSERT(se);
             if (!refNecessary(se)) {
               VarSymbol* tmp = new VarSymbol("_tmp", copy->retType);
               move->insertBefore(new DefExpr(tmp));

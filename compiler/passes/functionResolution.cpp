@@ -2089,7 +2089,7 @@ preFold(Expr* expr) {
           SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1));
           if (lhs->var == move->getFunction()->getReturnSymbol()) {
             SymExpr* ret = dynamic_cast<SymExpr*>(call->get(1));
-            assert(ret);
+            INT_ASSERT(ret);
             if (ret->var->defPoint->getFunction() == move->getFunction())
               USR_FATAL(ret, "illegal return expression in var function");
             if (ret->var->isConst() || ret->var->isParam())
@@ -2116,7 +2116,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
 
   type1 = dynamic_cast<EnumType*>(e1->type);
   type2 = dynamic_cast<EnumType*>(e2->type);
-  assert(type1 && type2);
+  INT_ASSERT(type1 && type2);
 
   // Loop over the enum values to find the int value of e1
   for_alist(DefExpr, constant, type1->constants) {

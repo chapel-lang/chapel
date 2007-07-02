@@ -51,7 +51,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
   } else if (!def) {
     /* Looking at a BlockStmt */
     BlockStmt* blk = dynamic_cast<BlockStmt*>(base);
-    assert(blk);
+    INT_ASSERT(blk);
     for_asts(ast, blk->body) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
@@ -66,7 +66,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
   } else {
     /* Looking at a record. */
     ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
-    assert(ct);
+    INT_ASSERT(ct);
     for_fields(field, ct) {
       if (ClassType* classfield = dynamic_cast<ClassType*>(field->type)) {
         if (classfield->classTag == CLASS_CLASS) {

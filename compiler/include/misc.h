@@ -18,7 +18,6 @@ int show_error(char *str, d_loc_t &loc, ...);
 int show_error(char *str, IFAAST *a, ...);
 int show_error(char *str, Var *v, ...);
 int buf_read(char *pathname, char **buf, int *len);
-void fail(char *str, ...);
 char *loc_string(d_loc_t &l);
 char *get_file_line(char *filename, int lineno);
 char *get_file_line(char *filename, int lineno);
@@ -33,6 +32,9 @@ char *dupstr(char *s, char *e = 0);
 
 #define INT_FATAL \
   if (setupError(__FILE__, __LINE__, true, false, false, false)) printProblem
+
+#define INT_ASSERT(x) \
+  if (!(x)) INT_FATAL("Assertion Error");
 
 #define INT_WARN \
   if (setupError(__FILE__, __LINE__, false, false, true, false)) printProblem
@@ -58,8 +60,6 @@ void printProblem(char* fmt, ...);
 void printProblem(IFAAST* ast, char* fmt, ...);
 void printProblem(BaseAST* ast, char* fmt, ...);
 void check_fatal_errors_encountered(void);
-
-void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);
 void stopCatchingSignals(void);

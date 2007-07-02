@@ -3,7 +3,6 @@
 #ifndef _chpl_H
 #define _chpl_H_
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,10 +27,5 @@ extern int verbose_level;
 #include "vec.h"
 #include "map.h"
 #include "misc.h"
-
-#if defined(__CYGWIN__) || 1
-#undef assert
-#define assert(_x) do { if (!(_x)) myassert(__FILE__, __LINE__, #_x); } while(0)
-#endif
 
 #endif

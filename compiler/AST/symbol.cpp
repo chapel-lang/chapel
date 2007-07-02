@@ -337,7 +337,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
-  assert(!newVarSymbol->immediate);
+  INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
 

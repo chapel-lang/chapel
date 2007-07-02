@@ -4,7 +4,6 @@
 #ifndef _num_h_
 #define _num_h_
 
-#include <assert.h>
 #include <string.h>
 #include "chpltypes.h"
 #include "map.h"
@@ -106,7 +105,7 @@ Immediate::int_value( void) {
   case INT_SIZE_32: val = v_int32; break;
   case INT_SIZE_64: val = v_int64; break;
   default:
-    assert(!"unknown int size");
+    INT_FATAL("unknown int size");
   }
   return val;
 }
@@ -122,7 +121,7 @@ Immediate::uint_value( void) {
   case INT_SIZE_32: val = v_uint32; break;
   case INT_SIZE_64: val = v_uint64; break;
   default:
-    assert(!"unknown uint size");
+    INT_FATAL("unknown uint size");
   }
   return val;
 }

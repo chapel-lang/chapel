@@ -249,8 +249,7 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 }
 
 
-int
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);

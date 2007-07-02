@@ -30,9 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* UnionFind by Tarjan (adapted) */
 
-//#include "../ifa/defs.h"
-#include <assert.h>
 #include "chpltypes.h"
+#include "misc.h"
 #include "vec.h"
 
 uint prime2[] = {
@@ -45,7 +44,7 @@ uint prime2[] = {
 // binary search over intervals
 static int
 i_find(Intervals *i, int x) {
-  assert(i->n);
+  INT_ASSERT(i->n);
   int l = 0, h = i->n;
  Lrecurse:
   if (h <= l + 2) {
@@ -103,7 +102,7 @@ Intervals::insert(int x) {
     }
     goto Lmore;
   } else {
-    assert(x < v[l]);
+    INT_ASSERT(x < v[l]);
     if (x == v[l] - 1) {
       v[l]--;
       goto Lmerge;
