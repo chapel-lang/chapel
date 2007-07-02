@@ -237,6 +237,9 @@ record _domain {
     return _value.getIndices();
 }
 
+def _isDomain(x: _domain) param return true;
+def _isDomain(x) param return false;
+
 def =(a: _domain, b: _domain) {
   //  if a == nil then return b; // stopgap: why? --sjd
   for e in a._value._arrs do

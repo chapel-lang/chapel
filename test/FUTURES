@@ -23,10 +23,6 @@ bug: module naming collision [modules/diten/nested_module_collision]
 error message: module naming collision [modules/bradc/multipleModulesSameName]
 
 
-* Applying op= style assignments to sync vars does not work
-bug: op= on sync vars [parallel/begin/marybeth/test_forbegin3]
-
-
 * Promoting var functions can result in a compilation error
 bug: promoted var function [arrays/deitz/promotion/test_scalar_promote10]
 

@@ -780,13 +780,6 @@ pragma "inline" def _cast(type t, x: t) where !_isPrimitiveType(t)
 pragma "inline" def _cast(type t, x) where x:object & t:x
   return __primitive("dynamic_cast", t, x);
 
-// inserts cast in compound assignments where necessary
-pragma "inline" def _compound_cast(type lt, type rt, x) where _isPrimitiveType(lt)
-  return _cast(lt, x);
-
-pragma "inline" def _compound_cast(type lt, type rt, x) where !_isPrimitiveType(lt)
-  return x;
-
 // handle default iterators
 pragma "inline" def _getIterator(ic: _iteratorClass)
   return ic;

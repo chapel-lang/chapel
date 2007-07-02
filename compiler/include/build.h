@@ -8,8 +8,8 @@
 
 Expr* buildDot(BaseAST* base, char* member);
 
-Expr* buildLogicalAnd(Expr* left, Expr* right);
-Expr* buildLogicalOr(Expr* left, Expr* right);
+Expr* buildLogicalAnd(BaseAST* left, BaseAST* right);
+Expr* buildLogicalOr(BaseAST* left, BaseAST* right);
 
 BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
@@ -32,11 +32,11 @@ BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* expr,
                           Expr* cond = NULL);
 BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
-BlockStmt* build_op_assign_chpl_stmt(char* op, Expr* lhs, Expr* rhs);
+BlockStmt* buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* build_plus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
-BlockStmt* build_minus_assign_chpl_stmt(Expr* lhs, Expr* rhs);
+BlockStmt* buildPlusAssignment(Expr* lhs, Expr* rhs);
+BlockStmt* buildMinusAssignment(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);
 BlockStmt* build_type_select(AList* s, BlockStmt* whenstmts);
 FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);

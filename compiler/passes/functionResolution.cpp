@@ -1515,6 +1515,8 @@ resolveCall(CallExpr* call) {
       Expr* castee = call->get(2);
       castee->remove();
       call->replace(castee);
+      makeNoop(call);
+      castee->getStmtExpr()->insertBefore(call);
     } else {
       call->get(1)->replace(new SymExpr(t->symbol));
     }

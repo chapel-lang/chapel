@@ -146,12 +146,6 @@ Unimplemented Features:
   - forall loops, promoted calls, reductions, and scans
 - If there are insufficient threads to spawn a task, the program halts
 
-Bugs:
-- Applying += and -= operators to sync vars does not work
-  e.g., var x: sync int = 0;   x += 1;
-  Workaround: expand operator manually
-  e.g., x = x + 1;
-
 
 --------------------------
 Locality and Distributions

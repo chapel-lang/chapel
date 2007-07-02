@@ -509,39 +509,39 @@ assign_stmt:
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = build_plus_assign_chpl_stmt($1, $3);
+      $$ = buildPlusAssignment($1, $3);
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = build_minus_assign_chpl_stmt($1, $3);
+      $$ = buildMinusAssignment($1, $3);
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("*", $1, $3);
+      $$ = buildCompoundAssignment("*", $1, $3);
     }
 | lvalue TASSIGNDIVIDE expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("/", $1, $3);
+      $$ = buildCompoundAssignment("/", $1, $3);
     }
 | lvalue TASSIGNMOD expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("%", $1, $3);
+      $$ = buildCompoundAssignment("%", $1, $3);
     }
 | lvalue TASSIGNEXP expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("**", $1, $3);
+      $$ = buildCompoundAssignment("**", $1, $3);
     }
 | lvalue TASSIGNBAND expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("&", $1, $3);
+      $$ = buildCompoundAssignment("&", $1, $3);
     }
 | lvalue TASSIGNBOR expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("|", $1, $3);
+      $$ = buildCompoundAssignment("|", $1, $3);
     }
 | lvalue TASSIGNBXOR expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("^", $1, $3);
+      $$ = buildCompoundAssignment("^", $1, $3);
     }
 | lvalue TASSIGNLAND expr TSEMI
     {
@@ -553,11 +553,11 @@ assign_stmt:
     }
 | lvalue TASSIGNSR expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt(">>", $1, $3);
+      $$ = buildCompoundAssignment(">>", $1, $3);
     }
 | lvalue TASSIGNSL expr TSEMI
     {
-      $$ = build_op_assign_chpl_stmt("<<", $1, $3);
+      $$ = buildCompoundAssignment("<<", $1, $3);
     }
 | lvalue TSWAP expr TSEMI
     {
