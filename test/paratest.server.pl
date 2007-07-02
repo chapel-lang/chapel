@@ -56,6 +56,11 @@ $incl_futures = 0;
 $filedist = 0;
 $valgrind = 0;
 
+$localhost = `uname -n`;
+($localnode, $junk) = split (/\./, $localhost, 2);
+chomp $localnode;
+
+
 my (@testdir_list, @node_list, $starttime, $endtime);
 
 sub systemd {
@@ -190,7 +195,12 @@ sub feed_nodes {
             $logfile = "$logdir/$testdirname.$node.log";
             # fork work
             unless ($pid = fork) {        # child
-                $rem_cmd = "$rem_exe $node $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts";
+                if ($node eq $localnode) {
+                    $rem_exec_cmd = "";
+                } else {
+                    $rem_exec_cmd = "$rem_exe $node";
+                }
+                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -409,10 +419,7 @@ sub main {
             push @node_list, $_;
         }
     } else { # else, just current node
-        local ($node) = `uname -n`;
-        ($node, $junk) = split (/\./, $node, 2);
-        chomp $node;
-        push @node_list, $node;
+        push @node_list, $localnode;
     }
 
     if (defined $dirfile) {
