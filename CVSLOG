@@ -109694,3 +109694,19 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-condexpr.good 
 
+---------------------------------------------------------------------------
+
+07/02/07 11:18:49 -- deitz
+
+Log message:
+	Added error checking for invalid indices in loops.  This cannot be
+	done as a syntax error in yacc because of its look-ahead limitations.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/test/trivial/dinan/: bad_index.good 
+Removed files:
+	chapel/test/trivial/dinan/: bad_index.future 
+
