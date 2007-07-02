@@ -1,0 +1,5 @@
+bug: captured ref
+
+This test shows how the user can capture a reference to a local
+variable and change it via this reference.  It shows a bug in copy
+propagation, which assumes the user cannot capture variables.
