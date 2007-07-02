@@ -396,10 +396,12 @@ void globalCopyPropagation(FnSymbol* fn) {
 }
 
 
-void singleAssignmentRefPropagation() {
-  compute_sym_uses();
+void singleAssignmentRefPropagation(FnSymbol* fn) {
+  compute_sym_uses(fn);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
 
-  forv_Vec(BaseAST, ast, gAsts) {
+  forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
       if (isReference(var->type) && var->defs.n == 1) {
         if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
@@ -421,8 +423,10 @@ void singleAssignmentRefPropagation() {
     }
   }
 
-  compute_sym_uses();
-  forv_Vec(BaseAST, ast, gAsts) {
+  compute_sym_uses(fn);
+  asts.clear();
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
       if (isReference(var->type) && var->defs.n == 1) {
         if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
@@ -494,8 +498,8 @@ void copyPropagation(void) {
 void refPropagation() {
   if (fBaseline)
     return;
-  singleAssignmentRefPropagation();
   forv_Vec(FnSymbol, fn, gFns) {
+    singleAssignmentRefPropagation(fn);
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }

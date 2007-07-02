@@ -238,6 +238,61 @@ scalarReplaceRecordVars(ClassType* ct, Symbol* sym) {
   return change;
 }
 
+static void
+scalarReplaceVars(FnSymbol* fn) {
+  bool change = true;
+  while (change) {
+    singleAssignmentRefPropagation(fn);
+
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+
+    Vec<DefExpr*> defs;
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+        if (def->sym->astType == SYMBOL_VAR &&
+            dynamic_cast<FnSymbol*>(def->parentSymbol)) {
+          TypeSymbol* ts = def->sym->type->symbol;
+          if (ts->hasPragma("iterator class") || ts->hasPragma("tuple"))
+            defs.add(def);
+        }
+      }
+      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (call->isPrimitive(PRIMITIVE_MOVE) && call->parentSymbol) {
+          if (SymExpr* se1 = dynamic_cast<SymExpr*>(call->get(1))) {
+            if (SymExpr* se2 = dynamic_cast<SymExpr*>(call->get(2))) {
+              if (se1->var == se2->var) {
+                call->remove();
+              }
+            }
+          }
+        }
+      }
+    }
+    compute_sym_uses(fn);
+    change = false;
+    forv_Vec(DefExpr, def, defs) {
+      ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
+      if (ct->symbol->hasPragma("iterator class")) {
+        change |= unifyClassInstances(ct, def->sym);
+      }
+    }
+
+    //
+    // NOTE - reenable scalar replacement
+    //
+    forv_Vec(DefExpr, def, defs) {
+      ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
+      if (ct->symbol->hasPragma("iterator class")) {
+        change |= scalarReplaceClassVars(ct, def->sym);
+      } else if (ct->symbol->hasPragma("tuple")) {
+        change |= scalarReplaceRecordVars(ct, def->sym);
+      }
+    }
+  }
+}
+
+
 //
 // eliminates a record type with a single field
 //
@@ -308,51 +363,8 @@ void scalarReplace() {
   if (fBaseline)
     return;
 
-  bool change = true;
-  while (change) {
-    singleAssignmentRefPropagation();
-    Vec<DefExpr*> defs;
-    forv_Vec(BaseAST, ast, gAsts) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (def->sym->astType == SYMBOL_VAR &&
-            dynamic_cast<FnSymbol*>(def->parentSymbol)) {
-          TypeSymbol* ts = def->sym->type->symbol;
-          if (ts->hasPragma("iterator class") || ts->hasPragma("tuple"))
-            defs.add(def);
-        }
-      }
-      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-        if (call->isPrimitive(PRIMITIVE_MOVE) && call->parentSymbol) {
-          if (SymExpr* se1 = dynamic_cast<SymExpr*>(call->get(1))) {
-            if (SymExpr* se2 = dynamic_cast<SymExpr*>(call->get(2))) {
-              if (se1->var == se2->var) {
-                call->remove();
-              }
-            }
-          }
-        }
-      }
-    }
-    compute_sym_uses();
-    change = false;
-    forv_Vec(DefExpr, def, defs) {
-      ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
-      if (ct->symbol->hasPragma("iterator class")) {
-        change |= unifyClassInstances(ct, def->sym);
-      }
-    }
-
-    //
-    // NOTE - reenable scalar replacement
-    //
-    forv_Vec(DefExpr, def, defs) {
-      ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
-      if (ct->symbol->hasPragma("iterator class")) {
-        change |= scalarReplaceClassVars(ct, def->sym);
-      } else if (ct->symbol->hasPragma("tuple")) {
-        change |= scalarReplaceRecordVars(ct, def->sym);
-      }
-    }
+  forv_Vec(FnSymbol, fn, gFns) {
+    scalarReplaceVars(fn);
   }
 
   // note: disabled on inlining because scalar replace does not work
