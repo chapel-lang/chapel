@@ -109684,3 +109684,13 @@ Log message:
 Removed files:
 	chapel/test/trivial/deitz/: test_plusassign_error.future 
 
+---------------------------------------------------------------------------
+
+07/02/07 11:16:22 -- deitz
+
+Log message:
+	Updated .good.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-condexpr.good 
+
