@@ -109788,3 +109788,13 @@ Log message:
 Added files:
 	chapel/test/studies/uts/: BinaryTree.chpl NOTEST uts.chpl 
 
+---------------------------------------------------------------------------
+
+07/02/07 16:20:50 -- deitz
+
+Log message:
+	Backed out changes from "07/02/07 13:18:27" due to errors that I missed.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
