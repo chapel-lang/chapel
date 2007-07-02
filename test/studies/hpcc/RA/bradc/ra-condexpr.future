@@ -1,8 +1,0 @@
-bug: implicit parameter coercions in conditional expression
-
-In this code, if param (or 0) is not explicitly typed as
-uint(64), a typecheck error occurs on combining ints and
-uints.  My understanding of the parameter coercion rules
-suggests that the result of the conditional expression
-should be cast to the appropriate type since both of the
-result values are params.
