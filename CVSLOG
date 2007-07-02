@@ -109636,3 +109636,41 @@ Log message:
 Removed files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-condexpr.future 
 
+---------------------------------------------------------------------------
+
+07/02/07 10:15:24 -- deitz
+
+Log message:
+	Added error checking on compound assignment to ensure that the rhs can
+	be assigned to the lhs for operators other than shifts.  Used a
+	BLOCK_TYPE (code that is resolved but removed from the AST shortly
+	after) to do this.
+	
+	The statement
+	
+	  a op= b;
+	
+	is now translated to
+	
+	  move(ltmp, &a)
+	  move(rtmp, b)
+	  if _isPrimitiveType(*ltmp) then
+	    BLOCK_TYPE: ltmp = rtmp
+	    ltmp = _cast(ltmp, *ltmp op rtmp)
+	  else
+	    ltmp = *ltmp op rtmp
+	
+	Removed a .future that checks this error.
+	
+	Unified code a little.
+	
+	Updated the spec to this change, removing a status note and mentioning
+	the shift semantics.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/spec/: Statements.tex 
+	chapel/test/trivial/deitz/: test_plusassign_error.good 
+
