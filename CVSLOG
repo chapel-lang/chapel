@@ -109615,3 +109615,24 @@ Log message:
 Modified files:
 	chapel/test/release/examples/hpcc/: ra.execopts ra.good 
 
+---------------------------------------------------------------------------
+
+07/02/07 09:53:05 -- deitz
+
+Log message:
+	This test can be simplified to
+	
+	  var x: uint(64);
+	  x = x ^ if x > 10 then 0 else 7;
+	
+	The compiler correctly complains:
+	
+	  illegal use of '^' on operands of type uint(64) and int
+	
+	The conditional expression is not a parameter because the condition is not
+	a parameter.  The type of the conditional expression is int and it is
+	illegal to use an int and a uint(64) together in an ^ expression.
+
+Removed files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-condexpr.future 
+
