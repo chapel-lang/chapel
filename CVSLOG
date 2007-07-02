@@ -109531,3 +109531,25 @@ Log message:
 Modified files:
 	chapel/test/compflags/bradc/noexec/: version.goodstart 
 
+---------------------------------------------------------------------------
+
+07/02/07 08:04:25 -- diten
+
+Log message:
+	Fix trivial/marybeth/typeselect.chpl future for return statements in type
+	select statements.
+	
+	Previously, the implementation was to generate one function per when statement
+	with arguments whose types match the types for that case that executes the
+	statements for that case.
+	
+	Now, the functions are parameter functions that return an integer, and a
+	normal select statement over the integer values is used.  Since the functions
+	are params, all of the incorrect cases are folded leaving only the one that
+	matches, with zero runtime overhead.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+Removed files:
+	chapel/test/trivial/marybeth/: typeselect.future 
+
