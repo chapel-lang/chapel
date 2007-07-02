@@ -109553,3 +109553,54 @@ Modified files:
 Removed files:
 	chapel/test/trivial/marybeth/: typeselect.future 
 
+---------------------------------------------------------------------------
+
+07/02/07 09:05:38 -- deitz
+
+Log message:
+	Reworked the internal implementation of compound assignment so that it
+	does not rely on nested functions.  This is a major simplification.
+	
+	The statement
+	
+	  a op= b;
+	
+	for any op other than + or - is now translated to
+	
+	  move(ltmp, &a)
+	  move(rtmp, b)
+	  if _isPrimitiveType(*ltmp) then
+	    ltmp = _cast(ltmp, *ltmp op rtmp)
+	  else
+	    ltmp = *ltmp op rtmp
+	
+	Both += and -= are handled with an extra conditional statement to
+	handle domain adding and removing.  For example, the statement
+	
+	  a += b;
+	
+	is translated to
+	
+	  move(ltmp, &a)
+	  move(rtmp, b)
+	  if _isDomain(ltmp) then
+	    ltmp.add(rtmp)
+	  else
+	    if _isPrimitiveType(*ltmp) then
+	      ltmp = _cast(ltmp, *ltmp op rtmp)
+	    else
+	      ltmp = *ltmp op rtmp
+	
+	Removed a .future related to += on sync variables.  This now works.
+
+Modified files:
+	./: STATUS 
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelArray.chpl ChapelBase.chpl 
+	chapel/test/: FUTURES 
+Removed files:
+	chapel/test/parallel/begin/marybeth/: test_forbegin3.future 
+
