@@ -109798,3 +109798,30 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+07/02/07 16:44:56 -- bradc
+
+Log message:
+	Removed Chapel assert() and fail() routines, replacing
+	with INT_FATAL() or INT_ASSERT() -- a new macro that
+	performs an assertion and exits using standard Chapel
+	concepts (causing it to be caught similarly when using
+	--gdb, for example).  Only one assert() remains and
+	it's a C++ assert() rather than the homegrown assert()
+	we used before because I couldn't figure out how to
+	replace the assert() used in a templatized constructor.
+	Apparently, macros within templatized constructors
+	aren't expanded?  Or I was on drugs.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp symbol.cpp 
+	chapel/compiler/adt/: vec.cpp 
+	chapel/compiler/ifa/: Makefile.share cast_code.cpp num.cpp num.h 
+	chapel/compiler/include/: chpl.h misc.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: copyCollect.cpp cullOverReferences.cpp 
+	                         functionResolution.cpp parallel.cpp 
+Removed files:
+	chapel/compiler/ifa/: fail.cpp 
+
