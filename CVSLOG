@@ -109604,3 +109604,14 @@ Modified files:
 Removed files:
 	chapel/test/parallel/begin/marybeth/: test_forbegin3.future 
 
+---------------------------------------------------------------------------
+
+07/02/07 09:50:59 -- bradc
+
+Log message:
+	Dialed RA problem size down a bit for the purposes of
+	testing more quickly.
+
+Modified files:
+	chapel/test/release/examples/hpcc/: ra.execopts ra.good 
+
