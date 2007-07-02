@@ -109775,3 +109775,16 @@ Added files:
 	                                     test_nested_var_iterator2.future 
 	                                     test_nested_var_iterator2.good 
 
+---------------------------------------------------------------------------
+
+07/02/07 15:45:11 -- dinan
+
+Log message:
+	Checking in my working copies of some tree code.  UTS is a first pass serial
+	implementation of the Unbalanced Tree Search benchmark and BinaryTree is a
+	program that creates a balanced binary tree in parallel and then performs a
+	parallel depth-first traversal of it.
+
+Added files:
+	chapel/test/studies/uts/: BinaryTree.chpl NOTEST uts.chpl 
+
