@@ -315,10 +315,28 @@ destructureIndices(BlockStmt* block,
   }
 }
 
+
+//
+// check validity of indices in loops and expressions
+//
+static void
+checkIndices(BaseAST* indices) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
+    if (!call->isNamed("_tuple"))
+      USR_FATAL(indices, "invalid index expression");
+    for_actuals(actual, call)
+      checkIndices(actual);
+  } else if (indices->astType != EXPR_SYM)
+    USR_FATAL(indices, "invalid index expression");
+}
+
+
 BlockStmt* build_for_block(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body) {
+  checkIndices(indices);
+
   if (tag == BLOCK_COFORALL) {
     BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
     VarSymbol* ss = new VarSymbol("_ss");
