@@ -551,7 +551,9 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
         else
-          expr = new CallExpr("|", expr, new CallExpr("==", selectCond->copy(), whenCond));
+          expr = buildLogicalOr(expr, new CallExpr("==",
+                                                   selectCond->copy(),
+                                                   whenCond));
       }
       if (!condStmt) {
         condStmt = new CondStmt(expr, when->thenStmt);
@@ -574,8 +576,10 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
 
 BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   static int uid = 1;
+  int caseId = 1;
   FnSymbol* fn = NULL;
   BlockStmt* stmts = build_chpl_stmt();
+  BlockStmt* newWhenStmts = build_chpl_stmt();
   bool has_otherwise = false;
 
   for_alist(Expr, stmt, whenstmts->body) {
@@ -598,8 +602,11 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtAny)));
       }
-      fn->addPragma("inline");
-      fn->insertAtTail(when->thenStmt->body->copy());
+      fn->isParam = true;
+      fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
+      newWhenStmts->insertAtTail(
+        new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
+        when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     } else {
       if (conds->argList->length() != exprs->length())
@@ -613,12 +620,22 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtUnknown), NULL, expr->copy()));
       }
-      fn->addPragma("inline");
-      fn->insertAtTail(when->thenStmt->body->copy());
+      fn->isParam = true;
+      fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
+      newWhenStmts->insertAtTail(
+        new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
+        when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     }
   }
-  stmts->insertAtTail(new CallExpr(fn->name, exprs));
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
+  tmp->canParam = true;
+  stmts->insertAtHead(new DefExpr(tmp));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE,
+                                   tmp,
+                                   new CallExpr(fn->name, exprs)));
+  stmts->insertAtTail(build_select(new SymExpr(tmp), newWhenStmts));
   return stmts;
 }
 

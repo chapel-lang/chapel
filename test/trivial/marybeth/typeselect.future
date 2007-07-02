@@ -1,7 +1,0 @@
-bug: return in type select
-
-This test fails to compile, complaining of illegal use of a function that doesn't
-return a value.
-
-It seems that the return statements in the type select statement block
-aren't seen by the compiler.
