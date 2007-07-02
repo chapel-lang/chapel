@@ -109760,3 +109760,18 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+07/02/07 14:00:26 -- deitz
+
+Log message:
+	This future shows how a user can capture a reference!  In this
+	particular example, the reference is to a local variable and it is
+	used to show an unfortunate bug in copy propagation.
+
+Added files:
+	chapel/test/functions/deitz/nested/: 
+	                                     test_nested_var_iterator2.chpl 
+	                                     test_nested_var_iterator2.future 
+	                                     test_nested_var_iterator2.good 
+
