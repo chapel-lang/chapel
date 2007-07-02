@@ -109726,3 +109726,21 @@ Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 	chapel/compiler/passes/: scalarReplace.cpp 
 
+---------------------------------------------------------------------------
+
+07/02/07 13:18:27 -- deitz
+
+Log message:
+	Fixed a bug in which a nested var iterator, which has an argument
+	passed to it by reference, did not store that argument as a reference
+	resulting in an issue if the var iterator tried to return that
+	argument (an outer local variable).
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+Removed files:
+	chapel/test/functions/deitz/nested/: 
+	                                     test_nested_var_iterator.future 
+
