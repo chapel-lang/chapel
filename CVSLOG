@@ -109674,3 +109674,13 @@ Modified files:
 	chapel/spec/: Statements.tex 
 	chapel/test/trivial/deitz/: test_plusassign_error.good 
 
+---------------------------------------------------------------------------
+
+07/02/07 10:22:25 -- deitz
+
+Log message:
+	Really removed future.
+
+Removed files:
+	chapel/test/trivial/deitz/: test_plusassign_error.future 
+
