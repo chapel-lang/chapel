@@ -109883,3 +109883,15 @@ Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/03/07 09:58:30 -- dinan
+
+Log message:
+	Added the Vim license for distribution.
+
+Modified files:
+	chapel/etc/vim/syntax/: chpl.vim 
+Added files:
+	chapel/etc/vim/: LICENSE 
+
