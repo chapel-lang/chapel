@@ -45,6 +45,7 @@ bool fNoLiveVariablesIteratorClassOpt = false;
 bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoInline = false;
+bool fShortNames = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fExplainCall[256] = "";
@@ -87,6 +88,7 @@ static ArgumentDescription arg_desc[] = {
  {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"parallel", 'p', NULL, "Toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
 
  {"", ' ', NULL, "Linker Control", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},

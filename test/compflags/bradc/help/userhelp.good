@@ -26,6 +26,7 @@ Code Generation:
   -O, --[no-]optimize                    Optimize generated C code
   -p, --parallel                         Toggle threaded code generation
       --savec <directory>                Save generated C code in directory
+      --short-names                      Use short names
 
 Linker Control:
       --ccflags <flags>                  Back-end C compiler flags

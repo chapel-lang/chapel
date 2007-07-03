@@ -126,6 +126,9 @@ OPTIONS
                     directory, creating the directory if it does not already
                     exist.
 
+  --short-names     Makes the variable names shorter when generating code at
+                    the expense of preserving names from the Chapel source.
+
   Linker Control Options
 
   --ccflags <flags>   Add the specified flags to the C compiler command line
