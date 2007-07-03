@@ -51,6 +51,7 @@ char fExplainCall[256] = "";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
+bool fNullTemps = false;
 bool copyCollect = false;
 int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
@@ -127,6 +128,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-live-variables-iterator-class-opt", ' ', NULL, "Do not use live variable analysis for iterator class construction", "F", &fNoLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
  {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fNoScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
+ {"null-temps", ' ', NULL, "Initialize nullable compiler temporaries to null", "F", &fNullTemps, "CHPL_NULL_TEMPS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}
 };

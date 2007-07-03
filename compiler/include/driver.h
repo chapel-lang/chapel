@@ -40,6 +40,8 @@ extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;
 
+extern bool fNullTemps;
+
 extern char defaultDistribution[256];
 
 extern bool ignore_warnings;

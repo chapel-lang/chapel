@@ -1412,13 +1412,15 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ";\n");
 
     // initialize iterator class due to reference counting
-    if (isPrimitive(PRIMITIVE_MOVE)) {
-      if (CallExpr* rhs = dynamic_cast<CallExpr*>(get(2))) {
-        if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
-          if (parentSymbol->hasPragma("first member sets")) {
-            SymExpr* se = dynamic_cast<SymExpr*>(get(1));
-            ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
-            codegenNullAssignments(outfile, se->var->cname, ct, 1);
+    if (fNullTemps) {
+      if (isPrimitive(PRIMITIVE_MOVE)) {
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(get(2))) {
+          if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
+            if (parentSymbol->hasPragma("first member sets")) {
+              SymExpr* se = dynamic_cast<SymExpr*>(get(1));
+              ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
+              codegenNullAssignments(outfile, se->var->cname, ct, 1);
+            }
           }
         }
       }

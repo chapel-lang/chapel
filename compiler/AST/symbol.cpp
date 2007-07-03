@@ -1387,11 +1387,13 @@ void FnSymbol::codegenDef(FILE* outfile) {
             def->sym->parentScope->astParent)
           def->sym->codegenDef(outfile);
   }
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (!dynamic_cast<TypeSymbol*>(def->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
-          codegenNullAssignments(outfile, def->sym->cname, ct);
+  if (fNullTemps) {
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+        if (!dynamic_cast<TypeSymbol*>(def->sym)) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+            codegenNullAssignments(outfile, def->sym->cname, ct);
+          }
         }
       }
     }
