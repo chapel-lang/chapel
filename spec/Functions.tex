@@ -276,7 +276,10 @@ var x, y = 0;
 def A(i: int) var {
   if i < 0 || i > 1 then
     halt("array access out of bounds");
-  return if i == 0 then x else y;
+  if i == 0 then
+    return x;
+  else
+    return y;
 }
 \end{chapel}
 This function can be assigned to in order to write to the ``elements''
