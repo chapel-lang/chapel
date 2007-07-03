@@ -109920,3 +109920,15 @@ Added files:
 	                                   variableLengthArgumentLists.chpl 
 	                                   variableLengthArgumentLists.good 
 
+---------------------------------------------------------------------------
+
+07/03/07 11:15:54 -- diten
+
+Log message:
+	Fix example in the spec that used a conditional expression as an lvalue.  Fix
+	the test of that example.
+
+Modified files:
+	chapel/spec/: Functions.tex 
+	chapel/test/spec/diten/functions/: variableFunctions.chpl 
+
