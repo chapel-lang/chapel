@@ -109967,3 +109967,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+07/03/07 13:39:46 -- bradc
+
+Log message:
+	Adding third linux64 valgrind suppression for getpwuid,
+	which seems to have caused the vast majority of last
+	night's valgrind regressions.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
