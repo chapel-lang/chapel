@@ -109932,3 +109932,21 @@ Modified files:
 	chapel/spec/: Functions.tex 
 	chapel/test/spec/diten/functions/: variableFunctions.chpl 
 
+---------------------------------------------------------------------------
+
+07/03/07 11:19:19 -- deitz
+
+Log message:
+	Added code generation flag --short-names to generate code such that
+	the variables have short names.  Currently, local variables are
+	generated as a capital T followed by an incremnted number.  These
+	numbers are assigned in order of the variables appearance in the
+	function.  This is sometimes useful for looking at the generated code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/doc/man/: chpl.txt 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
