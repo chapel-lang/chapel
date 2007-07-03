@@ -2,6 +2,7 @@
 " Language:	Chapel
 " Maintainer:	James Dinan <dinan@cray.com>
 " Last Change:	2007 June 25
+" License:      Vim License
 
 " Much was borrowed from the C and C++ syntax files.  Many thanks to those who
 " contributed to them.
