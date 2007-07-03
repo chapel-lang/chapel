@@ -2945,6 +2945,9 @@ pruneResolvedTree() {
       } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
         // Replace PRIMITIVE_TYPEOF with argument
         call->replace(call->get(1)->remove());
+      } else if (call->isPrimitive(PRIMITIVE_CAST)) {
+        if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
+          call->replace(call->get(2)->remove());
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
                  call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         // Remove member accesses of types

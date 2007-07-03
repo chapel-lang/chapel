@@ -396,6 +396,25 @@ void globalCopyPropagation(FnSymbol* fn) {
 }
 
 
+static CallExpr*
+findRefDef(VarSymbol* var) {
+  CallExpr* ret = NULL;
+  forv_Vec(SymExpr, def, var->defs) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(def->parentExpr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (isReference(call->get(2)->typeInfo())) {
+          if (ret)
+            return NULL;
+          else
+            ret = call;
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+
 void singleAssignmentRefPropagation(FnSymbol* fn) {
   compute_sym_uses(fn);
   Vec<BaseAST*> asts;
@@ -428,46 +447,65 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
-      if (isReference(var->type) && var->defs.n == 1) {
-        if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
-          if (move->isPrimitive(PRIMITIVE_MOVE)) {
-            if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
-              if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
-                bool stillAlive = false;
-                forv_Vec(SymExpr, se, var->uses) {
-                  CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
-                  if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
-                    parent->replace(rhs->get(1)->copy());
-                  } else if (parent &&
-                             (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-                              parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
-                    parent->get(1)->replace(rhs->get(1)->copy());
-                  } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
-                    parent->get(2)->replace(rhs->copy());
-                  } else
-                    stillAlive = true;
-                }
-                if (!stillAlive) {
-                  var->defPoint->remove();
-                  var->defs.v[0]->getStmtExpr()->remove();
-                }
-              } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-                bool stillAlive = false;
-                forv_Vec(SymExpr, se, var->uses) {
-                  CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
-                  if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
-                    parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                                 rhs->get(1)->copy(),
-                                                 rhs->get(2)->copy()));
-                  } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
-                    parent->get(2)->replace(rhs->copy());
-                  } else
-                    stillAlive = true;
-                }
-                if (!stillAlive) {
-                  var->defPoint->remove();
-                  var->defs.v[0]->getStmtExpr()->remove();
-                }
+      if (isReference(var->type)) {
+        if (CallExpr* move = findRefDef(var)) {
+          if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
+            if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+              bool stillAlive = false;
+              forv_Vec(SymExpr, se, var->uses) {
+                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                  parent->replace(rhs->get(1)->copy());
+                } else if (parent &&
+                           (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+                            parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
+                  parent->get(1)->replace(rhs->get(1)->copy());
+                } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                  parent->get(2)->replace(rhs->copy());
+                } else
+                  stillAlive = true;
+              }
+              forv_Vec(SymExpr, se, var->defs) {
+                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                if (parent == move)
+                  continue;
+                if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
+                  parent->get(1)->replace(rhs->get(1)->copy());
+                else
+                  stillAlive = true;
+              }
+              if (!stillAlive) {
+                var->defPoint->remove();
+                var->defs.v[0]->getStmtExpr()->remove();
+              }
+            } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+              bool stillAlive = false;
+              forv_Vec(SymExpr, se, var->uses) {
+                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                  parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                               rhs->get(1)->copy(),
+                                               rhs->get(2)->copy()));
+                } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                  parent->get(2)->replace(rhs->copy());
+                } else
+                  stillAlive = true;
+              }
+              forv_Vec(SymExpr, se, var->defs) {
+                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                if (parent == move)
+                  continue;
+                if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
+                  parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+                                               rhs->get(1)->copy(),
+                                               rhs->get(2)->copy(),
+                                               parent->get(2)->remove()));
+                else
+                  stillAlive = true;
+              }
+              if (!stillAlive) {
+                var->defPoint->remove();
+                var->defs.v[0]->getStmtExpr()->remove();
               }
             }
           }
