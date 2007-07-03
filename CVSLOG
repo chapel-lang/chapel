@@ -109895,3 +109895,28 @@ Modified files:
 Added files:
 	chapel/etc/vim/: LICENSE 
 
+---------------------------------------------------------------------------
+
+07/03/07 10:52:25 -- diten
+
+Log message:
+	Add tests for the example codes in the functions section of the spec. Currently
+	one of the spec examples fails. A workaround for the failing test is to use a
+	conditional statement that returns in both cases rather than returning a
+	conditional expression. The failure is a var function that has a problem with
+	internal temps getting assigned to the return value.
+
+Added files:
+	chapel/test/spec/diten/functions/: defaultValues.chpl 
+	                                   defaultValues.good 
+	                                   namedArguments.chpl 
+	                                   namedArguments.good 
+	                                   parameterFunctions.chpl 
+	                                   parameterFunctions.good 
+	                                   theReturnStatement.chpl 
+	                                   theReturnStatement.good 
+	                                   variableFunctions.chpl 
+	                                   variableFunctions.good 
+	                                   variableLengthArgumentLists.chpl 
+	                                   variableLengthArgumentLists.good 
+
