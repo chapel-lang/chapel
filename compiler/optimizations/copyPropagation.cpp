@@ -422,18 +422,26 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
-      if (isReference(var->type) && var->defs.n == 1) {
-        if (CallExpr* move = dynamic_cast<CallExpr*>(var->defs.v[0]->parentExpr)) {
-          if (move->isPrimitive(PRIMITIVE_MOVE)) {
-            if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2))) {
-              if (isReference(rhs->var->type)) {
-                forv_Vec(SymExpr, se, var->uses) {
+      if (isReference(var->type)) {
+        if (CallExpr* move = findRefDef(var)) {
+          if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2))) {
+            if (isReference(rhs->var->type)) {
+              forv_Vec(SymExpr, se, var->uses) {
+                if (se->parentExpr) {
                   SymExpr* rhsCopy = rhs->copy();
                   se->replace(rhsCopy);
                   rhsCopy->var->uses.add(rhsCopy);
                 }
-                var->defPoint->remove();
-                move->remove();
+              }
+              forv_Vec(SymExpr, se, var->defs) {
+                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                if (parent == move)
+                  continue;
+                if (parent) {
+                  SymExpr* rhsCopy = rhs->copy();
+                  se->replace(rhsCopy);
+                  rhsCopy->var->defs.add(rhsCopy);
+                }
               }
             }
           }

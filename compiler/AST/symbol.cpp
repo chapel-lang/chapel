@@ -1228,14 +1228,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     // compute instantiatedWith vector and rename instantiated type
     clone->name = astr(clone->name, "(");
-    clone->cname = stringcat(clone->cname, "_A_");
+    clone->cname = stringcat(clone->cname, "_");
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
         if (Type* type = dynamic_cast<Type*>(value)) {
           if (!first && !strncmp(clone->name, "_tuple", 6)) {
             clone->name = astr("(");
-            clone->cname = "_tuple_A_";
           }
           if (first) {
             clone->name = astr(clone->name, ",");
@@ -1267,7 +1266,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       }
     }
     clone->name = astr(clone->name, ")");
-    clone->cname = stringcat(clone->cname, "_B");
 
     retType->symbol->defPoint->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
