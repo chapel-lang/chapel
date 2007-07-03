@@ -109991,3 +109991,22 @@ Added files:
 	chapel/test/functions/deitz/nested/: 
 	                                     test_nested_var_iterator.future 
 
+---------------------------------------------------------------------------
+
+07/03/07 14:27:26 -- deitz
+
+Log message:
+	Added code to mangle formal argument names if the names duplicate one
+	another.
+	
+	Added a temp to replace the implicit "setter" argument with true or
+	false when references are culled in case the address of this argument
+	is taken.  This happens in the case that it is passed to a nested
+	function.  Previously, the replacement was direct.
+	
+	This fixes release/examples/sparse with --no-inline.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp cullOverReferences.cpp 
+	                         flattenFunctions.cpp 
+
