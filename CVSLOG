@@ -109979,3 +109979,15 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+07/03/07 14:19:44 -- deitz
+
+Log message:
+	Futurized test.  This will take a little work to get it working.  I
+	unfuturized it two days ago but had to back out those changes.
+
+Added files:
+	chapel/test/functions/deitz/nested/: 
+	                                     test_nested_var_iterator.future 
+
