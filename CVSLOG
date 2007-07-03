@@ -109862,3 +109862,24 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+07/03/07 09:26:29 -- deitz
+
+Log message:
+	Removed unnecessary reference temps that are dereferenced within the
+	same function and handle things like
+	
+	  c.x = ...
+	
+	and
+	
+	  x += ...
+	
+	This decreases the number of generated lines of code for Jacobi from
+	6698 to 6451 as counted by wc (3.8%).
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
