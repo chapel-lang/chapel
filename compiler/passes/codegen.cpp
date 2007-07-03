@@ -157,6 +157,15 @@ static void codegen_header(void) {
       if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
         typeSymbols.add(typeSymbol);
       } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
+
+        // mangle arguments if necessary
+        ChainHashMap<char*, StringHashFns, int> formal_names;
+        for_formals(formal, fnSymbol) {
+          if (formal_names.get(formal->cname))
+            formal->cname = stringcat("_", formal->cname, "_", intstring(formal->id));
+          formal_names.put(formal->cname, 1);
+        }
+
         fnSymbols.add(fnSymbol);
       } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
         if (varSymbol->parentScope->parent == rootScope)

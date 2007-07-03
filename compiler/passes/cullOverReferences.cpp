@@ -30,7 +30,7 @@ refNecessary(SymExpr* se) {
   }
   return false;
 }
-    
+
 
 // removes references that are not necessary
 void cullOverReferences() {
@@ -65,13 +65,19 @@ void cullOverReferences() {
   // change "setter" to true or false depending on whether the symbol
   // appears in reference or value functions
   //
+  Map<Symbol*,FnSymbol*> setterMap;
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->setter)
+      setterMap.put(fn->setter->sym, fn);
+  }
   forv_Vec(BaseAST, ast, gAsts) {
     if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
-      FnSymbol* fn = dynamic_cast<FnSymbol*>(se->parentSymbol);
-      if (fn && fn->setter && fn->setter->sym == se->var) {
-        if (!fn)
-          INT_FATAL(se, "unexpected case");
-        se->var = fn->retRef ? gTrue : gFalse;
+      if (FnSymbol* fn = setterMap.get(se->var)) {
+        VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
+        tmp->isCompilerTemp = true;
+        se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, fn->retRef ? gTrue : gFalse));
+        se->var = tmp;
       }
     }
   }

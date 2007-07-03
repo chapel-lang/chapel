@@ -47,7 +47,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   collect_asts(&asts, fn->body);
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      Type* type = sym->type->refType ? sym->type->refType : sym->type;
+      Type* type = !isReference(sym->type) ? sym->type->refType : sym->type;
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
       fn->insertFormalAtTail(new DefExpr(arg));
       forv_Vec(BaseAST, ast, asts) {
@@ -77,7 +77,7 @@ static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      if (sym->type->refType) {
+      if (!isReference(sym->type)) {
         VarSymbol* tmp = new VarSymbol("_tmp", sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
