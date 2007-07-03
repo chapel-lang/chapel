@@ -109844,3 +109844,21 @@ Modified files:
 	chapel/compiler/parser/: Makefile 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+07/03/07 09:26:03 -- deitz
+
+Log message:
+	Added miscellaneous developer flag --null-temps to insert code to
+	initialize all nullable compiler temps to null, including nullable
+	fields in records.  This used to be done by default and now requires
+	this flag.
+	
+	This decreases the number of generated lines of code for Jacobi from
+	6698 to 6073 as counted by wc (10.3%).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
