@@ -109950,3 +109950,20 @@ Modified files:
 	chapel/doc/man/: chpl.txt 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+07/03/07 11:24:26 -- deitz
+
+Log message:
+	Changed mangling of type names to eliminate As and Bs.
+	
+	Improved effectiveness of single assignment reference propagation when
+	dealing with copied references that are written to.
+	
+	This decreases the number of generated lines of code for Jacobi from
+	5897 to 5829 as counted by wc (1.2%).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
