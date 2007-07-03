@@ -68,7 +68,7 @@
 }
 
 {
-   linux64-also-breaks-getpwuid2
+   linux64-also-breaks-getpwuid-2
    Memcheck:Param
    socketcall.sendto(msg)
    fun:send
@@ -83,4 +83,22 @@
    fun:_Z9openCFileP8fileinfoPcS1_
    fun:_Z7codegenv
    fun:_Z7runPassPcPFvvE
+}
+
+{
+   linux64-also-breaks-getpwuid-3
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   fun:get_mapping
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+   fun:_Z12createTmpDirv
+   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z7codegenv
+   fun:_Z7runPassPcPFvvE
+   fun:_Z9runPassesv
 }
