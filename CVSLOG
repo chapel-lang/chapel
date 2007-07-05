@@ -110036,3 +110036,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+07/05/07 13:05:37 -- deitz
+
+Log message:
+	Added --serial flag which is semantically equivalent to calling main
+	inside a serial block that evaluates to true.  It is implemented by
+	changing forall, ordered forall, and coforall to for, changing begin,
+	cobegin, and atomic blocks to regular blocks, and removing the serial
+	keyword and evaluating its expression only for side effects.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+Added files:
+	chapel/test/parallel/serial/deitz/: test_serial_flag.chpl 
+	                                    test_serial_flag.good 
+
