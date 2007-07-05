@@ -122,6 +122,26 @@ static void codegen_header(void) {
   cnames.put("new", 1);
   cnames.put("register", 1);
   cnames.put("signal", 1);
+  cnames.put("ceil", 1);
+  cnames.put("acosh", 1);
+  cnames.put("asinh", 1);
+  cnames.put("atan2", 1);
+  cnames.put("atanh", 1);
+  cnames.put("cbrt", 1);
+  cnames.put("cosh", 1);
+  cnames.put("erf", 1);
+  cnames.put("erfc", 1);
+  cnames.put("exp", 1);
+  cnames.put("exp2", 1);
+  cnames.put("expm1", 1);
+  cnames.put("lgamma", 1);
+  cnames.put("log10", 1);
+  cnames.put("log1p", 1);
+  cnames.put("log", 1);
+  cnames.put("rint", 1);
+  cnames.put("sinh", 1);
+  cnames.put("tanh", 1);
+  cnames.put("ascii", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
