@@ -46,6 +46,7 @@ bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
+bool fSerial = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fExplainCall[256] = "";
@@ -102,6 +103,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
+ {"serial", ' ', NULL, "Serialize Chapel program", "F", &fSerial, "CHPL_SERIAL", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},

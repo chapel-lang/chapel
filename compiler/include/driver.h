@@ -35,6 +35,7 @@ extern char fExplainCall[256];
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fShortNames;
+extern bool fSerial;
 
 extern int debugParserLevel;
 extern bool no_codegen;

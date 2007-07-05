@@ -573,7 +573,10 @@ block_stmt:
     }
 | TCOBEGIN TLCBR stmt_ls TRCBR
     {
-      $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_COBEGIN));
+      if (fSerial)
+        $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_NORMAL));
+      else
+        $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_COBEGIN));
     }
 | TATOMIC stmt
     {
@@ -581,11 +584,17 @@ block_stmt:
         atomic_warning = true;
         USR_WARN($2, "atomic keyword is ignored (not implemented)");
       }
-      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_ATOMIC));
+      if (fSerial)
+        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
+      else
+        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_ATOMIC));
     }
 | TBEGIN stmt
     {
-      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_BEGIN));
+      if (fSerial)
+        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
+      else
+        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_BEGIN));
     }
 ;
 
@@ -605,7 +614,13 @@ on_stmt:
 
 serial_stmt:
   TSERIAL expr parsed_block_stmt
-    { $$ = build_serial_block(new CallExpr("_cond_test", $2), $3); }
+    {
+      if (fSerial) {
+        $3->insertAtHead(new CallExpr("_cond_test", $2));
+        $$ = $3;
+      } else
+        $$ = build_serial_block(new CallExpr("_cond_test", $2), $3);
+    }
 ;
 
 
@@ -1541,11 +1556,26 @@ for_tag:
   TFOR
     { $$ = BLOCK_FOR; }
 | TFORALL
-    { $$ = BLOCK_FORALL; }
+    {
+      if (fSerial)
+        $$ = BLOCK_FOR;
+      else
+        $$ = BLOCK_FORALL;
+    }
 | TORDERED TFORALL
-    { $$ = BLOCK_ORDERED_FORALL; }
+    {
+      if (fSerial)
+        $$ = BLOCK_FOR;
+      else
+        $$ = BLOCK_ORDERED_FORALL;
+    }
 | TCOFORALL
-    { $$ = BLOCK_COFORALL; }
+    {
+      if (fSerial)
+        $$ = BLOCK_FOR;
+      else
+        $$ = BLOCK_COFORALL;
+    }
 ;
 
 
