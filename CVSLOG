@@ -110056,3 +110056,14 @@ Added files:
 	chapel/test/parallel/serial/deitz/: test_serial_flag.chpl 
 	                                    test_serial_flag.good 
 
+---------------------------------------------------------------------------
+
+07/05/07 14:52:43 -- deitz
+
+Log message:
+	Added code to C version of RA benchmark to warm up memory of array
+	prior to timing.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/performance/: ra.c 
+
