@@ -1514,7 +1514,7 @@ identifiers that follows the type in a normal declaration."
   pike '("for" "if" "switch" "while" "foreach")
   awk  '("for" "if" "while")
   chpl '("select" "while"))  ; putting "if" "for" "forall" here causes
-                             ; weird indentation since parens not required
+                            ; weird indentation since parens not required
 
 (c-lang-defconst c-block-stmt-2-key
   ;; Regexp matching the start of any statement followed by a paren sexp
@@ -1724,7 +1724,7 @@ Note that Java specific rules are currently applied to tell this from
 	 ;; In CORBA CIDL: (These are declaration keywords that never
 	 ;; can start a declaration.)
 	 "entity" "process" "service" "session" "storage")
-  chpl '("begin" "cobegin" "coforall" "distributed" "for" "forall" "if" "in" "on" "reduce" "scan" "single" "sparse" "sync" "where"))
+  chpl '("begin" "cobegin" "coforall" "distributed" "for" "forall" "if" "in" "on" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
 
 
 ;;; Constants built from keywords.

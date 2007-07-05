@@ -2716,7 +2716,7 @@ See also `chpl-font-lock-extra-types'.")
                         "on" "ordered" "otherwise" "out"
                         "param"
                         "reduce" "repeat" "return"
-			"select" 
+			"select" "serial"
                         "then" "typeselect"
                         "until"
                         "var"
