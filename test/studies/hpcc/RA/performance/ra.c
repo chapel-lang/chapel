@@ -195,13 +195,14 @@ int main(int argc, char* argv[]) {
   printConfiguration();
   elemType * const __restrict T = (elemType*)malloc(m*sizeof(elemType));
   
-  double startTime = getCurrentTime();
   indexType i;
+  for (i=0; i<m; i++) T[i] = 0; // warm up memory (and zero out)
+
+  double startTime = getCurrentTime();
 
   for (i=0; i<m; i++) {
     T[i] = i;
   }
-
 
   randType r = getFirstRandom();
   for (i=0; i<N_U; i++) {
