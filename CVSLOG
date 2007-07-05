@@ -110025,3 +110025,14 @@ Added files:
 	chapel/test/parallel/serial/deitz/: test_serial1.chpl 
 	                                    test_serial1.good 
 
+---------------------------------------------------------------------------
+
+07/05/07 12:33:57 -- diten
+
+Log message:
+	Add a bunch of math function names to the list of reserved C names. This fixes
+	a lot of the --baseline testing failures.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
