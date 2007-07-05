@@ -110010,3 +110010,18 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp cullOverReferences.cpp 
 	                         flattenFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+07/05/07 10:58:08 -- deitz
+
+Log message:
+	Added serial test case and added serial keyword to emacs mode files.
+
+Modified files:
+	chapel/etc/emacs/21.3/: font-lock.el 
+	chapel/etc/emacs/21.4/: font-lock.el 
+	chapel/etc/emacs/22.0/: cc-langs.el 
+Added files:
+	chapel/test/parallel/serial/deitz/: test_serial1.chpl 
+	                                    test_serial1.good 
+
