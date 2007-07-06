@@ -110077,3 +110077,25 @@ Log message:
 Added files:
 	chapel/test/parallel/serial/deitz/: test_serial_flag.compopts 
 
+---------------------------------------------------------------------------
+
+07/06/07 14:05:29 -- deitz
+
+Log message:
+	Fixed a bug with the --no-live-variables-iterator-class-opt flag which
+	now passes all tests.  If this flag is used, live variable analysis is
+	not run and all local variables are added to a class.  However,
+	references were omitted from the class under the (false) assumption
+	that they would never be live at yield points.  I believe the change
+	that allowed index variables to be references made this assumption no
+	longer true.
+	
+	The perfect Friday change, after the diagnosis that a reference was
+	old in a getNextCursor invocation, the actual change to the compiler
+	proved to be very easy.  This change simply removes the conditional
+	that guarded against adding references to the list of symbols in an
+	iterator class.
+
+Modified files:
+	chapel/compiler/AST/: iterator.cpp 
+
