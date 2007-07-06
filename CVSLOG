@@ -110133,3 +110133,16 @@ Modified files:
 	chapel/compiler/AST/: primitive.cpp 
 	chapel/modules/standard/: Math.chpl 
 
+---------------------------------------------------------------------------
+
+07/06/07 15:47:45 -- deitz
+
+Log message:
+	Improved parallel test script to work with multiple compiler options
+	using -compopts if the options are delimited by quotation marks as in
+	
+	paratest.server.pl -nodefile chapnodes -compopts "--no-single-loop-iterator-opt --no-expand-iterators-inline-opt"
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
