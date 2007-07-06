@@ -110099,3 +110099,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: iterator.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/07 15:11:14 -- dinan
+
+Log message:
+	Added primitive "pow(:real, :real):real"
+
+Modified files:
+	chapel/modules/standard/: Math.chpl 
+	chapel/compiler/AST/: primitive.cpp 
+
