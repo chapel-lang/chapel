@@ -110067,3 +110067,13 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/performance/: ra.c 
 
+---------------------------------------------------------------------------
+
+07/06/07 09:28:39 -- deitz
+
+Log message:
+	Added compopts file for test_serial_flag test.
+
+Added files:
+	chapel/test/parallel/serial/deitz/: test_serial_flag.compopts 
+
