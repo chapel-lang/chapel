@@ -48,7 +48,7 @@ sub main {
 
     print "$id $workingdir $testdir $filedist $incl_futures $valgrind" if $debug;
     if ($#ARGV==6) {
-        $compopts = "-compopts ". $ARGV[6];
+        $compopts = "-compopts \"" . $ARGV[6] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
