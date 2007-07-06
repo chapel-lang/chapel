@@ -110122,3 +110122,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/07 15:37:00 -- dinan
+
+Log message:
+	Shamefully removing primitive pow().  :-)
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: Math.chpl 
+
