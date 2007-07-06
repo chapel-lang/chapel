@@ -180,10 +180,6 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_reduce_scan", def->sym->name, 12)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
     Expr* stmt = def->getStmtExpr();
-    BlockStmt* block = getBlock(stmt);
-    if (block->getFunction()->body == block &&
-        block->getFunction() == block->getModule()->initFn)
-      stmt = stmt->getFunction()->defPoint->getStmtExpr();
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }

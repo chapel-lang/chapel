@@ -41,7 +41,13 @@ void normalize(void) {
         if ((dynamic_cast<VarSymbol*>(def->sym) && !def->sym->isCompilerTemp) ||
             dynamic_cast<TypeSymbol*>(def->sym) ||
             dynamic_cast<FnSymbol*>(def->sym))
-          mod->block->insertAtTail(def->remove());
+          if (!((!strncmp("_anon_record", def->sym->name, 12)) ||
+                (!strncmp("_forallexpr", def->sym->name, 11)) ||
+                (!strncmp("_let_fn", def->sym->name, 7)) ||
+                (!strncmp("_if_fn", def->sym->name, 6)) ||
+                (!strncmp("_reduce_scan", def->sym->name, 12)) ||
+                (!strncmp("_forif_fn", def->sym->name, 9))))
+            mod->block->insertAtTail(def->remove());
     }
   }
 }
