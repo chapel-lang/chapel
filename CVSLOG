@@ -110146,3 +110146,16 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+07/06/07 16:13:10 -- dinan
+
+Log message:
+	Added Geometric and Binomial distributions.  Attempting to fork off the RNG
+	to later incorporate SHA1.  Doesn't compile yet.  :)
+
+Modified files:
+	chapel/test/studies/uts/: uts.chpl 
+Added files:
+	chapel/test/studies/uts/: lcg_rng.chpl 
+
