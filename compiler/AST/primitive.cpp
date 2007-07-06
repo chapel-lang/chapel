@@ -400,6 +400,7 @@ initPrimitive() {
   prim_def("log10", returnInfoFloat, true);
   prim_def("log1p", returnInfoFloat, true);
   prim_def("nearbyint", returnInfoFloat, true);
+  prim_def("pow", returnInfoFloat, true);
   prim_def("rint", returnInfoFloat, true);
   prim_def("round", returnInfoFloat, true);
   prim_def("sin", returnInfoFloat, true);
