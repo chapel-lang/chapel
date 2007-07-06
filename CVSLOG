@@ -110110,3 +110110,15 @@ Modified files:
 	chapel/modules/standard/: Math.chpl 
 	chapel/compiler/AST/: primitive.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/07 15:29:43 -- deitz
+
+Log message:
+	Fixed a bug seen with --no-inline in which our internal nested
+	functions, e.g., _if_fn, would not be nested at the top level, but
+	would instead be flattened early.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+
