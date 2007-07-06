@@ -28,7 +28,6 @@ pragma "inline" def log2(x : real) return __primitive("log2", x);
 pragma "inline" def log10(x : real) return __primitive("log10", x);
 pragma "inline" def log1p(x : real) return __primitive("log1p", x);
 pragma "inline" def nearbyint(x: real) return __primitive("nearbyint", x);
-pragma "inline" def pow(x: real, y: real) return __primitive("pow", x, y);
 pragma "inline" def rint(x: real) return __primitive("rint", x);
 pragma "inline" def round(x: real) return __primitive("round", x);
 pragma "inline" def sin(x: real) return __primitive("sin", x);
