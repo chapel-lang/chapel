@@ -110254,3 +110254,25 @@ Log message:
 Added files:
 	chapel/etc/: README 
 
+---------------------------------------------------------------------------
+
+07/09/07 15:55:22 -- deitz
+
+Log message:
+	Removed --parallel,-p flag as it is now redundant with --serial and
+	not as graceful.
+	
+	Moved work in parallel1 into cleanup (and simplified) as what is done
+	here is exactly what cleanup is intended for--minor straightening that
+	is more difficult to do while parsing.  Indeed, we may even want to
+	move this work into parsing as it would be simple to do there too.
+	Cleaned the code in parallel2 (now parallel) pass.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: cleanup.cpp parallel.cpp 
+	chapel/doc/man/: chpl.txt 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
