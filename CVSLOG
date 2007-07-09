@@ -110243,3 +110243,14 @@ Added files:
 	                                                  countMemory.chap09.good 
 	                                                  countMemory.chap10.good 
 
+---------------------------------------------------------------------------
+
+07/09/07 15:55:21 -- bradc
+
+Log message:
+	Adding top-level README for etc/ directory to be packed up
+	and distributed to users.
+
+Added files:
+	chapel/etc/: README 
+
