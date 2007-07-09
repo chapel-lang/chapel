@@ -110220,3 +110220,26 @@ Added files:
 	chapel/test/functions/deitz/iterators/: test_simple1.chpl 
 	                                        test_simple1.good 
 
+---------------------------------------------------------------------------
+
+07/09/07 15:34:48 -- bradc
+
+Log message:
+	Added two more regressions for getpwuid calls in the compiler
+	for valgrind testing related to compflags/bradc/gdbddash/declint
+	
+	Added memory count files for chap09 and chap10.
+	
+	This should leave only one remaining linux64 valgrind regression
+	for the test that purposefully runs out of memory (which causes
+	valgrind to print out a bunch of different stuff).  I need to
+	investigate whether there's a graceful way to handle this, but
+	probably not today.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+Added files:
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.chap09.good 
+	                                                  countMemory.chap10.good 
+
