@@ -1,0 +1,19 @@
+=====================
+Chapel editor support
+=====================
+
+This directory contains rudimentary support for code
+coloring/formatting in emacs and/or vim.  It is intended to be
+unpacked just under your $CHPL_HOME directory as follows:
+
+$CHPL_HOME/     -- the location of your normal Chapel installation
+  etc/          -- the result of un-tarring a chapel-<editor>.tar.gz file
+    README      -- this file
+    emacs/      -- the result of un-tarring chapel-emacs.tar.gz
+    vim/        -- the result of un-tarring chapel-vim.tar.gz
+
+Both the emacs and vim modes for Chapel were created by modifying
+existing language formatting modes for each editor, and are therefore
+licensed under the agreements of those languages (i.e., GPL for emacs
+and VIM license for vim).  See the license files in the emacs/ and
+vim/ subdirectories for details.
