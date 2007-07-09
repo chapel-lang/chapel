@@ -1,30 +1,47 @@
+/*
+**  UTS -- The Unbalanced Tree Search
+**
+**  James Dinan <dinan@cray.com>
+**  July, 2007
+*/
+ 
 use Math;
+use Time;
+use lcg_rng;
 
-config const DEPTH:        int = 10;
-config const PAR_DEPTH:    int = 2;
 
-config const SEED:        uint = 73;  // Seed for the hash of the root node
-config const MAX_CHILDREN: int = 10;
-config const B_0:          int = 5;
-config const MAX_DEPTH:    int = 4;
-config const nonLeafProb: real = 0.17;
-config const nonLeafBF:    int = 5;
-
+/**** UTS TYPES ****/
 enum NodeDistrib { Binomial, Geometric, Constant };
 enum GeoDistrib  { GeoFixed, GeoLinear, GeoPoly, GeoCyclic };
 
+
+/**** COMPILE PARAMS ****/
+param debug: bool = false;
+
+
+/**** UTS CONFIG VARS ****/
+config const SEED:        uint = 73;    // Seed for the hash of the root node
+config const MAX_CHILDREN: int = 2;     // Max. Children a node may have
+config const B_0:          int = 2;     // Branching Factor
+config const MAX_DEPTH:    int = 2;     // Depth limit
+config const nonLeafProb: real = 0.01;  // Probability of a non-leaf (binomial)
+config const nonLeafBF:    int = 2;     // Non-leaf branching factor (binomial)
+
+config const distrib: NodeDistrib = Geometric;
+config const geoDist: GeoDistrib  = GeoFixed;
+
+
 class TreeNode {
-  var depth: int;
-  var hash: RNG_state;
-  var distrib: NodeDistrib = Geometric;
-  var geoDist: GeoDistrib;
+  var depth:   int;
+  var hash:    RNG_state;
 
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
   var childDom = [1..nChildren];
   var children:  [childDom] TreeNode;
 
-  /* Generate this node's children */
+
+  // Generate this node's children
   def genChildren(): int {
     select distrib {
       when Geometric do 
@@ -32,13 +49,18 @@ class TreeNode {
       when Binomial do
         nChildren = numBinChildren();
       when Constant do
-        nChildren = numFixedChildren();
+        nChildren = numConstChildren();
     }
+
+    if debug then writeln("Constructing ", nChildren, " children: ", childDom);
 
     childDom  = [1..nChildren];
 
     forall i in childDom {
-      var child_hash = rng_spawn(hash, i);
+      var child_hash: RNG_state;
+
+      if debug then writeln("  + (", depth, ", ", i, ")");
+      rng_spawn(hash, child_hash, i);
       children[i]    = TreeNode(depth+1, child_hash);
     }
 
@@ -46,15 +68,16 @@ class TreeNode {
   }
 
 
-  /* Constant Distribution: Find the number of children */
+  // Constant Distribution: Find the number of children
+  //  Note: This is a _balanced_ tree.
   def numConstChildren(): int {
     return if depth < MAX_DEPTH then B_0 else 0;
   }
 
 
-  /* Binomial Distribution: Find the number of children */
+  // Binomial Distribution: Find the number of children
+  //  Note: distribution is identical everywhere below root
   def numBinChildren(): int {
-    // Note: distribution is identical everywhere below root
     var d: real = to_prob(rng_rand(hash));
     var numChildren = if d < nonLeafProb then nonLeafBF else 0;
 
@@ -62,8 +85,8 @@ class TreeNode {
   }
 
 
-  /* Geometric Distribution: Find the number of children */
-  def numGeoChildren(param shape: GeoDistrib): int {
+  // Geometric Distribution: Find the number of children
+  def numGeoChildren(shape: GeoDistrib): int {
     var b_i: real = B_0;
   
     // use shape function to compute target b_i
@@ -90,9 +113,6 @@ class TreeNode {
         when GeoLinear do 
           b_i =  B_0 * (1.0 - depth:real / MAX_DEPTH:real);
         
-        otherwise {
-          compilerError("Invalid geometric distribution");
-        }
       }
     }
 
@@ -107,14 +127,24 @@ class TreeNode {
     // (from inverse geometric cumulative density function)
     return floor(log(1 - u) / log(1 - p)); 
   }
-
 }
 
 
-// Parallel tree traversal
+def showSearchParams() {
+  if distrib == Geometric then
+    writeln("Tree is: Geometric, ", geoDist);
+  else
+    writeln("Tree is: ", distrib);
+
+  writeln("  SEED=", SEED, " B_0=", B_0, " MAX_DEPTH=", MAX_DEPTH,
+    " nonLeafProb=", nonLeafProb, " nonLeafBF=", nonLeafBF);
+  
+}
+
 def dfs_count(n: TreeNode):int {
   if n != nil {
     var count: int;
+    if debug then writeln("  - ", n.depth);
     forall i in n.childDom {
       count += dfs_count(n.children[i]);
     }
@@ -125,7 +155,6 @@ def dfs_count(n: TreeNode):int {
 }
 
 
-// Parallel tree creation
 def create_tree(parent: TreeNode): int {
   var count: int;
 
@@ -145,14 +174,25 @@ def create_tree(parent: TreeNode): int {
 
 
 def main {
+  var t_create: Timer();
+  var t_dfs   : Timer();
   var counted, created: int;
   var root: TreeNode;
   var hash: RNG_state = RNG_state();
   
-  rng_init(SEED);
+  rng_init(hash, SEED);
+  root = TreeNode(0, hash, Constant);
 
+  showSearchParams();
+
+  t_create.start();
   created = create_tree(root);
+  t_create.stop();
+
+  t_dfs.start();
   counted = dfs_count(root);
+  t_dfs.stop();
 
   writeln("Created = ", created, " Counted = ", counted);
+  writeln("t_create= ", t_create.elapsed(), " t_dfs = ", t_dfs.elapsed());
 }
