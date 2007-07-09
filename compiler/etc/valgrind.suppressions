@@ -102,3 +102,37 @@
    fun:_Z7runPassPcPFvvE
    fun:_Z9runPassesv
 }
+
+{
+   linux64-also-breaks-getpwuid-4-compflags-bradc-gdbddash-declint-only
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   fun:get_mapping
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+   fun:_Z12createTmpDirv
+   fun:_Z13createGDBFileiPPc
+   fun:main
+}
+
+{
+   linux64-also-breaks-getpwuid-5-compflags-bradc-gdbddash-declint-only
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   fun:get_mapping
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+   fun:_Z12createTmpDirv
+   fun:_Z14genIntFilenamePc
+   fun:_Z13createGDBFileiPPc
+   fun:_Z16runCompilerInGDBiPPc
+   fun:main
+}
