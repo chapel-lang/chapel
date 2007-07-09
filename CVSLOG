@@ -110208,3 +110208,15 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: liveVariableAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+07/09/07 14:44:16 -- deitz
+
+Log message:
+	Added a simple test that I used to debug the live variable problem
+	just fixed.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: test_simple1.chpl 
+	                                        test_simple1.good 
+
