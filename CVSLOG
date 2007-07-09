@@ -110159,3 +110159,16 @@ Modified files:
 Added files:
 	chapel/test/studies/uts/: lcg_rng.chpl 
 
+---------------------------------------------------------------------------
+
+07/09/07 09:53:17 -- deitz
+
+Log message:
+	Fixed a bug in the parallel server script in which multiple compopts
+	arguments specified in quotation marks would not be passed along when
+	running on remote nodes.  This changes adds a \ before the quotes so
+	that the quotes are kept on through the ssh command.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
