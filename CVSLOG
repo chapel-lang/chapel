@@ -110172,3 +110172,15 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+07/09/07 10:44:47 -- deitz
+
+Log message:
+	Moved serial flag to optimization control subsection and updated man page.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/doc/man/: chpl.txt 
+
