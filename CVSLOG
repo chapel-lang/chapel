@@ -110184,3 +110184,13 @@ Modified files:
 	chapel/test/compflags/bradc/help/: userhelp.good 
 	chapel/doc/man/: chpl.txt 
 
+---------------------------------------------------------------------------
+
+07/09/07 12:19:49 -- dinan
+
+Log message:
+	Checkpoint.  Things are looking good.  Almost time to look at pulling in SHA1.
+
+Modified files:
+	chapel/test/studies/uts/: lcg_rng.chpl uts.chpl 
+
