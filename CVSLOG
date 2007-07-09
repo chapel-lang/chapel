@@ -110194,3 +110194,17 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: lcg_rng.chpl uts.chpl 
 
+---------------------------------------------------------------------------
+
+07/09/07 14:37:38 -- deitz
+
+Log message:
+	Fixed a bug in which variables that were used and defined in the same
+	statement might be marked as "defined before used" instead of "used
+	before defined."  This fixes the bugs in the release directory related
+	to using the flags --no-expand-iterators-inline-opt and
+	--no-single-loop-iterator-opt at the same time.
+
+Modified files:
+	chapel/compiler/optimizations/: liveVariableAnalysis.cpp 
+
