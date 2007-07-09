@@ -82,6 +82,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
+ {"serial", ' ', NULL, "Serialize Chapel program", "F", &fSerial, "CHPL_SERIAL", NULL},
 
  {"", ' ', NULL, "Code Generation", NULL, NULL, NULL, NULL},
  {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
@@ -103,7 +104,6 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
- {"serial", ' ', NULL, "Serialize Chapel program", "F", &fSerial, "CHPL_SERIAL", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},

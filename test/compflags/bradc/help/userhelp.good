@@ -19,6 +19,7 @@ Optimization Control:
       --no-inline                        Do not inline functions
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
+      --serial                           Serialize Chapel program
 
 Code Generation:
       --[no-]cg-cpp-lines                Generate #line annotations
@@ -41,7 +42,6 @@ Miscellaneous Flags:
                                          Explain resolution of call
       --instantiate-max <max>            Limit number of instantiations
       --no-warnings                      Disable output of warnings
-      --serial                           Serialize Chapel program
   -s, --set <name>[=<value>]             Set config param value
 
 Compiler Information:

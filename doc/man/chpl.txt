@@ -96,6 +96,13 @@ OPTIONS
                     optimizes iterators that are defined in terms of a 
                     single loop. This option turns off this optimization.
 
+  --serial          Optimize compilation of code for serial execution,
+                    changing forall, ordered forall, and coforall to
+                    for, changing begin, cobegin, and atomic blocks to
+                    regular blocks, and removing the serial keyword
+                    and evaluating its expression only for side
+                    effects.
+
   Code Generation Options
 
   --[no-]cg-cpp-lines   Causes the compiler to emit cpp #line directives
