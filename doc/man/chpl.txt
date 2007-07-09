@@ -125,10 +125,6 @@ OPTIONS
                     used. If you would like additional flags to be used
                     with the C compiler command, use the --ccflags option.
 
-  -p, --parallel    Toggle parallel code generation for concepts like begin
-                    and cobegin. Currently, the default is for parallel
-                    concepts to be turned on.
-
   --savec <directory>    Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
                     exist.

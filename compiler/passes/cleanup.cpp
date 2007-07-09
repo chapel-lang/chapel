@@ -10,8 +10,45 @@
 #include "expr.h"
 #include "runtime.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
+
+
+//
+// Move statements in begin and cobegin blocks into nested functions
+//
+static void
+encapsulateBegins() {
+  int uid = 1;
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
+      if (b->blockTag == BLOCK_BEGIN) {
+        char *fname = astr("_begin_block", intstring(uid++));
+        FnSymbol *fn = new FnSymbol(fname);
+        fn->retType = dtVoid;
+        for_alist(Expr, stmt, b->body) {
+          stmt->remove();
+          fn->insertAtTail(stmt);
+        }
+        b->insertAtTail(new DefExpr(fn));
+        b->insertAtTail(new CallExpr(fname));
+      } else if (b->blockTag == BLOCK_COBEGIN) {
+        for_alist(Expr, stmt, b->body) {
+          char *fname = astr("_cobegin_stmt", intstring(uid++));
+          FnSymbol *fn = new FnSymbol(fname);
+          fn->retType = dtVoid;
+          b->insertAtHead(new DefExpr(fn));
+          stmt->insertBefore(new CallExpr(fname));
+          stmt->remove();
+          fn->insertAtTail(stmt);
+        }
+      }
+    }
+  }
+}
+
 
 //
 // Move the statements in a block out of the block
@@ -372,8 +409,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);
-    if (ts->hasPragma( "synchronization primitive"))
-      fn->addPragma( "synchronization primitive");
+    if (ts->hasPragma("synchronization primitive"))
+      fn->addPragma("synchronization primitive");
   }
 }
 
@@ -407,6 +444,8 @@ static void change_cast_in_where(FnSymbol* fn) {
 
 
 void cleanup(void) {
+  encapsulateBegins();
+
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 
@@ -433,8 +472,8 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (CallExpr *call = dynamic_cast<CallExpr*>( ast)) {
-      if (call->isNamed( "_build_array_type") && call->argList->length() == 4) {
+    if (CallExpr *call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isNamed("_build_array_type") && call->argList->length() == 4) {
         if (call->getStmtExpr()) {
           if (DefExpr *def = dynamic_cast<DefExpr*>(call->getStmtExpr())) {
             CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
@@ -444,16 +483,16 @@ void cleanup(void) {
             iter->remove();
             BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
             
-            FnSymbol *forall_init = new FnSymbol( "_forallinit");
+            FnSymbol *forall_init = new FnSymbol("_forallinit");
             forall_init->fnClass = FN_ITERATOR;
-            forall_init->insertAtTail( forblk);
-            def->insertBefore( new DefExpr( forall_init));
-            def->init->replace( new CallExpr( forall_init));
+            forall_init->insertAtTail(forblk);
+            def->insertBefore(new DefExpr(forall_init));
+            def->init->replace(new CallExpr(forall_init));
           } else {
-            INT_FATAL( call, "missing parent def expr");
+            INT_FATAL(call, "missing parent def expr");
           }
         } else {
-          INT_FATAL( call, "missing parent stmt");
+          INT_FATAL(call, "missing parent stmt");
         }
       }
     }
@@ -463,15 +502,15 @@ void cleanup(void) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
-      for_formals( arg, fn) {
+      for_formals(arg, fn) {
         SymExpr *s = dynamic_cast<SymExpr*>(arg->defaultExpr);
         if (!fn->instantiatedFrom &&
             s && 
             !arg->defPoint->exprType &&
             !arg->isTypeVariable) {
           if (s->var->type != dtNil) {
-            arg->defPoint->exprType = new CallExpr( PRIMITIVE_TYPEOF,
-                                                    arg->defaultExpr->copy());
+            arg->defPoint->exprType = new CallExpr(PRIMITIVE_TYPEOF,
+                                                   arg->defaultExpr->copy());
             insert_help(arg->defPoint->exprType, arg->defPoint, arg, fn->argScope);
             arg->type = dtUnknown;
           }

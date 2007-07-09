@@ -20,8 +20,7 @@ void inlineFunctions();
 void insertLineNumbers();
 void lowerIterators();
 void normalize();
-void parallel1();
-void parallel2();
+void parallel();
 void parse();
 void prune();
 void refPropagation();
@@ -39,7 +38,6 @@ PassInfo passlist[] = {
   RUN(checkParsed), // checks semantics of parsed AST
 
   // Scope resolution and normalization
-  RUN(parallel1),       // parallel transforms, part 1
   RUN(cleanup),         // post parsing transformations
   RUN(scopeResolve),    // resolve symbols by scope
   RUN(flattenClasses),  // denest nested classes
@@ -57,7 +55,7 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(lowerIterators),     // lowers iterators into functions/classes
   RUN(cullOverReferences), // remove excess references
-  RUN(parallel2),          // parallel transforms, part 2
+  RUN(parallel),           // parallel transforms
 
   // Optimizations
   RUN(inlineFunctions),     // function inlining

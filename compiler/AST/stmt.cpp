@@ -212,9 +212,9 @@ void BlockStmt::codegen(FILE* outfile) {
     fprintf(outfile, "{\n");
 
   if (body) {
-    if (parallelPass && blockTag == BLOCK_COBEGIN) {
+    if (blockTag == BLOCK_COBEGIN) {
       codegenCobegin( outfile, body);
-    } else if (parallelPass && blockTag == BLOCK_BEGIN) {
+    } else if (blockTag == BLOCK_BEGIN) {
       codegenBegin( outfile, body);
     } else {
       body->codegen(outfile, "");

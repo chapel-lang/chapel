@@ -59,7 +59,6 @@ int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
-bool parallelPass = true;
 char configParamString[FILENAME_MAX] = "";
 Map<char*, char*> configParamMap;
 bool debugCCode = false;
@@ -88,7 +87,6 @@ static ArgumentDescription arg_desc[] = {
  {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
- {"parallel", 'p', NULL, "Toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
 
@@ -266,6 +264,7 @@ int main(int argc, char *argv[]) {
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
+  addLibInfo("-lpthread");
   compile_all();
   free_args(&arg_state);
   clean_exit(0);

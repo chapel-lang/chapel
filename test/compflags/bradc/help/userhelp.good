@@ -25,7 +25,6 @@ Code Generation:
       --[no-]cg-cpp-lines                Generate #line annotations
   -g, --[no-]debug                       Allow debugging of generated C code
   -O, --[no-]optimize                    Optimize generated C code
-  -p, --parallel                         Toggle threaded code generation
       --savec <directory>                Save generated C code in directory
       --short-names                      Use short names
 
