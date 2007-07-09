@@ -197,10 +197,12 @@ sub feed_nodes {
             unless ($pid = fork) {        # child
                 if ($node eq $localnode) {
                     $rem_exec_cmd = "";
+                    $compopts = "\"$compopts\"";
                 } else {
                     $rem_exec_cmd = "$rem_exe $node";
+                    $compopts = "\\\"$compopts\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind \"$compopts\"";
+                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
