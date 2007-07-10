@@ -110300,3 +110300,13 @@ Log message:
 Added files:
 	chapel/test/trivial/dinan/: enumTest.chpl enumTest.future 
 
+---------------------------------------------------------------------------
+
+07/10/07 14:22:06 -- dinan
+
+Log message:
+	Whoops, forgot the .good.
+
+Added files:
+	chapel/test/trivial/dinan/: enumTest.good 
+
