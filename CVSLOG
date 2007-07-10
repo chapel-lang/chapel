@@ -110290,3 +110290,13 @@ Modified files:
 	chapel/runtime/include/: chplmem_tests.h 
 	chapel/runtime/src/: chplmem_tests.c 
 
+---------------------------------------------------------------------------
+
+07/09/07 17:45:10 -- dinan
+
+Log message:
+	future: Compiler error when an enumeration value is used in writeln()
+
+Added files:
+	chapel/test/trivial/dinan/: enumTest.chpl enumTest.future 
+
