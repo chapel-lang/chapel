@@ -452,16 +452,16 @@ initPrimitive() {
   prim_def("_bytesPerLocale", returnInfoUInt64);
   prim_def("_coresPerLocale", returnInfoInt32);
 
-  prim_def("_chpl_memtest_printMemTable", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_printMemStat", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_resetMemStat", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_allocAndFree", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_freedMalloc", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_freedWithoutMalloc", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_reallocWithoutMalloc", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_reallocZeroSize", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_mallocOutOfMemory", returnInfoVoid, true, true);
-  prim_def("_chpl_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
+  prim_def("_memtest_printMemTable", returnInfoVoid, true, true);
+  prim_def("_memtest_printMemStat", returnInfoVoid, true, true);
+  prim_def("_memtest_resetMemStat", returnInfoVoid, true, true);
+  prim_def("_memtest_allocAndFree", returnInfoVoid, true, true);
+  prim_def("_memtest_freedMalloc", returnInfoVoid, true, true);
+  prim_def("_memtest_freedWithoutMalloc", returnInfoVoid, true, true);
+  prim_def("_memtest_reallocWithoutMalloc", returnInfoVoid, true, true);
+  prim_def("_memtest_reallocZeroSize", returnInfoVoid, true, true);
+  prim_def("_memtest_mallocOutOfMemory", returnInfoVoid, true, true);
+  prim_def("_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
   prim_def("startTrackingMem", returnInfoVoid, true);
 
   prim_def("_printError", returnInfoVoid, true, true);

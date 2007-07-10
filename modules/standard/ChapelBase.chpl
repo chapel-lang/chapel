@@ -809,16 +809,16 @@ def =(ic: _iteratorClass, x: ic.eltType) {
   // note: need to verify that rhs can be assigned to lhs; checking
   // that rt:lt is not sufficient to handle parameter coercions
 
-pragma "inline" def _chpl_memtest_printMemTable(threshold: int = 1000) { __primitive("_chpl_memtest_printMemTable", threshold); }
-pragma "inline" def _chpl_memtest_printMemStat() { __primitive("_chpl_memtest_printMemStat"); }
-pragma "inline" def _chpl_memtest_resetMemStat() { __primitive("_chpl_memtest_resetMemStat"); }
-pragma "inline" def _chpl_memtest_allocAndFree() { __primitive("_chpl_memtest_allocAndFree"); }
-pragma "inline" def _chpl_memtest_freedMalloc() { __primitive("_chpl_memtest_freedMalloc"); }
-pragma "inline" def _chpl_memtest_freedWithoutMalloc() { __primitive("_chpl_memtest_freedWithoutMalloc"); }
-pragma "inline" def _chpl_memtest_reallocWithoutMalloc() { __primitive("_chpl_memtest_reallocWithoutMalloc"); }
-pragma "inline" def _chpl_memtest_reallocZeroSize() { __primitive("_chpl_memtest_reallocZeroSize"); }
-pragma "inline" def _chpl_memtest_mallocOutOfMemory() { __primitive("_chpl_memtest_mallocOutOfMemory"); }
-pragma "inline" def _chpl_memtest_reallocOutOfMemory() { __primitive("_chpl_memtest_reallocOutOfMemory"); }
+pragma "inline" def _chpl_memtest_printMemTable(threshold: int = 1000) { __primitive("_memtest_printMemTable", threshold); }
+pragma "inline" def _chpl_memtest_printMemStat() { __primitive("_memtest_printMemStat"); }
+pragma "inline" def _chpl_memtest_resetMemStat() { __primitive("_memtest_resetMemStat"); }
+pragma "inline" def _chpl_memtest_allocAndFree() { __primitive("_memtest_allocAndFree"); }
+pragma "inline" def _chpl_memtest_freedMalloc() { __primitive("_memtest_freedMalloc"); }
+pragma "inline" def _chpl_memtest_freedWithoutMalloc() { __primitive("_memtest_freedWithoutMalloc"); }
+pragma "inline" def _chpl_memtest_reallocWithoutMalloc() { __primitive("_memtest_reallocWithoutMalloc"); }
+pragma "inline" def _chpl_memtest_reallocZeroSize() { __primitive("_memtest_reallocZeroSize"); }
+pragma "inline" def _chpl_memtest_mallocOutOfMemory() { __primitive("_memtest_mallocOutOfMemory"); }
+pragma "inline" def _chpl_memtest_reallocOutOfMemory() { __primitive("_memtest_reallocOutOfMemory"); }
 
 pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }
 
