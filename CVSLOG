@@ -110276,3 +110276,17 @@ Modified files:
 	chapel/doc/man/: chpl.txt 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+07/09/07 17:00:38 -- deitz
+
+Log message:
+	Renamed memtest primitives so that they have different names than the
+	Chapel wrappers and thus work even without inlining the wrappers.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+	chapel/runtime/include/: chplmem_tests.h 
+	chapel/runtime/src/: chplmem_tests.c 
+
