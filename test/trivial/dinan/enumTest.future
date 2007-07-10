@@ -1,0 +1,1 @@
+bug: Compiler error when an enumeration value is used in writeln()
