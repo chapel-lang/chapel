@@ -253,7 +253,7 @@ syn keyword chplIntent		param type in out inout
 syn keyword chplStorageClass    const config var
 syn keyword chplType            domain index imag complex int uint real bool file string
 syn keyword chplType            locale sync atomic single function distributed
-syn keyword chplOperator	and or not of on reduce scan by
+syn keyword chplOperator	of on reduce scan by
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*$"
 syn keyword chplStructure	class record union enum
