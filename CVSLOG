@@ -110403,3 +110403,13 @@ Log message:
 Modified files:
 	chapel/etc/: README 
 
+---------------------------------------------------------------------------
+
+07/11/07 11:55:01 -- dinan
+
+Log message:
+	Removed highlightings for 'and', 'or', and 'not'
+
+Modified files:
+	chapel/etc/vim/syntax/: chpl.vim 
+
