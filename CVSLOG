@@ -110499,3 +110499,22 @@ Added files:
 	chapel/runtime/etc/: Makefile.threads-none 
 	                     Makefile.threads-pthreads 
 
+---------------------------------------------------------------------------
+
+07/11/07 15:02:49 -- deitz
+
+Log message:
+	Made it so that object files for the runtime are stored in a two
+	nested directories rather than just one.  The first directory is the
+	platform, the second is the threading package.  This allows an
+	installation to support more than one threading platform at a time.
+
+Modified files:
+	chapel/runtime/: Makefile 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/make/: Makefile.runtime.foot 
+	                      Makefile.runtime.head 
+	chapel/runtime/src/: Makefile Makefile.include 
+	chapel/runtime/threads-none/: Makefile Makefile.include 
+	chapel/runtime/threads-pthreads/: Makefile Makefile.include 
+
