@@ -110413,3 +110413,47 @@ Log message:
 Modified files:
 	chapel/etc/vim/syntax/: chpl.vim 
 
+---------------------------------------------------------------------------
+
+07/11/07 13:22:31 -- deitz
+
+Log message:
+	Refactored the runtime to make its Makefile structure mirror that of
+	the compiler.
+	
+	Added sibling directories to src/ called threads-none and
+	threads-pthreads in the start of an effort to factor pthreads out of
+	the threading support that we provide.  This makes pthreads one of
+	many alternatives, though the only one currently.
+	
+	Note that src/ should be renamed common/ or serial/ as this is the
+	serial runtime support files.
+	
+	Added another environment variable CHPL_THREADS that can be used to
+	specify a different threading package.  Currently, the default is
+	pthreads though we may instead want to require this be set.  Also,
+	pthreads is currently the only supported threading package.
+
+Modified files:
+	./: README.files 
+	chapel/make/: Makefile.base 
+	chapel/runtime/: Makefile 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: Makefile chplthreads.c 
+Added files:
+	chapel/runtime/: README.files 
+	chapel/runtime/include/threads-pthreads/: chpl_cfg_threads.h 
+	chapel/runtime/make/: Makefile.NOTES 
+	                      Makefile.runtime.commonrules 
+	                      Makefile.runtime.foot 
+	                      Makefile.runtime.head 
+	                      Makefile.runtime.rules 
+	                      Makefile.runtime.subdirrules 
+	chapel/runtime/src/: Makefile.include Makefile.share 
+	chapel/runtime/threads-none/: Makefile Makefile.include 
+	                              Makefile.share 
+	chapel/runtime/threads-pthreads/: Makefile Makefile.include 
+	                                  Makefile.share 
+	                                  chpl_cfg_threads.c 
+
