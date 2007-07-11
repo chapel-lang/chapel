@@ -1,4 +1,4 @@
-THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-none/$(CHPL_MAKE_PLATFORM)
+THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-none/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)
 
 ALL_SRCS += threads-none/*.c
 

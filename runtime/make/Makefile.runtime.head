@@ -15,7 +15,7 @@ RUNTIME_CFLAGS += $(INCL_CFLAGS)
 # clean and clobber targets
 #
 CLEAN_TARGS = \
-	./$(CHPL_MAKE_PLATFORM)/*.o \
+	./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/*.o \
 	core \
 	*.core \
 	*.gmon \

@@ -32,10 +32,11 @@ RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
 	$(THREADS_OBJS)
 
-RUNTIME_DIR = ../lib/$(CHPL_MAKE_PLATFORM)
+RUNTIME_DIR = ../lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
+RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/timestamp
 
-TARGETS = $(RUNTIME_DIR)/main.o $(RUNTIME_LIB)
+TARGETS = $(RUNTIME_LIB) $(RUNTIME_DIR)/main.o
 
 CLEAN_TARGS += $(TARGETS)
 
@@ -50,17 +51,17 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
 # target-based rules
 #
 
-$(RUNTIME_LIB): $(RUNTIME_OBJS)
+$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
 	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o ../TAGS $(RUNTIME_SRCS) include/*.h include/threads-$(CHPL_THREADS)/*.h) || echo "etags not available"
 
-$(RUNTIME_DIR)/main.o: src/$(CHPL_MAKE_PLATFORM)/main.o
-	@make $(RUNTIME_DIR)
+$(RUNTIME_DIR)/main.o: src/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/main.o
 	cp $< $@
 
-$(RUNTIME_DIR):
-	mkdir -p $@
+$(RUNTIME_DIR_TIMESTAMP):
+	mkdir -p $(RUNTIME_DIR)
+	touch $(RUNTIME_DIR_TIMESTAMP)
 
 #
 # include standard footer for runtime

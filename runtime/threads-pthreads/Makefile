@@ -6,7 +6,7 @@ RUNTIME_SUBDIR = threads-pthreads
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-THREADS_OBJDIR = $(CHPL_MAKE_PLATFORM)
+THREADS_OBJDIR = $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)
 include Makefile.share
 
 TARGETS = $(THREADS_OBJS)

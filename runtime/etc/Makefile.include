@@ -2,7 +2,7 @@ CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)
 include $(CHAPEL_ROOT)/make/Makefile.base
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_THREADS)
 CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include/threads-$(CHPL_THREADS) -I$(CHAPEL_ROOT)/runtime/include
-CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(CHPL_MAKE_PLATFORM)
+CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)
 
 all:
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -o $(TMPBINNAME) -I$(CHAPEL_RT_INC_DIR)/$(CHPL_MAKE_PLATFORM) -I$(CHAPEL_RT_INC_DIR) -L$(CHAPEL_RT_LIB_DIR) $(CHAPEL_RT_LIB_DIR)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
