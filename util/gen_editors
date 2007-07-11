@@ -1,0 +1,103 @@
+#!/usr/bin/perl
+
+
+# check out a clean copy of the sources into a temporary directory
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+$uwusername = $ENV{'CHPL_UW_CVS_USERNAME'};
+if ($uwusername eq "") {
+    $uwusername = $user;
+}
+$tmpdir = "$basetmpdir/chapel-editors.$user.$pid.deleteme";
+$chapeldir = "$tmpdir/etc";
+$cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
+system("mkdir $tmpdir > /dev/null");
+print "Checking out the sources...\n";
+system("cd $tmpdir && cvs -q -d $cvsroot checkout nightly > /dev/null");
+system("cd $tmpdir/chapel/etc/emacs && rm */*.orig.el");
+
+
+#$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
+$cvsignores = "CVS|RCS|.cvsignore";
+
+# explicit files to include
+@files = (
+    "README",
+);
+
+# C/C++ sources
+@code_dirs = (
+);
+
+# include these dirs and their entire contents
+@complete_dirs = (
+    "emacs",
+    "vim",
+);
+
+
+chdir "$tmpdir/chapel";
+
+foreach $editor (@complete_dirs) {
+    my @tarfiles = ();
+    foreach $file (@files) {
+        $dfile = "etc/$file";
+        if (!(-e $dfile)) {
+            print "$dfile does not exist\n";
+            exit( 9);
+        }
+        push @tarfiles, $dfile;
+    }
+
+    foreach $dir (@code_dirs) {
+        @filelist = `find etc/$dir`;
+        foreach $fullpath (@filelist) {
+            chomp $fullpath;
+            $file = $fullpath;
+            $file =~ s/(\S+\/)+//g;
+            if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README/) {
+                # print "$fullpath\n";
+                push @tarfiles, $fullpath;
+            }
+        }
+    }
+
+    @filelist = `find etc/$editor`;
+    foreach $fullpath (@filelist) {
+        chomp $fullpath;
+        next if ((-d $fullpath) || ($fullpath =~ /$cvsignores/));
+        # print "$fullpath\n";
+        push @tarfiles, $fullpath;
+    }
+
+# verify only files are listed
+    foreach $file (@tarfiles) {
+        if (-d $file) {
+            print "error: directory '$file' included\n";
+        }
+    }
+
+    if (defined($ENV{"CHPL_HOME"})) {
+        $resultdir = $ENV{"CHPL_HOME"};
+    } else {
+        $resultdir = $basetmpdir;
+    }
+
+    $cmd = "tar -cz -f $resultdir/chapel-$editor.tar.gz @tarfiles";
+#print "$cmd\n";
+    system ($cmd);
+    
+    print "Left result in $resultdir/chapel-$editor.tar.gz\n";
+    
+}
+
+
+
+system("rm -r $tmpdir");
