@@ -264,7 +264,6 @@ int main(int argc, char *argv[]) {
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
-  addLibInfo("-lpthread");
   compile_all();
   free_args(&arg_state);
   clean_exit(0);
