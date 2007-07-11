@@ -110341,3 +110341,33 @@ Modified files:
 	                                         compSampler-timecomp.perfkeys 
 	                                         fft-timecomp.perfkeys 
 
+---------------------------------------------------------------------------
+
+07/11/07 11:06:52 -- deitz
+
+Log message:
+	This is a stopgap measure to allow one to call a C function from
+	Chapel.  It is crufty at best.  I've been sitting on this work for a
+	while debating on whether to checkin but I accidentally integrated it
+	with other work so am trying to tease it out.
+	
+	Added support for calling C functions from Chapel by prototyping the C
+	function as if it were a Chapel function.  No overloading is allowed.
+	Support is only provided for primitive types.
+	
+	Use the new keyword _extern before the function prototype.
+	
+	To compile the C code, or link the C object file, add it to an option
+	using the --ccflags.
+	
+	As an example, see the new test link/deitz/test_link1.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
+Added files:
+	chapel/test/link/deitz/: link1.c test_link1.chpl 
+	                         test_link1.compopts test_link1.good 
+
