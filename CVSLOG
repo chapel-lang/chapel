@@ -110457,3 +110457,15 @@ Added files:
 	                                  Makefile.share 
 	                                  chpl_cfg_threads.c 
 
+---------------------------------------------------------------------------
+
+07/11/07 13:24:12 -- bradc
+
+Log message:
+	Adding the script that I use to generate editor tarballs
+	for users.  This is based on the gen_release script, but
+	somewhat different due to different assumptions.
+
+Added files:
+	chapel/util/: gen_editors 
+
