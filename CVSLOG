@@ -110393,3 +110393,13 @@ Added files:
 Removed files:
 	chapel/etc/emacs/22.0/: cc-menus.el cc-menus.orig.el 
 
+---------------------------------------------------------------------------
+
+07/11/07 11:27:45 -- bradc
+
+Log message:
+	Small wording change to top-level README.
+
+Modified files:
+	chapel/etc/: README 
+
