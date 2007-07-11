@@ -110310,3 +110310,34 @@ Log message:
 Added files:
 	chapel/test/trivial/dinan/: enumTest.good 
 
+---------------------------------------------------------------------------
+
+07/10/07 17:25:09 -- bradc
+
+Log message:
+	Updated the perfkeys files for the compile time
+	performance tests to reflect new passes; removed
+	parallel1, renamed parallel2 to parallel; added
+	new refPropagation pass (which has been in the
+	compiler for awhile -- I missed its addition).
+	
+	Also fixed up the .gpl and .dat files that we've
+	been using to reflect these changes and to fix
+	some other mistakes that seem to have creeped
+	into them.  I think everything should be correct
+	now.
+	
+	I've been taking the approach of removing dead
+	passes from the history of the performance
+	figures in order to keep the columns lining up,
+	which means we throw away some history (though
+	we have it under revision control) for the sake
+	of understanding how currently existing passes
+	have performed over time.
+
+Modified files:
+	chapel/test/performance/compiler/bradc/: 
+	                                         cg-sparse-timecomp.perfkeys 
+	                                         compSampler-timecomp.perfkeys 
+	                                         fft-timecomp.perfkeys 
+
