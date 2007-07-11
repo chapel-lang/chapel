@@ -101,6 +101,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TCLASS
 %token TCOBEGIN
 %token TCOFORALL
+%token TCOMPILERERROR
 %token TCONFIG
 %token TCONST
 %token TCONTINUE
@@ -109,7 +110,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TDO
 %token TDOMAIN
 %token TENUM
-%token TCOMPILERERROR
+%token TEXTERN
 %token TFOR
 %token TFORALL
 %token TGOTO
@@ -206,7 +207,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls
 
-%type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt
+%type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
@@ -665,6 +666,7 @@ decl_stmt:
   use_stmt
 | mod_decl_stmt
 | fn_decl_stmt
+| extern_fn_decl_stmt
 | class_decl_stmt
 | enum_decl_stmt
 | typedef_decl_stmt
@@ -721,6 +723,27 @@ fn_decl_stmt:
         }
       }
       $$ = build_chpl_stmt(new DefExpr($2));
+    }
+;
+
+
+extern_fn_decl_stmt:
+  TEXTERN TDEF identifier TLP formal_ls TRP opt_type TSEMI
+    {
+      FnSymbol* fn = new FnSymbol($3);
+      fn->isExtern = true;
+      if ($7)
+        fn->retExprType = $7;
+      else
+        fn->retType = dtVoid;
+      for_alist(Expr, expr, $5) {
+        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+          def->remove();
+          fn->insertFormalAtTail(def);
+        } else
+          USR_FATAL(expr, "illegal extern function definition");
+      }
+      $$ = build_chpl_stmt(new DefExpr(fn));
     }
 ;
 

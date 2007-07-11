@@ -49,6 +49,7 @@ class Symbol : public BaseAST {
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
+  bool isExtern;       // external to Chapel, implemented in C
   Vec<SymExpr*> defs;
   Vec<SymExpr*> uses;
   Vec<char*> pragmas;

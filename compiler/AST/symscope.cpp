@@ -240,7 +240,8 @@ void SymScope::codegenFunctions(FILE* outfile) {
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp)) {
-        fns.add(fn);
+        if (!fn->isExtern)
+          fns.add(fn);
       }
     }
   }

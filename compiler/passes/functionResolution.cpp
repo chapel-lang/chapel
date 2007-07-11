@@ -1073,6 +1073,9 @@ resolve_call(CallExpr* call,
   }
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (visibleFn->isExtern && visibleFns.n > 1)
+      USR_FATAL(visibleFn, "external function is overloaded");
+
     if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
@@ -2475,6 +2478,9 @@ resolveFns(FnSymbol* fn) {
   if (resolvedFns.set_in(fn))
     return;
   resolvedFns.set_add(fn);
+
+  if (fn->isExtern)
+    return;
 
   insertFormalTemps(fn);
 

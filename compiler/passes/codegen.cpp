@@ -264,9 +264,16 @@ static void codegen_header(void) {
     typeSymbol->codegenDef(outfile);
   }
 
-  fprintf(outfile, "/*** Function Prototypes ***/\n\n");
+  fprintf(outfile, "/*** Extern Function Prototypes ***/\n\n");
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
-    fnSymbol->codegenPrototype(outfile);
+    if (fnSymbol->isExtern)
+      fnSymbol->codegenPrototype(outfile);
+  }
+
+  fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");
+  forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
+    if (!fnSymbol->isExtern)
+      fnSymbol->codegenPrototype(outfile);
   }
 
   fprintf(outfile, "\n/*** Global Variables ***/\n\n");

@@ -53,6 +53,7 @@ do              processToken(TDO);
 domain          processToken(TDOMAIN);
 else            processToken(TELSE);
 enum            processToken(TENUM);
+_extern         processToken(TEXTERN);
 for             processToken(TFOR);
 forall          processToken(TFORALL);
 goto            processToken(TGOTO);

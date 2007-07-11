@@ -140,7 +140,8 @@ Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
   isTypeVariable(false),
   canParam(false),
   canType(false),
-  isConcurrent(false)
+  isConcurrent(false),
+  isExtern(false)
 {}
 
 
@@ -337,6 +338,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
+  newVarSymbol->isExtern = isExtern;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -1343,6 +1345,8 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
+  if (isExtern)
+    fprintf(outfile, "extern ");
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
