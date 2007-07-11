@@ -3,6 +3,15 @@
 ;; Copyright (C) 1992, 93, 94, 95, 96, 97, 98, 1999, 2000, 2001
 ;;  Free Software Foundation, Inc.
 
+;; Modified: by Bradford Chamberlain and Steven Deitz 2005-2007 to
+;;           support a Chapel mode and coloring.  These hacks are
+;;           being made available to the Chapel user community for
+;;           their convenience and are not intended to be supported by
+;;           the original authors below, nor to be folded back into
+;;           the emacs source tree.  Please send comments, feedback,
+;;           and bugs regarding the Chapel mode to:
+;;                 chapel_info@cray.com.
+
 ;; Author: jwz, then rms, then sm
 ;; Maintainer: FSF
 ;; Keywords: languages, faces
@@ -2704,20 +2713,20 @@ See also `chpl-font-lock-extra-types'.")
 (let* ((chpl-keywords
 	(eval-when-compile
 	  (regexp-opt '("atomic"
-                        "break" 
+                        "break" "by"
                         "cobegin" "config" "const" "continue" 
-                        "distributed" "do" 
+                        "def" "distributed" "do" 
                         "else" 
                         "for" "forall" 
                         "goto"
                         "if" "in" "inout" "iterator"
                         "let"
                         "nil"
-                        "ordered" "otherwise" "out"
+                        "on" "ordered" "otherwise" "out"
                         "param"
                         "reduce" "repeat" "return"
-			"select" "serial" 
-                        "typeselect"
+			"select" "serial"
+                        "then" "typeselect"
                         "until"
                         "var"
                         "when" "where" "while" "with"
@@ -2730,7 +2739,7 @@ See also `chpl-font-lock-extra-types'.")
              "#" "="))))
        (chpl-type-specs
 	(eval-when-compile
-	  (regexp-opt '("class" "enum" "function" "module" "record" "type" 
+	  (regexp-opt '("class" "enum" "fun" "module" "record" "type" 
                         "typedef" "union"))))
        (chpl-type-specs-depth
 	(regexp-opt-depth chpl-type-specs))
@@ -2739,8 +2748,8 @@ See also `chpl-font-lock-extra-types'.")
 	  (cons
 	   ,(eval-when-compile
 	      (regexp-opt
-	       '("bool" "complex" "domain" "float" "index" "integer" "string" 
-                 "void")))
+	       '("bool" "complex" "domain" "imag" "index" "int" "real" 
+                 "string" "subdomain" "uint" "void")))
 	   chpl-font-lock-extra-types)
 	  "\\|"))
        (chpl-type-names-depth
@@ -2748,7 +2757,7 @@ See also `chpl-font-lock-extra-types'.")
        (chpl-preprocessor-directives
 	(eval-when-compile
 	  (regexp-opt
-	   '("define"  "elif" "else" "endif" "error" "file" "if" "ifdef"
+	   '("define" "do" "elif" "else" "endif" "error" "file" "if" "ifdef"
 	     "ifndef" "include" "line" "pragma" "undef"))))
        (chpl-preprocessor-directives-depth
 	(regexp-opt-depth chpl-preprocessor-directives)))

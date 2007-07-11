@@ -2,6 +2,17 @@
 
 ;; Copyright (C) 2002, 03 Free Software Foundation, Inc.
 
+;; Modified: by Bradford Chamberlain and Steven Deitz in 2007 to
+;;           support a Chapel mode and coloring.  These hacks are
+;;           being made available to the Chapel user community for
+;;           their convenience and are not intended to be supported by
+;;           the original authors named below, nor to be folded back
+;;           into the emacs source tree without sufficient additional
+;;           work and popularization of Chapel.  
+;;
+;; Comments: Please send comments, feedback, and bugs regarding the
+;;           Chapel mode to: chapel_info@cray.com.
+
 ;; Authors:    2003- Alan Mackenzie
 ;;             2002- Martin Stjernholm
 ;; Maintainer: bug-cc-mode@gnu.org

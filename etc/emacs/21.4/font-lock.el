@@ -3,6 +3,15 @@
 ;; Copyright (C) 1992, 93, 94, 95, 96, 97, 98, 1999, 2000, 2001
 ;;  Free Software Foundation, Inc.
 
+;; Modified: by Bradford Chamberlain and Steven Deitz 2005-2007 to
+;;           support a Chapel mode and coloring.  These hacks are
+;;           being made available to the Chapel user community for
+;;           their convenience and are not intended to be supported by
+;;           the original authors below, nor to be folded back into
+;;           the emacs source tree.  Please send comments, feedback,
+;;           and bugs regarding the Chapel mode to:
+;;                 chapel_info@cray.com.
+
 ;; Author: jwz, then rms, then sm
 ;; Maintainer: FSF
 ;; Keywords: languages, faces

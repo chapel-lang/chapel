@@ -1,5 +1,14 @@
 ;;; cc-menus.el --- imenu support for CC Mode
 
+;; Modified: by Bradford Chamberlain and Steven Deitz 2005-2007 to
+;;           support a Chapel mode and coloring.  These hacks are
+;;           being made available to the Chapel user community for
+;;           their convenience and are not intended to be supported by
+;;           the original authors below, nor to be folded back into
+;;           the emacs source tree.  Please send comments, feedback,
+;;           and bugs regarding the Chapel mode to:
+;;                 chapel_info@cray.com.
+
 ;; Copyright (C) 1985,1987,1992-2001 Free Software Foundation, Inc.
 
 ;; Authors:    2000- Martin Stjernholm

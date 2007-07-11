@@ -1,0 +1,51 @@
+=================
+Chapel emacs mode
+=================
+
+This directory subtree contain versions of standard emacs e-lisp
+files, hacked to do simple formatting of Chapel code.  Chapel
+formatting is far from perfect, but also far better than having no
+formatting at all.  Version 22.0 is the main version that we are
+currently supporting -- the earlier versions are somewhat stale and
+likely to get more stale over time.
+
+The sources in this subdirectory are licensed under the GPL.  See the
+COPYING file in this directory for more information.
+
+To use these modes, it is suggested that you install these directories
+so that they appear under your Chapel release as follows:
+
+   $CHPL_HOME/    -- the location of your normal Chapel installation
+     etc/         -- the result of un-tarring chapel-editors.tar.gz
+       emacs/     -- this directory
+
+In which case, you should be able to use these modes by adding the
+following lines to your standard .emacs file:
+
+------------------------------------------------------------------------
+
+; query the environment variable CHPL_HOME
+(setq chpl-home (getenv "CHPL_HOME"))
+
+; prepend $CHPL_HOME/etc/emacs/x.y to your emacs load-path where x.y
+; is your emacs version number
+(if (string= chpl-home nil)
+    nil
+  (setq load-path (cons (concat chpl-home
+                                "/etc/emacs/"
+                                (number-to-string emacs-major-version) 
+                                "."
+                                (number-to-string emacs-minor-version))
+                        load-path))
+  )
+
+; make sure that when chpl-mode is entered, (our modified) cc-mode is
+;  loaded
+(autoload 'chpl-mode "cc-mode" "Chpl enhanced cc-mode" t)
+
+; make loading files with a .chpl extension put emacs into chpl-mode
+(setq auto-mode-alist (cons '("\\.chpl$" . chpl-mode)
+                            auto-mode-alist))
+
+
+------------------------------------------------------------------------
