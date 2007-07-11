@@ -110371,3 +110371,25 @@ Added files:
 	chapel/test/link/deitz/: link1.c test_link1.chpl 
 	                         test_link1.compopts test_link1.good 
 
+---------------------------------------------------------------------------
+
+07/11/07 11:24:23 -- bradc
+
+Log message:
+	Getting emacs mode files ready for release.  Added modifiation
+	notices to all the .el files as required by the GPL.  Added
+	COPYING, LICENSE, and README files to the emacs subdirectory.
+	Removed .el files that we had never modified.
+
+Modified files:
+	chapel/etc/emacs/21.3/: cc-langs.el cc-menus.el cc-mode.el 
+	                        font-lock.el 
+	chapel/etc/emacs/21.4/: cc-langs.el cc-menus.el cc-mode.el 
+	                        font-lock.el 
+	chapel/etc/emacs/22.0/: cc-defs.el cc-fonts.el cc-langs.el 
+	                        cc-mode.el chapel.el 
+Added files:
+	chapel/etc/emacs/: COPYING LICENSE README 
+Removed files:
+	chapel/etc/emacs/22.0/: cc-menus.el cc-menus.orig.el 
+
