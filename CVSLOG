@@ -110484,3 +110484,18 @@ Added files:
 	chapel/runtime/include/threads-none/: chpl_cfg_threads.h 
 	chapel/runtime/threads-none/: chpl_cfg_threads.c 
 
+---------------------------------------------------------------------------
+
+07/11/07 14:29:04 -- deitz
+
+Log message:
+	Removed the addition of -lpthread to LIBS from within the compiler.
+	This now happens from a Makefile from within runtime/etc.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/runtime/etc/: Makefile.include 
+Added files:
+	chapel/runtime/etc/: Makefile.threads-none 
+	                     Makefile.threads-pthreads 
+
