@@ -2,7 +2,6 @@ total time :
 time between passes :
 parse :
 checkParsed :
-parallel1 :
 cleanup :
 scopeResolve :
 flattenClasses :
@@ -13,7 +12,7 @@ resolve :
 checkResolved :
 flattenFunctions :
 cullOverReferences :
-parallel2 :
+parallel :
 lowerIterators :
 inlineFunctions :
 cullOverReferences :
@@ -24,3 +23,4 @@ prune :
 copyCollection :
 insertLineNumbers :
 codegen :
+refPropagation :
