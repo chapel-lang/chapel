@@ -1,0 +1,44 @@
+#
+# include the standard Chapel Makefile.base
+#
+
+CHAPEL_ROOT = $(RUNTIME_ROOT)/..
+CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+
+include $(CHAPEL_ROOT)/make/Makefile.base
+
+INCL_CFLAGS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_THREADS) -I$(RUNTIME_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(RUNTIME_ROOT)/include
+RUNTIME_CFLAGS += $(INCL_CFLAGS)
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(CHPL_MAKE_PLATFORM)/*.o \
+	core \
+	*.core \
+	*.gmon \
+	*.a \
+	$(GEN_SRCS) \
+	$(EXECS)
+
+CLOBBER_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(CHPL_MAKE_PLATFORM) \
+	*~
+
+
+#
+# platform-specific subdirectory targets
+#
+
+CVS_DEPENDS = ./$(CHPL_MAKE_PLATFORM)/Makefile.cvs.depend
+
+
+
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
+DEPENDSUBDIRS = $(SUBDIRS:%=%.dependdir)

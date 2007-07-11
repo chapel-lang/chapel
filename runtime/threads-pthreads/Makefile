@@ -1,15 +1,15 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = src
+RUNTIME_SUBDIR = threads-pthreads
 
 #
 # standard header
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-COMMON_OBJDIR = $(CHPL_MAKE_PLATFORM)
+THREADS_OBJDIR = $(CHPL_MAKE_PLATFORM)
 include Makefile.share
 
-TARGETS = $(COMMON_OBJS) $(MAIN_OBJS)
+TARGETS = $(THREADS_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

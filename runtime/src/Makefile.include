@@ -1,0 +1,5 @@
+COMMON_OBJDIR = $(RUNTIME_ROOT)/src/$(CHPL_MAKE_PLATFORM)
+
+ALL_SRCS += src/*.c
+
+include $(RUNTIME_ROOT)/src/Makefile.share

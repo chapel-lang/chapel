@@ -13,6 +13,12 @@ ifndef CHPL_MAKE_PLATFORM
 include $(CHAPEL_ROOT)/make/Makefile.platform
 endif
 
+#
+# use pthreads if CHPL_THREADS is not specified
+#
+ifndef CHPL_THREADS
+CHPL_THREADS = pthreads
+endif
 
 #
 # default CFLAGS, based on other settings

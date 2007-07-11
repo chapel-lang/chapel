@@ -1,42 +1,21 @@
 #ifndef _chplthreads_h_
 #define _chplthreads_h_
 
-// Pthread version of the Chapel thread interface
-#include <pthread.h>
-#include "chpltypes.h"
+#include "chpl_cfg_threads.h"
 
-// mutexes
-typedef pthread_mutex_t _chpl_mutex_t;
-typedef _chpl_mutex_t  *_chpl_mutex_p;
+_chpl_mutex_p _chpl_mutex_new(void);      // malloc and init a mutex
+int _chpl_mutex_init(_chpl_mutex_p mutex);
+int _chpl_mutex_lock(_chpl_mutex_p mutex);
+int _chpl_mutex_trylock(_chpl_mutex_p mutex);
+int _chpl_mutex_unlock(_chpl_mutex_p mutex);
+int _chpl_mutex_destroy(_chpl_mutex_p mutex);
 
-_chpl_mutex_p _chpl_mutex_new( void);      // malloc and init a mutex
-int _chpl_mutex_init( _chpl_mutex_p mutex);
-int _chpl_mutex_lock( _chpl_mutex_p mutex);
-int _chpl_mutex_trylock( _chpl_mutex_p mutex);
-int _chpl_mutex_unlock( _chpl_mutex_p mutex);
-int _chpl_mutex_destroy( _chpl_mutex_p mutex);
-
-// condition variables
-typedef pthread_cond_t    _chpl_condvar_t;
-typedef _chpl_condvar_t  *_chpl_condvar_p;
-
-_chpl_condvar_p _chpl_condvar_new( void);  // malloc and init a condvar
-int _chpl_condvar_init( _chpl_condvar_p cond);
-int _chpl_condvar_destroy( _chpl_condvar_p cond);
-int _chpl_condvar_signal( _chpl_condvar_p cond);
-int _chpl_condvar_broadcast( _chpl_condvar_p cond);
-int _chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex);
-
-// thread-related
-typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
-typedef void* _chpl_threadarg_t;           // function argument
-typedef pthread_attr_t _chpl_thread_attr_t;// thread attributes
-typedef pthread_t _chpl_thread_t;          // thread handle
-typedef struct {                           // temporary work space
-  _chpl_thread_t thread;                   // thread handle for join/wait
-  int            error;                    // to store fork error code
-} _chpl_cobegin_wkspace_t;
-
+_chpl_condvar_p _chpl_condvar_new(void);  // malloc and init a condvar
+int _chpl_condvar_init(_chpl_condvar_p cond);
+int _chpl_condvar_destroy(_chpl_condvar_p cond);
+int _chpl_condvar_signal(_chpl_condvar_p cond);
+int _chpl_condvar_broadcast(_chpl_condvar_p cond);
+int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex);
 
 // Chapel system thread control
 void    initChplThreads(void);             // main thread init's thread support
@@ -86,6 +65,5 @@ _chpl_cobegin (int                      nthreads, // number of threads
 int
 _chpl_begin (_chpl_threadfp_t  fp,                // function to fork
              _chpl_threadarg_t a);                // function arg
-
 
 #endif  // _chplthreads_h_

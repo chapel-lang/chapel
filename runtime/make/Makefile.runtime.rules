@@ -1,0 +1,9 @@
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
+
+depend: $(DEPENDSUBDIRS) $(DEPEND_DEPS) echoruntimedir
+	@echo Updating dependences...
+
+CVS_DEPS= $(CVS_SRCS:%.c=%.depend)
+
+filedepend: $(CVS_DEPS)

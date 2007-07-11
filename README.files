@@ -27,8 +27,5 @@ descriptions for the files and directories that they contain.
   make/             : Makefile settings for various platforms
   man/              : man pages for the Chapel compiler (chpl)
   modules/          : standard and internal Chapel modules
-  runtime/          : source files for Chapel's runtime support libraries
-    etc/            : Makefiles for compiler-generated code
-    include/        : header files for runtime support libraries
-    src/            : source code for runtime support libraries
+  runtime/          : source code for the runtime (see runtime/README.files)
   util/             : utility scripts

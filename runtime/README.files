@@ -1,0 +1,16 @@
+============================================
+Chapel Runtime Directory Structure and Files
+============================================
+
+The following list gives an overview of $CHPL_HOME/runtime's
+structure.
+
+./
+  etc/              : Makefiles for compiler-generated code
+  include/          : header files for the runtime
+  make/             : factored Makefiles for the runtime
+  Makefile          : Makefile for the runtime
+  README.files      : this file
+  src/              : source code for the runtime
+  threads-none/     : source code for no threading package
+  threads-pthreads/ : source code for interfacing with pthreads

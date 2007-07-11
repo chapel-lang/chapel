@@ -1,0 +1,46 @@
+#
+# recursive subdirectory rules
+#
+
+STARS = \*\*\*\*\*
+
+echoruntimedir:
+	@echo $(STARS) $(RUNTIME_SUBDIR)/ $(STARS)
+
+%.makedir:
+	@cd $* && $(MAKE)
+
+%.cleandir:
+	@cd $* && $(MAKE) clean
+
+%.cleandirdeps:
+	@cd $* && $(MAKE) cleandeps
+
+%.clobberdir:
+	@cd $* && $(MAKE) clobber
+
+%.dependdir:
+	@cd $* && $(MAKE) depend
+
+
+#
+# dependences and misc. stuff
+#
+
+-include $(CVS_DEPENDS)
+
+#
+# pattern-based rules
+#
+
+%.depend: %.c $(PLATFORM_DIR)
+	@$(CMAKEDEPEND) -MT '$(CHPL_MAKE_PLATFORM)/$*.o' $(RUNTIME_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
+
+$(CHPL_MAKE_PLATFORM)/%.o: %.c $(PLATFORM_DIR)
+	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
+
+FORCE:
+
+.PHONY: all clean cleandeps clobber depend test echoruntimedir FORCE
+.SUFFIXES:
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir .dependdir

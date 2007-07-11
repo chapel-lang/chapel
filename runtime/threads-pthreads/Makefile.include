@@ -1,0 +1,5 @@
+THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-pthreads/$(CHPL_MAKE_PLATFORM)
+
+ALL_SRCS += threads-pthreads/*.c
+
+include $(RUNTIME_ROOT)/threads-pthreads/Makefile.share

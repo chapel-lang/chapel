@@ -1,0 +1,26 @@
+COMMON_SRCS = \
+	arg.c \
+	chplcast.c \
+	chplcopygc.c \
+	chplexit.c \
+	chplio.c \
+	chplmem.c \
+	chplmem_tests.c \
+	chplsys.c \
+	chplthreads.c \
+	chpltypes.c \
+	config.c \
+	error.c \
+	gdb.c \
+
+MAIN_SRCS = \
+	main.c \
+
+CVS_SRCS = $(COMMON_SRCS) $(MAIN_SRCS)
+SRCS = $(CVS_SRCS)
+
+COMMON_OBJS = \
+	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
+
+MAIN_OBJS = \
+	$(MAIN_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
