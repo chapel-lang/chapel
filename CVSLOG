@@ -110469,3 +110469,18 @@ Log message:
 Added files:
 	chapel/util/: gen_editors 
 
+---------------------------------------------------------------------------
+
+07/11/07 13:48:58 -- deitz
+
+Log message:
+	Added initial support for setting your threads package to none by
+	setting CHPL_THREADS to none.  This has the same semantic effect as
+	compiling with the --serial flag.  Note that -lpthread is still linked
+	into the executable since this is added to the libray flags in the
+	compiler.
+
+Added files:
+	chapel/runtime/include/threads-none/: chpl_cfg_threads.h 
+	chapel/runtime/threads-none/: chpl_cfg_threads.c 
+
