@@ -11,20 +11,32 @@ type elemType = real(64);
 const matD : domain(2) distributed(Block) = [1..n, 1..n]; 
 const dmat : [(i,j) in matD] elemType = 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
-var oneAtATime: sync bool = true;
 
 class blockIndices {
   const ilo, ihi, jlo, jhi, klo, khi, llo, lhi : int;
+  
+  def blockIndices(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
+    this.ilo = ilo;
+    this.ihi = ihi;
+    this.jlo = jlo;
+    this.jhi = jhi;
+    this.klo = klo;
+    this.khi = khi;
+    this.llo = llo;
+    this.lhi = lhi;	 
+  }
 }
 
-config const numLocs = 50;
-var numLocsDone : sync int = 0;
+// config const nlocales = 5;
 var task : sync blockIndices;
  
 def buildjk() {
   cobegin {
-    for loc in 1..numLocs do
-      begin {	      	
+    /*
+    for l in 1..nlocales do
+      begin  
+    */ 
+        {	      	
           var bI, copyofbI : blockIndices;
           bI = task;
           while (bI.ilo != 0) {
@@ -34,17 +46,29 @@ def buildjk() {
               bI = task;
             }
           }
+      /*		
           task = bI;
-          numLocsDone = numLocsDone + 1;
-      }
+        //task = blockIndices(0,0,0,0,0,0,0,0);
+        //writeXF(task, bI);		
+        //writeXF(task, blockIndices(0,0,0,0,0,0,0,0));
+        */
+        }
     
-    forall bI in gen() do
-      task = bI;
+    {
+      forall iat in 1..natom {
+        forall jat in 1..iat {
+          forall kat in 1..iat {
+            const lattop = if (kat==iat) then jat else kat;  
+            forall lat in 1..lattop {
+              task = blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+            }
+          }
+        }
+      }
+      task = blockIndices(0,0,0,0,0,0,0,0);
+    }
   }
   
-  while (readXX(numLocsDone) < numLocs) {
-  }
-
   cobegin {
     [(i,j) in matD] jmat2T(i,j) = jmat2(j,i);
     [(i,j) in matD] kmat2T(i,j) = kmat2(j,i);
@@ -61,39 +85,30 @@ def buildjk() {
   writeln("\n1st col of exchange matrix:-\n", kmat2(1..n,1..1));
 }
 
-def gen() {
-  forall iat in 1..natom {
-    forall jat in 1..iat {
-      forall kat in 1..iat {
-        const lattop = if (kat==iat) then jat else kat;
-        forall lat in 1..lattop {
-          yield blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
-        }
-      }
-    }
-  }
-  yield blockIndices(0,0,0,0,0,0,0,0);
-}
-
 def buildjk_atom4(bI) {
-  const (ilo,ihi,jlo,jhi,klo,khi,llo,lhi) = (bI.ilo,bI.ihi,bI.jlo,bI.jhi,bI.klo,bI.khi,bI.llo,bI.lhi);
+  const ilo = bI.ilo, ihi = bI.ihi, jlo = bI.jlo, jhi = bI.jhi, klo = bI.klo, khi = bI.khi, llo = bI.llo, lhi = bI.lhi;
   
-  const (ijD,ikD,ilD,jkD,jlD,klD) = ([ilo..ihi,jlo..jhi],[ilo..ihi,klo..khi],[ilo..ihi,llo..lhi],[jlo..jhi,klo..khi],[jlo..jhi,llo..lhi],[klo..khi,llo..lhi]);
-
+  const ijD = [ilo..ihi, jlo..jhi];
+  const ikD = [ilo..ihi, klo..khi];
+  const ilD = [ilo..ihi, llo..lhi];	
+  const jkD = [jlo..jhi, klo..khi];
+  const jlD = [jlo..jhi, llo..lhi];
+  const klD = [klo..khi, llo..lhi];
+  
   const dij = dmat(ijD);
   const dik = dmat(ikD);
   const dil = dmat(ilD);
   const djk = dmat(jkD);
   const djl = dmat(jlD);
   const dkl = dmat(klD);
-
+  
   var jij : [ijD] elemType;
   var jkl : [klD] elemType;
   var kik : [ikD] elemType;
   var kil : [ilD] elemType;
   var kjk : [jkD] elemType;
   var kjl : [jlD] elemType;
-
+  
   var jtop, ktop, ltop : int;
   var facij, facijkl, gijkl: elemType;
   
@@ -121,15 +136,13 @@ def buildjk_atom4(bI) {
       }
     }
   }
-
-  var tmp = oneAtATime;
+  
   atomic jmat2(ijD) += jij;
   atomic jmat2(klD) += jkl;
   atomic kmat2(ikD) += kik;
   atomic kmat2(ilD) += kil;
   atomic kmat2(jkD) += kjk;
   atomic kmat2(jlD) += kjl;
-  oneAtATime = tmp;
 }
 
 def g(i,j,k,l) {
