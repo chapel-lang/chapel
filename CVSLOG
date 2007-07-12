@@ -110518,3 +110518,16 @@ Modified files:
 	chapel/runtime/threads-none/: Makefile Makefile.include 
 	chapel/runtime/threads-pthreads/: Makefile Makefile.include 
 
+---------------------------------------------------------------------------
+
+07/12/07 10:42:42 -- dinan
+
+Log message:
+	Feature request future: using config var comments in the --help message text.
+
+Added files:
+	chapel/test/execflags/dinan/: configvar_help_message.chpl 
+	                              configvar_help_message.execopts 
+	                              configvar_help_message.future 
+	                              configvar_help_message.good 
+
