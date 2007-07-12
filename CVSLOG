@@ -110531,3 +110531,21 @@ Added files:
 	                              configvar_help_message.future 
 	                              configvar_help_message.good 
 
+---------------------------------------------------------------------------
+
+07/12/07 16:08:34 -- bradc
+
+Log message:
+	Adding three new versions of Aniruddha's fock matrix
+	computation: fock-0.chpl, fock-1.chpl, fock-2.chpl.
+	Renamed the original code we were looking at (which
+	used to be called fock-1.chpl) into fock-orig.chpl.
+	Added a README to help track these versions.
+
+Modified files:
+	chapel/test/users/shetag/fock/: fock-1.chpl fock-1.good 
+Added files:
+	chapel/test/users/shetag/fock/: README fock-0.chpl fock-0.good 
+	                                fock-2.chpl fock-2.good 
+	                                fock-orig.chpl fock-orig.good 
+
