@@ -1,0 +1,11 @@
+feature request: comments following config vars to appear in --help message
+
+This is a feature suggestion we discussed where a comment that is associated
+with a config var could be displayed in the --help message.  For example if a
+chapel program we might have:
+
+config const k: int; // Order of Legendre Polynomial basis
+
+Which would result in a help message (eg './a.out --help') containing:
+
+  k: int          -- Order of Legendre Polynomial basis
