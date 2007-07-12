@@ -110549,3 +110549,13 @@ Added files:
 	                                fock-2.chpl fock-2.good 
 	                                fock-orig.chpl fock-orig.good 
 
+---------------------------------------------------------------------------
+
+07/12/07 16:21:52 -- bradc
+
+Log message:
+	Converted this over to a saner tabbing strategy.
+
+Modified files:
+	chapel/test/users/shetag/fock/: fock-0.chpl 
+
