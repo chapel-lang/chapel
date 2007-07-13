@@ -110626,3 +110626,89 @@ Added files:
 	chapel/test/trivial/dinan/: bad_return.chpl bad_return.future 
 	                            bad_return.good 
 
+---------------------------------------------------------------------------
+
+07/13/07 16:29:25 -- bradc
+
+Log message:
+	Continually haunted by the fact that:
+	   chpl --help --no-devel
+	and:
+	   chpl --no-devel --help
+	return different results due to the fact that help
+	is implemented in our flag mechanism as a function
+	callback rather than a change of state, I rejiggered
+	the printing of: --help, --copyright, --license,
+	--version to avoid the use of these functions and
+	print things out a bit more cleanly and uniformly.
+	
+	Also, changed output stream for this information
+	from stderr to stdout (to match what other compilers
+	do), and made the status message for --help depend
+	on whether the user requested it explicitly or it
+	was the result of not supplying a file argument.
+	
+	Inserted some new tests to lock in behavior if
+	pairs of flags or all four flags are used.  Removed
+	old --version test which had become redundant w.r.t.
+	this stuff; left userhelp.chpl as it was to avoid
+	confusion (it could just have easily been moved
+	into this new printstuff directory).
+
+Modified files:
+	chapel/compiler/include/: arg.h 
+	chapel/compiler/main/: arg.cpp driver.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.compopts 
+Added files:
+	chapel/test/compflags/bradc/help/: userhelp.noexec 
+	chapel/test/compflags/bradc/printstuff/: .cvsignore CLEANFILES 
+	                                         copyright.chpl 
+	                                         copyright.compopts 
+	                                         copyright.prediff 
+	                                         copyrighthelp.csh 
+	                                         helphelp.csh 
+	                                         license.chpl 
+	                                         license.compopts 
+	                                         license.noexec 
+	                                         license.prediff 
+	                                         licensehelp.csh 
+	                                         version.chpl 
+	                                         version.compopts 
+	                                         version.goodstart 
+	                                         version.noexec 
+	                                         version.prediff 
+	                                         versionhelp.csh 
+	                                         zall.chpl zall.compopts 
+	                                         zall.noexec 
+	                                         zall.prediff 
+	                                         zcopyhelp.chpl 
+	                                         zcopyhelp.compopts 
+	                                         zcopyhelp.noexec 
+	                                         zcopyhelp.prediff 
+	                                         zcopylice.chpl 
+	                                         zcopylice.compopts 
+	                                         zcopylice.noexec 
+	                                         zcopylice.prediff 
+	                                         zcopyvers.chpl 
+	                                         zcopyvers.compopts 
+	                                         zcopyvers.noexec 
+	                                         zcopyvers.prediff 
+	                                         zhelplice.chpl 
+	                                         zhelplice.compopts 
+	                                         zhelplice.noexec 
+	                                         zhelplice.prediff 
+	                                         zhelpvers.chpl 
+	                                         zhelpvers.compopts 
+	                                         zhelpvers.noexec 
+	                                         zhelpvers.prediff 
+	                                         zlicevers.chpl 
+	                                         zlicevers.compopts 
+	                                         zlicevers.noexec 
+	                                         zlicevers.prediff 
+Removed files:
+	chapel/test/compflags/bradc/noexec/: CLEANFILES NOEXEC 
+	                                     version.chpl 
+	                                     version.compopts 
+	                                     version.goodstart 
+	                                     version.prediff 
+
