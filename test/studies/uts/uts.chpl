@@ -36,7 +36,7 @@ config const geoDist: GeoDistrib  = GeoFixed;
 class TreeNode {
   //var hash:    RNG_state;
   var depth:   int;
-  var hash:    string = "  Here be dragons.  ";  // Handle delicately, if this is ever copied, things will go off the rails
+  var hash:    string = "__Here_be_dragons__";  // Handle delicately, if this is ever copied, things will go off the rails
 
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
