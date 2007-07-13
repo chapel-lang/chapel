@@ -110609,3 +110609,20 @@ Log message:
 Added files:
 	chapel/test/studies/uts/: UTS_LCPC06.pdf 
 
+---------------------------------------------------------------------------
+
+07/13/07 11:36:56 -- dinan
+
+Log message:
+	A return statement that is outside of any function results in the following
+	error message:
+	
+	bad_return.chpl:1: error: Not all function returns return a value
+	
+	which is difficult to interpret.  This future is to request a more descriptive
+	error message for this case.
+
+Added files:
+	chapel/test/trivial/dinan/: bad_return.chpl bad_return.future 
+	                            bad_return.good 
+
