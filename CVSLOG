@@ -110559,3 +110559,30 @@ Log message:
 Modified files:
 	chapel/test/users/shetag/fock/: fock-0.chpl 
 
+---------------------------------------------------------------------------
+
+07/12/07 18:39:15 -- dinan
+
+Log message:
+	Checking in UTS with SHA1 Random Number Generator (RNG):
+	
+	Created a wrapper package that calls into Brian Gladman (BRG)'s SHA1
+	implementation.  Many thanks to Steve for the _extern workaround.  I was able
+	to pass the 20 byte SHA1 digest in/out of the C functions as strings.  The only
+	gotcha is to be careful the strings are never copied in the Chapel code or else
+	strcpy() will stop copying at the first 0 it sees in the digest.
+	
+	As of this checkin, Geometric, Binomial, and Hybrid trees all generate
+	correctly (*knock on wood*).  Some test samples are included in
+	sample_trees.txt.  The current implementation is a memory hog so I end up
+	having to run all of the sample trees on one of the chapXX machines.  Brad gave
+	some good suggestions on tracking down the source of the memory bloat and I
+	will keep looking into this.
+
+Modified files:
+	chapel/test/studies/uts/: uts.chpl 
+Added files:
+	chapel/test/studies/uts/: Makefile brg_endian.h brg_sha1.c 
+	                          brg_sha1.h brg_types.h 
+	                          sample_trees.txt sha1_rng.chpl 
+
