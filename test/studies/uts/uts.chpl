@@ -7,11 +7,12 @@
  
 use Math;
 use Time;
-use lcg_rng;
+//use lcg_rng;
+use sha1_rng;
 
 
 /**** UTS TYPES ****/
-enum NodeDistrib { Binomial, Geometric, Constant };
+enum NodeDistrib { Binomial, Geometric, Hybrid, Constant };
 enum GeoDistrib  { GeoFixed, GeoLinear, GeoPoly, GeoCyclic };
 
 
@@ -20,20 +21,22 @@ param debug: bool = false;
 
 
 /**** UTS CONFIG VARS ****/
-config const SEED:        uint = 73;    // Seed for the hash of the root node
-config const MAX_CHILDREN: int = 2;     // Max. Children a node may have
-config const B_0:          int = 2;     // Branching Factor
-config const MAX_DEPTH:    int = 2;     // Depth limit
-config const nonLeafProb: real = 0.01;  // Probability of a non-leaf (binomial)
-config const nonLeafBF:    int = 2;     // Non-leaf branching factor (binomial)
+config const SEED:        uint = 16;    // Seed for the hash of the root node
+config const MAX_CHILDREN: int = 10;    // Max. Children a node may have
+config const B_0:          int = 4;     // Branching Factor
+config const MAX_DEPTH:    int = 6;     // Depth limit
+config const nonLeafProb: real = 0.10;  // Probability of a non-leaf (binomial)
+config const nonLeafBF:    int = 4;     // Non-leaf branching factor (binomial)
+config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from Geo=>Bin
 
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
 
 
 class TreeNode {
+  //var hash:    RNG_state;
   var depth:   int;
-  var hash:    RNG_state;
+  var hash:    string = "  Here be dragons.  ";  // Handle delicately, if this is ever copied, things will go off the rails
 
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
@@ -48,6 +51,8 @@ class TreeNode {
         nChildren = numGeoChildren(geoDist);
       when Binomial do
         nChildren = numBinChildren();
+      when Hybrid do
+        nChildren = numHybridChildren();
       when Constant do
         nChildren = numConstChildren();
     }
@@ -57,11 +62,9 @@ class TreeNode {
     childDom  = [1..nChildren];
 
     forall i in childDom {
-      var child_hash: RNG_state;
-
       if debug then writeln("  + (", depth, ", ", i, ")");
-      rng_spawn(hash, child_hash, i);
-      children[i]    = TreeNode(depth+1, child_hash);
+      children[i]    = TreeNode(depth+1);
+      rng_spawn(hash, children[i].hash, i-1);
     }
 
     return nChildren;
@@ -75,13 +78,24 @@ class TreeNode {
   }
 
 
+  // Hybrid trees are geometric at the top of the tree and binomial
+  // below a certain depth.
+  def numHybridChildren(): int {
+    if (depth < shiftDepth * MAX_DEPTH) then
+      return numGeoChildren(geoDist);
+    
+    else 
+      return numBinChildren();
+  }
+
   // Binomial Distribution: Find the number of children
   //  Note: distribution is identical everywhere below root
   def numBinChildren(): int {
-    var d: real = to_prob(rng_rand(hash));
-    var numChildren = if d < nonLeafProb then nonLeafBF else 0;
-
-    return numChildren;
+    if (depth == 0) then
+      return B_0;
+    
+    else
+      return if to_prob(rng_rand(hash)) < nonLeafProb then nonLeafBF else 0;
   }
 
 
@@ -178,10 +192,9 @@ def main {
   var t_dfs   : Timer();
   var counted, created: int;
   var root: TreeNode;
-  var hash: RNG_state = RNG_state();
   
-  rng_init(hash, SEED);
-  root = TreeNode(0, hash, Constant);
+  root = TreeNode(0);
+  rng_init(root.hash, SEED:int);
 
   showSearchParams();
 
