@@ -110596,3 +110596,16 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: sample_trees.txt uts.chpl 
 
+---------------------------------------------------------------------------
+
+07/13/07 10:16:30 -- dinan
+
+Log message:
+	This is a paper we published on UTS at LCPC in '06.  It's probably the most
+	up-to-date writeup on the current state of the benchmark.  Checking it in here
+	should help provide more info for those interested in the Chapel
+	implementation.
+
+Added files:
+	chapel/test/studies/uts/: UTS_LCPC06.pdf 
+
