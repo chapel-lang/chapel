@@ -1,6 +1,0 @@
-#!/bin/csh -f
-set compiler = $3
-echo compiler is `basename $compiler`
-echo -n `basename $compiler` > version.good
-cat version.goodstart ../../../../BUILD_VERSION >> version.good
-cat ../../../../COPYRIGHT >> version.good

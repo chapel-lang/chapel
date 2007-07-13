@@ -95,7 +95,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
         case 'S': strncpy((char *)desc[i].location,arg, atoi(desc[i].type+1));
           break;
         default:
-          fprintf(stderr, "%s:bad argument description\n", 
+          fprintf(stdout, "%s:bad argument description\n", 
                  arg_state->program_name);
           exit(1);
           break;
@@ -207,17 +207,17 @@ static void
 print_n_spaces(int n) {
   int i;
   for (i = 0; i < n; i++)
-    fprintf(stderr, " ");
+    fprintf(stdout, " ");
 }
 
 
 static void
 word_wrap_print(const char* text, int start_column, int end_column) {
   /*
-   * Print the buffer "text" to stderr with all non-whitespace text at or
+   * Print the buffer "text" to stdout with all non-whitespace text at or
    * after start_column, and print at most end_column characters per line.
    * Do not break lines in the middle of words. When this function is called,
-   * stderr must be in a state such that the next character fprintf will print
+   * stdout must be in a state such that the next character fprintf will print
    * is in start_column.
    */
   int space_left = 1 + end_column - start_column;
@@ -230,33 +230,31 @@ word_wrap_print(const char* text, int start_column, int end_column) {
   while (word) {
     int wordlength = strlen(word);
     if (first) {
-      space_left -= fprintf(stderr, "%s", word);
+      space_left -= fprintf(stdout, "%s", word);
       first = false;
     } else {
       if (wordlength + 1 < space_left) {
-        space_left -= fprintf(stderr, " %s", word);
+        space_left -= fprintf(stdout, " %s", word);
       } else {
-        fprintf(stderr, "\n");
+        fprintf(stdout, "\n");
         print_n_spaces(start_column - 1);
         space_left = 1 + end_column - start_column;
-        space_left -= fprintf(stderr, "%s", word);
+        space_left -= fprintf(stdout, "%s", word);
       }
     }
     word = strtok_r(NULL, delims, &save_ptr);
   }
   free(text_dup);
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
 }
 
 
-void
-usage(ArgumentState* arg_state, char* arg_unused) {
+void usage(ArgumentState* arg_state, int status) {
   ArgumentDescription *desc = arg_state->desc;
   const int desc_start_col = 42, end_col = 79;
   int i, nprinted;
 
-  (void)arg_unused;
-  fprintf(stderr,"Usage: %s [flags] [source files]\n",arg_state->program_name);
+  fprintf(stdout,"Usage: %s [flags] [source files]\n",arg_state->program_name);
 
   for (i = 0;; i++) {
     if (!desc[i].name)
@@ -264,37 +262,37 @@ usage(ArgumentState* arg_state, char* arg_unused) {
     if (desc[i].name[0] == '\0') {
       if (!strcmp(desc[i].description, "Developer Flags")) {
         if (developer) {
-          fprintf(stderr, "\n\n%s\n", desc[i].description);
-          fprintf(stderr, "===============\n");
+          fprintf(stdout, "\n\n%s\n", desc[i].description);
+          fprintf(stdout, "===============\n");
           continue;
         } else {
           break;
         }
       } else {
-        fprintf(stderr, "\n%s:\n", desc[i].description);
+        fprintf(stdout, "\n%s:\n", desc[i].description);
         continue;
       }
     }
     if (desc[i].key != ' ') {
-      nprinted = fprintf(stderr, "  -%c, --", desc[i].key);
+      nprinted = fprintf(stdout, "  -%c, --", desc[i].key);
     } else {
-      nprinted = fprintf(stderr, "      --");
+      nprinted = fprintf(stdout, "      --");
     }
     if (desc[i].type && !strcmp(desc[i].type, "N"))
-      nprinted += fprintf(stderr, "[no-]");
-    nprinted += fprintf(stderr, "%s", desc[i].name);
+      nprinted += fprintf(stdout, "[no-]");
+    nprinted += fprintf(stdout, "%s", desc[i].name);
 
     if (desc[i].argumentOptions)
-      nprinted += fprintf(stderr, " %s", desc[i].argumentOptions);
+      nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
     if (nprinted > (desc_start_col - 2)) {
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
       print_n_spaces(desc_start_col - 1);
     } else {
       print_n_spaces(desc_start_col - nprinted - 1);
     }
     word_wrap_print(desc[i].description, desc_start_col, end_col);
   }
-  exit(1);
+  exit(status);
 }
 
 void

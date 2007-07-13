@@ -15,10 +15,6 @@
 
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused);
-static void printVersionAndExit(ArgumentState *arg_state, char *arg_unused);
-static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused);
-static void printCopyrightAndExit(ArgumentState *arg_state, char *arg_unused);
-static void printLicenseAndExit(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
@@ -64,6 +60,11 @@ Map<char*, char*> configParamMap;
 bool debugCCode = false;
 bool optimizeCCode = false;
 
+static bool printCopyright = false;
+static bool printHelp = false;
+static bool printLicense = false;
+static bool printVersion = false;
+
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Traces", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
@@ -105,10 +106,10 @@ static ArgumentDescription arg_desc[] = {
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", configParamString, NULL, readConfigParam},
 
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", NULL, NULL, NULL, printCopyrightAndExit},
- {"help", 'h', NULL, "Help (show this list)", NULL, NULL, NULL, printHelpAndExit},
- {"license", ' ', NULL, "Show license", NULL, NULL, NULL, printLicenseAndExit},
- {"version", ' ', NULL, "Show version", NULL, NULL, NULL, printVersionAndExit},
+ {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
+ {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL},
+ {"license", ' ', NULL, "Show license", "F", &printLicense, NULL},
+ {"version", ' ', NULL, "Show version", "F", &printVersion, NULL},
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
@@ -143,44 +144,8 @@ static ArgumentState arg_state = {
   arg_desc
 };
 
-static void printLicenseAndExit(ArgumentState *arg_state, char *arg_unused) {
-  fprintf(stderr,
-#include "LICENSE"
-          );
-  clean_exit(0);
-}
-
-static void printCopyright(void) {
-  fprintf(stderr,
-#include "COPYRIGHT"
-          );
-}
-
-
-static void printCopyrightAndExit(ArgumentState* arg_state, char* arg_unused) {
-  printCopyright();
-  clean_exit(0);
-}
-
-static void printVersion(ArgumentState* arg_state) {
-  char ver[30];
-  get_version(ver);
-  fprintf(stderr, "%s Version %s\n", arg_state->program_name, ver);  
-  printCopyright();
-}
-
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
   printCppLineno = true;
-}
-
-static void printVersionAndExit(ArgumentState* arg_state, char* arg_unused) {
-  printVersion(arg_state);
-  clean_exit(0);
-}
-
-static void printHelpAndExit(ArgumentState *arg_state, char *arg_unused) {
-  usage(arg_state, arg_unused);
-  clean_exit(0);
 }
 
 static void 
@@ -253,13 +218,53 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 }
 
 
+static void printStuff(void) {
+  bool shouldExit = false;
+  bool printedSomething = false;
+
+  if (printVersion) {
+    char ver[64];
+    get_version(ver);
+    fprintf(stdout, "%s Version %s\n", arg_state.program_name, ver);
+    printCopyright = true;
+    printedSomething = true;
+    shouldExit = true;
+  }
+  if (printLicense) {
+    fprintf(stdout,
+#include "LICENSE"
+            );
+    printCopyright = false;
+    shouldExit = true;
+    printedSomething = true;
+  }
+  if (printCopyright) {
+    fprintf(stdout,
+#include "COPYRIGHT"
+            );
+    printedSomething = true;
+  }
+  if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
+    if (printedSomething) printf("\n");
+    usage(&arg_state, (printHelp == false));
+    shouldExit = true;
+    printedSomething = true;
+  }
+  if (printedSomething && arg_state.nfile_arguments < 1) {
+    shouldExit = true;
+  }
+  if (shouldExit) {
+    clean_exit(0);
+  }
+}
+
+
 int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
-  if (arg_state.nfile_arguments < 1)
-    printHelpAndExit(&arg_state, NULL);
+  printStuff();
   if (rungdb)
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))

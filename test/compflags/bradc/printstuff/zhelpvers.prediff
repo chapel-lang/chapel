@@ -1,0 +1,5 @@
+#!/bin/csh -f
+./versionhelp.csh $1 $2 $3 > zhelpvers.good
+./copyrighthelp.csh $1 $2 $3 >> zhelpvers.good
+echo >> zhelpvers.good
+./helphelp.csh $1 $2 $3 >> zhelpvers.good
