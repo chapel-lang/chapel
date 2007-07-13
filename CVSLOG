@@ -110586,3 +110586,13 @@ Added files:
 	                          brg_sha1.h brg_types.h 
 	                          sample_trees.txt sha1_rng.chpl 
 
+---------------------------------------------------------------------------
+
+07/12/07 18:44:55 -- dinan
+
+Log message:
+	Shaved 1 byte off of hash size.  Updated sample Hybrid tree.
+
+Modified files:
+	chapel/test/studies/uts/: sample_trees.txt uts.chpl 
+
