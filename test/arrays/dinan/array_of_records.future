@@ -1,0 +1,1 @@
+bug: A record containing an array of records causes internal error
