@@ -110712,3 +110712,22 @@ Removed files:
 	                                     version.goodstart 
 	                                     version.prediff 
 
+---------------------------------------------------------------------------
+
+07/13/07 17:14:36 -- dinan
+
+Log message:
+	Future:  The compiler generates an internal error during function resolution on
+	PRIMITIVE_SET_REF when it sees a record that contains an array of records with
+	the same type (record).
+	
+	It seems like this would have to be an error when the array is defined with a
+	default size, since this would result in an infinite size allocation.  However,
+	for arrays that are defined to be [1..0] this seems like it should be okay
+	assuming that arrays are stored by reference in records.
+
+Added files:
+	chapel/test/arrays/dinan/: array_of_records.chpl 
+	                           array_of_records.future 
+	                           array_of_records.good 
+
