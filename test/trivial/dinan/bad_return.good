@@ -1,1 +1,1 @@
-More descriptive error message
+bad_return.chpl:1: error: return statement is not in a function
