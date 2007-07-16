@@ -1,4 +1,6 @@
 use Math;
+use Time;
+
 config const DEPTH: int = 15;
 config const PAR_DEPTH: int = 2;
 
@@ -43,17 +45,26 @@ def create_tree(lvl: int, idx: int, to_depth: int, parent: BinaryTree) {
 
 
 def main {
+  var t_create: Timer();
+  var t_dfs   : Timer();
   var count, expected: int;
   var root = BinaryTree(data_t, (0, 0));
 
   writeln("Performing parallel tree creation..");
+  t_create.start();
   create_tree(0, 0, DEPTH, root);
+  t_create.stop();
+
   writeln("Performing parallel tree traversal..");
+  t_dfs.start();
   count = dfs_count(root);
+  t_dfs.stop();
 
   for i in [0..DEPTH] do
     expected += exp2(i):int;
   
+  writeln("t_create= ", t_create.elapsed(), " t_dfs = ", t_dfs.elapsed());
+
   if count == expected then
     writeln("Success: Counted ", count, " nodes");
   else
