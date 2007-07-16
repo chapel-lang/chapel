@@ -110754,3 +110754,19 @@ Modified files:
 Removed files:
 	chapel/test/trivial/dinan/: enumTest.future 
 
+---------------------------------------------------------------------------
+
+07/16/07 11:32:17 -- deitz
+
+Log message:
+	Improved error message for a code that tries to return a value from a
+	module (return not in function).
+	
+	Removed .future.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/trivial/dinan/: bad_return.good 
+Removed files:
+	chapel/test/trivial/dinan/: bad_return.future 
+
