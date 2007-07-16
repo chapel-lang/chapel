@@ -110731,3 +110731,26 @@ Added files:
 	                           array_of_records.future 
 	                           array_of_records.good 
 
+---------------------------------------------------------------------------
+
+07/16/07 11:32:04 -- deitz
+
+Log message:
+	Added support for implicit coercions from enumerations to strings.
+	Added an explicit _cast function from each enumeration to a string.
+	Removed the writeThis method on enumerations.
+	
+	Fixed a bug in which casts were not inserted for returned values in
+	functions that do not match the return type.  This shows up in
+	functions that return more than one value where the type of one value
+	can be implicitly coerced to the other.
+	
+	Removed .future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp 
+Removed files:
+	chapel/test/trivial/dinan/: enumTest.future 
+
