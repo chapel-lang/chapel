@@ -55,11 +55,13 @@ check_functions(FnSymbol* fn) {
         returns_void = true;
   }
   forv_Vec(CallExpr, ret, rets) {
-    if (returns_void && ret->typeInfo() != dtVoid)
-      if (fn->getModule()->initFn == fn)
+    if (returns_void && ret->typeInfo() != dtVoid) {
+      if (fn->getModule()->initFn == fn) {
         USR_FATAL(ret, "return statement is not in a function");
-      else
+      } else {
         USR_FATAL(fn, "Not all function returns return a value");
+      }
+    }
   }
 }
 
