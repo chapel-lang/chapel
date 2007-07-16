@@ -110832,3 +110832,16 @@ Log message:
 Modified files:
 	chapel/spec/: Language_Overview.tex 
 
+---------------------------------------------------------------------------
+
+07/16/07 15:36:28 -- marybeth
+
+Log message:
+	Checking in a future against slicing an empty range.  For the
+	case, ..x, the resulting range slice should be empty, but it
+	is not.
+
+Added files:
+	chapel/test/domains/marybeth/: testslice.chpl testslice.future 
+	                               testslice.good 
+
