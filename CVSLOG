@@ -110807,3 +110807,17 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: BinaryTree_ThreadLimit.chpl 
 
+---------------------------------------------------------------------------
+
+07/16/07 12:26:24 -- dinan
+
+Log message:
+	Added timers.  Added thread-limit throttling to parallel tree creation.
+
+Modified files:
+	chapel/test/studies/uts/: BinaryTree_ThreadLimit.chpl Makefile 
+Added files:
+	chapel/test/studies/uts/: BinaryTree_DepthLimit.chpl 
+Removed files:
+	chapel/test/studies/uts/: BinaryTree.chpl 
+
