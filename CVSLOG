@@ -110821,3 +110821,14 @@ Added files:
 Removed files:
 	chapel/test/studies/uts/: BinaryTree.chpl 
 
+---------------------------------------------------------------------------
+
+07/16/07 12:38:06 -- marybeth
+
+Log message:
+	Fixed error where \chpl was used instead of \rsec when referencing
+	the query expression section of the spec from the Language Overview.
+
+Modified files:
+	chapel/spec/: Language_Overview.tex 
+
