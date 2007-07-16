@@ -110780,3 +110780,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+07/16/07 12:07:04 -- dinan
+
+Log message:
+	This is a thread limited implementation of parallel DFS on a binary tree.  It
+	uses a global shared sync counter to limit the number of active threads.
+	BinaryTree.chpl, on the other hand, performs depth-limited parallel search.
+	
+	These files will probably need to move eventually, but for now I am using them
+	to prototype parallel stuff before migrating it into UTS.
+
+Modified files:
+	chapel/test/studies/uts/: BinaryTree.chpl 
+Added files:
+	chapel/test/studies/uts/: BinaryTree_ThreadLimit.chpl 
+
