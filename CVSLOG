@@ -110797,3 +110797,13 @@ Modified files:
 Added files:
 	chapel/test/studies/uts/: BinaryTree_ThreadLimit.chpl 
 
+---------------------------------------------------------------------------
+
+07/16/07 12:10:11 -- dinan
+
+Log message:
+	Cleanup
+
+Modified files:
+	chapel/test/studies/uts/: BinaryTree_ThreadLimit.chpl 
+
