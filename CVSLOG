@@ -110770,3 +110770,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/dinan/: bad_return.future 
 
+---------------------------------------------------------------------------
+
+07/16/07 11:42:28 -- deitz
+
+Log message:
+	Fixed braces around USR_FATAL in conditional.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
