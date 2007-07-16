@@ -724,6 +724,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
         wrapper->insertAtTail(new DefExpr(tmp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
         call->insertAtTail(tmp);
+      } else if (formal->type == dtString && dynamic_cast<EnumType*>(wrapper_formal->type)) {
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
       } else {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }

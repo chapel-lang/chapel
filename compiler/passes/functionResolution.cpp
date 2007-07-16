@@ -262,10 +262,9 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn)
   if (actualType->symbol->hasPragma("ref"))
     return canDispatch(getValueType(actualType), actualParam, formalType, fn);
 
-  if (is_int_type(formalType) && dynamic_cast<EnumType*>(actualType)) {
-    return true;
-  }
   if (is_int_type(formalType)) {
+    if (dynamic_cast<EnumType*>(actualType))
+      return true;
     if (actualType == dtBool)
       return true;
     if (is_int_type(actualType) &&
@@ -320,6 +319,8 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn)
         is_real_type(actualType) || is_imag_type(actualType) ||
         is_complex_type(actualType) ||
         actualType == dtBool)
+      return true;
+    if (dynamic_cast<EnumType*>(actualType))
       return true;
   }
   return false;
@@ -2531,6 +2532,8 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
+
+
   ret->type = retType;
   if (!fn->iteratorInfo) {
     fn->retType = retType;
@@ -2538,6 +2541,26 @@ resolveFns(FnSymbol* fn) {
       fn->retType = ret->type = dtVoid;
     else if (retType == dtUnknown)
       INT_FATAL(fn, "Unable to resolve return type");
+  }
+
+  for_exprs_postorder(expr, fn->body) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1))) {
+          if (lhs->var == ret) {
+            if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+              if (rhs->var->type != lhs->var->type) {
+                CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, rhs->remove());
+                lhs->insertAfter(cast);
+                resolveCall(cast);
+                if (cast->isResolved())
+                  resolveFns(cast->isResolved());
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo) {
