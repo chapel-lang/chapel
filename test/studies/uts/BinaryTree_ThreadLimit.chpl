@@ -1,8 +1,14 @@
 use Math;
-config const DEPTH: int = 15;
-config const PAR_DEPTH: int = 2;
 
 type data_t = (int, int);
+
+config const DEPTH: int = 15;
+config const PAR_DEPTH: int = 2;
+config const MAX_THREADS = 4;
+
+// Global thread counter
+var thread_cnt: sync int = 0;
+
 
 class BinaryTree {
   type elem_t;
@@ -12,19 +18,47 @@ class BinaryTree {
   var right: BinaryTree;
 }
 
+    
 // Parallel tree traversal
 def dfs_count(n: BinaryTree, d: int = 0):int {
-  if n != nil {
+  var isParallel = false;
+  var count = 0;
+  
+  if (n != nil) {
     var nleft, nright:int;
-    serial d > PAR_DEPTH cobegin {
+
+    if (readXX(thread_cnt) > MAX_THREADS) {
+      // Trade some imbalance for blocking overhead
+      isParallel = false;
+
+    } else {
+      // Try to get a ticket to run in parallel
+      var thread_cnt_l = thread_cnt;
+
+      if (thread_cnt_l < MAX_THREADS) {
+        isParallel = true;
+        thread_cnt = thread_cnt_l + 2;
+        writeln("Threads: ", thread_cnt_l+2);
+      } else {
+        thread_cnt = thread_cnt_l;
+      }
+    }
+    
+    // Parallel Depth-First Traversal
+    serial (!isParallel) cobegin {
       nleft  = dfs_count(n.left, d+1);
       nright = dfs_count(n.right, d+1);
     }
-    return 1 + nleft + nright;
+
+    count = 1 + nleft + nright;
   } else {
-    return 0;
+    count = 0;
   }
+
+  if (isParallel) then thread_cnt -= 1;
+  return count;
 }
+
 
 // Parallel tree creation
 def create_tree(lvl: int, idx: int, to_depth: int, parent: BinaryTree) {
