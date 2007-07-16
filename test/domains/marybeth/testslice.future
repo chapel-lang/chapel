@@ -1,0 +1,12 @@
+Domains, slicing
+
+This test performs slicing on a domain that has one dimension
+that is an empty range.  Two slices on the empty range are tested:
+..1 and 1.. .  The first results in the range 1..1 and the second
+results in another empty range 1..0.  Shouldn't both result in an
+empty range?
+
+Another two slices are tested:  ..2 and 2...  The first results
+in 1..2 and the second in 2..0.  I'm not sure how the
+empty range should be represented for the first case - 1..0 or
+2..0?
