@@ -27,14 +27,11 @@ def dfs_count(n: BinaryTree, d: int = 0):int {
   if (n != nil) {
     var nleft, nright:int;
 
-    if (readXX(thread_cnt) > MAX_THREADS) {
-      // Trade some imbalance for blocking overhead
-      isParallel = false;
-
-    } else {
-      // Try to get a ticket to run in parallel
+    // Trade some imbalance here for blocking overhead
+    if (readXX(thread_cnt) < MAX_THREADS) {
       var thread_cnt_l = thread_cnt;
 
+      // Try to get a ticket to run in parallel
       if (thread_cnt_l < MAX_THREADS) {
         isParallel = true;
         thread_cnt = thread_cnt_l + 2;
