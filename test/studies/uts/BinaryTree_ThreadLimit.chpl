@@ -4,7 +4,6 @@ use Time;
 type data_t = (int, int);
 
 config const DEPTH: int = 15;
-config const PAR_DEPTH: int = 2;
 config const MAX_THREADS = 4;
 
 // Global thread counter
@@ -19,6 +18,25 @@ class BinaryTree {
   var right: BinaryTree;
 }
 
+
+def threadsAvailable(n: int): bool {
+    // Trade some imbalance here for blocking overhead
+    if (readXX(thread_cnt) < MAX_THREADS) {
+      var thread_cnt_l = thread_cnt;
+
+      // Try to get a ticket to run in parallel
+      if (thread_cnt_l < MAX_THREADS) {
+        thread_cnt = thread_cnt_l + n;
+        //writeln("Threads: ", thread_cnt_l+2);
+        return true;
+      } else {
+        thread_cnt = thread_cnt_l;
+      }
+    }
+
+    return false;
+}
+
     
 // Parallel tree traversal
 def dfs_count(n: BinaryTree, d: int = 0):int {
@@ -28,20 +46,8 @@ def dfs_count(n: BinaryTree, d: int = 0):int {
   if (n != nil) {
     var nleft, nright:int;
 
-    // Trade some imbalance here for blocking overhead
-    if (readXX(thread_cnt) < MAX_THREADS) {
-      var thread_cnt_l = thread_cnt;
+    isParallel = threadsAvailable(2);
 
-      // Try to get a ticket to run in parallel
-      if (thread_cnt_l < MAX_THREADS) {
-        isParallel = true;
-        thread_cnt = thread_cnt_l + 2;
-        //writeln("Threads: ", thread_cnt_l+2);
-      } else {
-        thread_cnt = thread_cnt_l;
-      }
-    }
-    
     // Parallel Depth-First Traversal
     serial (!isParallel) cobegin {
       nleft  = dfs_count(n.left, d+1);
@@ -66,19 +72,7 @@ def create_tree(lvl: int, idx: int, to_depth: int, parent: BinaryTree) {
     parent.left  = BinaryTree(data_t, (lvl, idx));
     parent.right = BinaryTree(data_t, (lvl, idx+1));
 
-    // Trade some imbalance here for blocking overhead
-    if (readXX(thread_cnt) < MAX_THREADS) {
-      var thread_cnt_l = thread_cnt;
-
-      // Try to get a ticket to run in parallel
-      if (thread_cnt_l < MAX_THREADS) {
-        isParallel = true;
-        thread_cnt = thread_cnt_l + 2;
-        //writeln("Threads: ", thread_cnt_l+2);
-      } else {
-        thread_cnt = thread_cnt_l;
-      }
-    }
+    isParallel = threadsAvailable(2);
 
     // Recurse in parallel
     serial !isParallel cobegin {
@@ -97,6 +91,8 @@ def main {
   var t_dfs   : Timer();
   var count, expected: int;
   var root = BinaryTree(data_t, (0, 0));
+
+  writeln("Parallel Binary Tree Creation/Traversal: Thread Limit = ", MAX_THREADS);
 
   writeln("Performing parallel tree creation..");
   t_create.start();

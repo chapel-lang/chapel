@@ -50,6 +50,8 @@ def main {
   var count, expected: int;
   var root = BinaryTree(data_t, (0, 0));
 
+  writeln("Parallel Binary Tree Creation/Traversal: Depth Limit = ", PAR_DEPTH);
+  
   writeln("Performing parallel tree creation..");
   t_create.start();
   create_tree(0, 0, DEPTH, root);
