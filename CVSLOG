@@ -110845,3 +110845,14 @@ Added files:
 	chapel/test/domains/marybeth/: testslice.chpl testslice.future 
 	                               testslice.good 
 
+---------------------------------------------------------------------------
+
+07/16/07 17:10:14 -- dinan
+
+Log message:
+	Cleanups
+
+Modified files:
+	chapel/test/studies/uts/: BinaryTree_DepthLimit.chpl 
+	                          BinaryTree_ThreadLimit.chpl 
+
