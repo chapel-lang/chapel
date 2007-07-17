@@ -110856,3 +110856,14 @@ Modified files:
 	chapel/test/studies/uts/: BinaryTree_DepthLimit.chpl 
 	                          BinaryTree_ThreadLimit.chpl 
 
+---------------------------------------------------------------------------
+
+07/17/07 15:51:20 -- deitz
+
+Log message:
+	Fixed a bug in which a sync variable could not be assigned to a
+	non-sync variable when returned in the context of being a reference.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
