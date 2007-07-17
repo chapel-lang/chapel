@@ -1133,6 +1133,29 @@ count_instantiate_with_recursion(Type* t) {
 }
 
 
+static Type*
+getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
+  if (t->symbol->hasPragma( "synchronization primitive") &&
+      !fn->hasPragma("ref")) {
+    if (!fn->hasPragma("synchronization primitive") ||
+        (fn->isMethod && (t->instantiatedFrom != fn->_this->type))) {
+      // allow types to be instantiated to sync types
+      Symbol* arg = dynamic_cast<Symbol*>(key);
+      if (!arg || !arg->isTypeVariable) {
+        // instantiation of a non-type formal of sync type loses sync
+        Type* nt = dynamic_cast<Type*>(t->substitutions.v[0].value);
+        return getNewSubType(fn, nt, key);
+      }
+    }
+  } else if (!fn->hasPragma("tuple") &&
+             t->symbol->hasPragma("ref") && !fn->hasPragma("ref")) {
+    // instantiation of a formal of ref type loses ref
+    return getNewSubType(fn, getValueType(t), key);
+  }
+  return t;
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   Vec<BaseAST*> keys;
@@ -1141,21 +1164,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (Type* t = dynamic_cast<Type*>(generic_substitutions->get( key))) {
       if (t->isGeneric)
         INT_FATAL(this, "illegal instantiation with a generic type");
-      if (t->symbol->hasPragma( "synchronization primitive") && !hasPragma("ref")) {
-        if (!hasPragma("synchronization primitive") ||
-            (isMethod && (t->instantiatedFrom != _this->type))) {
-          // allow types to be instantiated to sync types
-          Symbol* arg = dynamic_cast<Symbol*>(key);
-          if (!arg || !arg->isTypeVariable) {
-            // instantiation of a non-type formal of sync type loses sync
-            Type  *base_type = dynamic_cast<Type*>( t->substitutions.v[0].value);
-            generic_substitutions->put( key, base_type);
-          }
-        }
-      } else if (!hasPragma("tuple") &&
-                 t->symbol->hasPragma("ref") && !hasPragma("ref")) {
-        generic_substitutions->put(key, t->getField("_val")->type);
-      }
+      Type* nt = getNewSubType(this, t, key);
+      if (t != nt)
+        generic_substitutions->put(key, nt);
     }
 
   }
