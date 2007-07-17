@@ -110867,3 +110867,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+07/17/07 15:54:29 -- deitz
+
+Log message:
+	Added Aniruddha bug submitted today, and fixed.
+
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync3.chpl 
+	                                  test_sync3.good 
+
