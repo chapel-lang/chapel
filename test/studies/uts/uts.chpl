@@ -7,7 +7,6 @@
  
 use Math;
 use Time;
-//use lcg_rng;
 use sha1_rng;
 
 
@@ -17,7 +16,9 @@ enum GeoDistrib  { GeoFixed, GeoLinear, GeoPoly, GeoCyclic };
 
 
 /**** COMPILE PARAMS ****/
-param debug: bool = false;
+config param debug:    bool = false;
+config param parallel: bool = true;
+param uts_version:   string = "2.1";
 
 
 /**** UTS CONFIG VARS ****/
@@ -32,9 +33,16 @@ config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from G
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
 
+config const MAX_THREADS:  int = 20;
+config const MIN_THREADS:  int = MAX_THREADS/4;
 
+// Global thread counter
+var thread_cnt: sync int = 0;
+var threads_spawned: int = 0; // "Locked" by thread_cnt
+
+
+/**** UTS TreeNode Class ****/
 class TreeNode {
-  //var hash:    RNG_state;
   var depth:   int;
   var hash:    string = "__Here_be_dragons__";  // Handle delicately, if this is ever copied, things will go off the rails
 
@@ -144,46 +152,129 @@ class TreeNode {
 }
 
 
-def showSearchParams() {
-  if distrib == Geometric then
-    writeln("Tree is: Geometric, ", geoDist);
-  else
-    writeln("Tree is: ", distrib);
+/*
+** Print out search parameters
+*/
+def uts_showSearchParams() {
+  writeln("UTS v", uts_version, " - Unbalanced Tree Search (", 
+      if parallel then "Parallel Chapel" else "Sequential Chapel", ")");
 
-  writeln("  SEED=", SEED, " B_0=", B_0, " MAX_DEPTH=", MAX_DEPTH,
-    " nonLeafProb=", nonLeafProb, " nonLeafBF=", nonLeafBF);
-  
+  writeln("Tree type: ", distrib);
+  writeln("Tree shape parameters:");
+  writeln("  root branching factor b_0 = ", B_0, ", root seed = ", SEED);
+    
+  if (distrib == Geometric || distrib == Hybrid) then
+    writeln("  Geo. params: Max_Depth = ", MAX_DEPTH, ", shape function = ", geoDist);
+
+  if (distrib == Binomial || distrib == Hybrid) then
+    writeln("  Bin. params: nonLeafProb=", nonLeafProb, " nonLeafBF=", nonLeafBF);
+
+  if (distrib == Hybrid) then
+    writeln("  Hybrid params: shiftDepth=", shiftDepth);
+
+  writeln("Random number generator: ", rng_getName());
+
+  if (parallel) {
+    writeln("Parallel execution parameters:");
+    writeln("  MAX_THREADS = ", MAX_THREADS, ", MIN_THREADS = ", MIN_THREADS);
+  }
+
+  writeln();
 }
 
-def dfs_count(n: TreeNode):int {
-  if n != nil {
-    var count: int;
-    if debug then writeln("  - ", n.depth);
-    forall i in n.childDom {
-      count += dfs_count(n.children[i]);
+
+/*
+** Request n threads.  Get back the number of threads granted.
+*/
+def requestThreads(n:int): int {
+  if (parallel) {
+    // Trade some imbalance here for blocking overhead
+    if (readXX(thread_cnt) < MIN_THREADS) {
+      var thread_cnt_l = thread_cnt;
+
+      // Try to get a ticket to run in parallel
+      if (thread_cnt_l < MAX_THREADS) {
+        var threads_avail   = MAX_THREADS-thread_cnt_l;
+        var threads_granted = if (n <= threads_avail) then n else threads_avail;
+        
+        thread_cnt = thread_cnt_l + threads_granted;
+        threads_spawned += threads_granted;
+        return threads_granted;
+      } else {
+        thread_cnt = thread_cnt_l;
+      }
     }
-    return 1 + count;
-  } else {
-    return 0;
+  }
+
+  return 0;
+}
+
+
+/*
+**  Parallel DFS
+*/
+def dfs_count(n: TreeNode, wasParallel: bool = false):int {
+  if n != nil {
+    if (parallel) {
+      var threads_granted = requestThreads(n.nChildren);
+      var count: sync int = 0;
+
+      coforall i in [1..threads_granted] {
+        count += dfs_count(n.children[i], true);
+      }
+
+      for i in [threads_granted+1..n.nChildren] {
+        count += dfs_count(n.children[i], false);
+      }
+
+      if (wasParallel) then thread_cnt -= 1;
+      return count+1;
+
+    } else {
+      var count: int;
+
+      for i in n.childDom {
+        count += dfs_count(n.children[i], false);
+      }
+      return count+1;
+    }
   }
 }
 
 
-def create_tree(parent: TreeNode): int {
-  var count: int;
-
+/*
+**  Parallel Tree Creation
+*/
+def create_tree(parent: TreeNode, wasParallel: bool = false): int {
   if parent == nil {
     writeln("create_tree(): Warning, called with nil");
     return 0;
   }
 
-  count += parent.genChildren();
+  if (parallel) {
+    var count: sync int = parent.genChildren();
+    var threads_granted = requestThreads(parent.nChildren);
 
-  forall i in parent.childDom {
-    count += create_tree(parent.children[i]);
+    // Spawn threads
+    coforall i in [1..threads_granted] {
+      count += create_tree(parent.children[i], true);
+    }
+    
+    // Run the rest sequentially
+    for i in [threads_granted+1..parent.nChildren] {
+      count += create_tree(parent.children[i], false);
+    }
+
+    if (wasParallel) then thread_cnt -= 1;
+    return count;
+
+  } else {
+    var count: int = parent.genChildren();
+
+    for i in parent.childDom do
+      count += create_tree(parent.children[i], false);
+    return count;
   }
-
-  return count;
 } 
 
 
@@ -196,16 +287,25 @@ def main {
   root = TreeNode(0);
   rng_init(root.hash, SEED:int);
 
-  showSearchParams();
+  uts_showSearchParams();
 
+  writeln("Performing tree creation..");
   t_create.start();
   created = create_tree(root);
   t_create.stop();
 
+  if parallel then writeln("  threads_spawned= ", threads_spawned);
+  threads_spawned = 0;
+
+  writeln("Performing tree traversal..");
   t_dfs.start();
   counted = dfs_count(root);
   t_dfs.stop();
 
-  writeln("Created = ", created, " Counted = ", counted);
-  writeln("t_create= ", t_create.elapsed(), " t_dfs = ", t_dfs.elapsed());
+  if parallel then writeln("  threads_spawned= ", threads_spawned);
+ 
+  writeln();
+  writeln("Total nodes: Created = ", created, ", ", "Counted = ", counted);
+  writeln("Time: t_create= ", t_create.elapsed(), " (", created/t_create.elapsed(), " nodes/sec)",
+      ", t_dfs = ", t_dfs.elapsed(), " (", counted/t_dfs.elapsed(), " nodes/sec)");
 }

@@ -27,4 +27,8 @@ _extern def rng_rand(mystate: string): int;
       return v:real/(max(uint)/2);
     }
   }
+
+  def rng_getName(): string {
+    return "BRG SHA-1";
+  }
 }

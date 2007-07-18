@@ -1,18 +1,15 @@
 CC=chpl
 CFLAGS=-O --no-bounds-checks
 
-TARGETS=uts btdl bttl
+TARGETS=uts-par uts-seq
 
-all: uts btdl bttl
+all: uts-par uts-seq
 
-uts: uts.chpl sha1_rng.chpl
-	$(CC) $(CFLAGS) -o $@ --ccflags="brg_sha1.c" $+
+uts-seq: uts.chpl sha1_rng.chpl
+	$(CC) $(CFLAGS) -o $@ --ccflags="brg_sha1.c" --serial -sparallel=false $+
 
-btdl: BinaryTree_DepthLimit.chpl
-	$(CC) $(CFLAGS) -o $@ $+
-
-bttl: BinaryTree_ThreadLimit.chpl
-	$(CC) $(CFLAGS) -o $@ $+
+uts-par: uts.chpl sha1_rng.chpl
+	$(CC) $(CFLAGS) -o $@ --ccflags="brg_sha1.c" -sparallel=true $+
 
 clean:
-	rm -f *.o *.gch $(TARGETS)
+	rm -f $(TARGETS)
