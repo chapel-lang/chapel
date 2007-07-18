@@ -110878,3 +110878,37 @@ Added files:
 	chapel/test/parallel/sync/deitz/: test_sync3.chpl 
 	                                  test_sync3.good 
 
+---------------------------------------------------------------------------
+
+07/17/07 17:52:35 -- dinan
+
+Log message:
+	This checkin contains a working, cleaned-up implementation of the
+	thread-limited parallel implementation of uts that we discussed at our last
+	meeting.  Both the serial and parallel implementations are rolled into the same
+	file and are selected via the "parallel" config param.  Sample workloads are
+	available in the "sample_trees.txt" file.
+	
+	Presently, this parallelization strategy performs poorly (slowdown on chap10).
+	My guess is that this is due to thread creation overhead and imbalance.  There
+	is also a significant performance difference between coforall and for so the
+	sequential implementation is a bit faster than the parallel implementation
+	running with 1 thread.  eg: "uts-seq" comparing to "uts-dfs -sMAX_THREADS=0".
+	
+	It's not that surprising that this parallelization strategy doesn't work too
+	well since this is, after all, the _Unbalanced_ Tree Search Benchmark.  :)  The
+	biggest problem is that when a thread is created it is presently given only a
+	single node to work on.  Since we have no idea how much work is lurking under
+	this node it would be better to split the current workload in the hope of
+	creating a more uniform task distribution.  Unfortunately this is not really
+	possible with the current recursive implementation but I have some chapel-esque
+	ideas for implementing a stack-based load balancer that I'll start exploring
+	tomorrow.
+
+Modified files:
+	chapel/test/studies/uts/: Makefile sha1_rng.chpl uts.chpl 
+Removed files:
+	chapel/test/studies/uts/: BinaryTree_DepthLimit.chpl 
+	                          BinaryTree_ThreadLimit.chpl 
+	                          lcg_rng.chpl 
+
