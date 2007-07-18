@@ -110933,3 +110933,25 @@ Added files:
 	                            module_reused_without_main.future 
 	                            module_reused_without_main.good 
 
+---------------------------------------------------------------------------
+
+07/18/07 12:14:51 -- dinan
+
+Log message:
+	New implementation of UTS that use a double-ended queue (DeQueue).  It works
+	and it's significantly faster than the recursive implementation.  The serial
+	version uses the DeQueue as a stack, but the parallel version will look to the
+	bottom of the stack to manage load imbalance.  This will allow the parallel
+	implementation to perform load balancing with larger granularity over the
+	1-node granularity available in the recursive implementation.
+	
+	Also, I've implemented a full dequeue from the ListStack example.  I'm not sure
+	if there is a repository of data structures for Chapel, but this code might be
+	useful to others.
+
+Modified files:
+	chapel/test/studies/uts/: Makefile 
+Added files:
+	chapel/test/studies/uts/: deq_testBottom.chpl deq_testTop.chpl 
+	                          dequeue.chpl uts_deq.chpl 
+
