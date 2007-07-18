@@ -110955,3 +110955,14 @@ Added files:
 	chapel/test/studies/uts/: deq_testBottom.chpl deq_testTop.chpl 
 	                          dequeue.chpl uts_deq.chpl 
 
+---------------------------------------------------------------------------
+
+07/18/07 13:12:07 -- diten
+
+Log message:
+	Add an npb/is version that uses buckets.  For problem sizes B and C, the bucket
+	version is actually faster than the non-bucket version on chap05.
+
+Added files:
+	chapel/test/npb/is/diten/: is.chpl is.good 
+
