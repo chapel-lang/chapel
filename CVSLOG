@@ -110912,3 +110912,24 @@ Removed files:
 	                          BinaryTree_ThreadLimit.chpl 
 	                          lcg_rng.chpl 
 
+---------------------------------------------------------------------------
+
+07/18/07 11:35:05 -- dinan
+
+Log message:
+	Future: using a module in your program forces you to define main().
+	
+	When you write "use module;" in your program, it is not possible to have the
+	program's entry point be outside of any function.  This results in:
+	
+	error: Code defines multiple modules but no main function.
+	
+	The future example is condensed to a single source file, but I also get the
+	same error if I put the "use module; code...;" into a separate file from the
+	module.
+
+Added files:
+	chapel/test/modules/dinan/: module_reused_without_main.chpl 
+	                            module_reused_without_main.future 
+	                            module_reused_without_main.good 
+
