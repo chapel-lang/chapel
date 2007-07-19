@@ -110993,3 +110993,13 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: Makefile dequeue.chpl uts_deq.chpl 
 
+---------------------------------------------------------------------------
+
+07/19/07 14:44:55 -- diten
+
+Log message:
+	I forgot to add the compiler warning about atomic not implemented to this .good.
+
+Modified files:
+	chapel/test/npb/is/diten/: is.good 
+
