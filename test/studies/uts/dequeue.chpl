@@ -13,6 +13,7 @@ module dequeue {
     var size: int;             // Length of the DeQueue
     var top: MyNode(itemType); // top node on DeQueue linked list
     var bottom: MyNode(itemType);
+    var id: int;
 
     // pushTop: add an item to the top of the DeQueue
     def pushTop(item: itemType) {
@@ -75,10 +76,14 @@ module dequeue {
       }
 
       // Remove from the current stack
-      newTop.prev.next = nil;
+      bottom = newTop.prev;
+      bottom.next = nil;
+      size -= n;
+
+      // Update new top
       newTop.prev = nil;
 
-      return DeQueue(itemType, n, newTop, newBottom);
+      return DeQueue(itemType, n, newTop, newBottom, id+1);
     }
 
     // isEmpty: true if the stack is empty; otherwise false

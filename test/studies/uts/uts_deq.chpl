@@ -34,12 +34,19 @@ config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from G
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
 
-config const MAX_THREADS:  int = 20;
-config const MIN_THREADS:  int = MAX_THREADS/4;
+config const MAX_THREADS:  int = 4;
+config const chunkSize:    int = 10;
 
 // Global thread counter
 var thread_cnt: sync int = 0;
 var threads_spawned: int = 0; // "Locked" by thread_cnt
+
+// Global stats, updated by a thread when it exits
+var global_count: sync int = 0;
+var global_maxDepth: sync int = 0;
+
+// Shared termination detection
+var terminated: single bool;
 
 
 /**** UTS TreeNode Class ****/
@@ -172,50 +179,88 @@ def uts_showSearchParams() {
 
   if (parallel) {
     writeln("Parallel execution parameters:");
-    writeln("  MAX_THREADS = ", MAX_THREADS, ", MIN_THREADS = ", MIN_THREADS);
+    writeln("  MAX_THREADS = ", MAX_THREADS, ", chunkSize = ", chunkSize);
   }
 
   writeln();
 }
 
 
+def balance_load(inout q: DeQueue(TreeNode)): int {
+  if (parallel) {
+    // Trade some imbalance here for blocking overhead
+    if (q.size > 2*chunkSize && readXX(thread_cnt) < MAX_THREADS) {
+      if debug then writeln(" ** dequeue ", q.id, " splitting off ", chunkSize, " nodes");
+
+      // Split off chunkSize nodes into a new queue
+      var work = q.split(chunkSize);
+
+      // Spawn a new worker on this queue
+      thread_cnt += 1;
+      threads_spawned += 1;
+      begin create_tree(work);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 /*
 **  Parallel Tree Creation
 */
-def create_tree(inout q: DeQueue(TreeNode)): int {
-  var count: int;
+def create_tree(inout q: DeQueue(TreeNode)) {
+  var count, maxDepth: int;
 
   if q.isEmpty() {
     writeln("create_tree(): Warning, called with no work");
-    return 0;
   }
 
   while !q.isEmpty() {
     var node = q.popTop();
     count += node.genChildren(q);
+    maxDepth = max(maxDepth, node.depth);
+
+    if (q.size > 2*chunkSize) then
+      balance_load(q);
   }
 
-  return count;
+  // Update search stats
+  global_count += count;
+  global_maxDepth = max(global_maxDepth, maxDepth);
+
+  // Update thread counts and detect termination
+  var thread_cnt_l = thread_cnt;
+  thread_cnt_l -= 1;
+  if thread_cnt_l == 0 then
+    terminated = true;
+  thread_cnt = thread_cnt_l;
 } 
 
 
-def main {
+def main() {
   var t_create: Timer();
-  var created: int;
   var root: TreeNode;
   var queue: DeQueue(TreeNode);
-  
+ 
+  // Create the root and push it into a queue
   root = TreeNode(0);
   rng_init(root.hash, SEED:int);
+  global_count += 1;
   queue.pushTop(root);
 
   uts_showSearchParams();
 
+  writeln("Performing ", if parallel then "parallel" else "serial", " tree search...");
+
   t_create.start();
-  created = create_tree(queue);
+  writeXF(thread_cnt, 1);
+  create_tree(queue);
+  if parallel then while !terminated { } // Wait for termination
   t_create.stop();
 
   writeln();
-  writeln("Tree size = ", created+1);
-  writeln("Time: t_create= ", t_create.elapsed(), " (", created/t_create.elapsed(), " nodes/sec)");
+  writeln("Threads spawned: ", threads_spawned);
+  writeln("Tree size = ", readXX(global_count), ", depth = ", readXX(global_maxDepth));
+  writeln("Time: t_create= ", t_create.elapsed(), " (", readXX(global_count)/t_create.elapsed(), " nodes/sec)");
 }
