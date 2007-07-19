@@ -110966,3 +110966,30 @@ Log message:
 Added files:
 	chapel/test/npb/is/diten/: is.chpl is.good 
 
+---------------------------------------------------------------------------
+
+07/18/07 17:32:54 -- dinan
+
+Log message:
+	uts_deq contains a pretty simple work-splitting load balancer that performs
+	surprisingly well.  On chap10 I am getting a speedup of 2x-3x when using all 4
+	cores which is pretty good.
+	
+	This load balancer takes advantage of syncs, single variables, and begin.  The
+	load balancer is distributed so all threads participate in load balancing.
+	When a thread sees that there are fewer than MAX_THREADS threads running (using
+	a shared global sync variable) and it has surplus work, it splits off chunkSize
+	nodes from the bottom of its stack and spawns a new thread to process them
+	(using begin).  So, there is no stealing or random polling.  This means that
+	there are no locks on each thread's work queues which makes the code pretty
+	simple and avoids a lot of runtime overhead.  Essentially I am betting that the
+	overhead from work stealing (where threads are spawned once and stay alive) is
+	roughly the same as or worse than the overhead involved in spawning a new
+	thread.
+	
+	Termination detection is accomplished with a global shared final bool that the
+	parent thread sleeps on.
+
+Modified files:
+	chapel/test/studies/uts/: Makefile dequeue.chpl uts_deq.chpl 
+
