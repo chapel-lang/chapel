@@ -111015,3 +111015,32 @@ Log message:
 Added files:
 	chapel/test/npb/is/diten/: is_mt.chpl is_mt.good 
 
+---------------------------------------------------------------------------
+
+07/20/07 12:02:45 -- deitz
+
+Log message:
+	Added Makefile skeleton and empty files for eventual distinction
+	between different comm packages, none and gasnet.
+
+Modified files:
+	chapel/make/: Makefile.base 
+	chapel/runtime/: Makefile 
+	chapel/runtime/etc/: Makefile.include 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/runtime/make/: Makefile.runtime.foot 
+	                      Makefile.runtime.head 
+	chapel/runtime/src/: Makefile Makefile.include Makefile.share 
+	chapel/runtime/threads-none/: Makefile Makefile.include 
+	chapel/runtime/threads-pthreads/: Makefile Makefile.include 
+Added files:
+	chapel/runtime/comm-gasnet/: Makefile Makefile.include 
+	                             Makefile.share chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: Makefile Makefile.include 
+	                           Makefile.share chpl_cfg_comm.c 
+	chapel/runtime/etc/: Makefile.comm-gasnet Makefile.comm-none 
+	chapel/runtime/include/: chplcomm.h 
+	chapel/runtime/include/comm-gasnet/: chpl_cfg_comm.h 
+	chapel/runtime/include/comm-none/: chpl_cfg_comm.h 
+	chapel/runtime/src/: chplcomm.c 
+
