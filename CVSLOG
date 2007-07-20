@@ -111003,3 +111003,15 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is.good 
 
+---------------------------------------------------------------------------
+
+07/20/07 10:01:53 -- diten
+
+Log message:
+	Add a multithreaded version the IS benchmark. On chap10, a 4 core machine with
+	four threads, it takes about twice as much time to run as the serial version.
+	At least it appears to be functionally correct...
+
+Added files:
+	chapel/test/npb/is/diten/: is_mt.chpl is_mt.good 
+
