@@ -111044,3 +111044,15 @@ Added files:
 	chapel/runtime/include/comm-none/: chpl_cfg_comm.h 
 	chapel/runtime/src/: chplcomm.c 
 
+---------------------------------------------------------------------------
+
+07/20/07 16:01:39 -- dinan
+
+Log message:
+	Future: FOR loop iteration variable is not updated on a continue
+
+Added files:
+	chapel/test/trivial/dinan/: for_continue.chpl 
+	                            for_continue.future 
+	                            for_continue.good 
+
