@@ -21,6 +21,13 @@ CHPL_THREADS = pthreads
 endif
 
 #
+# use none if CHPL_COMM is not specified
+#
+ifndef CHPL_COMM
+CHPL_COMM = none
+endif
+
+#
 # default CFLAGS, based on other settings
 #
 ifeq ($(DEBUG), 1)

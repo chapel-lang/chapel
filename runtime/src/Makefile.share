@@ -1,6 +1,7 @@
 COMMON_SRCS = \
 	arg.c \
 	chplcast.c \
+	chplcomm.c \
 	chplcopygc.c \
 	chplexit.c \
 	chplio.c \

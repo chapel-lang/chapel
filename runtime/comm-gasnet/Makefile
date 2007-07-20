@@ -1,15 +1,15 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = src
+RUNTIME_SUBDIR = comm-gasnet
 
 #
 # standard header
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-COMMON_OBJDIR = $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+COMM_OBJDIR = $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
 include Makefile.share
 
-TARGETS = $(COMMON_OBJS) $(MAIN_OBJS)
+TARGETS = $(COMM_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

@@ -33,17 +33,17 @@ echoruntimedir:
 # pattern-based rules
 #
 
-RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/.timestamp
+RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/.timestamp
 
 %.depend: %.c $(RUNTIME_OBJ_DIR)
-	@$(CMAKEDEPEND) -MT '$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/$*.o' $(RUNTIME_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
+	@$(CMAKEDEPEND) -MT '$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/$*.o' $(RUNTIME_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
 
-$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/%.o: %.c $(RUNTIME_OBJ_DIR)
+$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/%.o: %.c $(RUNTIME_OBJ_DIR)
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
 $(RUNTIME_OBJ_DIR):
-	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS) subdirectory to store platform-specific files
-	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS) > /dev/null 2>&1
+	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) subdirectory to store platform-specific files
+	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) > /dev/null 2>&1
 	@-touch $(RUNTIME_OBJ_DIR)
 
 
