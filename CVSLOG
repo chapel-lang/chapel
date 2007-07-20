@@ -111056,3 +111056,29 @@ Added files:
 	                            for_continue.future 
 	                            for_continue.good 
 
+---------------------------------------------------------------------------
+
+07/20/07 16:27:04 -- dinan
+
+Log message:
+	This is the random walk sudoku solver I've been babbling about.  The code is a
+	little frightening since it was written fast and hacked up to use less memory
+	and go fast.
+	
+	* sudoku.chpl is only the random walk simulated annealing solver.
+	
+	* sudoku-smart.chpl attempts to infer as many spots as possible before invoking
+	the above solver.  In easy to hard puzzles, the solution is found without
+	performing random search, however the evil and outlaw puzzles require more
+	sophisticated inference and in some cases guessing, so they invoke the random
+	solver.
+	
+	Warning: The evil and outlaw puzzles require a lot of memory to solve.
+
+Added files:
+	chapel/test/studies/sudoku/dinan/: Makefile easy.ans easy.dat 
+	                                   evil.ans evil.dat hard.ans 
+	                                   hard.dat outlaw.ans 
+	                                   outlaw.dat sudoku-smart.chpl 
+	                                   sudoku.chpl 
+
