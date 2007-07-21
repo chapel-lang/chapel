@@ -111082,3 +111082,17 @@ Added files:
 	                                   outlaw.dat sudoku-smart.chpl 
 	                                   sudoku.chpl 
 
+---------------------------------------------------------------------------
+
+07/20/07 17:20:29 -- marybeth
+
+Log message:
+	Fixed future about slicing empty ranges.  Now, if a range is
+	empty and bounded, any slice will return an empty range.
+
+Modified files:
+	chapel/modules/standard/: ChapelRange.chpl 
+	chapel/test/domains/marybeth/: testslice.good 
+Removed files:
+	chapel/test/domains/marybeth/: testslice.future 
+
