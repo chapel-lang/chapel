@@ -111251,3 +111251,13 @@ Added files:
 	                                                           twoscalecoeffs.py 
 	                                                           twoscalecoeffs.pyc 
 
+---------------------------------------------------------------------------
+
+07/23/07 13:26:18 -- dinan
+
+Log message:
+	This is the Fortran code for the Fock matrix calculation.
+
+Added files:
+	chapel/test/users/shetag/fock/hpcskernel/: NOTEST README fock.f 
+
