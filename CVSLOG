@@ -111272,3 +111272,13 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: Makefile sample_trees.txt 
 
+---------------------------------------------------------------------------
+
+07/23/07 15:57:20 -- dinan
+
+Log message:
+	Added thread safe state to the load balancer.
+
+Modified files:
+	chapel/test/studies/uts/: uts_deq.chpl 
+
