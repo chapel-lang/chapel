@@ -111096,3 +111096,17 @@ Modified files:
 Removed files:
 	chapel/test/domains/marybeth/: testslice.future 
 
+---------------------------------------------------------------------------
+
+07/23/07 11:27:19 -- dinan
+
+Log message:
+	This is only the simple elimination-based solver without any random search.  I
+	pulled this code out to focus on simplifying it using some creative iterators.
+	It isn't able to solve the evil and outlaw puzzles, but will solve easy-hard.
+
+Modified files:
+	chapel/test/studies/sudoku/dinan/: Makefile 
+Added files:
+	chapel/test/studies/sudoku/dinan/: sudoku-simple.chpl 
+
