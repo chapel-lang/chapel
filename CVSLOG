@@ -111120,3 +111120,20 @@ Log message:
 Added files:
 	chapel/test/studies/sudoku/dinan/: NOTEST 
 
+---------------------------------------------------------------------------
+
+07/23/07 11:33:57 -- diten
+
+Log message:
+	Fix a race condition in is_mt.  To determine when all threads had finished,
+	a sync var was incremented before each thread was spawned and decremented when
+	each thread terminated, and checked for 0.  If all running threads finished
+	before the total number of threads needed were started, the count fell to 0 and
+	not all work was done before doing verifications.
+	
+	Instead of bumping the counter each iteration, initialize the counter to
+	nThreads and only decrement it. Thanks for the tip, Brad.
+
+Modified files:
+	chapel/test/npb/is/diten/: is_mt.chpl 
+
