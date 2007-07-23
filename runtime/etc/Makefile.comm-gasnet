@@ -1,0 +1,6 @@
+include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
+
+CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit
+LD = $(GASNET_LD) $(GASNET_LFLAGS)
+
+LIBS += $(GASNET_LIBS)

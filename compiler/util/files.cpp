@@ -14,6 +14,7 @@
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
 char ccflags[256] = "";
+char ldflags[256] = "";
 bool ccwarnings = false;
 
 static char* tmpdirname = NULL;
@@ -317,6 +318,8 @@ codegen_makefile(fileinfo* mainfile) {
     fprintf(makefile.fptr, " $(OPT_CFLAGS)");
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
+  fprintf(makefile.fptr, " %s\n", ldflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);

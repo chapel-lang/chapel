@@ -6,3 +6,11 @@ SRCS = $(CVS_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
+
+INCL_CFLAGS += -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit
+
+CC = $(GASNET_CC)
+CPP = $(GASNET_CC)
+RUNTIME_CFLAGS = $(GASNET_CFLAGS) $(INCL_CFLAGS)

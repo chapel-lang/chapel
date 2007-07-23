@@ -1,11 +1,13 @@
 CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)
 include $(CHAPEL_ROOT)/make/Makefile.base
+LD = $(CC)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_THREADS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_COMM)
 CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include/threads-$(CHPL_THREADS) -I$(CHAPEL_ROOT)/runtime/include/comm-$(CHPL_COMM) -I$(CHAPEL_ROOT)/runtime/include
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
 
 all:
-	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -o $(TMPBINNAME) -I$(CHAPEL_RT_INC_DIR)/$(CHPL_MAKE_PLATFORM) -I$(CHAPEL_RT_INC_DIR) -L$(CHAPEL_RT_LIB_DIR) $(CHAPEL_RT_LIB_DIR)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
+	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o -I$(CHAPEL_RT_INC_DIR)/$(CHPL_MAKE_PLATFORM) -I$(CHAPEL_RT_INC_DIR) $(CHPLSRC)
+	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME) -L$(CHAPEL_RT_LIB_DIR) $(TMPBINNAME).o $(CHAPEL_RT_LIB_DIR)/main.o -lchpl -lm $(LIBS)
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)

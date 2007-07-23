@@ -467,4 +467,6 @@ initPrimitive() {
   prim_def("_printError", returnInfoVoid, true, true);
 
   prim_def("_mem_used", returnInfoUInt64, false, true);
+
+  prim_def("_chpl_comm_locale_id", returnInfoInt32, false, false);
 }

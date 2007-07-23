@@ -28,3 +28,5 @@ const Locale: [LocaleDomain] locale;
 def locale.numCores {
   on this do return __primitive("_coresPerLocale");
 }
+
+def localeID() return __primitive("_chpl_comm_locale_id");

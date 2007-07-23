@@ -6,6 +6,7 @@
 extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 extern char ccflags[256];
+extern char ldflags[256];
 extern bool ccwarnings;
 
 struct fileinfo {

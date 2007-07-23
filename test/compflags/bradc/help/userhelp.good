@@ -30,6 +30,7 @@ Code Generation:
 
 Linker Control:
       --ccflags <flags>                  Back-end C compiler flags
+      --ldflags <flags>                  Back-end C linker flags
   -l, --lib-linkage <library>            C library linkage
   -L, --lib-search-path <directory>      C library search path
   -o, --output <filename>                Name output executable
