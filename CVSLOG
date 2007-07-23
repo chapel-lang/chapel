@@ -111110,3 +111110,13 @@ Modified files:
 Added files:
 	chapel/test/studies/sudoku/dinan/: sudoku-simple.chpl 
 
+---------------------------------------------------------------------------
+
+07/23/07 11:31:22 -- dinan
+
+Log message:
+	Whoops!  Forgot NOTEST.
+
+Added files:
+	chapel/test/studies/sudoku/dinan/: NOTEST 
+
