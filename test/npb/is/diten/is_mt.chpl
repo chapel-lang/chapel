@@ -120,7 +120,8 @@ def setupPartialVerify() {
 def rank(iteration: int) {
   var done: single bool;
   var blkSize = totalKeys / nThreads;
-  var threadCnt: sync int = 0;
+  var threadCnt: sync int = nThreads;
+
   keyArray(iteration) = iteration;
   keyArray(iteration+maxIterations) = maxKey - iteration;
 
@@ -131,7 +132,6 @@ def rank(iteration: int) {
     var low = thread * blkSize;
     var high = if thread == nThreads-1 then D.high else (thread+1)*blkSize - 1;
     var DOM: domain(1) = [low..high];
-    threadCnt += 1;
     begin {
       keyBuff1([i in DOM] keyArray(i), thread) += 1;
       var threadCntL = threadCnt;
@@ -150,14 +150,10 @@ def rank(iteration: int) {
   }
 }
 
-def subRank(iteration: int, myThread: int, DOM) {
-  keyBuff1([i in DOM] keyArray(i), myThread) += 1;
-}
-
 
 def partialVerification(iteration: int) {
   for i in 0..4 {
-    var k = partialVerifyVals(i);//keyArray(testIndexArray(i));
+    var k = partialVerifyVals(i);
     select probClass {
       when S do {
         if (i <= 2) {
