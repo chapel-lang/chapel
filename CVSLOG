@@ -111183,3 +111183,71 @@ Modified files:
 	chapel/test/compflags/bradc/help/: userhelp.good 
 	chapel/test/link/deitz/: test_link1.compopts 
 
+---------------------------------------------------------------------------
+
+07/23/07 13:23:41 -- dinan
+
+Log message:
+	Checking in the 1D Madness code.  There are two implementations: Java and
+	Python.
+
+Added files:
+	chapel/test/studies/madness/dinan/: NOTEST 
+	chapel/test/studies/madness/dinan/hpcskernels/: NOTEST 
+	chapel/test/studies/madness/dinan/hpcskernels/mad_java/: 
+	                                                         Fn1d.java 
+	                                                         Function1d.java 
+	                                                         MadFn1d.java 
+	                                                         NOTEST 
+	                                                         Quadrature.java 
+	                                                         README 
+	                                                         Range1d.java 
+	                                                         Range2d.java 
+	                                                         Range3d.java 
+	                                                         SD1dTree.java 
+	                                                         Tensor1d.java 
+	                                                         Tensor2d.java 
+	                                                         Tensor3d.java 
+	                                                         TwoScaleCoeffs.java 
+	chapel/test/studies/madness/dinan/hpcskernels/mad_java/META-INF/: 
+	                                                                  MANIFEST.MF 
+	                                                                  NOTEST 
+	chapel/test/studies/madness/dinan/hpcskernels/mad_java/doc/: 
+	                                                             Fn1d.html 
+	                                                             Function1d.html 
+	                                                             MadFn.html 
+	                                                             MadFn1d.html 
+	                                                             NOTEST 
+	                                                             Quadrature.html 
+	                                                             Range1d.html 
+	                                                             Range2d.html 
+	                                                             Range3d.html 
+	                                                             SD1dTree.html 
+	                                                             Tensor1d.html 
+	                                                             Tensor2d.html 
+	                                                             Tensor3d.html 
+	                                                             TwoScaleCoeffs.html 
+	                                                             allclasses-frame.html 
+	                                                             allclasses-noframe.html 
+	                                                             constant-values.html 
+	                                                             deprecated-list.html 
+	                                                             help-doc.html 
+	                                                             index-all.html 
+	                                                             index.html 
+	                                                             overview-tree.html 
+	                                                             package-list 
+	                                                             packages.html 
+	                                                             serialized-form.html 
+	                                                             stylesheet.css 
+	chapel/test/studies/madness/dinan/hpcskernels/mad_java/doc/resources/: 
+	                                                                       inherit.gif 
+	chapel/test/studies/madness/dinan/hpcskernels/mad_python/: 1d.py 
+	                                                           NOTEST 
+	                                                           README 
+	                                                           quadrature.py 
+	                                                           quadrature.pyc 
+	                                                           tensor.py 
+	                                                           tensor.pyc 
+	                                                           twoscalecoeffs.py 
+	                                                           twoscalecoeffs.pyc 
+
