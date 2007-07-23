@@ -1,11 +1,8 @@
-config const numLocales = 1;
-
-if (numLocales != 1) then
-  halt("Multiple locales not yet supported");
+const numLocales = __primitive("_chpl_comm_num_locales");
 
 // would like this to be the following, but it breaks about 20 tests:
-//const LocaleDomain: domain(1) distributed(OnePer) = [0..numLocales);
-const LocaleDomain: domain(1) = [0..numLocales);
+//const LocaleDomain: domain(1) distributed(OnePer) = [0..numLocales-1];
+const LocaleDomain: domain(1) = [0..numLocales-1];
 
 class locale {
   const id: int;
@@ -26,7 +23,18 @@ const Locale: [LocaleDomain] locale;
 
 
 def locale.numCores {
-  on this do return __primitive("_coresPerLocale");
+  /* on this do */ return __primitive("_coresPerLocale");
+  // what does it even mean to have a return in an on statement?  I
+  // would prefer not to do this; certainly we do not migrate the
+  // calling site.  This should probably be rewritten to call the
+  // primitive and put the result in a temp in an on clause and then
+  // return the temp.
 }
 
 def localeID() return __primitive("_chpl_comm_locale_id");
+
+def _locale_to_id(l: locale) return l.id;
+
+def _locale_to_id(l) {
+  compilerError("invalid on clause");
+}

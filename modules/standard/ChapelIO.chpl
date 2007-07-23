@@ -318,3 +318,18 @@ def halt() {
 def halt(args ...?numArgs) {
   _handleRuntimeError("halt reached - "+_tuple2string(args));
 }
+
+def _debugWrite(args: string ...?n) {
+  for param i in 1..n do
+    if fprintf(_get_stdout(), "%s", args(i)) < 0 then
+      _fprintfError();
+  _fflush(_get_stdout());
+}
+
+def _debugWriteln(args: string ...?n) {
+  _debugWrite((...args), "\n");
+}
+
+def _debugWriteln() {
+  _debugWrite("\n");
+}

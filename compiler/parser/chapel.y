@@ -603,13 +603,11 @@ block_stmt:
 on_stmt:
   TON expr TDO stmt
     {
-      $4->insertAtHead($2);
-      $$ = build_chpl_stmt($4);
+      $$ = build_chpl_stmt(buildOnStmt($2, $4));
     }
 | TON expr parsed_block_stmt
     {
-      $3->insertAtHead($2);
-      $$ = build_chpl_stmt($3);
+      $$ = build_chpl_stmt(buildOnStmt($2, $3));
     }
 
 

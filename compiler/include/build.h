@@ -49,4 +49,6 @@ DefExpr*
 build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
+BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
+
 #endif

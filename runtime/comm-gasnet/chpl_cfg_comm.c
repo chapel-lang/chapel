@@ -5,7 +5,7 @@
 #define GASNET_PAR 1
 #include "gasnet.h"
 
-#define _DIST_DEBUG 1
+/*#define _DIST_DEBUG 1*/
 
 #ifdef _DIST_DEBUG
 #define PRINTF(_s)                                                      \
@@ -173,7 +173,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
 			    sizeof(ftable)/sizeof(gasnet_handlerentry_t),
 			    0,			// share everything
 			    0));
-  printf("starting %d of %d\n", gasnet_mynode()+1, gasnet_nodes());
+  printf("starting locale %d of %d locale(s)\n", gasnet_mynode(), gasnet_nodes());
   fflush(stdout);
   _chpl_comm_barrier("_chpl_comm_init");
 }
@@ -186,7 +186,11 @@ void _chpl_comm_barrier(char *msg) {
 }
 
 _int32 _chpl_comm_locale_id(void) {
-  return gasnet_mynode()+1;
+  return gasnet_mynode();
+}
+
+_int32 _chpl_comm_num_locales(void) {
+  return gasnet_nodes();
 }
 
 void _chpl_comm_done(void) {
@@ -196,7 +200,7 @@ void _chpl_comm_done(void) {
 
 void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr) {
   PRINTF("_chpl_comm_write");
-  if (_chpl_comm_locale_id()-1 == p->locale) {
+  if (_chpl_comm_locale_id() == p->locale) {
     bcopy(addr, p->addr, p->size);
   } else {
     gasnet_put(p->locale, p->addr, addr, p->size); // node, dest, src, size
@@ -205,7 +209,7 @@ void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr) {
 
 void  _chpl_comm_read(void *addr, _chpl_comm_ptr_t *p) {
   PRINTF("_chpl_comm_read");
-  if (_chpl_comm_locale_id()-1 == p->locale) {
+  if (_chpl_comm_locale_id() == p->locale) {
     bcopy(p->addr, addr, p->size);
   } else {
     gasnet_get(addr, p->locale, p->addr, p->size); // dest, node, src, size
@@ -221,7 +225,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
-  info->caller = _chpl_comm_locale_id()-1;
+  info->caller = _chpl_comm_locale_id();
   info->fun = f;
   info->arg_size = arg_size;
   bcopy(arg, &(info->arg), arg_size);
@@ -239,7 +243,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
-  info->caller = _chpl_comm_locale_id()-1;
+  info->caller = _chpl_comm_locale_id();
   info->ack = &done;
   info->fun = f;
   info->arg_size = arg_size;

@@ -795,3 +795,20 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
   }
   return where;
 }
+
+
+BlockStmt*
+buildOnStmt(Expr* expr, Expr* stmt) {
+  static int uid = 1;
+  BlockStmt* block = build_chpl_stmt();
+  FnSymbol* fn = new FnSymbol(astr("_on_fn_", intstring(uid++)));
+  fn->retType = dtVoid;
+  fn->insertAtTail(stmt);
+  Symbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
+  block->insertAtTail(new DefExpr(tmp));
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_locale_to_id", expr)));
+  block->insertAtTail(new DefExpr(fn));
+  block->insertAtTail(new CallExpr(PRIMITIVE_ON, tmp, new CallExpr(fn)));
+  return block;
+}

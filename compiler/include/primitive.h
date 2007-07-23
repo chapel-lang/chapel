@@ -7,6 +7,7 @@ enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
+  PRIMITIVE_ON,
   PRIMITIVE_SET_REF,
   PRIMITIVE_GET_REF,
   PRIMITIVE_RETURN,

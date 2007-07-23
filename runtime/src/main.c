@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   initMemTable();
   CreateConfigVarTable();
   initChplThreads();
-  if (_chpl_comm_locale_id() == 1)
+  if (_chpl_comm_locale_id() == 0)
     _chpl_main();
   exitChplThreads();
   printFinalMemStat(0, 0);

@@ -249,6 +249,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
+  prim_def(PRIMITIVE_ON, "on", returnInfoVoid, true);
   prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
   prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
   prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
@@ -469,4 +470,5 @@ initPrimitive() {
   prim_def("_mem_used", returnInfoUInt64, false, true);
 
   prim_def("_chpl_comm_locale_id", returnInfoInt32, false, false);
+  prim_def("_chpl_comm_num_locales", returnInfoInt32, false, false);
 }

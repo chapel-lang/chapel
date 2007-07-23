@@ -791,6 +791,18 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = ");
       get(2)->codegen(outfile);
       break;
+    case PRIMITIVE_ON:
+      if (CallExpr* call = dynamic_cast<CallExpr*>(get(2))) {
+        if (call->argList->length() != 0)
+          USR_FATAL(this, "complicated on clause not yet supported");
+        fprintf(outfile, "_chpl_comm_fork(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", (func_p)");
+        call->baseExpr->codegen(outfile);
+        fprintf(outfile, ", 0, 0)");
+      } else
+        USR_FATAL(this, "invalid on primitive");
+      break;
     case PRIMITIVE_SET_REF:
       fprintf(outfile, "&(");
       get(1)->codegen(outfile);

@@ -1,8 +1,10 @@
 var x: int = 2;
 
-on x {
-  var y: real = x;
+on Locale(0) {
+  var y: int = 3;
   writeln(y);
 }
 
-on x do writeln(x);
+writeln(x);
+
+on Locale(0) do writeln("bye");
