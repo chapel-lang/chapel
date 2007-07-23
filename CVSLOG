@@ -111137,3 +111137,49 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is_mt.chpl 
 
+---------------------------------------------------------------------------
+
+07/23/07 11:57:11 -- deitz
+
+Log message:
+	Added new function localeID() to return a locale's id (starting at one).
+	
+	Made it so that comm-gasnet files are compiled with the compilers and
+	flags from gasnet's udp conduit makefiles.  How better to do this?
+	Also should we bundle gasnet with chapel?
+	
+	Added some initial support for CHPL_COMM=gasnet.  This is all
+	temporary and will be improved.  For now, when running a chapel
+	program using gasnet communication, you must specify the number of
+	locales as the first argument.  Only the first locale runs _chpl_main.
+	Since "on" is not yet implemented, there is little that can be done.
+	I handcoded an "on" clause in the generated C code and that worked
+	with limitations on what could be done.
+	
+	Copied over much of the code that Wayne had written in chpldist.h and
+	chpldist.c to serve as the basis of the gasnet runtime.
+	
+	Broke the make of the compiler generated code into a compile step and
+	a link step and made it so that if using gasnet, the gasnet compilers
+	and flags are used.  Again, is there a better way to do this?
+	
+	Added compiler option --ldflags to specify flags to pass to the
+	linker.  Note to link in C code to a Chapel program, you should use
+	this --ldflags option instead.  Why?  Because gcc does not allow -c to
+	be used with -o if multiple source files are specified.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/include/: files.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/modules/standard/: ChapelLocale.chpl 
+	chapel/runtime/comm-gasnet/: Makefile.share chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/etc/: Makefile.comm-gasnet Makefile.include 
+	chapel/runtime/include/: chplcomm.h 
+	chapel/runtime/make/: Makefile.runtime.head 
+	chapel/runtime/src/: main.c 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/test/link/deitz/: test_link1.compopts 
+
