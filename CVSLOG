@@ -111282,3 +111282,47 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: uts_deq.chpl 
 
+---------------------------------------------------------------------------
+
+07/23/07 16:23:55 -- deitz
+
+Log message:
+	REGRESS NOTE: modules/standard/machine/numLocales2
+	  Multiple locales are now supported, but how to set it is TBD.
+	
+	Added support for on statements assuming that what is done in the
+	scope of the on statements does not access any variables defined in an
+	outer scope including globals.
+	
+	Added new primitive PRIMITIVE_ON to implement the on fork.
+	
+	Added new lightweight writing functions for debugging purposes called
+	_debugWrite and _debugWriteln.  These functions expect string
+	arguments, or types that can be coerced to strings.  They do not
+	access any global program state or sync variables.  I added these so
+	that we could write a test that uses the on clause.
+	
+	Removed the use of an on statement in Memory.chpl since a variable
+	declared in the scope of the on statement is used outside this scope.
+	This may be legal eventually, but does not work yet.
+	
+	Removed the use of an on statement in ChapelLocale.chpl as this is not
+	yet supported.  Also, I don't think we want to allow returns from
+	within on statements.
+	
+	Simplified on syntax test so that it currently works.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	chapel/compiler/include/: build.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: ChapelIO.chpl ChapelLocale.chpl 
+	                          Memory.chpl 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h 
+	chapel/runtime/src/: main.c 
+	chapel/test/trivial/deitz/: test_on_syntax.chpl 
+	                            test_on_syntax.good 
+
