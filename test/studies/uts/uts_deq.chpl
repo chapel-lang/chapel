@@ -34,8 +34,10 @@ config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from G
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
 
-config const MAX_THREADS:  int = 4;
-config const chunkSize:    int = 10;
+// Parallel search parameters
+config const MAX_THREADS:   int = 4;
+config const chunkSize:     int = 10;
+config const threading_throttle = 1;
 
 // Global thread counter
 var thread_cnt: sync int = 0;
@@ -47,6 +49,13 @@ var global_maxDepth: sync int = 0;
 
 // Shared termination detection
 var terminated: single bool;
+
+
+/**** State of the load balancer ****/
+record LDBalanceState {
+  var throttle_period = threading_throttle;
+  var throttle: int;
+}
 
 
 /**** UTS TreeNode Class ****/
@@ -186,12 +195,20 @@ def uts_showSearchParams() {
 }
 
 
-def balance_load(inout q: DeQueue(TreeNode)): int {
+def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
     if (q.size > 2*chunkSize && readXX(thread_cnt) < MAX_THREADS) {
       if debug then writeln(" ** dequeue ", q.id, " splitting off ", chunkSize, " nodes");
 
+      // Attempt to reduce thread creation overhead
+      if state.throttle < state.throttle_period {
+        state.throttle += 1;
+        return 0;
+      } else {
+        state.throttle = 0;
+      }
+      
       // Split off chunkSize nodes into a new queue
       var work = q.split(chunkSize);
 
@@ -211,6 +228,7 @@ def balance_load(inout q: DeQueue(TreeNode)): int {
 */
 def create_tree(inout q: DeQueue(TreeNode)) {
   var count, maxDepth: int;
+  var ldbal_state = LDBalanceState();
 
   if q.isEmpty() {
     writeln("create_tree(): Warning, called with no work");
@@ -222,7 +240,7 @@ def create_tree(inout q: DeQueue(TreeNode)) {
     maxDepth = max(maxDepth, node.depth);
 
     if (q.size > 2*chunkSize) then
-      balance_load(q);
+      balance_load(ldbal_state, q);
   }
 
   // Update search stats
