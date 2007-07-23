@@ -111261,3 +111261,14 @@ Log message:
 Added files:
 	chapel/test/users/shetag/fock/hpcskernel/: NOTEST README fock.f 
 
+---------------------------------------------------------------------------
+
+07/23/07 13:44:21 -- dinan
+
+Log message:
+	Updated with --ldflags.  Added 10^8 node trees, can't run them yet though due
+	to memory footprint.
+
+Modified files:
+	chapel/test/studies/uts/: Makefile sample_trees.txt 
+
