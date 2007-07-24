@@ -111360,3 +111360,13 @@ Added files:
 	chapel/test/npb/is/diten/: is.compopts is_mt.compopts 
 	                           is_no_buckets.compopts 
 
+---------------------------------------------------------------------------
+
+07/24/07 16:13:13 -- deitz
+
+Log message:
+	Removed tabs.
+
+Modified files:
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+
