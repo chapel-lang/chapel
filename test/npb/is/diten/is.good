@@ -1,4 +1,3 @@
-is.chpl:253: warning: atomic keyword is ignored (not implemented)
  NAS Parallel Benchmarks (Chapel) - IS Benchmark
 
  Size:  65536  (class S)
