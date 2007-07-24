@@ -111345,3 +111345,18 @@ Modified files:
 Added files:
 	chapel/etc/vim/indent/: chpl.vim 
 
+---------------------------------------------------------------------------
+
+07/24/07 09:12:38 -- diten
+
+Log message:
+	The line number in the atomics ignored warning in is_mt.good became outdated.
+	Remove the warning from the .good in all three IS tests and add .compopts files
+	with the --no-warnings flag.
+
+Modified files:
+	chapel/test/npb/is/diten/: is.good is_mt.good is_no_buckets.good 
+Added files:
+	chapel/test/npb/is/diten/: is.compopts is_mt.compopts 
+	                           is_no_buckets.compopts 
+
