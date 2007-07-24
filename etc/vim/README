@@ -1,5 +1,5 @@
-This syntax highlighting file is designed for use with Vim versions
-5.08 or newer.
+This syntax highlighting file is designed for use with Vim versions 5.08 or
+newer.
 
 Files:
 -----
@@ -8,7 +8,7 @@ Files:
                       scheme for chapel files.
 
  syntax/chpl.vim   -- Syntax highlighting scheme for chapel
- syntax/chpl-c.vim
+ indent/chpl.vim   -- Indenting scheme for chapel
  
 
 Installation Instructions:
@@ -23,12 +23,47 @@ Installation Instructions:
     $ cp -r * $HOME/.vim
 
 
-Enabling Syntax Highlighting:
-----------------------------
+Enabling Chapel Features in Vim:
+-------------------------------
 
-  - From within Vim, issue the command:
+Vim commands are denoted ": command".  Any of these commands can be issued
+automatically by adding them to you ".vimrc" file.
+
+  - Enable automatic filetype detection:
+
+    : ftdetect on
+  
+    Alternatively, you can manually select the chapel file type:
+
+    : set filetype=chpl
+
+  - Enable syntax highlighting scheme:
   
     : syntax on
 
-  - This command can also be entered in your ".vimrc" file to enable
-    syntax highlighting by default.
+  - Enable indenting scheme:
+
+    : ftdetect indent on
+
+    
+Suggested .vimrc commands (can be copy-pasted into ~/.vimrc):
+------------------------------------------------------------
+
+set nocompatible    " allow for non-vi compatible features
+syntax on           " enable syntax highlighting
+filetype indent on  " turn on filetype detection and indenting
+set autoindent      " turn on auto indenting
+
+" If you prefer spaces to tabs, uncomment the following:
+"  (To get a real tab with these settings, do CTRL-V TAB)
+" set expandtab     " replace indents with spaces
+" set shiftwidth=2  " set how many spaces per indent
+" set smarttab      " use spaces as indents at the beginning of lines
+
+" Other useful commands, uncomment as desired:
+" set background=dark " switch to color scheme for terminals with a dark background
+" set ignorecase      " ignore case when searching (turn off by ": set noignorecase")
+" set incsearch       " enable incremental search
+" set ruler           " show cursor line at the bottom of the terminal
+" set showmatch       " show bracket matches
+" set showmode        " display current mode in the status line
