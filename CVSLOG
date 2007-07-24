@@ -111326,3 +111326,22 @@ Modified files:
 	chapel/test/trivial/deitz/: test_on_syntax.chpl 
 	                            test_on_syntax.good 
 
+---------------------------------------------------------------------------
+
+07/23/07 17:45:45 -- dinan
+
+Log message:
+	Added a Chapel indenting scheme.  It uses the catch-all cindent scheme that is
+	used by both C and C++.  I haven't tested this too extensively, but from what I
+	can tell this scheme is going to work well with little to no modifications.
+	
+	Also improved the README file to contain a sample .vimrc file that enables both
+	indenting and syntax highlighting.  The suggested file also includes the
+	commands necessary to switch between using tabs vs. spaces for indenting as
+	well as an assortment of other handy commands.
+
+Modified files:
+	chapel/etc/vim/: README 
+Added files:
+	chapel/etc/vim/indent/: chpl.vim 
+
