@@ -111370,3 +111370,13 @@ Log message:
 Modified files:
 	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
 
+---------------------------------------------------------------------------
+
+07/24/07 17:46:01 -- dinan
+
+Log message:
+	Changed modules future from a bug to a feature request.
+
+Modified files:
+	chapel/test/modules/dinan/: module_reused_without_main.future 
+
