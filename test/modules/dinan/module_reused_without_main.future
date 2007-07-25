@@ -1,4 +1,4 @@
-bug: using a module in a program forces you to define main()
+feature request: using a module in a program forces you to define main()
 
-I noticed this also when I have two separate files: one containing
-the module and the other containing "use ...; code...;"
+In this simple case, the compiler should be able to infer the entry point into
+the program.
