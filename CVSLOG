@@ -111380,3 +111380,18 @@ Log message:
 Modified files:
 	chapel/test/modules/dinan/: module_reused_without_main.future 
 
+---------------------------------------------------------------------------
+
+07/26/07 11:43:03 -- dinan
+
+Log message:
+	Futures requesting warnings for "--var" and "++var".
+
+Added files:
+	chapel/test/trivial/dinan/: minusminus_warning.chpl 
+	                            minusminus_warning.future 
+	                            minusminus_warning.good 
+	                            plusplus_warning.chpl 
+	                            plusplus_warning.future 
+	                            plusplus_warning.good 
+
