@@ -111395,3 +111395,27 @@ Added files:
 	                            plusplus_warning.future 
 	                            plusplus_warning.good 
 
+---------------------------------------------------------------------------
+
+07/26/07 15:03:30 -- deitz
+
+Log message:
+	Added initial support for reading and writing local variables and
+	arguments within on statements.
+	
+	Added a new pass called insertFatPointers that inserts fat pointers
+	"_chpl_comm_ptr_t" to remote data and passes a wrapper class of these
+	fat pointers to the function that is forked for handling on
+	statements.
+	
+	I would be happy to go over this checkin with anybody interested as it
+	starts to lay some framework for much future work.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/modules/standard/: ChapelIO.chpl 
+	chapel/runtime/include/: chplcomm.h 
+
