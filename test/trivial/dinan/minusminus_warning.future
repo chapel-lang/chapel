@@ -1,0 +1,6 @@
+warning message: "--var" has no effect.
+
+Requesting a warning or error message.  This is an easy mistake for C, C++,
+Java, etc programmers that is often difficult to spot once it's been made.  It
+was pointed out that this warning is not trivial to generate since it is
+possible that a user has overloaded unary - to have an effect.
