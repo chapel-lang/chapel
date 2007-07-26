@@ -791,18 +791,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = ");
       get(2)->codegen(outfile);
       break;
-    case PRIMITIVE_ON:
-      if (CallExpr* call = dynamic_cast<CallExpr*>(get(2))) {
-        if (call->argList->length() != 0)
-          USR_FATAL(this, "complicated on clause not yet supported");
-        fprintf(outfile, "_chpl_comm_fork(");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ", (func_p)");
-        call->baseExpr->codegen(outfile);
-        fprintf(outfile, ", 0, 0)");
-      } else
-        USR_FATAL(this, "invalid on primitive");
-      break;
     case PRIMITIVE_SET_REF:
       fprintf(outfile, "&(");
       get(1)->codegen(outfile);
@@ -1412,6 +1400,51 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
       fprintf(outfile, "->_ref_count < 0)");
+      break;
+    case PRIMITIVE_ON:
+      if (CallExpr* call = dynamic_cast<CallExpr*>(get(2))) {
+        fprintf(outfile, "_chpl_comm_fork(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", (func_p)");
+        call->baseExpr->codegen(outfile);
+        fprintf(outfile, ", ");
+        call->get(1)->codegen(outfile);
+        fprintf(outfile, ", sizeof(_");
+        call->get(1)->typeInfo()->symbol->codegen(outfile);
+        fprintf(outfile, "))");
+      } else
+        USR_FATAL(this, "invalid on primitive");
+      break;
+    case PRIMITIVE_LOCALE_ID:
+      fprintf(outfile, "_chpl_comm_locale_id()");
+      break;
+    case PRIMITIVE_NUM_LOCALES:
+      fprintf(outfile, "_chpl_comm_num_locales()");
+      break;
+    case PRIMITIVE_SET_FAT:
+      fprintf(outfile, "_chpl_comm_set_fat(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", sizeof(");
+      getValueType(get(3)->typeInfo())->symbol->codegen(outfile);
+      fprintf(outfile, "), ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_COMM_READ:
+      fprintf(outfile, "_chpl_comm_read(&");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", &");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_COMM_WRITE:
+      fprintf(outfile, "_chpl_comm_write(&");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");

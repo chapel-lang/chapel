@@ -268,10 +268,14 @@ class Writer {
   def lockWrite() return false;
   def unlockWrite();
   def write(args ...?n) {
-    var need_release: bool = lockWrite();
+    var need_release: bool;
+    //    on locale(0) do  // ahh!!! new instance to write; want to use array
+      need_release = lockWrite();
     for param i in 1..n do
       args(i).writeThis(this);
-    if need_release then unlockWrite();
+    if need_release then
+      //      on locale(0) do  // ahh!!! new instance to write; want to use array
+        unlockWrite();
   }
   def writeln(args ...?n) {
     write((...args), "\n");

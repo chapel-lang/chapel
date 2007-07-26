@@ -7,7 +7,6 @@ enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
-  PRIMITIVE_ON,
   PRIMITIVE_SET_REF,
   PRIMITIVE_GET_REF,
   PRIMITIVE_RETURN,
@@ -121,6 +120,13 @@ enum PrimitiveTag {
   PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
 
   PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
+
+  PRIMITIVE_ON,          // invoke on statement by calling nested function
+  PRIMITIVE_LOCALE_ID,   // return locale id
+  PRIMITIVE_NUM_LOCALES, // return number of locales
+  PRIMITIVE_SET_FAT,     // capture address into fat pointer
+  PRIMITIVE_COMM_READ,   // read remote address via fat pointer
+  PRIMITIVE_COMM_WRITE,  // write remote address via fat pointer
 
   PRIMITIVE_INT_ERROR,
 

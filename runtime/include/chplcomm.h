@@ -13,6 +13,11 @@ typedef struct {
   void *addr;
 } _chpl_comm_ptr_t;
 
+#define _chpl_comm_set_fat(fat, ilocale, isize, iaddr) \
+  (fat).locale = ilocale;                              \
+  (fat).size = isize;                                  \
+  (fat).addr = iaddr
+
 void _chpl_comm_init(int *argc_p, char ***argv_p);
 void _chpl_comm_barrier(char *msg);
 _int32 _chpl_comm_num_locales(void);
