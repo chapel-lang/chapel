@@ -1,5 +1,6 @@
 #include "chplrt.h"
 #include "chplcomm.h"
+#include "chplmem.h"
 #include "chplthreads.h"
 
 #define GASNET_PAR 1

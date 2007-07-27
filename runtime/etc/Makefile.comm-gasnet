@@ -1,3 +1,5 @@
+GASNET_INSTALL = $(CHPL_HOME)/third-party/gasnet/install
+
 include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
 
 CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit
