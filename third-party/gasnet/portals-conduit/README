@@ -1,0 +1,263 @@
+GASNet Portals-conduit documentation
+Michael Welcome <mlwelcome@lbl.gov>
+$Revision$
+
+User Information:
+-----------------
+The GASNet Portals conduit is being developed exclusively (at this time) for the 
+Cray XT3 and follow-on Portals based systems.  The design and implementation is 
+based on the Portals 3.3 Message Passing Interface (Revision 1.0) developed at 
+Sandia National Laboratory and the University of New Mexico.
+
+As of August 28, 2006, this implementation uses the existing MPI-Conduit for the 
+GASNet Core active message layer and uses Portals directly for the more performance
+sensitive Extended API (Put/Get) operations.  A full Portals implementation is expected
+to be available by January 1, 2007.
+
+NOTE: the MPI-Conduit is a portable GASNet conduit and is provided for convenience,
+not performance.  
+
+The Cray XT3 compute node operating system is Catamount.  Catamount provides a single
+user thread of execution and limited operating system services.  The SeaStar 
+communication processor manages the delivery and receipt of locally or remotely
+generated RDMA operations.  Once a GASNet client issues a Portals RDMA operation, 
+the seastar hardware will deliver it to the remote node and arrange for Events
+to be generated during various phases of the operation.  The client or GASNet runtime
+layer must actively poll the network to process these events, completing the 
+associated GASNet operations.
+
+* The current implementation is restricted to the GASNET_SEQ and GASNET_SEGMENT_FAST configuration.
+
+Some notes on building GASNet for the Cray XT3
+----------------------------------------------
+
+* * * IMPORTANT:  Use of this conduit REQUIRES the GNU programming environment.  
+      It will fail with the PGI programming environment.
+      Before configuring GASNet or UPCR, switch to the GNU environment by typing:
+       	   module switch PrgEnv-pgi PrgEnv-gnu
+
+* Since the XT3 requires using a cross-compiler, there is a special cross
+  configuration script located in $GASNET_SRC_DIR/other/contrib/cross-configure-crayxt3.
+  Instructions are:
+
+   cd $GASNET_SRC_DIR
+   ln -s cother/contrib/cross-configure-crayxt3 .
+   ./Bootstrap
+   ./cross-configure-crayxt3
+   make
+
+* The Pittsburd Supercomputer Center uses "pbsyod", rather than the "yod" command to 
+  launch jobs.
+  When configuring GASNet, edit the cross-configure-crayxt3 file and modify the
+  definition of MPIRUN_CMD to use "pbsyod" rather than "yod".
+
+Recognized environment variables:
+---------------------------------
+GASNET_PORTAL_MAX_POLL_EVENTS=Num
+This value specified the maximum number of Portals Events that will
+be processed whenever the conduit Polls the network.  
+The default value is 40.  
+Increasing the value may increase the time spent processing events when Polling.  
+Decreasing the value may cause events to build-up if the runtime is unable to 
+poll the network frequently enough.
+NOTE:  Setting GASNET_PORTAL_MAX_POLL_EVENTS=0 has the effect of setting
+it to infinity.  That is, GASNet will process all outstanding Portals 
+events on each Poll of the network.
+
+GASNET_PORTAL_PUTGET_POLL=Num
+This value specifies the number of GASNet Put/Get operations that may
+execute before a call to poll the network is forced.  
+The default value is 6.
+An internal counter records the number of Put/Get calls that have been made 
+and if, during a Put/Get call, the counter exceeds this value, a call to poll 
+the network is made.  The counter is reset to zero whenever GASNet polls the network.
+Increasing this value may increase latency of GASNet operations during periods
+of heavy Put/Get usage (without intermediate polling) as operations are not
+marked complete until the corresponding Portals events are processed.
+Decreasing the value may reduce performance by forcing excessive calls to poll
+the network, although the effect is probably minor.
+
+GASNET_PORTAL_PUTGET_LIMIT=Num
+This value specified the maximum number of Put/Get operations that may be
+"in-flight" at any one time.  
+The default value is 255.
+An operation is in-flight during the time period from when it is issued until 
+it has been completed (by the receipt and processing of the corresponding Portals events).
+An internal counter records the number of in-flight Put/Get operations.  When
+this value is exceeded, any additional Put or Get operations are delayed until
+a previous operation has completed.  The network is continually polled during the 
+delay.  This value should probably not be increased, as having too many outstanding
+Portals operations may cause inefficiencies for the Portals implementation.
+This value may be reduced to force fewer in-flight operations.
+
+GASNET_PORTAL_NUM_TMPMD=Num
+Portals Put and Get operations are RDMA operations between a local and remote
+"Memory Descriptor".  Think of a Memory Descriptor (MD) as pinned and registered
+memory.  In GASNet the destination of a Put operation and the source of a Get
+operation is the shared memory segment on the target node, which is already covered
+by an MD (In GASNET_FAST mode).  However, the source memory of a Put or destination
+memory of a Get may not be covered.  Small Put and Get operations are usually 
+copied through a pre-pinned bounce buffer but for larger Put and Get operations,
+the source of the Put or destination of the Get must have a temporary MD constructed
+for it.  This environment variable limits the total number of temporary MD's allowed
+to be in use at any time.
+The default value is 1024.  
+If a Put or Get operation requires a temporary MD and the number in use exceeds this value, 
+the operation will poll the network until one is available.  
+NOTE: the value of GASNET_PORTAL_PUTGET_LIMIT is generally less than this value
+and so it would be impossible (in the current implementation) for this value to
+be exceeded.
+
+* See the README file for the MPI-Conduit for additional environment variables that 
+  effect the GASNet Core API, which is (currently) implemented by the MPI-Conduit.
+
+* All the standard GASNet environment variables (see top-level README)
+
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+In the next few months, the entire GASNet API will be implemented using only
+Portals.  Primarily, this will mean implementing GASNet Short, Medium and 
+Long active message Request and Reply operations using Portals RDMA operations.
+
+==============================================================================
+
+Design Overview:
+----------------
+At this point, the implementation is relatively straight-forward.   GASNet Put
+and Get operations are implemented in terms of Portals PtlPutRegion and PtlGetRegion
+operations.  
+
+Portals Put and Get operations are RDMA operations between a local and remote "Memory
+Descriptor".  A Memory Descriptor represents a pinned region of memory that is endowed 
+with various properties, such as what type of events will be generated on the MD, which
+operations are permitted to be performed on the MD, and how the memory is managed ("Locally"
+or "Remotely").  In addition, Portals MDs can be Free Floating, or on an ordered list attached
+to a Portals Table Entry.  MDs that are attached to a Portals Table Entry are accessable 
+to remote agents as the target of Put or source of Get RDMA operations.  Such MDs have
+a set of 64 bits called "Match-Bits".  These MDs may also have a mask called the "Ignore-bits",
+which will be discussed below.
+
+All Portals operations are non-blocking and do not return a handle.  Depending on 
+how the associated memory descriptors are configured, Portals Put and Get operations
+generate events on the source and destination memory descriptors.  When a Portals
+Put operation is issued, the caller supplies the local source memory descriptor, but the 
+remote destination memory descriptor is determined by specifying a portals table entry
+index and a set of 64 match-bits.  When the packet header of the message arrives at the
+destination node, the memory descriptors attached to that portals table entry are examined
+in order.  The first MD that matches the Match-bits of the Put operation (after being masked
+by the MD's Ignore-bits) is selected as the target MD.
+A similar procedure happens for Get operations.  The caller of the Get operation specifies
+the memory descriptor of the data destination, but the data source is specified
+by a portals table entry and set of match-bits.
+
+Depending on how an MD is configured, events will be generated based on underlying 
+actions associated with Portals Put and Get operations.  The events used in this
+GASNet implementation are:
+PTL_EVENT_SEND_END   - a locally initiated Put operation has been sent
+PTL_EVENT_ACK        - a locally initiated Put operation has reached its remote destination MD
+PTL_EVENT_PUT_END    - a remotely initiated Put operation has completed on a local MD
+PTL_EVENT_GET_END    - a remotely initiated Get operation has completed on a local MD
+PTL_EVENT_REPLY_END  - a locally initiated Get operation has completed on a local MD
+
+At startup the local shared memory segment (Remote Access Region or RAR) is allocated and
+covered by two Portals Memory Descriptors: RAR_MD and RARAM_MD.
+In addition, a bounce buffer region is allocated and covered with the ReqSB_MD 
+memory descriptor.
+A single Event Queue (EQ) is allocated with enough events to handle the maximum number
+of Put/Get operations allowed at any time (see environment variable GASNET_PORTAL_PUTGET_LIMIT).
+
+RAR_MD does not have a Portals event queue associated with it and therefore no events will be
+generated when operations are performed on it.  It is linked on the Portals Table Entry at 
+index RAR_PTE, with MATCH_BITS=0x00.  It is used as the target of GASNet Put and source of 
+GASNet Get operations.
+
+RARAM_MD is associated with the event queue (EQ) and is linked on the Portals
+table entry at index RAR_PTE with MATCH_BITS=0x01.  It is uses as 
+the source of a GASNet Put operation (when the source happens to lie within the
+local RAR).  Similarly, it is used as the destination of a GASNet Get operation
+when the destination lies in the local RAR.
+
+Both RAR_MD and RARAM_MD are configured to ignore all but the lowest 4 bits of a
+set of MATCH_BITS.
+
+ReqSB_MD is associated with EQ.  It is a free-floating MD and therefore cannot be used
+as the target of a remote Put or Get operation, only as the source of a Put or destination
+of a locally initiated Get operation.  Further, this memory region is managed
+by a simple "Chunk" allocator.  Currently, it allocates fixed-size, 1KB chunks.
+
+Each GASNet Put or Get operation is associated with a GASNet handle, a polymorphic
+typed object that records the state of the operation.  The objects can be referenced
+by either a standard (64 bit) pointer, or a compact 24-bit representation that can
+be converted to a pointer to the object.  
+
+Consider the implementation of a non-blocking GASNet Put operation:
+
+gasnet_handle_t gasnet_put_nb_bulk(void *dest, gasnet_node_t node, void *src, size_t nbytes);
+
+* We know the destination node and virtual memory address of where the data is to be put.
+  This region must lie within the RAR of the remote node.  We know the starting address of
+  this RAR since this information was exchanged at job startup.  We know the RAR is 
+  covered by the RAR_MD memory descriptor with MATCH_BITS=0x00 and we can compute the
+  the (remote) offset from the start of this MD.
+
+* There are several cases for determining the MD of the source memory region:
+  (1) It lives within the local RAR.  If so, use the local RAR_MD as the source
+      MD and compute the (local) offset as src - RAR_MD_start_address.
+  (2) It does not live within the local RAR, but nbytes <= 1KB.  Allocate a chunk
+      from ReqSB_MD and copy the data into this bounce buffer.  Compute the (local)
+      offset of this chunk from the start of ReqSB_MD.
+  (3) It does not live in the local RAR and is too big to be copied though a bounce
+      buffer.  Allocate a temporary memory descriptor (TEMP_MD) to cover the 
+      region to be sent.  Se the local_offset = 0.
+
+* Allocate a gasnet_handle_t object and encode its 24-bit representation into a portion of
+  the 64-bit MATCH_BITS that will be ignored by the remote memory descriptors (the upper 60 bits).
+  The handle is marked "IN_FLIGHT".
+
+* Issue the PtlPutRegion operation from the selected local MD and local_offset to the
+  remote node, specifying the RAR_PTE portals table entry and MATCH_BITS as specified 
+  above.  Request that an ACK event be delivered when the data has been written to the
+  remote memory.
+
+* return the gasnet_handle_t object to the client.
+
+At some point later in time, the data will be sent to the remote node, generating a 
+PTL_EVENT_SEND_END event on the local source MD.  In addition, when the data has been delivered to
+the target memory, an PTL_EVENT_ACK event will delivered to the source MD.
+At some point in time, the client or runtime layer will poll the network, processing outstanding
+events.  For this Put operation, the events will cause the following action:
+
+** The SEND_END event will be ignored by all memory descriptors for this operation.
+** The ACK event will cause the following actions:
+   - the 24 bit representation of the gasnet_handle_t object will be extracted from
+     the MATCH_BITS in the event structure.  The 64-bit pointer to the object will be
+     generate from the 24-bit representation.  The operation will be marked "DONE".
+   - If the event occurred on the local RAR (case (1) above), no action is taken.
+     If the event occurred on the ReqSB_MD (case (2)), this was a copy through a bounce
+     buffer and the chunk is freed for re-use.
+     If the event occurred on a TEMP_MD, the memory descriptor is "unlinked" (unpinned).
+
+Finally, the next time the client or the runtime layer calls gasnet_wait_syncnb() or
+gasnet_try_syncnb() with this handle, the handle is freed and the operation is complete.
+
+GASNet Get operations are handled in a similar manner.  
+All blocking operation poll the network until the desired operation is complete.
+
+
+
+
+
+
+
+

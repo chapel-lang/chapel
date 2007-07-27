@@ -1,0 +1,49 @@
+## Process this file with automake to produce Makefile.in	-*- makefile -*-
+#   $Source$
+#     $Date$
+# $Revision$
+# Description: Makefile for GASNet other/contrib
+# Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
+# Terms of use are as specified in license.txt
+
+AUTOMAKE_OPTIONS = foreign 1.4
+
+SUBDIRS = .
+
+EXTRA_DIST = $(dotpl_DATA) \
+	cross-configure-crayxt3
+# exclude these from distribution for now
+#	cross-configure-bgl \
+#	cross-configure-phantom \
+#	cross-configure-phoenix
+
+dotpldir = $(bindir)
+dotpl_DATA = gasnet_trace.pl
+
+bin_SCRIPTS = gasnet_trace
+
+all-local: $(bin_SCRIPTS) $(dotpl_DATA)
+
+$(top_builddir)/other/perlstart: $(top_srcdir)/other/perlstart.in
+	@cd $(top_builddir)/other && $(MAKE) perlstart
+
+gasnet_trace: $(top_builddir)/other/perlstart gasnet_trace.pl
+
+# Files to copy from srcdir to builddir if they differ
+if BUILD_IS_SRC
+files_we_copy = 
+else
+files_we_copy = $(dotpl_DATA)
+$(files_we_copy): force
+	@srcfile="$(srcdir)/`basename $@`" ; \
+         if test ! -f "$@" -o "`find $$srcfile -newer '$@' 2>&1`" ; then \
+          echo cp -f "$$srcfile" . ;         \
+          cp -f "$$srcfile" . ;              \
+         fi
+endif
+DISTCLEANFILES = $(files_we_copy)
+
+.PHONY: force
+
+force:
+	
