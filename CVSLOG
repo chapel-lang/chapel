@@ -111419,3 +111419,307 @@ Modified files:
 	chapel/modules/standard/: ChapelIO.chpl 
 	chapel/runtime/include/: chplcomm.h 
 
+---------------------------------------------------------------------------
+
+07/27/07 12:11:44 -- deitz
+
+Log message:
+	Added GASNet v. 1.8.0 source to third-party directory.
+
+Added files:
+	chapel/third-party/gasnet/: .autom4te.cfg Bootstrap ChangeLog 
+	                            Makefile.am Makefile.in README 
+	                            README-tools acconfig.h acinclude.m4 
+	                            aclocal.m4 configure configure.in 
+	                            gasnet.h gasnet_ammacros.h 
+	                            gasnet_asm.h gasnet_atomic_bits.h 
+	                            gasnet_atomicops.h gasnet_basic.h 
+	                            gasnet_coll.h gasnet_config.h.in 
+	                            gasnet_diagnostic.c gasnet_handler.h 
+	                            gasnet_help.h gasnet_internal.c 
+	                            gasnet_internal.h gasnet_membar.h 
+	                            gasnet_mmap.c gasnet_syncops.h 
+	                            gasnet_timer.h gasnet_toolhelp.h 
+	                            gasnet_tools.c gasnet_tools.h 
+	                            gasnet_trace.c gasnet_trace.h 
+	                            gasnet_vis.h license.txt unBootstrap 
+	chapel/third-party/gasnet/config-aux/: Makefile.am Makefile.in 
+	                                       config.guess config.sub 
+	                                       depcomp install-sh 
+	                                       missing mkinstalldirs 
+	chapel/third-party/gasnet/docs/: collective_notes.txt 
+	                                 gasnet.html gasnet.pdf 
+	                                 gasnet.ps gasnet.txt 
+	chapel/third-party/gasnet/elan-conduit/: Makefile.am Makefile.in 
+	                                         README conduit.mak.in 
+	                                         gasnet_core.c 
+	                                         gasnet_core.h 
+	                                         gasnet_core_dump.c 
+	                                         gasnet_core_fwd.h 
+	                                         gasnet_core_help.h 
+	                                         gasnet_core_internal.h 
+	                                         gasnet_core_reqrep.c 
+	                                         gasnet_core_toolhelp.h 
+	                                         gasnet_extended.c 
+	                                         gasnet_extended_fwd.h 
+	                                         gasnet_extended_internal.h 
+	chapel/third-party/gasnet/extended-ref/: README 
+	                                         gasnet_coll_fwd.h 
+	                                         gasnet_extended.c 
+	                                         gasnet_extended.h 
+	                                         gasnet_extended_fwd.h 
+	                                         gasnet_extended_help.h 
+	                                         gasnet_extended_internal.h 
+	                                         gasnet_extended_refbarrier.c 
+	                                         gasnet_extended_refcoll.c 
+	                                         gasnet_extended_refcoll.h 
+	                                         gasnet_extended_refvis.c 
+	                                         gasnet_extended_refvis.h 
+	                                         gasnet_vis_fwd.h 
+	                                         gasnet_vis_indexed.c 
+	                                         gasnet_vis_internal.h 
+	                                         gasnet_vis_strided.c 
+	                                         gasnet_vis_vector.c 
+	chapel/third-party/gasnet/gm-conduit/: Makefile.am Makefile.in 
+	                                       README conduit.mak.in 
+	                                       firehose_fwd.h 
+	                                       gasnet_core.c 
+	                                       gasnet_core.h 
+	                                       gasnet_core_conf.c 
+	                                       gasnet_core_fwd.h 
+	                                       gasnet_core_help.h 
+	                                       gasnet_core_internal.h 
+	                                       gasnet_core_receive.c 
+	                                       gasnet_extended.c 
+	                                       gasnet_extended_firehose.c 
+	                                       gasnet_extended_fwd.h 
+	                                       gasnet_extended_internal.h 
+	                                       gasnet_extended_op.c 
+	                                       gasnet_extended_ref.c 
+	                                       license.txt 
+	chapel/third-party/gasnet/gm-conduit/contrib/: Makefile.am 
+	                                               Makefile.in 
+	                                               gasnetrun_gm.in 
+	                                               gasnetrun_gm.pl 
+	chapel/third-party/gasnet/lapi-conduit/: Makefile.am Makefile.in 
+	                                         README STATUS 
+	                                         conduit.mak.in 
+	                                         gasnet_core.c 
+	                                         gasnet_core.h 
+	                                         gasnet_core_fwd.h 
+	                                         gasnet_core_help.h 
+	                                         gasnet_core_internal.h 
+	                                         gasnet_extended.c 
+	                                         gasnet_extended_fwd.h 
+	                                         gasnet_extended_internal.h 
+	                                         license.txt 
+	chapel/third-party/gasnet/mpi-conduit/: Makefile.am Makefile.in 
+	                                        README conduit.mak.in 
+	                                        gasnet_core.c 
+	                                        gasnet_core.h 
+	                                        gasnet_core_fwd.h 
+	                                        gasnet_core_help.h 
+	                                        gasnet_core_internal.h 
+	chapel/third-party/gasnet/mpi-conduit/contrib/: Makefile.am 
+	                                                Makefile.in 
+	                                                gasnetrun_mpi.in 
+	                                                gasnetrun_mpi.pl 
+	chapel/third-party/gasnet/other/: Makefile-conduit.mak.in 
+	                                  Makefile-libgasnet.mak.in 
+	                                  Makefile.am Makefile.in README 
+	                                  detect-cachesz.c 
+	                                  fragment-body.mak.in 
+	                                  fragment-head.mak.in 
+	                                  perlstart.in 
+	                                  portable_inttypes.h 
+	                                  portable_platform.h 
+	                                  tools-toggle.pl 
+	chapel/third-party/gasnet/other/ammpi/: Makefile.am 
+	                                        Makefile.common 
+	                                        Makefile.generic 
+	                                        Makefile.in 
+	                                        Makefile.standalone 
+	                                        Makefile.tests 
+	                                        Makefile.titanium.in 
+	                                        ammpi.h ammpi_ep.c 
+	                                        ammpi_internal.h 
+	                                        ammpi_reqrep.c 
+	                                        ammpi_spmd.c 
+	                                        ammpi_spmd.h license.txt 
+	chapel/third-party/gasnet/other/amudp/: Makefile.am 
+	                                        Makefile.common 
+	                                        Makefile.generic 
+	                                        Makefile.in 
+	                                        Makefile.standalone 
+	                                        Makefile.tests 
+	                                        Makefile.titanium.in 
+	                                        amudp.h amudp_cdefs.c 
+	                                        amudp_ep.cpp 
+	                                        amudp_internal.h 
+	                                        amudp_reqrep.cpp 
+	                                        amudp_spawn.cpp 
+	                                        amudp_spmd.cpp 
+	                                        amudp_spmd.h amudprun.c 
+	                                        exc.cpp exc.h 
+	                                        license.txt sig.cpp 
+	                                        sig.h sockaddr.h 
+	                                        socket.h socklist.cpp 
+	                                        socklist.h sockutil.cpp 
+	                                        sockutil.h ueth.h ufxp.h 
+	chapel/third-party/gasnet/other/amxtests/: apputils.c apputils.h 
+	                                           testam.c testam.h 
+	                                           testbounce.c 
+	                                           testbulk.c 
+	                                           testgetput.c 
+	                                           testlatency.c 
+	                                           testlatencyM.c 
+	                                           testping.c 
+	                                           testreadwrite.c 
+	                                           testreduce.c 
+	chapel/third-party/gasnet/other/contrib/: Makefile.am 
+	                                          Makefile.in 
+	                                          cross-configure-crayxt3 
+	                                          gasnet_trace.in 
+	                                          gasnet_trace.pl 
+	chapel/third-party/gasnet/other/firehose/: firehose-local.txt 
+	                                           firehose-remote.txt 
+	                                           firehose.c firehose.h 
+	                                           firehose_fwd_sample.h 
+	                                           firehose_hash.c 
+	                                           firehose_internal.h 
+	                                           firehose_page.c 
+	                                           firehose_region.c 
+	                                           firehose_trace.h 
+	chapel/third-party/gasnet/other/mpi-spawner/: README 
+	                                              gasnet_bootstrap_internal.h 
+	                                              gasnet_bootstrap_mpi.c 
+	                                              license.txt 
+	chapel/third-party/gasnet/other/plpa/: AUTHORS LICENSE NEWS 
+	                                       README README.GASNet 
+	                                       VERSION 
+	chapel/third-party/gasnet/other/plpa/config/: acinclude.m4 
+	chapel/third-party/gasnet/other/plpa/src/libplpa/: plpa.h 
+	                                                   plpa_api_probe.c 
+	                                                   plpa_bottom.h 
+	                                                   plpa_dispatch.c 
+	                                                   plpa_internal.h 
+	chapel/third-party/gasnet/other/ssh-spawner/: README 
+	                                              gasnet_bootstrap_internal.h 
+	                                              gasnet_bootstrap_ssh.c 
+	                                              license.txt 
+	chapel/third-party/gasnet/other/testspawn/: Makefile.am 
+	                                            Makefile.in README 
+	                                            gasnet_core.h 
+	                                            gasnet_core_fwd.h 
+	                                            gasnet_core_help.h 
+	                                            gasnet_core_internal.h 
+	                                            gasnet_extended_fwd.h 
+	                                            license.txt 
+	                                            testspawn.c 
+	chapel/third-party/gasnet/portals-conduit/: Makefile.am 
+	                                            Makefile.in README 
+	                                            conduit.mak.in 
+	                                            gasnet_core.c 
+	                                            gasnet_core.h 
+	                                            gasnet_core_fwd.h 
+	                                            gasnet_core_help.h 
+	                                            gasnet_core_internal.h 
+	                                            gasnet_extended.c 
+	                                            gasnet_extended_fwd.h 
+	                                            gasnet_extended_internal.h 
+	                                            gasnet_portals.c 
+	                                            gasnet_portals.h 
+	chapel/third-party/gasnet/sci-conduit/: Makefile.am Makefile.in 
+	                                        README conduit.mak.in 
+	                                        gasnet_core.c 
+	                                        gasnet_core.h 
+	                                        gasnet_core_fwd.h 
+	                                        gasnet_core_help.h 
+	                                        gasnet_core_internal.c 
+	                                        gasnet_core_internal.h 
+	chapel/third-party/gasnet/sci-conduit/contrib/: Makefile.am 
+	                                                Makefile.in 
+	                                                gasnetrun_sci.in 
+	                                                gasnetrun_sci.ksh 
+	                                                machines.sci 
+	chapel/third-party/gasnet/shmem-conduit/: Makefile.am 
+	                                          Makefile.in README 
+	                                          conduit.mak.in 
+	                                          gasnet_core.c 
+	                                          gasnet_core.h 
+	                                          gasnet_core_fwd.h 
+	                                          gasnet_core_help.h 
+	                                          gasnet_core_internal.h 
+	                                          gasnet_extended.c 
+	                                          gasnet_extended_fwd.h 
+	                                          gasnet_extended_help_extra.h 
+	chapel/third-party/gasnet/smp-conduit/: Makefile.am Makefile.in 
+	                                        README conduit.mak.in 
+	                                        gasnet_core.c 
+	                                        gasnet_core.h 
+	                                        gasnet_core_fwd.h 
+	                                        gasnet_core_help.h 
+	                                        gasnet_core_internal.h 
+	chapel/third-party/gasnet/template-conduit/: Makefile.am README 
+	                                             README.template 
+	                                             conduit.mak.in 
+	                                             gasnet_core.c 
+	                                             gasnet_core.h 
+	                                             gasnet_core_fwd.h 
+	                                             gasnet_core_help.h 
+	                                             gasnet_core_internal.h 
+	chapel/third-party/gasnet/tests/: Makefile.in README delay.c 
+	                                  test.h testalign.c testam.c 
+	                                  testbarrier.c 
+	                                  testbarrierconf.c 
+	                                  testbarrierlate.c testcoll.c 
+	                                  testcontend.c testcore1.c 
+	                                  testcxx.cc testenv.c 
+	                                  testexit.c testgasnet.c 
+	                                  testhsl.c testinternal.c 
+	                                  testlarge.c testlockcontend.c 
+	                                  testlogGP.c testmisc.c 
+	                                  testmpi.c testnbr.c 
+	                                  testqueue.c testrand.c 
+	                                  testsmall.c testthreads.c 
+	                                  testtools.c testtoolscxx.cc 
+	                                  testvis.c testvisperf.c 
+	chapel/third-party/gasnet/tests/mpi/: README-osumpi.txt 
+	                                      license.txt testmpinbr.c 
+	                                      testmpiperf.c 
+	                                      testosumpi2_acc_lat.c 
+	                                      testosumpi2_get_bw.c 
+	                                      testosumpi2_get_lat.c 
+	                                      testosumpi2_put_bw.c 
+	                                      testosumpi2_put_bw2.c 
+	                                      testosumpi2_put_lat.c 
+	                                      testosumpi_bcast_lat.c 
+	                                      testosumpi_bw.c 
+	                                      testosumpi_bw2.c 
+	                                      testosumpi_lat.c 
+	chapel/third-party/gasnet/udp-conduit/: Makefile.am Makefile.in 
+	                                        README conduit.mak.in 
+	                                        gasnet_core.c 
+	                                        gasnet_core.h 
+	                                        gasnet_core_fwd.h 
+	                                        gasnet_core_help.h 
+	                                        gasnet_core_internal.h 
+	chapel/third-party/gasnet/vapi-conduit/: Makefile.am Makefile.in 
+	                                         README conduit.mak.in 
+	                                         firehose_fwd.h 
+	                                         gasnet_core.c 
+	                                         gasnet_core.h 
+	                                         gasnet_core_fwd.h 
+	                                         gasnet_core_help.h 
+	                                         gasnet_core_internal.h 
+	                                         gasnet_core_sndrcv.c 
+	                                         gasnet_extended.c 
+	                                         gasnet_extended_fwd.h 
+	                                         gasnet_extended_internal.h 
+	                                         gasnet_firehose.c 
+	                                         license.txt 
+	chapel/third-party/gasnet/vapi-conduit/contrib/: Makefile.am 
+	                                                 Makefile.in 
+	                                                 gasnetrun_vapi.in 
+	                                                 gasnetrun_vapi.pl 
+
