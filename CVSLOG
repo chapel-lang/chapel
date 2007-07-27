@@ -111723,3 +111723,86 @@ Added files:
 	                                                 gasnetrun_vapi.in 
 	                                                 gasnetrun_vapi.pl 
 
+---------------------------------------------------------------------------
+
+07/27/07 14:32:47 -- deitz
+
+Log message:
+	To make gasnet,
+	
+	  cd third-party/gasnet
+	  ./Bootstrap               # you probably won't need to do this, enter 'n'
+	  ./configure --prefix=$CHPL_HOME/third-party/gasnet/install --enable-segment-everything --enable-debug
+	  make all
+	  make install
+	
+	To use gasnet,
+	
+	  setenv GASNET_SPAWNFN S
+	  setenv SSH_CMD ssh
+	  setenv SSH_SERVERS "chevy sleepingbear"
+	  setenv SSH_OPTIONS -x
+	
+	To use chapel with gasnet,
+	
+	  cd $CHPL_HOME
+	  setenv CHPL_COMM gasnet
+	  make
+	
+	To compile a chapel program and run it on 2 nodes,
+	
+	  chpl myprog.chpl
+	  a.out 2
+	
+	Here is a sample myprog.chpl:
+	
+	  def main {
+	    var x: int = 17;
+	    _debugWriteln(localeID(), " x=", x);
+	    x += 1;
+	    on Locale(1) {
+	      _debugWriteln(localeID(), " x=", x);
+	      x = x + 1;
+	    }
+	    _debugWriteln(localeID(), " x=", x);
+	  }
+	
+	Note that what you can do with multiple locales is very limited.
+	
+	Also, prior to this checkin, I had only worked on gasnet when making
+	it without "--enable-debug".  This makes us generate many warnings
+	when we compile our generated code, maybe because they enable even
+	more warnings than we do.  They do not make them errors though.  Also
+	the code runs significantly slower in this mode, and I'm seeing a seg
+	fault on the program above.  The documentation mentions that there are
+	extra checks when using --enable-debug.
+	
+	Also, I'm not convinced I remembered to make it with
+	--enable-segment-everything.
+
+Modified files:
+	chapel/runtime/comm-gasnet/: Makefile.share chpl_cfg_comm.c 
+	chapel/runtime/etc/: Makefile.comm-gasnet 
+	chapel/third-party/gasnet/: Makefile.in aclocal.m4 configure 
+	                            gasnet_config.h.in 
+	chapel/third-party/gasnet/config-aux/: Makefile.in 
+	chapel/third-party/gasnet/elan-conduit/: Makefile.in 
+	chapel/third-party/gasnet/gm-conduit/: Makefile.in 
+	chapel/third-party/gasnet/gm-conduit/contrib/: Makefile.in 
+	chapel/third-party/gasnet/lapi-conduit/: Makefile.in 
+	chapel/third-party/gasnet/mpi-conduit/: Makefile.in 
+	chapel/third-party/gasnet/mpi-conduit/contrib/: Makefile.in 
+	chapel/third-party/gasnet/other/: Makefile.in 
+	chapel/third-party/gasnet/other/ammpi/: Makefile.in 
+	chapel/third-party/gasnet/other/amudp/: Makefile.in 
+	chapel/third-party/gasnet/other/contrib/: Makefile.in 
+	chapel/third-party/gasnet/other/testspawn/: Makefile.in 
+	chapel/third-party/gasnet/portals-conduit/: Makefile.in 
+	chapel/third-party/gasnet/sci-conduit/: Makefile.in 
+	chapel/third-party/gasnet/sci-conduit/contrib/: Makefile.in 
+	chapel/third-party/gasnet/shmem-conduit/: Makefile.in 
+	chapel/third-party/gasnet/smp-conduit/: Makefile.in 
+	chapel/third-party/gasnet/udp-conduit/: Makefile.in 
+	chapel/third-party/gasnet/vapi-conduit/: Makefile.in 
+	chapel/third-party/gasnet/vapi-conduit/contrib/: Makefile.in 
+
