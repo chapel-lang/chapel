@@ -311,7 +311,7 @@ insertFatPointers(void) {
                   continue;
                 } else if (call->isPrimitive(PRIMITIVE_MOVE) &&
                            call->get(1) == se) {
-                  VarSymbol* rhs = new VarSymbol("_tmp", se->var->type);
+                  VarSymbol* rhs = new VarSymbol("_tmp", getValueType(se->var->type));
                   call->insertBefore(new DefExpr(rhs));
                   call->insertBefore(new CallExpr(PRIMITIVE_MOVE, rhs, call->get(2)->remove()));
                   VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);

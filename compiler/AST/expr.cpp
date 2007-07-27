@@ -1442,7 +1442,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_COMM_WRITE:
       fprintf(outfile, "_chpl_comm_write(&");
       get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
+      fprintf(outfile, ", &");
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
