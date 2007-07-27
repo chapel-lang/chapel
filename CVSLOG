@@ -111806,3 +111806,19 @@ Modified files:
 	chapel/third-party/gasnet/vapi-conduit/: Makefile.in 
 	chapel/third-party/gasnet/vapi-conduit/contrib/: Makefile.in 
 
+---------------------------------------------------------------------------
+
+07/27/07 14:48:19 -- deitz
+
+Log message:
+	Fixed a minor bug in writing to local variables on another locale.
+	The code dereferenced an uninitialized pointer and I'm surprised it
+	was working at all.
+	
+	This fixes the seg fault in the sample program I sent out in my last
+	checkin.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: parallel.cpp 
+
