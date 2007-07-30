@@ -1365,6 +1365,11 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_GC_ADD_NULL_ROOT:
+      fprintf(outfile, "_addNullRoot(&");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_GC_DELETE_ROOT:
       fprintf(outfile, "_deleteRoot()");
       break;

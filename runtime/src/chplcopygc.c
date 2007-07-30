@@ -14,7 +14,11 @@ int totalRoots = 0;
 void *rootlist[MAXROOTS];
 
 void _addRoot(void* root) {
-  /* Obviously this won't suffice. */
+  rootlist[totalRoots++] = root;
+}
+
+void _addNullRoot(void* root) {
+  *(void**)root = NULL;
   rootlist[totalRoots++] = root;
 }
 
@@ -46,6 +50,7 @@ void _chpl_gc_copy_collect(void) {
       }
     }
   }
+
   /* Now that any root objects are moved, move sub-objects. */
   scanptr = _to_space->head;
   while (scanptr != _to_space->current) {

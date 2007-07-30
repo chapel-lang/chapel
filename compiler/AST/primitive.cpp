@@ -356,6 +356,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
   prim_def(PRIMITIVE_GC_ADD_ROOT, "_addRoot", returnInfoVoid);
+  prim_def(PRIMITIVE_GC_ADD_NULL_ROOT, "_addNullRoot", returnInfoVoid);
   prim_def(PRIMITIVE_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
 
   prim_def(PRIMITIVE_CLASS_NULL, "_refnull", returnInfoBool);

@@ -25,7 +25,8 @@ void _chpl_gc_init(size_t heapsize);
    when it leaves scope. Unless GC is currently running, these
    should all be pointers to NULL variables or pointers
    to pointers to heap */
-void _addRoot(void *root);
+void _addRoot(void* root);
+void _addNullRoot(void* root);
 void _deleteRoot(void);
 
 /* Allocate space in the from-space.  If not enough space exists,

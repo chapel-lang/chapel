@@ -106,6 +106,7 @@ enum PrimitiveTag {
 
   PRIMITIVE_GC_CC_INIT,  // Initialize Heap for copy-collecting
   PRIMITIVE_GC_ADD_ROOT,    // Add a root variable for garbage collection
+  PRIMITIVE_GC_ADD_NULL_ROOT, // Add a root and point it to NULL
   PRIMITIVE_GC_DELETE_ROOT, // Remove a root variable for garbage collection
 
   PRIMITIVE_GC_INIT,  // set reference count to zero

@@ -6,7 +6,7 @@ class letterclass {
     return x + y + z;
   }
 }
-config const iterations = 1000;
+config const iterations = 10000000;
 def main() {
   var cc: letterclass();
   var n = 0;
