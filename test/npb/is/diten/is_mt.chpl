@@ -118,53 +118,39 @@ def setupPartialVerify() {
 }
 
 def rank(iteration: int) {
-  var done: single bool;
-  var blkSize = totalKeys / nThreads;
-  var threadCnt: sync int = nThreads;
+  const blkSize = totalKeys / nThreads;
 
   keyArray(iteration) = iteration;
   keyArray(iteration+maxIterations) = maxKey - iteration;
 
   partialVerifyVals = keyArray(testIndexArray);
-  keyBuff1 = 0;
 
-  for thread in 0..nThreads-1 {
-    var low = thread * blkSize;
-    var high = if thread == nThreads-1 then D.high else (thread+1)*blkSize - 1;
-    var DOM: domain(1) = [low..high];
-    begin {
-      keyBuff1([i in DOM] keyArray(i), thread) += 1;
-      var threadCntL = threadCnt;
-      threadCntL -= 1;
-      threadCnt = threadCntL;
-      if threadCntL == 0 then done = true;
-    }
+  coforall thread in 0..nThreads-1 {
+    const low = thread * blkSize;
+    const high = if thread == nThreads-1 then D.high else (thread+1)*blkSize-1;
+    keyBuff1(0..maxKey-1, thread) = 0;
+    keyBuff1(keyArray(low..high), thread) += 1;
+    keyBuff1(0..maxKey-1, thread) = + scan keyBuff1(0..maxKey-1, thread);
   }
-  if done {
-    var slice: domain(2) = [0..maxKey-1, 0..0];
-    if nThreads > 1 then
-      [i in 0..maxKey-1] keyBuff1(i, 0) = + reduce keyBuff1(i, [0..nThreads-1]);
-        
-    keyBuff1(slice) = + scan keyBuff1(slice);
-    partialVerification(iteration);
-  }
+  partialVerification(iteration);
 }
 
 
 def partialVerification(iteration: int) {
   for i in 0..4 {
     var k = partialVerifyVals(i);
+    var val = + reduce keyBuff1(k-1, 0..nThreads-1);
     select probClass {
       when S do {
         if (i <= 2) {
-          if (keyBuff1(k-1, 0) != testRankArray(i)+iteration) {
+          if (val != testRankArray(i)+iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(k-1, 0) != testRankArray(i)-iteration) {
+          if (val != testRankArray(i)-iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
@@ -174,14 +160,14 @@ def partialVerification(iteration: int) {
       }
       when W do {
         if (i < 2) {
-          if (keyBuff1(k-1, 0) != testRankArray(i) + (iteration-2)) {
+          if (val != testRankArray(i) + (iteration-2)) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(k-1, 0) != testRankArray(i) - iteration) {
+          if (val != testRankArray(i) - iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
@@ -191,14 +177,14 @@ def partialVerification(iteration: int) {
       }
       when A do {
         if (i <= 2) {
-          if (keyBuff1(k-1, 0) != testRankArray(i) + (iteration-1)) {
+          if (val != testRankArray(i) + (iteration-1)) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(k-1, 0) != testRankArray(i) - (iteration-1)) {
+          if (val != testRankArray(i) - (iteration-1)) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
@@ -208,14 +194,14 @@ def partialVerification(iteration: int) {
       }
       when B do {
         if (i == 1 || i == 2 || i == 4) {
-          if (keyBuff1(k-1, 0) != testRankArray(i) + iteration) {
+          if (val != testRankArray(i) + iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(k-1, 0) != testRankArray(i) - iteration) {
+          if (val != testRankArray(i) - iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
@@ -225,14 +211,14 @@ def partialVerification(iteration: int) {
       }
       when C do {
         if (i <= 2) {
-          if (keyBuff1(k-1, 0) != testRankArray(i) + iteration) {
+          if (val != testRankArray(i) + iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
             passedVerifications += 1;
           }
         } else {
-          if (keyBuff1(k-1, 0) != testRankArray(i) - iteration) {
+          if (val != testRankArray(i) - iteration) {
             writeln("Failed partial verification: iteration ",
                  iteration, ", test key ", i);
           } else {
@@ -246,6 +232,8 @@ def partialVerification(iteration: int) {
 
 def fullVerify() {
   var failures = 0;
+  for i in 0..maxKey-1 do
+    keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);
   buffer = keyArray;
   [i in D] {
     atomic {
