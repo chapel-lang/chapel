@@ -111834,3 +111834,28 @@ Log message:
 Modified files:
 	chapel/test/npb/is/diten/: is_mt.chpl 
 
+---------------------------------------------------------------------------
+
+07/30/07 12:02:53 -- diten
+
+Log message:
+	Add a new primitive for building the root set for garbage collection that sets
+	the root to NULL before adding it. When adding function arguments to the root
+	set, continue to use the regular addRoot, but for other variables, use the new
+	addNullRoot.  This way, garbage collection can assume non-null means pointer
+	into the heap instead of possibly being undefined.
+	
+	Add a compopts file for a test that specifies to use GC, and increase the
+	number of iterations so a collection will get triggered.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: copyCollect.cpp 
+	chapel/runtime/include/: chplcopygc.h 
+	chapel/runtime/src/: chplcopygc.c 
+	chapel/test/classes/diten/: allocateManyObjects.chpl 
+	                            allocateManyObjects.good 
+Added files:
+	chapel/test/classes/diten/: allocateManyObjects.compopts 
+
