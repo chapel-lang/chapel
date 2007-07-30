@@ -111822,3 +111822,15 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+07/30/07 11:52:36 -- diten
+
+Log message:
+	Clean up the threading code in IS by using a coforall instead of begin and sync
+	var counters. Also, move more work into the coforall so as much as possible can
+	be divided between multiple cores.
+
+Modified files:
+	chapel/test/npb/is/diten/: is_mt.chpl 
+
