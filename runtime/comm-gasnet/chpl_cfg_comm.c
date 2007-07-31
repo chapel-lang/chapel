@@ -2,6 +2,7 @@
 #include "chplcomm.h"
 #include "chplmem.h"
 #include "chplthreads.h"
+#include "error.h"
 
 #define GASNET_PAR 1
 #include "gasnet.h"
@@ -164,6 +165,44 @@ void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes)
   GASNET_Safe(gasnet_AMReplyMedium0(token, PTR_RET, ret_info, sizeof(_AM_ptr_ret_t)));
 }
 
+
+// Chapel interface starts here
+
+int _chpl_comm_user_invocation(int argc, char* argv[]) {
+  return ((argc <= 1) ||
+          (argc > 1 && strcmp(argv[1], "__AMUDP_SLAVE_PROCESS__") != 0));
+}
+
+
+int _chpl_comm_default_num_locales(void) {
+  _printError("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  return 0;
+}
+
+
+void _chpl_comm_verify_num_locales(_int32 proposedNumLocales) {
+}
+
+static char numLocalesString[64];
+
+char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
+                               int* commArgc) {
+  char** commArgv;
+  int i;
+  sprintf(numLocalesString, "%d", numLocales);
+  *commArgc = argc+1;
+  commArgv = _chpl_malloc((*commArgc)+1, sizeof(char*), "GASNet argv", 
+                          __FILE__, __LINE__);
+  commArgv[0] = argv[0];
+  commArgv[1] = numLocalesString;
+  for (i=1; i< argc; i++) {
+    commArgv[i+1] = argv[i];
+  }
+  commArgv[argc+1] = NULL;
+
+  return commArgv;
+}
+
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_init(argc_p, argv_p);
 
@@ -247,3 +286,4 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
   GASNET_BLOCKUNTIL(1==done);
 }
+

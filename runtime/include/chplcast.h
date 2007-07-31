@@ -1,6 +1,7 @@
 #ifndef _chplcast_h_
 #define _chplcast_h_
 
+#include <stdlib.h>         // needed for strtoull
 #include "chpltypes.h"
 
 /* string to every other primitive type */

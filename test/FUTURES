@@ -88,7 +88,6 @@ feature request: promotion is less specific than generic [functions/bradc/resolu
 
 
 * Generated executable's command-line parsing is not as robust as we'd like
-runtime error: command line parsing [execflags/shannon/spellingTest]
 runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidBoolean]
 runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidComplex]
 runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidFloat]

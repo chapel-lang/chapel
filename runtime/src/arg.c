@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "arg.h"
+#include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"
 #include "config.h"
@@ -44,6 +45,8 @@ void printHelpTable(void) {
 
   static flagType flagList[] = {
     {"-h, --help", "print this message", 'g'},
+    {"-nl <n>", "run program using n locales", 'g'},
+    {"", "(equivalent to setting the numLocales config const)", 'g'},
     {"--gdb", "run program in gdb", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
@@ -73,8 +76,13 @@ void printHelpTable(void) {
   i = 0;
   while (flagList[i].flag) {
     printHeaders(flagList[i].headerType, &lastHeaderType);
-    fprintf(stdout, "  %-*s -- %s\n", longestFlag, flagList[i].flag, 
-            flagList[i].description);
+    if (flagList[i].flag[0] == '\0') {
+      fprintf(stdout, "  %-*s    %s\n", longestFlag, flagList[i].flag,
+              flagList[i].description);
+    } else {
+      fprintf(stdout, "  %-*s  : %s\n", longestFlag, flagList[i].flag, 
+              flagList[i].description);
+    }
     i++;
   }
   fprintf(stdout, "\n");
@@ -197,6 +205,34 @@ static int parseMemFlag(char* memFlag) {
 }
 
 
+static void unexpectedArg(char* currentArg) {
+  char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
+  _printError(message, 0, 0);
+}
+
+
+static _int32 _argNumLocales = 0;
+
+static void parseNumLocales(char* numPtr) {
+  char* stopPtr;
+  _argNumLocales = strtol(numPtr, &stopPtr, 10);
+  if (*stopPtr != '\0') {
+    char* message = _glom_strings(3, "\"", numPtr, 
+                                  "\" is not a valid number of locales"
+                                  );
+    _printError(message, 0, 0);
+  }
+  if (_argNumLocales < 1) {
+    _printError("Number of locales must be greater than 0", 0, 0);
+  }
+}
+
+
+_int32 getArgNumLocales(void) {
+  return _argNumLocales;
+}
+
+
 void parseArgs(int argc, char* argv[]) {
   int i;
 
@@ -224,6 +260,11 @@ void parseArgs(int argc, char* argv[]) {
             printHelpMessage();
             break;
           }
+          if (strncmp(flag, "numLocales", 10) == 0) {
+            if (flag[10] == '=') {
+              parseNumLocales(&(flag[11]));
+            }
+          }
           if (flag[0] == 'm' && parseMemFlag(flag)) {
             break;
           }
@@ -243,28 +284,50 @@ void parseArgs(int argc, char* argv[]) {
           break;
         }
 
+      case 'h':
+        if (currentArg[2] == '\0') {
+          printHelpMessage();
+        } else {
+          unexpectedArg(currentArg);
+        }
+        break;
+
+      case 'n':
+        if (currentArg[2] == 'l') {
+          char* numPtr;
+          char numLocalesBuffer[128];
+          if (currentArg[3] == '\0') {
+            i++;
+            if (i >= argc) {
+              _printError("-nl flag is missing <numLocales> argument", 0, 0);
+            }
+            currentArg = argv[i];
+            numPtr = currentArg;
+          } else {
+            numPtr = &(currentArg[3]);
+          }
+          parseNumLocales(numPtr);
+          sprintf(numLocalesBuffer, "ChapelLocale.numLocales=%d", _argNumLocales);
+          addToConfigList(numLocalesBuffer, 1);
+          break;
+        }
+        unexpectedArg(currentArg);
+        break;
+
       case 's':
         {
           int isSingleArg = 1;
           if (argLength < 3) {
-            char* message = _glom_strings(3, "\"", currentArg, "\" is not a "
-                                          "valid argument");
+            char* message = _glom_strings(3, "\"", currentArg, 
+                                          "\" is not a valid argument");
             _printError(message, 0, 0);
           }
           addToConfigList(currentArg + 2, isSingleArg);
           break;
         }
 
-      case 'h':
-        printHelpMessage();
-        break;
-
       default:
-        {
-          char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, 
-                                        "\"");
-          _printError(message, 0, 0);
-        }
+        unexpectedArg(currentArg);
       }
     }
   }

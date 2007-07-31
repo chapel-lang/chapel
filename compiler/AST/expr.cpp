@@ -1424,7 +1424,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_localeID");
       break;
     case PRIMITIVE_NUM_LOCALES:
-      fprintf(outfile, "_numLocales");
+      fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
     case PRIMITIVE_SET_FAT:
       fprintf(outfile, "_chpl_comm_set_fat(");
