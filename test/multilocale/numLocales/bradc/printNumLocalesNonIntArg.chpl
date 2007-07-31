@@ -1,0 +1,1 @@
+writeln("numLocales is ", numLocales);
