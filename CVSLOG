@@ -111879,3 +111879,14 @@ Removed files:
 	chapel/test/modules/standard/memory/countMemory/: 
 	                                                  countMemory.stemp6.good 
 
+---------------------------------------------------------------------------
+
+07/30/07 17:32:27 -- bradc
+
+Log message:
+	Fixed portability bug in csh script that was
+	causing it to break on SunOS.
+
+Modified files:
+	chapel/test/compflags/bradc/printstuff/: copyright.prediff 
+
