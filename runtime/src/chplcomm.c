@@ -3,3 +3,6 @@
 // implementation files.
 //
 #include "chplrt.h"
+
+_int32 _localeID;
+_int32 _numLocales;

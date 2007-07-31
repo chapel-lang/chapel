@@ -1421,10 +1421,10 @@ void CallExpr::codegen(FILE* outfile) {
         USR_FATAL(this, "invalid on primitive");
       break;
     case PRIMITIVE_LOCALE_ID:
-      fprintf(outfile, "_chpl_comm_locale_id()");
+      fprintf(outfile, "_localeID");
       break;
     case PRIMITIVE_NUM_LOCALES:
-      fprintf(outfile, "_chpl_comm_num_locales()");
+      fprintf(outfile, "_numLocales");
       break;
     case PRIMITIVE_SET_FAT:
       fprintf(outfile, "_chpl_comm_set_fat(");

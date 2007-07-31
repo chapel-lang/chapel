@@ -167,11 +167,14 @@ void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes)
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_init(argc_p, argv_p);
 
+  _localeID = gasnet_mynode();
+  _numLocales = gasnet_nodes();
+
   GASNET_Safe(gasnet_attach(ftable, 
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             0,   // share everything
                             0));
-  printf("starting locale %d of %d locale(s)\n", gasnet_mynode(), gasnet_nodes());
+  printf("starting locale %d of %d locale(s)\n", _localeID, _numLocales);
   fflush(stdout);
   _chpl_comm_barrier("_chpl_comm_init");
 }
@@ -183,14 +186,6 @@ void _chpl_comm_barrier(char *msg) {
   PRINTF(msg);
 }
 
-_int32 _chpl_comm_locale_id(void) {
-  return gasnet_mynode();
-}
-
-_int32 _chpl_comm_num_locales(void) {
-  return gasnet_nodes();
-}
-
 void _chpl_comm_done(void) {
   _chpl_comm_barrier("_chpl_comm_done");
   gasnet_exit(0);
@@ -198,7 +193,7 @@ void _chpl_comm_done(void) {
 
 void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr) {
   PRINTF("_chpl_comm_write");
-  if (_chpl_comm_locale_id() == p->locale) {
+  if (_localeID == p->locale) {
     bcopy(addr, p->addr, p->size);
   } else {
     gasnet_put(p->locale, p->addr, addr, p->size); // node, dest, src, size
@@ -207,7 +202,7 @@ void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr) {
 
 void  _chpl_comm_read(void *addr, _chpl_comm_ptr_t *p) {
   PRINTF("_chpl_comm_read");
-  if (_chpl_comm_locale_id() == p->locale) {
+  if (_localeID == p->locale) {
     bcopy(p->addr, addr, p->size);
   } else {
     gasnet_get(addr, p->locale, p->addr, p->size); // dest, node, src, size
@@ -223,7 +218,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
-  info->caller = _chpl_comm_locale_id();
+  info->caller = _localeID;
   info->fun = f;
   info->arg_size = arg_size;
   bcopy(arg, &(info->arg), arg_size);
@@ -241,7 +236,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
-  info->caller = _chpl_comm_locale_id();
+  info->caller = _localeID;
   info->ack = &done;
   info->fun = f;
   info->arg_size = arg_size;

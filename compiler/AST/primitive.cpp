@@ -373,8 +373,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_IC_TYPE, "get_ic_type", returnInfoICType);
 
   prim_def(PRIMITIVE_ON, "on", returnInfoVoid, true);
-  prim_def(PRIMITIVE_LOCALE_ID, "_chpl_comm_locale_id", returnInfoInt32, false, false);
-  prim_def(PRIMITIVE_NUM_LOCALES, "_chpl_comm_num_locales", returnInfoInt32, false, false);
+  prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32, false, false);
+  prim_def(PRIMITIVE_NUM_LOCALES, "_numLocales", returnInfoInt32, false, false);
   prim_def(PRIMITIVE_SET_FAT, "_chpl_comm_set_fat_ptr", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_READ, "_chpl_comm_read", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_WRITE, "_chpl_comm_write", returnInfoVoid, true);

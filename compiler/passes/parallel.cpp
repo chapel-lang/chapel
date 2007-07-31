@@ -272,7 +272,7 @@ insertFatPointers(void) {
           ClassType* ct = new ClassType(CLASS_CLASS);
           TypeSymbol* cts = new TypeSymbol("_on_arg_class", ct);
           cts->addPragma("no gc");
-          VarSymbol* locale = new VarSymbol("_localeID", dtInt[INT_SIZE_32]);
+          VarSymbol* locale = new VarSymbol("_tmp", dtInt[INT_SIZE_32]);
           on->insertBefore(new DefExpr(locale));
           on->insertBefore(new CallExpr(PRIMITIVE_MOVE, locale, new CallExpr(PRIMITIVE_LOCALE_ID)));
           on->getModule()->block->insertAtHead(new DefExpr(cts));

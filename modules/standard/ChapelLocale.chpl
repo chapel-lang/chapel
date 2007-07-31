@@ -1,4 +1,4 @@
-const numLocales = __primitive("_chpl_comm_num_locales");
+const numLocales = __primitive("_numLocales");
 
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleDomain: domain(1) distributed(OnePer) = [0..numLocales-1];
@@ -31,7 +31,7 @@ def locale.numCores {
   // return the temp.
 }
 
-def localeID() return __primitive("_chpl_comm_locale_id");
+def localeID() return __primitive("_localeID");
 
 def _locale_to_id(l: locale) return l.id;
 
