@@ -112107,3 +112107,37 @@ Modified files:
 	                                             varNameQMark.good 
 	chapel/test/modules/standard/machine/: numLocales2.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 13:36:06 -- bradc
+
+Log message:
+	Adding a bunch of tests that lock in the -nl flag
+	behavior.  These are currently being tested for
+	the comm layer = none setting.  In cases where
+	gasnet output would differ, I've dropped in
+	.gasnet.good files, but the testing system does
+	not work with these as of yet.
+
+Added files:
+	chapel/test/multilocale/numLocales/bradc/: .cvsignore 
+	                                           printNumLocalesDefault.chpl 
+	                                           printNumLocalesDefault.gasnet.good 
+	                                           printNumLocalesDefault.good 
+	                                           printNumLocalesMissingArg.chpl 
+	                                           printNumLocalesMissingArg.execopts 
+	                                           printNumLocalesMissingArg.good 
+	                                           printNumLocalesNonIntArg.chpl 
+	                                           printNumLocalesNonIntArg.execopts 
+	                                           printNumLocalesNonIntArg.good 
+	                                           printNumLocalesOne.chpl 
+	                                           printNumLocalesOne.execopts 
+	                                           printNumLocalesOne.good 
+	                                           printNumLocalesTwo.chpl 
+	                                           printNumLocalesTwo.execopts 
+	                                           printNumLocalesTwo.gasnet.good 
+	                                           printNumLocalesTwo.good 
+	                                           printNumLocalesZero.chpl 
+	                                           printNumLocalesZero.execopts 
+	                                           printNumLocalesZero.good 
+
