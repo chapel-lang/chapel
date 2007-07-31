@@ -111910,3 +111910,18 @@ Modified files:
 	chapel/runtime/include/: chplcomm.h 
 	chapel/runtime/src/: chplcomm.c main.c 
 
+---------------------------------------------------------------------------
+
+07/31/07 10:06:03 -- deitz
+
+Log message:
+	Changed interface of _chpl_comm_write and _chpl_comm_read so that they
+	no longer take a fat pointer argument, but rather the three components
+	of the fat pointer, the locale, the address, and the size.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h 
+
