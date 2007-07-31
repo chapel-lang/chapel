@@ -111890,3 +111890,23 @@ Log message:
 Modified files:
 	chapel/test/compflags/bradc/printstuff/: copyright.prediff 
 
+---------------------------------------------------------------------------
+
+07/31/07 09:48:59 -- deitz
+
+Log message:
+	Replaced the functions _chpl_comm_locale_id() and
+	_chpl_comm_num_locales() by the global variables _localeID and
+	_numLocales that must be set in _chpl_comm_init().
+	
+	Added documentation to chplcomm.h.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/modules/standard/: ChapelLocale.chpl 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h 
+	chapel/runtime/src/: chplcomm.c main.c 
+
