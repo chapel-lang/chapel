@@ -75,14 +75,15 @@ class AList {
   FnSymbol* _alist_fn = (call)->isResolved();                           \
   if (_alist_fn->formals->length() != (call)->argList->length())        \
     INT_FATAL(call, "number of actuals does not match number of formals"); \
-  int _alist_i = 1;                                                     \
-  Expr* actual = ((call)->argList->length() >= _alist_i) ? (call)->get(_alist_i) : NULL; \
+  Expr* actual = ((call)->argList->head);                               \
+  Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \
   for (ArgSymbol *formal = (_alist_fn->formals->head) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((_alist_fn->formals)->head)->sym) : NULL, \
-         *_alist_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
+         *_alist_formal_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
        (formal);                                                        \
-       formal = _alist_next,                                            \
-         _alist_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL, \
-         _alist_i++, actual = formal ? (call)->get(_alist_i) : NULL)
+       formal = _alist_formal_next,                                     \
+         _alist_formal_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL, \
+         actual = _alist_actual_next,                                   \
+         _alist_actual_next = (actual) ? actual->next : NULL)
 
 #define for_actuals(actual, call)               \
   for_alist(Expr, actual, (call)->argList)
