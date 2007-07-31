@@ -112004,3 +112004,106 @@ Log message:
 Modified files:
 	chapel/runtime/etc/: Makefile.comm-gasnet 
 
+---------------------------------------------------------------------------
+
+07/31/07 13:33:10 -- bradc
+
+Log message:
+	Implemented a flag (-nl #) which can be used
+	to specify the number of locales on which a
+	Chapel program should be run.  This is shorthand
+	for using --numLocales=# and either mechanism
+	should work (if multiple -nl and --numLocales=
+	flags are used, the final one determines the
+	number of locales).
+	
+	To get this working, added a few new routines
+	to the Chapel runtime, implementing them for
+	both comm layers "none" and gasnet:
+	
+	* _chpl_comm_user_invocation() determines
+	  whether or not an invocation of main was
+	  done by the user or by the comm layer (via
+	  a recursive invocation of the program, e.g.)
+	  by inspecting the argc/argv arguments.
+	  - for none, it is always a user invocation
+	  - for gasnet, the argv vector is inspected
+	    to look for a sentinel value (which I
+	    hope is portable across different gasnet
+	    build configurations -- if not, we may
+	    need to improve this rule
+	
+	* _chpl_comm_default_num_locales() provides
+	  a default number of the locales if the user
+	  does not provide one
+	  - for none, the default is 1
+	  - for gasnet, the user is told to specify a
+	    number of locales and the program exits
+	
+	* _chpl_comm_verify_num_locales() makes sure
+	  that the number of locales being used is
+	  appropriate for that commlayer, exiting if
+	  it is not.
+	  - for none, if the number of locales is
+	    anything other than 1, an error is reported
+	  - for gasnet, this is a no-op
+	
+	* _chpl_comm_create_argcv() lets the comm layer
+	  build argc/argv values to pass into its
+	  comm_init routine, based on the argc/argv
+	  values passed to main
+	  - for none, this just uses the original
+	    argc/argv
+	  - for gasnet, the number of locales is
+	    inserted into the front of the argv vector
+	
+	Commented these routines pretty heavily in
+	chplcomm.h and also added a lot of comments
+	to the main.c file to help understand how
+	start-up occurs.
+	
+	Other changes related to this change:
+	
+	* changed the default numLocales initializer
+	  from a query of the runtime's numLocales
+	  value to a call to the
+	  _chpl_comm_default_num_locales() routine
+	  mentioned above.  As a result of this change,
+	  the runtime value _numLocales could be
+	  eliminated (it is redundant with the value
+	  in ChapelLocale.chpl) and perhaps ought to
+	  be to avoid redundancy and error-prone
+	  behavior, but Steve was on the fence about
+	  this, so I left both in for now.
+	
+	* Improved the parsing of the -h flag on the
+	  runtime executable, which closes out a
+	  nagging future.  Command-line parsing of
+	  arguments could still be improved further
+	
+	* Improved the executable's help format
+	  slightly.
+	
+	* Fixed the numLocales2 regression.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/modules/standard/: ChapelLocale.chpl 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: arg.h chplcast.h chplcomm.h 
+	chapel/runtime/src/: arg.c main.c 
+	chapel/test/: FUTURES 
+	chapel/test/execflags/shannon/: help.good spellingTest.good 
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.good 
+	                                             configVarDefaultValue.good 
+	                                             configVarHelp.good 
+	                                             configVarModStrings1.good 
+	                                             configVarModStrings2.good 
+	                                             configVarSetOver.good 
+	                                             configVarSetTwoTypes.good 
+	                                             configVarTwoModules.good 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.good 
+	chapel/test/modules/standard/machine/: numLocales2.good 
+
