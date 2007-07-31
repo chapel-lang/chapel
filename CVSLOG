@@ -111987,3 +111987,20 @@ Added files:
 	chapel/test/multilocale/deitz/: test_trivial1.chpl 
 	                                test_trivial1.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 13:19:10 -- bradc
+
+Log message:
+	Switched reference to CHPL_HOME to
+	CHAPEL_ROOT in the gasnet Makefile
+	for the runtime.  We use CHAPEL_ROOT
+	in the Makefiles for the compiler-
+	generated code to avoid any conflicts
+	with the user's CHPL_HOME environment
+	variable which may not match how their
+	code was compiled.
+
+Modified files:
+	chapel/runtime/etc/: Makefile.comm-gasnet 
+
