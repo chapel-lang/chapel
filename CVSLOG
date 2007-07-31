@@ -112141,3 +112141,36 @@ Added files:
 	                                           printNumLocalesZero.execopts 
 	                                           printNumLocalesZero.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 13:48:41 -- bradc
+
+Log message:
+	Adding .cvsignore files to help keep the third-party/gasnet
+	folder look cleaner in the presence of cvs -nq update once
+	gasnet has been built.
+
+Added files:
+	chapel/third-party/gasnet/: .cvsignore 
+	chapel/third-party/gasnet/config-aux/: .cvsignore 
+	chapel/third-party/gasnet/elan-conduit/: .cvsignore 
+	chapel/third-party/gasnet/gm-conduit/: .cvsignore 
+	chapel/third-party/gasnet/gm-conduit/contrib/: .cvsignore 
+	chapel/third-party/gasnet/lapi-conduit/: .cvsignore 
+	chapel/third-party/gasnet/mpi-conduit/: .cvsignore 
+	chapel/third-party/gasnet/mpi-conduit/contrib/: .cvsignore 
+	chapel/third-party/gasnet/other/: .cvsignore 
+	chapel/third-party/gasnet/other/ammpi/: .cvsignore 
+	chapel/third-party/gasnet/other/amudp/: .cvsignore 
+	chapel/third-party/gasnet/other/contrib/: .cvsignore 
+	chapel/third-party/gasnet/other/testspawn/: .cvsignore 
+	chapel/third-party/gasnet/portals-conduit/: .cvsignore 
+	chapel/third-party/gasnet/sci-conduit/: .cvsignore 
+	chapel/third-party/gasnet/sci-conduit/contrib/: .cvsignore 
+	chapel/third-party/gasnet/shmem-conduit/: .cvsignore 
+	chapel/third-party/gasnet/smp-conduit/: .cvsignore 
+	chapel/third-party/gasnet/tests/: .cvsignore 
+	chapel/third-party/gasnet/udp-conduit/: .cvsignore 
+	chapel/third-party/gasnet/vapi-conduit/: .cvsignore 
+	chapel/third-party/gasnet/vapi-conduit/contrib/: .cvsignore 
+
