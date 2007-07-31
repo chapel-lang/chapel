@@ -11,9 +11,9 @@ typedef void (*func_p)(void*);
 typedef void* (*thread_p)(void*);
 
 typedef struct {
-  int   locale; // locale that owns the data
-  int   size;   // size in bytes
-  void *addr;
+  _int32  locale; // locale that owns the data
+  _int32  size;   // size in bytes
+  void   *addr;   // local address of data
 } _chpl_comm_ptr_t;
 
 #define _chpl_comm_set_fat(fat, ilocale, isize, iaddr) \
@@ -45,22 +45,22 @@ void _chpl_comm_barrier(char *msg);
 void _chpl_comm_done(void);
 
 //
-// remote write to remote address pointed to by p of data at local
-// address addr
+// write 'size' bytes of local data at 'addr' to remote data at
+// 'raddr' on locale 'locale'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr);
+void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size);
 
 //
-// remote read to data at local address addr of remote data pointed to
-// by p
+// read 'size' bytes of remote data at 'raddr' on locale 'locale' to
+// local data at 'addr'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_read(void *addr, _chpl_comm_ptr_t *p);
+void  _chpl_comm_read(void *addr, _int32 locale, void* raddr, _int32 size);
 
 //
 // remote fork should launch a thread on locale that runs function f

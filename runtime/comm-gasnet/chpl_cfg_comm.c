@@ -191,21 +191,21 @@ void _chpl_comm_done(void) {
   gasnet_exit(0);
 }
 
-void  _chpl_comm_write(_chpl_comm_ptr_t *p, void *addr) {
+void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) {
   PRINTF("_chpl_comm_write");
-  if (_localeID == p->locale) {
-    bcopy(addr, p->addr, p->size);
+  if (_localeID == locale) {
+    bcopy(addr, raddr, size);
   } else {
-    gasnet_put(p->locale, p->addr, addr, p->size); // node, dest, src, size
+    gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
 }
 
-void  _chpl_comm_read(void *addr, _chpl_comm_ptr_t *p) {
+void  _chpl_comm_read(void *addr, _int32 locale, void* raddr, _int32 size) {
   PRINTF("_chpl_comm_read");
-  if (_localeID == p->locale) {
-    bcopy(p->addr, addr, p->size);
+  if (_localeID == locale) {
+    bcopy(raddr, addr, size);
   } else {
-    gasnet_get(addr, p->locale, p->addr, p->size); // dest, node, src, size
+    gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
 }
 
