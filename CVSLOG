@@ -111925,3 +111925,16 @@ Modified files:
 	chapel/runtime/comm-none/: chpl_cfg_comm.c 
 	chapel/runtime/include/: chplcomm.h 
 
+---------------------------------------------------------------------------
+
+07/31/07 10:16:15 -- deitz
+
+Log message:
+	Added a multilocale test that requires at least two locales.  Added a
+	NOTEST file to disable testing until we work out a way to test
+	multilocale codes.
+
+Added files:
+	chapel/test/multilocale/deitz/: NOTEST test_local_int.chpl 
+	                                test_local_int.good 
+
