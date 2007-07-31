@@ -112174,3 +112174,21 @@ Added files:
 	chapel/third-party/gasnet/vapi-conduit/: .cvsignore 
 	chapel/third-party/gasnet/vapi-conduit/contrib/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+07/31/07 14:28:01 -- bradc
+
+Log message:
+	Added a Makefile to the third-party directory which
+	can be used to make the gasnet directory by following
+	the instructions that Steve sent out.
+	
+	I haven't exposed this in the top-level directory's
+	Makefile as of yet because it's not clear whether we'll
+	package GASNet with Chapel or not (if we didn't, we may
+	not want to expose the third-party directory at that
+	level in the release).
+
+Added files:
+	chapel/third-party/: Makefile 
+
