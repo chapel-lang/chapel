@@ -10,6 +10,7 @@ Code Size Statistics:
 
 Optimization Control:
       --baseline                         Disable almost all optimizations
+      --local                            Compile program for a single locale
       --no-bounds-checks                 Disable bounds checking
       --no-copy-propagation              Disable copy propagation
       --no-expand-iterators-inline-opt   Disable the expansion of iterators
@@ -19,7 +20,7 @@ Optimization Control:
       --no-inline                        Do not inline functions
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
-      --serial                           Serialize Chapel program
+      --serial                           Serialize program
 
 Code Generation:
       --[no-]cg-cpp-lines                Generate #line annotations

@@ -72,6 +72,10 @@ OPTIONS
   --baseline        Turns off almost all optimizations and generates naive C
                     code with many temporary variables.
 
+  --local           Optimize compilation of code for single locale
+                    execution, changing on blocks to normal blocks and
+                    optimizing away all remote references.
+
   --no-bounds-checks   Turns off dynamic bounds checking within the
                     generated Chapel program. Currently using this option
                     is typically necessary in order to have any hope of 

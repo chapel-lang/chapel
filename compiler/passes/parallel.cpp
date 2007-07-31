@@ -265,6 +265,8 @@ parallel(void) {
 
 void
 insertFatPointers(void) {
+  if (fLocal)
+    return;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* on = dynamic_cast<CallExpr*>(ast)) {
       if (on->isPrimitive(PRIMITIVE_ON)) {

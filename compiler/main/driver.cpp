@@ -43,6 +43,7 @@ bool fNoBoundsChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
 bool fSerial = false;
+bool fLocal = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char fExplainCall[256] = "";
@@ -76,13 +77,14 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Optimization Control", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
+ {"local", ' ', NULL, "Compile program for a single locale", "F", &fLocal, "CHPL_LOCAL", NULL},
  {"no-bounds-checks", ' ', NULL, "Disable bounds checking", "F", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
- {"serial", ' ', NULL, "Serialize Chapel program", "F", &fSerial, "CHPL_SERIAL", NULL},
+ {"serial", ' ', NULL, "Serialize program", "F", &fSerial, "CHPL_SERIAL", NULL},
 
  {"", ' ', NULL, "Code Generation", NULL, NULL, NULL, NULL},
  {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},

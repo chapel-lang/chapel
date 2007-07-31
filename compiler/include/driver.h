@@ -36,6 +36,7 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fShortNames;
 extern bool fSerial;
+extern bool fLocal;
 
 extern int debugParserLevel;
 extern bool no_codegen;

@@ -603,12 +603,19 @@ block_stmt:
 on_stmt:
   TON expr TDO stmt
     {
-      $$ = build_chpl_stmt(buildOnStmt($2, $4));
+      if (fLocal)
+        $$ = build_chpl_stmt(new BlockStmt($4, BLOCK_NORMAL));
+      else
+        $$ = build_chpl_stmt(buildOnStmt($2, $4));
     }
 | TON expr parsed_block_stmt
     {
-      $$ = build_chpl_stmt(buildOnStmt($2, $3));
+      if (fLocal)
+        $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_NORMAL));
+      else
+        $$ = build_chpl_stmt(buildOnStmt($2, $3));
     }
+;
 
 
 serial_stmt:
