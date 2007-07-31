@@ -111938,3 +111938,20 @@ Added files:
 	chapel/test/multilocale/deitz/: NOTEST test_local_int.chpl 
 	                                test_local_int.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 10:59:33 -- deitz
+
+Log message:
+	Added compiler flag --local to optimize compilation for a single
+	locale, changing on statements into regular block statements and never
+	inserting any fat pointers.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/doc/man/: chpl.txt 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+
