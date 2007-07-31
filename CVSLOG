@@ -111955,3 +111955,20 @@ Modified files:
 	chapel/doc/man/: chpl.txt 
 	chapel/test/compflags/bradc/help/: userhelp.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 11:30:44 -- deitz
+
+Log message:
+	Added a test of reading and writing two local variables in the same on clause.
+	
+	Fixed a bug in the for_formals_actuals stylized loop in which this
+	loop would fail if the actual was removed from the list.  It is now
+	resilient to such a removal.
+
+Modified files:
+	chapel/compiler/include/: alist.h 
+Added files:
+	chapel/test/multilocale/deitz/: test_local_two_ints.chpl 
+	                                test_local_two_ints.good 
+
