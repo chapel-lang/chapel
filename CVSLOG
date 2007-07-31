@@ -111859,3 +111859,23 @@ Modified files:
 Added files:
 	chapel/test/classes/diten/: allocateManyObjects.compopts 
 
+---------------------------------------------------------------------------
+
+07/30/07 17:27:24 -- bradc
+
+Log message:
+	Since stemp6 died, created memory/number of cores files
+	for sunbeam and removed stemp6 files.
+
+Modified files:
+	chapel/test/modules/standard/machine/: .cvsignore 
+	chapel/test/modules/standard/memory/countMemory/: .cvsignore 
+Added files:
+	chapel/test/modules/standard/machine/: numCores.sunbeam.good 
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.sunbeam.good 
+Removed files:
+	chapel/test/modules/standard/machine/: numCores.stemp6.good 
+	chapel/test/modules/standard/memory/countMemory/: 
+	                                                  countMemory.stemp6.good 
+
