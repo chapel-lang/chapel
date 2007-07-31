@@ -111972,3 +111972,18 @@ Added files:
 	chapel/test/multilocale/deitz/: test_local_two_ints.chpl 
 	                                test_local_two_ints.good 
 
+---------------------------------------------------------------------------
+
+07/31/07 11:45:42 -- deitz
+
+Log message:
+	Added a numLocales-independent test that launches on clauses in a
+	coforall loop and computes a simple value.
+	
+	This works except on 3 locales I'm starting to see the program stop
+	before it prints out the final result, but not all of the time.
+
+Added files:
+	chapel/test/multilocale/deitz/: test_trivial1.chpl 
+	                                test_trivial1.good 
+
