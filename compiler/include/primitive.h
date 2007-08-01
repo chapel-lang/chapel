@@ -122,12 +122,13 @@ enum PrimitiveTag {
 
   PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
 
-  PRIMITIVE_ON,          // invoke on statement by calling nested function
-  PRIMITIVE_LOCALE_ID,   // return locale id
-  PRIMITIVE_NUM_LOCALES, // return number of locales
-  PRIMITIVE_SET_FAT,     // capture address into fat pointer
-  PRIMITIVE_COMM_READ,   // read remote address via fat pointer
-  PRIMITIVE_COMM_WRITE,  // write remote address via fat pointer
+  PRIMITIVE_ON,            // invoke on statement by calling nested function
+  PRIMITIVE_LOCALE_ID,     // return locale id
+  PRIMITIVE_NUM_LOCALES,   // return number of locales
+  PRIMITIVE_SET_FAT,       // capture address into fat pointer
+  PRIMITIVE_COMM_READ,     // read remote address via fat pointer
+  PRIMITIVE_COMM_WRITE,    // write remote address via fat pointer
+  PRIMITIVE_COMM_READ_OFF, // read remote address via fat pointer with field offset
 
   PRIMITIVE_INT_ERROR,
 

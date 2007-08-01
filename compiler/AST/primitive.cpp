@@ -378,6 +378,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_SET_FAT, "_chpl_comm_set_fat_ptr", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_READ, "_chpl_comm_read", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_WRITE, "_chpl_comm_write", returnInfoVoid, true);
+  prim_def(PRIMITIVE_COMM_READ_OFF, "_chpl_comm_read_off", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 

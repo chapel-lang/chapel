@@ -1459,6 +1459,21 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, ".size)");
       break;
+    case PRIMITIVE_COMM_READ_OFF:
+      fprintf(outfile, "_chpl_comm_read_off(&");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ".locale, ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ".addr, ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ".size, ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(4)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");
       break;
