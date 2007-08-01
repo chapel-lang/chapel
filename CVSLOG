@@ -112478,3 +112478,17 @@ Added files:
 	                                           testVerboseFlag.gasnet.good 
 	                                           testVerboseFlag.good 
 
+---------------------------------------------------------------------------
+
+08/01/07 15:27:29 -- bradc
+
+Log message:
+	Removing numLocales2 test.  Will reintroduce something
+	equivalent in a better spot once parallel testing is
+	working.
+
+Removed files:
+	chapel/test/modules/standard/machine/: numLocales2.chpl 
+	                                       numLocales2.execopts 
+	                                       numLocales2.good 
+
