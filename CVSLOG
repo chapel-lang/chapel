@@ -112192,3 +112192,102 @@ Log message:
 Added files:
 	chapel/third-party/: Makefile 
 
+---------------------------------------------------------------------------
+
+07/31/07 17:32:09 -- bradc
+
+Log message:
+	In this check-in, we throw a few more warning flags
+	(motivated by those used by the GASNet installation)
+	to keep our compiler, runtime, and generated code a
+	bit cleaner.  The upshot of this is that we now
+	compile gasnet code warning free (they were throwing
+	additional flags on our generated code which could
+	cause panic among the faint-hearted like myself).
+	
+	The flags added were:
+	
+	For C++: -Wno-unused -Wpointer-arith -Wwrite-strings
+	For C:   -Wnested-externs -Wdeclaration-after-statement
+	
+	The only one of these that had any significant effect
+	on our code (and it was significant) was -Wwrite-strings.
+	This flag causes warnings for things like:
+	
+	  char* str = "hello!";
+	
+	and:
+	
+	  void foo(char* ) { ... }
+	  foo("hello!");
+	
+	because in both cases, the string "hello!" is a
+	const char* (this, I believe is a fairly new addition
+	to the C spec) meaning that the characters can't be
+	overwritten (and in particular may be implemented by
+	being put into static memory).  So by assigning them
+	or passing them to a plain old char*, we're potentially
+	doing something unsafe since if that variable's
+	character buffer is written to later, we'd be modifying
+	this constant thing.
+	
+	As it turns out, we almost always use const char*'s
+	in our code because we rarely overwrite a buffer of
+	characters, but rather create a new one.
+	
+	There was a fair amount of work required to convert all
+	our uses of char*'s (which cascaded throughout our
+	functions and classes in a major way), but having
+	converted it, it should (a) be easy to maintain, and
+	(b) help us write cleaner, more precise, less
+	error-prone code.
+	
+	That's the idea anyway.  If it gives people a headache,
+	please give a shout.  Ditto if there are any questions
+	about the kinds of warnings this flag results in and
+	how to fix them.   I'm now quite experienced.
+	
+	I think the only case where I found a string that was
+	actually being modified was a case where we made a
+	string that was logically splicing one string into
+	another and made the insertion point into '\0' as a
+	little trick for making this work.  I replaced it
+	with another trick that didn't rely on modifying the
+	string.
+	
+	The other main change that one might see here is that
+	the type of _string in the generated code is now
+	const char* rather than char*.  This seems appropriate
+	given how we use them, at least in the current
+	implementation (and it seems to work).  We can reconsider
+	later if necessary.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp astutil.cpp baseAST.cpp 
+	                      build.cpp expr.cpp iterator.cpp 
+	                      primitive.cpp stmt.cpp symbol.cpp 
+	                      symscope.cpp type.cpp view.cpp 
+	chapel/compiler/ifa/: num.cpp num.h 
+	chapel/compiler/include/: alist.h arg.h astutil.h baseAST.h 
+	                          build.h countTokens.h driver.h expr.h 
+	                          files.h map.h misc.h mysystem.h 
+	                          primitive.h stmt.h stringutil.h 
+	                          symbol.h symscope.h type.h view.h yy.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/parser/: chapel.y countTokens.cpp parser.cpp 
+	                         processTokens.cpp processTokens.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp filesToAST.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         parallel.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/util/: files.cpp misc.cpp mysystem.cpp 
+	                       stringutil.cpp 
+	chapel/make/: Makefile.gnu 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h chplmem.h chpltypes.h 
+	                         config.h error.h 
+	chapel/runtime/src/: arg.c chplcast.c chplmem.c chpltypes.c 
+	                     config.c error.c gdb.c 
+
