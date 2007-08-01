@@ -27,6 +27,10 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
   _localeID = 0;
 }
 
+void _chpl_comm_rollcall(void) {
+  _chpl_msg(2, "executing on a single locale\n");
+}
+
 void _chpl_comm_barrier(const char *msg) { }
 
 void _chpl_comm_done(void) { }

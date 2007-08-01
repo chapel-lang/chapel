@@ -23,7 +23,7 @@ typedef struct {
 
 #define _chpl_comm_read_off(addr, locale, raddr, size, stype, sfield)   \
   _chpl_comm_read(addr, locale,                                         \
-                  (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)((stype*)addr)), \
+                  (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                   sizeof(((stype*)addr)->sfield))
 
 //
@@ -84,6 +84,15 @@ char** _chpl_comm_create_argcv(_int32 execNumLocales, int argc, char* argv[],
 //     argc/argv pair passed to main()
 //
 void _chpl_comm_init(int *argc_p, char ***argv_p);
+
+//
+// a final comm layer stub before barrier synching and calling into
+// the user code.  It is recommended that a debugging message be
+// printed here indicating that each locale has started using
+// _chpl_msg() and a verbosity level of 2 (which will cause it to be
+// displayed using the -v flag).
+//
+void _chpl_comm_rollcall(void);
 
 //
 // barrier for synchronization between all processes

@@ -53,6 +53,8 @@ int main(int argc, char* argv[]) {
     _chpl_comm_init(&argc, &argv);
     parseArgs(argc, argv);
   }
+  _chpl_comm_rollcall();
+  _chpl_comm_barrier("about to leave comm init code");
   initMemTable();            // get ready to start tracking memory
   CreateConfigVarTable();    // get ready to start tracking config vars
   initChplThreads();         // initialize the threads layer

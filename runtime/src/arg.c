@@ -11,7 +11,6 @@
 #include "gdb.h"
 
 
-
 static void printHeaders(char thisType, char* lastType) {
   if (thisType != *lastType) {
     fprintf(stdout, "\n");
@@ -47,6 +46,7 @@ void printHelpTable(void) {
     {"-h, --help", "print this message", 'g'},
     {"-nl <n>", "run program using n locales", 'g'},
     {"", "(equivalent to setting the numLocales config const)", 'g'},
+    {"-v, --verbose", "run program in verbose mode", 'g'},
     {"--gdb", "run program in gdb", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
@@ -248,7 +248,7 @@ void parseArgs(int argc, char* argv[]) {
                                     "argument");
       _printError(message, 0, 0);
     }
-    
+
     switch (currentArg[0]) {
     case '-':
       switch (currentArg[1]) {
@@ -258,6 +258,10 @@ void parseArgs(int argc, char* argv[]) {
           int isSingleArg = 1;
           if (strcmp(flag, "help") == 0) {
             printHelpMessage();
+            break;
+          }
+          if (strcmp(flag, "verbose") == 0) {
+            verbosity=2;
             break;
           }
           if (strncmp(flag, "numLocales", 10) == 0) {
@@ -322,9 +326,22 @@ void parseArgs(int argc, char* argv[]) {
                                           "\" is not a valid argument");
             _printError(message, 0, 0);
           }
+          if (strncmp(currentArg+2, "numLocales", 10) == 0) {
+            if (currentArg[12] == '=') {
+              parseNumLocales(&(currentArg[13]));
+            }
+          }
           addToConfigList(currentArg + 2, isSingleArg);
           break;
         }
+
+      case 'v':
+        if (currentArg[2] == '\0') {
+          verbosity = 2;
+        } else {
+          unexpectedArg(currentArg);
+        }
+        break;
 
       default:
         unexpectedArg(currentArg);

@@ -213,9 +213,11 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             0,   // share everything
                             0));
-  printf("starting locale %d of %d locale(s)\n", _localeID, _numLocales);
-  fflush(stdout);
-  _chpl_comm_barrier("_chpl_comm_init");
+}
+
+void _chpl_comm_rollcall(void) {
+  _chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
+            _numLocales);
 }
 
 void _chpl_comm_barrier(const char *msg) {
