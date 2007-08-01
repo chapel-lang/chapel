@@ -112381,3 +112381,13 @@ Added files:
 	chapel/test/multilocale/deitz/: test_local_record.chpl 
 	                                test_local_record.good 
 
+---------------------------------------------------------------------------
+
+08/01/07 12:11:10 -- deitz
+
+Log message:
+	Added one more cast to char* to remove the pointer warnings.
+
+Modified files:
+	chapel/runtime/include/: chplcomm.h 
+
