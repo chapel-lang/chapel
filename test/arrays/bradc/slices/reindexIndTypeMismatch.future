@@ -1,0 +1,32 @@
+feature request: int(64) -> int(32) reindexing
+
+This test tries to pass a slice of an array whose domain
+stores int(64) indexes into a function whose actual
+reindexes the array using a literal domain [1..4].
+Currently this results in an unresolved call message.
+I believe that this should be legal using one of the
+following approaches:
+
+1) We might say that reindexing in general can change the
+   index type of a domain.  In this case, the fake array
+   descriptor created for actual parameter X would be of
+   type int(32) while still aliasing the array data A.
+
+2) We might say that a declaration like the one in foo()
+   didn't indicate that X should have an int(32)-indexed
+   domain, but rather something that could legally be
+   indexed by 1..4 (which, using the rules we have for
+   integers, would imply that it could be an int(32)-,
+   uint(32)-, int(64)-, or uint(64)-indexed domain.
+
+3) We could also change the default index type of a domain
+   to int(64) (which might be reasonable for other reasons,
+   such as it being required for large arrays on today's
+   machines) in which case this test would no longer be
+   an error.
+
+This test is inspired by the HPCC FFT codes which, when
+converting the main domain to use an int(64) to use the
+requisite amount of memory, runs into this exact problem
+with its butterfly() routine.
+
