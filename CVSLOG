@@ -112343,3 +112343,23 @@ Added files:
 	chapel/test/multilocale/deitz/: test_local_int2.chpl 
 	                                test_local_int2.good 
 
+---------------------------------------------------------------------------
+
+08/01/07 11:13:04 -- bradc
+
+Log message:
+	Fixed a link error on Mac, where global symbols that
+	are neither marked as extern nor initialized are
+	defined as "common" symbols rather than "defined"
+	symbols in object files, and fail to satisfy an
+	unresolved external in another file if they are
+	the only thing in that object file that might resolve
+	a link step.  Initializing the variables fixes the
+	problem (as would defining other functions in the
+	file that were needed to link the program, but that
+	seemed like an even more artificial way to fix the
+	problem).
+
+Modified files:
+	chapel/runtime/src/: chplcomm.c 
+
