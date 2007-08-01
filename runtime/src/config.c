@@ -221,18 +221,6 @@ void parseConfigArgs(void) {
 }
 
 
-static int printHelp = 0; 
-
-void printHelpMessage(void) {
-  printHelp = 1;
-}
-
-
-int askedToPrintHelpMessage(void) {
-  return printHelp;
-}
-
-
 void initConfigVarTable(void) {
   int i;
   for (i = 0; i < HASHSIZE; i++) {

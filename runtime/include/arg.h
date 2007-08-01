@@ -3,7 +3,6 @@
 
 #include "chpltypes.h"
 
-void printHelpTable(void);
 void parseArgs(int argc, char* argv[]);
 _int32 getArgNumLocales(void);
 

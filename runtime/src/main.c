@@ -11,7 +11,6 @@
 
 
 extern void _chpl_main(void);
-extern void CreateConfigVarTable(void);
 
 int main(int argc, char* argv[]) {
   int commArgc;

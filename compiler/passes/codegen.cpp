@@ -383,11 +383,6 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "  parseConfigArgs();\n");
   fprintf(outfile, "}\n");
 
-  fprintf(outfile, "if (askedToPrintHelpMessage()) {\n");
-  fprintf(outfile, "  printHelpTable();\n");
-  fprintf(outfile, "  printConfigVarTable();\n");
-  fprintf(outfile, "}\n");
-  
   fprintf(outfile, "}\n");
 }
 

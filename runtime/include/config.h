@@ -10,13 +10,15 @@ void addToConfigList(char* currentArg, int isSingleArg);
 int askedToParseArgs(void);
 void parseConfigArgs(void);
 void printHelpMessage(void);
-int askedToPrintHelpMessage(void);
 void initConfigVarTable(void);
 void printConfigVarTable(void);
 void initSetValue(char* varName, char* value, const char* moduleName);
 char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName);
+
+// Defined in the compiler-generated code:
+extern void CreateConfigVarTable(void);
 
 #endif
 

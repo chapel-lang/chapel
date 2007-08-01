@@ -5,8 +5,8 @@
 #include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"
-#include "config.h"
 #include "chplrt.h"
+#include "config.h"
 #include "error.h"
 #include "gdb.h"
 
@@ -35,7 +35,7 @@ static void printHeaders(char thisType, char* lastType) {
 }
 
 
-void printHelpTable(void) {
+static void printHelpTable(void) {
   typedef struct _flagType {
     const char* flag;
     const char* description;
@@ -235,6 +235,7 @@ _int32 getArgNumLocales(void) {
 
 void parseArgs(int argc, char* argv[]) {
   int i;
+  int printHelp;
 
   checkForGDBArg(argc, argv);
   
@@ -257,7 +258,7 @@ void parseArgs(int argc, char* argv[]) {
           char* flag = currentArg + 2;
           int isSingleArg = 1;
           if (strcmp(flag, "help") == 0) {
-            printHelpMessage();
+            printHelp = 1;
             break;
           }
           if (strcmp(flag, "verbose") == 0) {
@@ -290,7 +291,7 @@ void parseArgs(int argc, char* argv[]) {
 
       case 'h':
         if (currentArg[2] == '\0') {
-          printHelpMessage();
+          printHelp = 1;
         } else {
           unexpectedArg(currentArg);
         }
@@ -347,5 +348,11 @@ void parseArgs(int argc, char* argv[]) {
         unexpectedArg(currentArg);
       }
     }
+  }
+
+  if (printHelp) {
+    CreateConfigVarTable();    // get ready to start tracking config vars
+    printHelpTable();
+    printConfigVarTable();
   }
 }
