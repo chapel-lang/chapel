@@ -112391,3 +112391,90 @@ Log message:
 Modified files:
 	chapel/runtime/include/: chplcomm.h 
 
+---------------------------------------------------------------------------
+
+08/01/07 15:21:54 -- bradc
+
+Log message:
+	Moving towards supporting multilocale testing,
+	added a -v flag that asks the Chapel executable
+	to execute in "verbose" mode.  Currently, the
+	only thing this controls is the "executing on
+	locale #x of y" message that occurs at program
+	startup for gasnet (and, added a similar message
+	for the commlayer=none setting).
+	
+	Changes that this involved:
+	
+	- added the -v flag itself, which sets the
+	  verbosity level from its default of "1" to
+	  "2".  Eventually, I suspect we may also
+	  want a -q "quiet" flag for setting the
+	  verbosity down to "0", but didn't bother
+	  adding this for now.
+	
+	- added a new routine: _chpl_comm_rollcall()
+	  which allows the comm layer to print out a
+	  message like this.  This was necessary because
+	  such a message needs to be printed out after
+	  we parse the user's commmand line arguments,
+	  and that is currently done after
+	  _chpl_comm_init() where this message was
+	  printed below.
+	
+	- moved the _chpl_comm_barrier that used to be
+	  in the gasnet _chpl_comm_init() call into the
+	  main() routine, as it will need to be called
+	  for all comm layers (and is a no-op for the
+	  none commlayer).
+	
+	- added a _chpl_msg() call that takes a verbosity
+	  level (0, 1, or 2) and otherwise behaves like
+	  printf().
+	
+	- added tests of this functionality
+	
+	And some miscellaneous changes:
+	
+	- pulled an extra cast out of the chplcomm.h
+	  _chpl_comm_read_off() macro
+	
+	- realized that I hadn't implemented the -s
+	  version of setting the numLocales configuration
+	  variable, so added that in.
+	
+	- added tests of setting numLocales using both
+	  config var setting styles
+
+Modified files:
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h error.h 
+	chapel/runtime/src/: arg.c error.c main.c 
+	chapel/test/execflags/shannon/: help.good 
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.good 
+	                                             configVarDefaultValue.good 
+	                                             configVarHelp.good 
+	                                             configVarModStrings1.good 
+	                                             configVarModStrings2.good 
+	                                             configVarSetOver.good 
+	                                             configVarSetTwoTypes.good 
+	                                             configVarTwoModules.good 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.good 
+Added files:
+	chapel/test/multilocale/numLocales/bradc/: setUsingDashS.chpl 
+	                                           setUsingDashS.execopts 
+	                                           setUsingDashS.good 
+	                                           setUsingDoubleDash.chpl 
+	                                           setUsingDoubleDash.execopts 
+	                                           setUsingDoubleDash.good 
+	                                           testVFlag.chpl 
+	                                           testVFlag.execopts 
+	                                           testVFlag.gasnet.good 
+	                                           testVFlag.good 
+	                                           testVerboseFlag.chpl 
+	                                           testVerboseFlag.execopts 
+	                                           testVerboseFlag.gasnet.good 
+	                                           testVerboseFlag.good 
+
