@@ -112302,3 +112302,29 @@ Log message:
 Removed files:
 	chapel/test/execflags/shannon/: spellingTest.future 
 
+---------------------------------------------------------------------------
+
+08/01/07 10:27:24 -- bradc
+
+Log message:
+	Fixed regressions in David's config param flag tests
+	thanks to some incredibly helpful debugging from David
+	(it would've taken me forever to find this).
+	
+	Because Immediate() supports char* and bool constructors,
+	and because we were passing a const char* in, C++ decides
+	the better match is the bool constructor.  Oog.  Fixed
+	this by making the Immediate constructor that takes a
+	char* take a const char* and propagating the const-ness
+	to related variables, methods, and functions similar to
+	what the bulk of my check-in yesterday did.
+	
+	Thanks David!
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp view.cpp 
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/spec/: Ranges.tex 
+
