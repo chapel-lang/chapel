@@ -112492,3 +112492,24 @@ Removed files:
 	                                       numLocales2.execopts 
 	                                       numLocales2.good 
 
+---------------------------------------------------------------------------
+
+08/01/07 15:43:51 -- bradc
+
+Log message:
+	Adding a feature request future related to a discussion
+	I was having with Steve.  Today if you have a domain
+	indexed by int(64)'s and you try to pass a slice of it
+	to a function argument that reindexes it to a literal
+	domain [1..4] it fails, I believe because it interprets
+	the [1..4] as an int(32) domain and considers this a
+	mismatch.  In the .future file I give 2 interpretations
+	of this, either of which feels like reasonable rationale
+	for supporting this type of behavior (besides simply
+	convenience).
+
+Added files:
+	chapel/test/arrays/bradc/slices/: reindexIndTypeMismatch.chpl 
+	                                  reindexIndTypeMismatch.future 
+	                                  reindexIndTypeMismatch.good 
+
