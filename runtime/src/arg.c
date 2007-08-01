@@ -235,7 +235,7 @@ _int32 getArgNumLocales(void) {
 
 void parseArgs(int argc, char* argv[]) {
   int i;
-  int printHelp;
+  int printHelp = 0;
 
   checkForGDBArg(argc, argv);
   
