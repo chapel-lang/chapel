@@ -23,7 +23,7 @@ typedef struct {
 
 #define _chpl_comm_read_off(addr, locale, raddr, size, stype, sfield)   \
   _chpl_comm_read(addr, locale,                                         \
-                  raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)((stype*)addr)), \
+                  (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)((stype*)addr)), \
                   sizeof(((stype*)addr)->sfield))
 
 //
