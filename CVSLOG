@@ -112363,3 +112363,21 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplcomm.c 
 
+---------------------------------------------------------------------------
+
+08/01/07 11:31:10 -- deitz
+
+Log message:
+	Added initial support for reading a field from a remote record and a
+	test case of it.  This uses pointer arithmetic in the generated code
+	and there is a warning.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/include/: chplcomm.h 
+Added files:
+	chapel/test/multilocale/deitz/: test_local_record.chpl 
+	                                test_local_record.good 
+
