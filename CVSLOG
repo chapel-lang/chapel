@@ -112532,3 +112532,16 @@ Modified files:
 	chapel/runtime/include/: arg.h config.h 
 	chapel/runtime/src/: arg.c config.c main.c 
 
+---------------------------------------------------------------------------
+
+08/01/07 16:27:27 -- bradc
+
+Log message:
+	Forgot to initialize a variable to 0 and was
+	getting lucky in the testing system on linux64,
+	but not on my desktop.  This should fix it.
+	Am about to test retroactively.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+
