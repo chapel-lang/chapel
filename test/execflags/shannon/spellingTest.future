@@ -1,6 +1,0 @@
-runtime error: command line parsing
-
-We should probably do something smarter here.  Could interpret
-hepl as four 1-letter flags and throw an error for not
-recognizing them, or require 1-letter flags to have nothing
-after them if they're expecting nothing.
