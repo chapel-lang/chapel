@@ -1600,7 +1600,7 @@ get_int(Expr *e, long *i) {
 }
 
 bool 
-get_string(Expr *e, char **s) {
+get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
@@ -1614,9 +1614,9 @@ get_string(Expr *e, char **s) {
   return false;
 }
 
-char*
+const char*
 get_string(Expr* e) {
-  char* s = NULL;
+  const char* s = NULL;
   if (!get_string(e, &s))
     INT_FATAL(e, "string literal expression expected");
   return s;

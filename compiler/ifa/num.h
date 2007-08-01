@@ -62,7 +62,7 @@ class Immediate { public:
     complex64  v_complex64;
     complex128 v_complex128;
     complex256 v_complex256;
-    char *v_string;
+    const char *v_string;
   };
 
   int64  int_value( void);
@@ -86,7 +86,7 @@ class Immediate { public:
     num_index = INT_SIZE_1;
     v_bool = b;
   }
-  Immediate(char *s) {
+  Immediate(const char *s) {
     memset(this, 0, sizeof(*this));
     const_kind = CONST_KIND_STRING;
     v_string = s;

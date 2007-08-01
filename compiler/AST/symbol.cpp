@@ -1779,7 +1779,8 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   PrimitiveType *t = immediate_type(imm);
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), t);
   s->immediate = new Immediate;
-  char str[512], *ss = str;
+  char str[512];
+  const char* ss = str;
   if (imm->const_kind == CONST_KIND_STRING)
     ss = imm->v_string;
   else

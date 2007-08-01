@@ -298,7 +298,7 @@ static void apply_getters_setters(FnSymbol* fn) {
                                      // getter or a setter
         continue;
       if (call->isNamed(".")) { // handle getter
-        char* method = NULL;
+        const char* method = NULL;
         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(2)))
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
             if (var->immediate->const_kind == CONST_KIND_STRING)

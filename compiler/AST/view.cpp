@@ -167,7 +167,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf(" ");
 
     long i;
-    char *str;
+    const char *str;
     if (get_int(expr, &i)) {
       printf(" %ld", i);
     } else if (get_string(expr, &str)) {

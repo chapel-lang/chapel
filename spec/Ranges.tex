@@ -251,8 +251,8 @@ slice-expr:
 Where the first expression is the range being sliced and the second
 expression is the range expressing the slice.  The resulting range
 represents the intersection between the two ranges.  If the slicing
-range is unbounded in one or both dimensions, it inherits its upper
-and lower bounds from the range being sliced.
+range is unbounded in one or both directions, it inherits its missing
+bounds from the range being sliced.
 
 \begin{example}
 In the following example, \chpl{r} represents the integers from 1 to

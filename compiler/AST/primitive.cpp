@@ -171,7 +171,7 @@ returnInfoGetMember(CallExpr* call) {
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {
-    char* name = var->immediate->v_string;
+    const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
         return field->type;
@@ -199,7 +199,7 @@ returnInfoGetMemberRef(CallExpr* call) {
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {
-    char* name = var->immediate->v_string;
+    const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
         return field->type->refType ? field->type->refType : field->type;

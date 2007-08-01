@@ -1531,7 +1531,7 @@ resolveCall(CallExpr* call) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
     if (!var || !var->immediate)
       INT_FATAL(call, "bad set member primitive");
-    char* name = var->immediate->v_string;
+    const char* name = var->immediate->v_string;
     ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
     if (!ct)
       INT_FATAL(call, "bad set member primitive");
@@ -2289,7 +2289,7 @@ postFold(Expr* expr) {
       Type* baseType = call->get(1)->typeInfo();
       if (baseType->symbol->hasPragma("ref"))
         baseType = getValueType(baseType);
-      char* memberName = get_string(call->get(2));
+      const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       if (sym->isParam()) {
         Vec<BaseAST*> keys;
@@ -2985,7 +2985,7 @@ pruneResolvedTree() {
         if (!call->parentSymbol->hasPragma("ref") &&
             baseType->symbol->hasPragma("ref"))
           baseType = getValueType(baseType);
-        char* memberName = get_string(call->get(2));
+        const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
         if (sym->isTypeVariable && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
           if (sym->type->defaultValue)
