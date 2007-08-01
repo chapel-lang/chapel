@@ -56,7 +56,6 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(lowerIterators),     // lowers iterators into functions/classes
   RUN(cullOverReferences), // remove excess references
-  RUN(insertFatPointers),  // inserts fat pointers for on clauses
   RUN(parallel),           // parallel transforms
 
   // Optimizations
@@ -66,6 +65,8 @@ PassInfo passlist[] = {
   RUN(copyPropagation),     // copy propagation
   RUN(deadCodeElimination), // eliminate dead code
   RUN(prune),               // prune AST of dead functions and types
+
+  RUN(insertFatPointers), // inserts fat pointers for on clauses
 
   // AST to C
   RUN(copyCollection),    // insert code needed for copying garbage collection
