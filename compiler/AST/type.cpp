@@ -155,7 +155,7 @@ bool Type::implementedUsingCVals(void) {
 }
 
 
-Symbol* Type::getField(char* name) {
+Symbol* Type::getField(const char* name) {
   INT_FATAL(this, "getField not called on ClassType");
   return NULL;
 }
@@ -435,7 +435,7 @@ bool ClassType::implementedUsingCVals(void) {
 }
 
 
-Symbol* ClassType::getField(char* name) {
+Symbol* ClassType::getField(const char* name) {
   for_fields(sym, this) {
     if (!strcmp(sym->name, name))
       return sym;
@@ -451,7 +451,7 @@ Symbol* ClassType::getField(int i) {
 
 
 static PrimitiveType* 
-createPrimitiveType( char *name, char *cname) {
+createPrimitiveType(const char *name, const char *cname) {
   PrimitiveType* pt = new PrimitiveType(NULL);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;

@@ -13,6 +13,8 @@ char* astr(const char* s1, const char* s2 = NULL,
            const char* s3 = NULL, const char* s4 = NULL);
 char* istr(int i);
 
+void printStatistics(const char* pass);
+
 class AList;
 class Symbol;
 class ModuleSymbol;
@@ -61,7 +63,7 @@ enum astType_t {
   AST_TYPE_END 
 };
 
-extern char* astTypeName[];
+extern const char* astTypeName[];
 
 #define COPY_DEF(type)                                                  \
   virtual type* copy(ASTMap* map = NULL, bool internal = false) {       \
@@ -95,7 +97,7 @@ class BaseAST {
 
   SymScope* parentScope;
 
-  char* filename;       // filename of location
+  const char* filename;       // filename of location
   int lineno;           // line number of location
 
   BaseAST(astType_t type = BASE);
@@ -113,18 +115,18 @@ class BaseAST {
   char* stringLoc(void);
   void printLoc(FILE* outfile);
 
-  void addPragma(char* str);
-  void addPragmas(Vec<char*>* srcPragmas);
+  void addPragma(const char* str);
+  void addPragmas(Vec<const char*>* srcPragmas);
   void copyPragmas(BaseAST* ast);
 
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
 
-  Symbol* lookup(char*);
+  Symbol* lookup(const char*);
   Symbol* lookup(BaseAST*);
-  TypeSymbol* lookupType(char*);
+  TypeSymbol* lookupType(const char*);
   TypeSymbol* lookupType(BaseAST*);
-  VarSymbol* lookupVar(char*);
+  VarSymbol* lookupVar(const char*);
   VarSymbol* lookupVar(BaseAST*);
 };
 
@@ -136,7 +138,7 @@ int compar_baseast(const void *ai, const void *aj);
 void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 
 extern int currentLineno;
-extern char* currentFilename;
+extern const char* currentFilename;
 
 extern SymScope* rootScope; // contains intrinsics and all modules
 

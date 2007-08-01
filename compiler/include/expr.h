@@ -75,7 +75,7 @@ class SymExpr : public Expr {
  public:
   Symbol* var;
   SymExpr(Symbol* init_var);
-  SymExpr(char* init_var);
+  SymExpr(const char* init_var);
   COPY_DEF(SymExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
@@ -122,7 +122,7 @@ class CallExpr : public Expr {
   void insertAtTail(AList* ast);
 
   FnSymbol* isResolved(void);
-  bool isNamed(char*);
+  bool isNamed(const char*);
 
   Expr* get(int index);
   FnSymbol* findFnSymbol(void);
@@ -133,9 +133,9 @@ class CallExpr : public Expr {
 
 class NamedExpr : public Expr {
  public:
-  char* name;
+  const char* name;
   Expr* actual;
-  NamedExpr(char* init_name, Expr* init_actual);
+  NamedExpr(const char* init_name, Expr* init_actual);
   virtual void verify(); 
   COPY_DEF(NamedExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);

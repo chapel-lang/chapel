@@ -66,7 +66,7 @@ int askedToParseArgs(void) {
 }
 
 
-static void parseModVarName(char* modVarName, char** moduleName, 
+static void parseModVarName(char* modVarName, const char** moduleName, 
                             char** varName) {
   char* dot = strrchr(modVarName, '.');
   if (dot) {
@@ -89,7 +89,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   char firstChar;
   char* value;
   char lastChar;
-  char* moduleName;
+  const char* moduleName;
   char* varName;
 
   if (!equalsSign || !(equalsSign + 1)) {
@@ -163,7 +163,7 @@ static void parseSingleArg(char* currentArg) {
     value = equalsSign + 1;
 
     if (value) {
-      char* moduleName;
+      const char* moduleName;
       char* varName;
       parseModVarName(currentArg, &moduleName, &varName);
 
@@ -242,7 +242,7 @@ void initConfigVarTable(void) {
 
 
 /* hashing function */
-static unsigned hash(char* varName) {
+static unsigned hash(const char* varName) {
   unsigned hashValue;
   for (hashValue = 0; *varName != '\0'; varName++) {
     hashValue = *varName + 31 * hashValue;
@@ -316,7 +316,8 @@ void printConfigVarTable(void) {
 static configVarType _ambiguousConfigVar;
 static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
 
-static configVarType* lookupConfigVar(char* varName, char* moduleName) {
+static configVarType* lookupConfigVar(const char* varName, 
+                                      const char* moduleName) {
   configVarType* configVar = NULL;
   configVarType* foundConfigVar = NULL; 
   unsigned hashValue;
@@ -348,10 +349,10 @@ static configVarType* lookupConfigVar(char* varName, char* moduleName) {
 }
 
 
-void initSetValue(char* varName, char* value, char* moduleName) {
+void initSetValue(char* varName, char* value, const char* moduleName) {
   configVarType* configVar;
   if  (*varName == '\0') {
-    char* message = "No variable name given";
+    const char* message = "No variable name given";
     _printError(message, 0, 0);
   }
   configVar = lookupConfigVar(varName, moduleName);
@@ -376,10 +377,10 @@ void initSetValue(char* varName, char* value, char* moduleName) {
 }
 
 
-char* lookupSetValue(char* varName, char* moduleName) {
+char* lookupSetValue(const char* varName, const char* moduleName) {
   configVarType* configVar;
   if (strcmp(moduleName, "") == 0) {
-    char* message = "Attempted to lookup value with the module name an "
+    const char* message = "Attempted to lookup value with the module name an "
       "empty string";
     _printInternalError(message);
   }
@@ -393,7 +394,8 @@ char* lookupSetValue(char* varName, char* moduleName) {
 }
 
 
-void installConfigVar(char* varName, char* value, char* moduleName) {
+void installConfigVar(const char* varName, const char* value, 
+                      const char* moduleName) {
   unsigned hashValue;
   char* description = _glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 

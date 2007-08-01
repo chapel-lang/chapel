@@ -68,8 +68,8 @@ Is this "while x"(i); or "while x(i)";?
 
 %union  {
   bool boolval;
-  char* pch;
-  Vec<char*>* vpch;
+  const char* pch;
+  Vec<const char*>* vpch;
 
   varType vt;
   consType ct;
@@ -277,7 +277,7 @@ program: stmt_ls
 
 
 pragma_ls:
-    { $$ = new Vec<char*>(); }
+    { $$ = new Vec<const char*>(); }
 | pragma_ls pragma
     { $1->add($2); }
 ;

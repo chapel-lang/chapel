@@ -210,12 +210,12 @@ returnInfoGetMemberRef(CallExpr* call) {
   return NULL;
 }
 
-HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
+HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
 PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
-                         char *aname,
+                         const char *aname,
                          Type *(*areturnInfo)(CallExpr*)) :
   tag(atag),
   name(aname),
@@ -227,7 +227,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 }
 
 static void
-prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
@@ -235,7 +235,7 @@ prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*),
 }
 
 static void
-prim_def(char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;

@@ -69,7 +69,7 @@ flatten_scopeless_block(BlockStmt* block) {
 //
 ModuleSymbol* getUsedModule(CallExpr* call) {
   ModuleSymbol* mod = NULL;
-  char* name = NULL;
+  const char* name = NULL;
 
   if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
     name = sym->var->name;
@@ -291,7 +291,7 @@ static void build_constructor(ClassType* ct) {
   for_fields(tmp, ct) {
     if (!dynamic_cast<VarSymbol*>(tmp))
       continue;
-    char* name = tmp->name;
+    const char* name = tmp->name;
     Type* type = tmp->type;
     Expr* exprType = tmp->defPoint->exprType;
     if (exprType)

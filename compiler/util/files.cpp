@@ -22,7 +22,7 @@ static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCD
 
 static const int MAX_CHARS_PER_PID = 32;
 
-static char* intExeFilename;
+static const char* intExeFilename;
 static int numLibFlags = 0;
 static char** libFlag = NULL;
 
@@ -40,7 +40,7 @@ void addLibInfo(char* libName) {
 
 
 static void createTmpDir(void) {
-  char* commandExplanation;
+  const char* commandExplanation;
 
   if (strcmp(saveCDir, "") == 0) {
     const char* tmpdirprefix = "/tmp/chpl-";
@@ -55,7 +55,7 @@ static void createTmpDir(void) {
     snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
 
     struct passwd* passwdinfo = getpwuid(geteuid());
-    char* userid;
+    const char* userid;
     if (passwdinfo == NULL) {
       userid = "anon";
     } else {
@@ -106,8 +106,8 @@ void deleteTmpDir(void) {
 }
 
 
-static char* genIntFilename(char* filename) {
-  char* slash = "/";
+static const char* genIntFilename(const char* filename) {
+  const char* slash = "/";
 
   if (intDirName == NULL) {
     createTmpDir();    
@@ -134,19 +134,19 @@ static char* stripdirectories(char* filename) {
 
 
 void genCFilenames(char* modulename, char** outfilename) {
-  static char* outfilesuffix = ".c";
+  static const char* outfilesuffix = ".c";
   *outfilename = stringcat(modulename, outfilesuffix);
 }
 
 
-static FILE* openfile(char* outfilename, char* mode = "w") {
+static FILE* openfile(const char* outfilename, const char* mode = "w") {
   FILE* outfile;
 
   outfile = fopen(outfilename, mode);
   if (outfile == NULL) {
-    char* errorstr = "opening ";
-    char* errormsg = stringcat(errorstr, outfilename, ": ", 
-                                 strerror(errno));
+    const char* errorstr = "opening ";
+    const char* errormsg = stringcat(errorstr, outfilename, ": ", 
+                                     strerror(errno));
 
     USR_FATAL(errormsg);
   }
@@ -157,15 +157,15 @@ static FILE* openfile(char* outfilename, char* mode = "w") {
 
 static void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
-    char* errorstr = "closing file: ";
-    char* errormsg = stringcat(errorstr, strerror(errno));
+    const char* errorstr = "closing file: ";
+    const char* errormsg = stringcat(errorstr, strerror(errno));
 
     USR_FATAL(errormsg);
   }
 }
 
 
-void openfile(fileinfo* thefile, char* mode) {
+void openfile(fileinfo* thefile, const char* mode) {
   thefile->fptr = openfile(thefile->pathname, mode);
 }
 
@@ -175,7 +175,7 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, char* name, char* ext) {
+void openCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = stringcat(name, ".", ext);
   else
@@ -190,7 +190,7 @@ void closeCFile(fileinfo* fi) {
 }
 
 
-fileinfo* openTmpFile(char* tmpfilename) {
+fileinfo* openTmpFile(const char* tmpfilename) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
   newfile->filename = stringcpy(tmpfilename);
@@ -201,7 +201,7 @@ fileinfo* openTmpFile(char* tmpfilename) {
 }
 
 
-FILE* openInputFile(char* filename) {
+FILE* openInputFile(const char* filename) {
   return openfile(filename, "r");
 }
 
@@ -231,8 +231,8 @@ char* nthFilename(int i) {
 }
 
 
-char* createGDBFile(int argc, char* argv[]) {
-  char* gdbfilename = genIntFilename("gdb.commands");
+const char* createGDBFile(int argc, char* argv[]) {
+  const char* gdbfilename = genIntFilename("gdb.commands");
   FILE* gdbfile = openfile(gdbfilename);
   int i;
 

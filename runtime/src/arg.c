@@ -38,9 +38,9 @@ static void printHeaders(char thisType, char* lastType) {
 
 void printHelpTable(void) {
   typedef struct _flagType {
-    char* flag;
-    char* description;
-    char headerType;
+    const char* flag;
+    const char* description;
+    const char headerType;
   } flagType;
 
   static flagType flagList[] = {

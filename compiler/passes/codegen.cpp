@@ -52,12 +52,11 @@ setOrder(Map<ClassType*,int>& order, int& maxOrder,
 
 
 #define STRSUB(x)                               \
-  *ch = '\0';                                   \
-  sym->cname = stringcat(sym->cname, x, ch+1);  \
+  sym->cname = stringinsert(sym->cname, ch, x); \
   ch = sym->cname
 
 static void legalizeCName(Symbol* sym) {
-  for (char* ch = sym->cname; *ch != '\0'; ch++) {
+  for (const char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
     case '>': STRSUB("_GREATER_"); break;
     case '<': STRSUB("_LESS_"); break;
@@ -80,7 +79,7 @@ static void legalizeCName(Symbol* sym) {
 }
 
 static void codegen_header(void) {
-  ChainHashMap<char*, StringHashFns, int> cnames;
+  ChainHashMap<const char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;
@@ -155,7 +154,7 @@ static void codegen_header(void) {
       if (sym->name == sym->cname)
         sym->cname = stringcpy(sym->name);
 
-      if (char* pragma = sym->hasPragmaPrefix("rename"))
+      if (const char* pragma = sym->hasPragmaPrefix("rename"))
         sym->cname = stringcpy(pragma+7);
 
       if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))
@@ -179,7 +178,7 @@ static void codegen_header(void) {
       } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
 
         // mangle arguments if necessary
-        ChainHashMap<char*, StringHashFns, int> formal_names;
+        ChainHashMap<const char*, StringHashFns, int> formal_names;
         for_formals(formal, fnSymbol) {
           if (formal_names.get(formal->cname))
             formal->cname = stringcat("_", formal->cname, "_", intstring(formal->id));

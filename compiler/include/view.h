@@ -17,6 +17,6 @@ extern void list_view_noline(BaseAST* ast);
 extern void print_symtab(BaseAST* ast);
 extern void nprint_symtab(BaseAST* ast);
 
-extern void html_view(char* passName);
+extern void html_view(const char* passName);
 
 #endif

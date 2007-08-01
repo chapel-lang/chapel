@@ -8,7 +8,7 @@
 
 extern FILE* html_index_file;
 
-extern Map<char*, char*> configParamMap;
+extern Map<const char*, const char*> configParamMap;
 
 extern int instantiation_limit;
 

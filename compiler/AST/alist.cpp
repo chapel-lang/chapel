@@ -126,7 +126,7 @@ void AList::insertAtTail(AList* new_ast) {
 }
 
 
-void AList::codegen(FILE* outfile, char* separator) {
+void AList::codegen(FILE* outfile, const char* separator) {
   for_asts(node, this) {
     node->codegen(outfile);
     if (node->next != tail) {

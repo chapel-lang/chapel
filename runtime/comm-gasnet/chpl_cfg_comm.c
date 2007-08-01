@@ -192,7 +192,7 @@ char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
   sprintf(numLocalesString, "%d", numLocales);
   *commArgc = argc+1;
   commArgv = _chpl_malloc((*commArgc)+1, sizeof(char*), "GASNet argv", 
-                          __FILE__, __LINE__);
+                          __LINE__, __FILE__);
   commArgv[0] = argv[0];
   commArgv[1] = numLocalesString;
   for (i=1; i< argc; i++) {
@@ -218,7 +218,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
   _chpl_comm_barrier("_chpl_comm_init");
 }
 
-void _chpl_comm_barrier(char *msg) {
+void _chpl_comm_barrier(const char *msg) {
   PRINTF(msg);
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));

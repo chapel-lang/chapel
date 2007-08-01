@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include "baseAST.h"
 #include "files.h"
 #include "misc.h"
 #include "log.h"
@@ -11,13 +12,13 @@
 void verify();
 void cleanAst();
 void destroyAst();
-void printStatistics(char* pass);
+void printStatistics(const char* pass);
 
 bool printPasses = false;
 
 struct PassInfo {
   void (*fn)(void);
-  char *name;
+  const char *name;
 };
 
 #define FIRST {NULL, NULL}
@@ -26,7 +27,7 @@ struct PassInfo {
 #include "passlist.h"
 
 
-static void runPass(char *passName, void (*pass)(void)) {
+static void runPass(const char *passName, void (*pass)(void)) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
   static double timeBetweenPasses = -1.0;

@@ -11,8 +11,8 @@ extern bool ccwarnings;
 
 struct fileinfo {
   FILE* fptr;
-  char* filename;
-  char* pathname;
+  const char* filename;
+  const char* pathname;
 };
 
 void codegen_makefile(fileinfo* mainfile);
@@ -21,21 +21,21 @@ void deleteTmpDir(void);
 
 void genCFilenames(char* modulename, char** outfilename);
 
-void openCFile(fileinfo* fi, char* name, char* ext = NULL);
+void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi);
 
-fileinfo* openTmpFile(char* tmpfilename);
+fileinfo* openTmpFile(const char* tmpfilename);
 
-void openfile(fileinfo* thefile, char* mode);
+void openfile(fileinfo* thefile, const char* mode);
 void closefile(fileinfo* thefile);
 
-FILE* openInputFile(char* filename);
+FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
 void testInputFiles(int numFilenames, char* filename[]);
 char* nthFilename(int i);
 void addLibInfo(char* filename);
 
-char* createGDBFile(int argc, char* argv[]);
+const char* createGDBFile(int argc, char* argv[]);
 
 void makeBinary(void);
 

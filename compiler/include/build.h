@@ -6,7 +6,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
-Expr* buildDot(BaseAST* base, char* member);
+Expr* buildDot(BaseAST* base, const char* member);
 
 Expr* buildLogicalAnd(BaseAST* left, BaseAST* right);
 Expr* buildLogicalOr(BaseAST* left, BaseAST* right);
@@ -14,8 +14,8 @@ Expr* buildLogicalOr(BaseAST* left, BaseAST* right);
 BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
 void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint);
-DefExpr* buildLabelStmt(char* name);
-ModuleSymbol* build_module(char* name, modType type, AList* stmts);
+DefExpr* buildLabelStmt(const char* name);
+ModuleSymbol* build_module(const char* name, modType type, AList* stmts);
 CallExpr* build_primitive_call(AList* exprs);
 
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2 = NULL);
@@ -31,8 +31,8 @@ BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* iterator,
                           Expr* expr,
                           Expr* cond = NULL);
-BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
-BlockStmt* buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs);
+BlockStmt* build_param_for_stmt(const char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
+BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);
@@ -44,9 +44,9 @@ void setVarSymbolAttributes(BlockStmt* stmts,
                             varType vartag,
                             consType constag);
 
-DefExpr* build_class(char* name, Type* type, AList* decls);
+DefExpr* build_class(const char* name, Type* type, AList* decls);
 DefExpr*
-build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable);
+build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);

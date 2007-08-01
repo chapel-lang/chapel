@@ -88,7 +88,7 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, AList* ast) {
 }
 
 
-void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
+void reset_file_info(BaseAST* baseAST, int lineno, const char* filename) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, baseAST);
   forv_Vec(BaseAST, ast, asts) {
@@ -98,7 +98,7 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
 }
 
 
-void reset_file_info(AList* exprs, int lineno, char* filename) {
+void reset_file_info(AList* exprs, int lineno, const char* filename) {
   for_alist(Expr, expr, exprs) {
     reset_file_info(expr, lineno, filename);
   }

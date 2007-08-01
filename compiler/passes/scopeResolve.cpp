@@ -11,7 +11,7 @@
  ***   returns true iff function name matches a method name in class
  ***/
 static bool
-name_matches_method(char* name, Type* type) {
+name_matches_method(const char* name, Type* type) {
   if (!strcmp(name, type->symbol->name))
     return false;
   forv_Vec(Symbol, method, type->methods) {
@@ -37,7 +37,7 @@ name_matches_method(char* name, Type* type) {
  ***   not including any classes this class is nested in
  ***/
 static bool
-name_matches_method_local(char* name, Type* type) {
+name_matches_method_local(const char* name, Type* type) {
   if (!strcmp(name, type->symbol->name))
     return false;
   forv_Vec(Symbol, method, type->methods) {
@@ -76,7 +76,7 @@ resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
     else
       INT_FATAL(gotoStmt, "Unexpected goto type");
   } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
-    char* name = gotoStmt->label->name;
+    const char* name = gotoStmt->label->name;
     if (gotoStmt->goto_type == goto_break)
       name = stringcat("_post", name);
     forv_Vec(BaseAST, ast, asts) {
@@ -131,7 +131,7 @@ void scopeResolve(Symbol* base) {
 
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (dynamic_cast<UnresolvedSymbol*>(symExpr->var)) {
-        char* name = symExpr->var->name;
+        const char* name = symExpr->var->name;
         if (!strcmp(name, "."))
           continue;
 

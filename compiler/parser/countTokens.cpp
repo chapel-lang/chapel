@@ -204,7 +204,7 @@ void countCommentLine(void) {
 }
 
 
-void countSingleLineComment(char* comment) {
+void countSingleLineComment(const char* comment) {
   if (printTokens) {
     if (!comment) {
       comment = "";

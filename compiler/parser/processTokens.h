@@ -5,10 +5,10 @@
    tokens */
 
 void processNewline(void);
-char* eatStringLiteral(char* c);
+char* eatStringLiteral(const char* c);
 void processSingleLineComment(void);
 void processMultiLineComment(void);
-void processWhitespace(char* tabOrSpace);
+void processWhitespace(const char* tabOrSpace);
 void processInvalidToken(void);
 
 #endif

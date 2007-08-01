@@ -56,7 +56,7 @@ static int uid = 1;
 #define calc_counters(typeName, enumName)               \
   k##typeName = n##typeName*sizeof(typeName)/1024
 
-void printStatistics(char* pass) {
+void printStatistics(const char* pass) {
   static int last_asts = -1;
 
   fprintf(stderr, "%s\n", pass);
@@ -327,7 +327,7 @@ void BaseAST::printLoc(FILE* outfile) {
 }
 
 
-void BaseAST::addPragma(char* str) {
+void BaseAST::addPragma(const char* str) {
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
     defExpr->sym->addPragma(str);
   } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
@@ -336,8 +336,8 @@ void BaseAST::addPragma(char* str) {
 }
 
 
-void BaseAST::addPragmas(Vec<char*>* srcPragmas) {
-  forv_Vec(char, srcPragma, *srcPragmas) {
+void BaseAST::addPragmas(Vec<const char*>* srcPragmas) {
+  forv_Vec(const char, srcPragma, *srcPragmas) {
     addPragma(srcPragma);
   }
 }
@@ -385,7 +385,7 @@ FnSymbol* BaseAST::getFunction() {
 }
 
 
-Symbol* BaseAST::lookup(char* name) {
+Symbol* BaseAST::lookup(const char* name) {
   if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(this))
     return a->block->blkScope->lookup(name);
   return parentScope->lookup(name);
@@ -398,7 +398,7 @@ Symbol* BaseAST::lookup(BaseAST* ast) {
   return NULL;
 }
 
-TypeSymbol* BaseAST::lookupType(char* name) {
+TypeSymbol* BaseAST::lookupType(const char* name) {
   return dynamic_cast<TypeSymbol*>(lookup(name));
 }
 
@@ -406,7 +406,7 @@ TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
   return dynamic_cast<TypeSymbol*>(lookup(ast));
 }
 
-VarSymbol* BaseAST::lookupVar(char* name) {
+VarSymbol* BaseAST::lookupVar(const char* name) {
   return dynamic_cast<VarSymbol*>(lookup(name));
 }
 
@@ -424,7 +424,7 @@ int compar_baseast(const void *ai, const void *aj) {
   return 0;
 }
 
-char* astTypeName[AST_TYPE_END+1] = {
+const char* astTypeName[AST_TYPE_END+1] = {
   "Expr",
   "SymExpr",
   "DefExpr",
@@ -456,7 +456,7 @@ char* astTypeName[AST_TYPE_END+1] = {
 };
 
 int currentLineno = 0;
-char* currentFilename = NULL;
+const char* currentFilename = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m) for_asts(tmp, ((_t*)a)->_m) asts.add(tmp)

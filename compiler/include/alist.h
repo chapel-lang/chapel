@@ -40,7 +40,7 @@ class AList {
   void insertAtTail(AList* new_ast);
 
   // codegen list
-  void codegen(FILE* outfile, char* separator = ", ");
+  void codegen(FILE* outfile, const char* separator = ", ");
 };
 
 #define for_alist(elt_type, node, list)                                 \

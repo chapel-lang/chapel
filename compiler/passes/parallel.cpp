@@ -171,7 +171,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
       } else {
         
         // create a new class to capture refs to locals
-        char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
+        const char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
         ClassType* ctype = new ClassType( CLASS_CLASS);
         TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
                                                       fname),

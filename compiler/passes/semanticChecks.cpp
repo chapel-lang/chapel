@@ -22,7 +22,7 @@ check_redefinition(Symbol* sym) {
       }
     }
     if (count >= 2) {
-      char* redefinitionLocations = "";
+      const char* redefinitionLocations = "";
       for (Symbol* tmp = sym->overloadNext; tmp; tmp = tmp->overloadNext) {
         if (!tmp->getFnSymbol()) {
           redefinitionLocations =
@@ -76,7 +76,7 @@ check_parsed_vars(VarSymbol* var) {
       USR_FATAL(var, "Top-level params must be initialized.");
   if (var->varClass == VAR_CONFIG &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
-    char *varType = NULL;
+    const char *varType = NULL;
     switch (var->consClass) {
       case VAR_VAR:   varType = "variables"; break;
       case VAR_CONST: varType = "constants"; break;
@@ -91,10 +91,10 @@ check_parsed_vars(VarSymbol* var) {
 
 static void
 check_named_arguments(CallExpr* call) {
-  Vec<char*> names;
+  Vec<const char*> names;
   for_actuals(expr, call) {
     if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
-      forv_Vec(char, name, names) {
+      forv_Vec(const char, name, names) {
         if (!strcmp(name, named->name))
           USR_FATAL(named, "The named argument '%s' is used more "
                     "than once in the same function call.", name);
@@ -158,7 +158,7 @@ checkNormalized(void) {
       continue;
 
     ModuleSymbol* mod = fn->getModule();
-    Vec<char*> reported;
+    Vec<const char*> reported;
     Vec<BaseAST*> asts;
     Vec<Symbol*> defined;
     collect_asts_postorder(&asts, fn);

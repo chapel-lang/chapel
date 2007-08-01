@@ -101,13 +101,13 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
 
 class StringHashFns {
  public:
-  static unsigned int hash(char *s) { 
+  static unsigned int hash(const char *s) { 
     unsigned int h = 0; 
     // 31 changed to 27, to avoid prime2 in vec.cpp
     while (*s) h = h * 27 + (unsigned char)*s++;  
     return h;
   }
-  static int equal(char *a, char *b) { return !strcmp(a, b); }
+  static int equal(const char *a, const char *b) { return !strcmp(a, b); }
 };
 
 class PointerHashFns {

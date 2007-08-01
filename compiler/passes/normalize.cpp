@@ -429,7 +429,7 @@ fix_def_expr(VarSymbol* var) {
     stmt = noop; // insert regular definition code in then block
   }
   if (var->varClass == VAR_CONFIG && var->consClass == VAR_PARAM) {
-    if (char* value = configParamMap.get(canonicalize_string(var->name))) {
+    if (const char* value = configParamMap.get(canonicalize_string(var->name))) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(init)) {
         if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(symExpr->var)) {
           if (varSymbol->immediate) {

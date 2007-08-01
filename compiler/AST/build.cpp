@@ -8,7 +8,7 @@
 #include "type.h"
 
 
-Expr* buildDot(BaseAST* base, char* member) {
+Expr* buildDot(BaseAST* base, const char* member) {
   return new CallExpr(".", base, new_StringSymbol(member));
 }
 
@@ -72,7 +72,7 @@ void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 
 
 DefExpr*
-buildLabelStmt(char* name) {
+buildLabelStmt(const char* name) {
   return new DefExpr(new LabelSymbol(name));
 }
 
@@ -129,7 +129,7 @@ static void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* build_module(char* name, modType type, AList* stmts) {
+ModuleSymbol* build_module(const char* name, modType type, AList* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type);
   for_alist(Expr, stmt, stmts) {
     stmt->remove();
@@ -418,7 +418,7 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
 }
 
 
-BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
+BlockStmt* build_param_for_stmt(const char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts, BLOCK_PARAM_FOR);
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
@@ -432,7 +432,7 @@ BlockStmt* build_param_for_stmt(char* index, Expr* low, Expr* high, Expr* stride
 
 
 BlockStmt*
-buildCompoundAssignment(char* op, Expr* lhs, Expr* rhs) {
+buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = build_chpl_stmt();
 
   VarSymbol* ltmp = new VarSymbol("_ltmp");
@@ -695,7 +695,7 @@ setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
 
 
 DefExpr*
-build_class(char* name, Type* type, AList* decls) {
+build_class(const char* name, Type* type, AList* decls) {
   ClassType* ct = dynamic_cast<ClassType*>(type);
 
   if (!ct) {
@@ -710,7 +710,7 @@ build_class(char* name, Type* type, AList* decls) {
 
 
 DefExpr*
-build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
+build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
   if (argSymbol->intent == INTENT_TYPE) {
     type = NULL;

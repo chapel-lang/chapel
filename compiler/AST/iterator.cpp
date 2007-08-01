@@ -28,7 +28,7 @@ IteratorInfo::IteratorInfo() :
 
 
 static FnSymbol*
-buildEmptyIteratorMethod(char* name, ClassType* ct) {
+buildEmptyIteratorMethod(const char* name, ClassType* ct) {
   FnSymbol* fn = new FnSymbol(name);
   fn->copyPragmas(fn);
   fn->addPragma("auto ii");
@@ -40,7 +40,7 @@ buildEmptyIteratorMethod(char* name, ClassType* ct) {
 }
 
 
-static VarSymbol* newTemp(FnSymbol* fn, Type* type, char* name = "_tmp") {
+static VarSymbol* newTemp(FnSymbol* fn, Type* type, const char* name = "_tmp") {
   VarSymbol* var = new VarSymbol(name, type);
   var->isCompilerTemp = true;
   fn->insertAtHead(new DefExpr(var));

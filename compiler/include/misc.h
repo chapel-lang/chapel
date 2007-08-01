@@ -21,7 +21,6 @@ int buf_read(char *pathname, char **buf, int *len);
 char *loc_string(d_loc_t &l);
 char *get_file_line(char *filename, int lineno);
 char *get_file_line(char *filename, int lineno);
-char *dupstr(char *s, char *e = 0);
 
 
 // INT_FATAL(ast, format, ...)
@@ -54,11 +53,11 @@ char *dupstr(char *s, char *e = 0);
 #define USR_STOP \
   check_fatal_errors_encountered
 
-bool setupError(char* filename, int lineno,
+bool setupError(const char* filename, int lineno,
                 bool fatal, bool user, bool cont, bool print);
-void printProblem(char* fmt, ...);
-void printProblem(IFAAST* ast, char* fmt, ...);
-void printProblem(BaseAST* ast, char* fmt, ...);
+void printProblem(const char* fmt, ...);
+void printProblem(IFAAST* ast, const char* fmt, ...);
+void printProblem(BaseAST* ast, const char* fmt, ...);
 void check_fatal_errors_encountered(void);
 
 void startCatchingSignals(void);

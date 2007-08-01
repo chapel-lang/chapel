@@ -12,7 +12,7 @@
  *  string to complex
  */
 static _string _get_string_imag_part(_string s) {
-  char* ps = s;
+  const char* ps = s;
   while (*ps == ' ') // eat space
     ps++;
   if (*ps == '-' || *ps == '+') // eat sign
@@ -130,10 +130,10 @@ real_to_string(_imag128, "%Lgi")
     if (isnan(x.re) || isnan(x.im)) {                   \
       return NANSTRING;                                 \
     } else {                                            \
-      char* re = realtype##_to_string(x.re);            \
-      char* im;                                         \
+      const char* re = realtype##_to_string(x.re);      \
+      const char* im;                                   \
       realtype imval = x.im;                            \
-      char* op = " + ";                                 \
+      const char* op = " + ";                           \
       if (imval < 0) {                                  \
         imval = -x.im;                                  \
         op = " - ";                                     \

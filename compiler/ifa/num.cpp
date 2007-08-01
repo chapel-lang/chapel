@@ -776,7 +776,7 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
 }
 
 void
-convert_string_to_immediate(char *str, Immediate *imm) {
+convert_string_to_immediate(const char *str, Immediate *imm) {
   switch (imm->const_kind) {
     case NUM_KIND_NONE:
       break;

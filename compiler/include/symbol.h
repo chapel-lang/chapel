@@ -36,8 +36,8 @@ enum consType {
 
 class Symbol : public BaseAST {
  public:
-  char* name;
-  char* cname; // Name of symbol for generating C code
+  const char* name;
+  const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
   Symbol* overloadNext;
@@ -52,7 +52,7 @@ class Symbol : public BaseAST {
   bool isExtern;       // external to Chapel, implemented in C
   Vec<SymExpr*> defs;
   Vec<SymExpr*> uses;
-  Vec<char*> pragmas;
+  Vec<const char*> pragmas;
 
   Symbol(astType_t astType, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -75,9 +75,9 @@ class Symbol : public BaseAST {
   virtual Symbol* getSymbol(void);
   virtual bool isImmediate();
 
-  char* hasPragma(char* str);
-  void removePragma(char* str);
-  char* hasPragmaPrefix(char* str);
+  const char* hasPragma(const char* str);
+  void removePragma(const char* str);
+  const char* hasPragmaPrefix(const char* str);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -100,7 +100,7 @@ class VarSymbol : public Symbol {
   VarSymbol   *refcMutex;    // guard refc
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
-  VarSymbol(char* init_name, Type* init_type = dtUnknown,
+  VarSymbol(const char* init_name, Type* init_type = dtUnknown,
             varType  init_varClass = VAR_NORMAL, 
             consType init_consClass = VAR_VAR);
   ~VarSymbol();
@@ -126,7 +126,7 @@ class ArgSymbol : public Symbol {
   Type* instantiatedFrom;
   bool instantiatedParam;
 
-  ArgSymbol(intentTag iIntent, char* iName, Type* iType,
+  ArgSymbol(intentTag iIntent, const char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
   virtual void verify(); 
   COPY_DEF(ArgSymbol);
@@ -143,7 +143,7 @@ class ArgSymbol : public Symbol {
 
 class TypeSymbol : public Symbol {
  public:
-  TypeSymbol(char* init_name, Type* init_type);
+  TypeSymbol(const char* init_name, Type* init_type);
   virtual void verify(); 
   COPY_DEF(TypeSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -187,7 +187,7 @@ class FnSymbol : public Symbol {
   bool isWrapper;
   bool normalizedOnce;
 
-  FnSymbol(char* initName);
+  FnSymbol(const char* initName);
   ~FnSymbol();
            
   virtual void verify(); 
@@ -227,7 +227,7 @@ class FnSymbol : public Symbol {
 
 class EnumSymbol : public Symbol {
  public:
-  EnumSymbol(char* init_name);
+  EnumSymbol(const char* init_name);
   virtual void verify(); 
   COPY_DEF(EnumSymbol);
   void codegenDef(FILE* outfile);
@@ -248,7 +248,7 @@ class ModuleSymbol : public Symbol {
   FnSymbol* initFn;
   Vec<ModuleSymbol*> subModules;
 
-  ModuleSymbol(char* init_name, modType init_modtype);
+  ModuleSymbol(const char* init_name, modType init_modtype);
   ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);
@@ -259,19 +259,19 @@ class ModuleSymbol : public Symbol {
 
 class LabelSymbol : public Symbol {
  public:
-  LabelSymbol(char* init_name);
+  LabelSymbol(const char* init_name);
   virtual void verify(); 
   COPY_DEF(LabelSymbol);
   virtual void codegenDef(FILE* outfile);
 };
 
 
-VarSymbol *new_StringSymbol(char *s);
+VarSymbol *new_StringSymbol(const char *s);
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type size=INT_SIZE_32);
 VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_32);
-VarSymbol *new_RealSymbol(char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ImagSymbol(char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 PrimitiveType *immediate_type(Immediate *imm);
 

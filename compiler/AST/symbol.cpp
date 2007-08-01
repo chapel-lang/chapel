@@ -240,8 +240,8 @@ Symbol* Symbol::getSymbol(void) {
 }
 
 
-char* Symbol::hasPragma(char* str) {
-  forv_Vec(char, pragma, pragmas) {
+const char* Symbol::hasPragma(const char* str) {
+  forv_Vec(const char, pragma, pragmas) {
     if (!strcmp(pragma, str))
       return pragma;
   }
@@ -251,7 +251,7 @@ char* Symbol::hasPragma(char* str) {
 }
 
 
-void Symbol::removePragma(char* str) {
+void Symbol::removePragma(const char* str) {
   for (int i = 0; i < pragmas.n; i++)
     if (!strcmp(pragmas.v[i], str))
       pragmas.v[i] = "";
@@ -260,8 +260,8 @@ void Symbol::removePragma(char* str) {
 }
 
 
-char* Symbol::hasPragmaPrefix(char* str) {
-  forv_Vec(char, pragma, pragmas) {
+const char* Symbol::hasPragmaPrefix(const char* str) {
+  forv_Vec(const char, pragma, pragmas) {
     if (!strncmp(pragma, str, strlen(str)))
       return pragma;
   }
@@ -301,7 +301,7 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 }
 
 
-VarSymbol::VarSymbol(char    *init_name,
+VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type,
                      varType  init_varClass, 
                      consType init_consClass) :
@@ -406,7 +406,7 @@ bool VarSymbol::isImmediate() {
 }
 
 
-ArgSymbol::ArgSymbol(intentTag iIntent, char* iName, 
+ArgSymbol::ArgSymbol(intentTag iIntent, const char* iName, 
                      Type* iType, Expr* iDefaultExpr,
                      Expr* iVariableExpr) :
   Symbol(SYMBOL_ARG, iName, iType),
@@ -486,7 +486,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 }
 
 
-TypeSymbol::TypeSymbol(char* init_name, Type* init_type) :
+TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(SYMBOL_TYPE, init_name, init_type)
 {
   isTypeVariable = true;
@@ -532,7 +532,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* initName) :
+FnSymbol::FnSymbol(const char* initName) :
   Symbol(SYMBOL_FN, initName),
   formals(new AList()),
   setter(NULL),
@@ -1367,7 +1367,7 @@ void FnSymbol::codegenPrototype(FILE* outfile) {
 
 
 static void
-codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct) {
+codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
   if (ct->classTag == CLASS_CLASS)
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
@@ -1386,7 +1386,7 @@ codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct) {
 
 void FnSymbol::codegenDef(FILE* outfile) {
   if (strcmp(saveCDir, "") && filename) {
-    char* name = strrchr(filename, '/');
+    const char* name = strrchr(filename, '/');
     name = (!name) ? filename : name + 1;
     fprintf(outfile, "/* %s:%d */\n", name, lineno);
   }
@@ -1535,7 +1535,7 @@ FnSymbol::getFormal(int i) {
 }
 
 
-EnumSymbol::EnumSymbol(char* init_name) :
+EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
 { }
 
@@ -1558,7 +1558,7 @@ bool EnumSymbol::isParam(void) { return true; }
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
-ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
+ModuleSymbol::ModuleSymbol(const char* init_name, modType init_modtype) :
   Symbol(SYMBOL_MODULE, init_name),
   modtype(init_modtype),
   block(new BlockStmt()),
@@ -1604,7 +1604,7 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-LabelSymbol::LabelSymbol(char* init_name) :
+LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(SYMBOL_LABEL, init_name, NULL)
 { 
  
@@ -1631,7 +1631,7 @@ static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
 
-VarSymbol *new_StringSymbol(char *str) {
+VarSymbol *new_StringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
   imm.v_string = canonicalize_string(str);
@@ -1694,7 +1694,7 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_RealSymbol(char *n, long double b, IF1_float_type size) {
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1717,7 +1717,7 @@ VarSymbol *new_RealSymbol(char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ImagSymbol(char *n, long double b, IF1_float_type size) {
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1740,7 +1740,7 @@ VarSymbol *new_ImagSymbol(char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_complex_type size) {
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size) {
   Immediate imm;
   switch (size) {
   case COMPLEX_SIZE_64: 

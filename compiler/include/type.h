@@ -65,7 +65,7 @@ class Type : public BaseAST {
   virtual bool requiresCParamTmp(intentTag intent);
   virtual bool implementedUsingCVals(void);
 
-  virtual Symbol* getField(char* name);
+  virtual Symbol* getField(const char* name);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -128,7 +128,7 @@ class ClassType : public Type {
 
   virtual bool implementedUsingCVals(void);
 
-  virtual Symbol* getField(char* name);
+  virtual Symbol* getField(const char* name);
   virtual Symbol* getField(int i);
 };
 

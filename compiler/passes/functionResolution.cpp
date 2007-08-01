@@ -48,10 +48,10 @@ enum resolve_call_error_type {
 static resolve_call_error_type resolve_call_error;
 static Vec<FnSymbol*> resolve_call_error_candidates;
 static FnSymbol* resolve_call(CallExpr* call,
-                              char *name,
+                              const char *name,
                               Vec<Type*>* actual_types,
                               Vec<Symbol*>* actual_params,
-                              Vec<char*>* actual_names);
+                              Vec<const char*>* actual_names);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
@@ -78,7 +78,7 @@ static void makeRefType(Type* type) {
 
   Vec<Type*> atypes;
   Vec<Symbol*> aparams;
-  Vec<char*> anames;
+  Vec<const char*> anames;
   atypes.add(type);
   aparams.add(NULL);
   anames.add(NULL);
@@ -388,7 +388,7 @@ computeActualFormalMap(FnSymbol* fn,
                        int num_formals,
                        Vec<Type*>* actual_types,
                        Vec<Symbol*>* actual_params,
-                       Vec<char*>* actual_names) {
+                       Vec<const char*>* actual_names) {
   for (int i = 0; i < num_formals; i++) {
     formal_actuals->add(NULL);
     formal_params->add(NULL);
@@ -593,7 +593,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              FnSymbol* fn,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names,
+             Vec<const char*>* actual_names,
              bool inst = false) {
   fn = expandVarArgs(fn, actual_types->n);
 
@@ -921,7 +921,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
-char* type2string(Type* type) {
+const char* type2string(Type* type) {
   if (type->symbol->hasPragma("ref"))
     return getValueType(type)->symbol->name;
   else
@@ -929,14 +929,14 @@ char* type2string(Type* type) {
 }
 
 
-char* call2string(CallExpr* call,
-                  char* name,
-                  Vec<Type*>& atypes,
-                  Vec<Symbol*>& aparams,
-                  Vec<char*>& anames) {
+const char* call2string(CallExpr* call,
+                        const char* name,
+                        Vec<Type*>& atypes,
+                        Vec<Symbol*>& aparams,
+                        Vec<const char*>& anames) {
   bool method = false;
   bool _this = false;
-  char *str = "";
+  const char *str = "";
   if (atypes.n > 1)
     if (atypes.v[0] == dtMethodToken)
       method = true;
@@ -984,7 +984,7 @@ char* call2string(CallExpr* call,
 }
 
 
-char* fn2string(FnSymbol* fn) {
+const char* fn2string(FnSymbol* fn) {
   char* str;
   int start = 0;
   if (fn->instantiatedFrom)
@@ -1044,10 +1044,10 @@ explainCallMatch(CallExpr* call) {
 
 static FnSymbol*
 resolve_call(CallExpr* call,
-             char *name,
+             const char *name,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names) {
+             Vec<const char*>* actual_names) {
   Vec<FnSymbol*> visibleFns;                    // visible functions
 
   Vec<FnSymbol*> candidateFns;
@@ -1139,7 +1139,7 @@ resolve_call(CallExpr* call,
     FnSymbol* promoted = build_promotion_wrapper(best, actual_types, actual_params, call->square);
     if (promoted != best) {
       if (fWarnPromotion) {
-        char* str = call2string(call, name, *actual_types, *actual_params, *actual_names);
+        const char* str = call2string(call, name, *actual_types, *actual_params, *actual_names);
         USR_WARN(call, "promotion on %s", str);
       }
       best = promoted;
@@ -1157,7 +1157,7 @@ static void
 computeActuals(CallExpr* call,
                Vec<Type*>* atypes,
                Vec<Symbol*>* aparams,
-               Vec<char*>* anames) {
+               Vec<const char*>* anames) {
   for_actuals(actual, call) {
     atypes->add(actual->typeInfo());
     SymExpr* symExpr;
@@ -1341,14 +1341,14 @@ resolveCall(CallExpr* call) {
 
     Vec<Type*> atypes;
     Vec<Symbol*> aparams;
-    Vec<char*> anames;
+    Vec<const char*> anames;
     computeActuals(call, &atypes, &aparams, &anames);
 
     checkUnaryOp(call, &atypes, &aparams);
     checkBinaryOp(call, &atypes, &aparams);
 
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
-    char* name = base->var->name;
+    const char* name = base->var->name;
     FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
     if (call->partialTag) {
       if (!resolvedFn)
@@ -1396,7 +1396,7 @@ resolveCall(CallExpr* call) {
                          call2string(call, name, atypes, aparams, anames));
           USR_STOP();
         } else {
-          char* str = call2string(call, name, atypes, aparams, anames);
+          const char* str = call2string(call, name, atypes, aparams, anames);
           USR_FATAL_CONT(userCall(call), "%s call '%s'",
                          (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
                          str);
@@ -2434,7 +2434,7 @@ resolveBody(Expr* body) {
           if (from->lineno > 0 && from->getModule()->modtype != MOD_STANDARD)
             break;
         }
-        char* str = "";
+        const char* str = "";
         for_actuals(actual, call) {
           if (SymExpr* sym = dynamic_cast<SymExpr*>(actual)) {
             if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
@@ -3132,8 +3132,8 @@ is_array_type(Type* type) {
 static void
 fixTypeNames(ClassType* ct) {
   if (is_array_type(ct)) {
-    char* domain_type = ct->getField("dom")->type->symbol->name;
-    char* elt_type = ct->getField("eltType")->type->symbol->name;
+    const char* domain_type = ct->getField("dom")->type->symbol->name;
+    const char* elt_type = ct->getField("eltType")->type->symbol->name;
     ct->symbol->defPoint->parentScope->undefine(ct->symbol);
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
     ct->symbol->defPoint->parentScope->define(ct->symbol);
@@ -3145,7 +3145,7 @@ fixTypeNames(ClassType* ct) {
     ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
   if (ct->symbol->hasPragma("array") || ct->symbol->hasPragma("domain")) {
-    char* name = ct->getField(1)->type->symbol->name;
+    const char* name = ct->getField(1)->type->symbol->name;
     ct->symbol->defPoint->parentScope->undefine(ct->symbol);
     ct->symbol->name = name;
     ct->symbol->defPoint->parentScope->define(ct->symbol);

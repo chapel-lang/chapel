@@ -85,7 +85,7 @@ class GotoStmt : public Expr {
   gotoType goto_type;
 
   GotoStmt(gotoType init_goto_type);
-  GotoStmt(gotoType init_goto_type, char* init_label);
+  GotoStmt(gotoType init_goto_type, const char* init_label);
   GotoStmt(gotoType init_goto_type, Symbol* init_label);
   virtual void verify();
   COPY_DEF(GotoStmt);

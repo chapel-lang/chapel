@@ -47,7 +47,7 @@ void processNewline(void) {
 }
 
 
-char* eatStringLiteral(char* startChar) {
+char* eatStringLiteral(const char* startChar) {
   register int c;
   
   newString();
@@ -131,7 +131,7 @@ void processMultiLineComment(void) {
 }
 
 
-void processWhitespace(char* tabOrSpace) {
+void processWhitespace(const char* tabOrSpace) {
   // might eventually want to keep track of column numbers and do
   // something here
 }

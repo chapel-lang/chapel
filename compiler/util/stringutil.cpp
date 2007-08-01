@@ -6,6 +6,17 @@
 #include "stringutil.h"
 
 
+char *
+dupstr(const char *s, const char *e) {
+  int l = e ? e-s : strlen(s);
+  char *ss = (char*)malloc(l+1);
+  memcpy(ss, s, l);
+  ss[l] = 0;
+  return ss;
+}
+
+
+
 int stringlen(const char* s1) {
   if (s1 == NULL) {
     return 0;
@@ -34,6 +45,11 @@ char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4,
   char* s = (char*)malloc(stringlen(s1, s2, s3, s4, s5) + 1);
   sprintf(s, "%s%s%s%s%s", s1, s2, s3, s4, s5);
   return s;
+}
+
+
+char* stringinsert(const char* sorig, const char* pos, const char* insertme) {
+  return stringcat(dupstr(sorig, pos), insertme, dupstr(pos+1));
 }
 
 

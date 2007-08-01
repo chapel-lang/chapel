@@ -8,7 +8,7 @@
 #include "yy.h"
 #include "runtime.h"
 
-static ModuleSymbol* parseStandardModule(char* name) {
+static ModuleSymbol* parseStandardModule(const char* name) {
   static char* modulePath = NULL;
   if (modulePath == NULL) {
     modulePath = stringcat(chplhome, "/modules/standard/");

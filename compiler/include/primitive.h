@@ -136,15 +136,15 @@ enum PrimitiveTag {
 
 class PrimitiveOp { public:
   PrimitiveTag tag;
-  char *name;
+  const char *name;
   Type *(*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
   bool passLineno; // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
 };
 
-extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
+extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 

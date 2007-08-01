@@ -12,9 +12,9 @@ SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
 
 
 SymScope::~SymScope() {
-  Vec<char*> keys;
+  Vec<const char*> keys;
   visibleFunctions.get_keys(keys);
-  forv_Vec(char, key, keys) {
+  forv_Vec(const char, key, keys) {
     delete visibleFunctions.get(key);
   }
 }
@@ -69,7 +69,7 @@ void SymScope::undefine(Symbol* sym) {
 
 
 Symbol*
-SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse) {
+SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse) {
   Symbol* sym;
 
   if (!alreadyVisited) {
@@ -109,7 +109,7 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse
 
 
 Symbol*
-SymScope::lookup(char* name) {
+SymScope::lookup(const char* name) {
   Symbol* sym = lookupLocal(name);
   if (sym)
     return sym;
@@ -276,7 +276,7 @@ void SymScope::removeVisibleFunction(FnSymbol* fn) {
 
 
 void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
-                                   char* name,
+                                   const char* name,
                                    bool recursed,
                                    bool nestedUse) {
 

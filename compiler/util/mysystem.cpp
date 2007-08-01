@@ -5,7 +5,7 @@
 
 bool printSystemCommands = false;
 
-int mysystem(const char* command, char* description, int ignorestatus) {
+int mysystem(const char* command, const char* description, int ignorestatus) {
   if (printSystemCommands) {
     printf("%s\n\n", command);
   }

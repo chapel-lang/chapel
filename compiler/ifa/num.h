@@ -141,7 +141,7 @@ IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 #define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool","uint8","uint16","uint32","uint64",0,0,0}, {"bool","int8","int16","int32","int64",0,0,0}, {0,"float32",0,"float64",0,0,0,"float128"}}
-IFA_EXTERN char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
+IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {
@@ -176,7 +176,7 @@ int sprint_imm(char *str, char *control_string, Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
-void convert_string_to_immediate(char *str, Immediate *imm);
+void convert_string_to_immediate(const char *str, Immediate *imm);
 
 #endif
 

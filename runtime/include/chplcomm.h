@@ -84,7 +84,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p);
 //
 // barrier for synchronization between all processes
 //
-void _chpl_comm_barrier(char *msg);
+void _chpl_comm_barrier(const char *msg);
 
 //
 // terminates communication package at the end of the chapel program

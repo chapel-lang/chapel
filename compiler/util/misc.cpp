@@ -10,6 +10,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "misc.h"
 
 void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -18,15 +19,6 @@ void cleanup_for_exit(void) {
 
 // must be non-static to avoid dead-code elim. when compiling -O3
 void gdbShouldBreakHere(void) {
-}
-
-char *
-dupstr(char *s, char *e) {
-  int l = e ? e-s : strlen(s);
-  char *ss = (char*)malloc(l+1);
-  memcpy(ss, s, l);
-  ss[l] = 0;
-  return ss;
 }
 
 void
@@ -44,7 +36,7 @@ clean_exit(int status) {
 static bool exit_immediately = true;
 static bool exit_eventually = false;
 
-static char* err_filename;
+static const char* err_filename;
 static int err_lineno;
 static int err_fatal;
 static int err_user;
@@ -52,7 +44,7 @@ static int err_print;
 static FnSymbol* err_fn = NULL;
 
 
-static char* cleanFilename(BaseAST* ast) {
+static const char* cleanFilename(BaseAST* ast) {
   if (strstr(ast->filename, "/modules/standard"))
     return stringcat("$CHPL_HOME", strstr(ast->filename, "/modules/standard"));
   return ast->filename;
@@ -63,7 +55,7 @@ static void
 print_user_internal_error() {
   static char error[8];
 
-  char* filename_start = strrchr(err_filename, '/');
+  const char* filename_start = strrchr(err_filename, '/');
   if (filename_start)
     filename_start++;
   else
@@ -86,7 +78,7 @@ print_user_internal_error() {
 
 
 bool
-setupError(char *filename, int lineno, bool fatal, bool user, bool cont,
+setupError(const char *filename, int lineno, bool fatal, bool user, bool cont,
            bool print) {
   err_filename = filename;
   err_lineno = lineno;
@@ -141,7 +133,7 @@ static void printDevelErrorFooter(void) {
 
 
 
-void printProblem(char *fmt, ...) {
+void printProblem(const char *fmt, ...) {
   printDevelErrorHeader(NULL);
 
   if (!err_user && !developer)
@@ -163,7 +155,7 @@ void printProblem(char *fmt, ...) {
 }
 
 
-void printProblem(BaseAST* ast, char *fmt, ...) {
+void printProblem(BaseAST* ast, const char *fmt, ...) {
   printDevelErrorHeader(ast);
 
   if (!err_user && !developer)

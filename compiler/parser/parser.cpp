@@ -9,7 +9,7 @@
 #include "yy.h"
 
 AList* yystmtlist = NULL;
-char* yyfilename;
+const char* yyfilename;
 int chplLineno;
 int yystartlineno;
 extern YYLTYPE yylloc;

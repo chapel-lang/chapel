@@ -205,7 +205,7 @@ SymExpr::SymExpr(Symbol* init_var) :
 }
 
 
-SymExpr::SymExpr(char* init_var) :
+SymExpr::SymExpr(const char* init_var) :
   Expr(EXPR_SYM),
   var(new UnresolvedSymbol(init_var))
 {}
@@ -591,7 +591,7 @@ FnSymbol* CallExpr::isResolved(void) {
 }
 
 
-bool CallExpr::isNamed(char* name) {
+bool CallExpr::isNamed(const char* name) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
   if (base && !strcmp(base->var->name, name))
     return true;
@@ -631,7 +631,7 @@ Type* CallExpr::typeInfo(void) {
 
 // codegen unary operator or infix binary operator
 static void
-help_codegen_op(FILE* outfile, char* name, Expr* e1, Expr* e2 = NULL) {
+help_codegen_op(FILE* outfile, const char* name, Expr* e1, Expr* e2 = NULL) {
   fprintf(outfile, "(");
   if (e2) {
     e1->codegen(outfile);
@@ -647,7 +647,7 @@ help_codegen_op(FILE* outfile, char* name, Expr* e1, Expr* e2 = NULL) {
 
 // codegen function call
 static void
-help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
+help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
                 BaseAST* ast2 = NULL, BaseAST* ast3 = NULL,
                 BaseAST* ast4 = NULL, BaseAST* ast5 = NULL) {
   fprintf(outfile, "%s(", name);
@@ -705,7 +705,7 @@ static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
 
 
 static void
-codegenNullAssignments(FILE* outfile, char* cname, ClassType* ct, int skip=0) {
+codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct, int skip=0) {
   if (!skip && ct->classTag == CLASS_CLASS)
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
@@ -1542,7 +1542,7 @@ bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
 }
 
 
-NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
+NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(EXPR_NAMED),
   name(init_name),
   actual(init_actual)

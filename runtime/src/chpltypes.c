@@ -16,9 +16,9 @@
 #define NEGINFSTRING "-inf"
 #define POSINFSTRING "inf"
 
-char* _default_format_write_complex64 = "%g + %gi";
-char* _default_format_write_complex128 = "%lg + %lgi";
-char* _default_format_write_complex256 = "%Lg + %Lgi";
+const char* _default_format_write_complex64 = "%g + %gi";
+const char* _default_format_write_complex128 = "%lg + %lgi";
+const char* _default_format_write_complex256 = "%Lg + %Lgi";
 
 char* _glom_strings(int numstrings, ...) {
   va_list ap;
@@ -51,10 +51,10 @@ string_concat(_string x, _string y) {
 
 _string
 string_strided_select(_string x, int low, int high, int stride) {
-  _string result =
+  char* result =
     _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp", 0, 0);
   _string src = x + low - 1;
-  _string dst = result;
+  char* dst = result;
   while (src - x <= high - 1) {
     *dst++ = *src;
     src += stride;

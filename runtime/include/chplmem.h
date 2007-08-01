@@ -25,12 +25,12 @@ void setMemtrace(char* memLogname);
 
 #define _chpl_alloc(size, description, lineno, filename) \
   _chpl_malloc(1, size, description, lineno, filename)
-void* _chpl_malloc(size_t number, size_t size, char* description,
+void* _chpl_malloc(size_t number, size_t size, const char* description,
                    _int32 lineno, _string filename);
-void* _chpl_calloc(size_t number, size_t size, char* description,
+void* _chpl_calloc(size_t number, size_t size, const char* description,
                    _int32 lineno, _string filename);
-void* _chpl_realloc(void* ptr, size_t number, size_t size, char* description,
-                    _int32 lineno, _string filename);
+void* _chpl_realloc(void* ptr, size_t number, size_t size, 
+                    const char* description, _int32 lineno, _string filename);
 void  _chpl_free(void* ptr, _int32 lineno, _string filename);
 
 _uint64 _mem_used(_int32 lineno, _string filename);

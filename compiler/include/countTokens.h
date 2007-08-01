@@ -15,7 +15,7 @@ void finishCountingTokens(void);
 void countToken(char* tokentext);
 void countNewline(void);
 void countCommentLine(void);
-void countSingleLineComment(char* comment);
+void countSingleLineComment(const char* comment);
 void countMultiLineComment(char* comment);
 
 #endif

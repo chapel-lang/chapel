@@ -12,7 +12,7 @@ extern FILE *yyin;
 
 extern char* yytext;
 extern int chplLineno;
-extern char* yyfilename;
+extern const char* yyfilename;
   
 int yyparse(void);
 void yyerror(const char* str);

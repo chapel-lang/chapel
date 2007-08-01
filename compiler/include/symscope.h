@@ -7,8 +7,8 @@ class SymScope {
  public:
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
-  Map<char*,Vec<FnSymbol*>*> visibleFunctions;
-  ChainHashMap<char*, StringHashFns, Symbol*> table;
+  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
+  ChainHashMap<const char*, StringHashFns, Symbol*> table;
 
   SymScope(BaseAST* iastParent, SymScope* iparent);
   ~SymScope();
@@ -16,8 +16,8 @@ class SymScope {
   void define(Symbol* sym);
   void undefine(Symbol* sym);
 
-  Symbol* lookupLocal(char* name, Vec<SymScope*>* alreadyVisited = NULL, bool nestedUse = false);
-  Symbol* lookup(char* name);
+  Symbol* lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited = NULL, bool nestedUse = false);
+  Symbol* lookup(const char* name);
 
   void addModuleUse(ModuleSymbol* mod);
   Vec<ModuleSymbol*>* getModuleUses();
@@ -30,7 +30,7 @@ class SymScope {
 
   void addVisibleFunction(FnSymbol* fn);
   void removeVisibleFunction(FnSymbol* fn);
-  void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, char* name,
+  void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, const char* name,
                            bool recursed = false, bool nestedUse = false);
 }; 
 

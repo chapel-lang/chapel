@@ -130,7 +130,7 @@ list_ast(BaseAST* ast, int indent = 0) {
 
 
 static char*
-html_file_name( int pass, char *module) {
+html_file_name( int pass, const char *module) {
   return stringcat( "pass", intstring(pass), "_module_", module, ".html");
 }
 
@@ -549,7 +549,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
   }
 }
 
-void html_view(char* passName) {
+void html_view(const char* passName) {
   static int uid = 1;
   FILE* html_file;
   char* filename;

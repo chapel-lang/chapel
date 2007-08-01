@@ -9,7 +9,8 @@
 
 int gdbArgNo;
 
-static int mysystem(const char* command, char* description, int ignorestatus) {
+static int mysystem(const char* command, const char* description, 
+                    int ignorestatus) {
   int status = system(command);
 
   if (status == -1) {
@@ -22,12 +23,12 @@ static int mysystem(const char* command, char* description, int ignorestatus) {
 }
 
 
-static FILE* openfile(char* outfilename, char* mode) {
+static FILE* openfile(const char* outfilename, const char* mode) {
   FILE* outfile;
 
   outfile = fopen(outfilename, mode);
   if (outfile == NULL) {
-    char* errorstr = "opening ";
+    const char* errorstr = "opening ";
     char* errormsg = _glom_strings(4, errorstr, outfilename, ": ", 
                                    strerror(errno));
 
@@ -40,7 +41,7 @@ static FILE* openfile(char* outfilename, char* mode) {
 
 static void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
-    char* errorstr = "closing file: ";
+    const char* errorstr = "closing file: ";
     char* errormsg = _glom_strings(2, errorstr, strerror(errno));
 
     _printError(errormsg, gdbArgNo, "(command-line)");
@@ -49,7 +50,7 @@ static void closefile(FILE* thefile) {
 
 
 static int usingGDBFile = 0;
-static char* gdbfilename = "./.chpl.gdb.commands";
+static const char* gdbfilename = "./.chpl.gdb.commands";
 
 
 static void createGDBFile(int argc, char* argv[]) {

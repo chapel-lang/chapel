@@ -90,7 +90,7 @@ void buildDefaultFunctions(void) {
 //  function's first formal's type's name matches formalTypeName1 if not NULL
 //  function's second formal's type's name matches formalTypeName2 if not NULL
 
-static bool type_name_match(char* name, Symbol* sym) {
+static bool type_name_match(const char* name, Symbol* sym) {
   if (!strcmp(name, sym->type->symbol->name))
     return true;
   SymExpr* symExpr = dynamic_cast<SymExpr*>(sym->defPoint->exprType);
@@ -99,11 +99,11 @@ static bool type_name_match(char* name, Symbol* sym) {
   return false;
 }
 
-static FnSymbol* function_exists(char* name,
+static FnSymbol* function_exists(const char* name,
                                  int numFormals = -1,
-                                 char* formalTypeName1 = NULL,
-                                 char* formalTypeName2 = NULL,
-                                 char* formalTypeName3 = NULL) {
+                                 const char* formalTypeName1 = NULL,
+                                 const char* formalTypeName2 = NULL,
+                                 const char* formalTypeName3 = NULL) {
   forv_Vec(FnSymbol, fn, gFns) {
     if (strcmp(name, fn->name))
       continue;

@@ -57,7 +57,7 @@ int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
 char configParamString[FILENAME_MAX] = "";
-Map<char*, char*> configParamMap;
+Map<const char*, const char*> configParamMap;
 bool debugCCode = false;
 bool optimizeCCode = false;
 
@@ -170,7 +170,7 @@ compile_all(void) {
 }
 
 static void
-compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
+compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
   char* argv0 = stringcpy(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
@@ -187,7 +187,7 @@ compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
 
 
 void runCompilerInGDB(int argc, char* argv[]) {
-  char* gdbCommandFilename = createGDBFile(argc, argv);
+  const char* gdbCommandFilename = createGDBFile(argc, argv);
   char* command = stringcat("gdb -q ", argv[0]," -x ", gdbCommandFilename);
   int status = mysystem(command, "running gdb", 0);
 
