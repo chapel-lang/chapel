@@ -112328,3 +112328,18 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/spec/: Ranges.tex 
 
+---------------------------------------------------------------------------
+
+08/01/07 10:34:11 -- deitz
+
+Log message:
+	Moved insertFatPointers to after optimizations.  This enables += on
+	local variables within on blocks and places insertFatPointers more
+	where I now think it should go.  No other changes necessary.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+Added files:
+	chapel/test/multilocale/deitz/: test_local_int2.chpl 
+	                                test_local_int2.good 
+
