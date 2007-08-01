@@ -112513,3 +112513,22 @@ Added files:
 	                                  reindexIndTypeMismatch.future 
 	                                  reindexIndTypeMismatch.good 
 
+---------------------------------------------------------------------------
+
+08/01/07 16:16:32 -- bradc
+
+Log message:
+	Changed the implementation of the generated executable's
+	help message so that it is printed out in parseArgs()
+	rather than at the point that the configuration variable
+	table is set up.  Without doing this, there was a problem
+	trying to get help on gasnet, because it would complain
+	at you first for not specifying a number of locales.
+	This approach is also a bit simpler, requiring fewer
+	callbacks between the user code and runtime.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/runtime/include/: arg.h config.h 
+	chapel/runtime/src/: arg.c config.c main.c 
+
