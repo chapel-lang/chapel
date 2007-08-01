@@ -112291,3 +112291,14 @@ Modified files:
 	chapel/runtime/src/: arg.c chplcast.c chplmem.c chpltypes.c 
 	                     config.c error.c gdb.c 
 
+---------------------------------------------------------------------------
+
+08/01/07 09:49:30 -- bradc
+
+Log message:
+	Knew that I'd fixed this future, but forgot to remove
+	the .future file.
+
+Removed files:
+	chapel/test/execflags/shannon/: spellingTest.future 
+
