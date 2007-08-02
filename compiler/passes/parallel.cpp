@@ -320,6 +320,13 @@ insertFatPointers(void) {
                   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
                   move->replace(new CallExpr(PRIMITIVE_COMM_READ_OFF, move->get(1)->remove(), tmp, getValueType(se->var->type)->symbol, call->get(2)->remove()));
                   continue;
+                } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                           call->get(1) == se) {
+                  VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+                  call->insertBefore(new DefExpr(tmp));
+                  call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+                  call->replace(new CallExpr(PRIMITIVE_COMM_WRITE_OFF, tmp, call->get(3)->remove(), getValueType(se->var->type)->symbol, call->get(2)->remove()));
+                  continue;
                 } else if (call->isPrimitive(PRIMITIVE_MOVE) &&
                            call->get(1) == se) {
                   VarSymbol* rhs = new VarSymbol("_tmp", getValueType(se->var->type));

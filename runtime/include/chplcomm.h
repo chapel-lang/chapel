@@ -26,6 +26,11 @@ typedef struct {
                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                   sizeof(((stype*)addr)->sfield))
 
+#define _chpl_comm_write_off(addr, locale, raddr, size, stype, sfield)  \
+  _chpl_comm_write(addr, locale,                                        \
+                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
+                   sizeof(((stype*)addr)->sfield))
+
 //
 // given the program arguments, returns whether the invocation of
 // main() is the original invocation by the user (1) or a recursive
