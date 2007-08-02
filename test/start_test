@@ -49,6 +49,7 @@
 #   -futures
 #   -futuresonly
 #   -performance
+#   -comm [none|gasnet]
 #   -interpret (DEPRECATED)
 #
 # These options can be used with a double-dash as well 
@@ -141,6 +142,17 @@
 # be skipped by dropping a NOINTERP file into it.  Because the
 # Chapel compiler's interpreter feature is currently disabled, this
 # flags is currenty deprecated.
+#
+# The -comm option requests that testing be performed with respect to
+# a specific comm layer.  At the time of this writing, none and gasnet
+# are the two supported options.  Choosing something other than "none"
+# will cause "-nl 1" to be prefixed to the generated executable's
+# command-line options to set the number of locales.  Setting the
+# number of locales to something other than 1 can be done using
+# NUMLOCALES and <testname>.numlocales files in the testing
+# directories themselves.  Any directory or test that has a number of
+# locales specified will be skipped when using "none" as the comm
+# layer (either explicitly or by not specifying a -comm flag).
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -308,6 +320,7 @@ set user = `whoami`
 #
 unsetenv CHPL_HOME
 unsetenv CHPL_DEVELOPER
+unsetenv CHPL_COMM
 
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
@@ -352,14 +365,15 @@ set testfuturesonly = 0
 set testnotests = 0
 set recurse = 1
 set tee = "tee"
-
+set numlocales = 0
+set comm = "none"
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
 	case -execopts:
 	case --execopts:
 		shift
-		set execopts = "$argv[1]"
+		set execopts = "$execopts $argv[1]"
 		shift
 		breaksw
 	case -compiler:
@@ -435,6 +449,15 @@ while ( $#argv > 0 )
                 shift
                 set tee = "$testdir/Bin/cat2File"
                 breaksw
+        case -comm:
+        case --comm:
+                shift
+                set comm = $argv[1]
+                shift
+                if ($comm != "none") then
+                    set numlocales = "1"
+                endif
+                breaksw
 	case -h:
 	case -help:
         case --help
@@ -452,6 +475,7 @@ while ( $#argv > 0 )
 		echo "          -valgrind"
                 echo "          -valgrindexe"
                 echo "          -notee"
+                echo "          -comm [none|gasnet]"
 #                echo "          -interpret (or -i)"
 		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -h, -help"
@@ -526,6 +550,15 @@ endif
 echo \[compopts: \"$compopts\"\] |& $tee -a $logtmp
 
 echo \[execopts: \"$execopts\"\] |& $tee -a $logtmp
+
+echo \[comm: \"$comm\"\] |& tee -a $logtmp
+setenv CHPL_COMM $comm
+
+if ($numlocales == "0") then
+    echo \[numlocales: \"\(default\)\"\] |& tee -a $logtmp
+else
+    echo \[numlocales: \"$numlocales\"\] |& tee -a $logtmp
+endif
 
 if ($onetestpath != "") then
     if ($startdir != $testdir) then
@@ -641,6 +674,12 @@ foreach dir ($dirs)
 	endif
        	echo " " |& $tee -a $logfile
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
+
+        if (-e ./NUMLOCALES && $CHPL_COMM == "none") then
+            echo \[Skipping NUMLOCALES directory: $dir \] |& $tee -a $logfile
+            continue
+        endif
+
 	if ((! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
             (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS))) \
             || $onetest != "") then
@@ -656,6 +695,7 @@ foreach dir ($dirs)
                 endif
 		setenv COMPOPTS "$compopts"
 		setenv EXECOPTS "$execopts"
+                setenv NUMLOCALES "$numlocales"
                 if ($onetest != "") then
                     setenv CHPL_ONETEST "$onetest"
                 endif

@@ -89,6 +89,12 @@ else
     set lastcompopts = ""
 endif
 
+if (-r ./NUMLOCALES) then
+    set numlocales = `cat ./NUMLOCALES`
+else
+    set numlocales = "$NUMLOCALES"
+endif
+
 if (-r ./EXECOPTS) then
     set globalExecopts = "$EXECOPTS `cat ./EXECOPTS`"
 else
@@ -199,7 +205,6 @@ foreach chplsrc ($testsrc)
         continue;
     endif
 
-
     if (-r ./$execfile.catfiles) then
         set catfiles = "$globalCatfiles `cat ./$execfile.catfiles`"
     else
@@ -212,10 +217,28 @@ foreach chplsrc ($testsrc)
         set compopts = "$globalCompopts"
     endif
 
-    if (-r ./$execfile.$execoptsuffix) then
-	set execopts = "$globalExecopts `cat ./$execfile.$execoptsuffix`"
+    if (-r ./$execfile.numlocales) then
+        set numlocales = "`cat ./$execfile.numlocales`"
+    endif
+
+    if ($numlocales != "0" && $numlocales != "1") then
+        if ($CHPL_COMM == "none") then
+            echo "numlocales = $numlocales"
+            echo \[Skipping numlocales test: $localdir/$execfile\]
+            continue;
+        endif
+    endif
+
+    if ($numlocales == "0") then
+        set numlocexecopts = ""
     else
-        set execopts = "$globalExecopts"
+        set numlocexecopts = "-nl $numlocales"
+    endif
+
+    if (-r ./$execfile.$execoptsuffix) then
+	set execopts = "$numlocexecopts $globalExecopts `cat ./$execfile.$execoptsuffix`"
+    else
+        set execopts = "$numlocexecopts $globalExecopts"
     endif
 
     if (-r ./$execfile.timeout) then
