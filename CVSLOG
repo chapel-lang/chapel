@@ -112587,3 +112587,16 @@ Added files:
 Removed files:
 	chapel/test/multilocale/deitz/: NOTEST 
 
+---------------------------------------------------------------------------
+
+08/02/07 10:56:19 -- bradc
+
+Log message:
+	In changing from char* to const char*, the munged
+	names used by valgrind to report errors changed,
+	making our suppressions invalid.  I believe this
+	should fix the problem.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
