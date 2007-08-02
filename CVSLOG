@@ -112631,3 +112631,19 @@ Added files:
 	                                test_local_record3.chpl 
 	                                test_local_record3.good 
 
+---------------------------------------------------------------------------
+
+08/02/07 15:44:13 -- dinan
+
+Log message:
+	Feature request for generics in tuples, eg:
+	
+	def car(x: (?T1, ?T2)) var: T1 {
+	  return x(1);
+	}
+
+Added files:
+	chapel/test/types/tuple/dinan/: pining_for_lisp.chpl 
+	                                pining_for_lisp.future 
+	                                pining_for_lisp.good 
+
