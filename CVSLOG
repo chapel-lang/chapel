@@ -112600,3 +112600,15 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+08/02/07 12:09:27 -- dinan
+
+Log message:
+	This is a test that exercises dynamic dispatch by calling a method that is
+	overridden in a subclass in several different contexts.
+
+Added files:
+	chapel/test/classes/dinan/: dynamic_dispatch.chpl 
+	                            dynamic_dispatch.good 
+
