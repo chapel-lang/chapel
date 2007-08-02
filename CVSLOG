@@ -112647,3 +112647,19 @@ Added files:
 	                                pining_for_lisp.future 
 	                                pining_for_lisp.good 
 
+---------------------------------------------------------------------------
+
+08/02/07 15:57:09 -- dinan
+
+Log message:
+	Same as pining_for_lisp but uses an alternative way of defining the generic
+	tuple that currently works:
+	
+	def car(x: _tuple) var: x(1).type where x.size == 2 {
+	  return x(1);
+	}
+
+Added files:
+	chapel/test/types/tuple/dinan/: pining_for_lisp_ver2.chpl 
+	                                pining_for_lisp_ver2.good 
+
