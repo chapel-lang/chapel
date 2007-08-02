@@ -9,10 +9,10 @@
    fun:getpwuid_r@@GLIBC_2.1.2
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePc
-   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z14genIntFilenamePKc
+   fun:_Z9openCFileP8fileinfoPKcS2_
    fun:_Z7codegenv
-   fun:_Z7runPassPcPFvvE
+   fun:_Z7runPassPKcPFvvE
    fun:_Z9runPassesv
 }
 
@@ -27,9 +27,9 @@
    fun:getpwuid_r@@GLIBC_2.1.2
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z9openCFileP8fileinfoPKcS2_
    fun:_Z7codegenv
-   fun:_Z7runPassPcPFvvE
+   fun:_Z7runPassPKcPFvvE
    fun:_Z9runPassesv
    fun:main
 }
@@ -45,7 +45,7 @@
    fun:getpwuid_r@@GLIBC_2.1.2
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z13createGDBFileiPPc
+   fun:_Z13createGDBFileiPPKc
    fun:main
 }
 
@@ -61,10 +61,10 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePc
-   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z14genIntFilenamePKc
+   fun:_Z9openCFileP8fileinfoPKcS2_
    fun:_Z7codegenv
-   fun:_Z7runPassPcPFvvE
+   fun:_Z7runPassPKcPFvvE
 }
 
 {
@@ -79,10 +79,10 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePc
-   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z14genIntFilenamePKc
+   fun:_Z9openCFileP8fileinfoPKcS2_
    fun:_Z7codegenv
-   fun:_Z7runPassPcPFvvE
+   fun:_Z7runPassPKcPFvvE
 }
 
 {
@@ -97,9 +97,9 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z9openCFileP8fileinfoPcS1_
+   fun:_Z9openCFileP8fileinfoPKcS2_
    fun:_Z7codegenv
-   fun:_Z7runPassPcPFvvE
+   fun:_Z7runPassPKcPFvvE
    fun:_Z9runPassesv
 }
 
@@ -115,7 +115,7 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z13createGDBFileiPPc
+   fun:_Z13createGDBFileiPPKc
    fun:main
 }
 
@@ -131,8 +131,8 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePc
-   fun:_Z13createGDBFileiPPc
-   fun:_Z16runCompilerInGDBiPPc
+   fun:_Z14genIntFilenamePKc
+   fun:_Z13createGDBFileiPPKc
+   fun:_Z16runCompilerInGDBiPPKc
    fun:main
 }
