@@ -112612,3 +112612,22 @@ Added files:
 	chapel/test/classes/dinan/: dynamic_dispatch.chpl 
 	                            dynamic_dispatch.good 
 
+---------------------------------------------------------------------------
+
+08/02/07 15:15:52 -- deitz
+
+Log message:
+	Added initial support for writing to a field in a remote record and
+	two test cases.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/include/: chplcomm.h 
+Added files:
+	chapel/test/multilocale/deitz/: test_local_record2.chpl 
+	                                test_local_record2.good 
+	                                test_local_record3.chpl 
+	                                test_local_record3.good 
+
