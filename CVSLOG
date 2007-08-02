@@ -112545,3 +112545,45 @@ Log message:
 Modified files:
 	chapel/runtime/src/: arg.c 
 
+---------------------------------------------------------------------------
+
+08/01/07 17:44:24 -- bradc
+
+Log message:
+	Added an initial capability for doing parallel testing.
+	To request a parallel testing run, use the -comm <layer>
+	flag, specifying "gasnet" as the layer:
+	
+	      start_test -comm gasnet
+	
+	("none" can also be specified, and is the default).
+	
+	Using any comm layer other than "none" will result in
+	"-nl 1" being prefixed to the execution options by
+	default.
+	
+	If a directory has a NUMLOCALES file or a test has a
+	<testname>.numlocales file (containing a single
+	integer) that integer will be used as the number of
+	locales for the execution instead of the default "-nl 1".
+	
+	Such directories/tests will be skipped over when testing
+	"--comm none", since it doesn't support multiple locales.
+	
+	The main feature that's missing as of this checkin is
+	the ability to specify an output file that is
+	commlayer-specific (and/or "none"-specific) in order
+	to test different behaviors under different commlayers.
+	For example, my tests that explicitly test what happens
+	if the number of locales is too big or not specified
+	give different answers in these cases (the majority of
+	tests will not/should not).
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+Added files:
+	chapel/test/multilocale/deitz/: .cvsignore NUMLOCALES 
+Removed files:
+	chapel/test/multilocale/deitz/: NOTEST 
+
