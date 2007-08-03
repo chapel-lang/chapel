@@ -112758,3 +112758,18 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/03/07 15:36:39 -- dinan
+
+Log message:
+	Introducing Mad Chapel!
+	
+	I am translating mad_python to Chapel here...
+
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: 1d.chpl NOTEST 
+	                                               quadrature.chpl 
+	                                               tensor.chpl 
+	                                               twoscalecoeffs.chpl 
+
