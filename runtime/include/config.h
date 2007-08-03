@@ -6,7 +6,7 @@
 #define _config_has_value(v,m) (lookupSetValue(v,m) != NULL)
 #define _config_get_value(v, m) (lookupSetValue(v,m))
 
-void addToConfigList(char* currentArg, int isSingleArg);
+void addToConfigList(const char* currentArg, int isSingleArg);
 int askedToParseArgs(void);
 void parseConfigArgs(void);
 void printHelpMessage(void);

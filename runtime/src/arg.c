@@ -89,14 +89,14 @@ static void printHelpTable(void) {
 }
 
 
-static _int64 getIntArg(char* valueString, char* memFlag) {
+static _int64 getIntArg(char* valueString, const char* memFlag) {
   char extraChars;
   _int64 value = 0;  /* initialization is silly hack for freebsd */
   int numScans;
   char* message;
 
   if (!valueString || strcmp(valueString, "") == 0) {
-    message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+    message = _glom_strings(3, "The ", memFlag, " flag is missing "
                                   "its int input");
     _printError(message, 0, 0);
   }
@@ -110,10 +110,10 @@ static _int64 getIntArg(char* valueString, char* memFlag) {
 }
 
 
-static char* getStringArg(char* valueString, char* memFlag) {
+static char* getStringArg(char* valueString, const char* memFlag) {
   char* message;
   if (!valueString || strcmp(valueString, "") == 0) {
-    message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
+    message = _glom_strings(3, "The ", memFlag, " flag is missing "
                                   "its string input");
     _printError(message, 0, 0);
   }
@@ -121,7 +121,7 @@ static char* getStringArg(char* valueString, char* memFlag) {
 }
 
 
-static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
+static void exitIfEqualsSign(char* equalsSign, const char* memFlag) {
   if (equalsSign) {
     char* message = _glom_strings(3, "The ", memFlag, " flag takes no "
                                   "argument");
@@ -131,7 +131,7 @@ static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
 
 typedef enum _MemFlagType {MemMax, MemStat, MemTrack, MemThreshold, MemTrace, MOther} MemFlagType;
 
-static int parseMemFlag(char* memFlag) {
+static int parseMemFlag(const char* memFlag) {
   char* equalsSign;
   char* valueString;
   MemFlagType flag = MOther;
@@ -155,7 +155,6 @@ static int parseMemFlag(char* memFlag) {
   valueString = NULL;
 
   if (equalsSign) {
-    *equalsSign = '\0';
     valueString = equalsSign + 1;
   }
 
@@ -163,21 +162,21 @@ static int parseMemFlag(char* memFlag) {
   case MemMax:
     {
       _int64 value;
-      value = getIntArg(valueString, memFlag);
+      value = getIntArg(valueString, "--memmax");
       setMemmax(value);
       break;
     }
 
   case MemStat:
     {
-      exitIfEqualsSign(equalsSign, memFlag);
+      exitIfEqualsSign(equalsSign, "--memstat");
       setMemstat();
       break;
     }
    
   case MemTrack:
     {
-      exitIfEqualsSign(equalsSign, memFlag);
+      exitIfEqualsSign(equalsSign, "--memstat");
       setMemtrack();
       break;
     }
@@ -185,14 +184,14 @@ static int parseMemFlag(char* memFlag) {
   case MemThreshold:
     {
       _int64 value;
-      value = getIntArg(valueString, memFlag);
+      value = getIntArg(valueString, "--memthreshold");
       setMemthreshold(value);
       break;
     }
 
   case MemTrace:
     {
-      valueString = getStringArg(valueString, memFlag);
+      valueString = getStringArg(valueString, "--memtrace");
       setMemtrace(valueString);
       break;
     }
@@ -205,7 +204,7 @@ static int parseMemFlag(char* memFlag) {
 }
 
 
-static void unexpectedArg(char* currentArg) {
+static void unexpectedArg(const char* currentArg) {
   char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
   _printError(message, 0, 0);
 }
@@ -213,7 +212,7 @@ static void unexpectedArg(char* currentArg) {
 
 static _int32 _argNumLocales = 0;
 
-static void parseNumLocales(char* numPtr) {
+static void parseNumLocales(const char* numPtr) {
   char* stopPtr;
   _argNumLocales = strtol(numPtr, &stopPtr, 10);
   if (*stopPtr != '\0') {
@@ -241,12 +240,12 @@ void parseArgs(int argc, char* argv[]) {
   
   for (i = 1; i < argc; i++) {
     int argLength = 0;
-    char* currentArg = argv[i];
+    const char* currentArg = argv[i];
     argLength = strlen(currentArg);
 
     if (argLength < 2) {
-      char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
-                                    "argument");
+      const char* message = _glom_strings(3, "\"", currentArg, 
+                                          "\" is not a valid argument");
       _printError(message, 0, 0);
     }
 
@@ -255,7 +254,7 @@ void parseArgs(int argc, char* argv[]) {
       switch (currentArg[1]) {
       case '-':
         {
-          char* flag = currentArg + 2;
+          const char* flag = currentArg + 2;
           int isSingleArg = 1;
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
@@ -299,7 +298,7 @@ void parseArgs(int argc, char* argv[]) {
 
       case 'n':
         if (currentArg[2] == 'l') {
-          char* numPtr;
+          const char* numPtr;
           char numLocalesBuffer[128];
           if (currentArg[3] == '\0') {
             i++;

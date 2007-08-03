@@ -40,7 +40,7 @@ typedef struct _argType {
 static argType* firstArg = NULL;
 static argType* lastArg = NULL;
 
-void addToConfigList(char* currentArg, int isSingleArg) {
+void addToConfigList(const char* currentArg, int isSingleArg) {
   char* description = _glom_strings(2, "argument list entry for ", currentArg);
   argType* arg = (argType*) _chpl_calloc(1, sizeof(argType), description, 0, 0);
   _chpl_free(description, 0, 0);

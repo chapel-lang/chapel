@@ -13,9 +13,6 @@
 extern void _chpl_main(void);
 
 int main(int argc, char* argv[]) {
-  int commArgc;
-  char** commArgv;
-
   // Was this version of main invoked by the user, or by the comm layer?
   if (_chpl_comm_user_invocation(argc, argv)) {
     //
@@ -42,8 +39,13 @@ int main(int argc, char* argv[]) {
     // Give the comm layer a chance to munge the argc/argv vector as
     // appropriate and invoke chpl_comm_init
     //
-    commArgv = _chpl_comm_create_argcv(execNumLocales, argc, argv, &commArgc);
-    _chpl_comm_init(&commArgc, &commArgv);
+    {
+      int commArgc;
+      char** commArgv;
+
+      commArgv = _chpl_comm_create_argcv(execNumLocales, argc, argv, &commArgc);
+      _chpl_comm_init(&commArgc, &commArgv);
+    }
   } else {
     //
     // If it was not the user that invoked this program, let the comm
