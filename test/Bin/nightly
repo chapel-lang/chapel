@@ -28,6 +28,8 @@ while (@ARGV) {
         $performance = 1;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
+    } elsif ($flag eq "-gasnet") {
+        $gasnet = 1;
     } else {
         $printusage = 1;
         last;
@@ -49,7 +51,8 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-baseline : run baseline tests\n";
+    print "\t-baseline    : run baseline tests\n";
+    print "\t-gasnet      : run gasnet regressions\n";
     exit 1;
 }
 
@@ -112,6 +115,8 @@ if ($logdir eq "" || $statdir eq "") {
 if ($debug == 1) {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$platform-debug.dat";
+    } elsif ($gasnet == 1) {
+        $statfile = "$statdir/nightly-gasnet.$platform-debug.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$platform-debug.dat";
     } else {
@@ -120,11 +125,24 @@ if ($debug == 1) {
 } else {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$platform-cron.dat";
+    } elsif ($gasnet == 1) {
+        $statfile = "$statdir/nightly-gasnet.$platform-cron.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$platform-cron.dat";
     } else {
         $statfile = "$statdir/nightly.$platform-cron.dat";
     }
+}
+
+
+if ($performance == 1) {
+    $subjectid = "Perf";
+} elsif ($gasnet == 1) {
+    $subjectid = "GASNet";
+} elsif ($baseline == 1) {
+    $subjectid = "Baseline";
+} else {
+    $subjectid = "";
 }
 
 
@@ -135,6 +153,9 @@ if ($valgrind == 1) {
     } elsif ($performance == 1) {
         $threechars = "vgp";
         $morechars = "perf+vgrnd";
+    } elsif ($gasnet == 1) {
+        $threechars = "vgs";
+        $morechars = "gasnet+vgrnd";
     } elsif ($baseline == 1) {
         $threechars = "vgn";
         $morechars + "baseline+vgrnd";
@@ -148,6 +169,9 @@ if ($valgrind == 1) {
 } elsif ($performance == 1) {
     $threechars = "prf";
     $morechars = "performance";
+} elsif ($gasnet == 1) {
+    $threechars = "gas";
+    $morechars = "gasnet";
 } elsif ($baseline == 1) {
     $threechars = "npt";
     $morechars = "baseline";
@@ -242,6 +266,9 @@ if ($platform eq "cygwin") {
 # build stuff
 #
 
+if ($gasnet == 1) {
+    mysystem("cd $chapeldir/third-party && $make gasnet", "making GASNet", 1, 1);
+}
 mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 1, 1);
 mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 1, 1);
 #if ($valgrind == 1) {
@@ -269,6 +296,9 @@ if ($examples == 1) {
 }
 if ($performance == 1) {
     $testflags = "$testflags -performance";
+}
+if ($gasnet == 1) {
+    $testflags = "$testflags -comm gasnet";
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
@@ -333,22 +363,11 @@ if ($runtests == 1) {
     } else {
         $shortstatus = "build/test failed";
     }
+
     if ($debug == 1) {
-        if ($performance == 1) {
-            $mailsubject = "Chapel Debug Perf ($platform): $shortstatus";
-        } elsif ($baseline == 1) {
-            $mailsubject = "Chapel Debug Baseline ($platform): $shortstatus";
-        } else {
-            $mailsubject = "Chapel Debug ($platform): $shortstatus";
-        }
+        $mailsubject = "Chapel $subjectid Debug ($platform): $shortstatus";
     } else {
-        if ($performance == 1) {
-            $mailsubject = "Chapel Perf Nightly ($platform): $shortstatus";
-        } elsif ($baseline == 1) {
-            $mailsubject = "Chapel Baseline Nightly ($platform): $shortstatus";
-        } else {
-            $mailsubject = "Chapel Nightly ($platform): $shortstatus";
-        }
+        $mailsubject = "Chapel $subjectid Nightly ($platform): $shortstatus";
     }
     
     if ($debug == 1) {
@@ -462,10 +481,10 @@ sub mysystem {
 
 	if ($mailmsg != 0) {
             if ($debug == 1) {
-                $mailsubject = "Chapel: Debug Results ($platform): Failure notice";
+                $mailsubject = "Chapel: $subjectid Debug ($platform): Failure notice";
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
             } else {
-                $mailsubject = "Chapel: Nightly Results ($platform): Failure notice";
+                $mailsubject = "Chapel: $subjectid Nightly ($platform): Failure notice";
                 $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
             }
 
