@@ -50,6 +50,23 @@
 }
 
 {
+   new-os-upgrade-breaks-getpwuid-4
+   Memcheck:Param
+   socketcall.send(msg)
+   fun:send
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.1.2
+   fun:getpwuid
+   fun:_Z12createTmpDirv
+   fun:_Z14genIntFilenamePKc
+   fun:_Z13createGDBFileiPPc
+   fun:_Z16runCompilerInGDBiPPc
+   fun:main
+}
+
+{
    linux64-also-breaks-getpwuid
    Memcheck:Param
    socketcall.sendto(msg)
@@ -134,5 +151,23 @@
    fun:_Z14genIntFilenamePKc
    fun:_Z13createGDBFileiPPKc
    fun:_Z16runCompilerInGDBiPPKc
+   fun:main
+}
+
+{
+   linux64-also-breaks-getpwuid-6-compflags-bradc-gdbddash-declint-only
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   fun:get_mapping
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+   fun:_Z12createTmpDirv
+   fun:_Z14genIntFilenamePc
+   fun:_Z13createGDBFileiPPc
+   fun:_Z16runCompilerInGDBiPPc
    fun:main
 }
