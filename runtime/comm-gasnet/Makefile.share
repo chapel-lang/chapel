@@ -7,7 +7,7 @@ SRCS = $(CVS_SRCS)
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-GASNET_INSTALL = $(CHPL_HOME)/third-party/gasnet/install
+GASNET_INSTALL = $(RUNTIME_ROOT)/../third-party/gasnet/install
 
 include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
 
