@@ -112731,3 +112731,14 @@ Modified files:
 	                             memstatEquals.good 
 	                             memtraceNoFilename.good 
 
+---------------------------------------------------------------------------
+
+08/03/07 13:37:50 -- bradc
+
+Log message:
+	Final getpwuid suppressions which seem to need upgrading
+	due to recent changes.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
