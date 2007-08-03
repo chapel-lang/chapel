@@ -112715,3 +112715,19 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/07 11:22:30 -- bradc
+
+Log message:
+	Oops, forgot to check in these modified .good files
+	with my "non-destructive arg parsing" change of this
+	morning.  (I cleaned up some error messages a bit
+	in doing that refactoring, which changed these .good
+	files).
+
+Modified files:
+	chapel/test/memory/shannon/: memmaxBytes.good memmaxInput.good 
+	                             memstatEquals.good 
+	                             memtraceNoFilename.good 
+
