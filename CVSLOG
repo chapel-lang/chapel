@@ -112773,3 +112773,13 @@ Added files:
 	                                               tensor.chpl 
 	                                               twoscalecoeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/07 15:40:00 -- dinan
+
+Log message:
+	
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: quadrature.chpl 
+
