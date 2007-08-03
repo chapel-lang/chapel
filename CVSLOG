@@ -112705,3 +112705,13 @@ Log message:
 Modified files:
 	chapel/third-party/: Makefile 
 
+---------------------------------------------------------------------------
+
+08/03/07 10:57:25 -- deitz
+
+Log message:
+	Added (intptr_t) cast before casting an integer to a pointer.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
