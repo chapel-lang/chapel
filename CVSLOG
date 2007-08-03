@@ -112693,3 +112693,15 @@ Log message:
 Modified files:
 	chapel/runtime/comm-gasnet/: Makefile.share 
 
+---------------------------------------------------------------------------
+
+08/03/07 10:45:15 -- bradc
+
+Log message:
+	Removed another instance of CHPL_HOME from the Makefiles
+	(I think it's the last -- my grepmake script was out of
+	date).
+
+Modified files:
+	chapel/third-party/: Makefile 
+
