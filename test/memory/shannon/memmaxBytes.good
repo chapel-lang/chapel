@@ -1,1 +1,1 @@
-error: The "memmax" flag is missing its int input
+error: The --memmax flag is missing its int input
