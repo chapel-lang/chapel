@@ -112742,3 +112742,19 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+08/03/07 15:17:59 -- bradc
+
+Log message:
+	Added ability to test gasnet using the nightly regression
+	script via a "-gasnet" flag.  User needs to have CHPL_COMM
+	set to GASNET in their environment in order to have the
+	runtime build appropriately, and GASNET_SPAWNFN set to L
+	in order to get a clean set of results.  I set up a cron
+	job to do this nightly on chap10 and am about to update
+	the Wiki regressions page.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
