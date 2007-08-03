@@ -907,7 +907,7 @@ copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST
   if (!strcmp("_construct__tuple", root->name)) {
     if (Symbol* sym = dynamic_cast<Symbol*>(key)) {
       if (sym->name[0] == 'x') {
-        subs.put((BaseAST*)(atoi(sym->name+1)), value);
+        subs.put((BaseAST*)(intptr_t)atoi(sym->name+1), value);
         return;
       }
     }
