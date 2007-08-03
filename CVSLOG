@@ -112680,3 +112680,16 @@ Modified files:
 	chapel/runtime/include/: config.h 
 	chapel/runtime/src/: arg.c config.c main.c 
 
+---------------------------------------------------------------------------
+
+08/03/07 10:21:47 -- bradc
+
+Log message:
+	Redefined GASNET_INSTALL Makefile variable in terms of
+	RUNTIME_ROOT rather than CHPL_HOME in order to continue
+	supporting the ability to make the compiler and runtime
+	without setting CHPL_HOME first.
+
+Modified files:
+	chapel/runtime/comm-gasnet/: Makefile.share 
+
