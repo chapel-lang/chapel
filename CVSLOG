@@ -112663,3 +112663,20 @@ Added files:
 	chapel/test/types/tuple/dinan/: pining_for_lisp_ver2.chpl 
 	                                pining_for_lisp_ver2.good 
 
+---------------------------------------------------------------------------
+
+08/03/07 10:12:05 -- bradc
+
+Log message:
+	Fixed some GASNet bugs in which our destructive
+	parsing of the argv[] vector caused sub-processes
+	not to see the original argv[] arguments.  Changed
+	the relevant parts of arg.c to remove such
+	destructive parsing, and to manipulate the args
+	as const char*'s to try and avoid this in the future
+	as well.
+
+Modified files:
+	chapel/runtime/include/: config.h 
+	chapel/runtime/src/: arg.c config.c main.c 
+
