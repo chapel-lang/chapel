@@ -59,11 +59,12 @@ int main(int argc, char* argv[]) {
   initMemTable();            // get ready to start tracking memory
   CreateConfigVarTable();    // get ready to start tracking config vars
   initChplThreads();         // initialize the threads layer
+
   if (_localeID == 0)        // have locale #0 run the user's main function
     _chpl_main();
-  exitChplThreads();         // tear down the threads
-  printFinalMemStat(0, 0);   // print the final memory statistics
-  _chpl_comm_done();         // exit the communication layer
 
-  return 0;
+  _chpl_exit_all(0);         // have everyone exit
+  return 0;                  // should never get here
 }
+
+

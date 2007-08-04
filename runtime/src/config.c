@@ -297,7 +297,7 @@ void printConfigVarTable(void) {
       }
     }
   }
-  _chpl_exit(0);
+  _chpl_exit_any(0);
 }
 
 

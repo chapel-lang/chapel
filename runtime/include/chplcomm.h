@@ -100,18 +100,36 @@ void _chpl_comm_init(int *argc_p, char ***argv_p);
 void _chpl_comm_rollcall(void);
 
 //
-// barrier for synchronization between all processes
+// barrier for synchronization between all processes; currently only
+// used for startup and teardown.  msg is a string that can be used
+// for debugging to determine where the barrier is being called.
 //
 void _chpl_comm_barrier(const char *msg);
 
 //
-// terminates communication package at the end of the chapel program
+// terminates communication package at the end of a normal run of the
+// chapel program -- assumes all processes are calling into the
+// routine.  If the communication layer likes to call exit, the exit
+// code is provided using the "status" argument; if it doesn't, it
+// can simply return and the Chapel program will call exit().
+//
 // notes:
 //   this function is called last
-//   it must barrier but allow other threads to be started on this process
-//   program termination is not yet implemented correctly
+//   a barrier is invoked before calling into this function
+//   Chapel's program termination is not yet implemented correctly
 //
-void _chpl_comm_done(void);
+void _chpl_comm_exit_all(int status);
+
+
+//
+// this routine should terminate the communication package when called
+// by any thread, and should clean up the communication package's
+// resources as best possible.  This routine is called whenever a user
+// thread calls halt or exit and we have no guarantees that all threads
+// are calling into the halt or exit.  Otherwise, it is much like the
+// _chpl_comm_exit_all() routine.
+//
+void _chpl_comm_exit_any(int status);
 
 //
 // write 'size' bytes of local data at 'addr' to remote data at

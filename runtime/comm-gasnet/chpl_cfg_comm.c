@@ -203,8 +203,11 @@ char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
   return commArgv;
 }
 
+static int gasnet_init_called = 0;
+
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_init(argc_p, argv_p);
+  gasnet_init_called = 1;
 
   _localeID = gasnet_mynode();
   _numLocales = gasnet_nodes();
@@ -227,9 +230,18 @@ void _chpl_comm_barrier(const char *msg) {
   PRINTF(msg);
 }
 
-void _chpl_comm_done(void) {
-  _chpl_comm_barrier("_chpl_comm_done");
-  gasnet_exit(0);
+static void _chpl_comm_exit_common(int status) {
+  if (gasnet_init_called) {
+    gasnet_exit(status);
+  }
+}
+
+void _chpl_comm_exit_all(int status) {
+  _chpl_comm_exit_common(status);
+}
+
+void _chpl_comm_exit_any(int status) {
+  _chpl_comm_exit_common(status);
 }
 
 void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) {

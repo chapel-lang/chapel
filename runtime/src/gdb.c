@@ -107,7 +107,7 @@ static void runInGDB(int argc, char* argv[]) {
   command = _glom_strings(4, "gdb -q ", argv[0]," -x ", gdbfilename);
   status = mysystem(command, "running gdb", 0);
 
-  _chpl_exit(status);
+  _chpl_exit_all(status);
 }
 
 
@@ -118,7 +118,6 @@ void checkForGDBArg(int argc, char* argv[]) {
     if (strcmp(argv[i], "--gdb") == 0) {
       gdbArgNo = i;
       runInGDB(argc, argv);
-      _chpl_exit(0);
     }
   }
 }

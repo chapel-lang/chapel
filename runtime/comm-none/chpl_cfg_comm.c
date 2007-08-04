@@ -33,7 +33,9 @@ void _chpl_comm_rollcall(void) {
 
 void _chpl_comm_barrier(const char *msg) { }
 
-void _chpl_comm_done(void) { }
+void _chpl_comm_exit_any(int status) { }
+
+void _chpl_comm_exit_all(int status) { }
 
 void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) { }
 
@@ -44,4 +46,3 @@ void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) { }
 void _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   (*f)(0);
 }
-

@@ -438,7 +438,7 @@ initPrimitive() {
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);
-  prim_def("_chpl_exit", returnInfoVoid, true);
+  prim_def("_chpl_exit_any", returnInfoVoid, true);
 
   prim_def("complex_set_real", returnInfoVoid, true);
   prim_def("complex_set_imag", returnInfoVoid, true);
