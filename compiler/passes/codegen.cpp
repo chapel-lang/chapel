@@ -316,7 +316,7 @@ codegen_cid2offsets(FILE* outfile) {
   }
 
   fprintf(outfile, "size_t* cid2offsets(_int64 cid) {\n");
-  fprintf(outfile, "size_t* offsets;\n");
+  fprintf(outfile, "size_t* offsets = NULL;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
@@ -341,7 +341,7 @@ codegen_cid2offsets(FILE* outfile) {
 static void
 codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "size_t cid2size(_int64 cid) {\n");
-  fprintf(outfile, "size_t size;\n");
+  fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
