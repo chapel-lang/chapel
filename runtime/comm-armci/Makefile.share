@@ -1,0 +1,14 @@
+COMM_SRCS = \
+	chpl_cfg_comm.c \
+
+CVS_SRCS = $(COMM_SRCS)
+SRCS = $(CVS_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/install
+
+INCL_CFLAGS += -I$(ARMCI_INSTALL)/include
+
+RUNTIME_CFLAGS = $(INCL_CFLAGS)
