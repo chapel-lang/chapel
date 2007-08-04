@@ -112795,3 +112795,15 @@ Added files:
 	chapel/runtime/comm-armci/: Makefile Makefile.include 
 	                            Makefile.share chpl_cfg_comm.c 
 
+---------------------------------------------------------------------------
+
+08/03/07 17:45:56 -- bradc
+
+Log message:
+	Initialized a few variables in generated code to
+	get rid of some of the warnings that show up when
+	compiling with GASNet.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
