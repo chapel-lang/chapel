@@ -112783,3 +112783,15 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: quadrature.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/07 17:15:17 -- bradc
+
+Log message:
+	Added placeholder files for ARMCI comm layer in preparation
+	for delivering to Vinod.
+
+Added files:
+	chapel/runtime/comm-armci/: Makefile Makefile.include 
+	                            Makefile.share chpl_cfg_comm.c 
+
