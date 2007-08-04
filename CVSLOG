@@ -112807,3 +112807,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/07 17:47:59 -- bradc
+
+Log message:
+	Split _chpl_exit() into _chpl_exit_all() and _chpl_exit_any()
+	to indicate whether it's a cooperative exit (one that you
+	could put a barrier synch in front of) or one thread trying
+	to bring the whole system down.  Propagated these semantics
+	to the comm layer.  Changed existing _chpl_exits to one flavor
+	or the other.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h chplexit.h 
+	chapel/runtime/src/: chplexit.c config.c error.c gdb.c main.c 
+
