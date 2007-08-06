@@ -112838,3 +112838,22 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+08/06/07 10:42:47 -- bradc
+
+Log message:
+	Adding various grep scripts that Steve and I use (and
+	each have had private copies of) to the utility
+	directory.  All assume that CHPL_HOME is set.
+	
+	  grepchpl -- greps the compiler sources and includes
+	  grepmake -- greps the Chapel Makefiles
+	  grepmod  -- greps the standard Chapel modules
+	  greprt   -- greps the runtime sources and includes
+	
+	Suggestions for improvement are welcome.
+
+Added files:
+	chapel/util/: grepchpl grepmake grepmod greprt 
+
