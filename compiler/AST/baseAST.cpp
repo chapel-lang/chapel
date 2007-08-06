@@ -25,6 +25,18 @@ canonicalize_string(const char *s) {
 char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4) {
   char s[1024];
+  int len;
+  len = strlen(s1);
+  if (s2)
+    len += strlen(s2);
+  if (s3)
+    len += strlen(s3);
+  if (s4)
+    len += strlen(s4);
+  if (len > 1024) {
+    sprintf(s, "_auto_truncate_");
+    return canonicalize_string(s);
+  }
   strcpy(s, s1);
   if (s2)
     strcat(s, s2);
