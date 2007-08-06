@@ -112857,3 +112857,15 @@ Log message:
 Added files:
 	chapel/util/: grepchpl grepmake grepmod greprt 
 
+---------------------------------------------------------------------------
+
+08/06/07 10:45:41 -- bradc
+
+Log message:
+	Oops, I spoke too soon last time -- there were a few
+	other suppressions that needed updating on one of the
+	gdb tests which I had somehow missed.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
