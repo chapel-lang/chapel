@@ -113075,3 +113075,13 @@ Log message:
 Added files:
 	chapel/third-party/armci/: Makefile 
 
+---------------------------------------------------------------------------
+
+08/06/07 14:14:03 -- bradc
+
+Log message:
+	Added comm layer directories to runtime README file
+
+Modified files:
+	chapel/runtime/: README.files 
+
