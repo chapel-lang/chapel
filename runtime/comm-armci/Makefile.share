@@ -7,7 +7,7 @@ SRCS = $(CVS_SRCS)
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/install
+ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/install/$(CHPL_MAKE_PLATFORM)
 
 INCL_CFLAGS += -I$(ARMCI_INSTALL)/include
 
