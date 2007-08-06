@@ -113117,3 +113117,17 @@ Log message:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/06/07 14:45:55 -- deitz
+
+Log message:
+	Factored pthreads specific routines out of our gasnet comm code by
+	abstracting it into the threading code.
+
+Modified files:
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h chplthreads.h 
+	chapel/runtime/include/threads-none/: chpl_cfg_threads.h 
+	chapel/runtime/include/threads-pthreads/: chpl_cfg_threads.h 
+
