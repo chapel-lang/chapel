@@ -171,3 +171,21 @@
    fun:_Z16runCompilerInGDBiPPc
    fun:main
 }
+
+{
+   linux64-sometimes-breaks-getpwuid-7-multilocale-numlocales-bradc-setusingdashs
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:__sendto_nocancel
+   fun:__netlink_sendreq
+   fun:__netlink_request
+   fun:getifaddrs
+   fun:clntudp_call
+   fun:__ypclnt_call
+   fun:do_ypcall
+   fun:do_ypcall_tr
+   fun:yp_match
+   fun:_nss_nis_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+}
