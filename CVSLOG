@@ -112944,3 +112944,104 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplexit.c 
 
+---------------------------------------------------------------------------
+
+08/06/07 11:50:13 -- bradc
+
+Log message:
+	Adding armci to our third-party directory in hopes
+	that it is of use to Vinod (or indicative of how
+	we'd want it organized).
+
+Added files:
+	chapel/third-party/armci/armci1-3B/: GNUmakefile README 
+	chapel/third-party/armci/armci1-3B/config/: makecoms.h 
+	                                            makefile.h makelib.h 
+	                                            makemp.h 
+	chapel/third-party/armci/armci1-3B/doc/: README README.PVM 
+	                                         README.myrinet 
+	                                         armci.pdf 
+	chapel/third-party/armci/armci1-3B/examples/: README barrier.c 
+	                                              barrier.h errors.h 
+	                                              lu-b-bc.c 
+	                                              lu-block.c 
+	                                              lu-thread.c lu.c 
+	                                              timing.c 
+	chapel/third-party/armci/armci1-3B/f90/: GNUmakefile 
+	                                         armci_mem_f90.f90 
+	                                         armci_mov_f90.f90 
+	                                         armci_nbmov.f90 
+	                                         armci_types.f90 
+	                                         armcif90.c arraydesc.h 
+	                                         arraywrap.c 
+	                                         checkput.f90 
+	                                         definekind.f90 
+	                                         definekind_cray.f90 
+	                                         kinds.f90 testa.F90 
+	                                         testa_init.f90 
+	                                         testanb.f90 
+	                                         testfa_type.f90 
+	                                         testnbfa_type.f90 
+	chapel/third-party/armci/armci1-3B/src/: GNUmakefile MakeFile 
+	                                         README acc.c acc.h 
+	                                         aggregate.c alloc.s 
+	                                         armci-vapi.h armci.c 
+	                                         armci.h armci_chkpt.c 
+	                                         armci_chkpt.h 
+	                                         armci_profile.c 
+	                                         armci_profile.h 
+	                                         armci_storage.c 
+	                                         armci_storage.h 
+	                                         armci_vampir.c 
+	                                         armci_vampir.h armcip.h 
+	                                         async.c bgml.c bgml.h 
+	                                         bgmlacc.h bgmldefs.h 
+	                                         bgmltas-ppc.h 
+	                                         bufalloc.c buffers.c 
+	                                         clusterinfo.c copy.h 
+	                                         dataserv-gm.c 
+	                                         dataserv-sr8k.c 
+	                                         dataserv.c ds-shared.c 
+	                                         elan.c elan4.c 
+	                                         elandefs.h 
+	                                         faccumulate.f fcopy.f 
+	                                         fence.c fttest.c 
+	                                         fujitsu-vpp.h 
+	                                         funcs-ia64.S gpc.c 
+	                                         gpc.h gpctest.c 
+	                                         groups.c ipctest.c 
+	                                         kr_malloc.c kr_malloc.h 
+	                                         lapi.c lapi2.c 
+	                                         lapidefs.h locks.c 
+	                                         locks.h memlock.c 
+	                                         memlock.h memory.c 
+	                                         message.c message.h 
+	                                         mp3.h msgcheck.c 
+	                                         mutex.c myrinet.c 
+	                                         myrinet.h noncont.c 
+	                                         openib.c pack.c perf.c 
+	                                         perf_aggr.c perf_nb.c 
+	                                         pgs.c pgs_sys.h 
+	                                         pgs_thread.h portals.c 
+	                                         portals.h regions.c 
+	                                         request.c request.h 
+	                                         rmw.c rtinfo.c 
+	                                         semaphores.c 
+	                                         semaphores.h shmalloc.c 
+	                                         shmalloc.h shmclean.c 
+	                                         shmem.c shmem.h 
+	                                         shmlimit.c shmlimit.h 
+	                                         shmtest.c signaltrap.c 
+	                                         signaltrap.h sockets.c 
+	                                         sockets.h spawn.c 
+	                                         spinlock.h sr8k.c 
+	                                         sr8k.h strided.c 
+	                                         tas-alpha.h tas-i386.h 
+	                                         tas-ia64.h tas-ppc.h 
+	                                         tas-sx.s tas.gcc test.c 
+	                                         test_groups.c 
+	                                         testnotify.c timer.c 
+	                                         vapi.c vector.c via.c 
+	                                         via.h winshmem.c 
+	                                         x86copy.gcc 
+
