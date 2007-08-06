@@ -123,9 +123,10 @@ static void updateMaxMem(void) {
 static void increaseMemStat(size_t chunk, _int32 lineno, _string filename) {
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
-      const char* message = "Exceeded memory limit";
-      _printError(message, lineno, filename);
-    }
+    const char* message = "Exceeded memory limit";
+    _chpl_mutex_unlock(&_memstat_lock);
+    _printError(message, lineno, filename);
+  }
   updateMaxMem();
 }
 

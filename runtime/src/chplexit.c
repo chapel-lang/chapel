@@ -22,7 +22,6 @@ static int _chpl_exit_common(int status, int all) {
   if (status != 0) {
     gdbShouldBreakHere();
   }
-  printFinalMemStat(0, 0);   // print the final memory statistics
   cleanup_for_exit();
   if (all) {
     exitChplThreads();         // tear down the threads
@@ -38,6 +37,7 @@ static int _chpl_exit_common(int status, int all) {
 
 
 void _chpl_exit_all(int status) {
+  printFinalMemStat(0, 0);   // print the final memory statistics
   _chpl_exit_common(status, 1);
 }
 
