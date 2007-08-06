@@ -1438,7 +1438,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_COMM_READ:
-      fprintf(outfile, "_chpl_comm_read(&");
+      fprintf(outfile, "_chpl_comm_get(&");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);
@@ -1449,7 +1449,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ".size)");
       break;
     case PRIMITIVE_COMM_WRITE:
-      fprintf(outfile, "_chpl_comm_write(&");
+      fprintf(outfile, "_chpl_comm_put(&");
       get(2)->codegen(outfile);
       fprintf(outfile, ", ");
       get(1)->codegen(outfile);
@@ -1460,7 +1460,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ".size)");
       break;
     case PRIMITIVE_COMM_READ_OFF:
-      fprintf(outfile, "_chpl_comm_read_off(&");
+      fprintf(outfile, "_chpl_comm_get_off(&");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);
@@ -1475,7 +1475,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_COMM_WRITE_OFF:
-      fprintf(outfile, "_chpl_comm_write_off(&");
+      fprintf(outfile, "_chpl_comm_put_off(&");
       get(2)->codegen(outfile);
       fprintf(outfile, ", ");
       get(1)->codegen(outfile);

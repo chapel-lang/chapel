@@ -37,9 +37,9 @@ void _chpl_comm_exit_any(int status) { }
 
 void _chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) { }
+void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) { }
 
-void  _chpl_comm_read(void *addr, _int32 locale, void* raddr, _int32 size) { }
+void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size) { }
 
 void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) { }
 

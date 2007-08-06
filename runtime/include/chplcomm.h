@@ -21,13 +21,13 @@ typedef struct {
   (fat).size = isize;                                  \
   (fat).addr = iaddr
 
-#define _chpl_comm_read_off(addr, locale, raddr, size, stype, sfield)   \
-  _chpl_comm_read(addr, locale,                                         \
+#define _chpl_comm_get_off(addr, locale, raddr, size, stype, sfield)   \
+  _chpl_comm_get(addr, locale,                                         \
                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                   sizeof(((stype*)addr)->sfield))
 
-#define _chpl_comm_write_off(addr, locale, raddr, size, stype, sfield)  \
-  _chpl_comm_write(addr, locale,                                        \
+#define _chpl_comm_put_off(addr, locale, raddr, size, stype, sfield)  \
+  _chpl_comm_put(addr, locale,                                        \
                    (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                    sizeof(((stype*)addr)->sfield))
 
@@ -132,22 +132,22 @@ void _chpl_comm_exit_all(int status);
 void _chpl_comm_exit_any(int status);
 
 //
-// write 'size' bytes of local data at 'addr' to remote data at
+// put 'size' bytes of local data at 'addr' to remote data at
 // 'raddr' on locale 'locale'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size);
+void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size);
 
 //
-// read 'size' bytes of remote data at 'raddr' on locale 'locale' to
+// get 'size' bytes of remote data at 'raddr' on locale 'locale' to
 // local data at 'addr'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_read(void *addr, _int32 locale, void* raddr, _int32 size);
+void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size);
 
 //
 // remote fork should launch a thread on locale that runs function f

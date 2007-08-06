@@ -159,7 +159,7 @@ void _chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
   // this should be an ARMCI put call
 }
 
@@ -171,7 +171,7 @@ void  _chpl_comm_write(void* addr, _int32 locale, void* raddr, _int32 size) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_read(void *addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size) {
   // this should be an ARMCI get call
 }
 
