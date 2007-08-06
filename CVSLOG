@@ -112869,3 +112869,29 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: valgrind.suppressions 
 
+---------------------------------------------------------------------------
+
+08/06/07 10:49:44 -- bradc
+
+Log message:
+	On getting an out-of-memory error, our memory module
+	was deadlocking, blocking on a lock that was never
+	released.  This was due to a change I'd made in
+	refactoring the exit routines in order to print the
+	memory statistics in both the _all and _any exit
+	routines.
+	
+	Here, I unlock the lock in question once it's been
+	detected that the error exists, breaking the deadlock.
+	However, I've also taken the printing of the memory
+	statistics out of the exit _any routine for now in
+	order to avoid having to change the output of the
+	"out-of-memory" tests.  We could change this back if
+	we wanted to and would find it useful -- the deadlock
+	would no longer exist.  The whole memory module is in
+	need of some refactoring, so this seemed like the
+	easiest change for now to me.
+
+Modified files:
+	chapel/runtime/src/: chplexit.c chplmem.c 
+
