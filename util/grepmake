@@ -1,0 +1,13 @@
+#!/bin/tcsh
+
+set grep = grep
+if `uname -s` == "SunOS" then
+    set grep = /usr/xpg4/bin/grep
+endif
+
+grep -H -e "$argv" $CHPL_HOME/Make*
+find $CHPL_HOME/make -name "Make*" -exec $grep -H -e "$argv" {} \;
+find $CHPL_HOME/compiler -name "Make*" -exec $grep -H -e "$argv" {} \;
+find $CHPL_HOME/runtime -name "Make*" -exec $grep -H -e "$argv" {} \;
+grep -H -e "$argv" $CHPL_HOME/third-party/Make*
+

@@ -1,0 +1,12 @@
+#!/bin/tcsh
+
+set grep = grep
+if `uname -s` == "SunOS" then
+    set grep = /usr/xpg4/bin/grep
+endif
+
+cd $CHPL_HOME/compiler
+
+$grep -e "$argv" */*.lex */*.y */*.h */*.cpp */*/*.h
+
+cd -

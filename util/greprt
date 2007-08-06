@@ -1,0 +1,12 @@
+#!/bin/tcsh
+
+set grep = grep
+if `uname -s` == "SunOS" then
+    set grep = /usr/xpg4/bin/grep
+endif
+
+cd $CHPL_HOME/runtime
+
+$grep  -e "$argv" include/*.h src/*.c comm-none/*.c comm-gasnet/*.c threads-none/*.c threads-pthreads/*.c
+
+cd -
