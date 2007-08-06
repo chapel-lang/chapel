@@ -8,7 +8,6 @@ extern _int32 _localeID;   // unique ID for each locale: 0, 1, 2, ...
 extern _int32 _numLocales; // number of locales
 
 typedef void (*func_p)(void*);
-typedef void* (*thread_p)(void*);
 
 typedef struct {
   _int32  locale; // locale that owns the data

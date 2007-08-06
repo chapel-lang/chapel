@@ -21,4 +21,7 @@ typedef struct {                           // temporary work space
   int            error;                    // to store fork error code
 } _chpl_cobegin_wkspace_t;
 
+#define _chpl_thread_create(thread, attr, fun, arg) \
+  pthread_create(thread, attr, fun, arg)
+
 #endif

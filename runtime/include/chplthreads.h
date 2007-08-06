@@ -1,6 +1,8 @@
 #ifndef _chplthreads_h_
 #define _chplthreads_h_
 
+typedef void* (*_void_star_fun_p)(void*);
+
 #include "chpl_cfg_threads.h"
 
 _chpl_mutex_p _chpl_mutex_new(void);      // malloc and init a mutex

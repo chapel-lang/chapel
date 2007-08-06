@@ -69,12 +69,6 @@ gasnet_handlerentry_t ftable[] = {
 void _AM_fork_nb_wrapper(dist_fork_t *i) {
   (*(i->fun))(&(i->arg));
   _chpl_free(i, 0, 0);
-  /*
-    pthread_mutex_lock(&sysinfo.local_thread_cnt_lock);
-    sysinfo.local_thread_cnt--;
-    pthread_cond_signal(&sysinfo.process_can_exit);
-    pthread_mutex_unlock(&sysinfo.local_thread_cnt_lock);
-  */
 }
 
 
@@ -82,17 +76,12 @@ void _AM_fork_nb_wrapper(dist_fork_t *i) {
 void _AM_fork_nb(gasnet_token_t token, 
                  void   *buf,
                  size_t  nbytes) {
-  pthread_t    t;
+  _chpl_thread_t    t;
   dist_fork_t *fork_info;
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  /*
-    pthread_mutex_lock(&sysinfo.local_thread_cnt_lock);
-    sysinfo.local_thread_cnt++;
-    pthread_mutex_unlock(&sysinfo.local_thread_cnt_lock);
-  */
-  pthread_create(&t, NULL, (thread_p)_AM_fork_nb_wrapper, (void*)fork_info);
+  _chpl_thread_create(&t, NULL, (_void_star_fun_p)_AM_fork_nb_wrapper, (void*)fork_info);
 }
 
 
@@ -108,12 +97,6 @@ void _AM_fork_wrapper(dist_fork_t *i) {
                                       &(i->ack), 
                                       sizeof(i->ack)));
   _chpl_free(i, 0, 0);
-  /*
-    pthread_mutex_lock(&sysinfo.local_thread_cnt_lock);
-    sysinfo.local_thread_cnt--;
-    pthread_cond_signal(&sysinfo.process_can_exit);
-    pthread_mutex_unlock(&sysinfo.local_thread_cnt_lock);
-  */
 }
 
 
@@ -121,19 +104,14 @@ void _AM_fork_wrapper(dist_fork_t *i) {
 void _AM_fork(gasnet_token_t  token, 
        void    *buf,
        size_t   nbytes) {
-  pthread_t     t;
+  _chpl_thread_t     t;
   dist_fork_t *fork_info;
 
   PRINTF("_AM_fork");
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  /*
-    pthread_mutex_lock(&sysinfo.local_thread_cnt_lock);
-    sysinfo.local_thread_cnt++;
-    pthread_mutex_unlock(&sysinfo.local_thread_cnt_lock);
-  */
-  pthread_create(&t, NULL, (thread_p)_AM_fork_wrapper, (void*)fork_info);
+  _chpl_thread_create(&t, NULL, (_void_star_fun_p)_AM_fork_wrapper, (void*)fork_info);
 }
 
 
