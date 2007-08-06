@@ -113131,3 +113131,15 @@ Modified files:
 	chapel/runtime/include/threads-none/: chpl_cfg_threads.h 
 	chapel/runtime/include/threads-pthreads/: chpl_cfg_threads.h 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:17:32 -- bradc
+
+Log message:
+	Re-added test in runtime Makefile, looking for
+	chplrt.h, to ensure that malloc, exit, etc.
+	aren't used.
+
+Modified files:
+	chapel/runtime/make/: Makefile.runtime.foot 
+
