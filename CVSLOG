@@ -113085,3 +113085,15 @@ Log message:
 Modified files:
 	chapel/runtime/: README.files 
 
+---------------------------------------------------------------------------
+
+08/06/07 14:24:32 -- bradc
+
+Log message:
+	Fixed runtime Makefiles so that DEBUG is on by default
+	for developers and OPTIMIZE is on by default for
+	non-developers, as with the compiler.
+
+Modified files:
+	chapel/runtime/make/: Makefile.runtime.head 
+
