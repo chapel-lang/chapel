@@ -113189,3 +113189,15 @@ Log message:
 Added files:
 	chapel/test/Bin/: nightly-par 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:43:38 -- bradc
+
+Log message:
+	A string-to-type test that I wrote awhile back
+	but never checked in.
+
+Added files:
+	chapel/test/types/string/bradc/: .cvsignore string2val.chpl 
+	                                 string2val.good 
+
