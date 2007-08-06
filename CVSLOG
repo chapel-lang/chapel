@@ -113097,3 +113097,13 @@ Log message:
 Modified files:
 	chapel/runtime/make/: Makefile.runtime.head 
 
+---------------------------------------------------------------------------
+
+08/06/07 14:40:02 -- deitz
+
+Log message:
+	Added more .h files to greprt.
+
+Modified files:
+	chapel/util/: greprt 
+
