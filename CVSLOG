@@ -113107,3 +113107,13 @@ Log message:
 Modified files:
 	chapel/util/: greprt 
 
+---------------------------------------------------------------------------
+
+08/06/07 14:41:20 -- dinan
+
+Log message:
+	Matrices that form the twoscale relation
+
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.chpl 
+
