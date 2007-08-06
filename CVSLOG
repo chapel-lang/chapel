@@ -113225,3 +113225,14 @@ Removed files:
 	                                                           tensor.pyc 
 	                                                           twoscalecoeffs.pyc 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:51:08 -- deitz
+
+Log message:
+	Made astr robust to larger strings.  It now returns a truncated name if the
+	strings are too long.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+
