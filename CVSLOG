@@ -112911,3 +112911,17 @@ Modified files:
 	chapel/runtime/comm-none/: chpl_cfg_comm.c 
 	chapel/runtime/include/: chplcomm.h 
 
+---------------------------------------------------------------------------
+
+08/06/07 11:24:13 -- deitz
+
+Log message:
+	Fixed a bug in which a definition of a temporary would be removed if
+	the temporary was used in an unnecessary call to the _init function
+	when that use was removed even if there is another use of the
+	temporary.  The temporary is now only removed if that is the only use
+	of the temporary.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
