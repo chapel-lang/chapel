@@ -1,0 +1,16 @@
+
+ARMCI_NETWORK environment variable must be used to build ARMCI to
+work properly on clusters with Myrinet (GM), Giganet cLAN (VIA), or
+Quadrics. This is accomplished by specifying the communication protocol
+appropriate for such a network. 
+
+The recognized options for ARMCI_NETWORK are: GM, VIA, QUADRICS, SOCKETS.
+SOCKETS is the assumed default for clusters connected with Ethernet.
+This protocol might also work on other networks however, the performance
+mght be suboptimal and on Myrinet it could even hang (GM does not
+support fork that the std version of ARMCI uses). 
+
+
+Bugs, problems, questions:
+
+email: <parsoft-support@emsl.pnl.gov>
