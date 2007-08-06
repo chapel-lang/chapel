@@ -113212,3 +113212,16 @@ Log message:
 Added files:
 	chapel/test/types/tuple/bradc/: oneTuple.chpl oneTuple.good 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:48:57 -- dinan
+
+Log message:
+	Accidentally checked in compiled pyton code..
+
+Removed files:
+	chapel/test/studies/madness/dinan/hpcskernels/mad_python/: 
+	                                                           quadrature.pyc 
+	                                                           tensor.pyc 
+	                                                           twoscalecoeffs.pyc 
+
