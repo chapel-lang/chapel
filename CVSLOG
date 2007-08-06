@@ -113236,3 +113236,21 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+08/06/07 16:28:10 -- bradc
+
+Log message:
+	Adding .cvsignore files to the test directory to
+	avoid *.tmp, a.out files created by failing tests,
+	testing by hand.
+
+Modified files:
+	chapel/test/release/examples/: .cvsignore 
+	chapel/test/release/examples/hpcc/: .cvsignore 
+Added files:
+	chapel/test/link/deitz/: .cvsignore 
+	chapel/test/puzzles/deitz/: .cvsignore 
+	chapel/test/studies/madness/dinan/mad_chapel/: .cvsignore 
+	chapel/test/types/tuple/dinan/: .cvsignore 
+
