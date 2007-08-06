@@ -113143,3 +113143,13 @@ Log message:
 Modified files:
 	chapel/runtime/make/: Makefile.runtime.foot 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:21:20 -- bradc
+
+Log message:
+	Added this required, but currently unused header file.
+
+Added files:
+	chapel/runtime/include/comm-armci/: chpl_cfg_comm.h 
+
