@@ -112925,3 +112925,22 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/06/07 11:25:25 -- bradc
+
+Log message:
+	Added flushes of the stdin/stderr streams just before
+	exiting -- not sure whether these will make a difference
+	or not.  The two Sunday, Aug 5th gasnet regressions
+	seemed to be due to program output being truncated, so
+	this change is hoping that this will cause such races
+	to disappear.  It seems probable, however, that we'll
+	have to do something more explicit since the race is
+	probably in the OS (like have all processes print
+	through a single process, either by default or when a
+	flag is used).
+
+Modified files:
+	chapel/runtime/src/: chplexit.c 
+
