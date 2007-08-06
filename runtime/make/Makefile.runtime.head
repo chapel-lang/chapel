@@ -1,4 +1,14 @@
 #
+# settings for the build
+#
+ifdef CHPL_DEVELOPER
+DEBUG=1
+else
+OPTIMIZE=1
+endif
+
+
+#
 # include the standard Chapel Makefile.base
 #
 
