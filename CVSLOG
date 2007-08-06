@@ -113045,3 +113045,23 @@ Added files:
 	                                         via.h winshmem.c 
 	                                         x86copy.gcc 
 
+---------------------------------------------------------------------------
+
+08/06/07 13:19:31 -- bradc
+
+Log message:
+	Moved third-party GASNet installation into a
+	subdirectory named after CHPL_PLATFORM so
+	that a single source tree can support multiple
+	platforms (e.g., linux, linux64, sunos).  This
+	will require anyone who is using GASNet to
+	rebuild their GASNet directory (which can be
+	done by cd-ing into third-party and executing
+	make).
+
+Modified files:
+	chapel/runtime/comm-armci/: Makefile.share 
+	chapel/runtime/comm-gasnet/: Makefile.share 
+	chapel/runtime/etc/: Makefile.comm-gasnet 
+	chapel/third-party/: Makefile 
+
