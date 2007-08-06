@@ -113169,3 +113169,23 @@ Added files:
 	chapel/runtime/threads-none/: .cvsignore 
 	chapel/runtime/threads-pthreads/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:30:00 -- bradc
+
+Log message:
+	This is a parallel version of the "nightly" script
+	used to run most of our nightly regression tests.
+	To my knowledge, the only nightly test that currently
+	uses nightly-par is the valgrind tests (since they're
+	the only ones that take long enough to warrant it and
+	have machine resources that are dedicated to running
+	in parallel).
+	
+	No guarantees that this script is general at all.
+	It's been living in my directory and getting used,
+	but I hadn't realized that I hadn't checked it in.
+
+Added files:
+	chapel/test/Bin/: nightly-par 
+
