@@ -112827,3 +112827,14 @@ Modified files:
 	chapel/runtime/include/: chplcomm.h chplexit.h 
 	chapel/runtime/src/: chplexit.c config.c error.c gdb.c main.c 
 
+---------------------------------------------------------------------------
+
+08/06/07 10:29:21 -- bradc
+
+Log message:
+	Yet another valgrind suppression related to getpwuid.  This
+	one doesn't seem to occur consistently.
+
+Modified files:
+	chapel/compiler/etc/: valgrind.suppressions 
+
