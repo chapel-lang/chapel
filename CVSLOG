@@ -113153,3 +113153,19 @@ Log message:
 Added files:
 	chapel/runtime/include/comm-armci/: chpl_cfg_comm.h 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:21:56 -- bradc
+
+Log message:
+	.cvsignore files with platform-specific
+	subdirectories for all the new runtime
+	source directories.
+
+Added files:
+	chapel/runtime/comm-armci/: .cvsignore 
+	chapel/runtime/comm-gasnet/: .cvsignore 
+	chapel/runtime/comm-none/: .cvsignore 
+	chapel/runtime/threads-none/: .cvsignore 
+	chapel/runtime/threads-pthreads/: .cvsignore 
+
