@@ -112895,3 +112895,19 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplexit.c chplmem.c 
 
+---------------------------------------------------------------------------
+
+08/06/07 11:00:32 -- bradc
+
+Log message:
+	Renamed _chpl_comm_read*/write* to _chpl_comm_get*/put*
+	to more intuitively reflect the 1-sided semantics we're
+	assuming.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/runtime/comm-armci/: chpl_cfg_comm.c 
+	chapel/runtime/comm-gasnet/: chpl_cfg_comm.c 
+	chapel/runtime/comm-none/: chpl_cfg_comm.c 
+	chapel/runtime/include/: chplcomm.h 
+
