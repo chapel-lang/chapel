@@ -113065,3 +113065,13 @@ Modified files:
 	chapel/runtime/etc/: Makefile.comm-gasnet 
 	chapel/third-party/: Makefile 
 
+---------------------------------------------------------------------------
+
+08/06/07 13:20:01 -- bradc
+
+Log message:
+	Placeholder Makefile for ARMCI build in third-party.
+
+Added files:
+	chapel/third-party/armci/: Makefile 
+
