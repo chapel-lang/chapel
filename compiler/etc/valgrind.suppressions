@@ -132,7 +132,7 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
    fun:_Z12createTmpDirv
-   fun:_Z13createGDBFileiPPKc
+   fun:_Z13createGDBFileiPPc
    fun:main
 }
 
@@ -149,8 +149,8 @@
    fun:getpwuid
    fun:_Z12createTmpDirv
    fun:_Z14genIntFilenamePKc
-   fun:_Z13createGDBFileiPPKc
-   fun:_Z16runCompilerInGDBiPPKc
+   fun:_Z13createGDBFileiPPc
+   fun:_Z16runCompilerInGDBiPPc
    fun:main
 }
 
@@ -173,7 +173,7 @@
 }
 
 {
-   linux64-sometimes-breaks-getpwuid-7-multilocale-numlocales-bradc-setusingdashs
+   linux64-breaks-getpwuid-7-multilocale-numlocales-bradc-setusingdashs
    Memcheck:Param
    socketcall.sendto(msg)
    fun:__sendto_nocancel
@@ -189,3 +189,5 @@
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
 }
+
+
