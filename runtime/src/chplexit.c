@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "chplcomm.h"
 #include "chplexit.h"
@@ -19,6 +20,8 @@ static void cleanup_for_exit(void) {
 
 
 static int _chpl_exit_common(int status, int all) {
+  fflush(stdout);
+  fflush(stderr);
   if (status != 0) {
     gdbShouldBreakHere();
   }
