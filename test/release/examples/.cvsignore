@@ -1,5 +1,6 @@
 a.out
 *.tmp
+output
 hello
 hello-module
 beer

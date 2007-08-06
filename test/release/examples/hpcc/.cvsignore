@@ -1,7 +1,7 @@
 *.tmp
 a.out
+output
 stream
 ra
 fft
-output
 perfdat
