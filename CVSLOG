@@ -113201,3 +113201,14 @@ Added files:
 	chapel/test/types/string/bradc/: .cvsignore string2val.chpl 
 	                                 string2val.good 
 
+---------------------------------------------------------------------------
+
+08/06/07 15:46:36 -- bradc
+
+Log message:
+	Another old test lying around -- this one testing 1-tuple
+	declarations and printing.
+
+Added files:
+	chapel/test/types/tuple/bradc/: oneTuple.chpl oneTuple.good 
+
