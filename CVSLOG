@@ -113561,3 +113561,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/07/07 16:49:05 -- bradc
+
+Log message:
+	Overloaded math on ranges for all combinations
+	of integer types between 32 and 64 bits.  This
+	is unfortunately done in a fairly brain-dead
+	way (lots of code cloning) due to reasons
+	captured in the rangeVsPromotion* and
+	arrayVsPromotion* futures.
+
+Modified files:
+	chapel/modules/standard/: ChapelRange.chpl 
+
