@@ -668,6 +668,7 @@ else
 endif
 
 foreach dir ($dirs)
+	cd $basedir
 	if ( -x $dir ) then
 		pushd $dir >& /dev/null
 		set dir = $cwd
@@ -713,7 +714,6 @@ foreach dir ($dirs)
 		echo \["No tests in directory " $dir\] |& \
 			$tee -a $logfile
 	endif
-	cd $basedir
 end
 
 # return to directory where we started and remove lock
