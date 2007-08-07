@@ -184,9 +184,12 @@ foreach chplsrc ($testsrc)
     # allow a platform-specific .good file to be used, if it exists
     set checkfile = $execfile.$machine.good
     if ( ! -r $checkfile ) then
-        set checkfile = $execfile.$platform.good
+        set checkfile = $execfile.comm-$CHPL_COMM.good
         if ( ! -r $checkfile ) then 
-            set checkfile = $execfile.good
+            set checkfile = $execfile.$platform.good
+            if ( ! -r $checkfile ) then 
+                set checkfile = $execfile.good
+            endif
         endif
     endif
     set complog = $execfile.comp.out.tmp

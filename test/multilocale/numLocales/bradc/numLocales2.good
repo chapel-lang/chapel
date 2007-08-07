@@ -1,0 +1,3 @@
+numLocales = 2
+LocaleDomain = [0..1]
+Locale = LOCALE0 LOCALE1

@@ -150,9 +150,12 @@
 # command-line options to set the number of locales.  Setting the
 # number of locales to something other than 1 can be done using
 # NUMLOCALES and <testname>.numlocales files in the testing
-# directories themselves.  Any directory or test that has a number of
-# locales specified will be skipped when using "none" as the comm
-# layer (either explicitly or by not specifying a -comm flag).
+# directories themselves.  Using these mechanisms to set the number of
+# locales to 0 will cause the testing system to not use the -nl flag
+# by default.  Any directory or test that has a NUMLOCALES file, or
+# that has a .numlocales file specifying a number other than 0 or 1
+# will be skipped when using "none" as the communic layer (either
+# explicitly or by not specifying a -comm flag).
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -165,13 +168,17 @@
 # compilation and the execution are concatenated and diff'd against
 # the .good file.  This allows programs that are supposed to generate
 # errors, warnings, and correct programs to all be tested using the
-# same mechanisms.  If the output for a test varies by machine or
-# platform name, files named <testname>.<machname>.good or 
-# <testname>.<platform>.good can be used to specify the output for
-# such tests, where "machname" is the output of "uname -n" with
-# any "." qualifiers after the machine name stripped off and
-# "platform" is the value of $CHPL_PLATFORM.  The most specific
-# good file will be used, in the order: machname, platform, generic.
+# same mechanisms.  
+#
+#If the output for a test varies by machine, communication layer, or
+# platform name, files named <testname>.<machname>.good,
+# <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
+# be used to specify the output for such tests, where "machname" is
+# the output of "uname -n" with any "." qualifiers after the machine
+# name stripped off, commlayer is the communication layer being tested
+# (e.g., "none" or "gasnet") and "platform" is the value of
+# $CHPL_PLATFORM.  The most specific good file will be used, in the
+# order: machname, commlayer, platform, generic.
 #
 # Tests that are not yet expected to work can be marked as such
 # by creating a <testname>.future file.  The presence of the
