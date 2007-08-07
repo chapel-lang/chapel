@@ -113591,3 +113591,18 @@ Removed files:
 	chapel/test/domains/indefinite/waynew/: tuple_domain.future 
 	chapel/test/types/tuple/deitz/: test_tuple_type3.future 
 
+---------------------------------------------------------------------------
+
+08/07/07 16:54:48 -- deitz
+
+Log message:
+	Added support for using '$' in identifier names and a test.  I forgot
+	who said they would drop me a Hamilton...
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: codegen.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_dollar_sign.chpl 
+	                            test_dollar_sign.good 
+
