@@ -113551,3 +113551,13 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: forallInitButNoInit.future 
 
+---------------------------------------------------------------------------
+
+08/07/07 14:04:20 -- deitz
+
+Log message:
+	Fixed bracketing around USR_FATAL which expands to a conditional itself.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
