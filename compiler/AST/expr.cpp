@@ -1426,7 +1426,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
-    case PRIMITIVE_COMM_READ:
+    case PRIMITIVE_COMM_GET:
       {
         fprintf(outfile, "_chpl_comm_get(&");
         get(1)->codegen(outfile);
@@ -1440,7 +1440,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "))");
       }
       break;
-    case PRIMITIVE_COMM_WRITE:
+    case PRIMITIVE_COMM_PUT:
       {
         fprintf(outfile, "_chpl_comm_put(&");
         get(2)->codegen(outfile);
@@ -1454,7 +1454,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "))");
       }
       break;
-    case PRIMITIVE_COMM_READ_OFF:
+    case PRIMITIVE_COMM_GET_OFF:
       fprintf(outfile, "_chpl_comm_get_off(&");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
@@ -1467,7 +1467,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(4)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_COMM_WRITE_OFF:
+    case PRIMITIVE_COMM_PUT_OFF:
       fprintf(outfile, "_chpl_comm_put_off(&");
       get(2)->codegen(outfile);
       fprintf(outfile, ", ");
