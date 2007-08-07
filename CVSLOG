@@ -113389,3 +113389,15 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
 
+---------------------------------------------------------------------------
+
+08/07/07 09:54:03 -- deitz
+
+Log message:
+	Changed COMM_READ and COMM_WRITE to COMM_GET and COMM_PUT in the compiler.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: parallel.cpp 
+
