@@ -113401,3 +113401,18 @@ Modified files:
 	chapel/compiler/include/: primitive.h 
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+08/07/07 10:10:19 -- deitz
+
+Log message:
+	Added a future that shows the need for an overhaul of function resolution so
+	that we can resolve calls even if calls from within another function need to
+	be resolved first.  We need an ability to skip over a call and come back to
+	it later.
+
+Added files:
+	chapel/test/modules/deitz/: test_module_mutual_use.chpl 
+	                            test_module_mutual_use.future 
+	                            test_module_mutual_use.good 
+
