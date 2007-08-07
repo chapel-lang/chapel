@@ -1426,38 +1426,33 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
-    case PRIMITIVE_SET_FAT:
-      fprintf(outfile, "_chpl_comm_set_fat(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ", sizeof(");
-      getValueType(get(3)->typeInfo())->symbol->codegen(outfile);
-      fprintf(outfile, "), ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ")");
-      break;
     case PRIMITIVE_COMM_READ:
-      fprintf(outfile, "_chpl_comm_get(&");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".locale, ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".addr, ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".size)");
+      {
+        fprintf(outfile, "_chpl_comm_get(&");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ".locale, ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ".addr, sizeof(");
+        ClassType* ct = dynamic_cast<ClassType*>(get(2)->typeInfo());
+        ct->getField(2)->typeInfo()->symbol->codegen(outfile);
+        fprintf(outfile, "))");
+      }
       break;
     case PRIMITIVE_COMM_WRITE:
-      fprintf(outfile, "_chpl_comm_put(&");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".locale, ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".addr, ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".size)");
+      {
+        fprintf(outfile, "_chpl_comm_put(&");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ".locale, ");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ".addr, sizeof(");
+        ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
+        ct->getField(2)->typeInfo()->symbol->codegen(outfile);
+        fprintf(outfile, "))");
+      }
       break;
     case PRIMITIVE_COMM_READ_OFF:
       fprintf(outfile, "_chpl_comm_get_off(&");
@@ -1467,8 +1462,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ".locale, ");
       get(2)->codegen(outfile);
       fprintf(outfile, ".addr, ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".size, ");
       get(3)->codegen(outfile);
       fprintf(outfile, ", ");
       get(4)->codegen(outfile);
@@ -1482,8 +1475,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ".locale, ");
       get(1)->codegen(outfile);
       fprintf(outfile, ".addr, ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".size, ");
       get(3)->codegen(outfile);
       fprintf(outfile, ", ");
       get(4)->codegen(outfile);

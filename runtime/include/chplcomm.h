@@ -9,23 +9,12 @@ extern _int32 _numLocales; // number of locales
 
 typedef void (*func_p)(void*);
 
-typedef struct {
-  _int32  locale; // locale that owns the data
-  _int32  size;   // size in bytes
-  void   *addr;   // local address of data
-} _chpl_comm_ptr_t;
-
-#define _chpl_comm_set_fat(fat, ilocale, isize, iaddr) \
-  (fat).locale = ilocale;                              \
-  (fat).size = isize;                                  \
-  (fat).addr = iaddr
-
-#define _chpl_comm_get_off(addr, locale, raddr, size, stype, sfield)   \
+#define _chpl_comm_get_off(addr, locale, raddr, stype, sfield)   \
   _chpl_comm_get(addr, locale,                                         \
                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                   sizeof(((stype*)addr)->sfield))
 
-#define _chpl_comm_put_off(addr, locale, raddr, size, stype, sfield)  \
+#define _chpl_comm_put_off(addr, locale, raddr, stype, sfield)  \
   _chpl_comm_put(addr, locale,                                        \
                    (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
                    sizeof(((stype*)addr)->sfield))

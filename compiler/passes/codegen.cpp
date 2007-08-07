@@ -233,6 +233,17 @@ static void codegen_header(void) {
 //   }
 //   printf("%d\n", maxOrder);
 
+  // codegen reference types
+  fprintf(outfile, "/*** Primitive References ***/\n\n");
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ts->hasPragma("ref")) {
+      ClassType* ct = dynamic_cast<ClassType*>(getValueType(ts->type));
+      if (ct && ct->classTag != CLASS_CLASS)
+        continue; // references to records and unions codegened below
+      ts->codegenPrototype(outfile);
+    }
+  }
+
   // codegen records/unions in topological order
   fprintf(outfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
   for (int i = 1; i <= maxOrder; i++) {
@@ -241,13 +252,13 @@ static void codegen_header(void) {
         if (order.get(ct) == i)
           ts->codegenDef(outfile);
     }
-  }
-
-  // codegen reference types
-  fprintf(outfile, "/*** References ***/\n\n");
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (typeSymbol->hasPragma("ref"))
-      typeSymbol->codegenPrototype(outfile);
+    forv_Vec(TypeSymbol, ts, typeSymbols) {
+      if (ts->hasPragma("ref"))
+        if (ClassType* ct = dynamic_cast<ClassType*>(getValueType(ts->type)))
+          if (order.get(ct) == i)
+            ts->codegenPrototype(outfile);
+    }
+    fprintf(outfile, "\n");
   }
 
   // codegen remaining types

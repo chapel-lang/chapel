@@ -578,9 +578,6 @@ void initPrimitiveTypes(void) {
   dtCondVar_p = createPrimitiveType( "_condvar_p", "_chpl_condvar_p"); 
   CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "NULL");
 
-  dtFatPtr = createPrimitiveType("_chpl_comm_ptr_t", "_chpl_comm_ptr_t");
-  CREATE_DEFAULT_SYMBOL(dtFatPtr, gFatPtr, "NULL");
-
   dtAny = createPrimitiveType ("_any", "_any");
   dtAny->isGeneric = true;
   dtIntegral = createPrimitiveType ("integral", "integral");

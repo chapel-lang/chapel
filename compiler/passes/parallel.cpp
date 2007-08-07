@@ -4,6 +4,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
@@ -264,9 +265,12 @@ parallel(void) {
 
 
 void
-insertFatPointers(void) {
+insertWideReferences(void) {
   if (fLocal)
     return;
+
+  Map<Type*,ClassType*> wideMap;
+
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* on = dynamic_cast<CallExpr*>(ast)) {
       if (on->isPrimitive(PRIMITIVE_ON)) {
@@ -286,10 +290,21 @@ insertFatPointers(void) {
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_on_args", ct);
           compute_sym_uses(fn);
           for_formals_actuals(formal, actual, call) {
-            VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+            ClassType* wide = wideMap.get(actual->typeInfo());
+            if (!wide) {
+              Type* base = actual->typeInfo();
+              wide = new ClassType(CLASS_RECORD);
+              TypeSymbol* ts =
+                new TypeSymbol(astr("_wide_", base->symbol->cname), wide);
+              compilerModule->block->insertAtTail(new DefExpr(ts));
+              wide->fields->insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+              wide->fields->insertAtTail(new DefExpr(new VarSymbol("addr", base)));
+            }
+            VarSymbol* tmp = new VarSymbol("_tmp", wide);
             on->insertBefore(new DefExpr(tmp));
-            on->insertBefore(new CallExpr(PRIMITIVE_SET_FAT, tmp, locale, actual->remove()));
-            VarSymbol* field = new VarSymbol(astr("_f", intstring(i)), dtFatPtr);
+            on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(1), locale));
+            on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(2), actual->remove()));
+            VarSymbol* field = new VarSymbol(astr("_f", intstring(i)), wide);
             ct->fields->insertAtTail(new DefExpr(field));
             i++;
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ci, field, tmp));
@@ -306,7 +321,7 @@ insertFatPointers(void) {
                   CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
                   if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
                     INT_FATAL(call, "unexpected case");
-                  VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
                   move->insertBefore(new DefExpr(tmp));
                   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
                   move->replace(new CallExpr(PRIMITIVE_COMM_READ, move->get(1)->remove(), tmp));
@@ -315,14 +330,14 @@ insertFatPointers(void) {
                   CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
                   if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
                     INT_FATAL(call, "unexpected case");
-                  VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
                   move->insertBefore(new DefExpr(tmp));
                   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
                   move->replace(new CallExpr(PRIMITIVE_COMM_READ_OFF, move->get(1)->remove(), tmp, getValueType(se->var->type)->symbol, call->get(2)->remove()));
                   continue;
                 } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
                            call->get(1) == se) {
-                  VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
                   call->insertBefore(new DefExpr(tmp));
                   call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
                   call->replace(new CallExpr(PRIMITIVE_COMM_WRITE_OFF, tmp, call->get(3)->remove(), getValueType(se->var->type)->symbol, call->get(2)->remove()));
@@ -332,7 +347,7 @@ insertFatPointers(void) {
                   VarSymbol* rhs = new VarSymbol("_tmp", getValueType(se->var->type));
                   call->insertBefore(new DefExpr(rhs));
                   call->insertBefore(new CallExpr(PRIMITIVE_MOVE, rhs, call->get(2)->remove()));
-                  VarSymbol* tmp = new VarSymbol("_tmp", dtFatPtr);
+                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
                   call->insertBefore(new DefExpr(tmp));
                   call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
                   call->replace(new CallExpr(PRIMITIVE_COMM_WRITE, tmp, rhs));

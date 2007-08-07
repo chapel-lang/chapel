@@ -17,7 +17,7 @@ void deadCodeElimination();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
-void insertFatPointers();
+void insertWideReferences();
 void insertLineNumbers();
 void lowerIterators();
 void normalize();
@@ -66,7 +66,7 @@ PassInfo passlist[] = {
   RUN(deadCodeElimination), // eliminate dead code
   RUN(prune),               // prune AST of dead functions and types
 
-  RUN(insertFatPointers), // inserts fat pointers for on clauses
+  RUN(insertWideReferences), // inserts wide references for on clauses
 
   // AST to C
   RUN(copyCollection),    // insert code needed for copying garbage collection

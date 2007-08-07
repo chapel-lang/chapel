@@ -375,7 +375,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_ON, "on", returnInfoVoid, true);
   prim_def(PRIMITIVE_NUM_LOCALES, "_chpl_comm_default_num_locales", returnInfoInt32, false, false);
   prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32, false, false);
-  prim_def(PRIMITIVE_SET_FAT, "_chpl_comm_set_fat_ptr", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_READ, "_chpl_comm_get", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_WRITE, "_chpl_comm_put", returnInfoVoid, true);
   prim_def(PRIMITIVE_COMM_READ_OFF, "_chpl_comm_get_off", returnInfoVoid, true);

@@ -45,7 +45,7 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
-  ClassType* refType;
+  ClassType* refType;  // pointer to references for non-reference types
 
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual ~Type();
@@ -171,7 +171,6 @@ TYPE_EXTERN PrimitiveType* dtTimer;
 TYPE_EXTERN PrimitiveType* dtMutex;
 TYPE_EXTERN PrimitiveType* dtMutex_p;
 TYPE_EXTERN PrimitiveType* dtCondVar_p;        // condition variable
-TYPE_EXTERN PrimitiveType* dtFatPtr;
 
 void initPrimitiveTypes(void);
 
