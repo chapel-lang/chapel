@@ -113277,3 +113277,61 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelArray.chpl ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+08/06/07 17:29:06 -- bradc
+
+Log message:
+	Added ability to specify a commlayer-specific .good file
+	to the testing system, using the name:
+	
+	   foo.comm-$CHPL_COMM.good
+	
+	Typically, comm-none should be used to specify such files
+	assuming that the default output would be similar for any
+	comm layer that supports multiple locales.  As a result
+	of this change, the current order of precedence for .good
+	files is:
+	
+	      foo.<machine name>.good
+	      foo.comm-$CHPL_COMM.good
+	      foo.<platform>.good
+	      foo.good
+	
+	Obviously, one might want a richer hierarchy combining
+	machine name and/or platform with comm layer, but the
+	current hierarchy seemed like it would take us quite far,
+	so I didn't implement anything more complicated for now.
+	
+	Updated comments in the start_test file to talk about
+	this and to provide a bit more detail about using numlocales
+	files.
+	
+	Updated my numLocales tests so that they should now work
+	correctly with either gasnet or none as CHPL_COMM.
+
+Modified files:
+	chapel/test/: start_test 
+	chapel/test/Bin/: sub_test 
+	chapel/test/multilocale/numLocales/bradc/: 
+	                                           printNumLocalesDefault.good 
+	                                           printNumLocalesTwo.good 
+	                                           testVFlag.good 
+	                                           testVerboseFlag.good 
+Added files:
+	chapel/test/multilocale/numLocales/bradc/: numLocales2.chpl 
+	                                           numLocales2.comm-none.good 
+	                                           numLocales2.execopts 
+	                                           numLocales2.good 
+	                                           printNumLocalesDefault.comm-none.good 
+	                                           printNumLocalesDefault.numlocales 
+	                                           printNumLocalesTwo.comm-none.good 
+	                                           testVFlag.comm-none.good 
+	                                           testVerboseFlag.comm-none.good 
+Removed files:
+	chapel/test/multilocale/numLocales/bradc/: 
+	                                           printNumLocalesDefault.gasnet.good 
+	                                           printNumLocalesTwo.gasnet.good 
+	                                           testVFlag.gasnet.good 
+	                                           testVerboseFlag.gasnet.good 
+
