@@ -113347,3 +113347,31 @@ Modified files:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.dat 
 
+---------------------------------------------------------------------------
+
+08/07/07 09:02:31 -- deitz
+
+Log message:
+	Replaced the generic fat pointer _chpl_comm_ptr with compiler
+	generated fat pointers called wide references.
+	
+	Removed PRIMITIVE_SET_FAT, replacing its functionality with two calls
+	to PRIMITIVE_SET_MEMBER to set the fields of the wide references.
+	
+	Made PRIMITIVE_COMM_READ and PRIMITIVE_COMM_WRITE generate the size of
+	involved data using the sizeof intrinsic.
+	
+	Reworked generation of the header file so that wide references are
+	always generated after the references that they contain.
+	
+	Changed the pass name insertFatPointers to insertWideReferences.
+	
+	Added code to generate wide references during their insertion.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: codegen.cpp parallel.cpp 
+	chapel/runtime/include/: chplcomm.h 
+
