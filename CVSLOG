@@ -113375,3 +113375,17 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp parallel.cpp 
 	chapel/runtime/include/: chplcomm.h 
 
+---------------------------------------------------------------------------
+
+08/07/07 09:52:51 -- bradc
+
+Log message:
+	Fiddled with reindex function in SingleLocaleArithmeticArray
+	to support domains of different index types.  Improved
+	user error in the compiler to name the argument being queried
+	that is not a type or parameter.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: SingleLocaleArithmetic.chpl 
+
