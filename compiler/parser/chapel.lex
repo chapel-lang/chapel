@@ -25,7 +25,7 @@
 digit           [0-9]
 bit             [0-1]
 hexDigit        [0-9a-fA-F]
-letter          [_a-zA-Z]
+letter          [_a-zA-Z$]
 ident           {letter}({letter}|{digit})*
 binaryLiteral   0b{bit}+
 hexLiteral      0x{hexDigit}+

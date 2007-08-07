@@ -72,6 +72,7 @@ static void legalizeCName(Symbol* sym) {
     case '!': STRSUB("_EXCLAMATION_"); break;
     case '#': STRSUB("_POUND_"); break;
     case '?': STRSUB("_QUESTION_"); break;
+    case '$': STRSUB("_DOLLAR_"); break;
     case '~': STRSUB("_TILDA_"); break;
     default: break;
     }
