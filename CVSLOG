@@ -113521,3 +113521,19 @@ Added files:
 Removed files:
 	chapel/test/arrays/bradc/slices/: reindexIndTypeMismatch.future 
 
+---------------------------------------------------------------------------
+
+08/07/07 12:42:04 -- bradc
+
+Log message:
+	Fixed bug in start_test script in which skipping over a
+	numlocales directory caused all subsequent directories
+	to fail.  This has caused only 900-some tests to run on
+	most of our sequential test platforms for the past few
+	nights.  GASNet and Valgrind testing ran all the tests,
+	while the others only ran a subset.  Sorry for the
+	inconvenience.
+
+Modified files:
+	chapel/test/: start_test 
+
