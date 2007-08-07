@@ -55,7 +55,7 @@ record range {
       halt("range slicing not supported for strided ranges yet");
     }
     if ((boundedType == bounded) && (_high < _low)) then 
-      return range(eltType, bounded, stridable, _low:eltType, _high:eltType, _stride:eltType);
+      return range(eltType, bounded, stridable:bool, _low:eltType, _high:eltType, _stride:eltType);
 //    Why can't above return statement return this?  A function
 //    resolution error results if return this is used, complaining
 //    that there are multiple return types.
@@ -279,19 +279,40 @@ def =(a: _domain, b: range) {
 }
 
 
-def +(r: range, s:int) {
+/* Would like to define these as follows:
+
+def +(r: range, s: integral) {
   return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
 }
 
-def -(r: range, s:int) {
+but because we don't distinguish "better" functions between promotion
+and generics, it doesn't work -- see the arrayVsPromotion and
+rangeVsPromotion futures for examples of this.
+
+Alternatively, we might like to do:
+
+def +(r: range, s: r.eltType) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+but this doesn't allow an int(32) range to be added to an int(64)
+integer, which seems useful/important/congruous to integer addition.
+So, I'm cloning manually. */
+
+
+def +(r: range, s: int) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+def -(r: range, s: int) {
   return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
 }
 
-def *(r: range, s:int) {
+def *(r: range, s: int) {
   return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
 }
 
-def /(r: range, s:int) {
+def /(r: range, s: int) {
   return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
 }
 
@@ -308,5 +329,107 @@ def *(s:int, r: range) {
 }
 
 def /(s:int, r: range) {
+  return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
+}
+
+
+
+def +(r: range, s: uint) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+def -(r: range, s: uint) {
+  return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
+}
+
+def *(r: range, s: uint) {
+  return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
+}
+
+def /(r: range, s: uint) {
+  return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
+}
+
+def +(s:uint, r: range) {
+  return range((s+r._low).type, r.boundedType, r.stridable, s+r._low, s+r._high, r._stride);
+}
+
+def -(s:uint, r: range) {
+  return range((s-r._low).type, r.boundedType, r.stridable, s-r._low, s-r._high, r._stride);
+}
+
+def *(s:uint, r: range) {
+  return range((s*r._low).type, r.boundedType, stridable=true, s*r._low, s*r._high, s*r._stride);
+}
+
+def /(s:uint, r: range) {
+  return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
+}
+
+
+
+def +(r: range, s: int(64)) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+def -(r: range, s: int(64)) {
+  return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
+}
+
+def *(r: range, s: int(64)) {
+  return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
+}
+
+def /(r: range, s: int(64)) {
+  return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
+}
+
+def +(s:int(64), r: range) {
+  return range((s+r._low).type, r.boundedType, r.stridable, s+r._low, s+r._high, r._stride);
+}
+
+def -(s:int(64), r: range) {
+  return range((s-r._low).type, r.boundedType, r.stridable, s-r._low, s-r._high, r._stride);
+}
+
+def *(s:int(64), r: range) {
+  return range((s*r._low).type, r.boundedType, stridable=true, s*r._low, s*r._high, s*r._stride);
+}
+
+def /(s:int(64), r: range) {
+  return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
+}
+
+
+
+def +(r: range, s: uint(64)) {
+  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
+}
+
+def -(r: range, s: uint(64)) {
+  return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
+}
+
+def *(r: range, s: uint(64)) {
+  return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
+}
+
+def /(r: range, s: uint(64)) {
+  return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
+}
+
+def +(s:uint(64), r: range) {
+  return range((s+r._low).type, r.boundedType, r.stridable, s+r._low, s+r._high, r._stride);
+}
+
+def -(s:uint(64), r: range) {
+  return range((s-r._low).type, r.boundedType, r.stridable, s-r._low, s-r._high, r._stride);
+}
+
+def *(s:uint(64), r: range) {
+  return range((s*r._low).type, r.boundedType, stridable=true, s*r._low, s*r._high, s*r._stride);
+}
+
+def /(s:uint(64), r: range) {
   return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
 }
