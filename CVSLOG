@@ -113494,3 +113494,30 @@ Added files:
 	                                         test_param_default.chpl 
 	                                         test_param_default.good 
 
+---------------------------------------------------------------------------
+
+08/07/07 12:01:26 -- bradc
+
+Log message:
+	More hacking on ChapelArray and SingleLocaleArithmetic
+	modules in order to allow the reindex() routine to be
+	more flexible with respect to index type.  This change
+	causes reindexIndTypeMismatch to start working, but
+	still doesn't make the original FFT code that
+	motivated this future to work.  Need to look at that
+	a bit more -- an iterator is still being introduced
+	for some reason.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	chapel/test/arrays/bradc/slices/: reindexIndTypeMismatch.chpl 
+	                                  reindexIndTypeMismatch.good 
+Added files:
+	chapel/test/arrays/bradc/slices/: reindexIndTypeMismatch2D.chpl 
+	                                  reindexIndTypeMismatch2D.good 
+	                                  sliceInt64WithInt.chpl 
+	                                  sliceInt64WithInt.good 
+Removed files:
+	chapel/test/arrays/bradc/slices/: reindexIndTypeMismatch.future 
+
