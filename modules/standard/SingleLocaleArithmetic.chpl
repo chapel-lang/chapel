@@ -280,7 +280,8 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, true, d, noinit=true);
+    var alias = SingleLocaleArithmeticArray(eltType, d.rank, d.dim_type, d.stridable, true, d, noinit=true);
+    //    was:  (eltType, rank, dim_type, d.stridable, true, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {

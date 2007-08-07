@@ -727,7 +727,7 @@ static void
 replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
                    Vec<BaseAST*>& asts) {
   if (!arg->isTypeVariable && arg->intent != INTENT_PARAM)
-    USR_FATAL(def, "query variable is not type or parameter");
+    USR_FATAL(def, "query variable is not type or parameter: %s", arg->name);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
       if (se->var == def->sym) {
