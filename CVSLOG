@@ -113576,3 +113576,18 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+08/07/07 16:49:13 -- deitz
+
+Log message:
+	Fixed a bug in which tuple types could not be specified in expression
+	contexts such as actuals for functions that expect type variables.
+	Removed two .futures.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/domains/indefinite/waynew/: tuple_domain.future 
+	chapel/test/types/tuple/deitz/: test_tuple_type3.future 
+
