@@ -2060,6 +2060,31 @@ preFold(Expr* expr) {
           }
         }
       }
+
+      //
+      // handle tuple types in expression contexts
+      //   see test/types/tuple/deitz/test_tuple_type3.chpl
+      //
+      if (SymExpr* se = dynamic_cast<SymExpr*>(call->get(2))) {
+        if (se->var->isTypeVariable) {
+          CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
+          INT_ASSERT(move);
+          for (int i = 2; i <= call->argList->length(); i++) {
+            Expr* actual = call->get(i);
+            VarSymbol* tmp = new VarSymbol("_tmp");
+            tmp->isCompilerTemp = true;
+            tmp->canParam = true;
+            move->insertBefore(new DefExpr(tmp));
+            actual->replace(new SymExpr(tmp));
+            CallExpr* init = new CallExpr("_init", actual);
+            move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, init));
+            if (result == expr)
+              result = init;
+          }
+          result = preFold(result);
+        }
+      }
+
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&

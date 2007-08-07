@@ -1,3 +1,0 @@
-bug: tuple type passed to type argument
-
-A tuple type cannot be parsed in expression contexts.
