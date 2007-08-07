@@ -113416,3 +113416,32 @@ Added files:
 	                            test_module_mutual_use.future 
 	                            test_module_mutual_use.good 
 
+---------------------------------------------------------------------------
+
+08/07/07 10:37:29 -- deitz
+
+Log message:
+	Added several futures and tests in my local directory.
+
+Added files:
+	chapel/test/arrays/deitz/: test_big_stride.chpl 
+	                           test_big_stride.good 
+	chapel/test/classes/deitz/: test_class_simple1.chpl 
+	                            test_class_simple1.good 
+	                            test_secondary_method4.chpl 
+	                            test_secondary_method4.future 
+	                            test_secondary_method4.good 
+	chapel/test/functions/deitz/: test_iterator7.chpl 
+	                              test_iterator7.good 
+	chapel/test/functions/deitz/iterators/: test_misc.chpl 
+	                                        test_misc.good 
+	chapel/test/trivial/deitz/: test_tuple_var.chpl 
+	                            test_tuple_var.good 
+	chapel/test/types/tuple/deitz/: test_tuple_type3.chpl 
+	                                test_tuple_type3.future 
+	                                test_tuple_type3.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_call_with_type_side_effects.chpl 
+	                                         test_call_with_type_side_effects.future 
+	                                         test_call_with_type_side_effects.good 
+
