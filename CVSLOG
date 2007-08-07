@@ -113445,3 +113445,30 @@ Added files:
 	                                         test_call_with_type_side_effects.future 
 	                                         test_call_with_type_side_effects.good 
 
+---------------------------------------------------------------------------
+
+08/07/07 10:59:31 -- deitz
+
+Log message:
+	Added several futures and tests in another local directory.
+
+Added files:
+	chapel/test/arrays/deitz/part2/: test_array_of_array2.chpl 
+	                                 test_array_of_array2.future 
+	                                 test_array_of_array2.good 
+	chapel/test/classes/deitz/: test_generics2.chpl 
+	                            test_generics2.good 
+	chapel/test/classes/deitz/dispatch/: test_generic_where.chpl 
+	                                     test_generic_where.future 
+	                                     test_generic_where.good 
+	chapel/test/types/type_variables/deitz/: test_query_field10.chpl 
+	                                         test_query_field10.good 
+	chapel/test/types/type_variables/deitz/part7/: 
+	                                               test_generic_error1.chpl 
+	                                               test_generic_error1.future 
+	                                               test_generic_error1.good 
+	chapel/test/types/typedefs/deitz/: test_type1.chpl 
+	                                   test_type1.good 
+	                                   test_type2.chpl 
+	                                   test_type2.good 
+
