@@ -113254,3 +113254,26 @@ Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: .cvsignore 
 	chapel/test/types/tuple/dinan/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/06/07 17:07:00 -- bradc
+
+Log message:
+	Working towards getting my future test
+	reindexIndTypeMismatch.chpl working
+	better (as well as the changes to our
+	FFT code that motivated it), made
+	slicing of domains and arrays, and
+	creation of ranges a bit more generic
+	than they were previously.  In particular,
+	allowed arrays and domains to be sliced
+	with ranges having dimension types that
+	differ from themselves and made range
+	slicing cast its low, high, and stride
+	values to match the type of the slice
+	rather than using the type of the original
+	range.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl ChapelRange.chpl 
+
