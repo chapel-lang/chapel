@@ -113472,3 +113472,25 @@ Added files:
 	                                   test_type2.chpl 
 	                                   test_type2.good 
 
+---------------------------------------------------------------------------
+
+08/07/07 11:34:32 -- deitz
+
+Log message:
+	Added several more tests from my third and final local workspace.
+
+Added files:
+	chapel/test/domains/deitz/: test_indefinite1.chpl 
+	                            test_indefinite1.good 
+	                            test_indefinite_domain_of_tuple.chpl 
+	                            test_indefinite_domain_of_tuple.good 
+	chapel/test/functions/deitz/: test_rec_infer.chpl 
+	                              test_rec_infer.good 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_iterator_method1.chpl 
+	                                        test_iterator_method1.good 
+	chapel/test/types/type_variables/deitz/: test_generic_call.chpl 
+	                                         test_generic_call.good 
+	                                         test_param_default.chpl 
+	                                         test_param_default.good 
+
