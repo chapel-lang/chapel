@@ -113537,3 +113537,17 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+08/07/07 13:38:11 -- deitz
+
+Log message:
+	Fixed a bug in which an internal error would be encountered if an
+	array were declared with the for loop syntax but no initializer
+	expression.  Removed a future.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Removed files:
+	chapel/test/arrays/bradc/: forallInitButNoInit.future 
+
