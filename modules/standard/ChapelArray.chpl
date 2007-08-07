@@ -327,9 +327,16 @@ record _array {
 
   def numElements return _dom.numIndices; // assume dom name
 
-  def reindex(d: _domain) {
+  def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(x.type, x.dim_type, x.dim_type, eltType, rank, x);
+  }
+
+  def reindex(d: _domain) where rank != 1 {
+    var x = _value.reindex(d._value);
+    type xDimIndexType = x.dim_type;       // BLC: hacks to get around
+    type xIndexType = rank*xDimIndexType;  // inflexibility of tuple syntax
+    return _array(x.type, xIndexType, x.dim_type, eltType, rank, x);
   }
 
   def IRV var {

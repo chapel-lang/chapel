@@ -283,12 +283,12 @@ class SingleLocaleArithmeticArray: BaseArray {
     var alias = SingleLocaleArithmeticArray(eltType, d.rank, d.dim_type, d.stridable, true, d, noinit=true);
     //    was:  (eltType, rank, dim_type, d.stridable, true, d, noinit=true);
     alias.data = data;
-    alias.size = size;
+    alias.size = size: d.dim_type;
     for param i in 1..rank {
       alias.off(i) = d.dim(i)._low;
-      alias.blk(i) = blk(i) * dom.dim(i)._stride / str(i);
+      alias.blk(i) = (blk(i) * dom.dim(i)._stride / str(i)) : d.dim_type;
       alias.str(i) = d.dim(i)._stride;
-      alias.adj(i) = adj(i);
+      alias.adj(i) = adj(i) : d.dim_type;
     }
     alias.computeFactoredOffs();
     return alias;

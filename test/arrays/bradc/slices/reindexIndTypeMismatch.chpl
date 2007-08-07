@@ -10,5 +10,5 @@ foo(A[1..8 by 2]);
 
 def foo(X:[1..4]) {
   writeln("X is: ", X);
-  writeln("X[2] is: ", X[2]);
+  writeln("X(2) is: ", X(2));
 }
