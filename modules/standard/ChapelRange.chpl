@@ -55,7 +55,7 @@ record range {
       halt("range slicing not supported for strided ranges yet");
     }
     if ((boundedType == bounded) && (_high < _low)) then 
-      return range(eltType, bounded, stridable, _low, _high, _stride);
+      return range(eltType, bounded, stridable, _low:eltType, _high:eltType, _stride:eltType);
 //    Why can't above return statement return this?  A function
 //    resolution error results if return this is used, complaining
 //    that there are multiple return types.

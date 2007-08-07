@@ -117,7 +117,7 @@ record _domain {
   }
 
   // slicing a domain using a varargs set of ranges of rank elements
-  def this(i: range(_dim_index_type,?bnd,?str) ... rank) {
+  def this(i: range(?rngDimType,?bnd,?str) ... rank) {
     // assuming stridable dependent on incoming ranges for now;
     // really should check stridablility of current domain as well to be
     // correct.
@@ -309,7 +309,7 @@ record _array {
   }
 
   pragma "valid lvalue"
-  def this(i: range(_dim_index_type,?bnd,?stridable) ...rank) {
+  def this(i: range(?rangeDimType,?bnd,?stridable) ...rank) {
     var d = _dom[(...i)];
     return this(d);
   }
