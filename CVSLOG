@@ -113335,3 +113335,15 @@ Removed files:
 	                                           testVFlag.gasnet.good 
 	                                           testVerboseFlag.gasnet.good 
 
+---------------------------------------------------------------------------
+
+08/06/07 18:34:06 -- dinan
+
+Log message:
+	Madness twoscale coeffecients code.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.dat 
+
