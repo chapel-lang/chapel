@@ -481,13 +481,15 @@ void cleanup(void) {
             Expr *iter = tinfo->get(4);
             indices->remove();
             iter->remove();
-            BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
+            if (def->init) {
+              BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
             
-            FnSymbol *forall_init = new FnSymbol("_forallinit");
-            forall_init->fnClass = FN_ITERATOR;
-            forall_init->insertAtTail(forblk);
-            def->insertBefore(new DefExpr(forall_init));
-            def->init->replace(new CallExpr(forall_init));
+              FnSymbol *forall_init = new FnSymbol("_forallinit");
+              forall_init->fnClass = FN_ITERATOR;
+              forall_init->insertAtTail(forblk);
+              def->insertBefore(new DefExpr(forall_init));
+              def->init->replace(new CallExpr(forall_init));
+            }
           } else {
             INT_FATAL(call, "missing parent def expr");
           }
