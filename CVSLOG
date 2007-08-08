@@ -113631,3 +113631,13 @@ Added files:
 Removed files:
 	chapel/test/studies/uts/: uts.chpl 
 
+---------------------------------------------------------------------------
+
+08/07/07 18:25:34 -- bradc
+
+Log message:
+	Fixed a simple thinko in this script.
+
+Modified files:
+	chapel/util/pastPerformance/: timerange 
+
