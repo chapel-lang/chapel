@@ -5,7 +5,7 @@ if (@ARGV) {
     if (@ARGV) {
         $startback = shift @ARGV;
     } else {
-        $startback = $numdays;
+        $startback = 0;
     }
 } else {
     print "countrange <numdays> [<startback>]\n";
