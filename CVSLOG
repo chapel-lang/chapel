@@ -113718,3 +113718,13 @@ Removed files:
 	                                               tensor.chpl 
 	                                               twoscalecoeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/07 13:46:44 -- deitz
+
+Log message:
+	Fixed a minor bug in html view in which a NULL pointer could be dereferenced.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
