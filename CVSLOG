@@ -113699,3 +113699,22 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/07 13:19:53 -- dinan
+
+Log message:
+	Moving over to the Java code, porting from Python is just a headache.  Two-scale coefficients
+	library is now working.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: hg_coeffs.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: 
+	                                               TwoScaleCoeffs.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: 1d.chpl 
+	                                               quadrature.chpl 
+	                                               tensor.chpl 
+	                                               twoscalecoeffs.chpl 
+
