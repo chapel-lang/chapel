@@ -564,7 +564,7 @@ void html_view(const char* passName) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->sym))
         mods.add(mod);
-  mods.add(theProgram);
+  // mods.add(theProgram); // The whole program nested in one module
   forv_Vec(ModuleSymbol, mod, mods) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
