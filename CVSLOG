@@ -113789,3 +113789,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/dinan/: for_continue.future 
 
+---------------------------------------------------------------------------
+
+08/08/07 16:53:43 -- deitz
+
+Log message:
+	Fixed a bug in the non-parameter tuple access function in which not
+	all paths returned a value.  This resulted in C compilation warnings
+	when compiling with the -O option and the gasnet flags.
+
+Modified files:
+	chapel/modules/standard/: ChapelTuple.chpl 
+
