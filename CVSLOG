@@ -113688,3 +113688,14 @@ Added files:
 Removed files:
 	chapel/test/modules/deitz/: test_nested_modules.future 
 
+---------------------------------------------------------------------------
+
+08/08/07 12:35:57 -- diten
+
+Log message:
+	Fix the segmentation faults my last change introduced. Don't insert use
+	statements of the outermost module.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
