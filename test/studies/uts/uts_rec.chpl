@@ -117,14 +117,14 @@ class TreeNode {
       
         // Expected size is polynomial in depth
         when GeoPoly do
-          b_i = B_0 * (depth:real ** (-log(B_0:real)/log(MAX_DEPTH:real)));
+          b_i = B_0 * (depth ** (-log(B_0:real)/log(MAX_DEPTH:real)));
         
         // Expected size is cyclic
         when GeoCyclic {
           if (depth > 5 * MAX_DEPTH) then
             b_i = 0.0;
           else
-            b_i = B_0 ** sin(2.0*3.141592653589793*depth:real / MAX_DEPTH:real);
+            b_i = B_0 ** sin(2.0*3.141592653589793*depth/MAX_DEPTH);
         }
 
         // Expected size is the same at all nodes up to max depth
