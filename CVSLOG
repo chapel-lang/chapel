@@ -113728,3 +113728,26 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/07 14:27:17 -- dinan
+
+Log message:
+	Fn1d, MadFn1d, Quadrature ported.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: 
+	                                               TwoScaleCoeffs.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Fn1d.chpl 
+	                                               Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               Quadrature.chpl 
+	                                               Range1d.chpl 
+	                                               Range2d.chpl 
+	                                               Range3d.chpl 
+	                                               SD1dTree.chpl 
+	                                               Tensor1d.chpl 
+	                                               Tensor2d.chpl 
+	                                               Tensor3d.chpl 
+
