@@ -113606,3 +113606,13 @@ Added files:
 	chapel/test/trivial/deitz/: test_dollar_sign.chpl 
 	                            test_dollar_sign.good 
 
+---------------------------------------------------------------------------
+
+08/07/07 17:29:17 -- dinan
+
+Log message:
+	Corrections from today's meeting.
+
+Modified files:
+	chapel/test/studies/uts/: uts_deq.chpl 
+
