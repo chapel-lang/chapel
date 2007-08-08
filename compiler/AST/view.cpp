@@ -392,7 +392,7 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
   fprintf(html_file, " ) ");
   if (fn->retRef)
     fprintf(html_file, "<b>ref</b> ");
-  if (fn->retType->symbol) {
+  if (fn->retType && fn->retType->symbol) {
     fprintf(html_file, " : ");
     html_print_symbol( html_file, pass, fn->retType->symbol, false);
   }
