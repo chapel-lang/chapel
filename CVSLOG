@@ -113774,3 +113774,18 @@ Log message:
 Removed files:
 	chapel/test/studies/madness/dinan/mad_chapel/: SD1dTree.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/07 15:38:41 -- deitz
+
+Log message:
+	Fixed a bug with using unlabeled continue statements in a for loop.
+	
+	Removed an extra line from a .good and removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/test/trivial/dinan/: for_continue.good 
+Removed files:
+	chapel/test/trivial/dinan/: for_continue.future 
+
