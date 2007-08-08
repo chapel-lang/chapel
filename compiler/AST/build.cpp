@@ -410,7 +410,7 @@ BlockStmt* build_for_block(BlockTag tag,
     destructureIndices(body, indices, new SymExpr(index));
     body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
   }
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
+  body->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
