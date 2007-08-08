@@ -67,51 +67,45 @@ flatten_scopeless_block(BlockStmt* block) {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-ModuleSymbol* getUsedModule(CallExpr* call) {
+ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   ModuleSymbol* mod = NULL;
-  const char* name = NULL;
 
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-    name = sym->var->name;
-    mod = dynamic_cast<ModuleSymbol*>(sym->lookup(name));
-
-    if (mod && call->argList->length() == 2) {
-      SymExpr* sym2 = dynamic_cast<SymExpr*>(call->get(2));
-      VarSymbol* sym2var = dynamic_cast<VarSymbol*>(sym2->var);
-      name = sym2var->immediate->v_string;
-      mod = dynamic_cast<ModuleSymbol*>(sym->lookup(name));
-    }
-  } else if (CallExpr* c = dynamic_cast<CallExpr*>(call->get(1))) {
-    if (c->isNamed(".")) {
-      mod = getUsedModule(c);
-      if (mod && call->argList->length() == 2) {
-        SymExpr* sym2 = dynamic_cast<SymExpr*>(call->get(2));
-        VarSymbol* sym2var = dynamic_cast<VarSymbol*>(sym2->var);
-        name = sym2var->immediate->v_string;
-        mod = dynamic_cast<ModuleSymbol*>(mod->lookup(name));
-      }
-    }
+  if (!useCall) {
+    CallExpr* call = dynamic_cast<CallExpr*>(expr);
+    if (!call)
+      INT_FATAL(call, "Bad use statement in getUsedModule");
+    if (!call->isPrimitive(PRIMITIVE_USE))
+      INT_FATAL(call, "Bad use statement in getUsedModule");
+    return getUsedModule(call->get(1), call);
   }
-  if (!mod)
-    USR_FATAL(call, "Cannot find module '%s'", name);
+
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    mod = dynamic_cast<ModuleSymbol*>(useCall->parentScope->lookup(sym->var->name));
+    if (!mod)
+      USR_FATAL(useCall, "Cannot find module '%s'", sym->var->name);
+  } else if(CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (!call->isNamed("."))
+      USR_FATAL(useCall, "Bad use statement in getUsedModule");
+    ModuleSymbol* lhs = getUsedModule(call->get(1), useCall);
+    if (!lhs)
+      USR_FATAL(useCall, "Cannot find module");
+    SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2));
+    const char* rhsName;
+    if (!rhs)
+      INT_FATAL(useCall, "Bad use statement in getUsedModule");
+
+    if (!get_string(rhs, &rhsName))
+      INT_FATAL(useCall, "Bad use statement in getUsedModule");
+
+    mod = dynamic_cast<ModuleSymbol*>(lhs->lookup(rhsName));
+    if (!mod)
+      USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
+  } else {
+    INT_FATAL(useCall, "Bad use statement in getUsedModule");
+  }
+
   return mod;
 }
-
-
-//
-// Make all modules nested within outerMod import all the modules outerMod
-// imports. Inner modules have access to all symbols the outer module does.
-//
-static void
-addInnerModuleUses(ModuleSymbol* modUsed, ModuleSymbol* outerMod) {
-  forv_Vec(ModuleSymbol, subModule, outerMod->subModules) {
-    if (!subModule->block->modUses.in(modUsed)) {
-      subModule->block->blkScope->addModuleUse(modUsed);
-      addInnerModuleUses(modUsed, subModule);
-    }
-  }
-}
-
 
 //
 // Transform module uses into calls to initialize functions; store the
@@ -443,13 +437,32 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
+//
+// Make all modules use their parent module to make sure its init function
+// has run and its symbols are initialized.
+//
+void useOuterModules(ModuleSymbol* mod) {
+  for_alist(Expr, stmt, mod->block->body) {
+    if (BlockStmt* b = dynamic_cast<BlockStmt*>(stmt))
+      stmt = b->body->first();
+    if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
+      if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(def->sym)) {
+        m->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, mod));
+        useOuterModules(m);
+      }
+    }
+  }
+}
+
+
 void cleanup(void) {
   encapsulateBegins();
+  useOuterModules(theProgram);
 
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
 
   // handle "use mod;" where mod is a module
+  collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -458,13 +471,6 @@ void cleanup(void) {
         process_import_expr(call);
       if (call->isPrimitive(PRIMITIVE_YIELD))
         call->getFunction()->fnClass = FN_ITERATOR;
-    }
-  }
-
-  // Make nested modules use all the modules the outer module uses
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    forv_Vec(ModuleSymbol, usedModule, mod->block->modUses) {
-      addInnerModuleUses(usedModule, mod);
     }
   }
 

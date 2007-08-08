@@ -195,7 +195,9 @@ static bool
 isLive(Symbol* sym) {
   if (sym->astType == SYMBOL_UNRESOLVED)
     return true;
-  if (sym->parentScope == rootScope)
+  if (sym == theProgram)
+    return true;
+  if (sym->parentScope == theProgram->block->blkScope)
     return true;
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
     if (var->immediate)
@@ -552,6 +554,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
 }
 
 SymScope* rootScope = NULL;
+ModuleSymbol* theProgram = NULL;
 
 Vec<ModuleSymbol*> allModules;  // Contains all modules
 Vec<ModuleSymbol*> userModules; // Contains user modules

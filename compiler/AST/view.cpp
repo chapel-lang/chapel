@@ -479,6 +479,12 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         } else if (dynamic_cast<LabelSymbol*>(e->sym)) {
           fprintf(html_file, "<B>label</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
+        } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(e->sym)) {
+          fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
+          fprintf(html_file, "<CHPLTAG=\"MOD%d\">\n", mod->id);
+          fprintf(html_file, "<B>module ");
+          html_print_symbol(html_file, pass, e->sym, true);
+          fprintf(html_file, "</B><UL>\n");
         } else {
           fprintf(html_file, "<B>def</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
@@ -553,9 +559,13 @@ void html_view(const char* passName) {
   static int uid = 1;
   FILE* html_file;
   char* filename;
-
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    // filename = stringcat("pass", intstring(uid), "_module_", mod->name, ".html");
+  Vec<ModuleSymbol*> mods;
+  for_alist(Expr, expr, theProgram->block->body)
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->sym))
+        mods.add(mod);
+  mods.add(theProgram);
+  forv_Vec(ModuleSymbol, mod, mods) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(stringcat(log_dir, filename), "w");
@@ -569,7 +579,9 @@ void html_view(const char* passName) {
     fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
     fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, passName);
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
-    fprintf(html_file, "<B>module %s</B>\n", mod->name);
+    fprintf(html_file, "<B>module \n");
+    html_print_symbol(html_file, uid, mod, true);
+    fprintf(html_file, "</B>\n");
     for_alist(Expr, stmt, mod->block->body)
       html_view_ast( html_file, uid, stmt);
     fprintf(html_file, "</HTML>\n");

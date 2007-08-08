@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "chapel.tab.h"
 #include "yy.h"
 
@@ -26,17 +27,6 @@ static char* filenameToModulename(char* filename) {
   }
 
   return modulename;
-}
-
-static void
-clearModulesDefPoints(AList* stmts) {
-  for_alist(Expr, stmt, stmts) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
-      stmt = block->body->first();
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt))
-      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym))
-        mod->defPoint = NULL;
-  }
 }
 
 bool containsOnlyModules(AList* stmts) {
@@ -76,10 +66,19 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   if (!containsOnlyModules(yystmtlist)) {
     char* modulename = filenameToModulename(filename);
     newModule = build_module(modulename, moduletype, yystmtlist);
-  } else {
-    clearModulesDefPoints(yystmtlist);
   }
-
+  if (newModule) {
+    theProgram->block->insertAtTail(new DefExpr(newModule));
+  } else {
+    for_alist(Expr, stmt, yystmtlist) {
+      if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+        stmt = block->body->first();
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt))
+        if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+          theProgram->block->insertAtTail(defExpr->remove());
+        }
+    }
+  }
   yyfilename = "<internal>";
 
   yylloc.first_column = yylloc.last_column = 0;

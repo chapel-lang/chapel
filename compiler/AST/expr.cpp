@@ -63,7 +63,7 @@ ASTContext Expr::getContext(void) {
 
 bool Expr::inTree(void) {
   if (parentSymbol)
-    return true;
+    return parentSymbol->inTree();
   else
     return false;
 }

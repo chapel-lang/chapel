@@ -1,0 +1,2 @@
+bad_transitive_use.chpl:16: In function 'main':
+bad_transitive_use.chpl:17: error: unresolved call 'bar()'

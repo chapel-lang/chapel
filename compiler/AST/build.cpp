@@ -121,6 +121,16 @@ static void createInitFn(ModuleSymbol* mod) {
 
   for_alist(Expr, stmt, mod->block->body) {
     if (1 || !stmtIsGlob(stmt)) {
+      if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+        if (block->body->length() == 1) {
+          if (DefExpr* def = dynamic_cast<DefExpr*>(block->body->only())) {
+            if (dynamic_cast<ModuleSymbol*>(def->sym)) {
+              // Don't move module definitions into the init function
+              continue;
+            }
+          }
+        }
+      }
       stmt->remove();
       mod->initFn->insertAtTail(stmt);
     }

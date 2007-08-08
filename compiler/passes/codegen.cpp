@@ -188,7 +188,7 @@ static void codegen_header(void) {
 
         fnSymbols.add(fnSymbol);
       } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
-        if (varSymbol->parentScope->parent == rootScope)
+        if (dynamic_cast<ModuleSymbol*>(varSymbol->defPoint->parentSymbol))
           varSymbols.add(varSymbol);
       }
     }

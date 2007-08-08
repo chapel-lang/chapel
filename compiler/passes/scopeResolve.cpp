@@ -161,7 +161,9 @@ void scopeResolve(Symbol* base) {
         if (!dynamic_cast<UnresolvedSymbol*>(symExpr->var))
           continue;
 
-        Symbol* sym = symExpr->lookup(name);
+        Symbol* sym = symExpr->parentScope->lookup(name, NULL, false, false);
+        if (!sym)
+          sym = symExpr->parentScope->lookup(name, NULL, false, true);
 
         bool handleFunctionWithoutParens = false;
         for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {

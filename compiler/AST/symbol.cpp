@@ -171,7 +171,7 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 
 
 bool Symbol::inTree(void) {
-  if (dynamic_cast<ModuleSymbol*>(this))
+  if (this == theProgram)
     return true;
   if (defPoint)
     return defPoint->inTree();
@@ -1563,11 +1563,9 @@ ModuleSymbol::ModuleSymbol(const char* init_name, modType init_modtype) :
   block(new BlockStmt()),
   initFn(NULL)
 {
-  rootScope->define(this);
-  registerModule(this);
-  block->blkScope = new SymScope(block, rootScope);
   block->parentSymbol = this;
-  block->parentScope = rootScope;
+  block->blkScope = NULL;
+  registerModule(this);
 }
 
 
@@ -1638,7 +1636,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   if (s)
     return s;
   s = new VarSymbol("_literal_string", dtString);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1662,7 +1660,7 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   if (s)
     return s;
   s = new VarSymbol("_literal_int", dtInt[size]);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1686,7 +1684,7 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   if (s)
     return s;
   s = new VarSymbol("_literal_uint", dtUInt[size]);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1708,7 +1706,7 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   if (s)
     return s;
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtReal[size]);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1731,7 +1729,7 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   if (s)
     return s;
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtImag[size]);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1763,7 +1761,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   if (s)
     return s;
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtComplex[size]);
-  rootScope->define(s);
+  theProgram->block->blkScope->define(s);
   s->immediate = new Immediate;
   s->cname = dupstr(n);
   *s->immediate = imm;

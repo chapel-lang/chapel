@@ -37,8 +37,7 @@ void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts(Vec<BaseAST*>* asts) {
-  forv_Vec(ModuleSymbol, mod, allModules)
-    collect_asts(asts, mod);
+  collect_asts(asts, theProgram);
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
@@ -51,8 +50,7 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts) {
-  forv_Vec(ModuleSymbol, mod, allModules)
-    collect_asts_postorder(asts, mod);
+  collect_asts_postorder(asts, theProgram);
 }
 
 
@@ -290,22 +288,15 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
 }
 
 
-void addUseCalls(ModuleSymbol* mod, ModuleSymbol* outer) {
-  mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
-  forv_Vec(ModuleSymbol, submodule, mod->subModules) {
-    addUseCalls(submodule, outer);
-  }
-}
-
-
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
                  Symbol* parentSymbol,
                  SymScope* parentScope) {
-  if (dynamic_cast<ModuleSymbol*>(ast))
-    return;
-
-  if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(ast)) {
+      mod->parentScope = parentScope;
+      parentSymbol = mod;
+      parentExpr = NULL;
+  } else if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
   }
@@ -320,24 +311,16 @@ void insert_help(BaseAST* ast,
         if (blockStmt->blkScope &&
             blockStmt->blkScope->astParent == blockStmt)
           INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
-        if (!blockStmt->blkScope) {
-          blockStmt->blkScope = new SymScope(blockStmt, parentScope);
-          blockStmt->blkScope->astParent = blockStmt;
-        }
+        blockStmt->blkScope = new SymScope(blockStmt, parentScope);
         parentScope = blockStmt->blkScope;
       }
     }
     if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
         ModuleSymbol* outer = dynamic_cast<ModuleSymbol*>(def_expr->parentSymbol);
-        mod->defPoint->sym = NULL;
-        mod->defPoint = NULL;
-        parentExpr->remove();
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
-        outer->subModules.add(mod);
-        addUseCalls(mod, outer);
-        parentScope = mod->block->blkScope;
+        def_expr->parentScope->define(def_expr->sym);
       } else {
         if (def_expr->sym && !dynamic_cast<UnresolvedSymbol*>(def_expr->sym)) {
           def_expr->parentScope->define(def_expr->sym);
@@ -347,7 +330,6 @@ void insert_help(BaseAST* ast,
         if (fn->argScope)
           INT_FATAL(fn, "Unexpected scope in FnSymbol");
         fn->argScope = new SymScope(fn, parentScope);
-        fn->argScope->astParent = fn;
         parentScope = fn->argScope;
       }
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
@@ -370,9 +352,6 @@ void insert_help(BaseAST* ast,
 
 
 void remove_help(BaseAST* ast) {
-  if (dynamic_cast<ModuleSymbol*>(ast))
-    return;
-
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, a, asts)
@@ -393,7 +372,7 @@ void remove_help(BaseAST* ast) {
       }
     }
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (defExpr->sym && !dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+      if (defExpr->sym) {
         if (defExpr->sym->parentScope)
           defExpr->sym->parentScope->undefine(defExpr->sym);
         defExpr->sym->parentScope = NULL;
@@ -410,6 +389,12 @@ void remove_help(BaseAST* ast) {
             delete type->structScope;
             type->structScope = NULL;
           }
+        }
+      }
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+        if (mod->block->blkScope) {
+          delete mod->block->blkScope;
+          mod->block->blkScope = NULL;
         }
       }
     }

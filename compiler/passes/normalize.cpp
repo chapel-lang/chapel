@@ -31,9 +31,7 @@ static void fixup_query_formals(FnSymbol* fn);
 
 
 void normalize(void) {
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    normalize(mod);
-  }
+  normalize(theProgram);
   normalized = true;
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(Expr, expr, mod->initFn->body->body) {
@@ -551,7 +549,7 @@ static void tag_global(FnSymbol* fn) {
   }
   if (fn->global) {
     fn->parentScope->removeVisibleFunction(fn);
-    rootScope->addVisibleFunction(fn);
+    theProgram->block->blkScope->addVisibleFunction(fn);
     if (dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
       ModuleSymbol* mod = fn->getModule();
       Expr* def = fn->defPoint;
