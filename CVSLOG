@@ -113751,3 +113751,16 @@ Added files:
 	                                               Tensor2d.chpl 
 	                                               Tensor3d.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/07 14:56:58 -- diten
+
+Log message:
+	Turn off generating the html view of the whole program as a single module.
+	Continue generating views of each immediate submodule of the program module.
+	Creating the whole program view doubled the size of the already large html
+	output while giving very little additional information.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
