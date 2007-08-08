@@ -16,7 +16,7 @@ module TwoScaleCoeffs {
         if ((k > 0) && (k <= getMaxK()))
             return hg_getCoeffs(k);
         else 
-          writeln("TwoScaleCoeffs.getCoeffs(): k=", k, " is out of bounds!");
+          halt("TwoScaleCoeffs.getCoeffs(): k=", k, " is out of bounds!");
     }
     
     /** Return maximum k.
