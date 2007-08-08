@@ -113764,3 +113764,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/07 15:01:20 -- dinan
+
+Log message:
+	Not used.
+
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: SD1dTree.chpl 
+
