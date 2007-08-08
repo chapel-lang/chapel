@@ -44,6 +44,7 @@ var thread_cnt: sync int = 0;
 var threads_spawned: int = 0; // "Locked" by thread_cnt
 
 // Global stats, updated by a thread when it exits
+// FIXME: These will become hotspots
 var global_count: sync int = 0;
 var global_maxDepth: sync int = 0;
 
@@ -80,7 +81,7 @@ class TreeNode {
 
     if debug then writeln("Constructing ", nChildren, " children");
 
-    forall i in [0..nChildren-1] {
+    for i in [0..nChildren-1] {
       if debug then writeln("  + (", depth, ", ", i, ")");
       var t = TreeNode(depth+1);
       rng_spawn(hash, t.hash, i);
@@ -129,14 +130,14 @@ class TreeNode {
       
         // Expected size is polynomial in depth
         when GeoPoly do
-          b_i = B_0 * (depth:real ** (-log(B_0:real)/log(MAX_DEPTH:real)));
+          b_i = B_0 * (depth ** (-log(B_0:real)/log(MAX_DEPTH:real)));
         
         // Expected size is cyclic
         when GeoCyclic {
           if (depth > 5 * MAX_DEPTH) then
             b_i = 0.0;
           else
-            b_i = B_0 ** sin(2.0*3.141592653589793*depth:real / MAX_DEPTH:real);
+            b_i = B_0 ** sin(2.0*3.141592653589793*depth/MAX_DEPTH);
         }
 
         // Expected size is the same at all nodes up to max depth
@@ -213,8 +214,9 @@ def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
       var work = q.split(chunkSize);
 
       // Spawn a new worker on this queue
-      thread_cnt += 1;
+      var tmp = thread_cnt; // Lock the access to threads_spawned
       threads_spawned += 1;
+      thread_cnt = tmp + 1;
       begin create_tree(work);
       return 1;
     }
@@ -257,7 +259,7 @@ def create_tree(inout q: DeQueue(TreeNode)) {
 
 
 def main() {
-  var t_create: Timer();
+  var t_create: Timer;
   var root: TreeNode;
   var queue: DeQueue(TreeNode);
  
