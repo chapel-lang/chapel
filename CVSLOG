@@ -113641,3 +113641,50 @@ Log message:
 Modified files:
 	chapel/util/pastPerformance/: timerange 
 
+---------------------------------------------------------------------------
+
+08/08/07 12:16:32 -- diten
+
+Log message:
+	Stop denesting modules. Instead insert DefExprs for all outermost modules into
+	a root module currently named "_Program". Nested modules are left defined in
+	the module the user defined them within, which is at some point nested in
+	_Program.  The modules are never denested until being written out in C.
+	Instead, they are just viewed in the nested sence up to function resolution,
+	and viewed as they were before this change after resolution.
+	
+	Updated the lookup functions to work a little better when dealing with nested
+	modules, but they still aren't correct in all situations I've come across.
+	
+	Changed inTree functions to return true only for things defined under the
+	root _Program module.
+	
+	Rewrote a function to find the module used by a use statement. It's now a lot
+	cleaner and correctly finds modules that were missed previously.
+	
+	Added a whole program view to the html output. The gdb view functions already
+	handled this correctly.
+	
+	Add some tests of nested modules, including bad_transitive_use, which is shows
+	that use statements are transitive again.  I consider this a regression, not
+	a future, and plan to fix it asap.
+	
+	Fixed a future that showed that modules shouldn't be denested at
+	parse time.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      symbol.cpp symscope.cpp type.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h symscope.h 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp normalize.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	                         verify.cpp 
+Added files:
+	chapel/test/modules/diten/: bad_transitive_use.chpl 
+	                            bad_transitive_use.good 
+	                            modulescopes.chpl modulescopes.good 
+	                            nesting.chpl nesting.good 
+Removed files:
+	chapel/test/modules/deitz/: test_nested_modules.future 
+
