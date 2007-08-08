@@ -113616,3 +113616,18 @@ Log message:
 Modified files:
 	chapel/test/studies/uts/: uts_deq.chpl 
 
+---------------------------------------------------------------------------
+
+08/07/07 18:24:38 -- dinan
+
+Log message:
+	Moved uts.chpl to uts_rec.chpl -- this implementation is recursive
+	uts_deq.chpl is the iterative implementation.
+
+Modified files:
+	chapel/test/studies/uts/: Makefile 
+Added files:
+	chapel/test/studies/uts/: uts_rec.chpl 
+Removed files:
+	chapel/test/studies/uts/: uts.chpl 
+
