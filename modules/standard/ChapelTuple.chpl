@@ -39,6 +39,7 @@ pragma "scalar replace tuples" pragma "tuple" record _tuple {
       if i == j then
         return this(j);
     halt("tuple indexing out-of-bounds error");
+    return this(1);
   }
 
   def these() {
