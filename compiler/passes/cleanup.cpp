@@ -447,7 +447,8 @@ void useOuterModules(ModuleSymbol* mod) {
       stmt = b->body->first();
     if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
       if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(def->sym)) {
-        m->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, mod));
+        if (mod != theProgram)
+          m->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, mod));
         useOuterModules(m);
       }
     }
