@@ -113816,3 +113816,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+08/09/07 14:12:41 -- diten
+
+Log message:
+	Make inner modules call the init function of the module they are nested within
+	instead of making them use it completely. This fixes one of my two regressions.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
