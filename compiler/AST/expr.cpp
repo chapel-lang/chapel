@@ -1436,7 +1436,7 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegen(outfile);
         fprintf(outfile, ".addr, sizeof(");
         ClassType* ct = dynamic_cast<ClassType*>(get(2)->typeInfo());
-        ct->getField(2)->typeInfo()->symbol->codegen(outfile);
+        getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
         fprintf(outfile, "))");
       }
       break;
@@ -1450,7 +1450,7 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen(outfile);
         fprintf(outfile, ".addr, sizeof(");
         ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
-        ct->getField(2)->typeInfo()->symbol->codegen(outfile);
+        getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
         fprintf(outfile, "))");
       }
       break;
