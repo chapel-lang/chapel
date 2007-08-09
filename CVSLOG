@@ -113801,3 +113801,18 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelTuple.chpl 
 
+---------------------------------------------------------------------------
+
+08/09/07 13:35:35 -- deitz
+
+Log message:
+	Fixed a bug in the sizeof expression generated for the comm_put and
+	get primitives in which the size of the reference was generated as
+	opposed to the size of what is referenced.  This did not show up on
+	systems where the default integer is the same size as an address but
+	caused problems on linux64.  This should fix the three multilocale
+	tests that were failing under gasnet nightly testing.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
