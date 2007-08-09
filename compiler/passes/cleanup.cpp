@@ -438,18 +438,22 @@ static void change_cast_in_where(FnSymbol* fn) {
 
 
 //
-// Make all modules use their parent module to make sure its init function
-// has run and its symbols are initialized.
+// Make all modules call their parent module's init function to make sure
+// it has been run and the module's symbols are initialized.  This is NOT
+// the same as using the outer module.
 //
-void useOuterModules(ModuleSymbol* mod) {
+void initializeOuterModules(ModuleSymbol* mod) {
   for_alist(Expr, stmt, mod->block->body) {
     if (BlockStmt* b = dynamic_cast<BlockStmt*>(stmt))
       stmt = b->body->first();
     if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
       if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(def->sym)) {
-        if (mod != theProgram)
-          m->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, mod));
-        useOuterModules(m);
+        if (mod != theProgram) {
+          if (!m->initFn || !mod->initFn)
+            INT_FATAL("Module with no initialization function");
+          m->initFn->insertAtTail(new CallExpr(mod->initFn));
+        }
+        initializeOuterModules(m);
       }
     }
   }
@@ -458,7 +462,7 @@ void useOuterModules(ModuleSymbol* mod) {
 
 void cleanup(void) {
   encapsulateBegins();
-  useOuterModules(theProgram);
+  initializeOuterModules(theProgram);
 
   Vec<BaseAST*> asts;
 
