@@ -113827,3 +113827,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/07 14:49:39 -- deitz
+
+Log message:
+	Refactored how to call html_view so that it can now be called from
+	within gdb during a compilation with the -t flag.  I've found this
+	very useful for debugging.  At any point when the AST is stable so
+	that an html log for a pass can be built, you can use
+	
+	  call html_view("some name")
+	
+	during debug to add a line to the html log call "some name" which
+	allows you to click on things via the browser to get a look at the
+	state of the IR.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/main/: runpasses.cpp 
+
