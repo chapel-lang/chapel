@@ -113859,3 +113859,18 @@ Added files:
 	                                     test_ref_promotion.future 
 	                                     test_ref_promotion.good 
 
+---------------------------------------------------------------------------
+
+08/10/07 16:42:44 -- marybeth
+
+Log message:
+	Adding a new blocked Cholesky routine which can compute either the lower
+	or the upper triangular factor.  This version contains
+	a new set of iterators.  The outer loop iterator returns subdomains.
+	The remaining iterators use these subdomains and the variable upper
+	to yield the expected indices and ranges for all of the BLAS loop nests.
+
+Added files:
+	chapel/test/studies/cholesky/marybeth/: blockCholesky.chpl 
+	                                        blockCholesky.good 
+
