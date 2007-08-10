@@ -560,6 +560,10 @@ void html_view(const char* passName) {
   FILE* html_file;
   char* filename;
   Vec<ModuleSymbol*> mods;
+
+  fprintf(html_index_file, "<TR><TD>");
+  fprintf(html_index_file, "%s", passName);
+  fprintf(html_index_file, "</TD><TD>");
   for_alist(Expr, expr, theProgram->block->body)
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->sym))
@@ -587,5 +591,7 @@ void html_view(const char* passName) {
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
   }
+  fprintf(html_index_file, "</TD></TR>");
+  fflush(html_index_file);
   uid++;
 }

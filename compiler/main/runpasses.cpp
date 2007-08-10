@@ -72,12 +72,7 @@ static void runPass(const char *passName, void (*pass)(void)) {
   if (strlen(fPrintStatistics))
     printStatistics(passName);
   if (fdump_html) {
-    fprintf(html_index_file, "<TR><TD>");
-    fprintf(html_index_file, "%s", passName);
-    fprintf(html_index_file, "</TD><TD>");
     html_view(passName);
-    fprintf(html_index_file, "</TD></TR>");
-    fflush(html_index_file);
   }
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
