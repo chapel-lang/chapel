@@ -1,0 +1,4 @@
+bug: promotion of a reference of an array
+
+This test fails because the coercion on the array reference causes the
+promotions to be consecutive rather than simultaneous.
