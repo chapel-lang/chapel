@@ -113847,3 +113847,15 @@ Modified files:
 	chapel/compiler/AST/: view.cpp 
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/07 15:30:51 -- deitz
+
+Log message:
+	Added a future that captures a bug seen by Aniruddha.
+
+Added files:
+	chapel/test/arrays/deitz/promotion/: test_ref_promotion.chpl 
+	                                     test_ref_promotion.future 
+	                                     test_ref_promotion.good 
+
