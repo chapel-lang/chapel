@@ -687,7 +687,7 @@ build_empty_wrapper(FnSymbol* fn) {
 
 
 FnSymbol*
-FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
+FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions) {
   // return cached if we already created this coercion wrapper
   if (FnSymbol* cached = checkMapCache(&cw_cache, this, coercion_map))
     return cached;
@@ -701,7 +701,9 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     if (_this == formal)
       wrapper->_this = wrapper_formal;
     wrapper->insertFormalAtTail(wrapper_formal);
-    if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
+    if (coercions->get(formal)) {
+      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal));
+      INT_ASSERT(ts);
       wrapper_formal->type = ts->type;
       if (ts->hasPragma( "synchronization primitive")) {
         // check if this is a member access
@@ -730,6 +732,9 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }
     } else {
+      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal));
+      if (ts && (formal != _this || !hasPragma("ref this")))
+        wrapper_formal->type = ts->type;
       call->insertAtTail(wrapper_formal);
     }
   }

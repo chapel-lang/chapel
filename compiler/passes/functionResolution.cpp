@@ -733,17 +733,25 @@ build_coercion_wrapper(FnSymbol* fn,
                        Vec<Type*>* actual_types,
                        Vec<Symbol*>* actual_params) {
   ASTMap subs;
+  Map<ArgSymbol*,bool> coercions;
   int j = -1;
+  bool coerce = false;
   for_formals(formal, fn) {
     j++;
     Type* actual_type = actual_types->v[j];
     Symbol* actual_param = actual_params->v[j];
-    if (actual_type != formal->type)
-      if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type))
+    if (actual_type != formal->type) {
+      if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type)) {
         subs.put(formal, actual_type->symbol);
+        coercions.put(formal,true);
+        coerce = true;
+      } else {
+        subs.put(formal, actual_type->symbol);
+      }
+    }
   }
-  if (subs.n)
-    fn = fn->coercion_wrapper(&subs);
+  if (coerce)
+    fn = fn->coercion_wrapper(&subs, &coercions);
   return fn;  
 }
 
@@ -1135,6 +1143,7 @@ resolve_call(CallExpr* call,
   } else {
     best = build_default_wrapper(best, actual_formals);
     best = build_order_wrapper(best, actual_formals);
+    best = build_coercion_wrapper(best, actual_types, actual_params);
 
     FnSymbol* promoted = build_promotion_wrapper(best, actual_types, actual_params, call->square);
     if (promoted != best) {
@@ -1144,7 +1153,6 @@ resolve_call(CallExpr* call,
       }
       best = promoted;
     }
-    best = build_coercion_wrapper(best, actual_types, actual_params);
   }
 
   for (int i = 0; i < candidateActualFormals.n; i++)

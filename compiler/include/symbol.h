@@ -197,7 +197,7 @@ class FnSymbol : public Symbol {
 
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs, bool isSquare);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
-  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions);
+  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   FnSymbol* instantiate_generic(ASTMap* substitutions);
   void codegenHeader(FILE* outfile);
