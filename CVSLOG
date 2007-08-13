@@ -113896,3 +113896,39 @@ Modified files:
 	chapel/test/types/file/: freadIntFailed.good freadNoFloat.good 
 	                         freadNoInt.good freadNotABoolean.good 
 
+---------------------------------------------------------------------------
+
+08/13/07 15:41:40 -- deitz
+
+Log message:
+	Fixed a bug in which a coercion of an argument that also promotes a
+	function would disable the promotion of that argument being zipped
+	with any other argument that promotes the function resulting instead
+	in a staged promotion with similar results to tensor promotion.  This
+	showed up in a case where a reference to an array needed to be coerced
+	to an array before promoting the function.
+	
+	This change makes coercion wrappers build up from the actual call
+	instead of from the function itself.  In the common case, this should
+	have no effect, but this fixes the bug above since the coercion
+	wrapper is built with all of the arguments before a promotion wrapper
+	is built.  The coercion_wrapper function now takes an additional
+	argument called "coercions" that is used to signal which arguments are
+	being coerced, and which are not.  This allows the wrapper to be built
+	with an argument that is a different type from the formal argument
+	even if that particular argument is not being coerced, that is, it
+	will be promoted instead.
+	
+	Added special handling of the "ref this" pragma to the coercion
+	wrapper so that the argument's type is not taken from the actual
+	argument.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/arrays/deitz/promotion/: test_ref_promotion.future 
+
