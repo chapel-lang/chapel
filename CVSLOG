@@ -113874,3 +113874,25 @@ Added files:
 	chapel/test/studies/cholesky/marybeth/: blockCholesky.chpl 
 	                                        blockCholesky.good 
 
+---------------------------------------------------------------------------
+
+08/13/07 15:09:40 -- deitz
+
+Log message:
+	Reworked the implementation of the read functions of primitive types
+	(incomplete) to avoid an fscanf primitive that has side effects on its
+	arguments.  Improved some error messages.  Removed two instances of
+	code to special case the fscanf primitive because of its unorthodox
+	behaviour.  This was getting in the way of fixing a bug that I am
+	working on.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	chapel/modules/standard/: ChapelBase.chpl ChapelIO.chpl 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/trivial/shannon/: readStringOverflow.good 
+	                              readWriteBool.good 
+	chapel/test/types/file/: freadIntFailed.good freadNoFloat.good 
+	                         freadNoInt.good freadNotABoolean.good 
+
