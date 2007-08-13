@@ -24,7 +24,12 @@ extern char* _default_format_write_complex256;
 
 typedef FILE* _cfile;
 
-_string string_fscanf(FILE* fp, _int32 lineno, _string filename);
-_bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace);
+_string _fscan_string(FILE* fp, _int32 lineno, _string filename);
+_int32 _fscan_int32(FILE* fp, _int32 lineno, _string filename);
+_uint32 _fscan_uint32(FILE* fp, _int32 lineno, _string filename);
+_real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename);
+
+_bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
+                     _int32 lineno, _string filename);
 
 #endif

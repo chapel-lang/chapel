@@ -38,12 +38,17 @@ returnInfoInt64(CallExpr* call) {
 }
 
 static Type*
+returnInfoUInt32(CallExpr* call) {
+  return dtUInt[INT_SIZE_32];
+}
+
+static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
 
 static Type*
-returnInfoFloat(CallExpr* call) {
+returnInfoReal64(CallExpr* call) {
   return dtReal[FLOAT_SIZE_64];
 }
 
@@ -385,46 +390,48 @@ initPrimitive() {
   prim_def("_config_has_value", returnInfoBool);
   prim_def("_config_get_value", returnInfoString);
 
-  prim_def("acos", returnInfoFloat, true);
-  prim_def("acosh", returnInfoFloat, true);
-  prim_def("asin", returnInfoFloat, true);
-  prim_def("asinh", returnInfoFloat, true);
-  prim_def("atan", returnInfoFloat, true);
-  prim_def("atan2", returnInfoFloat, true);  
-  prim_def("atanh", returnInfoFloat, true);
-  prim_def("cbrt", returnInfoFloat, true);
-  prim_def("ceil", returnInfoFloat, true);
-  prim_def("cos", returnInfoFloat, true);
-  prim_def("cosh", returnInfoFloat, true);
-  prim_def("exp", returnInfoFloat, true);
-  prim_def("exp2", returnInfoFloat, true);
-  prim_def("erf", returnInfoFloat, true);
-  prim_def("erfc", returnInfoFloat, true);
-  prim_def("expm1", returnInfoFloat, true);
-  prim_def("fabs", returnInfoFloat, true);
-  prim_def("floor", returnInfoFloat, true);
-  prim_def("lgamma", returnInfoFloat, true);
-  prim_def("log", returnInfoFloat, true);
-  prim_def("log2", returnInfoFloat, true);
-  prim_def("log10", returnInfoFloat, true);
-  prim_def("log1p", returnInfoFloat, true);
-  prim_def("nearbyint", returnInfoFloat, true);
-  prim_def("rint", returnInfoFloat, true);
-  prim_def("round", returnInfoFloat, true);
-  prim_def("sin", returnInfoFloat, true);
-  prim_def("sinh", returnInfoFloat, true);
-  prim_def("sqrt", returnInfoFloat, true);
-  prim_def("tan", returnInfoFloat, true);
-  prim_def("tanh", returnInfoFloat, true);
-  prim_def("tgamma", returnInfoFloat, true);
-  prim_def("trunc", returnInfoFloat, true);
+  prim_def("acos", returnInfoReal64, true);
+  prim_def("acosh", returnInfoReal64, true);
+  prim_def("asin", returnInfoReal64, true);
+  prim_def("asinh", returnInfoReal64, true);
+  prim_def("atan", returnInfoReal64, true);
+  prim_def("atan2", returnInfoReal64, true);  
+  prim_def("atanh", returnInfoReal64, true);
+  prim_def("cbrt", returnInfoReal64, true);
+  prim_def("ceil", returnInfoReal64, true);
+  prim_def("cos", returnInfoReal64, true);
+  prim_def("cosh", returnInfoReal64, true);
+  prim_def("exp", returnInfoReal64, true);
+  prim_def("exp2", returnInfoReal64, true);
+  prim_def("erf", returnInfoReal64, true);
+  prim_def("erfc", returnInfoReal64, true);
+  prim_def("expm1", returnInfoReal64, true);
+  prim_def("fabs", returnInfoReal64, true);
+  prim_def("floor", returnInfoReal64, true);
+  prim_def("lgamma", returnInfoReal64, true);
+  prim_def("log", returnInfoReal64, true);
+  prim_def("log2", returnInfoReal64, true);
+  prim_def("log10", returnInfoReal64, true);
+  prim_def("log1p", returnInfoReal64, true);
+  prim_def("nearbyint", returnInfoReal64, true);
+  prim_def("rint", returnInfoReal64, true);
+  prim_def("round", returnInfoReal64, true);
+  prim_def("sin", returnInfoReal64, true);
+  prim_def("sinh", returnInfoReal64, true);
+  prim_def("sqrt", returnInfoReal64, true);
+  prim_def("tan", returnInfoReal64, true);
+  prim_def("tanh", returnInfoReal64, true);
+  prim_def("tgamma", returnInfoReal64, true);
+  prim_def("trunc", returnInfoReal64, true);
   prim_def("fopen", returnInfoFile, true);
   prim_def("fclose", returnInfoInt32, true);
   prim_def("fprintf", returnInfoInt32, true);
-  prim_def("fscanf", returnInfoInt32, true);
   prim_def("fflush", returnInfoInt32, true);
-  prim_def("readLit", returnInfoBool, true);
-  prim_def("string_fscanf", returnInfoString, true, true);
+  prim_def("_fscan_literal", returnInfoBool, true, true);
+  prim_def("_fscan_string", returnInfoString, true, true);
+  prim_def("_fscan_int32", returnInfoInt32, true, true);
+  prim_def("_fscan_uint32", returnInfoUInt32, true, true);
+  prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_copy", returnInfoString, true);
   prim_def("string_index", returnInfoString, true);
@@ -451,12 +458,12 @@ initPrimitive() {
 
   prim_def("_init_timer", returnInfoVoid, true);
   prim_def("_now_timer", returnInfoTimer, true);
-  prim_def("_seconds_timer", returnInfoFloat, true);
-  prim_def("_microseconds_timer", returnInfoFloat, true);
+  prim_def("_seconds_timer", returnInfoReal64, true);
+  prim_def("_microseconds_timer", returnInfoReal64, true);
   prim_def("_now_year", returnInfoInt32, true);
   prim_def("_now_month", returnInfoInt32, true);
   prim_def("_now_day", returnInfoInt32, true);
-  prim_def("_now_time", returnInfoFloat, true);
+  prim_def("_now_time", returnInfoReal64, true);
 
   prim_def("_bytesPerLocale", returnInfoUInt64);
   prim_def("_coresPerLocale", returnInfoInt32);

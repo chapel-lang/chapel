@@ -727,14 +727,8 @@ pragma "inline" def _fclose(fp: _file)
 pragma "inline" def fprintf(fp: _file, fmt: string, val)
   return __primitive("fprintf", fp, fmt, val);
 
-pragma "inline" def fscanf(fp: _file, fmt: string, inout val)
-  return __primitive("fscanf", fp, fmt, val);
-
-pragma "inline" def _string_fscanf(fp: _file)
-  return __primitive("string_fscanf", fp);
-
 pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
-  return __primitive("readLit", fp, val, ignoreWhiteSpace);
+  return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
 
 
 //

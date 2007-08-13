@@ -6,53 +6,77 @@
 #include "chplrt.h"
 #include "error.h"
 
-static void scanfError(void) {
-  char* message = _glom_strings(2, "Read failed: ", strerror(errno));
-  _printError(message, 0, 0);
+static void _fscan_error_check(int err, _int32 lineno, _string filename) {
+  if (err == EOF)
+    _printError("read failed: eof", lineno, filename);
+  else if (err < 0)
+    _printError(string_concat("read failed: ", strerror(errno)),
+                lineno, filename);
+  else if (err == 0)
+    _printError("read failed: value not read", lineno, filename);
 }
 
-_string string_fscanf(FILE* fp, _int32 lineno, _string filename) {
-  char localVal[_default_string_length];
+_string _fscan_string(FILE* fp, _int32 lineno, _string filename) {
+  char result[_default_string_length];
   char dsl[1024];
-  int returnVal = 0;
-  returnVal = fscanf(fp, "%255s", localVal);
-  if (returnVal == EOF) {
-    _printError("Read failed: EOF", lineno, filename);
-  }
-  if (returnVal < 0) {
-    scanfError();
-  }
-  if (strlen(localVal) == (_default_string_length - 1)) {
-    char* message;
+  int err;
+
+  err = fscanf(fp, "%255s", result);
+  _fscan_error_check(err, lineno, filename);
+  if (strlen(result) == (_default_string_length - 1)) {
     sprintf(dsl, "%d", _default_string_length);
-    message = _glom_strings(2, "The maximum string length is ", dsl);
-    _printError(message, lineno, filename);
+    _printError(string_concat("maximum string length is ", dsl),
+                lineno, filename);
   }
-  return string_copy(localVal);
+  return string_copy(result);
 }
 
-                            
-_bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace) {
-  int returnVal  = 0;
-  char inputVal  = ' ';
+_int32 _fscan_int32(FILE* fp, _int32 lineno, _string filename) {
+  _int32 result;
+  int err;
+
+  err = fscanf(fp, "%d", &result);
+  _fscan_error_check(err, lineno, filename);
+  return result;
+}
+
+_uint32 _fscan_uint32(FILE* fp, _int32 lineno, _string filename) {
+  _uint32 result;
+  int err;
+
+  err = fscanf(fp, "%u", &result);
+  _fscan_error_check(err, lineno, filename);
+  return result;
+}
+
+_real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename) {
+  _real64 result;
+  int err;
+
+  err = fscanf(fp, "%lg", &result);
+  _fscan_error_check(err, lineno, filename);
+  return result;
+}
+
+_bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
+                     _int32 lineno, _string filename) {
+  char ch  = ' ';
+  int err;
 
   if (ignoreWhiteSpace) {
-    while ((inputVal == ' ') || (inputVal == '\n') || (inputVal == '\r') || 
-           (inputVal == '\t')) {
-      returnVal = fscanf(fp, "%c", &inputVal);
+    while ((ch == ' ') || (ch == '\n') || (ch == '\r') || (ch == '\t')) {
+      err = fscanf(fp, "%c", &ch);
+      _fscan_error_check(err, lineno, filename);
     }
   } else {
-    returnVal = fscanf(fp, "%c", &inputVal);
+    err = fscanf(fp, "%c", &ch);
+    _fscan_error_check(err, lineno, filename);
   }
 
-  if (inputVal == *val) {
-    return true;
-  } else { 
-    returnVal = ungetc(inputVal, fp);
-    if (returnVal == EOF) {
-      char* message = _glom_strings(2, "ungetc in _readLitChar failed: ", strerror(errno));
-      _printInternalError(message);
-    }
+  if (ch != *val) {
+    err = ungetc(ch, fp);
+    _fscan_error_check(err, lineno, filename);
+    return false;
   }
-  return false;
+  return true;
 }

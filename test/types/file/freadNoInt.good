@@ -1,1 +1,1 @@
-freadNoInt.chpl:5: error: halt reached - ***Error: No int was read***
+freadNoInt.chpl:5: error: read failed: value not read

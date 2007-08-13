@@ -112,56 +112,22 @@ def _fprintfError() {
 }
 
 
-def _fscanfError() {
-  halt("***Error: Read failed: ", _get_errno(), "***");
-}
-
 def file.read(inout val: int) {
-  if (isOpen) {
-    var returnVal: int = fscanf(_fp, "%d", val);
-    if (returnVal == _get_eof()) {
-      halt("***Error: Read failed: EOF***");
-    }
-    if (returnVal < 0) {
-      _fscanfError();
-    } else if (returnVal == 0) {
-      halt("***Error: No int was read***");
-    }
-  } else {
-    _fopenError(this, isRead = true);
-  }
+  if !isOpen then
+    _fopenError(this, isRead=true);
+  val = __primitive("_fscan_int32", _fp);
 }
 
 def file.read(inout val: uint) {
-  if (isOpen) {
-    var returnVal: int = fscanf(_fp, "%llu", val);
-    if (returnVal == _get_eof()) {
-      halt("***Error: Read failed: EOF***");
-    }
-    if (returnVal < 0) {
-      _fscanfError();
-    } else if (returnVal == 0) {
-      halt("***Error: No int was read***");
-    }
-  } else {
-    _fopenError(this, isRead = true);
-  }
+  if !isOpen then
+    _fopenError(this, isRead=true);
+  val = __primitive("_fscan_uint32", _fp);
 }
 
 def file.read(inout val: real) {
-  if (isOpen) {
-    var returnVal: int = fscanf(_fp, "%lg", val);
-    if (returnVal == _get_eof()) {
-      halt("***Error: Read failed: EOF***");
-    }
-    if (returnVal < 0) {
-      _fscanfError();
-    } else if (returnVal == 0) {
-      halt("***Error: No real was read***");
-    }
-  } else {
-    _fopenError(this, isRead = true);
-  }
+  if !isOpen then
+    _fopenError(this, isRead=true);
+  val = __primitive("_fscan_real64", _fp);
 }
 
 def file.read(inout val: complex) {
@@ -196,25 +162,20 @@ def file.read(inout val: complex) {
 }
 
 def file.read(inout val: string) {
-  if (isOpen) {
-    val = _string_fscanf(_fp);
-  } else {
-    _fopenError(this, isRead = true);
-  }
+  if !isOpen then
+    _fopenError(this, isRead=true);
+  val = __primitive("_fscan_string", _fp);
 }
 
 def file.read(inout val: bool) {
-  if (isOpen) {
-    var valString : string = _string_fscanf(_fp);
-    if (valString == "true") {
-      val = true;
-    } else if (valString == "false") {
-      val = false;
-    } else {
-      halt("***Error: Not of bool type***");
-    }
+  var s: string;
+  this.read(s);
+  if (s == "true") {
+    val = true;
+  } else if (s == "false") {
+    val = false;
   } else {
-    _fopenError(this, isRead = true);
+    halt("read of bool value that is neither true nor false");
   }
 }
 

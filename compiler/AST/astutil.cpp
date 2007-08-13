@@ -158,11 +158,6 @@ void compute_sym_uses(BaseAST* base) {
           if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == a) {
             a->var->defs.add(a);
             continue;
-          } else if (call->primitive &&
-                     !strcmp(call->primitive->name, "fscanf") &&
-                     call->get(3) == a) {
-            a->var->defs.add(a);
-            continue;
           } else if (call->isResolved()) {
             ArgSymbol* arg = actual_to_formal(a);
             if (arg->intent == INTENT_OUT) {

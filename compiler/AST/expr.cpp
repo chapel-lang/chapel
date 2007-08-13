@@ -733,15 +733,6 @@ void CallExpr::codegen(FILE* outfile) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
       fprintf(outfile, "%s(", primitive->name);
-      if (!strcmp(primitive->name, "fscanf")) {
-        get(1)->codegen(outfile);
-        fprintf(outfile, ", ");
-        get(2)->codegen(outfile);
-        fprintf(outfile, ", &");
-        get(3)->codegen(outfile);
-        fprintf(outfile, ")");
-        break;
-      }
       bool first_actual;
       first_actual = true;
       for_actuals(actual, this) {

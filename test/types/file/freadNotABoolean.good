@@ -1,1 +1,1 @@
-freadNotABoolean.chpl:6: error: halt reached - ***Error: Not of bool type***
+freadNotABoolean.chpl:6: error: halt reached - read of bool value that is neither true nor false
