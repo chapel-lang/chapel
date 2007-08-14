@@ -113961,3 +113961,18 @@ Removed files:
 	                                           useBeforeDef2.future 
 	chapel/test/studies/blas/marybeth/: saxpy2.future 
 
+---------------------------------------------------------------------------
+
+08/14/07 15:06:54 -- deitz
+
+Log message:
+	Fixed a bug in which inout and out intents would not result in a copy
+	back for variable-length arguments.
+	
+	Removed special-casing code in the compiler to handle the read
+	function.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: ChapelIO.chpl 
+
