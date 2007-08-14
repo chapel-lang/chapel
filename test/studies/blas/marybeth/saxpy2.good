@@ -1,1 +1,2 @@
-Error: Variable 'D' used before defined (saxpy2.chpl:1)
+saxpy2.chpl:1: In function 'saxpy':
+saxpy2.chpl:1: error: 'D' used before defined

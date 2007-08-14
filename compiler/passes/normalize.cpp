@@ -30,9 +30,53 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
 
 
-void normalize(void) {
-  normalize(theProgram);
-  normalized = true;
+static void
+checkUseBeforeDefs() {
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint->parentSymbol) {
+      ModuleSymbol* mod = fn->getModule();
+      Vec<const char*> reported;
+      Vec<BaseAST*> asts;
+      Vec<Symbol*> defined;
+      collect_asts_postorder(&asts, fn);
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+          if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
+            if (dynamic_cast<ModuleSymbol*>(base->var))
+              USR_FATAL_CONT(call, "illegal use of module '%s'", base->var->name);
+          if (call->isPrimitive(PRIMITIVE_MOVE))
+            defined.set_add(dynamic_cast<SymExpr*>(call->get(1))->var);
+        } else if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+          if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
+            if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+              continue;
+          if (dynamic_cast<VarSymbol*>(sym->var))
+            if (sym->var->defPoint &&
+                (sym->var->defPoint->parentSymbol == fn ||
+                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn)))
+              if (!defined.set_in(sym->var))
+                if (sym->var != fn->_this)
+                  USR_FATAL(sym, "'%s' used before defined", sym->var->name);
+          CallExpr* parent = dynamic_cast<CallExpr*>(sym->parentExpr);
+          if (!(parent && parent->baseExpr == sym))
+            if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+              if (!reported.set_in(sym->var->name)) {
+                if (!dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
+                  USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                                 sym->var->name);
+                  reported.set_add(sym->var->name);
+                }
+              }
+            }
+        }
+      }
+    }
+  }
+}
+
+
+static void
+flattenGlobalFunctions() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(Expr, expr, mod->initFn->body->body) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
@@ -48,6 +92,14 @@ void normalize(void) {
             mod->block->insertAtTail(def->remove());
     }
   }
+}
+
+
+void normalize(void) {
+  normalize(theProgram);
+  normalized = true;
+  checkUseBeforeDefs();
+  flattenGlobalFunctions();
 }
 
 void normalize(BaseAST* base) {
