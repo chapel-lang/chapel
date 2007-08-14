@@ -61,6 +61,13 @@ Map<const char*, const char*> configParamMap;
 bool debugCCode = false;
 bool optimizeCCode = false;
 
+bool fEnableTimers = false;
+Timer timer1;
+Timer timer2;
+Timer timer3;
+Timer timer4;
+Timer timer5;
+
 static bool printCopyright = false;
 static bool printHelp = false;
 static bool printLicense = false;
@@ -135,6 +142,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fNoScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"null-temps", ' ', NULL, "Initialize nullable compiler temporaries to null", "F", &fNullTemps, "CHPL_NULL_TEMPS", NULL},
+ {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}
 };
@@ -273,6 +281,13 @@ int main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   compile_all();
+  if (fEnableTimers) {
+    printf("timer 1: %8.3lf\n", timer1.elapsed());
+    printf("timer 2: %8.3lf\n", timer2.elapsed());
+    printf("timer 3: %8.3lf\n", timer3.elapsed());
+    printf("timer 4: %8.3lf\n", timer4.elapsed());
+    printf("timer 5: %8.3lf\n", timer5.elapsed());
+  }
   free_args(&arg_state);
   clean_exit(0);
   return 0;

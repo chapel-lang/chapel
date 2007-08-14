@@ -2,7 +2,8 @@ UTIL_SRCS = \
 	files.cpp \
 	misc.cpp \
 	mysystem.cpp \
-	stringutil.cpp
+	stringutil.cpp \
+	timer.cpp
 
 CVS_SRCS = $(UTIL_SRCS)
 SRCS = $(CVS_SRCS)

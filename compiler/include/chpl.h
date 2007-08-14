@@ -27,5 +27,6 @@ extern int verbose_level;
 #include "vec.h"
 #include "map.h"
 #include "misc.h"
+#include "timer.h"
 
 #endif

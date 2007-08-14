@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include "map.h"
+#include "chpl.h"
 
 extern FILE* html_index_file;
 
@@ -55,5 +56,12 @@ extern bool fWarnPromotion;
 extern bool copyCollect;
 
 extern bool debugCCode, optimizeCCode;
+
+extern bool fEnableTimers;
+extern Timer timer1;
+extern Timer timer2;
+extern Timer timer3;
+extern Timer timer4;
+extern Timer timer5;
 
 #endif

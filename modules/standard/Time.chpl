@@ -37,7 +37,7 @@ record Timer {
     if running {
       var time2: _timervalue;
       time2 = __primitive("_now_timer", time2);
-      accumulated = _diff_timer(time2, time);
+      accumulated += _diff_timer(time2, time);
       running = false;
     } else {
       halt("stop called on a timer that has not been started");
