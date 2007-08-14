@@ -18,7 +18,6 @@ bool normalized = false;
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
-static void decompose_special_calls(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
@@ -150,7 +149,6 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       call_constructor_for_class(a);
-      decompose_special_calls(a);
     }
   }
 
@@ -287,43 +285,6 @@ static void call_constructor_for_class(CallExpr* call) {
           INT_FATAL(call, "class type has no default constructor");
       }
     }
-  }
-}
-
-
-static void decompose_special_calls(CallExpr* call) {
-  if (call->isResolved())
-    return;
-  if (!call->argList->isEmpty() > 0) {
-    Expr* firstArg = dynamic_cast<Expr*>(call->argList->get(1));
-    SymExpr* symArg = dynamic_cast<SymExpr*>(firstArg);
-    // don't decompose method calls
-    if (symArg && symArg->var == gMethodToken)
-      return;
-  }
-  if (call->isNamed(".")) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2))) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (var->immediate &&
-            var->immediate->const_kind == CONST_KIND_STRING &&
-            !strcmp(var->immediate->v_string, "read")) {
-          if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
-            while (parent->argList->length() > 1) {
-              Expr* arg = parent->get(1)->remove();
-              parent->getStmtExpr()->insertBefore(new CallExpr(call->copy(), arg));
-            }
-          }
-        }
-      }
-    }
-  } else if (call->isNamed("read")) {
-    for_actuals(actual, call) {
-      actual->remove();
-      call->getStmtExpr()->insertBefore(
-        new CallExpr(
-          new CallExpr(".", chpl_stdin, new_StringSymbol("read")), actual));
-    }
-    call->getStmtExpr()->remove();
   }
 }
 

@@ -561,6 +561,18 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
+
+          if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
+            int i = 1;
+            for_actuals(actual, tupleCall) {
+              VarSymbol* tmp = new VarSymbol("_tmp");
+              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, actual->copy(), new CallExpr("=", actual->copy(), tmp)));
+              i++;
+            }
+          }
+
           tupleCall->insertAtHead(new_IntSymbol(n));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, tupleCall));
           fn->insertAtHead(new DefExpr(var));

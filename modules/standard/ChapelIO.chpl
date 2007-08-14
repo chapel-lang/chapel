@@ -111,6 +111,11 @@ def _fprintfError() {
   halt("***Error: Write failed: ", _get_errno(), "***");
 }
 
+def file.read(inout first, inout rest ...?n) {
+  read(first);
+  for param i in 1..n do
+    read(rest(i));
+}
 
 def file.read(inout val: int) {
   if !isOpen then
@@ -258,6 +263,12 @@ def writeln() {
   stdout.writeln();
 }
 
+def read(inout args ...?n) {
+  stdin.read((...args));
+}
+
+//def read(type t)
+//  return stdin.read(t);
 
 def _tuple2string(t) {
   var s: string;
