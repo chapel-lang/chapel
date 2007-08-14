@@ -113932,3 +113932,32 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/promotion/: test_ref_promotion.future 
 
+---------------------------------------------------------------------------
+
+08/14/07 10:39:42 -- deitz
+
+Log message:
+	Moved "use before def" check into normalization before global
+	functions are removed from the module's generated init function in
+	order to handle global use before def errors.
+	
+	Updated error message formats and removed three .futures.
+	
+	Added more "In function 'foo'" headings to some compiler error
+	messages.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/functions/bradc/useBeforeDef/: useBeforeDef.good 
+	                                           useBeforeDef2.good 
+	chapel/test/modules/diten/usemodule/: test_nested_use2.good 
+	                                      test_nested_use3.good 
+	                                      test_nested_use4.good 
+	chapel/test/studies/blas/marybeth/: saxpy2.good 
+	chapel/test/trivial/bradc/: localConfig.good 
+Removed files:
+	chapel/test/functions/bradc/useBeforeDef/: useBeforeDef.future 
+	                                           useBeforeDef2.future 
+	chapel/test/studies/blas/marybeth/: saxpy2.future 
+
