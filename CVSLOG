@@ -113976,3 +113976,41 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/modules/standard/: ChapelIO.chpl 
 
+---------------------------------------------------------------------------
+
+08/14/07 16:43:43 -- deitz
+
+Log message:
+	Added timer capabilities to our compiler for lightweight profiling.
+	
+	To enable this timing during a compile, use --timers.
+	
+	There are five timers that can be used anywhere in the code base,
+	creatively named timer1, timer2, timer3, timer4, and timer5.
+	
+	If you're interested in timing a section of code, simply start and
+	stop one of these timers around that code as in
+	
+	  timer1.start();
+	  // code segment
+	  timer1.stop();
+	
+	The timer is cumulative.  To clear it, use timer1.clear().  To read
+	the elapsed time, use timer1.elapsed().  Timer is a class so new
+	instances of this class can be made.
+	
+	When using the --timers flag, the only effect is that the values in
+	the five predefined timers are printed out at the end of the
+	compilation.
+	
+	This code is based on the Chapel standard timer class Timer.
+
+Modified files:
+	chapel/compiler/include/: chpl.h driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: Makefile.share 
+	chapel/modules/standard/: Time.chpl 
+Added files:
+	chapel/compiler/include/: timer.h 
+	chapel/compiler/util/: timer.cpp 
+
