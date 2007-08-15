@@ -114014,3 +114014,33 @@ Added files:
 	chapel/compiler/include/: timer.h 
 	chapel/compiler/util/: timer.cpp 
 
+---------------------------------------------------------------------------
+
+08/15/07 11:54:32 -- deitz
+
+Log message:
+	Added macros isDerivedClass(ast) for all derived classes of BaseAST.
+	These macros return true if ast points to a dynamic subclass of
+	BaseAST.
+	
+	Added macros toDerivedClass(ast) to safely downcast the ast pointer.
+	This is equivalent to dynamic_cast<DerivedClass*>(ast), but is
+	significantly faster.
+	
+	Optimized the cleanAst routine, called between passes, to avoid use of
+	dynamic_cast and to no longer clear use and def vectors.  This drops
+	the time between passes on Jacobi from 1.9 to 1.2 seconds with the
+	vast majority of time between passes spent in the verify code rather
+	than the clean code.
+	
+	Added an INT_FATAL to check for the case where addPragma or addPragmas
+	is called but no pragma is actually added because 'this' is not a
+	DefExpr or a Symbol.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/jplevyak/: pragma-2.chpl pragma-3.chpl 
+	                               pragma-4.chpl 
+
