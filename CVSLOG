@@ -114152,3 +114152,21 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
 	chapel/compiler/parser/: chapel.lex modulefinder.lex 
 
+---------------------------------------------------------------------------
+
+08/15/07 16:41:44 -- dinan
+
+Log message:
+	Been a while since I committed.  I am working on the Tensor class, about to
+	make some big changes I might regret later.  Range classes are replaced by
+	first class ranges in Chapel, 3d tensor class isn't used in 1d madness.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Tensor1d.chpl 
+	                                               TwoScaleCoeffs.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Range1d.chpl 
+	                                               Range2d.chpl 
+	                                               Range3d.chpl 
+	                                               Tensor3d.chpl 
+
