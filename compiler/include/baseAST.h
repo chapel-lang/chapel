@@ -105,7 +105,6 @@ class BaseAST {
   COPY_DEF(BaseAST);
 
   virtual void verify(); 
-  virtual void clean();
 
   virtual void codegen(FILE* outfile);
 
@@ -146,5 +145,68 @@ extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
 extern ModuleSymbol* theProgram;
 void registerModule(ModuleSymbol* mod);
+
+//
+// class test macros: determine the dynamic type of a BaseAST*
+//
+#define isExpr(ast)                                                     \
+  ((ast) && (ast)->astType >= EXPR && (ast)->astType <= STMT_GOTO)
+
+#define isSymExpr(ast)   ((ast) && (ast)->astType == EXPR_SYM)
+#define isDefExpr(ast)   ((ast) && (ast)->astType == EXPR_DEF)
+#define isCallExpr(ast)  ((ast) && (ast)->astType == EXPR_CALL)
+#define isNamedExpr(ast) ((ast) && (ast)->astType == EXPR_NAMED)
+#define isBlockStmt(ast) ((ast) && (ast)->astType == STMT_BLOCK)
+#define isCondStmt(ast)  ((ast) && (ast)->astType == STMT_COND)
+#define isGotoStmt(ast)  ((ast) && (ast)->astType == STMT_GOTO)
+
+#define isSymbol(ast)                                                   \
+  ((ast) && (ast)->astType >= SYMBOL && (ast)->astType <= SYMBOL_LABEL)
+
+#define isUnresolvedSymbol(ast) ((ast) && (ast)->astType == SYMBOL_UNRESOLVED)
+#define isModuleSymbol(ast)     ((ast) && (ast)->astType == SYMBOL_MODULE)
+#define isVarSymbol(ast)        ((ast) && (ast)->astType == SYMBOL_VAR)
+#define isArgSymbol(ast)        ((ast) && (ast)->astType == SYMBOL_ARG)
+#define isTypeSymbol(ast)       ((ast) && (ast)->astType == SYMBOL_TYPE)
+#define isFnSymbol(ast)         ((ast) && (ast)->astType == SYMBOL_FN)
+#define isEnumSymbol(ast)       ((ast) && (ast)->astType == SYMBOL_ENUM)
+#define isLabelSymbol(ast)      ((ast) && (ast)->astType == SYMBOL_LABEL)
+
+#define isType(ast)                                                     \
+  ((ast) && (ast)->astType >= TYPE && (ast)->astType <= TYPE_CLASS)
+
+#define isPrimitiveType(ast) ((ast) && (ast)->astType == TYPE_PRIMITIVE)
+#define isEnumType(ast)      ((ast) && (ast)->astType == TYPE_ENUM)
+#define isUserType(ast)      ((ast) && (ast)->astType == TYPE_USER)
+#define isClassType(ast)     ((ast) && (ast)->astType == TYPE_CLASS)
+
+//
+// safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*
+//   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
+//
+#define toExpr(ast)      (isExpr(ast)      ? ((Expr*)(ast))      : NULL)
+#define toSymExpr(ast)   (isSymExpr(ast)   ? ((SymExpr*)(ast))   : NULL)
+#define toDefExpr(ast)   (isDefExpr(ast)   ? ((DefExpr*)(ast))   : NULL)
+#define toCallExpr(ast)  (isCallExpr(ast)  ? ((CallExpr*)(ast))  : NULL)
+#define toNamedExpr(ast) (isNamedExpr(ast) ? ((NamedExpr*)(ast)) : NULL)
+#define toBlockStmt(ast) (isBlockStmt(ast) ? ((BlockStmt*)(ast)) : NULL)
+#define toCondStmt(ast)  (isCondStmt(ast)  ? ((CondStmt*)(ast))  : NULL)
+#define toGotoStmt(ast)  (isGotoStmt(ast)  ? ((GotoStmt*)(ast))  : NULL)
+
+#define toSymbol(ast)           (isSymbol(ast)           ? ((Symbol*)(ast))           : NULL)
+#define toUnresolvedSymbol(ast) (isUnresolvedSymbol(ast) ? ((UnresolvedSymbol*)(ast)) : NULL)
+#define toModuleSymbol(ast)     (isModuleSymbol(ast)     ? ((ModuleSymbol*)(ast))     : NULL)
+#define toVarSymbol(ast)        (isVarSymbol(ast)        ? ((VarSymbol*)(ast))        : NULL)
+#define toArgSymbol(ast)        (isArgSymbol(ast)        ? ((ArgSymbol*)(ast))        : NULL)
+#define toTypeSymbol(ast)       (isTypeSymbol(ast)       ? ((TypeSymbol*)(ast))       : NULL)
+#define toFnSymbol(ast)         (isFnSymbol(ast)         ? ((FnSymbol*)(ast))         : NULL)
+#define toEnumSymbol(ast)       (isEnumSymbol(ast)       ? ((EnumSymbol*)(ast))       : NULL)
+#define toLabelSymbol(ast)      (isLabelSymbol(ast)      ? ((LabelSymbol*)(ast))      : NULL)
+
+#define toType(ast)          (isType(ast)          ? ((Type*)(ast))          : NULL)
+#define toPrimitiveType(ast) (isPrimitiveType(ast) ? ((PrimitiveType*)(ast)) : NULL)
+#define toEnumType(ast)      (isEnumType(ast)      ? ((EnumType*)(ast))      : NULL)
+#define toUserType(ast)      (isUserType(ast)      ? ((UserType*)(ast))      : NULL)
+#define toClassType(ast)     (isClassType(ast)     ? ((ClassType*)(ast))     : NULL)
 
 #endif

@@ -207,9 +207,10 @@ isLive(Symbol* sym) {
   return false;
 }
 
+
 void cleanAst() {
   forv_Vec(BaseAST, ast, gAsts) {
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
+    if (TypeSymbol* ts = toTypeSymbol(ast)) {
       for(int i = 0; i < ts->type->methods.n; i++) {
         FnSymbol* method = ts->type->methods.v[i];
         if (method && !isLive(method))
@@ -224,7 +225,7 @@ void cleanAst() {
   }
   int iasts = 0, ifn = 0, itypes = 0;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+    if (Symbol* sym = toSymbol(ast)) {
       if (isLive(sym)) {
         gAsts.v[iasts++] = ast;
       } else {
@@ -232,13 +233,13 @@ void cleanAst() {
           delete sym->type;
         delete sym;
       }
-    } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    } else if (Expr* expr = toExpr(ast)) {
       if (expr->parentSymbol) {
         gAsts.v[iasts++] = ast;
-        if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
+        if (DefExpr* def = toDefExpr(ast)) {
+          if (FnSymbol* fn = toFnSymbol(def->sym))
             gFns.v[ifn++] = fn;
-          if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
+          else if (TypeSymbol* type = toTypeSymbol(def->sym))
             gTypes.v[itypes++] = type;
         }
       } else
@@ -248,8 +249,6 @@ void cleanAst() {
   gAsts.n = iasts;
   gFns.n = ifn;
   gTypes.n = itypes;
-  forv_Vec(BaseAST, ast, gAsts)
-    ast->clean();
 }
 
 
@@ -313,11 +312,6 @@ void BaseAST::verify() {
 }
 
 
-void BaseAST::clean() {
-
-}
-
-
 void BaseAST::codegen(FILE* outfile) {
   if (!this) {
     INT_FATAL("Calling codegen() on a Null AST");
@@ -346,6 +340,8 @@ void BaseAST::addPragma(const char* str) {
     defExpr->sym->addPragma(str);
   } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
     sym->pragmas.add(str);
+  } else {
+    INT_FATAL(this, "pragma not added");
   }
 }
 

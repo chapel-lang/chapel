@@ -158,13 +158,6 @@ void Symbol::verify() {
 }
 
 
-void Symbol::clean() {
-  BaseAST::clean();
-  uses.clear();
-  defs.clear();
-}
-
-
 void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
 }

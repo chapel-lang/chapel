@@ -57,7 +57,6 @@ class Symbol : public BaseAST {
   Symbol(astType_t astType, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
   virtual void verify(); 
-  virtual void clean();
   void setParentScope(SymScope* init_parentScope);
   virtual bool inTree();
   virtual Type* typeInfo(void);

@@ -1680,7 +1680,7 @@ insertFormalTemps(FnSymbol* fn) {
 }
 
 static bool
-isType(Expr* expr) {
+isTypeExpr(Expr* expr) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
     if (sym->var->isTypeVariable)
       return true;
@@ -2045,7 +2045,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isNamed("==")) {
-      if (isType(call->get(1)) || isType(call->get(2))) {
+      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(1)->typeInfo();
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
@@ -2055,7 +2055,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isNamed("!=")) {
-      if (isType(call->get(1)) || isType(call->get(2))) {
+      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(1)->typeInfo();
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
@@ -2352,7 +2352,7 @@ postFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIMITIVE_ISSUBTYPE)) {
-      if (isType(call->get(1)) || isType(call->get(2))) {
+      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
