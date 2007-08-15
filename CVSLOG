@@ -114141,3 +114141,14 @@ Modified files:
 	                         verify.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+08/15/07 15:07:22 -- deitz
+
+Log message:
+	Removed all "#include <typeinfo>" lines.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/parser/: chapel.lex modulefinder.lex 
+
