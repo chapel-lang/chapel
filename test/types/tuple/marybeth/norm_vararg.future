@@ -1,0 +1,28 @@
+bug: when querying the type of the tuple in a variable length
+argument list, a tuple type is given, not the type of the tuple
+elements
+
+In this test, 
+
+def norm(x:?t...?n) {
+  var sum: t;
+  for i in 1..n {
+    sum += x(i)*2;
+  }
+  return sqrt(sum);
+}
+
+t is a n*t homogeneous tuple.  The test fails because there isn't a sqrt
+function that takes tuple types as input, so it fails to compile.
+
+This doesn't seem correct to me.  If I were to specify the type of a 
+tuple in the above example, I would write:
+
+def norm(x:real...?n) {
+  var sum: real;
+...
+}
+
+So, when querying the type of x (as in the first definition of norm), 
+I would expect it to return the type of the elements of the tuple, 
+not a tuple type.
