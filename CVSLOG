@@ -114064,3 +114064,42 @@ Added files:
 	                                   norm_vararg.future 
 	                                   norm_vararg.good 
 
+---------------------------------------------------------------------------
+
+08/15/07 14:16:13 -- deitz
+
+Log message:
+	Made for_alist macro take only two arguments and declare the first
+	argument to be of type Expr.  So
+	
+	  for_alist(expr, exprlist) { ...
+	
+	is equivalent to the old for_alist written as
+	
+	  for_alist(Expr, expr, exprlist) { ...
+	
+	but is implemented without an unnecessary dynamic_cast.
+	
+	Ditto with for_alist_backward.
+	
+	Added new macros for_defs and for_defs_backward that is equivalent to
+	the old for_alists written as
+	
+	  for_alist(DefExpr, def, defexprlist) { ...
+	    for_alist_backward(DefExpr, def, defexprlist) { ...
+	
+	Removed dynamic_casts from all of the stylized loops over alists,
+	replacing them with the toBaseAST macros.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp astutil.cpp baseAST.cpp bb.cpp 
+	                      build.cpp iterator.cpp stmt.cpp type.cpp 
+	                      view.cpp 
+	chapel/compiler/include/: alist.h 
+	chapel/compiler/optimizations/: collapseBlocks.cpp 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         copyCollect.cpp functionResolution.cpp 
+	                         normalize.cpp parallel.cpp 
+	                         semanticChecks.cpp 
+
