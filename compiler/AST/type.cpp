@@ -1,4 +1,3 @@
-#include <typeinfo>
 #define TYPE_EXTERN
 #include "astutil.h"
 #include "build.h"

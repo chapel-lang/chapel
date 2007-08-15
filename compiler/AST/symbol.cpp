@@ -1,4 +1,3 @@
-#include <typeinfo>
 #include "astutil.h"
 #include "bb.h"
 #include "build.h"

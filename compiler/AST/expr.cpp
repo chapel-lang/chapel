@@ -1,4 +1,3 @@
-#include <typeinfo>
 #include <string.h>
 #include "astutil.h"
 #include "expr.h"

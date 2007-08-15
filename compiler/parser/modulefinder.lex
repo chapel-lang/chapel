@@ -1,7 +1,6 @@
 %{
 
 #include <stdio.h>
-#include <typeinfo>
 #include "processTokens.h"
 #include "modulefinder.tab.h"
 #include "yy.h"

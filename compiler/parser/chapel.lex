@@ -4,7 +4,6 @@
 %{
 
 #include <stdio.h>
-#include <typeinfo>
 #include "lexyacc.h"
 #include "chapel.tab.h"
 
