@@ -114044,3 +114044,23 @@ Modified files:
 	chapel/test/trivial/jplevyak/: pragma-2.chpl pragma-3.chpl 
 	                               pragma-4.chpl 
 
+---------------------------------------------------------------------------
+
+08/15/07 13:39:25 -- marybeth
+
+Log message:
+	Checking in a future regarding variable length argument lists
+	using homogeneous tuples.
+	
+	In this test, I attempted to query the type of the elements of
+	a variable length argument list.  Instead, I got a tuple type.
+	
+	I think this is a bug.  If the tuple type is the correct type
+	for this type query, then how do I access the type of the tuple
+	elements?
+
+Added files:
+	chapel/test/types/tuple/marybeth/: norm_vararg.chpl 
+	                                   norm_vararg.future 
+	                                   norm_vararg.good 
+
