@@ -11,7 +11,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   currentLineno = call->lineno;
   for_formals_actuals(formal, actual, call) {
     if (formal->requiresCPtr() || formal->isTypeVariable) {
-      if (SymExpr* se = dynamic_cast<SymExpr*>(actual))
+      if (SymExpr* se = toSymExpr(actual))
         map->put(formal, se->var);
       else
         INT_FATAL(actual, "illegal reference actual encountered in inlining");
@@ -33,11 +33,11 @@ static void inline_call(CallExpr* call, Vec<BaseAST*>& new_asts) {
   mapFormalsToActuals(call, &map);
   BlockStmt* block = fn->body->copy(&map);
   reset_file_info(block, call->lineno, call->filename);
-  CallExpr* return_stmt = dynamic_cast<CallExpr*>(block->body->last());
+  CallExpr* return_stmt = toCallExpr(block->body->last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(call, "Cannot inline function, function is not normalized");
   Expr* return_value = return_stmt->get(1);
-  SymExpr* se = dynamic_cast<SymExpr*>(return_value);
+  SymExpr* se = toSymExpr(return_value);
   if (!se || se->var->astType == SYMBOL_ARG)
     INT_FATAL(fn, "inlined function cannot return an argument symbol");
   return_stmt->remove();
@@ -55,7 +55,7 @@ static void inline_call(CallExpr* call, Vec<BaseAST*>& new_asts) {
 static void
 inline_calls(Vec<BaseAST*>& asts, Vec<FnSymbol*>* inline_stack = NULL) {
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->hasPragma("inline")) {
           Vec<FnSymbol*> stack;

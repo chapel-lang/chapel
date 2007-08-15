@@ -63,7 +63,7 @@ Type::copyInner(ASTMap* map) {
 
 void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Symbol*>(new_ast);
+    defaultValue = toSymbol(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -175,7 +175,7 @@ void PrimitiveType::verify() {
 
 
 EnumType::EnumType(AList* init_constants) :
-  Type(TYPE_ENUM, dynamic_cast<DefExpr*>(init_constants->first())->sym),
+  Type(TYPE_ENUM, toDefExpr(init_constants->first())->sym),
   constants(init_constants)
 {
   for_defs(def, constants)
@@ -209,7 +209,7 @@ EnumType::copyInner(ASTMap* map) {
 
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Symbol*>(new_ast);
+    defaultValue = toSymbol(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -278,9 +278,9 @@ UserType::copyInner(ASTMap* map) {
 
 void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Symbol*>(new_ast);
+    defaultValue = toSymbol(new_ast);
   } else if (old_ast == typeExpr) {
-    typeExpr = dynamic_cast<Expr*>(new_ast);
+    typeExpr = toExpr(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -336,7 +336,7 @@ ClassType::copyInner(ASTMap* map) {
   copy_type->fields->insertAtTail(COPY_INT(fields));
   copy_type->inherits->insertAtTail(COPY_INT(inherits));
   for_fields(field, copy_type) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(field))
+    if (FnSymbol* fn = toFnSymbol(field))
       copy_type->methods.add(fn);
   }
   return copy_type;
@@ -348,8 +348,8 @@ void ClassType::addDeclarations(AList* stmts, bool tail) {
   collect_top_asts(&asts, stmts);
 
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
         methods.add(fn);
         fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
         fn->insertFormalAtHead(new DefExpr(fn->_this));
@@ -370,7 +370,7 @@ void ClassType::addDeclarations(AList* stmts, bool tail) {
 
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Symbol*>(new_ast);
+    defaultValue = toSymbol(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -406,7 +406,7 @@ void ClassType::codegenDef(FILE* outfile) {
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
-    dynamic_cast<Type*>(substitutions.v[0].value)->symbol->codegen(outfile);
+    toType(substitutions.v[0].value)->symbol->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {
@@ -446,7 +446,7 @@ Symbol* ClassType::getField(const char* name) {
 
 
 Symbol* ClassType::getField(int i) {
-  return dynamic_cast<DefExpr*>(fields->get(i))->sym;
+  return toDefExpr(fields->get(i))->sym;
 }
 
 
@@ -644,7 +644,7 @@ bool is_complex_type(Type *t) {
 
 
 bool is_enum_type(Type *t) {
-  return dynamic_cast<EnumType*>(t);
+  return toEnumType(t);
 }
 
 
@@ -676,7 +676,7 @@ int get_width(Type *t) {
 
 
 bool isRecordType(Type* t) {
-  ClassType* ct = dynamic_cast<ClassType*>(t);
+  ClassType* ct = toClassType(t);
   if (ct && ct->classTag == CLASS_RECORD)
     return true;
   return false;
@@ -687,7 +687,7 @@ bool isReference(Type* t) {
 }
 
 Type* getValueType(Type* type) {
-  if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
+  if (ClassType* ct = toClassType(type)) {
     if (ct->symbol->hasPragma("ref")) {
       return ct->getField(1)->type;
     }

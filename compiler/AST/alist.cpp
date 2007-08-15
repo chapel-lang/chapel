@@ -73,7 +73,7 @@ void AList::insertAtHead(Expr* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
-  if (dynamic_cast<Symbol*>(new_ast))
+  if (toSymbol(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtHead");
   if (!head) {
     head = new_ast;
@@ -102,7 +102,7 @@ void AList::insertAtTail(Expr* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
-  if (dynamic_cast<Symbol*>(new_ast))
+  if (toSymbol(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtTail");
   if (!tail) {
     head = new_ast;

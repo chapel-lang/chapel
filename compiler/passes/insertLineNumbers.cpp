@@ -61,7 +61,7 @@ void insertLineNumbers() {
   // loop over all primitives that require a line number and filename
   // and pass them an actual line number and filename
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr * call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr * call = toCallExpr(ast)) {
       if (call->primitive && call->primitive->passLineno) {
         insertLineNumber(call);
       }

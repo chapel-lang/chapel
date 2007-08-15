@@ -10,7 +10,7 @@ refNecessary(SymExpr* se) {
   if (se->var->defs.n > 1)
     return true;
   forv_Vec(SymExpr, use, se->var->uses) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(use->parentExpr)) {
+    if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
         if (formal->defPoint->getFunction()->_this == formal)
@@ -18,7 +18,7 @@ refNecessary(SymExpr* se) {
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (refNecessary(dynamic_cast<SymExpr*>(call->get(1))))
+        if (refNecessary(toSymExpr(call->get(1))))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
@@ -46,10 +46,10 @@ void cullOverReferences() {
       fn->defPoint->insertBefore(new DefExpr(copy));
       VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
       INT_ASSERT(ret->type);
-      CallExpr* call = dynamic_cast<CallExpr*>(copy->body->body->last());
+      CallExpr* call = toCallExpr(copy->body->body->last());
       if (!call || !call->isPrimitive(PRIMITIVE_RETURN))
         INT_FATAL(fn, "function is not normal");
-      SymExpr* se = dynamic_cast<SymExpr*>(call->get(1));
+      SymExpr* se = toSymExpr(call->get(1));
       if (!se)
         INT_FATAL(fn, "function is not normal");
       call->insertBefore(new DefExpr(ret));
@@ -71,7 +71,7 @@ void cullOverReferences() {
       setterMap.put(fn->setter->sym, fn);
   }
   forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+    if (SymExpr* se = toSymExpr(ast)) {
       if (FnSymbol* fn = setterMap.get(se->var)) {
         VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
         tmp->isCompilerTemp = true;
@@ -85,15 +85,15 @@ void cullOverReferences() {
   compute_sym_uses();
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = toCallExpr(ast)) {
       //
       // change call of reference function to value function
       //
       if (FnSymbol* fn = call->isResolved()) {
         if (FnSymbol* copy = refMap.get(fn)) {
-          if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr)) {
+          if (CallExpr* move = toCallExpr(call->parentExpr)) {
             INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
-            SymExpr* se = dynamic_cast<SymExpr*>(move->get(1));
+            SymExpr* se = toSymExpr(move->get(1));
             INT_ASSERT(se);
             if (!refNecessary(se)) {
               VarSymbol* tmp = new VarSymbol("_tmp", copy->retType);
@@ -101,11 +101,11 @@ void cullOverReferences() {
               move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
                                              new CallExpr(PRIMITIVE_SET_REF, tmp)));
               se->var = tmp;
-              SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+              SymExpr* base = toSymExpr(call->baseExpr);
               base->var = copy;
             }
           } else {
-            SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+            SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;
           }
         }

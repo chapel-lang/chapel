@@ -22,9 +22,9 @@ name_matches_method(const char* name, Type* type) {
     if (name_matches_method(name, pt))
       return true;
   }
-  if (ClassType* ct = dynamic_cast<ClassType*>(type)) {
+  if (ClassType* ct = toClassType(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
-    if (ClassType* outer = dynamic_cast<ClassType*>(outerType))
+    if (ClassType* outer = toClassType(outerType))
       if (name_matches_method(name, outer))
         return true;
   }
@@ -54,7 +54,7 @@ name_matches_method_local(const char* name, Type* type) {
 
 static BlockStmt*
 find_outer_loop(Expr* stmt) {
-  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+  if (BlockStmt* block = toBlockStmt(stmt))
     if (block->isLoop())
       return block;
   if (stmt->parentExpr)
@@ -75,12 +75,12 @@ resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
       gotoStmt->label = loop->pre_loop;
     else
       INT_FATAL(gotoStmt, "Unexpected goto type");
-  } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
+  } else if (toUnresolvedSymbol(gotoStmt->label)) {
     const char* name = gotoStmt->label->name;
     if (gotoStmt->goto_type == goto_break)
       name = stringcat("_post", name);
     forv_Vec(BaseAST, ast, asts) {
-      if (LabelSymbol* ls = dynamic_cast<LabelSymbol*>(ast)) {
+      if (LabelSymbol* ls = toLabelSymbol(ast)) {
         if (!strcmp(ls->name, name))
           gotoStmt->label = ls;
       }
@@ -95,7 +95,7 @@ void scopeResolve(void) {
   forv_Vec(FnSymbol, fn, gFns)
     scopeResolve(fn);
   forv_Vec(TypeSymbol, type, gTypes) {
-    if (dynamic_cast<UserType*>(type->type)) {
+    if (toUserType(type->type)) {
       type->defPoint->remove();
     }
   }
@@ -104,7 +104,7 @@ void scopeResolve(void) {
 
 
 void scopeResolve(Symbol* base) {
-  if (!dynamic_cast<TypeSymbol*>(base) && !dynamic_cast<FnSymbol*>(base))
+  if (!toTypeSymbol(base) && !toFnSymbol(base))
     INT_FATAL(base, "scopeResolve called on Symbol other than Type or Fn");
 
   Vec<BaseAST*> asts;
@@ -115,36 +115,36 @@ void scopeResolve(Symbol* base) {
 
     // Translate M.x where M is a ModuleSymbol into just x
     // where x is the symbol from module M.
-    if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* callExpr = toCallExpr(ast)) {
       SymExpr *base, *sym1, *sym2;
       ModuleSymbol *module;
-      if ((base = dynamic_cast<SymExpr*>(callExpr->baseExpr)) &&
+      if ((base = toSymExpr(callExpr->baseExpr)) &&
           (!strcmp(base->var->name, "."))                     &&
-          (sym1 = dynamic_cast<SymExpr*>(callExpr->get(1)))   &&
-          (module = dynamic_cast<ModuleSymbol*>(sym1->var))   &&
-          (sym2 = dynamic_cast<SymExpr*>(callExpr->get(2)))) {
+          (sym1 = toSymExpr(callExpr->get(1)))   &&
+          (module = toModuleSymbol(sym1->var))   &&
+          (sym2 = toSymExpr(callExpr->get(2)))) {
         SymExpr *newSym =
           new SymExpr(module->block->blkScope->lookup(get_string(sym2)));
         callExpr->replace(newSym);
       }
     }
 
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
-      if (dynamic_cast<UnresolvedSymbol*>(symExpr->var)) {
+    if (SymExpr* symExpr = toSymExpr(ast)) {
+      if (toUnresolvedSymbol(symExpr->var)) {
         const char* name = symExpr->var->name;
         if (!strcmp(name, "."))
           continue;
 
         Symbol* parent = symExpr->parentSymbol;
         // resolve method's type if in a method
-        while (!dynamic_cast<ModuleSymbol*>(parent)) {
-          if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+        while (!toModuleSymbol(parent)) {
+          if (FnSymbol* method = toFnSymbol(parent)) {
             if (method->_this) {
               if (method->_this->type == dtUnknown) {
-                if (SymExpr* sym = dynamic_cast<SymExpr*>(method->_this->defPoint->exprType)) {
+                if (SymExpr* sym = toSymExpr(method->_this->defPoint->exprType)) {
                   if (sym->var->type == dtUnknown) {
                     TypeSymbol* ts =
-                      dynamic_cast<TypeSymbol*>(symExpr->lookup(sym->var->name));
+                      toTypeSymbol(symExpr->lookup(sym->var->name));
                     sym->var = ts;
                     sym->remove();
                   }
@@ -158,7 +158,7 @@ void scopeResolve(Symbol* base) {
           parent = parent->defPoint->parentSymbol;
         }
 
-        if (!dynamic_cast<UnresolvedSymbol*>(symExpr->var))
+        if (!toUnresolvedSymbol(symExpr->var))
           continue;
 
         Symbol* sym = symExpr->parentScope->lookup(name, NULL, false, false);
@@ -167,7 +167,7 @@ void scopeResolve(Symbol* base) {
 
         bool handleFunctionWithoutParens = false;
         for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
-          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(tmp)) {
+          if (FnSymbol* fn = toFnSymbol(tmp)) {
             if (!fn->isMethod && fn->noParens) {
               symExpr->replace(new CallExpr(fn));
               handleFunctionWithoutParens = true;
@@ -178,20 +178,20 @@ void scopeResolve(Symbol* base) {
           continue;
 
         // sjd: stopgap to avoid shadowing variables or functions by methods
-        while (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+        while (FnSymbol* fn = toFnSymbol(sym)) {
           if (fn->isMethod)
             sym = sym->overloadNext;
           else
             break;
         }
 
-        FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
-        TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
+        FnSymbol* fn = toFnSymbol(sym);
+        TypeSymbol* type = toTypeSymbol(sym);
         if (sym) {
           if (!fn)
             symExpr->var = sym;
           if (type)
-            if (UserType* ut = dynamic_cast<UserType*>(type->type)) {
+            if (UserType* ut = toUserType(type->type)) {
               Expr* e = ut->typeExpr->copy();
               symExpr->replace(e);
               collect_asts_postorder(&asts, e); // scope resolve type alias
@@ -202,8 +202,8 @@ void scopeResolve(Symbol* base) {
         // Apply 'this' and 'outer' in methods where necessary
         {
           Symbol* parent = symExpr->parentSymbol;
-          while (!dynamic_cast<ModuleSymbol*>(parent)) {
-            if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+          while (!toModuleSymbol(parent)) {
+            if (FnSymbol* method = toFnSymbol(parent)) {
 
               // stopgap bug fix: do not let methods shadow symbols
               // that are more specific than methods
@@ -212,23 +212,23 @@ void scopeResolve(Symbol* base) {
 
               if (method->_this && symExpr->var != method->_this) {
                 Type* type = method->_this->type;
-                if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
+                if ((sym && toClassType(sym->parentScope->astParent)) ||
                     name_matches_method(name, type)) {
-                  CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
+                  CallExpr* call = toCallExpr(symExpr->parentExpr);
                   if (call && call->baseExpr == symExpr &&
                       call->argList->length() >= 2 &&
-                      dynamic_cast<SymExpr*>(call->get(1)) &&
-                      dynamic_cast<SymExpr*>(call->get(1))->var == gMethodToken) {
+                      toSymExpr(call->get(1)) &&
+                      toSymExpr(call->get(1))->var == gMethodToken) {
                     symExpr->var = new UnresolvedSymbol(name);
                   } else {
-                    ClassType* ct = dynamic_cast<ClassType*>(type);
+                    ClassType* ct = toClassType(type);
                     int nestDepth = 0;
                     if (name_matches_method(name, type)) {
                       while (ct && !name_matches_method_local(name, ct)) {
                         // count how many classes out from current depth that
                         // this method is first defined in
                         nestDepth += 1;
-                        ct = dynamic_cast<ClassType*>
+                        ct = toClassType
                           (ct->symbol->defPoint->parentSymbol->type);
                       }
                     } else {
@@ -236,7 +236,7 @@ void scopeResolve(Symbol* base) {
                         // count how many classes out from current depth that
                         // this symbol is first defined in
                         nestDepth += 1;
-                        ct = dynamic_cast<ClassType*>
+                        ct = toClassType
                           (ct->symbol->defPoint->parentSymbol->type);
                       }
                     }
@@ -274,7 +274,7 @@ void scopeResolve(Symbol* base) {
           }
         }
       }
-    } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {
+    } else if (GotoStmt* gs = toGotoStmt(ast)) {
       resolveGotoLabel(gs, asts);
     }
   }

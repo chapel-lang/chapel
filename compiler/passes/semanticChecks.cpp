@@ -42,7 +42,7 @@ check_functions(FnSymbol* fn) {
   Vec<CallExpr*> rets;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* ret = dynamic_cast<CallExpr*>(ast))
+    if (CallExpr* ret = toCallExpr(ast))
       if (ret->isPrimitive(PRIMITIVE_RETURN) && ret->parentSymbol == fn)
         rets.add(ret);
   }
@@ -50,7 +50,7 @@ check_functions(FnSymbol* fn) {
     return;
   bool returns_void = false;
   forv_Vec(CallExpr, ret, rets) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(ret->get(1)))
+    if (SymExpr* sym = toSymExpr(ret->get(1)))
       if (sym->var == gVoid)
         returns_void = true;
   }
@@ -70,9 +70,9 @@ static void
 check_parsed_vars(VarSymbol* var) {
   if (var->isParam() && !var->immediate)
     if (!var->defPoint->init &&
-        (dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) ||
-         dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
-        !dynamic_cast<FnSymbol*>(var->defPoint->parentScope->astParent))
+        (toFnSymbol(var->defPoint->parentSymbol) ||
+         toModuleSymbol(var->defPoint->parentSymbol)) &&
+        !toFnSymbol(var->defPoint->parentScope->astParent))
       USR_FATAL(var, "Top-level params must be initialized.");
   if (var->varClass == VAR_CONFIG &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
@@ -93,7 +93,7 @@ static void
 check_named_arguments(CallExpr* call) {
   Vec<const char*> names;
   for_actuals(expr, call) {
-    if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
+    if (NamedExpr* named = toNamedExpr(expr)) {
       forv_Vec(const char, name, names) {
         if (!strcmp(name, named->name))
           USR_FATAL(named, "The named argument '%s' is used more "
@@ -111,29 +111,29 @@ checkParsed(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
 
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+    if (CallExpr* call = toCallExpr(ast))
       check_named_arguments(call);
 
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    if (DefExpr* def = toDefExpr(ast)) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
-      } else if (dynamic_cast<VarSymbol*>(def->sym)) {
+      } else if (toVarSymbol(def->sym)) {
         if (def->sym->hasPragma("internal var"))
           def->sym->isCompilerTemp = true;
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
-          if (dynamic_cast<BlockStmt*>(def->parentExpr))
+          if (toBlockStmt(def->parentExpr))
             USR_FATAL_CONT(def->sym,
                            "Variable '%s' is not initialized or has no type",
                            def->sym->name);
       }
     }
 
-    if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+    if (Symbol* sym = toSymbol(ast))
       check_redefinition(sym);
 
-    if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
+    if (VarSymbol* a = toVarSymbol(ast))
       check_parsed_vars(a);
-    else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
+    else if (FnSymbol* fn = toFnSymbol(ast))
       check_functions(fn);
   }
 }
@@ -160,7 +160,7 @@ static void
 check_resolved_syms(Symbol* var) {
   if (!var->isConst() && !var->isParam())
     return;
-  if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var))
+  if (VarSymbol* vs = toVarSymbol(var))
     if (vs->immediate)
       return;
   if (var->defs.n > 1)
@@ -168,11 +168,11 @@ check_resolved_syms(Symbol* var) {
                    "Assigning to a constant expression");
   // need something like below to check constant assignment via refs
   forv_Vec(SymExpr, use, var->uses) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(use->parentExpr))
+    if (CallExpr* call = toCallExpr(use->parentExpr))
       if (call->isPrimitive(PRIMITIVE_SET_REF))
-        if (CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr))
+        if (CallExpr* move = toCallExpr(call->parentExpr))
           if (move->isPrimitive(PRIMITIVE_MOVE))
-            if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
+            if (SymExpr* lhs = toSymExpr(move->get(1)))
               if (lhs->var->defs.n > 1)
                 USR_FATAL_CONT(lhs->var->defs.v[lhs->var->defs.n-1], "Assigning to a constant expression");
   }
@@ -185,17 +185,17 @@ checkResolved(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (dynamic_cast<VarSymbol*>(ast) || dynamic_cast<ArgSymbol*>(ast))
-      check_resolved_syms(dynamic_cast<Symbol*>(ast));
+    if (toVarSymbol(ast) || toArgSymbol(ast))
+      check_resolved_syms(toSymbol(ast));
   }
 
   forv_Vec(TypeSymbol, type, gTypes) {
-    if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+    if (EnumType* et = toEnumType(type->type)) {
       for_defs(def, et->constants) {
         if (def->init) {
-          SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
-          if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
-                       !dynamic_cast<VarSymbol*>(sym->var)->immediate))
+          SymExpr* sym = toSymExpr(def->init);
+          if (!sym || (toVarSymbol(sym->var)->consClass != VAR_PARAM &&
+                       !toVarSymbol(sym->var)->immediate))
             USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }
       }

@@ -54,7 +54,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     BBB(fn->body);
     BB_STOP();
   } else {
-    if (BlockStmt* s = dynamic_cast<BlockStmt*>(stmt)) {
+    if (BlockStmt* s = toBlockStmt(stmt)) {
       if (s->loopInfo) {
         BasicBlock* top = basicBlock;
         BB_RESTART();
@@ -75,7 +75,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
           BBB(stmt);
         }
       }
-    } else if (CondStmt* s = dynamic_cast<CondStmt*>(stmt)) {
+    } else if (CondStmt* s = toCondStmt(stmt)) {
       BB_ADD(s->condExpr);
       BasicBlock* top = basicBlock;
       BB_RESTART();
@@ -92,8 +92,8 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       BB_THREAD(top, elseTop);
       BB_THREAD(thenBottom, bottom);
       BB_THREAD(elseBottom, bottom);
-    } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
-      LabelSymbol* label = dynamic_cast<LabelSymbol*>(s->label);
+    } else if (GotoStmt* s = toGotoStmt(stmt)) {
+      LabelSymbol* label = toLabelSymbol(s->label);
       if (BasicBlock* bb = labelMaps.get(label)) {
         BB_THREAD(basicBlock, bb);
       } else {
@@ -105,13 +105,13 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       }
       BB_RESTART();
     } else {
-      DefExpr* def = dynamic_cast<DefExpr*>(stmt);
-      if (def && dynamic_cast<LabelSymbol*>(def->sym)) {
+      DefExpr* def = toDefExpr(stmt);
+      if (def && toLabelSymbol(def->sym)) {
         BasicBlock* top = basicBlock;
         BB_RESTART();
         BasicBlock* bottom = basicBlock;
         BB_THREAD(top, bottom);
-        LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym);
+        LabelSymbol* label = toLabelSymbol(def->sym);
         if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
           forv_Vec(BasicBlock, basicBlock, *vbb) {
             BB_THREAD(basicBlock, bottom);
@@ -130,8 +130,8 @@ void buildLocalsVectorMap(FnSymbol* fn,
   int i = 0;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-        if (dynamic_cast<VarSymbol*>(def->sym)) {
+      if (DefExpr* def = toDefExpr(expr)) {
+        if (toVarSymbol(def->sym)) {
           locals.add(def->sym);
           localMap.put(def->sym, i++);
         }

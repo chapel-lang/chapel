@@ -9,10 +9,10 @@
 static ClassType* isInnerClass(BaseAST* ast) {
   ClassType *outer = NULL, *inner = NULL;
   
-  if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (ClassType* ct = toClassType(def->sym->type)) {
       outer = 
-        dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type);
+        toClassType(ct->symbol->defPoint->parentSymbol->type);
       if (outer) {
         inner = ct;
       }

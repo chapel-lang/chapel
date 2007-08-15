@@ -30,7 +30,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
   if (!base) {
     /* This is the first level of recursion.  Scan the formals. */
     for_formals(formal, fn) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(formal->type)) {
+      if (ClassType* ct = toClassType(formal->type)) {
         if (ct->classTag == CLASS_CLASS) {
           addToRootSet(fn, new SymExpr(formal), false);
         } else if (ct->classTag == CLASS_RECORD) {
@@ -40,25 +40,25 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
     }
     /* Now scan the Function body */
     for_alist(expr, fn->body->body) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+      if (DefExpr* def = toDefExpr(expr)) {
+        if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
           addToRootSet(fn, new SymExpr(def->sym), nullify);
           } else if (ct->classTag == CLASS_RECORD) {
             buildRootSetForFunction(fn, new SymExpr(def->sym), def, nullify);
           }
         }
-      } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+      } else if (BlockStmt* blk = toBlockStmt(expr)) {
         buildRootSetForFunction(fn, blk, NULL, nullify);
       }
     }
   } else if (!def) {
     /* Looking at a BlockStmt */
-    BlockStmt* blk = dynamic_cast<BlockStmt*>(base);
+    BlockStmt* blk = toBlockStmt(base);
     INT_ASSERT(blk);
     for_alist(ast, blk->body) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+      if (DefExpr* def = toDefExpr(ast)) {
+        if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
             addToRootSet(fn, new SymExpr(def->sym), nullify);
           } else if (ct->classTag == CLASS_RECORD) {
@@ -69,10 +69,10 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
     }
   } else {
     /* Looking at a record. */
-    ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
+    ClassType* ct = toClassType(def->sym->type);
     INT_ASSERT(ct);
     for_fields(field, ct) {
-      if (ClassType* classfield = dynamic_cast<ClassType*>(field->type)) {
+      if (ClassType* classfield = toClassType(field->type)) {
         if (classfield->classTag == CLASS_CLASS) {
           addToRootSet(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
                                            base->copy(),
@@ -91,9 +91,9 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
 
 void buildRootSetForModule(ModuleSymbol* module) {
   for_alist(expr, module->block->body) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      if (dynamic_cast<VarSymbol*>(def->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (toVarSymbol(def->sym)) {
+        if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
             addToRootSet(chpl_main, new SymExpr(def->sym), true);
           }

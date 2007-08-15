@@ -40,7 +40,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
       Vec<BaseAST*> asts;
       collect_asts(&asts, expr);
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
             if (!bbDefSet.set_in(se->var))
               gen->v[defMap.get(se)] = true;
@@ -124,7 +124,7 @@ buildDefUseChains(FnSymbol* fn,
       Vec<BaseAST*> asts;
       collect_asts(&asts, expr);
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             UD.put(se, new Vec<SymExpr*>());
             for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
@@ -139,7 +139,7 @@ buildDefUseChains(FnSymbol* fn,
         }
       }
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
             for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
               if (defs.v[j]->var != se->var)

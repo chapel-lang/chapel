@@ -11,7 +11,7 @@
 
 static void
 list_sym(Symbol* sym, bool type = true) {
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
+  if (VarSymbol* var = toVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
         printf("%lld ", var->immediate->int_value());
@@ -22,18 +22,18 @@ list_sym(Symbol* sym, bool type = true) {
       }
     }
   }
-  if (dynamic_cast<FnSymbol*>(sym)) {
+  if (toFnSymbol(sym)) {
     printf("fn ");
-  } else if (dynamic_cast<ArgSymbol*>(sym)) {
+  } else if (toArgSymbol(sym)) {
     printf("arg ");
-  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+  } else if (toTypeSymbol(sym)) {
     printf("type ");
   }
   printf("%s", sym->name);
   printf("[%d]", sym->id);
   if (!type) {
     printf(" ");
-  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+  } else if (FnSymbol* fn = toFnSymbol(sym)) {
     printf(":%s", fn->retType->symbol->name);
     printf("[%d] ", fn->retType->symbol->id);
   } else if (sym->type && sym->type->symbol) {
@@ -49,7 +49,7 @@ static bool
 list_line(Expr* expr) {
   if (IS_STMT(expr))
     return true;
-  if (CondStmt* cond = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+  if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
     if (cond->condExpr == expr)
       return false;
   }
@@ -61,44 +61,44 @@ list_line(Expr* expr) {
 
 static void
 list_ast(BaseAST* ast, int indent = 0) {
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+  if (Expr* expr = toExpr(ast)) {
     if (list_line(expr)) {
       printf("%-7d ", expr->id);
       for (int i = 0; i < indent; i++)
         printf(" ");
     }
-    if (GotoStmt* e = dynamic_cast<GotoStmt*>(ast)) {
+    if (GotoStmt* e = toGotoStmt(ast)) {
       printf("goto ");
       if (e->label) {
         list_ast(e->label, indent+1);
       }
-    } else if (dynamic_cast<BlockStmt*>(ast)) {
+    } else if (toBlockStmt(ast)) {
       printf("{\n");
-    } else if (dynamic_cast<CondStmt*>(ast)) {
+    } else if (toCondStmt(ast)) {
       printf("if ");
-    } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+    } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->primitive)
         printf("%s( ", e->primitive->name);
       else
         printf("call( ");
-    } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+    } else if (NamedExpr* e = toNamedExpr(expr)) {
       printf("%s = ", e->name);
-    } else if (dynamic_cast<DefExpr*>(expr)) {
+    } else if (toDefExpr(expr)) {
       printf("def ");
-    } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+    } else if (SymExpr* e = toSymExpr(expr)) {
       list_sym(e->var, false);
     }
   }
 
-  if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+  if (Symbol* sym = toSymbol(ast))
     list_sym(sym);
-  if (dynamic_cast<FnSymbol*>(ast) || dynamic_cast<ModuleSymbol*>(ast)) {
+  if (toFnSymbol(ast) || toModuleSymbol(ast)) {
     printf("\n");
   }
 
   int new_indent = indent;
 
-  if (Expr* expr = dynamic_cast<Expr*>(ast))
+  if (Expr* expr = toExpr(ast))
     if (list_line(expr))
       new_indent = indent+2;
 
@@ -107,22 +107,22 @@ list_ast(BaseAST* ast, int indent = 0) {
   forv_Vec(BaseAST, ast, asts)
     list_ast(ast, new_indent);
 
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    if (dynamic_cast<CallExpr*>(expr)) {
+  if (Expr* expr = toExpr(ast)) {
+    if (toCallExpr(expr)) {
       printf(") ");
     }
-    if (dynamic_cast<BlockStmt*>(ast)) {
+    if (toBlockStmt(ast)) {
       printf("%-7d ", expr->id);
       for (int i = 0; i < indent; i++)
         printf(" ");
       printf("}\n");
-    } else if (CondStmt* cond = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+    } else if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (!dynamic_cast<CondStmt*>(expr) && list_line(expr)) {
-      DefExpr* def = dynamic_cast<DefExpr*>(expr);
-      if (!(def && (dynamic_cast<FnSymbol*>(def->sym) ||
-                    dynamic_cast<ModuleSymbol*>(def->sym))))
+    } else if (!toCondStmt(expr) && list_line(expr)) {
+      DefExpr* def = toDefExpr(expr);
+      if (!(def && (toFnSymbol(def->sym) ||
+                    toModuleSymbol(def->sym))))
         printf("\n");
     }
   }
@@ -138,7 +138,7 @@ static void
 view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   if (!ast)
     return;
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+  if (Expr* expr = toExpr(ast)) {
     printf("\n");
     for (int i = 0; i < indent; i++)
       printf(" ");
@@ -149,21 +149,21 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf("%d ", ast->id);
     printf("%s", astTypeName[expr->astType]);
 
-    if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
+    if (GotoStmt *gs= toGotoStmt(ast)) {
       if (gs->label) {
         printf( " ");
         view_ast( gs->label, number, mark, indent+1);
       }
     }
 
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+    if (CallExpr* call = toCallExpr(expr))
       if (call->primitive)
         printf(" %s", call->primitive->name);
 
-    if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr))
+    if (NamedExpr* named = toNamedExpr(expr))
       printf(" \"%s\"", named->name);
 
-    if (dynamic_cast<DefExpr*>(expr))
+    if (toDefExpr(expr))
       printf(" ");
 
     long i;
@@ -174,21 +174,21 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf(" \"%s\"", str);
     }
 
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (SymExpr* sym = toSymExpr(expr)) {
       printf(" '");
       if (sym->var->id == mark)
         printf("***");
-      if (dynamic_cast<FnSymbol*>(sym->var)) {
+      if (toFnSymbol(sym->var)) {
         printf("fn ");
-      } else if (dynamic_cast<ArgSymbol*>(sym->var)) {
+      } else if (toArgSymbol(sym->var)) {
         printf("arg ");
-      } else if (dynamic_cast<TypeSymbol*>(sym->var)) {
+      } else if (toTypeSymbol(sym->var)) {
         printf("type ");
       }
       printf("%s", sym->var->name);
       if (number)
         printf("[%d]", sym->var->id);
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->var)) {
+      if (FnSymbol* fn = toFnSymbol(sym->var)) {
         printf(":%s", fn->retType->symbol->name);
         if (number)
           printf("[%d]", fn->retType->symbol->id);
@@ -201,21 +201,21 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     }
   }
 
-  if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+  if (Symbol* sym = toSymbol(ast)) {
     printf("'");
     if (ast->id == mark)
       printf("***");
-    if (dynamic_cast<FnSymbol*>(sym)) {
+    if (toFnSymbol(sym)) {
       printf("fn ");
-    } else if (dynamic_cast<ArgSymbol*>(sym)) {
+    } else if (toArgSymbol(sym)) {
       printf("arg ");
-    } else if (dynamic_cast<TypeSymbol*>(sym)) {
+    } else if (toTypeSymbol(sym)) {
       printf("type ");
     }
     printf("%s", sym->name);
     if (number)
       printf("[%d]", sym->id);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (FnSymbol* fn = toFnSymbol(sym)) {
       printf(":%s", fn->retType->symbol->name);
       if (number)
         printf("[%d]", fn->retType->symbol->id);
@@ -232,20 +232,20 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   forv_Vec(BaseAST, ast, asts)
     view_ast(ast, number, mark, indent + 2);
 
-  if (dynamic_cast<Expr*>(ast))
+  if (toExpr(ast))
     printf(")");
 }
 
 static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
   SymScope* scope = NULL;
-  if (BlockStmt* a = dynamic_cast<BlockStmt*>(ast))
+  if (BlockStmt* a = toBlockStmt(ast))
     scope = a->blkScope;
-  else if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(ast))
+  else if (ModuleSymbol* a = toModuleSymbol(ast))
     scope = a->block->blkScope;
-  else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
+  else if (FnSymbol* a = toFnSymbol(ast))
     scope = a->argScope;
-  else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast))
-    if (ClassType* ct = dynamic_cast<ClassType*>(a->type))
+  else if (TypeSymbol* a = toTypeSymbol(ast))
+    if (ClassType* ct = toClassType(a->type))
       scope = ct->structScope;
 
   if (scope)
@@ -258,7 +258,7 @@ static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
 }
 
 void list_view(BaseAST* ast) {
-  if (dynamic_cast<Symbol*>(ast))
+  if (toSymbol(ast))
     printf("%-7d ", ast->id);
   list_ast(ast);
   printf("\n");
@@ -266,7 +266,7 @@ void list_view(BaseAST* ast) {
 }
 
 void list_view_noline(BaseAST* ast) {
-  if (dynamic_cast<Symbol*>(ast))
+  if (toSymbol(ast))
     printf("%-7d ", ast->id);
   list_ast(ast);
   fflush(stdout);
@@ -328,15 +328,15 @@ void mark_view(BaseAST* ast, int id) {
 
 static ClassType *
 structuralTypeSymbol(Symbol *s) {
-  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
-    if (ClassType *st = dynamic_cast<ClassType*>(ts->type))
+  if (TypeSymbol *ts = toTypeSymbol(s))
+    if (ClassType *st = toClassType(ts->type))
       return st;
   return NULL;
 }
 
 static void
 html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
-  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+  if (!toUnresolvedSymbol(sym)) {
     if (def) {
       fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
     } else {
@@ -349,21 +349,21 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
       }
     }
   }
-  if (dynamic_cast<FnSymbol*>(sym)) {
+  if (toFnSymbol(sym)) {
     fprintf(html_file, "<FONT COLOR=\"blue\">");
-  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+  } else if (toTypeSymbol(sym)) {
     fprintf(html_file, "<FONT COLOR=\"green\">");
   } else {
     fprintf(html_file, "<FONT COLOR=\"red\">");
   }
   fprintf(html_file, "%s", sym->name);
   fprintf(html_file, "</FONT>");
-  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+  if (!toUnresolvedSymbol(sym)) {
     fprintf(html_file, "<FONT COLOR=\"grey\">[%d]</FONT>", sym->id);
   }
   fprintf(html_file, "</A>");
   if (def &&
-      !dynamic_cast<TypeSymbol*>(sym) &&
+      !toTypeSymbol(sym) &&
       sym->type &&
       sym->type->symbol &&
       sym->type != dtUnknown) {
@@ -400,8 +400,8 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
 
 static void
 html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    if (BlockStmt *b=dynamic_cast<BlockStmt*>(expr)) {
+  if (Expr* expr = toExpr(ast)) {
+    if (BlockStmt *b=toBlockStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "{");
       switch( b->blockTag) {
@@ -416,7 +416,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       default:
         break;
       }
-    } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(expr)) {
+    } else if (GotoStmt* s = toGotoStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       switch (s->goto_type) {
       case goto_normal: fprintf(html_file, "<B>goto</B> "); break;
@@ -425,7 +425,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       }
       if (s->label)
         html_print_symbol( html_file, pass, s->label, true);
-    } else if (dynamic_cast<CondStmt*>(expr)) {
+    } else if (toCondStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "<B>if</B> ");
     } else {
@@ -433,8 +433,8 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         fprintf(html_file, "<DL>\n");
       }
       fprintf(html_file, " ");
-      if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+      if (DefExpr* e = toDefExpr(expr)) {
+        if (FnSymbol* fn = toFnSymbol(e->sym)) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
           fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
           fprintf(html_file, "<B>function ");
@@ -443,7 +443,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         } else if (structuralTypeSymbol(e->sym)) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n");
           fprintf(html_file, "<LI>");
-          if (DefExpr *def = dynamic_cast<DefExpr*>( ast))
+          if (DefExpr *def = toDefExpr( ast))
             if (def->sym->hasPragma( "sync var")) {
               fprintf( html_file, "<B>sync</B> ");
             } else if (def->sym->hasPragma( "single var")) {
@@ -452,10 +452,10 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           fprintf(html_file, "<B>type ");
           html_print_symbol( html_file, pass, e->sym, true);
           fprintf(html_file, "</B><UL>\n");
-        } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
+        } else if (toTypeSymbol(e->sym)) {
           fprintf(html_file, "<B>type </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
-        } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
+        } else if (VarSymbol* vs=toVarSymbol(e->sym)) {
           if (vs->type->symbol->hasPragma( "sync var")) {
             fprintf( html_file, "<B>sync </B>");
           } else if (vs->type->symbol->hasPragma( "single var")) {
@@ -463,7 +463,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           }
           fprintf(html_file, "<B>var </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
-        } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
+        } else if (ArgSymbol* s = toArgSymbol(e->sym)) {
           switch (s->intent) {
           case INTENT_IN: fprintf(html_file, "<B>in</B> "); break;
           case INTENT_INOUT: fprintf(html_file, "<B>inout</B> "); break;
@@ -476,10 +476,10 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           }
           fprintf(html_file, "<B>arg</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
-        } else if (dynamic_cast<LabelSymbol*>(e->sym)) {
+        } else if (toLabelSymbol(e->sym)) {
           fprintf(html_file, "<B>label</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
-        } else if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(e->sym)) {
+        } else if (ModuleSymbol* mod = toModuleSymbol(e->sym)) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
           fprintf(html_file, "<CHPLTAG=\"MOD%d\">\n", mod->id);
           fprintf(html_file, "<B>module ");
@@ -497,11 +497,11 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         } else {
           fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
         }
-      } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+      } else if (SymExpr* e = toSymExpr(expr)) {
         html_print_symbol( html_file, pass, e->var, false);
-      } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+      } else if (NamedExpr* e = toNamedExpr(expr)) {
         fprintf(html_file, "(%s = ", e->name);
-      } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+      } else if (CallExpr* e = toCallExpr(expr)) {
         fprintf(html_file, "(%d ", e->id);
         if (!e->primitive) {
           fprintf(html_file, "<B>call</B> ");
@@ -526,28 +526,28 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
   forv_Vec(BaseAST, ast, asts)
     html_view_ast( html_file, pass, ast);
 
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-    if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
-      if (dynamic_cast<FnSymbol*>(e->sym) || 
-          (dynamic_cast<TypeSymbol*>(e->sym) &&
-           dynamic_cast<ClassType*>(e->sym->type))) {
+  if (Expr* expr = toExpr(ast)) {
+    if (DefExpr* e = toDefExpr(expr)) {
+      if (toFnSymbol(e->sym) || 
+          (toTypeSymbol(e->sym) &&
+           toClassType(e->sym->type))) {
         fprintf(html_file, "</UL>\n");
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+        if (FnSymbol* fn = toFnSymbol(e->sym)) {
           fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
         }
         fprintf(html_file, "</UL>\n");
       }
-    } else if (dynamic_cast<SymExpr*>(expr)) {
-    } else if (dynamic_cast<CallExpr*>(expr) ||
-               dynamic_cast<NamedExpr*>(expr)) {
+    } else if (toSymExpr(expr)) {
+    } else if (toCallExpr(expr) ||
+               toNamedExpr(expr)) {
       fprintf(html_file, ")");
     }
 
-    if (dynamic_cast<BlockStmt*>(expr) ||
-        dynamic_cast<CondStmt*>(expr) ||
-        dynamic_cast<GotoStmt*>(expr) ||
+    if (toBlockStmt(expr) ||
+        toCondStmt(expr) ||
+        toGotoStmt(expr) ||
         expr->getStmtExpr() && expr->getStmtExpr() == expr) {
-      if (dynamic_cast<BlockStmt*>(expr))
+      if (toBlockStmt(expr))
         fprintf(html_file, "}");
       fprintf(html_file, "</DL>\n");
     }
@@ -565,8 +565,8 @@ void html_view(const char* passName) {
   fprintf(html_index_file, "%s", passName);
   fprintf(html_index_file, "</TD><TD>");
   for_alist(expr, theProgram->block->body)
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->sym))
+    if (DefExpr* def = toDefExpr(expr))
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym))
         mods.add(mod);
   // mods.add(theProgram); // The whole program nested in one module
   forv_Vec(ModuleSymbol, mod, mods) {

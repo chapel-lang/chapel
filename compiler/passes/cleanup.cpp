@@ -23,7 +23,7 @@ encapsulateBegins() {
   int uid = 1;
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
+    if (BlockStmt *b = toBlockStmt(ast)) {
       if (b->blockTag == BLOCK_BEGIN) {
         char *fname = astr("_begin_block", intstring(uid++));
         FnSymbol *fn = new FnSymbol(fname);
@@ -71,7 +71,7 @@ ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   ModuleSymbol* mod = NULL;
 
   if (!useCall) {
-    CallExpr* call = dynamic_cast<CallExpr*>(expr);
+    CallExpr* call = toCallExpr(expr);
     if (!call)
       INT_FATAL(call, "Bad use statement in getUsedModule");
     if (!call->isPrimitive(PRIMITIVE_USE))
@@ -79,17 +79,17 @@ ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
     return getUsedModule(call->get(1), call);
   }
 
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    mod = dynamic_cast<ModuleSymbol*>(useCall->parentScope->lookup(sym->var->name));
+  if (SymExpr* sym = toSymExpr(expr)) {
+    mod = toModuleSymbol(useCall->parentScope->lookup(sym->var->name));
     if (!mod)
       USR_FATAL(useCall, "Cannot find module '%s'", sym->var->name);
-  } else if(CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+  } else if(CallExpr* call = toCallExpr(expr)) {
     if (!call->isNamed("."))
       USR_FATAL(useCall, "Bad use statement in getUsedModule");
     ModuleSymbol* lhs = getUsedModule(call->get(1), useCall);
     if (!lhs)
       USR_FATAL(useCall, "Cannot find module");
-    SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2));
+    SymExpr* rhs = toSymExpr(call->get(2));
     const char* rhsName;
     if (!rhs)
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
@@ -97,7 +97,7 @@ ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
-    mod = dynamic_cast<ModuleSymbol*>(lhs->lookup(rhsName));
+    mod = toModuleSymbol(lhs->lookup(rhsName));
     if (!mod)
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
   } else {
@@ -159,11 +159,11 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   }
 
   for_alist(expr, ct->inherits) {
-    TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
+    TypeSymbol* ts = toTypeSymbol(expr->lookup(expr));
     expr->remove();
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
-    ClassType* pt = dynamic_cast<ClassType*>(ts->type);
+    ClassType* pt = toClassType(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);
     if (ct->classTag == CLASS_UNION || pt->classTag == CLASS_UNION)
@@ -181,7 +181,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
     for_fields_backward(field, pt) {
-      if (dynamic_cast<VarSymbol*>(field))
+      if (toVarSymbol(field))
         ct->fields->insertAtHead(field->defPoint->copy());
     }
   }
@@ -190,7 +190,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 
 static BlockStmt*
 getBlock(Expr* stmt) {
-  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+  if (BlockStmt* block = toBlockStmt(stmt)) {
     if (block->blkScope)
       return block;
   }
@@ -225,7 +225,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
  ***   NOTE: handles recursive tuple destructuring, (i,(j,k)) = ...
  ***/
 static void destructure_tuple(CallExpr* call) {
-  CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
+  CallExpr* parent = toCallExpr(call->parentExpr);
   if (!parent || !parent->isNamed("=") || parent->get(1) != call)
     return;
   Expr* stmt = parent->getStmtExpr();
@@ -237,7 +237,7 @@ static void destructure_tuple(CallExpr* call) {
   for_actuals(expr, call) {
     if (i > 1) {
       Expr *removed_expr = expr->remove();
-      if (SymExpr *sym_expr = dynamic_cast<SymExpr *>(removed_expr)) {
+      if (SymExpr *sym_expr = toSymExpr(removed_expr)) {
         if (!strcmp(sym_expr->var->name, "_")) {
           i++;
           continue;
@@ -259,7 +259,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasPragma("synchronization primitive"))
     ct->defaultValue = NULL;
   char* name;
-  if (!dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type)) {
+  if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
     name = astr("_construct_", ct->symbol->name);
   } else {
     name = astr(ct->symbol->name);
@@ -267,7 +267,7 @@ static void build_constructor(ClassType* ct) {
   FnSymbol* fn = new FnSymbol(name);
   ct->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
-  if (!dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type)) {
+  if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
     fn->cname = astr("_construct_", ct->symbol->cname);
   } else {
     fn->cname = astr(ct->symbol->cname);
@@ -283,7 +283,7 @@ static void build_constructor(ClassType* ct) {
 
   ASTMap field2formal;
   for_fields(tmp, ct) {
-    if (!dynamic_cast<VarSymbol*>(tmp))
+    if (!toVarSymbol(tmp))
       continue;
     const char* name = tmp->name;
     Type* type = tmp->type;
@@ -297,7 +297,7 @@ static void build_constructor(ClassType* ct) {
         exprType = init->copy();
     } else if (!tmp->isTypeVariable)
       init = new SymExpr(gNil);
-    VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
+    VarSymbol *vtmp = toVarSymbol(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
     field2formal.put(tmp, arg);
@@ -312,7 +312,7 @@ static void build_constructor(ClassType* ct) {
   // Make the line numbers for the formals point to the fields they
   // map to, not the first line of the class definition.
   for_fields(field, ct) {
-    if (Symbol* formal = dynamic_cast<Symbol*>(field2formal.get(field))) {
+    if (Symbol* formal = toSymbol(field2formal.get(field))) {
       formal->lineno = field->lineno;
       formal->defPoint->lineno = field->defPoint->lineno;
       formal->filename = field->filename;
@@ -338,7 +338,7 @@ static void build_constructor(ClassType* ct) {
   for_fields(field, ct) {
     for_formals(formal, fn) {
       if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
-        CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType);
+        CallExpr* call = toCallExpr(formal->defPoint->exprType);
         if (call && call->isNamed("_build_array_type")) {
           VarSymbol* tmp = new VarSymbol("_tmp");
           fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
@@ -362,7 +362,7 @@ static void build_constructor(ClassType* ct) {
 
   Symbol* myThis = fn->_this;
   ClassType *outerType =
-    dynamic_cast<ClassType*>(ct->symbol->defPoint->parentSymbol->type);
+    toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Create an "outer" pointer to the outer class in the inner class
     VarSymbol* outer = new VarSymbol("outer");
@@ -396,9 +396,9 @@ static void build_constructor(ClassType* ct) {
 
 
 static void flatten_primary_methods(FnSymbol* fn) {
-  if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
+  if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
     Expr* insertPoint = ts->defPoint;
-    while (dynamic_cast<TypeSymbol*>(insertPoint->parentSymbol))
+    while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
     DefExpr* def = fn->defPoint;
     def->remove();
@@ -426,7 +426,7 @@ static void change_cast_in_where(FnSymbol* fn) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, fn->where);
     forv_Vec(BaseAST, ast, asts) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
           call->primitive = primitives[PRIMITIVE_ISSUBTYPE];
           call->baseExpr->remove();
@@ -444,10 +444,10 @@ static void change_cast_in_where(FnSymbol* fn) {
 //
 void initializeOuterModules(ModuleSymbol* mod) {
   for_alist(stmt, mod->block->body) {
-    if (BlockStmt* b = dynamic_cast<BlockStmt*>(stmt))
+    if (BlockStmt* b = toBlockStmt(stmt))
       stmt = b->body->first();
-    if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
-      if (ModuleSymbol* m = dynamic_cast<ModuleSymbol*>(def->sym)) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      if (ModuleSymbol* m = toModuleSymbol(def->sym)) {
         if (mod != theProgram) {
           if (!m->initFn || !mod->initFn)
             INT_FATAL("Module with no initialization function");
@@ -471,7 +471,7 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_USE))
         process_import_expr(call);
       if (call->isPrimitive(PRIMITIVE_YIELD))
@@ -483,11 +483,11 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (CallExpr *call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr *call = toCallExpr(ast)) {
       if (call->isNamed("_build_array_type") && call->argList->length() == 4) {
         if (call->getStmtExpr()) {
-          if (DefExpr *def = dynamic_cast<DefExpr*>(call->getStmtExpr())) {
-            CallExpr *tinfo = dynamic_cast<CallExpr*>(def->exprType);
+          if (DefExpr *def = toDefExpr(call->getStmtExpr())) {
+            CallExpr *tinfo = toCallExpr(def->exprType);
             Expr *indices = tinfo->get(3);
             Expr *iter = tinfo->get(4);
             indices->remove();
@@ -514,9 +514,9 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
+    if (FnSymbol *fn = toFnSymbol(ast)) {
       for_formals(arg, fn) {
-        SymExpr *s = dynamic_cast<SymExpr*>(arg->defaultExpr);
+        SymExpr *s = toSymExpr(arg->defaultExpr);
         if (!fn->instantiatedFrom &&
             s && 
             !arg->defPoint->exprType &&
@@ -537,7 +537,7 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    if (DefExpr* def = toDefExpr(ast)) {
       normalize_nested_function_expressions(def);
     }
   }
@@ -545,18 +545,18 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+    if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
-    } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_tuple"))
         destructure_tuple(call);
-    } else if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
+    } else if (DefExpr* def = toDefExpr(ast)) {
+      if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
+        if (ClassType* ct = toClassType(ts->type)) {
           add_class_to_hierarchy(ct);
         }
-      } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         add_this_formal_to_method(fn);
         change_cast_in_where(fn);
@@ -567,8 +567,8 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
+    if (TypeSymbol* ts = toTypeSymbol(ast)) {
+      if (ClassType* ct = toClassType(ts->type)) {
         build_constructor(ct);
         if (ct->defaultConstructor->isMethod) {
           // This is a nested class constructor

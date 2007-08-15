@@ -40,7 +40,7 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
   BlockStmt* block = NULL;
   if (!ast)
     block = new BlockStmt();
-  else if (Expr* a = dynamic_cast<Expr*>(ast))
+  else if (Expr* a = toExpr(ast))
     block = new BlockStmt(a);
   else
     INT_FATAL(ast, "Illegal argument to build_chpl_stmt");
@@ -52,14 +52,14 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
 void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 1;
   for_alist(expr, decls->body) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (DefExpr* def = toDefExpr(expr)) {
       if (strcmp(def->sym->name, "_")) {
         def->init = new CallExpr(base->copy(), new_IntSymbol(count));
         insertPoint->insertBefore(def->remove());
       } else {
         def->remove();
       }
-    } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+    } else if (BlockStmt* blk = toBlockStmt(expr)) {
       build_tuple_var_decl(new CallExpr(base, new_IntSymbol(count)),
                            blk, insertPoint);
     } else {
@@ -78,15 +78,15 @@ buildLabelStmt(const char* name) {
 
 
 static bool stmtIsGlob(Expr* stmt) {
-  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+  if (BlockStmt* block = toBlockStmt(stmt)) {
     if (block->body->length() != 1)
       return false;
     stmt = block->body->only();
   }
-  if (DefExpr* def = dynamic_cast<DefExpr*>(stmt))
-    if (dynamic_cast<FnSymbol*>(def->sym) ||
-        dynamic_cast<ModuleSymbol*>(def->sym) ||
-        dynamic_cast<TypeSymbol*>(def->sym))
+  if (DefExpr* def = toDefExpr(stmt))
+    if (toFnSymbol(def->sym) ||
+        toModuleSymbol(def->sym) ||
+        toTypeSymbol(def->sym))
       return true;
   return false;
 }
@@ -121,10 +121,10 @@ static void createInitFn(ModuleSymbol* mod) {
 
   for_alist(stmt, mod->block->body) {
     if (1 || !stmtIsGlob(stmt)) {
-      if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+      if (BlockStmt* block = toBlockStmt(stmt)) {
         if (block->body->length() == 1) {
-          if (DefExpr* def = dynamic_cast<DefExpr*>(block->body->only())) {
-            if (dynamic_cast<ModuleSymbol*>(def->sym)) {
+          if (DefExpr* def = toDefExpr(block->body->only())) {
+            if (toModuleSymbol(def->sym)) {
               // Don't move module definitions into the init function
               continue;
             }
@@ -153,12 +153,12 @@ ModuleSymbol* build_module(const char* name, modType type, AList* stmts) {
 CallExpr* build_primitive_call(AList* exprs) {
   if (exprs->length() == 0)
     INT_FATAL("primitive has no name");
-  Expr* expr = dynamic_cast<Expr*>(exprs->get(1));
+  Expr* expr = toExpr(exprs->get(1));
   expr->remove();
-  SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
+  SymExpr* symExpr = toSymExpr(expr);
   if (!symExpr)
     INT_FATAL(expr, "primitive has no name");
-  VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var);
+  VarSymbol* var = toVarSymbol(symExpr->var);
   if (!var || !var->immediate || var->immediate->const_kind != CONST_KIND_STRING)
     INT_FATAL(expr, "primitive with non-literal string name");
   PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
@@ -247,8 +247,8 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
   if ((body->body->length() == 1) &&
-      dynamic_cast<BlockStmt*>(body->body->only())) {
-    BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->only());
+      toBlockStmt(body->body->only())) {
+    BlockStmt* block = toBlockStmt(body->body->only());
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   } else {
     body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
@@ -297,12 +297,12 @@ static void
 destructureIndices(BlockStmt* block,
                    BaseAST* indices,
                    Expr* init) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
+  if (CallExpr* call = toCallExpr(indices)) {
     if (call->isNamed("_tuple")) {
       int i = 0;
       for_actuals(actual, call) {
         if (i > 0) { // skip first (size parameter)
-          if (SymExpr *sym_expr = dynamic_cast<SymExpr*>(actual)) {
+          if (SymExpr *sym_expr = toSymExpr(actual)) {
             if (!strcmp(sym_expr->var->name, "_")) {
               i++;
               continue;
@@ -314,8 +314,8 @@ destructureIndices(BlockStmt* block,
         i++;
       }
     }
-  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(indices)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+  } else if (SymExpr* sym = toSymExpr(indices)) {
+    if (toUnresolvedSymbol(sym->var)) {
       VarSymbol* var = new VarSymbol(sym->var->name);
       var->isCompilerTemp = true;
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
@@ -331,7 +331,7 @@ destructureIndices(BlockStmt* block,
 //
 static void
 checkIndices(BaseAST* indices) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(indices)) {
+  if (CallExpr* call = toCallExpr(indices)) {
     if (!call->isNamed("_tuple"))
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
@@ -369,7 +369,7 @@ BlockStmt* build_for_block(BlockTag tag,
   BlockStmt* stmts = build_chpl_stmt();
   build_loop_labels(body);
 
-  CallExpr* icall = dynamic_cast<CallExpr*>(iterator);
+  CallExpr* icall = toCallExpr(iterator);
   if (icall && icall->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
     body->loopInfo = icall;
     if (icall->argList->length() == 4) {
@@ -528,10 +528,10 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* condStmt = NULL;
 
   for_alist(stmt, whenstmts->body) {
-    CondStmt* when = dynamic_cast<CondStmt*>(stmt);
+    CondStmt* when = toCondStmt(stmt);
     if (!when)
       INT_FATAL("error in build_select");
-    CallExpr* conds = dynamic_cast<CallExpr*>(when->condExpr);
+    CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
       INT_FATAL("error in build_select");
     if (conds->argList->length() == 0) {
@@ -577,10 +577,10 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   bool has_otherwise = false;
 
   for_alist(stmt, whenstmts->body) {
-    CondStmt* when = dynamic_cast<CondStmt*>(stmt);
+    CondStmt* when = toCondStmt(stmt);
     if (!when)
       INT_FATAL("error in build_select");
-    CallExpr* conds = dynamic_cast<CallExpr*>(when->condExpr);
+    CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
       INT_FATAL("error in build_select");
     if (conds->argList->length() == 0) {
@@ -635,8 +635,8 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
 
 
 FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(red)) {
-    if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+  if (SymExpr* sym = toSymExpr(red)) {
+    if (UnresolvedSymbol* us = toUnresolvedSymbol(sym->var)) {
       if (!strcmp(us->name, "max"))
         us->name = astr("_max");
       else if (!strcmp(us->name, "min"))
@@ -674,7 +674,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
   for_alist_backward(stmt, stmts->body) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
+    if (DefExpr* def = toDefExpr(stmt)) {
       if (def->init || def->exprType) {
         init = def->init;
         type = def->exprType;
@@ -692,8 +692,8 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 void
 setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
   for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         var->consClass = constag;
         var->varClass = vartag;
         continue;
@@ -706,7 +706,7 @@ setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
 
 DefExpr*
 build_class(const char* name, Type* type, AList* decls) {
-  ClassType* ct = dynamic_cast<ClassType*>(type);
+  ClassType* ct = toClassType(type);
 
   if (!ct) {
     INT_FATAL(type, "build_class called on non ClassType");
@@ -759,7 +759,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
   for_alist(expr, tupledefs->body) {
     count++;
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (DefExpr* def = toDefExpr(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(count));
       if (strcmp(def->sym->name, "_")) {
         fn->insertAtHead(def->remove());
@@ -767,7 +767,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
         // Ignore values in places marked with an underscore
         def->remove();
       }
-    } else if (BlockStmt* subtuple = dynamic_cast<BlockStmt*>(expr)) {
+    } else if (BlockStmt* subtuple = toBlockStmt(expr)) {
       /* newClause is:
          (& IS_TUPLE(base(count)) (build_tuple_arg's where clause)) */
       Expr* newClause = buildLogicalAnd(

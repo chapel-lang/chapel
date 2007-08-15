@@ -74,7 +74,7 @@ BlockStmt::copyInner(ASTMap* map) {
 
 void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == loopInfo)
-    loopInfo = dynamic_cast<CallExpr*>(new_ast);
+    loopInfo = toCallExpr(new_ast);
   else
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
 }
@@ -90,8 +90,8 @@ codegenCobegin( FILE* outfile, AList *body) {
   fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
   stmt_cnt = 0;
   for_alist(stmt, body) {
-    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
-      if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
+    if (CallExpr *cexpr=toCallExpr(stmt)) {
+      if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
       } else {
         INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
@@ -110,15 +110,15 @@ codegenCobegin( FILE* outfile, AList *body) {
   fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
   stmt_cnt = 0;
   for_alist(stmt, body) {
-    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
-      Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first());
+    if (CallExpr *cexpr=toCallExpr(stmt)) {
+      Expr *actuals = toExpr(cexpr->argList->first());
       // pass exactly one class object containing ptrs to locals
       fprintf (outfile, "(_chpl_threadarg_t)");
       if (actuals) {
         /*
           FnSymbol *fnsym = cexpr->findFnSymbol();
           DefExpr  *formals = fnsym->formals->first();
-          if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
+          if (toArgSymbol(formals->sym)->requiresCPtr()) {
           fprintf (outfile, "&");
           }
         */
@@ -151,11 +151,11 @@ codegenBegin( FILE* outfile, AList *body) {
 
   fprintf( outfile, "_chpl_begin( ");
   for_alist(stmt, body) {
-    if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
-      if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
+    if (CallExpr *cexpr=toCallExpr(stmt)) {
+      if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
         fprintf (outfile, "(_chpl_threadarg_t) ");
-        if (Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first())) {
+        if (Expr *actuals = toExpr(cexpr->argList->first())) {
           actuals->codegen (outfile);
         } else {
           fprintf( outfile, "NULL");
@@ -227,7 +227,7 @@ void BlockStmt::codegen(FILE* outfile) {
     fprintf(outfile, ");\n");
   } else if (this != getFunction()->body) {
     fprintf(outfile, "}");
-    CondStmt* cond = dynamic_cast<CondStmt*>(parentExpr);
+    CondStmt* cond = toCondStmt(parentExpr);
     if (!cond || !(cond->thenStmt == this && cond->elseStmt))
       fprintf(outfile, "\n");
   }
@@ -275,12 +275,12 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   thenStmt(NULL),
   elseStmt(NULL)
 {
-  if (Expr* s = dynamic_cast<Expr*>(iThenStmt))
+  if (Expr* s = toExpr(iThenStmt))
     thenStmt = new BlockStmt(s);
   else
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   if (iElseStmt) {
-    if (Expr* s = dynamic_cast<Expr*>(iElseStmt))
+    if (Expr* s = toExpr(iElseStmt))
       elseStmt = new BlockStmt(s);
     else
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
@@ -326,11 +326,11 @@ CondStmt::copyInner(ASTMap* map) {
 
 void CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == condExpr) {
-    condExpr = dynamic_cast<Expr*>(new_ast);
+    condExpr = toExpr(new_ast);
   } else if (old_ast == thenStmt) {
-    thenStmt = dynamic_cast<BlockStmt*>(new_ast);
+    thenStmt = toBlockStmt(new_ast);
   } else if (old_ast == elseStmt) {
-    elseStmt = dynamic_cast<BlockStmt*>(new_ast);
+    elseStmt = toBlockStmt(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild");
   }

@@ -28,20 +28,20 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
   // Find all the args that should be heap allocated -> heapList
   forv_Vec(BlockStmt, block, blocks) {
     if (block->blockTag == BLOCK_BEGIN) {
-      CallExpr* call = dynamic_cast<CallExpr*>(block->body->tail);
+      CallExpr* call = toCallExpr(block->body->tail);
       INT_ASSERT(call);
       for_alist(expr, block->body) {
-        if (CallExpr* move = dynamic_cast<CallExpr*>(expr)) {
+        if (CallExpr* move = toCallExpr(expr)) {
           if (move->isPrimitive(PRIMITIVE_MOVE)) {
-            if (CallExpr* ref = dynamic_cast<CallExpr*>(move->get(2))) {
+            if (CallExpr* ref = toCallExpr(move->get(2))) {
               if (ref->isPrimitive(PRIMITIVE_SET_REF)) {
-                SymExpr* se = dynamic_cast<SymExpr*>(ref->get(1));
+                SymExpr* se = toSymExpr(ref->get(1));
                 INT_ASSERT(se);
-                VarSymbol* var = dynamic_cast<VarSymbol*>(se->var);
+                VarSymbol* var = toVarSymbol(se->var);
                 INT_ASSERT(var);
                 DefExpr* def = var->defPoint;
                 
-                SymExpr* lse = dynamic_cast<SymExpr*>(move->get(1));
+                SymExpr* lse = toSymExpr(move->get(1));
                 INT_ASSERT(lse->var->uses.n == 1);
                 INT_ASSERT(lse->var->defs.n == 1);
  
@@ -56,7 +56,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                   forv_Vec(SymExpr, se, var->uses) {
                     if (!se->parentSymbol)
                       continue;
-                    CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+                    CallExpr* call = toCallExpr(se->parentExpr);
                     if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
                       call->replace(se->remove());
                     } else if (!call || !(call->isPrimitive(PRIMITIVE_SET_MEMBER) || call->isPrimitive(PRIMITIVE_GET_MEMBER))) {
@@ -119,9 +119,9 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                                                 var,
                                                 var->refc,
                                                 var->refcMutex));
-                BlockStmt *mainfb = dynamic_cast<BlockStmt*>(def->parentExpr);
+                BlockStmt *mainfb = toBlockStmt(def->parentExpr);
                 Expr      *laststmt = mainfb->body->last();
-                CallExpr* ret = dynamic_cast<CallExpr*>(laststmt);
+                CallExpr* ret = toCallExpr(laststmt);
                 if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
                   laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                                         var,
@@ -165,14 +165,14 @@ thread_args(Vec<BlockStmt*>& blocks) {
     BlockStmt *newb = new BlockStmt();
     newb->blockTag = b->blockTag;
     for_alist(expr, b->body) {
-      CallExpr* fcall = dynamic_cast<CallExpr*>(expr);
+      CallExpr* fcall = toCallExpr(expr);
       if (!fcall || !fcall->isResolved()) {
         b->insertBefore(expr->remove());
         continue;
       } else {
         
         // create a new class to capture refs to locals
-        const char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
+        const char* fname = (toSymExpr(fcall->baseExpr))->var->name;
         ClassType* ctype = new ClassType( CLASS_CLASS);
         TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
                                                       fname),
@@ -184,7 +184,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         // add the function args as fields in the class
         int i = 1;
         for_actuals(arg, fcall) {
-          SymExpr *s = dynamic_cast<SymExpr*>(arg);
+          SymExpr *s = toSymExpr(arg);
           Symbol  *var = s->var; // arg or var
           var->isConcurrent = true;
           VarSymbol* field = new VarSymbol(astr("_", intstring(i), "_", var->name), var->type);
@@ -208,7 +208,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         // set the references in the class instance
         i = 1;
         for_actuals(arg, fcall) {
-          SymExpr *s = dynamic_cast<SymExpr*>(arg);
+          SymExpr *s = toSymExpr(arg);
           Symbol  *var = s->var; // var or arg
           CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER,
                                       tempc,
@@ -220,7 +220,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         
         // create wrapper-function that uses the class instance
         FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
-        DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
+        DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
         ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
         wrap_fn->insertFormalAtTail( wrap_c);
         mod->block->insertAtTail(new DefExpr(wrap_fn));
@@ -228,7 +228,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
             
         // translate the original cobegin function
-        CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
+        CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
         for_fields(field, ctype) {  // insert args
           new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
                                                wrap_c,
@@ -254,7 +254,7 @@ void
 parallel(void) {
   Vec<BlockStmt*> blocks;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast))
+    if (BlockStmt* block = toBlockStmt(ast))
       if (block->blockTag == BLOCK_BEGIN || block->blockTag == BLOCK_COBEGIN)
         blocks.add(block);
   }
@@ -272,9 +272,9 @@ insertWideReferences(void) {
   Map<Type*,ClassType*> wideMap;
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* on = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* on = toCallExpr(ast)) {
       if (on->isPrimitive(PRIMITIVE_ON)) {
-        if (CallExpr* call = dynamic_cast<CallExpr*>(on->get(2))) {
+        if (CallExpr* call = toCallExpr(on->get(2))) {
           ClassType* ct = new ClassType(CLASS_CLASS);
           TypeSymbol* cts = new TypeSymbol("_on_arg_class", ct);
           cts->addPragma("no gc");
@@ -316,9 +316,9 @@ insertWideReferences(void) {
               defset.set_add(def);
             }
             forv_Vec(SymExpr, se, usedefs) {
-              if (CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr)) {
+              if (CallExpr* call = toCallExpr(se->parentExpr)) {
                 if (call->isPrimitive(PRIMITIVE_GET_REF)) {
-                  CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
+                  CallExpr* move = toCallExpr(call->parentExpr);
                   if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
                     INT_FATAL(call, "unexpected case");
                   VarSymbol* tmp = new VarSymbol("_tmp", wide);
@@ -327,7 +327,7 @@ insertWideReferences(void) {
                   move->replace(new CallExpr(PRIMITIVE_COMM_GET, move->get(1)->remove(), tmp));
                   continue;
                 } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-                  CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
+                  CallExpr* move = toCallExpr(call->parentExpr);
                   if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
                     INT_FATAL(call, "unexpected case");
                   VarSymbol* tmp = new VarSymbol("_tmp", wide);

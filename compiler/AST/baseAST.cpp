@@ -199,7 +199,7 @@ isLive(Symbol* sym) {
     return true;
   if (sym->parentScope == theProgram->block->blkScope)
     return true;
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+  if (VarSymbol* var = toVarSymbol(sym))
     if (var->immediate)
       return true;
   if (sym->defPoint->parentSymbol)
@@ -336,9 +336,9 @@ void BaseAST::printLoc(FILE* outfile) {
 
 
 void BaseAST::addPragma(const char* str) {
-  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
+  if (DefExpr* defExpr = toDefExpr(this)) {
     defExpr->sym->addPragma(str);
-  } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
+  } else if (Symbol* sym = toSymbol(this)) {
     sym->pragmas.add(str);
   } else {
     INT_FATAL(this, "pragma not added");
@@ -354,21 +354,21 @@ void BaseAST::addPragmas(Vec<const char*>* srcPragmas) {
 
 
 void BaseAST::copyPragmas(BaseAST* ast) {
-  if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+  if (Symbol* sym = toSymbol(ast))
     addPragmas(&(sym->pragmas));
 }
 
 
 ModuleSymbol* BaseAST::getModule() {
-  if (!this || dynamic_cast<UnresolvedSymbol*>(this))
+  if (!this || toUnresolvedSymbol(this))
     return NULL;
-  if (ModuleSymbol* x = dynamic_cast<ModuleSymbol*>(this))
+  if (ModuleSymbol* x = toModuleSymbol(this))
     return x;
-  else if (Type* x = dynamic_cast<Type*>(this))
+  else if (Type* x = toType(this))
     return x->symbol->getModule();
-  else if (Symbol* x = dynamic_cast<Symbol*>(this))
+  else if (Symbol* x = toSymbol(this))
     return x->defPoint->getModule();
-  else if (Expr* x = dynamic_cast<Expr*>(this))
+  else if (Expr* x = toExpr(this))
     return x->parentSymbol->getModule();
   else
     INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
@@ -377,17 +377,17 @@ ModuleSymbol* BaseAST::getModule() {
 
 
 FnSymbol* BaseAST::getFunction() {
-  if (!this || dynamic_cast<UnresolvedSymbol*>(this))
+  if (!this || toUnresolvedSymbol(this))
     return NULL;
-  if (ModuleSymbol* x = dynamic_cast<ModuleSymbol*>(this))
+  if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
-  else if (FnSymbol* x = dynamic_cast<FnSymbol*>(this))
+  else if (FnSymbol* x = toFnSymbol(this))
     return x;
-  else if (Type* x = dynamic_cast<Type*>(this))
+  else if (Type* x = toType(this))
     return x->symbol->getFunction();
-  else if (Symbol* x = dynamic_cast<Symbol*>(this))
+  else if (Symbol* x = toSymbol(this))
     return x->defPoint->getFunction();
-  else if (Expr* x = dynamic_cast<Expr*>(this))
+  else if (Expr* x = toExpr(this))
     return x->parentSymbol->getFunction();
   else
     INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
@@ -396,32 +396,32 @@ FnSymbol* BaseAST::getFunction() {
 
 
 Symbol* BaseAST::lookup(const char* name) {
-  if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(this))
+  if (ModuleSymbol* a = toModuleSymbol(this))
     return a->block->blkScope->lookup(name);
   return parentScope->lookup(name);
 }
 
 Symbol* BaseAST::lookup(BaseAST* ast) {
-  if (SymExpr* a = dynamic_cast<SymExpr*>(ast))
+  if (SymExpr* a = toSymExpr(ast))
     return lookup(a->var->name);
   INT_FATAL(ast, "Bad call to lookup");
   return NULL;
 }
 
 TypeSymbol* BaseAST::lookupType(const char* name) {
-  return dynamic_cast<TypeSymbol*>(lookup(name));
+  return toTypeSymbol(lookup(name));
 }
 
 TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
-  return dynamic_cast<TypeSymbol*>(lookup(ast));
+  return toTypeSymbol(lookup(ast));
 }
 
 VarSymbol* BaseAST::lookupVar(const char* name) {
-  return dynamic_cast<VarSymbol*>(lookup(name));
+  return toVarSymbol(lookup(name));
 }
 
 VarSymbol* BaseAST::lookupVar(BaseAST* ast) {
-  return dynamic_cast<VarSymbol*>(lookup(ast));
+  return toVarSymbol(lookup(ast));
 }
 
 int compar_baseast(const void *ai, const void *aj) {

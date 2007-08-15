@@ -23,9 +23,9 @@ void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
       var->defPoint->parentSymbol == fn &&
       isDeadVariable(var)) {
     forv_Vec(SymExpr, se, var->defs) {
-      CallExpr* call = dynamic_cast<CallExpr*>(se->parentExpr);
+      CallExpr* call = toCallExpr(se->parentExpr);
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2))) {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
           call->remove();
           rhs->var->uses.n--;
           deadVariableEliminationHelp(fn, rhs->var);
@@ -44,7 +44,7 @@ void deadVariableElimination(FnSymbol* fn) {
   collect_asts(&asts, fn);
   compute_sym_uses(fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    if (DefExpr* def = toDefExpr(ast)) {
       deadVariableEliminationHelp(fn, def->sym);
     }
   }
@@ -57,10 +57,10 @@ void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* expr = dynamic_cast<SymExpr*>(ast)) {
+    if (SymExpr* expr = toSymExpr(ast)) {
       if (expr->parentExpr && expr == expr->getStmtExpr())
         expr->remove();
-    } else if (CallExpr* expr = dynamic_cast<CallExpr*>(ast)) {
+    } else if (CallExpr* expr = toCallExpr(ast)) {
       if (expr->isPrimitive(PRIMITIVE_CAST) ||
           expr->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIMITIVE_GET_MEMBER) ||
@@ -69,8 +69,8 @@ void deadExpressionElimination(FnSymbol* fn) {
         if (expr->parentExpr && expr == expr->getStmtExpr())
           expr->remove();
       if (expr->isPrimitive(PRIMITIVE_MOVE))
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(expr->get(1)))
-          if (SymExpr* rhs = dynamic_cast<SymExpr*>(expr->get(2)))
+        if (SymExpr* lhs = toSymExpr(expr->get(1)))
+          if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
               expr->remove();
     }
@@ -91,24 +91,24 @@ void deadCodeElimination(FnSymbol* fn) {
       Vec<BaseAST*> asts;
       collect_asts(&asts, expr);
       forv_Vec(BaseAST, ast, asts) {
-        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
           if (call->isResolved() ||
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
           if (call->isPrimitive(PRIMITIVE_MOVE))
-            if (SymExpr* se = dynamic_cast<SymExpr*>(call->get(1)))
+            if (SymExpr* se = toSymExpr(call->get(1)))
               if (!DU.get(se) || // DU chain only contains locals
                   !se->var->type->refType) // reference issue
                 essential = true;
         }
-        if (Expr* sub = dynamic_cast<Expr*>(ast)) {
+        if (Expr* sub = toExpr(ast)) {
           exprMap.put(sub, expr);
-          if (BlockStmt* block = dynamic_cast<BlockStmt*>(sub->parentExpr))
+          if (BlockStmt* block = toBlockStmt(sub->parentExpr))
             if (block->loopInfo == sub)
               essential = true;
-          if (CondStmt* cond = dynamic_cast<CondStmt*>(sub->parentExpr))
+          if (CondStmt* cond = toCondStmt(sub->parentExpr))
             if (cond->condExpr == sub)
               essential = true;
         }
@@ -124,7 +124,7 @@ void deadCodeElimination(FnSymbol* fn) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, expr);
     forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (SymExpr* se = toSymExpr(ast)) {
         if (Vec<SymExpr*>* defs = UD.get(se)) {
           forv_Vec(SymExpr, def, *defs) {
             Expr* expr = exprMap.get(def);

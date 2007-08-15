@@ -4,13 +4,13 @@
 #include "stmt.h"
 
 void collapseBlocks(BlockStmt* block) {
-  FnSymbol* fn = dynamic_cast<FnSymbol*>(block->parentSymbol);
+  FnSymbol* fn = toFnSymbol(block->parentSymbol);
   if (fn)
     block->remove();
   Vec<Expr*> exprs;
   collect_stmts(&exprs, block);
   forv_Vec(Expr, expr, exprs) {
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(expr)) {
+    if (BlockStmt* block = toBlockStmt(expr)) {
       if (block->list &&
           !block->loopInfo &&
           block->blockTag != BLOCK_COBEGIN &&

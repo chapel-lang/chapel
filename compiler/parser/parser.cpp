@@ -32,10 +32,10 @@ static char* filenameToModulename(char* filename) {
 bool containsOnlyModules(AList* stmts) {
   for_alist(stmt, stmts) {
     bool isModuleDef = false;
-    if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+    if (BlockStmt* block = toBlockStmt(stmt))
       stmt = block->body->first();
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt))
-      if (dynamic_cast<ModuleSymbol*>(defExpr->sym))
+    if (DefExpr* defExpr = toDefExpr(stmt))
+      if (toModuleSymbol(defExpr->sym))
         isModuleDef = true;
     if (!isModuleDef)
       return false;
@@ -71,10 +71,10 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
     theProgram->block->insertAtTail(new DefExpr(newModule));
   } else {
     for_alist(stmt, yystmtlist) {
-      if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+      if (BlockStmt* block = toBlockStmt(stmt))
         stmt = block->body->first();
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt))
-        if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+      if (DefExpr* defExpr = toDefExpr(stmt))
+        if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym)) {
           theProgram->block->insertAtTail(defExpr->remove());
         }
     }

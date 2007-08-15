@@ -12,8 +12,8 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
   Vec<BaseAST*> labels;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast)) {
-      DefExpr* def = dynamic_cast<DefExpr*>(gotoStmt->next);
+    if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
+      DefExpr* def = toDefExpr(gotoStmt->next);
       if (def && def->sym == gotoStmt->label)
         gotoStmt->remove();
       else
@@ -22,8 +22,8 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
   }
 
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-      if (LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym))
+    if (DefExpr* def = toDefExpr(ast))
+      if (LabelSymbol* label = toLabelSymbol(def->sym))
         if (!labels.set_in(label))
           def->remove();
   }

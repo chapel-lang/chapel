@@ -27,7 +27,7 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
     return order.get(ct);
   int i = 0;
   for_fields(field, ct) {
-    if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+    if (ClassType* fct = toClassType(field->type)) {
       if (!visit.set_in(fct) && fct->classTag != CLASS_CLASS)
         setOrder(order, maxOrder, fct);
       i = max(i, getOrder(order, maxOrder, fct, visit));
@@ -144,12 +144,12 @@ static void codegen_header(void) {
   cnames.put("ascii", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+    if (CallExpr* call = toCallExpr(ast))
       if (FnSymbol* fn = call->isResolved())
         if (fn->hasPragma("c for loop increment"))
           call->remove();
 
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    if (DefExpr* def = toDefExpr(ast)) {
       Symbol* sym = def->sym;
 
       if (sym->name == sym->cname)
@@ -158,7 +158,7 @@ static void codegen_header(void) {
       if (const char* pragma = sym->hasPragmaPrefix("rename"))
         sym->cname = stringcpy(pragma+7);
 
-      if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))
+      if (VarSymbol* vs = toVarSymbol(ast))
         if (vs->immediate)
           continue;
 
@@ -166,17 +166,17 @@ static void codegen_header(void) {
 
       // mangle symbol that is neither field nor formal if the symbol's
       // name has already been encountered
-      if (!dynamic_cast<ArgSymbol*>(sym) &&
-          !dynamic_cast<UnresolvedSymbol*>(sym) &&
-          !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
+      if (!toArgSymbol(sym) &&
+          !toUnresolvedSymbol(sym) &&
+          !toClassType(sym->parentScope->astParent) &&
           cnames.get(sym->cname))
         sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
 
       cnames.put(sym->cname, 1);
     
-      if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
+      if (TypeSymbol* typeSymbol = toTypeSymbol(sym)) {
         typeSymbols.add(typeSymbol);
-      } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
+      } else if (FnSymbol* fnSymbol = toFnSymbol(sym)) {
 
         // mangle arguments if necessary
         ChainHashMap<const char*, StringHashFns, int> formal_names;
@@ -187,8 +187,8 @@ static void codegen_header(void) {
         }
 
         fnSymbols.add(fnSymbol);
-      } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
-        if (dynamic_cast<ModuleSymbol*>(varSymbol->defPoint->parentSymbol))
+      } else if (VarSymbol* varSymbol = toVarSymbol(sym)) {
+        if (toModuleSymbol(varSymbol->defPoint->parentSymbol))
           varSymbols.add(varSymbol);
       }
     }
@@ -213,7 +213,7 @@ static void codegen_header(void) {
   // codegen enumerated types
   fprintf(outfile, "\n/*** Enumerated Types ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (dynamic_cast<EnumType*>(typeSymbol->type))
+    if (toEnumType(typeSymbol->type))
       typeSymbol->codegenDef(outfile);
   }
 
@@ -222,7 +222,7 @@ static void codegen_header(void) {
   Map<ClassType*,int> order;
   int maxOrder = 0;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+    if (ClassType* ct = toClassType(ts->type))
       setOrder(order, maxOrder, ct);
   }
 
@@ -238,7 +238,7 @@ static void codegen_header(void) {
   fprintf(outfile, "/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ts->hasPragma("ref")) {
-      ClassType* ct = dynamic_cast<ClassType*>(getValueType(ts->type));
+      ClassType* ct = toClassType(getValueType(ts->type));
       if (ct && ct->classTag != CLASS_CLASS)
         continue; // references to records and unions codegened below
       ts->codegenPrototype(outfile);
@@ -249,13 +249,13 @@ static void codegen_header(void) {
   fprintf(outfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
   for (int i = 1; i <= maxOrder; i++) {
     forv_Vec(TypeSymbol, ts, typeSymbols) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+      if (ClassType* ct = toClassType(ts->type))
         if (order.get(ct) == i)
           ts->codegenDef(outfile);
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ts->hasPragma("ref"))
-        if (ClassType* ct = dynamic_cast<ClassType*>(getValueType(ts->type)))
+        if (ClassType* ct = toClassType(getValueType(ts->type)))
           if (order.get(ct) == i)
             ts->codegenPrototype(outfile);
     }
@@ -265,10 +265,10 @@ static void codegen_header(void) {
   // codegen remaining types
   fprintf(outfile, "\n/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(typeSymbol->type))
+    if (ClassType* ct = toClassType(typeSymbol->type))
       if (ct->classTag != CLASS_CLASS)
         continue;
-    if (dynamic_cast<EnumType*>(typeSymbol->type))
+    if (toEnumType(typeSymbol->type))
       continue;
     if (typeSymbol->hasPragma("ref"))
       continue;
@@ -304,7 +304,7 @@ codegen_cid2offsets(FILE* outfile) {
   // cid2offsets which takes a cid and returns a pointer to the array
   // corresponding to the class with that cid.
   forv_Vec(TypeSymbol, typeSym, gTypes) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+    if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "size_t _");
         ct->symbol->codegen(outfile);
@@ -312,7 +312,7 @@ codegen_cid2offsets(FILE* outfile) {
         ct->symbol->codegen(outfile);
         fprintf(outfile, "), ");
         for_fields(field, ct) {
-          if (ClassType* innerct = dynamic_cast<ClassType*>(field->type)) {
+          if (ClassType* innerct = toClassType(field->type)) {
             if (innerct->classTag == CLASS_CLASS) {
               fprintf(outfile, "(size_t)&((_");
               ct->symbol->codegen(outfile);
@@ -331,7 +331,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "size_t* offsets = NULL;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+    if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "case %d:\n", ct->id);
         fprintf(outfile, "offsets = _");
@@ -356,7 +356,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(typeSym->type)) {
+    if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
         fprintf(outfile, "case %d:\n", ct->id);
         fprintf(outfile, "size = sizeof(_");
@@ -381,8 +381,8 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "initConfigVarTable();\n");
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
+    if (DefExpr* def = toDefExpr(ast)) {
+      VarSymbol* var = toVarSymbol(def->sym);
       if (var && var->varClass == VAR_CONFIG) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         fprintf(outfile, var->type->symbol->name);

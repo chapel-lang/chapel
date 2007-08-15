@@ -88,7 +88,7 @@ static Type*
 returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (t->isGeneric) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
+    if (SymExpr* sym = toSymExpr(call->get(1)))
       if (sym->var->isTypeVariable)
         return dtUnknown;
     USR_FATAL(call, "Illegal cast to generic type");
@@ -98,7 +98,7 @@ returnInfoCast(CallExpr* call) {
 
 static Type*
 returnInfoVal(CallExpr* call) {
-  ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+  ClassType* ct = toClassType(call->get(1)->typeInfo());
   if (!ct || !ct->symbol->hasPragma("ref"))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
@@ -123,7 +123,7 @@ returnInfoMove(CallExpr* call) {
 
 static Type*
 returnInfoICType(CallExpr* call) {
-  ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+  ClassType* ct = toClassType(call->get(1)->typeInfo());
   return ct->scalarPromotionType; // this is the element type
 }
 
@@ -145,15 +145,15 @@ returnInfoNumericUp(CallExpr* call) {
 
 static Type*
 returnInfoArrayIndex(CallExpr* call) {
-  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* sym = toSymExpr(call->get(1));
   if (!sym || !sym->var->type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return dynamic_cast<Type*>(sym->var->type->substitutions.v[0].value)->refType;
+  return toType(sym->var->type->substitutions.v[0].value)->refType;
 }
 
 static Type*
 returnInfoChplAlloc(CallExpr* call) {
-  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* sym = toSymExpr(call->get(1));
   if (!sym)
     INT_FATAL(call, "bad _chpl_alloc primitive");
   return sym->var->type;
@@ -161,18 +161,18 @@ returnInfoChplAlloc(CallExpr* call) {
 
 static Type*
 returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
-  ClassType* ct = dynamic_cast<ClassType*>(sym1->var->type);
+  ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasPragma("ref"))
-    ct = dynamic_cast<ClassType*>(getValueType(ct));
+    ct = toClassType(getValueType(ct));
   if (!ct)
     INT_FATAL(call, "bad member primitive");
-  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+  SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+  VarSymbol* var = toVarSymbol(sym->var);
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {
@@ -189,18 +189,18 @@ returnInfoGetMember(CallExpr* call) {
 
 static Type*
 returnInfoGetMemberRef(CallExpr* call) {
-  SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
-  ClassType* ct = dynamic_cast<ClassType*>(sym1->var->type);
+  ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasPragma("ref"))
-    ct = dynamic_cast<ClassType*>(getValueType(ct));
+    ct = toClassType(getValueType(ct));
   if (!ct)
     INT_FATAL(call, "bad member primitive");
-  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+  SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+  VarSymbol* var = toVarSymbol(sym->var);
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (var->immediate) {

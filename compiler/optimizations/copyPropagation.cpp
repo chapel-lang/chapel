@@ -18,7 +18,7 @@ bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
 bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet) {
   if (defSet.set_in(se))
     return true;
-  if (CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr)) {
+  if (CallExpr* parent = toCallExpr(se->parentExpr)) {
     if (parent->isPrimitive(PRIMITIVE_SET_REF))
       return true;
     if (isRecordType(se->var->type)) {
@@ -49,7 +49,7 @@ localCopyPropagationCore(BasicBlock* bb,
     // replace uses with available copies
     //
     forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (SymExpr* se = toSymExpr(ast)) {
         if (useSet.set_in(se)) {
           if (Symbol* sym = available.get(se->var)) {
             if (!invalidateCopies(se, defSet))
@@ -65,7 +65,7 @@ localCopyPropagationCore(BasicBlock* bb,
     //  can be assigned
     //
     forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (SymExpr* se = toSymExpr(ast)) {
         if (invalidateCopies(se, defSet)) {
           form_Map(AvailableMapElem, pair, available) {
             if (pair->key == se->var || pair->value == se->var)
@@ -78,10 +78,10 @@ localCopyPropagationCore(BasicBlock* bb,
     //
     // insert pairs into available copies map
     //
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+    if (CallExpr* call = toCallExpr(expr))
       if (call->isPrimitive(PRIMITIVE_MOVE))
-        if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
-          if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
+        if (SymExpr* lhs = toSymExpr(call->get(1)))
+          if (SymExpr* rhs = toSymExpr(call->get(2)))
             if (lhs->var != rhs->var &&
                 defSet.set_in(lhs) &&
                 (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate()))
@@ -104,8 +104,8 @@ void localCopyPropagation(FnSymbol* fn) {
   Vec<Symbol*> locals;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+      if (DefExpr* def = toDefExpr(expr))
+        if (VarSymbol* var = toVarSymbol(def->sym))
           if (isCandidateForCopyPropagation(fn, var))
             locals.add(def->sym);
     }
@@ -168,8 +168,8 @@ void globalCopyPropagation(FnSymbol* fn) {
   Vec<Symbol*> locals;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+      if (DefExpr* def = toDefExpr(expr))
+        if (VarSymbol* var = toVarSymbol(def->sym))
           if (isCandidateForCopyPropagation(fn, var))
             locals.add(def->sym);
     }
@@ -213,7 +213,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       // invalidate available copies based on defs
       //
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (invalidateCopies(se, defSet)) {
             for (int i = start; i < _LHS.n; i++) {
               if (_LHS.v[i]) {
@@ -230,10 +230,10 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       // insert pairs into available copies map
       //
-      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+      if (CallExpr* call = toCallExpr(expr))
         if (call->isPrimitive(PRIMITIVE_MOVE))
-          if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
-            if (SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)))
+          if (SymExpr* lhs = toSymExpr(call->get(1)))
+            if (SymExpr* rhs = toSymExpr(call->get(2)))
               if (lhs->var != rhs->var &&
                   defSet.set_in(lhs) &&
                   (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate())) {
@@ -330,7 +330,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       // invalidate available copies based on defs
       //
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (invalidateCopies(se, defSet)) {
             for (int j = 0; j < start; j++) {
               if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
@@ -400,7 +400,7 @@ static CallExpr*
 findRefDef(VarSymbol* var) {
   CallExpr* ret = NULL;
   forv_Vec(SymExpr, def, var->defs) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(def->parentExpr)) {
+    if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (isReference(call->get(2)->typeInfo())) {
           if (ret)
@@ -421,10 +421,10 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
   collect_asts(&asts, fn);
 
   forv_Vec(BaseAST, ast, asts) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
+    if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReference(var->type)) {
         if (CallExpr* move = findRefDef(var)) {
-          if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2))) {
+          if (SymExpr* rhs = toSymExpr(move->get(2))) {
             if (isReference(rhs->var->type)) {
               forv_Vec(SymExpr, se, var->uses) {
                 if (se->parentExpr) {
@@ -434,7 +434,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
                 }
               }
               forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent == move)
                   continue;
                 if (parent) {
@@ -454,14 +454,14 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
   asts.clear();
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(ast)) {
+    if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReference(var->type)) {
         if (CallExpr* move = findRefDef(var)) {
-          if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2))) {
+          if (CallExpr* rhs = toCallExpr(move->get(2))) {
             if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
               bool stillAlive = false;
               forv_Vec(SymExpr, se, var->uses) {
-                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
                   parent->replace(rhs->get(1)->copy());
                 } else if (parent &&
@@ -474,7 +474,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
                   stillAlive = true;
               }
               forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent == move)
                   continue;
                 if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
@@ -489,7 +489,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
             } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
               bool stillAlive = false;
               forv_Vec(SymExpr, se, var->uses) {
-                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
                   parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
                                                rhs->get(1)->copy(),
@@ -500,7 +500,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
                   stillAlive = true;
               }
               forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = dynamic_cast<CallExpr*>(se->parentExpr);
+                CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent == move)
                   continue;
                 if (parent && parent->isPrimitive(PRIMITIVE_MOVE))

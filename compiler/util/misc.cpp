@@ -95,11 +95,11 @@ setupError(const char *filename, int lineno, bool fatal, bool user, bool cont,
 static void
 printDevelErrorHeader(BaseAST* ast) {
   if (!err_print) {
-    if (Expr* expr = dynamic_cast<Expr*>(ast)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(expr->parentSymbol)) {
+    if (Expr* expr = toExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
         if (fn != err_fn) {
           err_fn = fn;
-          while ((fn = dynamic_cast<FnSymbol*>(err_fn->defPoint->parentSymbol))) {
+          while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
             if (fn == fn->getModule()->initFn)
               break;
             err_fn = fn;

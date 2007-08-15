@@ -36,10 +36,10 @@ void buildDefaultFunctions(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+    if (TypeSymbol* type = toTypeSymbol(ast)) {
+      if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
-          VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
+          VarSymbol *cfield = toVarSymbol(field);
           // if suppress for cobegin created arg classes
           if (cfield && strcmp(field->name, "_promotionType")) {
             build_getter(ct, field);
@@ -49,15 +49,15 @@ void buildDefaultFunctions(void) {
       if (type->hasPragma("no default functions"))
         continue;
       if (!fNoStdIncs) {
-        if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+        if (EnumType* et = toEnumType(type->type)) {
           buildDefaultReadFunction(et);
           buildStringCastFunction(et);
-        } else if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        } else if (ClassType* ct = toClassType(type->type)) {
           buildDefaultReadFunction(ct);
           buildDefaultWriteFunction(ct);
         }
       }
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+      if (ClassType* ct = toClassType(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
           if (!(ct->symbol->hasPragma("domain") ||
                 ct->symbol->hasPragma("array"))) {
@@ -73,7 +73,7 @@ void buildDefaultFunctions(void) {
           build_union_assignment_function(ct);
         }
       }
-      if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
+      if (EnumType* et = toEnumType(type->type)) {
         build_enum_init_function(et);
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
@@ -93,7 +93,7 @@ void buildDefaultFunctions(void) {
 static bool type_name_match(const char* name, Symbol* sym) {
   if (!strcmp(name, sym->type->symbol->name))
     return true;
-  SymExpr* symExpr = dynamic_cast<SymExpr*>(sym->defPoint->exprType);
+  SymExpr* symExpr = toSymExpr(sym->defPoint->exprType);
   if (symExpr && !strcmp(name, symExpr->var->name))
     return true;
   return false;
@@ -135,7 +135,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, fn);
     forv_Vec(BaseAST, ast, asts) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed(field->name) && call->argList->length() == 2) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
               call->get(2)->typeInfo() == ct) {
@@ -334,7 +334,7 @@ static void build_enum_init_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("_init");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
   fn->insertFormalAtTail(arg1);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, dynamic_cast<DefExpr*>(et->constants->first())->sym));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, toDefExpr(et->constants->first())->sym));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
@@ -437,7 +437,7 @@ static void build_record_init_function(ClassType* ct) {
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_fields(tmp, ct) {
-    VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
+    VarSymbol* var = toVarSymbol(tmp);
     if (var->consClass == VAR_PARAM || var->isTypeVariable)
       call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
   }
@@ -496,7 +496,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("read");
   fn->cname = stringcat("_auto_", ct->symbol->name, "_read");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
@@ -560,7 +560,7 @@ static void buildDefaultReadFunction(EnumType* et) {
 
   FnSymbol* fn = new FnSymbol("read");
   fn->cname = stringcat("_auto_", et->symbol->name, "_read");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
+  TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));

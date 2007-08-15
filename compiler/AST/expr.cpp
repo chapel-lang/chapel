@@ -23,7 +23,7 @@ Expr* Expr::getStmtExpr() {
   if (!IS_EXPR(this))
     INT_FATAL(this, "Expr::getStmtExpr() not called on EXPR");
   if (!parentExpr) {
-    if (dynamic_cast<ModuleSymbol*>(parentSymbol))
+    if (toModuleSymbol(parentSymbol))
       return this;
     return NULL;
   }
@@ -159,7 +159,7 @@ void Expr::insertBefore(Expr* new_ast) {
     INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertBefore");
-  if (dynamic_cast<Symbol*>(new_ast))
+  if (toSymbol(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in Expr::insertBefore");
   new_ast->prev = prev;
   new_ast->next = this;
@@ -181,7 +181,7 @@ void Expr::insertAfter(Expr* new_ast) {
     INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertAfter");
-  if (dynamic_cast<Symbol*>(new_ast))
+  if (toSymbol(new_ast))
     INT_FATAL(new_ast, "Argument is a symbol in Expr::insertAfter");
   new_ast->prev = this;
   new_ast->next = next;
@@ -269,16 +269,16 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   if (sym)
     sym->defPoint = this;
 
-  if (Expr* a = dynamic_cast<Expr*>(initInit))
+  if (Expr* a = toExpr(initInit))
     init = a;
-  else if (Symbol* a = dynamic_cast<Symbol*>(initInit))
+  else if (Symbol* a = toSymbol(initInit))
     init = new SymExpr(a);
   else if (initInit)
     INT_FATAL(this, "DefExpr initialized with bad init ast");
 
-  if (Expr* a = dynamic_cast<Expr*>(initExprType))
+  if (Expr* a = toExpr(initExprType))
     exprType = a;
-  else if (Symbol* a = dynamic_cast<Symbol*>(initExprType))
+  else if (Symbol* a = toSymbol(initExprType))
     exprType = new SymExpr(a);
   else if (initExprType)
     INT_FATAL(this, "DefExpr initialized with bad exprType ast");
@@ -299,7 +299,7 @@ void DefExpr::verify() {
   if (!sym) {
     INT_FATAL(this, "DefExpr has no sym");
   }
-  if (dynamic_cast<FnSymbol*>(sym) && (exprType || init))
+  if (toFnSymbol(sym) && (exprType || init))
     INT_FATAL(this, "Bad FnSymbol::defPoint");
 }
 
@@ -312,9 +312,9 @@ DefExpr::copyInner(ASTMap* map) {
 
 void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == init) {
-    init = dynamic_cast<Expr*>(new_ast);
+    init = toExpr(new_ast);
   } else if (old_ast == exprType) {
-    exprType = dynamic_cast<Expr*>(new_ast);
+    exprType = toExpr(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild");
   }
@@ -328,16 +328,16 @@ Type* DefExpr::typeInfo(void) {
 
 
 void DefExpr::codegen(FILE* outfile) {
-  if (dynamic_cast<LabelSymbol*>(sym))
+  if (toLabelSymbol(sym))
     fprintf(outfile, "%s:;\n", sym->cname);
 }
 
 
 static void
 codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
-  ClassType* ct = dynamic_cast<ClassType*>(base->typeInfo());
+  ClassType* ct = toClassType(base->typeInfo());
   if (ct->symbol->hasPragma("ref")) {
-    ct = dynamic_cast<ClassType*>(getValueType(ct));
+    ct = toClassType(getValueType(ct));
     fprintf(outfile, "(*");
     base->codegen(outfile);
     fprintf(outfile, ")");
@@ -357,7 +357,7 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
-  if (dynamic_cast<Symbol*>(arg) || dynamic_cast<Expr*>(arg))
+  if (toSymbol(arg) || toExpr(arg))
     call->insertAtTail(arg);
   else
     INT_FATAL(call, "Bad argList in CallExpr constructor");
@@ -379,9 +379,9 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   methodTag(false),
   square(false)
 {
-  if (Symbol* b = dynamic_cast<Symbol*>(base)) {
+  if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
-  } else if (Expr* b = dynamic_cast<Expr*>(base)) {
+  } else if (Expr* b = toExpr(base)) {
     baseExpr = b;
   } else {
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
@@ -454,9 +454,9 @@ CallExpr::CallExpr(BaseAST* base, AList* args) :
   methodTag(false),
   square(false)
 {
-  if (Symbol* b = dynamic_cast<Symbol*>(base)) {
+  if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
-  } else if (Expr* b = dynamic_cast<Expr*>(base)) {
+  } else if (Expr* b = toExpr(base)) {
     baseExpr = b;
   } else {
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
@@ -519,8 +519,8 @@ void CallExpr::verify() {
   if (argList->parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
   if (normalized && isPrimitive(PRIMITIVE_RETURN)) {
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(parentSymbol);
-    SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
+    FnSymbol* fn = toFnSymbol(parentSymbol);
+    SymExpr* sym = toSymExpr(get(1));
     if (!fn)
       INT_FATAL(this, "Return is not in a function.");
     if (fn->body->body->last() != this)
@@ -548,7 +548,7 @@ CallExpr::copyInner(ASTMap* map) {
 
 void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == baseExpr) {
-    baseExpr = dynamic_cast<Expr*>(new_ast);
+    baseExpr = toExpr(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
@@ -557,19 +557,19 @@ void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 void
 CallExpr::insertAtHead(BaseAST* ast) {
-  if (Symbol* a = dynamic_cast<Symbol*>(ast))
+  if (Symbol* a = toSymbol(ast))
     argList->insertAtHead(new SymExpr(a));
   else
-    argList->insertAtHead(dynamic_cast<Expr*>(ast));
+    argList->insertAtHead(toExpr(ast));
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
-  if (Symbol* a = dynamic_cast<Symbol*>(ast))
+  if (Symbol* a = toSymbol(ast))
     argList->insertAtTail(new SymExpr(a));
   else
-    argList->insertAtTail(dynamic_cast<Expr*>(ast));
+    argList->insertAtTail(toExpr(ast));
 }
 
 
@@ -586,13 +586,13 @@ CallExpr::insertAtTail(AList* ast) {
 
 
 FnSymbol* CallExpr::isResolved(void) {
-  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-  return base ? dynamic_cast<FnSymbol*>(base->var) : NULL;
+  SymExpr* base = toSymExpr(baseExpr);
+  return base ? toFnSymbol(base->var) : NULL;
 }
 
 
 bool CallExpr::isNamed(const char* name) {
-  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+  SymExpr* base = toSymExpr(baseExpr);
   if (base && !strcmp(base->var->name, name))
     return true;
   return false;
@@ -600,16 +600,16 @@ bool CallExpr::isNamed(const char* name) {
 
 
 Expr* CallExpr::get(int index) {
-  return dynamic_cast<Expr*>(argList->get(index));
+  return toExpr(argList->get(index));
 }
 
 
 FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    fn = dynamic_cast<FnSymbol*>(variable->var);
+  if (SymExpr* variable = toSymExpr(baseExpr)) {
+    fn = toFnSymbol(variable->var);
     if (!fn)
-      if(dynamic_cast<UnresolvedSymbol*>(variable->var))
+      if(toUnresolvedSymbol(variable->var))
         return NULL;
   }
   if (!fn) {
@@ -710,7 +710,7 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct, int skip
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
     for_fields(field, ct) {
-      if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+      if (ClassType* fct = toClassType(field->type)) {
         char buffer[1024];
         strcpy(buffer, cname);
         if (skip)
@@ -1054,9 +1054,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SET_MEMBER_REF_TO: {
       codegen_member( outfile, get(1), get(2));
       fprintf( outfile, " = ");
-      SymExpr *s = dynamic_cast<SymExpr*>(get(3));
+      SymExpr *s = toSymExpr(get(3));
       VarSymbol *vs;
-      if (s && (vs= dynamic_cast<VarSymbol*>(s->var))) {
+      if (s && (vs= toVarSymbol(s->var))) {
         fprintf( outfile, "%s", vs->cname);
       } else {
         fprintf( outfile, "&(");
@@ -1083,10 +1083,10 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_SET_HEAPVAR: {
       // args: heap var, alloc expr
-      SymExpr *s = dynamic_cast<SymExpr*>(get(1));
+      SymExpr *s = toSymExpr(get(1));
       VarSymbol *vs;
       if (s &&
-          (vs = dynamic_cast<VarSymbol*>(s->var))) {
+          (vs = toVarSymbol(s->var))) {
         fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
         get(2)->codegen(outfile);
       } else {
@@ -1203,14 +1203,14 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_struct = false;
-      CallExpr *parent_call = (CallExpr*) dynamic_cast<CallExpr*>(parentExpr);
+      CallExpr *parent_call = (CallExpr*) toCallExpr(parentExpr);
 
       if (parent_call && parent_call->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
         is_struct = false;
       } else {
         // if Chapel class or record
-        if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {
-          if (dynamic_cast<ClassType*>(t->type)) {
+        if (TypeSymbol *t = toTypeSymbol(typeInfo()->symbol)) {
+          if (toClassType(t->type)) {
             is_struct = true;
           }
         }
@@ -1285,7 +1285,7 @@ void CallExpr::codegen(FILE* outfile) {
           INT_FATAL(this, "illegal cast to complex");
         }
       } else {
-        ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
+        ClassType* ct = toClassType(typeInfo());
         if (ct && ct->classTag != CLASS_CLASS) {
           fprintf(outfile, "(*((");
           typeInfo()->codegen(outfile);
@@ -1303,7 +1303,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_DYNAMIC_CAST: {
-      ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
+      ClassType* ct = toClassType(typeInfo());
       if (ct && ct->classTag == CLASS_CLASS) {
         fprintf(outfile, "((");
         codegenDynamicCastCheck(outfile, typeInfo(), get(2));
@@ -1338,7 +1338,7 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_CLASS_NULL:
-      //      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+      //      if (SymExpr* sym = toSymExpr(get(1))) {
         fprintf(outfile, "(");
         get(1)->codegen(outfile);
         fprintf(outfile, " == NULL)");
@@ -1398,7 +1398,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "->_ref_count < 0)");
       break;
     case PRIMITIVE_ON:
-      if (CallExpr* call = dynamic_cast<CallExpr*>(get(2))) {
+      if (CallExpr* call = toCallExpr(get(2))) {
         fprintf(outfile, "_chpl_comm_fork(");
         get(1)->codegen(outfile);
         fprintf(outfile, ", (func_p)");
@@ -1426,7 +1426,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ".locale, ");
         get(2)->codegen(outfile);
         fprintf(outfile, ".addr, sizeof(");
-        ClassType* ct = dynamic_cast<ClassType*>(get(2)->typeInfo());
+        ClassType* ct = toClassType(get(2)->typeInfo());
         getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
         fprintf(outfile, "))");
       }
@@ -1440,7 +1440,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ".locale, ");
         get(1)->codegen(outfile);
         fprintf(outfile, ".addr, sizeof(");
-        ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
+        ClassType* ct = toClassType(get(1)->typeInfo());
         getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
         fprintf(outfile, "))");
       }
@@ -1484,11 +1484,11 @@ void CallExpr::codegen(FILE* outfile) {
     // initialize iterator class due to reference counting
     if (fNullTemps) {
       if (isPrimitive(PRIMITIVE_MOVE)) {
-        if (CallExpr* rhs = dynamic_cast<CallExpr*>(get(2))) {
+        if (CallExpr* rhs = toCallExpr(get(2))) {
           if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
             if (parentSymbol->hasPragma("first member sets")) {
-              SymExpr* se = dynamic_cast<SymExpr*>(get(1));
-              ClassType* ct = dynamic_cast<ClassType*>(get(1)->typeInfo());
+              SymExpr* se = toSymExpr(get(1));
+              ClassType* ct = toClassType(get(1)->typeInfo());
               codegenNullAssignments(outfile, se->var->cname, ct, 1);
             }
           }
@@ -1499,7 +1499,7 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+  if (SymExpr* variable = toSymExpr(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
       if (argList->length() == 0) {
         fprintf(outfile, "0");
@@ -1517,16 +1517,16 @@ void CallExpr::codegen(FILE* outfile) {
   // runtime support for read, config, tostring require a cast of the
   // compiler produced complex type to the runtime complex type;
   // eventually there should be no runtime complex type
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+  if (SymExpr* variable = toSymExpr(baseExpr)) {
     if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128**)");
     }
   }
 
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+  if (SymExpr* variable = toSymExpr(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
-      ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->retType);
-      dynamic_cast<DefExpr*>(ct->fields->get(2))->sym->type->codegen(outfile);
+      ClassType* ct = toClassType(toFnSymbol(variable->var)->retType);
+      toDefExpr(ct->fields->get(2))->sym->type->codegen(outfile);
       fprintf(outfile, ", ");
     }
   }
@@ -1577,7 +1577,7 @@ NamedExpr::copyInner(ASTMap* map) {
 
 void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == actual) {
-    actual = dynamic_cast<Expr*>(new_ast);
+    actual = toExpr(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in NamedExpr::replaceChild");
   }
@@ -1597,8 +1597,8 @@ void NamedExpr::codegen(FILE* outfile) {
 bool 
 get_int(Expr *e, long *i) {
   if (e) {
-    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
-      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+    if (SymExpr *l = toSymExpr(e)) {
+      if (VarSymbol *v = toVarSymbol(l->var)) {
         if (v->immediate) {
           if (v->immediate->const_kind == NUM_KIND_INT) {
             *i = v->immediate->int_value();
@@ -1614,8 +1614,8 @@ get_int(Expr *e, long *i) {
 bool 
 get_string(Expr *e, const char **s) {
   if (e) {
-    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
-      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+    if (SymExpr *l = toSymExpr(e)) {
+      if (VarSymbol *v = toVarSymbol(l->var)) {
         if (v->immediate && v->immediate->const_kind == CONST_KIND_STRING) {
           *s = v->immediate->v_string;
           return true;
@@ -1637,8 +1637,8 @@ get_string(Expr* e) {
 VarSymbol * 
 get_constant(Expr *e) {
   if (e) {
-    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
-      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+    if (SymExpr *l = toSymExpr(e)) {
+      if (VarSymbol *v = toVarSymbol(l->var)) {
         if (v->immediate != 0)
           return v;
       }
@@ -1685,15 +1685,15 @@ Expr* getFirstExpr(Expr* expr) {
 Expr* getNextExpr(Expr* expr) {
   if (expr->next)
     return getFirstExpr(expr->next);
-  if (CallExpr* parent = dynamic_cast<CallExpr*>(expr->parentExpr)) {
+  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
     if (expr == parent->baseExpr && parent->argList->head)
       return getFirstExpr(parent->argList->head);
-  } else if (CondStmt* parent = dynamic_cast<CondStmt*>(expr->parentExpr)) {
+  } else if (CondStmt* parent = toCondStmt(expr->parentExpr)) {
     if (expr == parent->condExpr && parent->thenStmt)
       return getFirstExpr(parent->thenStmt);
     else if (expr == parent->thenStmt && parent->elseStmt)
       return getFirstExpr(parent->elseStmt);
-  } else if (BlockStmt* parent = dynamic_cast<BlockStmt*>(expr->parentExpr)) {
+  } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
     if (expr == parent->loopInfo && parent->body->head)
       return getFirstExpr(parent->body->head);
   }

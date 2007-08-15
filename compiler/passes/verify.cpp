@@ -12,19 +12,19 @@ verify_ast(BaseAST* ast,
            SymScope* parentScope) {
   ast->verify();
 
-  if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+  if (Symbol* sym = toSymbol(ast)) {
     if (sym->parentScope != parentScope)
       INT_FATAL(sym, "Symbol's parentScope is incorrect");
     parentSymbol = sym;
     parentExpr = NULL;
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
+    if (FnSymbol* fn = toFnSymbol(sym))
       parentScope = fn->argScope;
-    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym))
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type))
+    if (TypeSymbol* type = toTypeSymbol(sym))
+      if (ClassType* ct = toClassType(type->type))
         parentScope = ct->structScope;
   }
 
-  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+  if (Expr* expr = toExpr(ast)) {
     if (expr->parentScope != parentScope)
       INT_FATAL(expr, "Expr's parentScope is incorrect");
     if (!expr->parentSymbol)
@@ -35,7 +35,7 @@ verify_ast(BaseAST* ast,
       INT_FATAL(expr, "Expr's parentExpr is incorrect");
     if (parentExpr && parentExpr->parentSymbol != expr->parentSymbol)
       INT_FATAL(expr, "Expr's parentExpr's parentSymbol is incorrect");
-    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(expr))
+    if (BlockStmt* blockStmt = toBlockStmt(expr))
       if (blockStmt->blockTag != BLOCK_SCOPELESS)
         parentScope = blockStmt->blkScope;
     parentExpr = expr;

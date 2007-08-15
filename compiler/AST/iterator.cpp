@@ -140,7 +140,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
 //
 static void
 insertGetMember(FnSymbol* fn, BaseAST* v, Symbol* ic, Symbol* f) {
-  Symbol* local = dynamic_cast<Symbol*>(v);
+  Symbol* local = toSymbol(v);
   INT_ASSERT(local);
 
   PrimitiveTag primitiveGetMemberTag;
@@ -163,10 +163,10 @@ insertGetMember(FnSymbol* fn, BaseAST* v, Symbol* ic, Symbol* f) {
 //
 static void
 insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
-  Symbol* local = dynamic_cast<Symbol*>(v);
+  Symbol* local = toSymbol(v);
   INT_ASSERT(local);
   
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+  if (FnSymbol* fn = toFnSymbol(ast)) {
     if (local->type == f->type->refType) {
       Symbol* tmp = newTemp(fn, f->type);
       fn->insertAtTail(
@@ -175,7 +175,7 @@ insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
       fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, tmp));
     } else
       fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, local));
-  } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+  } else if (Expr* expr = toExpr(ast)) {
     if (local->type == f->type->refType) {
       Symbol* tmp = newTemp(expr->getFunction(), f->type);
       expr->getStmtExpr()->insertAfter(
@@ -209,7 +209,7 @@ buildGetNextCursor(FnSymbol* fn,
   // change yields to labels and gotos
   int i = 2; // 1 = not started, 0 = finished
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
         call->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new_IntSymbol(i)));
         call->insertBefore(new GotoStmt(goto_normal, end));
@@ -238,7 +238,7 @@ buildGetNextCursor(FnSymbol* fn,
   // fields when local variables change
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
-    if (dynamic_cast<ArgSymbol*>(local)) {
+    if (toArgSymbol(local)) {
       Type* type = local->type;
       Symbol* newlocal = newTemp(ii->getNextCursor, type, local->name);
       ASTMap map;
@@ -251,19 +251,19 @@ buildGetNextCursor(FnSymbol* fn,
       insertSetMember(ii->getNextCursor, iterator, field, local);
     } else {
       forv_Vec(SymExpr, se, local->defs) {
-        if (dynamic_cast<CallExpr*>(se->parentExpr))
+        if (toCallExpr(se->parentExpr))
           insertSetMember(se, iterator, field, local);
       }
 
       // update based on indirect writes via references
       forv_Vec(SymExpr, se, local->uses) {
-        if (CallExpr* ref = dynamic_cast<CallExpr*>(se->parentExpr))
+        if (CallExpr* ref = toCallExpr(se->parentExpr))
           if (ref->isPrimitive(PRIMITIVE_SET_REF))
-            if (CallExpr* move = dynamic_cast<CallExpr*>(ref->parentExpr))
+            if (CallExpr* move = toCallExpr(ref->parentExpr))
               if (move->isPrimitive(PRIMITIVE_MOVE))
-                if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
+                if (SymExpr* lhs = toSymExpr(move->get(1)))
                   forv_Vec(SymExpr, se, lhs->var->defs) {
-                    if (dynamic_cast<CallExpr*>(se->parentExpr))
+                    if (toCallExpr(se->parentExpr))
                       insertSetMember(se, iterator, field, local);
                   }
       }
@@ -377,11 +377,11 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
         if (singleYield) {
           return NULL;
-        } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(call->parentExpr)) {
+        } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
           if (block->loopInfo &&
               (block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
                block->loopInfo->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
@@ -394,7 +394,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         }
       }
-    } else if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+    } else if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->loopInfo) {
         if (singleFor) {
           return NULL;
@@ -442,7 +442,7 @@ buildSingleLoopMethods(FnSymbol* fn,
                        Symbol* value,
                        CallExpr* yield) {
   IteratorInfo* ii = fn->iteratorInfo;
-  BlockStmt* loop = dynamic_cast<BlockStmt*>(yield->parentExpr);
+  BlockStmt* loop = toBlockStmt(yield->parentExpr);
 
   Symbol* headIterator = ii->getHeadCursor->getFormal(1);
   Symbol* nextIterator = ii->getNextCursor->getFormal(1);
@@ -463,8 +463,8 @@ buildSingleLoopMethods(FnSymbol* fn,
   // add local variable defs to iterator methods that need them
   //
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<ArgSymbol*>(def->sym))
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (toArgSymbol(def->sym))
         continue;
       ii->getNextCursor->insertAtHead(def->remove());
       ii->getHeadCursor->insertAtHead(def->copy(&headMap));
@@ -518,7 +518,7 @@ buildSingleLoopMethods(FnSymbol* fn,
     ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, loop->loopInfo->get(1)->copy(&headMap), loop->loopInfo->get(2)->copy(&headMap)));
     ii->getHeadCursor->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cloopHeadCond, new CallExpr(PRIMITIVE_LESSOREQUAL, loop->loopInfo->get(1)->copy(&headMap), loop->loopInfo->get(3)->copy(&headMap))));
 
-    Symbol* counter = dynamic_cast<SymExpr*>(loop->loopInfo->get(1))->var;
+    Symbol* counter = toSymExpr(loop->loopInfo->get(1))->var;
     ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_MOVE, zip1Map.get(counter), loop->loopInfo->get(2)->copy(&zip1Map)));
     ii->getZipCursor1->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, zip1Iterator, local2field.get(counter), zip1Map.get(counter)));
 
@@ -590,7 +590,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   // fields when local variables change
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
-    if (dynamic_cast<ArgSymbol*>(local)) {
+    if (toArgSymbol(local)) {
       Symbol* newlocal = newTemp(ii->getNextCursor, local->type, local->name);
       updateOneSymbol(ii->getNextCursor, local, newlocal);
 
@@ -637,51 +637,51 @@ buildSingleLoopMethods(FnSymbol* fn,
       insertSetMember(ii->getZipCursor4, zip4Iterator, field, zip4Map.get(local));
     } else {
       forv_Vec(SymExpr, se, local->defs) {
-        if (dynamic_cast<CallExpr*>(se->parentExpr))
+        if (toCallExpr(se->parentExpr))
           insertSetMember(se, nextIterator, field, local);
         SymExpr* se2;
-        if ((se2 = dynamic_cast<SymExpr*>(headMap.get(se))))
-          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+        if ((se2 = toSymExpr(headMap.get(se))))
+          if (toCallExpr(se2->parentExpr))
             insertSetMember(se2, headIterator, field, headMap.get(local));
-        if ((se2 = dynamic_cast<SymExpr*>(zip1Map.get(se))))
-          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+        if ((se2 = toSymExpr(zip1Map.get(se))))
+          if (toCallExpr(se2->parentExpr))
             insertSetMember(se2, zip1Iterator, field, zip1Map.get(local));
-        if ((se2 = dynamic_cast<SymExpr*>(zip2Map.get(se))))
-          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+        if ((se2 = toSymExpr(zip2Map.get(se))))
+          if (toCallExpr(se2->parentExpr))
             insertSetMember(se2, zip2Iterator, field, zip2Map.get(local));
-        if ((se2 = dynamic_cast<SymExpr*>(zip3Map.get(se))))
-          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+        if ((se2 = toSymExpr(zip3Map.get(se))))
+          if (toCallExpr(se2->parentExpr))
             insertSetMember(se2, zip3Iterator, field, zip3Map.get(local));
-        if ((se2 = dynamic_cast<SymExpr*>(zip4Map.get(se))))
-          if (dynamic_cast<CallExpr*>(se2->parentExpr))
+        if ((se2 = toSymExpr(zip4Map.get(se))))
+          if (toCallExpr(se2->parentExpr))
             insertSetMember(se2, zip4Iterator, field, zip4Map.get(local));
       }
 
       // update based on indirect writes via references
       forv_Vec(SymExpr, se, local->uses) {
-        if (CallExpr* ref = dynamic_cast<CallExpr*>(se->parentExpr))
+        if (CallExpr* ref = toCallExpr(se->parentExpr))
           if (ref->isPrimitive(PRIMITIVE_SET_REF))
-            if (CallExpr* move = dynamic_cast<CallExpr*>(ref->parentExpr))
+            if (CallExpr* move = toCallExpr(ref->parentExpr))
               if (move->isPrimitive(PRIMITIVE_MOVE))
-                if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)))
+                if (SymExpr* lhs = toSymExpr(move->get(1)))
                   forv_Vec(SymExpr, se, lhs->var->defs) {
-                    if (dynamic_cast<CallExpr*>(se->parentExpr))
+                    if (toCallExpr(se->parentExpr))
                       insertSetMember(se, nextIterator, field, local);
                     SymExpr* se2;
-                    if ((se2 = dynamic_cast<SymExpr*>(headMap.get(se))))
-                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                    if ((se2 = toSymExpr(headMap.get(se))))
+                      if (toCallExpr(se2->parentExpr))
                         insertSetMember(se2, headIterator, field, headMap.get(local));
-                    if ((se2 = dynamic_cast<SymExpr*>(zip1Map.get(se))))
-                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                    if ((se2 = toSymExpr(zip1Map.get(se))))
+                      if (toCallExpr(se2->parentExpr))
                         insertSetMember(se2, zip1Iterator, field, zip1Map.get(local));
-                    if ((se2 = dynamic_cast<SymExpr*>(zip2Map.get(se))))
-                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                    if ((se2 = toSymExpr(zip2Map.get(se))))
+                      if (toCallExpr(se2->parentExpr))
                         insertSetMember(se2, zip2Iterator, field, zip2Map.get(local));
-                    if ((se2 = dynamic_cast<SymExpr*>(zip3Map.get(se))))
-                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                    if ((se2 = toSymExpr(zip3Map.get(se))))
+                      if (toCallExpr(se2->parentExpr))
                         insertSetMember(se2, zip3Iterator, field, zip3Map.get(local));
-                    if ((se2 = dynamic_cast<SymExpr*>(zip4Map.get(se))))
-                      if (dynamic_cast<CallExpr*>(se2->parentExpr))
+                    if ((se2 = toSymExpr(zip4Map.get(se))))
+                      if (toCallExpr(se2->parentExpr))
                         insertSetMember(se2, zip4Iterator, field, zip4Map.get(local));
                   }
       }
@@ -741,7 +741,7 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     bool hasYield = false;
     forv_Vec(Expr, expr, bb->exprs) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
+      if (CallExpr* call = toCallExpr(expr))
         if (call->isPrimitive(PRIMITIVE_YIELD))
           hasYield = true;
     }
@@ -751,7 +751,7 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
         live.add(OUT.v[i]->v[j]);
       }
       for (int k = bb->exprs.n - 1; k >= 0; k--) {
-        if (CallExpr* call = dynamic_cast<CallExpr*>(bb->exprs.v[k])) {
+        if (CallExpr* call = toCallExpr(bb->exprs.v[k])) {
           if (call->isPrimitive(PRIMITIVE_YIELD)) {
             for (int j = 0; j < locals.n; j++) {
               if (live.v[j]) {
@@ -763,7 +763,7 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
         Vec<BaseAST*> asts;
         collect_asts(&asts, bb->exprs.v[k]);
         forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+          if (SymExpr* se = toSymExpr(ast)) {
             if (defSet.set_in(se)) {
               live.v[localMap.get(se->var)] = false;
             }
@@ -795,8 +795,8 @@ addLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn) {
   buildBasicBlocks(fn);
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-        if (dynamic_cast<VarSymbol*>(def->sym)) {
+      if (DefExpr* def = toDefExpr(expr)) {
+        if (toVarSymbol(def->sym)) {
           syms.add(def->sym);
         }
       }
@@ -860,7 +860,7 @@ void lowerIterator(FnSymbol* fn) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->classType->symbol, new_StringSymbol("iterator class"))));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
-    if (dynamic_cast<ArgSymbol*>(local)) {
+    if (toArgSymbol(local)) {
       insertSetMember(fn, t1, field, local);
     }
   }

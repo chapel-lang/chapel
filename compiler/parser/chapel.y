@@ -719,10 +719,10 @@ fn_decl_stmt:
         $2->noParens = true;
       else {
         for_alist(expr, $3) {
-          if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+          if (DefExpr* def = toDefExpr(expr)) {
             def->remove();
             $2->insertFormalAtTail(def);
-          } else if (BlockStmt* tupledefs = dynamic_cast<BlockStmt*>(expr)) {
+          } else if (BlockStmt* tupledefs = toBlockStmt(expr)) {
             build_tuple_arg($2, tupledefs, NULL);
           }
         }
@@ -742,7 +742,7 @@ extern_fn_decl_stmt:
       else
         fn->retType = dtVoid;
       for_alist(expr, $5) {
-        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        if (DefExpr* def = toDefExpr(expr)) {
           def->remove();
           fn->insertFormalAtTail(def);
         } else
@@ -898,7 +898,7 @@ class_decl_stmt:
       DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
       delete $2;
-      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->type)->inherits->insertAtTail($4);
+      toClassType(toTypeSymbol(def->sym)->type)->inherits->insertAtTail($4);
       $$ = build_chpl_stmt(def);
     }
 ;
@@ -1040,13 +1040,13 @@ var_decl_stmt_inner:
       tmp->isCompilerTemp = true;
       int count = 1;
       for_alist(expr, $2->body) {
-        if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+        if (DefExpr* def = toDefExpr(expr)) {
           if (strcmp(def->sym->name, "_")) {
             def->init = new CallExpr(tmp, new_IntSymbol(count));
           } else {
             def->remove();
           }
-        } else if (BlockStmt* blk = dynamic_cast<BlockStmt*>(expr)) {
+        } else if (BlockStmt* blk = toBlockStmt(expr)) {
           build_tuple_var_decl(new CallExpr(tmp, new_IntSymbol(count)),
                                blk, expr);
         }
@@ -1349,7 +1349,7 @@ tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
       if ($2->length() == 1) {
-        $$ = dynamic_cast<Expr*>($2->get(1));
+        $$ = toExpr($2->get(1));
         $$->remove();
       } else {
         CallExpr* tupleCall = new CallExpr("_tuple", $2);

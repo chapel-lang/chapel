@@ -74,7 +74,7 @@ addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
 //   if (oldFn->id == 34813) {
 //     printf("%d -> %d ", oldFn->id, newFn->id);
 //     form_Map(ASTMapElem, e, *subs) {
-//       if (Type* t = dynamic_cast<Type*>(e->value))
+//       if (Type* t = toType(e->value))
 //         printf("%s [%d] ", t->symbol->name, e->value->id);
 //       else
 //         printf("(not a type) [%d] ", e->value->id);
@@ -151,7 +151,7 @@ Symbol::~Symbol() {
 
 void Symbol::verify() {
   BaseAST::verify();
-  if (defPoint && !defPoint->parentSymbol && !dynamic_cast<ModuleSymbol*>(this))
+  if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
@@ -201,7 +201,7 @@ bool Symbol::isParam(){
 
 
 bool Symbol::isThis(void) {
-  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->parentSymbol);
+  FnSymbol *f = toFnSymbol(defPoint->parentSymbol);
   if (!f || !f->_this)
     return 0;
   else
@@ -237,7 +237,7 @@ const char* Symbol::hasPragma(const char* str) {
     if (!strcmp(pragma, str))
       return pragma;
   }
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+  if (!toModuleSymbol(this) && getModule())
     return getModule()->hasPragma(str);
   return NULL;
 }
@@ -247,7 +247,7 @@ void Symbol::removePragma(const char* str) {
   for (int i = 0; i < pragmas.n; i++)
     if (!strcmp(pragmas.v[i], str))
       pragmas.v[i] = "";
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+  if (!toModuleSymbol(this) && getModule())
     getModule()->removePragma(str);
 }
 
@@ -257,7 +257,7 @@ const char* Symbol::hasPragmaPrefix(const char* str) {
     if (!strncmp(pragma, str, strlen(str)))
       return pragma;
   }
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+  if (!toModuleSymbol(this) && getModule())
     return getModule()->hasPragmaPrefix(str);
   return NULL;
 }
@@ -436,9 +436,9 @@ ArgSymbol::copyInner(ASTMap* map) {
 
 void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultExpr)
-    defaultExpr = dynamic_cast<Expr*>(new_ast);
+    defaultExpr = toExpr(new_ast);
   else if (old_ast == variableExpr)
-    variableExpr = dynamic_cast<Expr*>(new_ast);
+    variableExpr = toExpr(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }
@@ -448,7 +448,7 @@ bool ArgSymbol::requiresCPtr(void) {
   if (intent == INTENT_REF ||
       (!strcmp(name, "this") && is_complex_type(type)))
     return true;
-  ClassType* ct = dynamic_cast<ClassType*>(type);
+  ClassType* ct = toClassType(type);
   if (ct && ct->classTag != CLASS_CLASS)
     return true;
   return false;
@@ -583,7 +583,7 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::astType");
   }
   if (normalized && !hasPragma("auto ii")) {
-    CallExpr* last = dynamic_cast<CallExpr*>(body->body->last());
+    CallExpr* last = toCallExpr(body->body->last());
     if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
   }
@@ -625,13 +625,13 @@ FnSymbol::copyInner(ASTMap* map) {
 
 void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
-    body = dynamic_cast<BlockStmt*>(new_ast);
+    body = toBlockStmt(new_ast);
   } else if (old_ast == where) {
-    where = dynamic_cast<BlockStmt*>(new_ast);
+    where = toBlockStmt(new_ast);
   } else if (old_ast == setter) {
-    setter = dynamic_cast<DefExpr*>(new_ast);
+    setter = toDefExpr(new_ast);
   } else if (old_ast == retExprType) {
-    retExprType = dynamic_cast<Expr*>(new_ast);
+    retExprType = toExpr(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }
@@ -640,7 +640,7 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 static bool
 returns_void(FnSymbol* fn) {
-  CallExpr* ret = dynamic_cast<CallExpr*>(fn->body->body->last());
+  CallExpr* ret = toCallExpr(fn->body->body->last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(fn, "Function is not in normal form");
   return ret->typeInfo() == dtVoid;
@@ -695,14 +695,14 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
       wrapper->_this = wrapper_formal;
     wrapper->insertFormalAtTail(wrapper_formal);
     if (coercions->get(formal)) {
-      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal));
+      TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
       wrapper_formal->type = ts->type;
       if (ts->hasPragma( "synchronization primitive")) {
         // check if this is a member access
         DefExpr *mt;
         if ((this->formals->length() > 0) &&
-            (mt = dynamic_cast<DefExpr*>(this->formals->get(1))) &&
+            (mt = toDefExpr(this->formals->get(1))) &&
             (mt->sym->type == dtMethodToken) &&
             (_this == this->getFormal(2))) {
           // call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
@@ -719,13 +719,13 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
         wrapper->insertAtTail(new DefExpr(tmp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
         call->insertAtTail(tmp);
-      } else if (formal->type == dtString && dynamic_cast<EnumType*>(wrapper_formal->type)) {
+      } else if (formal->type == dtString && toEnumType(wrapper_formal->type)) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
       } else {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }
     } else {
-      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal));
+      TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       if (ts && (formal != _this || !hasPragma("ref this")))
         wrapper_formal->type = ts->type;
       call->insertAtTail(wrapper_formal);
@@ -770,7 +770,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Expr* temp_type = NULL;
       if (formal->intent != INTENT_OUT)
         temp_init = formal->defaultExpr->copy();
-      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init))
+      if (SymExpr* symExpr = toSymExpr(temp_init))
         if (symExpr->var == gNil)
           temp_init = NULL;
       if (formal->defPoint->exprType)
@@ -804,7 +804,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
 
   // Make the line numbers match the numbers from the formals they map to
   for_formals(formal, this) {
-    if (Symbol* sym = dynamic_cast<Symbol*>(copy_map.get(formal))) {
+    if (Symbol* sym = toSymbol(copy_map.get(formal))) {
       sym->defPoint->lineno = formal->lineno;
       sym->defPoint->filename = formal->filename;
       sym->lineno = formal->lineno;
@@ -858,7 +858,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
     if (_this == formal)
       wrapper->_this = new_formal;
     if (Symbol* sub = promotion_subs->get(formal)) {
-      TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sub);
+      TypeSymbol* ts = toTypeSymbol(sub);
       if (!ts)
         INT_FATAL(this, "error building promotion wrapper");
       new_formal->type = ts->type;
@@ -902,14 +902,14 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
 static void
 copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST* value) {
   if (!strcmp("_construct__tuple", root->name)) {
-    if (Symbol* sym = dynamic_cast<Symbol*>(key)) {
+    if (Symbol* sym = toSymbol(key)) {
       if (sym->name[0] == 'x') {
         subs.put((BaseAST*)(intptr_t)atoi(sym->name+1), value);
         return;
       }
     }
   }
-  if (dynamic_cast<ArgSymbol*>(key)) {
+  if (toArgSymbol(key)) {
     if (root != fn) {
       int i = 1;
       for_formals(formal, fn) {
@@ -946,7 +946,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 //   if (root->id == 53713) {
 //     printf("add %d: ", root->id);
 //     form_Map(ASTMapElem, e, clone->substitutions) {
-//       if (Type* t = dynamic_cast<Type*>(e->value))
+//       if (Type* t = toType(e->value))
 //         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
 //       else
 //         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
@@ -958,10 +958,10 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 
   // add parameter instantiations to parameter map for function resolution
   for (int i = 0; i < generic_subs->n; i++) {
-    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(generic_subs->v[i].key)) {
+    if (ArgSymbol* arg = toArgSymbol(generic_subs->v[i].key)) {
       if (arg->intent == INTENT_PARAM) {
-        Symbol* key = dynamic_cast<Symbol*>(map.get(arg));
-        Symbol* val = dynamic_cast<Symbol*>(generic_subs->v[i].value);
+        Symbol* key = toSymbol(map.get(arg));
+        Symbol* val = toSymbol(generic_subs->v[i].value);
         if (!key || !val)
           INT_FATAL("error building parameter map in instantiation");
         paramMap.put(key, val);
@@ -974,7 +974,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   // argument is later instantiated based on the type of the parameter
   for_formals(arg, fn) {
     if (paramMap.get(arg)) {
-      Symbol* key = dynamic_cast<Symbol*>(map.get(arg));
+      Symbol* key = toSymbol(map.get(arg));
       Symbol* val = paramMap.get(arg);
       if (!key || !val)
         INT_FATAL("error building parameter map in instantiation");
@@ -991,7 +991,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   update_symbols(clone, &subs);
 
   for_formals(formal, fn) {
-    ArgSymbol* cloneFormal = dynamic_cast<ArgSymbol*>(map.get(formal));
+    ArgSymbol* cloneFormal = toArgSymbol(map.get(formal));
     if (generic_subs->get(formal) && formal->intent == INTENT_PARAM) {
       cloneFormal->intent = INTENT_BLANK;
       cloneFormal->isGeneric = false;
@@ -1002,7 +1002,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
         cloneFormal->defaultExpr->remove();
       cloneFormal->defaultExpr = new SymExpr(gNil);
       cloneFormal->defaultExpr->parentSymbol = cloneFormal;
-    } else if (Type* t = dynamic_cast<Type*>(generic_subs->get(formal))) {
+    } else if (Type* t = toType(generic_subs->get(formal))) {
       cloneFormal->isGeneric = false;
       cloneFormal->instantiatedFrom = formal->type;
       cloneFormal->type = t;
@@ -1017,8 +1017,8 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 
 static void
 instantiate_tuple(FnSymbol* fn) {
-  ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
-  int64 size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->int_value();
+  ClassType* tuple = toClassType(fn->retType);
+  int64 size = toVarSymbol(tuple->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
@@ -1034,11 +1034,11 @@ instantiate_tuple(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
-  VarSymbol* var = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
+  VarSymbol* var = toVarSymbol(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
   if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();
-  if (index <= 0 || index >= dynamic_cast<ClassType*>(fn->_this->type)->fields->length()) {
+  if (index <= 0 || index >= toClassType(fn->_this->type)->fields->length()) {
     fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", intstring(index), ")")))));
   } else {
     char* name = stringcat("x", intstring(index));
@@ -1053,7 +1053,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
   if (fn->formals->length() != 1)
     INT_FATAL(fn, "tuple copy function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
-  ClassType* ct = dynamic_cast<ClassType*>(arg->type);
+  ClassType* ct = toClassType(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
@@ -1069,7 +1069,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   if (fn->formals->length() != 1)
     INT_FATAL(fn, "tuple init function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
-  ClassType* ct = dynamic_cast<ClassType*>(arg->type);
+  ClassType* ct = toClassType(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
@@ -1085,7 +1085,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->formals->length() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
-  ClassType  *ct = dynamic_cast<ClassType*>(arg->type);
+  ClassType  *ct = toClassType(arg->type);
   CallExpr *ret;
   if (ct->fields->length() < 0) {
     ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
@@ -1138,10 +1138,10 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
     if (!fn->hasPragma("synchronization primitive") ||
         (fn->isMethod && (t->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
-      Symbol* arg = dynamic_cast<Symbol*>(key);
+      Symbol* arg = toSymbol(key);
       if (!arg || !arg->isTypeVariable) {
         // instantiation of a non-type formal of sync type loses sync
-        Type* nt = dynamic_cast<Type*>(t->substitutions.v[0].value);
+        Type* nt = toType(t->substitutions.v[0].value);
         return getNewSubType(fn, nt, key);
       }
     }
@@ -1159,7 +1159,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   Vec<BaseAST*> keys;
   generic_substitutions->get_keys( keys);
   forv_Vec(BaseAST, key, keys) {
-    if (Type* t = dynamic_cast<Type*>(generic_substitutions->get( key))) {
+    if (Type* t = toType(generic_substitutions->get( key))) {
       if (t->isGeneric)
         INT_FATAL(this, "illegal instantiation with a generic type");
       Type* nt = getNewSubType(this, t, key);
@@ -1184,7 +1184,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 //   if (root->id == 53713) {
 //     printf("chk %d: ", root->id);
 //     form_Map(ASTMapElem, e, all_substitutions) {
-//       if (Type* t = dynamic_cast<Type*>(e->value))
+//       if (Type* t = toType(e->value))
 //         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
 //       else
 //         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
@@ -1223,7 +1223,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   }
 
   if (fnClass == FN_CONSTRUCTOR) {
-    if (!dynamic_cast<ClassType*>(retType))
+    if (!toClassType(retType))
       INT_FATAL("bad instantiation of non-class type");
 
     // copy generic class type
@@ -1234,8 +1234,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
     forv_Vec(BaseAST, value, values)
-      if (Type* type = dynamic_cast<Type*>(value))
-        if (!dynamic_cast<PrimitiveType*>(type))
+      if (Type* type = toType(value))
+        if (!toPrimitiveType(type))
           if (!retType->symbol->hasPragma("ref"))
             defPoint->parentScope->addModuleUse(type->getModule());
 
@@ -1245,7 +1245,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
-        if (Type* type = dynamic_cast<Type*>(value)) {
+        if (Type* type = toType(value)) {
           if (!first && !strncmp(clone->name, "_tuple", 6)) {
             clone->name = astr("(");
           }
@@ -1259,12 +1259,12 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
             clone->type->instantiatedWith = new Vec<Type*>();
           clone->type->instantiatedWith->add(type);
           first = true;
-        } else if (Symbol* symbol = dynamic_cast<Symbol*>(value)) {
+        } else if (Symbol* symbol = toSymbol(value)) {
           if (first) {
             clone->name = astr(clone->name, ",");
             clone->cname = stringcat(clone->cname, "_");
           }
-          VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
+          VarSymbol* var = toVarSymbol(symbol);
           if (var && var->immediate) {
             char imm[128];
             sprint_imm(imm, *var->immediate);
@@ -1369,7 +1369,7 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
     for_fields(field, ct) {
-      if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+      if (ClassType* fct = toClassType(field->type)) {
         char buffer[1024];
         strcpy(buffer, cname);
         strcat(buffer, ".");
@@ -1398,7 +1398,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     Vec<Symbol*> defSet;
     int i = 1;
     forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+      if (SymExpr* se = toSymExpr(ast)) {
         if (se->var->astType == SYMBOL_VAR) {
           if (se->var->defPoint && se->var->defPoint->parentSymbol == this) {
             if (!defSet.set_in(se->var)) {
@@ -1412,17 +1412,17 @@ void FnSymbol::codegenDef(FILE* outfile) {
   }
 
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-      if (!dynamic_cast<TypeSymbol*>(def->sym))
+    if (DefExpr* def = toDefExpr(ast))
+      if (!toTypeSymbol(def->sym))
         if (def->sym->parentScope->astParent->getModule()->block !=
             def->sym->parentScope->astParent)
           def->sym->codegenDef(outfile);
   }
   if (fNullTemps) {
     forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-        if (!dynamic_cast<TypeSymbol*>(def->sym)) {
-          if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+      if (DefExpr* def = toDefExpr(ast)) {
+        if (!toTypeSymbol(def->sym)) {
+          if (ClassType* ct = toClassType(def->sym->type)) {
             codegenNullAssignments(outfile, def->sym->cname, ct);
           }
         }
@@ -1448,10 +1448,10 @@ FnSymbol::insertAtTail(Expr* ast) {
 
 Symbol*
 FnSymbol::getReturnSymbol() {
-  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  CallExpr* ret = toCallExpr(body->body->last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
-  SymExpr* sym = dynamic_cast<SymExpr*>(ret->get(1));
+  SymExpr* sym = toSymExpr(ret->get(1));
   if (!sym)
     INT_FATAL(this, "function is not normal");
   return sym->var;
@@ -1460,11 +1460,11 @@ FnSymbol::getReturnSymbol() {
 
 Symbol*
 FnSymbol::getReturnLabel() {
-  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  CallExpr* ret = toCallExpr(body->body->last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
-  if (DefExpr* def = dynamic_cast<DefExpr*>(ret->prev))
-    if (Symbol* sym = dynamic_cast<LabelSymbol*>(def->sym))
+  if (DefExpr* def = toDefExpr(ret->prev))
+    if (Symbol* sym = toLabelSymbol(def->sym))
       return sym;
   return NULL;
 }
@@ -1472,12 +1472,12 @@ FnSymbol::getReturnLabel() {
 
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
-  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  CallExpr* ret = toCallExpr(body->body->last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   Expr* last = ret;
-  if (DefExpr* def = dynamic_cast<DefExpr*>(last->prev))
-    if (dynamic_cast<LabelSymbol*>(def->sym))
+  if (DefExpr* def = toDefExpr(last->prev))
+    if (toLabelSymbol(def->sym))
       last = last->prev; // label before return
   last->insertBefore(ast);
 }
@@ -1485,7 +1485,7 @@ FnSymbol::insertBeforeReturn(Expr* ast) {
 
 void
 FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
-  CallExpr* ret = dynamic_cast<CallExpr*>(body->body->last());
+  CallExpr* ret = toCallExpr(body->body->last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
@@ -1506,9 +1506,9 @@ FnSymbol::insertAtTail(AList* ast) {
 
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
-  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(ast))
+  if (ArgSymbol* arg = toArgSymbol(ast))
     formals->insertAtHead(new DefExpr(arg));
-  else if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+  else if (DefExpr* def = toDefExpr(ast))
     formals->insertAtHead(def);
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtHead");
@@ -1517,9 +1517,9 @@ FnSymbol::insertFormalAtHead(BaseAST* ast) {
 
 void
 FnSymbol::insertFormalAtTail(BaseAST* ast) {
-  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(ast))
+  if (ArgSymbol* arg = toArgSymbol(ast))
     formals->insertAtTail(new DefExpr(arg));
-  else if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+  else if (DefExpr* def = toDefExpr(ast))
     formals->insertAtTail(def);
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtTail");
@@ -1528,7 +1528,7 @@ FnSymbol::insertFormalAtTail(BaseAST* ast) {
 
 ArgSymbol*
 FnSymbol::getFormal(int i) {
-  return dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(formals->get(i))->sym);
+  return toArgSymbol(toDefExpr(formals->get(i))->sym);
 }
 
 
@@ -1592,7 +1592,7 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {
-    block = dynamic_cast<BlockStmt*>(new_ast);
+    block = toBlockStmt(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
   }

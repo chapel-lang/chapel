@@ -61,7 +61,7 @@ liveVariableAnalysis(FnSymbol* fn,
       Vec<BaseAST*> asts;
       collect_asts(&asts, expr);
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             int id = localMap.get(se->var);
             if (!def->v[id])
@@ -70,7 +70,7 @@ liveVariableAnalysis(FnSymbol* fn,
         }
       }
       forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = dynamic_cast<SymExpr*>(ast)) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
             int id = localMap.get(se->var);
             if (!use->v[id])
