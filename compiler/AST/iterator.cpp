@@ -202,7 +202,7 @@ buildGetNextCursor(FnSymbol* fn,
   Vec<Symbol*> labels;
   iterator = ii->getNextCursor->getFormal(1);
   cursor = ii->getNextCursor->getFormal(2);
-  for_alist(Expr, expr, fn->body->body)
+  for_alist(expr, fn->body->body)
     ii->getNextCursor->insertAtTail(expr->remove());
   Symbol* end = new LabelSymbol("_end");
 
@@ -479,7 +479,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   // add BLOCK I to getHeadCursor method
   // copy BLOCK I to getZipCursor1 method
   //
-  for_alist(Expr, expr, fn->body->body) {
+  for_alist(expr, fn->body->body) {
     if (expr == loop)
       break;
     ii->getHeadCursor->insertAtTail(expr->copy(&headMap));
@@ -492,7 +492,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   // add BLOCK III to getZipCursor3 method
   //
   bool postYield = false;
-  for_alist(Expr, expr, loop->body) {
+  for_alist(expr, loop->body) {
     if (!postYield) {
       if (expr == yield)
         postYield = true;
@@ -537,7 +537,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   //
   BlockStmt* headThen = new BlockStmt();
   BlockStmt* nextThen = new BlockStmt();
-  for_alist(Expr, expr, loop->body) {
+  for_alist(expr, loop->body) {
     if (expr == yield)
       break;
     headThen->insertAtTail(expr->copy(&headMap));
@@ -552,7 +552,7 @@ buildSingleLoopMethods(FnSymbol* fn,
   BlockStmt* headElse = new BlockStmt();
   BlockStmt* nextElse = new BlockStmt();
   loop->remove();
-  for_alist(Expr, expr, fn->body->body) {
+  for_alist(expr, fn->body->body) {
     if (!expr->next) // ignore return statement
       break;
     headElse->insertAtTail(expr->copy(&headMap));
@@ -852,7 +852,7 @@ void lowerIterator(FnSymbol* fn) {
 
   // rebuild iterator function
 
-  for_alist(Expr, expr, fn->body->body)
+  for_alist(expr, fn->body->body)
     expr->remove();
   fn->defPoint->remove();
   fn->retType = ii->classType;

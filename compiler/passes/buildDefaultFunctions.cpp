@@ -274,7 +274,7 @@ static void build_enum_enumerate_function(EnumType* et) {
 
   // Generate the tuple of enum values for the given enum type
   CallExpr* call = new CallExpr("_construct__tuple");
-  for_alist(DefExpr, constant, et->constants) {
+  for_defs(constant, et->constants) {
     call->insertAtTail(constant->sym);
   }
   call->insertAtHead(new_IntSymbol(call->argList->length()));
@@ -310,7 +310,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg2);
 
   CondStmt* cond = NULL;
-  for_alist(DefExpr, constant, et->constants) {
+  for_defs(constant, et->constants) {
     cond = new CondStmt(
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
              new CallExpr(PRIMITIVE_RETURN, constant->sym),
@@ -575,7 +575,7 @@ static void buildDefaultReadFunction(EnumType* et) {
                                 new_StringSymbol("***Error: Not of "), 
                                 new_StringSymbol(et->symbol->name), 
                                 new_StringSymbol(" type***"));
-  for_alist_backward(DefExpr, constant, et->constants) {
+  for_defs_backward(constant, et->constants) {
     Expr* cond = new CallExpr("==", valString, new_StringSymbol(constant->sym->name));
     Expr* thenStmt = new CallExpr("=", arg, constant->sym);
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
@@ -674,7 +674,7 @@ static void buildStringCastFunction(EnumType* et) {
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
-  for_alist(DefExpr, constant, et->constants) {
+  for_defs(constant, et->constants) {
     fn->insertAtTail(
       new CondStmt(
         new CallExpr("==", arg, constant->sym),

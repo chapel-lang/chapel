@@ -718,7 +718,7 @@ fn_decl_stmt:
       if (!$3)
         $2->noParens = true;
       else {
-        for_alist(Expr, expr, $3) {
+        for_alist(expr, $3) {
           if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
             def->remove();
             $2->insertFormalAtTail(def);
@@ -741,7 +741,7 @@ extern_fn_decl_stmt:
         fn->retExprType = $7;
       else
         fn->retType = dtVoid;
-      for_alist(Expr, expr, $5) {
+      for_alist(expr, $5) {
         if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
           def->remove();
           fn->insertFormalAtTail(def);
@@ -1015,7 +1015,7 @@ var_decl_stmt_inner_ls:
     { $$ = $1; }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
-      for_alist(Expr, expr, $3->body)
+      for_alist(expr, $3->body)
         $1->insertAtTail(expr->remove());
       $$ = $1;
     }
@@ -1039,7 +1039,7 @@ var_decl_stmt_inner:
       VarSymbol* tmp = new VarSymbol("_tuple_tmp");
       tmp->isCompilerTemp = true;
       int count = 1;
-      for_alist(Expr, expr, $2->body) {
+      for_alist(expr, $2->body) {
         if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
           if (strcmp(def->sym->name, "_")) {
             def->init = new CallExpr(tmp, new_IntSymbol(count));
@@ -1095,7 +1095,7 @@ tuple_type:
   TLP type_ls TRP
     {
       CallExpr* call = new CallExpr("_tuple", new_IntSymbol($2->length()));
-      for_alist(Expr, expr, $2) {
+      for_alist(expr, $2) {
         call->argList->insertAtTail(new CallExpr("_init", expr->remove()));
       }
       $$ = call;

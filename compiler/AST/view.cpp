@@ -564,7 +564,7 @@ void html_view(const char* passName) {
   fprintf(html_index_file, "<TR><TD>");
   fprintf(html_index_file, "%s", passName);
   fprintf(html_index_file, "</TD><TD>");
-  for_alist(Expr, expr, theProgram->block->body)
+  for_alist(expr, theProgram->block->body)
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->sym))
         mods.add(mod);
@@ -586,7 +586,7 @@ void html_view(const char* passName) {
     fprintf(html_file, "<B>module \n");
     html_print_symbol(html_file, uid, mod, true);
     fprintf(html_file, "</B>\n");
-    for_alist(Expr, stmt, mod->block->body)
+    for_alist(stmt, mod->block->body)
       html_view_ast( html_file, uid, stmt);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);

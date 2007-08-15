@@ -89,7 +89,7 @@ codegenCobegin( FILE* outfile, AList *body) {
   // gen code for the function pointer array
   fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist(Expr, stmt, body) {
+  for_alist(stmt, body) {
     if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
       if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
@@ -109,7 +109,7 @@ codegenCobegin( FILE* outfile, AList *body) {
   // ok, walk through again and gen code for the argument array
   fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist(Expr, stmt, body) {
+  for_alist(stmt, body) {
     if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
       Expr *actuals = dynamic_cast<Expr*>(cexpr->argList->first());
       // pass exactly one class object containing ptrs to locals
@@ -150,7 +150,7 @@ codegenBegin( FILE* outfile, AList *body) {
     INT_FATAL("begin codegen - expect only one function call");
 
   fprintf( outfile, "_chpl_begin( ");
-  for_alist (Expr, stmt, body) {
+  for_alist(stmt, body) {
     if (CallExpr *cexpr=dynamic_cast<CallExpr*>(stmt)) {
       if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);

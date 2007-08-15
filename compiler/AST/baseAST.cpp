@@ -469,7 +469,7 @@ int currentLineno = 0;
 const char* currentFilename = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
-#define AST_ADD_LIST(_t, _m) for_asts(tmp, ((_t*)a)->_m) asts.add(tmp)
+#define AST_ADD_LIST(_t, _m) for_alist(tmp, ((_t*)a)->_m) asts.add(tmp)
 
 void
 get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {

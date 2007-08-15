@@ -191,7 +191,7 @@ checkResolved(void) {
 
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
-      for_alist(DefExpr, def, et->constants) {
+      for_defs(def, et->constants) {
         if (def->init) {
           SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
           if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&

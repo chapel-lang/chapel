@@ -43,33 +43,53 @@ class AList {
   void codegen(FILE* outfile, const char* separator = ", ");
 };
 
-#define for_alist(elt_type, node, list)                                 \
-  for (elt_type *node = dynamic_cast<elt_type*>((list)->head),          \
-         *_alist_next = (node) ? dynamic_cast<elt_type*>((node)->next) : NULL; \
+#define for_alist(node, list)                                           \
+  for (Expr *node = (list)->head,                                       \
+         *_alist_next = (node) ? (node)->next : NULL;                   \
        node;                                                            \
        node = _alist_next,                                              \
-         _alist_next = (node) ? dynamic_cast<elt_type*>((node)->next) : NULL)
+         _alist_next = (node) ? (node)->next : NULL)
 
-#define for_asts(node, list)                        \
-  for (Expr *node = (list)->head,                   \
-         *_alist_next = (node) ? node->next : NULL; \
-       node;                                        \
-       node = _alist_next,                          \
-         _alist_next = (node) ? node->next : NULL)
+#define for_alist_backward(node, list)                                  \
+  for (Expr *node = (list)->tail,                                       \
+         *_alist_prev = (node) ? (node)->prev : NULL;                   \
+       node;                                                            \
+       node = _alist_prev,                                              \
+         _alist_prev = (node) ? (node)->prev : NULL)
+
+#define for_defs(node, list)                                            \
+  for (DefExpr *node = toDefExpr((list)->head),                         \
+         *_alist_next = (node) ? toDefExpr((node)->next) : NULL;        \
+       node;                                                            \
+       node = _alist_next,                                              \
+         _alist_next = (node) ? toDefExpr((node)->next) : NULL)
+
+#define for_defs_backward(node, list)                                   \
+  for (DefExpr *node = toDefExpr((list)->tail),                         \
+         *_alist_prev = (node) ? toDefExpr((node)->prev) : NULL;        \
+       node;                                                            \
+       node = _alist_prev,                                              \
+         _alist_prev = (node) ? toDefExpr((node)->prev) : NULL)
 
 #define for_formals(formal, fn)                                         \
-  for (ArgSymbol *formal = ((fn)->formals->head) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((fn)->formals->head)->sym) : NULL, \
-         *_alist_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
+  for (ArgSymbol *formal = ((fn)->formals->head) ? toArgSymbol(toDefExpr((fn)->formals->head)->sym) : NULL, \
+         *_alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \
        (formal);                                                        \
        formal = _alist_next,                                            \
-         _alist_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL)
+         _alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL)
 
 #define for_formals_backward(formal, fn)                                \
-  for (ArgSymbol *formal = ((fn)->formals->tail) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((fn)->formals->tail)->sym) : NULL, \
-         *_alist_prev = (formal && formal->defPoint->prev) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->prev)->sym) : NULL; \
+  for (ArgSymbol *formal = ((fn)->formals->tail) ? toArgSymbol(toDefExpr((fn)->formals->tail)->sym) : NULL, \
+         *_alist_prev = (formal && formal->defPoint->prev) ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym) : NULL; \
        (formal);                                                        \
        formal = _alist_prev,                                            \
-         _alist_prev = (formal && formal->defPoint->prev) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->prev)->sym) : NULL)
+         _alist_prev = (formal && formal->defPoint->prev) ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym) : NULL)
+
+#define for_actuals(actual, call)               \
+  for_alist(actual, (call)->argList)
+
+#define for_actuals_backward(actual, call)      \
+  for_alist_backward(actual, (call)->argList)
 
 #define for_formals_actuals(formal, actual, call)                       \
   FnSymbol* _alist_fn = (call)->isResolved();                           \
@@ -77,39 +97,26 @@ class AList {
     INT_FATAL(call, "number of actuals does not match number of formals"); \
   Expr* actual = ((call)->argList->head);                               \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \
-  for (ArgSymbol *formal = (_alist_fn->formals->head) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((_alist_fn->formals)->head)->sym) : NULL, \
-         *_alist_formal_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
+  for (ArgSymbol *formal = (_alist_fn->formals->head) ? toArgSymbol(toDefExpr((_alist_fn->formals)->head)->sym) : NULL, \
+         *_alist_formal_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \
        (formal);                                                        \
        formal = _alist_formal_next,                                     \
-         _alist_formal_next = (formal && formal->defPoint->next) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL, \
+         _alist_formal_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL, \
          actual = _alist_actual_next,                                   \
          _alist_actual_next = (actual) ? actual->next : NULL)
 
-#define for_actuals(actual, call)               \
-  for_alist(Expr, actual, (call)->argList)
-
-#define for_actuals_backward(actual, call)              \
-  for_alist_backward(Expr, actual, (call)->argList)
-
 #define for_fields(field, ct)                                           \
-  for (Symbol *field = ((ct)->fields->head) ? dynamic_cast<DefExpr*>(((ct)->fields)->head)->sym : NULL, \
-         *_alist_next = (field && field->defPoint->next) ? dynamic_cast<DefExpr*>(field->defPoint->next)->sym : NULL; \
+  for (Symbol *field = ((ct)->fields->head) ? toDefExpr(((ct)->fields)->head)->sym : NULL, \
+         *_alist_next = (field && field->defPoint->next) ? toDefExpr(field->defPoint->next)->sym : NULL; \
        (field);                                                         \
        field = _alist_next,                                             \
-         _alist_next = (field && field->defPoint->next) ? dynamic_cast<DefExpr*>(field->defPoint->next)->sym : NULL)
+         _alist_next = (field && field->defPoint->next) ? toDefExpr(field->defPoint->next)->sym : NULL)
 
 #define for_fields_backward(field, ct)                                  \
-  for (Symbol *field = ((ct)->fields->tail) ? dynamic_cast<DefExpr*>(((ct)->fields)->tail)->sym : NULL, \
-         *_alist_prev = (field && field->defPoint->prev) ? dynamic_cast<DefExpr*>(field->defPoint->prev)->sym : NULL; \
+  for (Symbol *field = ((ct)->fields->tail) ? toDefExpr(((ct)->fields)->tail)->sym : NULL, \
+         *_alist_prev = (field && field->defPoint->prev) ? toDefExpr(field->defPoint->prev)->sym : NULL; \
        (field);                                                         \
        field = _alist_prev,                                             \
-         _alist_prev = (field && field->defPoint->prev) ? dynamic_cast<DefExpr*>(field->defPoint->prev)->sym : NULL)
-
-#define for_alist_backward(elt_type, node, list)                        \
-  for (elt_type *node = dynamic_cast<elt_type*>((list)->tail),          \
-         *_alist_prev = (node) ? dynamic_cast<elt_type*>((node)->prev) : NULL; \
-       node;                                                            \
-       node = _alist_prev,                                              \
-         _alist_prev = (node) ? dynamic_cast<elt_type*>((node)->prev) : NULL)
+         _alist_prev = (field && field->defPoint->prev) ? toDefExpr(field->defPoint->prev)->sym : NULL)
 
 #endif

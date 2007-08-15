@@ -178,7 +178,7 @@ EnumType::EnumType(AList* init_constants) :
   Type(TYPE_ENUM, dynamic_cast<DefExpr*>(init_constants->first())->sym),
   constants(init_constants)
 {
-  for_alist(DefExpr, def, constants)
+  for_defs(def, constants)
     def->sym->type = this;
   constants->parent = this;
 }
@@ -219,7 +219,7 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef enum {");
   bool first = true;
-  for_alist(DefExpr, constant, constants) {
+  for_defs(constant, constants) {
     if (!first) {
       fprintf(outfile, ", ");
     }

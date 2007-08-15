@@ -39,7 +39,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
       }
     }
     /* Now scan the Function body */
-    for_asts(expr, fn->body->body) {
+    for_alist(expr, fn->body->body) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
@@ -56,7 +56,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
     /* Looking at a BlockStmt */
     BlockStmt* blk = dynamic_cast<BlockStmt*>(base);
     INT_ASSERT(blk);
-    for_asts(ast, blk->body) {
+    for_alist(ast, blk->body) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
@@ -90,7 +90,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
 
 
 void buildRootSetForModule(ModuleSymbol* module) {
-  for_alist(Expr, expr, module->block->body) {
+  for_alist(expr, module->block->body) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       if (dynamic_cast<VarSymbol*>(def->sym)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {

@@ -28,14 +28,14 @@ encapsulateBegins() {
         char *fname = astr("_begin_block", intstring(uid++));
         FnSymbol *fn = new FnSymbol(fname);
         fn->retType = dtVoid;
-        for_alist(Expr, stmt, b->body) {
+        for_alist(stmt, b->body) {
           stmt->remove();
           fn->insertAtTail(stmt);
         }
         b->insertAtTail(new DefExpr(fn));
         b->insertAtTail(new CallExpr(fname));
       } else if (b->blockTag == BLOCK_COBEGIN) {
-        for_alist(Expr, stmt, b->body) {
+        for_alist(stmt, b->body) {
           char *fname = astr("_cobegin_stmt", intstring(uid++));
           FnSymbol *fn = new FnSymbol(fname);
           fn->retType = dtVoid;
@@ -55,7 +55,7 @@ encapsulateBegins() {
 //
 static void
 flatten_scopeless_block(BlockStmt* block) {
-  for_alist(Expr, stmt, block->body) {
+  for_alist(stmt, block->body) {
     stmt->remove();
     block->insertBefore(stmt);
   }
@@ -158,7 +158,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     }
   }
 
-  for_alist(Expr, expr, ct->inherits) {
+  for_alist(expr, ct->inherits) {
     TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
     expr->remove();
     if (!ts)
@@ -443,7 +443,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 // the same as using the outer module.
 //
 void initializeOuterModules(ModuleSymbol* mod) {
-  for_alist(Expr, stmt, mod->block->body) {
+  for_alist(stmt, mod->block->body) {
     if (BlockStmt* b = dynamic_cast<BlockStmt*>(stmt))
       stmt = b->body->first();
     if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {

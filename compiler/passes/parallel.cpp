@@ -30,7 +30,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
     if (block->blockTag == BLOCK_BEGIN) {
       CallExpr* call = dynamic_cast<CallExpr*>(block->body->tail);
       INT_ASSERT(call);
-      for_alist(Expr, expr, block->body) {
+      for_alist(expr, block->body) {
         if (CallExpr* move = dynamic_cast<CallExpr*>(expr)) {
           if (move->isPrimitive(PRIMITIVE_MOVE)) {
             if (CallExpr* ref = dynamic_cast<CallExpr*>(move->get(2))) {
@@ -164,7 +164,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
     ModuleSymbol* mod = b->getModule();
     BlockStmt *newb = new BlockStmt();
     newb->blockTag = b->blockTag;
-    for_alist(Expr, expr, b->body) {
+    for_alist(expr, b->body) {
       CallExpr* fcall = dynamic_cast<CallExpr*>(expr);
       if (!fcall || !fcall->isResolved()) {
         b->insertBefore(expr->remove());

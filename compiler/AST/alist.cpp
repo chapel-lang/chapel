@@ -24,7 +24,7 @@ bool AList::isEmpty(void) {
 
 int AList::length(void) {
   int numNodes = 0;
-  for_asts(node, this) {
+  for_alist(node, this) {
     numNodes++;
   }
   return numNodes;
@@ -57,7 +57,7 @@ Expr* AList::get(int index) {
     INT_FATAL("Indexing list must use positive integer");
   }
   int i = 0;
-  for_asts(node, this) {
+  for_alist(node, this) {
     i++;
     if (i == index) {
       return node;
@@ -90,7 +90,7 @@ void AList::insertAtHead(Expr* new_ast) {
 
 
 void AList::insertAtHead(AList* new_ast) {
-  for_alist_backward(Expr, elem, new_ast) {
+  for_alist_backward(elem, new_ast) {
     elem->remove();
     insertAtHead(elem);
   }
@@ -119,7 +119,7 @@ void AList::insertAtTail(Expr* new_ast) {
 
 
 void AList::insertAtTail(AList* new_ast) {
-  for_asts(elem, new_ast) {
+  for_alist(elem, new_ast) {
     elem->remove();
     insertAtTail(elem);
   }
@@ -127,7 +127,7 @@ void AList::insertAtTail(AList* new_ast) {
 
 
 void AList::codegen(FILE* outfile, const char* separator) {
-  for_asts(node, this) {
+  for_alist(node, this) {
     node->codegen(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -146,7 +146,7 @@ AList* AList::copy(ASTMap* map, bool internal) {
     map = &localMap;
 
   AList* newList = new AList();
-  for_asts(node, this) {
+  for_alist(node, this) {
     Expr* newnode = COPY_INT(node);
     newnode->next = NULL;
     newnode->prev = NULL;
@@ -155,7 +155,7 @@ AList* AList::copy(ASTMap* map, bool internal) {
   }
 
   if (!internal) {
-    for_asts(node, newList)
+    for_alist(node, newList)
       update_symbols(node, map);
   }
   return newList;

@@ -51,7 +51,7 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
 
 void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 1;
-  for_alist(Expr, expr, decls->body) {
+  for_alist(expr, decls->body) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       if (strcmp(def->sym->name, "_")) {
         def->init = new CallExpr(base->copy(), new_IntSymbol(count));
@@ -119,7 +119,7 @@ static void createInitFn(ModuleSymbol* mod) {
     }
   }
 
-  for_alist(Expr, stmt, mod->block->body) {
+  for_alist(stmt, mod->block->body) {
     if (1 || !stmtIsGlob(stmt)) {
       if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
         if (block->body->length() == 1) {
@@ -141,7 +141,7 @@ static void createInitFn(ModuleSymbol* mod) {
 
 ModuleSymbol* build_module(const char* name, modType type, AList* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type);
-  for_alist(Expr, stmt, stmts) {
+  for_alist(stmt, stmts) {
     stmt->remove();
     mod->block->insertAtTail(stmt);
   }
@@ -527,7 +527,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
 
-  for_alist(Expr, stmt, whenstmts->body) {
+  for_alist(stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -540,7 +540,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
       otherwise = when;
     } else {
       Expr* expr = NULL;
-      for_alist(Expr, whenCond, conds->argList) {
+      for_alist(whenCond, conds->argList) {
         whenCond->remove();
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
@@ -576,7 +576,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   BlockStmt* newWhenStmts = build_chpl_stmt();
   bool has_otherwise = false;
 
-  for_alist(Expr, stmt, whenstmts->body) {
+  for_alist(stmt, whenstmts->body) {
     CondStmt* when = dynamic_cast<CondStmt*>(stmt);
     if (!when)
       INT_FATAL("error in build_select");
@@ -589,7 +589,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
       has_otherwise = true;
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
-      for_alist(Expr, expr, exprs) {
+      for_alist(expr, exprs) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -607,7 +607,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
-      for_alist(Expr, expr, conds->argList) {
+      for_alist(expr, conds->argList) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -673,7 +673,7 @@ void
 backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
-  for_alist_backward(Expr, stmt, stmts->body) {
+  for_alist_backward(stmt, stmts->body) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(stmt)) {
       if (def->init || def->exprType) {
         init = def->init;
@@ -691,7 +691,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 void
 setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
-  for_alist(Expr, stmt, stmts->body) {
+  for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt)) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
         var->consClass = constag;
@@ -757,7 +757,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     outermost = true;
   }
 
-  for_alist(Expr, expr, tupledefs->body) {
+  for_alist(expr, tupledefs->body) {
     count++;
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(count));

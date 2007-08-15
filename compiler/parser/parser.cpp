@@ -30,7 +30,7 @@ static char* filenameToModulename(char* filename) {
 }
 
 bool containsOnlyModules(AList* stmts) {
-  for_alist(Expr, stmt, stmts) {
+  for_alist(stmt, stmts) {
     bool isModuleDef = false;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
       stmt = block->body->first();
@@ -70,7 +70,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));
   } else {
-    for_alist(Expr, stmt, yystmtlist) {
+    for_alist(stmt, yystmtlist) {
       if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
         stmt = block->body->first();
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(stmt))

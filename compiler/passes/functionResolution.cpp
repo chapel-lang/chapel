@@ -2169,7 +2169,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   INT_ASSERT(type1 && type2);
 
   // Loop over the enum values to find the int value of e1
-  for_alist(DefExpr, constant, type1->constants) {
+  for_defs(constant, type1->constants) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
@@ -2180,7 +2180,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   }
   // Loop over the enum values to find the int value of e2
   count = 0;
-  for_alist(DefExpr, constant, type2->constants) {
+  for_defs(constant, type2->constants) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
@@ -2860,7 +2860,7 @@ resolve() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
-      for_alist(DefExpr, def, et->constants) {
+      for_defs(def, et->constants) {
         if (def->init) {
           resolve_type_expr(def->init);
         }

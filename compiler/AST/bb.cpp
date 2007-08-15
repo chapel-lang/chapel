@@ -13,7 +13,7 @@ BasicBlock::BasicBlock(int init_id) : id(init_id) {}
   basicBlock->exprs.add(expr)
 
 #define BB_ADD_LS(exprls)                       \
-  for_alist(Expr, expr, exprls) {               \
+  for_alist(expr, exprls) {               \
     BB_ADD(expr);                               \
   }
 
@@ -60,7 +60,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         BB_RESTART();
         BB_ADD(s->loopInfo);
         BasicBlock* loopTop = basicBlock;
-        for_alist(Expr, stmt, s->body) {
+        for_alist(stmt, s->body) {
           BBB(stmt);
         }
         BasicBlock* loopBottom = basicBlock;
@@ -71,7 +71,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         BB_THREAD(loopBottom, loopTop);
         BB_THREAD(top, bottom);
       } else {
-        for_alist(Expr, stmt, s->body) {
+        for_alist(stmt, s->body) {
           BBB(stmt);
         }
       }

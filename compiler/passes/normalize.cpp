@@ -77,7 +77,7 @@ checkUseBeforeDefs() {
 static void
 flattenGlobalFunctions() {
   forv_Vec(ModuleSymbol, mod, allModules) {
-    for_alist(Expr, expr, mod->initFn->body->body) {
+    for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
         if ((dynamic_cast<VarSymbol*>(def->sym) && !def->sym->isCompilerTemp) ||
             dynamic_cast<TypeSymbol*>(def->sym) ||
@@ -456,7 +456,7 @@ fix_def_expr(VarSymbol* var) {
           }
         } else if (EnumSymbol* sym = dynamic_cast<EnumSymbol*>(symExpr->var)) {
           if (EnumType* et = dynamic_cast<EnumType*>(sym->type)) {
-            for_alist(DefExpr, constant, et->constants) {
+            for_defs(constant, et->constants) {
               if (!strcmp(constant->sym->name, value)) {
                 init->replace(new SymExpr(constant->sym));
                 init = var->defPoint->init;
