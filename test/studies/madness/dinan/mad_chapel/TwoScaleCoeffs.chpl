@@ -79,11 +79,11 @@ module TwoScaleCoeffs {
     }
     
     
-    def mxmt(a: [] real, b: [] real) /* FIXME: where a.rank == 2 && b.rank == 2 */ {
-                                     /* What really matters is that the dims of a and b match and are square */
+    def mxmt(a: [] real, b: [] real) { /* FIXME: where a.rank == 2 && b.rank == 2 */
+                                       /* What really matters is that the dims of */
+                                       /* a and b match and are square            */
         var c: [a.domain] real;
         
-        //writeln("mxmt called on a=", a.domain, " b=", b.domain, " c=", c.domain);
         for (i, j) in a.domain do
           for k in a.domain.dim(1) do
             c[i, j] += a[k, i] * b[k, j];
@@ -94,7 +94,6 @@ module TwoScaleCoeffs {
     def err(a: [] real): real where a.rank == 2 {
         var sum = 0.0;
         
-        //writeln("err called on ", a.domain);
         for i in a.domain.dim(1) {
           for j in 0..i-1 do
             sum += a[i, j]*a[i, j] + a[j, i]*a[j, i];
@@ -105,7 +104,6 @@ module TwoScaleCoeffs {
     }
 
     // test things out to see if they work
-    // this method gets run if you run "java thisclass"
     def main () {
         for k in 1..getMaxK() {            
             var hg = getCoeffs(k);
