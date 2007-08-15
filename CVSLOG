@@ -114103,3 +114103,41 @@ Modified files:
 	                         normalize.cpp parallel.cpp 
 	                         semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+08/15/07 15:01:36 -- deitz
+
+Log message:
+	Changed all dynamic_casts in the compiler to use the new toBaseAST
+	style casts.  They are shorter to write
+	
+	  toCallExpr(ast) vs. dynamic_cast<CallExpr*>(ast)
+	
+	and result in a substantial speedup, decreasing the time to compile my
+	Jacobi test from 7.8 to 5.4 seconds, a speedup of about 31%.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp astutil.cpp baseAST.cpp bb.cpp 
+	                      build.cpp expr.cpp iterator.cpp 
+	                      primitive.cpp stmt.cpp symbol.cpp 
+	                      symscope.cpp type.cpp view.cpp 
+	chapel/compiler/optimizations/: collapseBlocks.cpp 
+	                                copyPropagation.cpp 
+	                                deadCodeElimination.cpp 
+	                                liveVariableAnalysis.cpp 
+	                                reachingDefinitionsAnalysis.cpp 
+	                                removeUnnecessaryGotos.cpp 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp copyCollect.cpp 
+	                         cullOverReferences.cpp 
+	                         flattenClasses.cpp flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp 
+	                         insertLineNumbers.cpp 
+	                         lowerIterators.cpp normalize.cpp 
+	                         parallel.cpp scalarReplace.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	                         verify.cpp 
+	chapel/compiler/util/: misc.cpp 
+
