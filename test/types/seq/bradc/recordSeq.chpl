@@ -1,3 +1,5 @@
+use List;
+
 record myrecord {
   var x: int;
   var y: real;

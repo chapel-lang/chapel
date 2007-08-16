@@ -1,3 +1,5 @@
+use List;
+
 class C {
   var jump = 0;
   var result = 0;

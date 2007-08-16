@@ -1,3 +1,5 @@
+use List;
+
 def foo() {
   var s: list(int) = makeList( 1, 2, 3 );
 

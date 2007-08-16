@@ -1,3 +1,5 @@
+use List;
+
 var s: list(int);
 
 s.append(1);

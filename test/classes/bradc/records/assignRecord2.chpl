@@ -1,3 +1,5 @@
+use List;
+
 class myclass {
   var a: int;
   var b: real;

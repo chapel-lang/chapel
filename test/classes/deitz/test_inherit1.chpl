@@ -1,3 +1,5 @@
+use List;
+
 module M1 {
   class C {
     var s: list of int;

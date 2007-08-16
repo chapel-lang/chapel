@@ -1,3 +1,5 @@
+use List;
+
 def foo(s) {
 
   writeln("s is: ", s);

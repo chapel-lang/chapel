@@ -1,3 +1,5 @@
+use List;
+
 class C {
   var x: int;
   def foo() { writeln("C: ", this); }

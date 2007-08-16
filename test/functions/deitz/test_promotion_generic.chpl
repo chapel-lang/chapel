@@ -1,3 +1,5 @@
+use List;
+
 def foo(i: int) {
   writeln(i);
 }

@@ -1,3 +1,5 @@
+use List;
+
 def foo(s : list of string) {
   writeln("foo called on a sequence of strings: ", s);
 }

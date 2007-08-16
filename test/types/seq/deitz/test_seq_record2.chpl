@@ -1,3 +1,5 @@
+use List;
+
 record R {
   var x : int;
   var y : int;

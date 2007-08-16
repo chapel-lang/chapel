@@ -1,1 +1,1 @@
-emptySeq3.chpl:1: error: type mismatch in assignment from nil to list(int)
+emptySeq3.chpl:3: error: type mismatch in assignment from nil to list(int)

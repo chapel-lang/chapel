@@ -1,3 +1,5 @@
+use List;
+
 def f() {
   var s : list of int;
   var i : int;

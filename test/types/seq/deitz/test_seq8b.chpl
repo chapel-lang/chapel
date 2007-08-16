@@ -1,3 +1,5 @@
+use List;
+
 var s : list of string = makeList( "three", "one", "four" );
 
 writeln(s);

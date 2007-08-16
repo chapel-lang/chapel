@@ -1,3 +1,5 @@
+use List;
+
 config var phrase : string = "shuffle me please";
 const n = length(phrase);
 

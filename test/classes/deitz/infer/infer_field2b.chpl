@@ -1,4 +1,5 @@
 // infer return type of iterator with state transform
+use List;
 
 def bar() : int {
   var i = 1;
