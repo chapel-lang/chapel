@@ -114170,3 +114170,13 @@ Removed files:
 	                                               Range3d.chpl 
 	                                               Tensor3d.chpl 
 
+---------------------------------------------------------------------------
+
+08/15/07 18:07:26 -- dinan
+
+Log message:
+	
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Tensor1d.chpl 
+
