@@ -114257,3 +114257,13 @@ Modified files:
 	                          SingleLocaleEnum.chpl 
 	                          SingleLocaleSparse.chpl 
 
+---------------------------------------------------------------------------
+
+08/16/07 16:29:43 -- deitz
+
+Log message:
+	Updated .good to fix regression.  This is a good transitive use.
+
+Modified files:
+	chapel/test/modules/diten/: bad_transitive_use.good 
+
