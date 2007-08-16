@@ -3,8 +3,7 @@
 ModuleSymbol* baseModule = NULL;
 ModuleSymbol* fileModule = NULL;
 ModuleSymbol* tupleModule = NULL;
-ModuleSymbol* standardModule = NULL;
-ModuleSymbol* compilerModule = NULL;
+ModuleSymbol* theProgram = NULL;
 ModuleSymbol* domainModule = NULL;
 
 TypeSymbol* chpl_array;

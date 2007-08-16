@@ -1,5 +1,6 @@
 #include "expr.h"
 #include "stmt.h"
+#include "runtime.h"
 #include "stringutil.h"
 #include "symscope.h"
 #include "files.h"
@@ -69,12 +70,12 @@ void SymScope::undefine(Symbol* sym) {
 
 
 Symbol*
-SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse, bool returnModules) {
+SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool returnModules) {
   Symbol* sym;
 
   if (!alreadyVisited) {
     Vec<SymScope*> scopes;
-    return lookupLocal(name, &scopes, nestedUse, returnModules);
+    return lookupLocal(name, &scopes, returnModules);
   }
 
   if (alreadyVisited->set_in(this))
@@ -89,17 +90,15 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool nes
 
   if (astParent && astParent->getModule()->block == astParent) {
     ModuleSymbol* mod = astParent->getModule();
-    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, nestedUse, returnModules);
+    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, returnModules);
     if (sym && (!toModuleSymbol(sym) || returnModules))
       return sym;
   }
 
   Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (modUses && !nestedUse) {
+  if (modUses) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      bool mynestedUse = nestedUse || (module->modtype == MOD_USER);
-      mynestedUse = false;
-      sym = module->block->blkScope->lookup(name, alreadyVisited, mynestedUse, returnModules);
+      sym = module->block->blkScope->lookup(name, alreadyVisited, returnModules);
       if (sym && (!toModuleSymbol(sym) || returnModules))
         return sym;
     }
@@ -110,26 +109,26 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool nes
 
 
 Symbol*
-SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool nestedUse, bool returnModules) {
+SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnModules) {
   if (!alreadyVisited) {
     Vec<SymScope*> scopes;
-    return lookup(name, &scopes, nestedUse, returnModules);
+    return lookup(name, &scopes, returnModules);
   }
 
-  Symbol* sym = lookupLocal(name, alreadyVisited, nestedUse, returnModules);
+  Symbol* sym = lookupLocal(name, alreadyVisited, returnModules);
   if (sym && (!toModuleSymbol(sym) || returnModules))
     return sym;
   if (FnSymbol* fn = toFnSymbol(astParent)) {
     if (fn->_this) {
       ClassType* ct = toClassType(fn->_this->type);
       if (ct) {
-        Symbol* sym = ct->structScope->lookupLocal(name, alreadyVisited, nestedUse, returnModules);
+        Symbol* sym = ct->structScope->lookupLocal(name, alreadyVisited, returnModules);
         if (sym && (!toModuleSymbol(sym) || returnModules))
           return sym;
         Type* outerType = ct->symbol->defPoint->parentSymbol->type;
         if (ClassType* ot = toClassType(outerType)) {
           // Nested class.  Look at the scope of the outer class
-          Symbol* sym = ot->structScope->lookup(name, alreadyVisited, nestedUse, returnModules);
+          Symbol* sym = ot->structScope->lookup(name, alreadyVisited, returnModules);
           if (sym && (!toModuleSymbol(sym) || returnModules))
             return sym;
         }
@@ -137,7 +136,7 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool nestedUs
     }
   }
   if (parent)
-    return parent->lookup(name, alreadyVisited, nestedUse, returnModules);
+    return parent->lookup(name, alreadyVisited, returnModules);
   return NULL;
 }
 
@@ -283,8 +282,7 @@ void SymScope::removeVisibleFunction(FnSymbol* fn) {
 
 void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
                                    const char* name,
-                                   bool recursed,
-                                   bool nestedUse) {
+                                   bool recursed) {
 
   // to avoid infinite loop because of cyclic module uses
   static Vec<SymScope*> visited;
@@ -298,21 +296,21 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   if (fs)
     allVisibleFunctions->append(*fs);
   Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (modUses && !nestedUse) {
+  if (modUses) {
     forv_Vec(ModuleSymbol, module, *modUses) {
-      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true, false);
+      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }
   if (astParent) {
     if (FnSymbol* fn = toFnSymbol(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
-        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
+        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
     if (astParent->getModule()->block == astParent) {
       ModuleSymbol* mod = astParent->getModule();
-      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
+      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }
   if (parent)
-    parent->getVisibleFunctions(allVisibleFunctions, name, true, nestedUse);
+    parent->getVisibleFunctions(allVisibleFunctions, name, true);
 }

@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -197,7 +198,7 @@ isLive(Symbol* sym) {
     return true;
   if (sym == theProgram)
     return true;
-  if (sym->parentScope == theProgram->block->blkScope)
+  if (sym->parentScope == rootScope)
     return true;
   if (VarSymbol* var = toVarSymbol(sym))
     if (var->immediate)
@@ -550,7 +551,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
 }
 
 SymScope* rootScope = NULL;
-ModuleSymbol* theProgram = NULL;
 
 Vec<ModuleSymbol*> allModules;  // Contains all modules
 Vec<ModuleSymbol*> userModules; // Contains user modules

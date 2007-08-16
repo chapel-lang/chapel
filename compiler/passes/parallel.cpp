@@ -296,7 +296,7 @@ insertWideReferences(void) {
               wide = new ClassType(CLASS_RECORD);
               TypeSymbol* ts =
                 new TypeSymbol(astr("_wide_", base->symbol->cname), wide);
-              compilerModule->block->insertAtTail(new DefExpr(ts));
+              theProgram->block->insertAtTail(new DefExpr(ts));
               wide->fields->insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
               wide->fields->insertAtTail(new DefExpr(new VarSymbol("addr", base)));
             }

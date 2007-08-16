@@ -207,7 +207,7 @@ static void build_chpl_main(void) {
     USR_FATAL(chpl_main, "Main function must be defined at module scope");
   currentLineno = -1;
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
-  chpl_main->insertAtHead(new CallExpr(compilerModule->initFn));
+  chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
 
 

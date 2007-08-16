@@ -454,7 +454,7 @@ createPrimitiveType(const char *name, const char *cname) {
   PrimitiveType* pt = new PrimitiveType(NULL);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
-  theProgram->block->blkScope->define(ts);
+  rootScope->define(ts);
   return pt;
 }
 
@@ -486,19 +486,12 @@ createPrimitiveType(const char *name, const char *cname) {
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
   gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
-  theProgram->block->blkScope->define(gSym);                            \
+  rootScope->define(gSym);                                              \
   primType->defaultValue = gSym
 
 
 void initPrimitiveTypes(void) {
   rootScope  = new SymScope(NULL, NULL);
-  theProgram = new ModuleSymbol("_Program", MOD_STANDARD);
-  theProgram->block->parentScope = rootScope;
-  theProgram->block->blkScope = new SymScope(theProgram->block, rootScope);
-  rootScope->define(theProgram);
-  theProgram->initFn = new FnSymbol("init_Program");
-  theProgram->block->insertAtHead(new DefExpr(theProgram->initFn));
-
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
   
@@ -514,9 +507,14 @@ void initPrimitiveTypes(void) {
 
   dtBool = createPrimitiveType ("bool", "_bool");
 
-  // Create initial compiler module and its scope
-  compilerModule = build_module("_compiler", MOD_STANDARD, new AList());
-  theProgram->block->insertAtTail(new DefExpr(compilerModule));
+  // Inititalize the outermost module
+  theProgram = new ModuleSymbol("_Program", MOD_STANDARD);
+  theProgram->block->parentScope = rootScope;
+  theProgram->block->blkScope = new SymScope(theProgram->block, rootScope);
+  rootScope->define(theProgram);
+  createInitFn(theProgram);
+  if (fNoStdIncs)
+    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelBase")));
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
@@ -528,7 +526,7 @@ void initPrimitiveTypes(void) {
 
   gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
   // SJD: Should intrinsics have DefExprs?
-  theProgram->block->blkScope->define(gTrue);
+  rootScope->define(gTrue);
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
   gTrue->immediate->const_kind = NUM_KIND_UINT;
@@ -536,7 +534,7 @@ void initPrimitiveTypes(void) {
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
-  theProgram->block->blkScope->define(gBoundsChecking);
+  rootScope->define(gBoundsChecking);
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gFalse->immediate;

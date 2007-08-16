@@ -1,3 +1,4 @@
+use List;
 class SingleLocaleEnumDomain: BaseDomain {
   type ind_type;
   var adomain: SingleLocaleAssociativeDomain(ind_type=ind_type);

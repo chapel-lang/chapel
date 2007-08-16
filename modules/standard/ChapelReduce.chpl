@@ -1,3 +1,4 @@
+use List;
 def _reduce(r, s) { // reduce s by reduction r
   for e in s do
     r.accumulate(e);

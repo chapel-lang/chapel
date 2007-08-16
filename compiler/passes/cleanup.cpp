@@ -116,9 +116,9 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  if (mod != compilerModule)
-    call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
-
+  if (mod == theProgram)
+    USR_FATAL(call, "Cannot use module %s", mod->name);
+  call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->blkScope->addModuleUse(mod);
   else
@@ -462,6 +462,7 @@ void initializeOuterModules(ModuleSymbol* mod) {
 
 void cleanup(void) {
   encapsulateBegins();
+
   initializeOuterModules(theProgram);
 
   Vec<BaseAST*> asts;

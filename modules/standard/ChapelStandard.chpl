@@ -1,4 +1,3 @@
-use _compiler;
 use ChapelBase;
 use ChapelIO;
 use ChapelTuple;

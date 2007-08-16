@@ -3,6 +3,7 @@
 #include "countTokens.h"
 #include "files.h"
 #include "parser.h"
+#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
@@ -65,7 +66,13 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   if (!containsOnlyModules(yystmtlist)) {
     char* modulename = filenameToModulename(filename);
-    newModule = build_module(modulename, moduletype, yystmtlist);
+    if (!strcmp(modulename, "ChapelStandard")) {
+      // Put the code from the ChapelStandard file into the program module
+      // instead of creating a new module for it.
+      theProgram->initFn->insertAtTail(yystmtlist);
+      return NULL;
+    } else
+      newModule = build_module(modulename, moduletype, yystmtlist);
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));

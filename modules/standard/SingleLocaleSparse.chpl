@@ -1,4 +1,5 @@
 use Search;
+use List;
 
 class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   param rank : int;

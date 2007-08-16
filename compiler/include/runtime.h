@@ -7,11 +7,9 @@
 #include "type.h"
 
 extern ModuleSymbol* baseModule;
-extern ModuleSymbol* closureModule;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
-extern ModuleSymbol* standardModule;
-extern ModuleSymbol* compilerModule;
+extern ModuleSymbol* theProgram;
 extern ModuleSymbol* domainModule;
 
 extern TypeSymbol* chpl_array;

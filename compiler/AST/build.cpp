@@ -92,31 +92,22 @@ static bool stmtIsGlob(Expr* stmt) {
 }
 
 
-static void createInitFn(ModuleSymbol* mod) {
+void createInitFn(ModuleSymbol* mod) {
   currentLineno = mod->lineno;
   currentFilename = mod->filename;
 
   mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
   mod->initFn->retType = dtVoid;
 
-  if (strcmp(mod->name, "_compiler")) {
+  if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
     VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime"));
-    compilerModule->initFn->insertAtHead(new DefExpr(guard,
-                                                     new SymExpr(gTrue)));
+    theProgram->initFn->insertAtHead(new DefExpr(guard, new SymExpr(gTrue)));
     mod->initFn->insertAtTail(
       new CondStmt(
         new CallExpr("!", guard),
         new CallExpr(PRIMITIVE_RETURN, gVoid)));
     mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
-
-    if (strcmp(mod->name, "ChapelStandard")) {
-      if (fNoStdIncs) {
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_compiler")));
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelBase")));
-      } else
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelStandard")));
-    }
   }
 
   for_alist(stmt, mod->block->body) {

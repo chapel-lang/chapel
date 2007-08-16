@@ -143,7 +143,7 @@ extern SymScope* rootScope; // contains intrinsics and all modules
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
-extern ModuleSymbol* theProgram;
+
 void registerModule(ModuleSymbol* mod);
 
 //
