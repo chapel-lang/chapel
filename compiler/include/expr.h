@@ -46,11 +46,8 @@ class Expr : public BaseAST {
   void replace(Expr* new_ast);
   virtual void insertBefore(Expr* new_ast);
   virtual void insertAfter(Expr* new_ast);
-
-
-
 };
-#define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
+
 
 class DefExpr : public Expr {
  public:

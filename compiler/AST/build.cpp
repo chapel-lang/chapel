@@ -130,12 +130,8 @@ void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* build_module(const char* name, modType type, AList* stmts) {
-  ModuleSymbol* mod = new ModuleSymbol(name, type);
-  for_alist(stmt, stmts) {
-    stmt->remove();
-    mod->block->insertAtTail(stmt);
-  }
+ModuleSymbol* build_module(const char* name, modType type, BlockStmt* block) {
+  ModuleSymbol* mod = new ModuleSymbol(name, type, block);
   createInitFn(mod);
   return mod;
 }

@@ -185,9 +185,9 @@ int getNextYYChar() {
 
 /*
 AList<Stmt>* parse_string(char* string) {
-  yystmtlist = NULL;
+  yyblock = NULL;
   yy_scan_string(string);
   yyparse();
-  return yystmtlist;
+  return yyblock;
 }
 */

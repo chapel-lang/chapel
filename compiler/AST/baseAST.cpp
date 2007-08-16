@@ -476,19 +476,6 @@ void
 get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   switch (a->astType) {
   case EXPR:
-  case SYMBOL:
-  case TYPE:
-    break;
-  case STMT_BLOCK:
-    AST_ADD_LIST(BlockStmt, body);
-    AST_ADD_CHILD(BlockStmt, loopInfo);
-    break;
-  case STMT_COND:
-    AST_ADD_CHILD(CondStmt, condExpr);
-    AST_ADD_CHILD(CondStmt, thenStmt);
-    AST_ADD_CHILD(CondStmt, elseStmt);
-    break;
-  case STMT_GOTO:
     break;
   case EXPR_SYM:
     break;
@@ -503,6 +490,19 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     break;
   case EXPR_NAMED:
     AST_ADD_CHILD(NamedExpr, actual);
+    break;
+  case STMT_BLOCK:
+    AST_ADD_LIST(BlockStmt, body);
+    AST_ADD_CHILD(BlockStmt, loopInfo);
+    break;
+  case STMT_COND:
+    AST_ADD_CHILD(CondStmt, condExpr);
+    AST_ADD_CHILD(CondStmt, thenStmt);
+    AST_ADD_CHILD(CondStmt, elseStmt);
+    break;
+  case STMT_GOTO:
+    break;
+  case SYMBOL:
     break;
   case SYMBOL_UNRESOLVED:
     break;
@@ -528,6 +528,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case SYMBOL_ENUM:
     break;
   case SYMBOL_LABEL:
+    break;
+  case TYPE:
     break;
   case TYPE_PRIMITIVE:
     break;

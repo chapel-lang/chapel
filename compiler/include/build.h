@@ -15,7 +15,7 @@ BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
 void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint);
 DefExpr* buildLabelStmt(const char* name);
-ModuleSymbol* build_module(const char* name, modType type, AList* stmts);
+ModuleSymbol* build_module(const char* name, modType type, BlockStmt* block);
 CallExpr* build_primitive_call(AList* exprs);
 
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2 = NULL);

@@ -147,11 +147,7 @@ AList* AList::copy(ASTMap* map, bool internal) {
 
   AList* newList = new AList();
   for_alist(node, this) {
-    Expr* newnode = COPY_INT(node);
-    newnode->next = NULL;
-    newnode->prev = NULL;
-    newnode->list = NULL;
-    newList->insertAtTail(newnode);
+    newList->insertAtTail(COPY_INT(node));
   }
 
   if (!internal) {

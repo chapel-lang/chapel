@@ -4,8 +4,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
-extern Symbol* yypst;
-extern AList* yystmtlist;
+extern BlockStmt* yyblock;
 extern int yystartlineno;
 
 extern FILE *yyin;

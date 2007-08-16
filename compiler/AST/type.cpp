@@ -344,7 +344,9 @@ ClassType::copyInner(ASTMap* map) {
 
 void ClassType::addDeclarations(AList* stmts, bool tail) {
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, stmts);
+
+  for_alist(expr, stmts)
+    collect_top_asts(&asts, expr);
 
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
@@ -508,7 +510,7 @@ void initPrimitiveTypes(void) {
   dtBool = createPrimitiveType ("bool", "_bool");
 
   // Inititalize the outermost module
-  theProgram = new ModuleSymbol("_Program", MOD_STANDARD);
+  theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
   theProgram->block->parentScope = rootScope;
   theProgram->block->blkScope = new SymScope(theProgram->block, rootScope);
   rootScope->define(theProgram);

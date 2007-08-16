@@ -246,7 +246,7 @@ class ModuleSymbol : public Symbol {
   BlockStmt* block;
   FnSymbol* initFn;
 
-  ModuleSymbol(const char* init_name, modType init_modtype);
+  ModuleSymbol(const char* iName, modType iModtype, BlockStmt* iBlock);
   ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);

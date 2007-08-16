@@ -80,7 +80,7 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 
 static void
-codegenCobegin( FILE* outfile, AList *body) {
+codegenCobegin( FILE* outfile, AList* body) {
   int stmt_cnt;
   int num_stmts = body->length();
   // For now, assume all statements will be forked.
@@ -143,7 +143,7 @@ codegenCobegin( FILE* outfile, AList *body) {
 
 
 static void
-codegenBegin( FILE* outfile, AList *body) {
+codegenBegin( FILE* outfile, AList* body) {
   // Body should be one function call that we fork.
   if (body->length() != 1)
     INT_FATAL("begin codegen - expect only one function call");

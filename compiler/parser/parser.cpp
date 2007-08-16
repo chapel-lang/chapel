@@ -10,7 +10,7 @@
 #include "chapel.tab.h"
 #include "yy.h"
 
-AList* yystmtlist = NULL;
+BlockStmt* yyblock = NULL;
 const char* yyfilename;
 int chplLineno;
 int yystartlineno;
@@ -53,7 +53,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 1;
   yyin = openInputFile(filename);
   
-  yystmtlist = NULL;
+  yyblock = NULL;
   if (moduletype == MOD_USER) {
     startCountingFileTokens(filename);
   }
@@ -64,20 +64,20 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   closeInputFile(yyin);
 
-  if (!containsOnlyModules(yystmtlist)) {
+  if (!containsOnlyModules(yyblock->body)) {
     char* modulename = filenameToModulename(filename);
     if (!strcmp(modulename, "ChapelStandard")) {
       // Put the code from the ChapelStandard file into the program module
       // instead of creating a new module for it.
-      theProgram->initFn->insertAtTail(yystmtlist);
+      theProgram->initFn->insertAtTail(yyblock->body);
       return NULL;
     } else
-      newModule = build_module(modulename, moduletype, yystmtlist);
+      newModule = build_module(modulename, moduletype, yyblock);
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));
   } else {
-    for_alist(stmt, yystmtlist) {
+    for_alist(stmt, yyblock->body) {
       if (BlockStmt* block = toBlockStmt(stmt))
         stmt = block->body->first();
       if (DefExpr* defExpr = toDefExpr(stmt))
@@ -93,4 +93,3 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   return newModule;
 }
-

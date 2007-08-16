@@ -1554,10 +1554,10 @@ bool EnumSymbol::isParam(void) { return true; }
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
-ModuleSymbol::ModuleSymbol(const char* init_name, modType init_modtype) :
-  Symbol(SYMBOL_MODULE, init_name),
-  modtype(init_modtype),
-  block(new BlockStmt()),
+ModuleSymbol::ModuleSymbol(const char* iName, modType iModtype, BlockStmt* iBlock) :
+  Symbol(SYMBOL_MODULE, iName),
+  modtype(iModtype),
+  block(iBlock),
   initFn(NULL)
 {
   block->parentSymbol = this;

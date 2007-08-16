@@ -79,8 +79,6 @@ Is this "while x"(i); or "while x(i)";?
 
   Expr* pexpr;
   DefExpr* pdefexpr;
-
-  Expr* pstmt;
   BlockStmt* pblockstmt;
 
   Type* ptype;
@@ -90,9 +88,7 @@ Is this "while x"(i); or "while x(i)";?
   ModuleSymbol* pmodsym;
   EnumSymbol* penumsym;
 
-  AList* pexprls;
-  AList* pstmtls;
-  AList* pdefexprls;
+  AList* palist;
 }
 
 %token TATOMIC
@@ -199,8 +195,8 @@ Is this "while x"(i); or "while x(i)";?
 %type <pch> pragma
 %type <vpch> pragma_ls
 
-%type <pstmtls> program
-%type <pstmtls> stmt_ls decl_stmt_ls class_body_stmt_ls
+%type <pblockstmt> program stmt_ls
+%type <palist> decl_stmt_ls class_body_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
@@ -217,7 +213,7 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pblockstmt> parsed_block_stmt block_stmt
 
-%type <pstmt> when_stmt
+%type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type opt_formal_type array_type opt_elt_type top_level_type
@@ -230,9 +226,9 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> literal where distributed_expr
 %type <pexpr> variable_expr top_level_expr alias_expr
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
-%type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
+%type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
 %type <pdefexpr> formal enum_item
-%type <pdefexprls> formal_ls opt_formal_ls enum_ls
+%type <palist> formal_ls opt_formal_ls enum_ls
 
 %type <pfnsym> function
 
@@ -269,7 +265,7 @@ Is this "while x"(i); or "while x(i)";?
 
 
 program: stmt_ls
-    { (void)@1.first_line; yystmtlist = $$; }
+    { (void)@1.first_line; yyblock = $$; }
 ;
 
 
@@ -294,7 +290,7 @@ pragma:
 
 stmt_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = new BlockStmt(); }
 | stmt_ls pragma_ls stmt
     {
       $3->body->first()->addPragmas($2);
@@ -570,14 +566,16 @@ assign_stmt:
 block_stmt:
   TLCBR stmt_ls TRCBR
     {
-      $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
+      $$ = build_chpl_stmt($2);
     }
 | TCOBEGIN TLCBR stmt_ls TRCBR
     {
       if (fSerial)
-        $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_NORMAL));
-      else
-        $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_COBEGIN));
+        $$ = build_chpl_stmt($3);
+      else {
+        $3->blockTag = BLOCK_COBEGIN;
+        $$ = build_chpl_stmt($3);
+      }
     }
 | TATOMIC stmt
     {

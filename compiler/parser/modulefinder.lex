@@ -59,12 +59,3 @@ module          processToken(TMODULE);
 int getNextYYChar() {
   return yyinput();
 }
-
-/*
-AList<Stmt>* parse_string(char* string) {
-  yystmtlist = NULL;
-  yy_scan_string(string);
-  yyparse();
-  return yystmtlist;
-}
-*/
