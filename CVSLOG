@@ -114224,3 +114224,36 @@ Modified files:
 	                              test_seq_tuple.chpl 
 	chapel/test/types/tuple/shannon/: sequenceInTuple.chpl 
 
+---------------------------------------------------------------------------
+
+08/16/07 14:05:25 -- diten
+
+Log message:
+	Make the standard modules all get used directly by the root level module
+	instead of being used by the ChapelStandard module and remove references to
+	a ChapelStandard module. Since all modules are nested within the root level
+	module, no other modules need to use any of the auto-used standard modules.
+	
+	Also, move all of the run_modulename_firsttime bool values from the _compiler
+	module into the _Program module and remove references to _compiler.
+	
+	Add use List statements to a few standard modules that use lists.
+	
+	Stop trying to block use statement transitivity in the symbol and function
+	lookup functions.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp 
+	                      symscope.cpp type.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h build.h runtime.h symscope.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         filesToAST.cpp parallel.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	                         verify.cpp 
+	chapel/modules/standard/: ChapelReduce.chpl ChapelStandard.chpl 
+	                          SingleLocaleArithmetic.chpl 
+	                          SingleLocaleEnum.chpl 
+	                          SingleLocaleSparse.chpl 
+
