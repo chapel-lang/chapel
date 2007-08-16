@@ -114180,3 +114180,47 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Tensor1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/16/07 09:13:05 -- diten
+
+Log message:
+	Update the tests that have lists to explicitly use the List module.
+
+Modified files:
+	chapel/test/classes/bradc/records/: assignRecord2.chpl 
+	chapel/test/classes/deitz/: test_inherit1.chpl 
+	chapel/test/classes/deitz/dispatch/: test_dd5.chpl 
+	chapel/test/classes/deitz/infer/: infer_field2.chpl 
+	                                  infer_field2a.chpl 
+	                                  infer_field2b.chpl 
+	                                  infer_field2c.chpl 
+	chapel/test/classes/waynew/: dyndis2.chpl 
+	chapel/test/functions/deitz/: test_promotion_generic.chpl 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/seq/bradc/: emptySeq2.chpl emptySeq2a.chpl 
+	                              emptySeq3.chpl emptySeq3.good 
+	                              hashEquals.chpl length.chpl 
+	                              recordSeq.chpl returnSeq.chpl 
+	                              returnSeq2.chpl 
+	chapel/test/types/seq/deitz/: test_seq1a.chpl test_seq1b.chpl 
+	                              test_seq1c.chpl test_seq1d.chpl 
+	                              test_seq2.chpl test_seq3.chpl 
+	                              test_seq4.chpl test_seq5.chpl 
+	                              test_seq6.chpl test_seq7.chpl 
+	                              test_seq8.chpl test_seq8b.chpl 
+	                              test_seq9.chpl test_seq_arg.chpl 
+	                              test_seq_class1.chpl 
+	                              test_seq_class2.chpl 
+	                              test_seq_class3.chpl 
+	                              test_seq_class4.chpl 
+	                              test_seq_htuple1.chpl 
+	                              test_seq_htuple2.chpl 
+	                              test_seq_of_seq.chpl 
+	                              test_seq_of_seq2.chpl 
+	                              test_seq_record1.chpl 
+	                              test_seq_record2.chpl 
+	                              test_seq_return1.chpl 
+	                              test_seq_tuple.chpl 
+	chapel/test/types/tuple/shannon/: sequenceInTuple.chpl 
+
