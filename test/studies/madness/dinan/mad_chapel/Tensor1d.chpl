@@ -1,97 +1,55 @@
 /** Tensor1d class implements one-dimensional tensor/vector operations
  */
 class Tensor1d {
-    var n: int = 0;
-    var val = 0.0;
+    // FIXME: This is only meant to stand in for a constructor.  Don't use!
+    var n: int;
     // FIXME: Private Members:
     var A: [0..n-1] real;
-
-    // FIXME: Need constructors plz thx
-
-    def initialize() {
-      A = val;
-    }
 
     /** Construct a Tensor1d from a 1-d array.
         @param A    array of doubles.
     */
     def dupFrom(B: [] real) {
-        writeln("dupFrom: ", B);
-        n = B.domain.dim(1).high - B.domain.dim(1).low + 1;
         A.domain = B.domain;
         A = B;
         return this;
     }
 
     def this(i) var {
-      return A[i];
+       return A[i];
     }
 
     def these() var {
-      yield A.domain;
+        for i in A.domain do yield i;
     }
 
     // def methods
 
-    /** Copy
-        @return      new Tensor1d which contains copy of matrix
-    */
     def copy(): Tensor1d {
         return Tensor1d().dupFrom(A);
     }
 
-    /** get array assoc with Tensor1d
-        @return      array assoc with Tensor1d
-    */
     def getArray() var {
         return A;
     }
 
-    /** get size
-        @return       size of Tensor1d
-    */
-    def getN(): int {
-        return n;
-    }
-
-    /** get element (i)
-        @param  i    index
-        @return      value of element (i)
-    */
-    def get(i: int): real {
-        return A[i];
-    }
-    
-    /** Get this[s:e] into new Tensor1d
+    /** Get [s..e] into new Tensor1d
         @param s     start of range to copy from
         @param e     end of range to copy from
         @return      new Tensor1d with this[s:e] in it
     */
     def getTensor1d(s: int, e: int): Tensor1d {
-        var n   = e - s;
-        var ret = Tensor1d(n);
-        for i in 0..n-1 do
-          ret.set(i, A[i+s]);
-        return ret;
+        return Tensor1d().dupFrom(A[s..e]);
     }
 
-    /** Get this[range] into new Tensor1d
-        @param range   Range1d
-        @return        new Tensor1d with this[range] in it
+    /** Get [r] into new Tensor1d
+        @param r   Range1d
+        @return    new Tensor1d with this[range] in it
     */
-/*    def Tensor1d getTensor1d(Range1d range){
-        return getTensor1d(range.s,range.e);
+    def getTensor1d(r): Tensor1d {
+        return Tensor1d().dupFrom(a[r]);
     }
-*/    
-    /** Set element this[i] to val
-        @param i     index
-        @param val   value    
-        @return      this so operations can be chained
-    */
-    def set(i: int, val: real): Tensor1d {
-        A[i] = val;
-        return this;
-    }
+    
     
     
     /** Set elements of this[s:e] to val
@@ -100,8 +58,8 @@ class Tensor1d {
         @param val   value
         @return      this so operations can be chained
     */
-    def set(s: int, e: int, val: real): Tensor1d {
-        for i in s..e-1 do
+    def set(r, val): Tensor1d {
+        for i in r do
             A[i] = val;
         return this;
     }
@@ -203,71 +161,55 @@ class Tensor1d {
         @return      this so operations can be chained
         @exception  IllegalArgumentException dims must match
     */
-/*    def Tensor1d gaxpy(double alpha, Tensor1d other, double beta){
-        
-        if(this.n != other.getN())
-            throw new IllegalArgumentException("Tensor1d:gaxpy: dims must match");
+    def gaxpy(alpha, other: Tensor1d, beta) {
+        if (A.domain != other.domain) then
+            halt("Tensor1d:gaxpy: dims must match");
 
-        double[] B = other.getArray();
-        
-        for(int i = 0; i < this.n;  i++)
-            this.A[i] = alpha*this.A[i] + beta*B[i];
+        A = alpha*A + beta*other.getArray();
         
         return this;
     }
-    */
     
     /** inplace scale this by alpha, modifies this, this = alpha*this
         @param alpha scaling factor for this
         @return      this so operations can be chained
     */
-/*    def Tensor1d scale(double alpha){
-        
-        for(int i = 0; i < n;  i++)
-            A[i] = alpha*A[i];
-
+    def scale(alpha) {
+        A *= alpha;
         return this;
     }
-    */
 
     /** inplace elementwise multiply
         @param other another Tensor1d
         @return      this so operations can be chained
         @exception  IllegalArgumentException dims must match
     */
-/*    def Tensor1d emul(Tensor1d other){
+    def emul(other: Tensor1d) {
+        if (A.domain != other.domain) then
+            halt("Tensor1d:emul: dims must match");
 
-        if(this.n != other.getN())
-            throw new IllegalArgumentException("Tensor1d:emul: dims must match");
-
-        double[] B = other.getArray();
-
-        for (int i = 0; i < n; i++)
-            A[i] *= B[i];
+        A *= other.getArray();
 
         return this;
     }
-    */
 
     /** addition
         @param other another Tensor1d
         @return      new Tensor1d = this + other
     */
-/*    def Tensor1d add(Tensor1d other){
-        Tensor1d r = new Tensor1d(this.getArray());
+    def add(other: Tensor1d) {
+        var r = this.copy();
         return r.gaxpy(1.0,other,1.0);
     }
-    */
 
     /** subtraction
         @param other another Tensor1d
         @return      new Tensor1d = this - other
     */
-/*    def Tensor1d sub(Tensor1d other){
-        Tensor1d r = new Tensor1d(this.getArray());
+    def sub(other: Tensor1d){
+        var r = this.copy();
         return r.gaxpy(1.0,other,-1.0);
     }
-    */
 
     /** convert Tensor1d to a String
         @return      String representation of this
@@ -290,12 +232,12 @@ def main () {
   writeln("t1 = Tensor1d(5) = ", t1);
 
   // 5 long filled with 5.0
-  var t2 = Tensor1d(10, 5.0);
+  var t2 = Tensor1d(10);
   writeln("t2 = Tensor1d(10, 5.0) = ", t2);
 
   // fill t3 with { 5.0, 4.0, 4.0, 4.0 }
-  t2.set(0, 5.0);
-  t2.set(1, 5, 4.0);
+  t2[0] = 5.0;
+  t2.set(1..5, 4.0);
   writeln("t2.set(0, 5.0); t2.set(1, 5, 4.0); = ", t2);
 
   // extract elements 2 and 3 from t2 and put into t1
@@ -303,7 +245,8 @@ def main () {
   writeln("t1 = t2.getTensor1d(2, 4); = ", t1);
 
   // set t3 to 1.0
-  t2.set(0, 5, 1.0);
+  writeln("t2= ", t2, t2.A.domain, t1.A.domain);
+  t2.set(0..5, 1.0);
   // set elements 1 and 2 of t3 to contents of t1
   t2.setTensor1d(1, 3, t1);
   writeln("t3.set(0, 5, 1.0); t3.setTensor1d(1, 3, t3); = ", t2);
