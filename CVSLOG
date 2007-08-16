@@ -114267,3 +114267,21 @@ Log message:
 Modified files:
 	chapel/test/modules/diten/: bad_transitive_use.good 
 
+---------------------------------------------------------------------------
+
+08/16/07 16:37:02 -- deitz
+
+Log message:
+	Started working on and analyzing the possibility of not allocating
+	ALists separately.  Cleaned up some code related to the top-level
+	parsed statement lists.
+	
+	Made various minor miscellaneous simplifications.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp astutil.cpp baseAST.cpp 
+	                      build.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: astutil.h build.h expr.h symbol.h yy.h 
+	chapel/compiler/parser/: chapel.lex chapel.y modulefinder.lex 
+	                         parser.cpp 
+
