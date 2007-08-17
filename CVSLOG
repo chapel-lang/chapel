@@ -114312,3 +114312,16 @@ Log message:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
 
+---------------------------------------------------------------------------
+
+08/16/07 17:53:02 -- dinan
+
+Log message:
+	End of the day commit.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor1d.chpl 
+	                                               TwoScaleCoeffs.chpl 
+	                                               hg_coeffs.chpl 
+
