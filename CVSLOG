@@ -114348,3 +114348,26 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelIO.chpl 
 
+---------------------------------------------------------------------------
+
+08/17/07 14:23:51 -- bradc
+
+Log message:
+	Filing some Aniruddha codes for posterity and testing.
+	
+	* tensor.chpl is from the mail sent to Steve and me on
+	  August 9th, and has since been boiled down to Steve's
+	  test_ref_promotion.chpl test.  In this version, I
+	  switched version 3 for version 2 since it is now
+	  working.
+	
+	* classWithArray.chpl is from his mail sent to chapel_users
+	  on August 16th and appears to be a bug to me.  Filed it
+	  as such.
+
+Added files:
+	chapel/test/users/shetag/: classWithArray.chpl 
+	                           classWithArray.future 
+	                           classWithArray.good tensor.chpl 
+	                           tensor.good 
+
