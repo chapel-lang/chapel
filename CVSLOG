@@ -114371,3 +114371,21 @@ Added files:
 	                           classWithArray.good tensor.chpl 
 	                           tensor.good 
 
+---------------------------------------------------------------------------
+
+08/17/07 14:44:32 -- marybeth
+
+Log message:
+	Checking in first version of QR.  This is a non-blocked
+	version of QR and it is mostly translated directly from the
+	LAPACK routines.
+	
+	For now, any machine constants that are used are hard-coded
+	in the file.  This will change in time.
+	
+	Checking in this file for a baseline version to compare further
+	tests with.
+
+Added files:
+	chapel/test/studies/matrixlib/QR/: qr.chpl qr.good prolate5.dat 
+
