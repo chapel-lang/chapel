@@ -3,14 +3,13 @@ module hg {
   var hg_maxK: int;
 
   // FIXME: This should be module-private
-  var hg_coeffs: [1..0, 1..0, 1..0] real;
+  var hg_coeffs: [0..-1, 0..-1, 0..-1] real;
 
   
   def hg_getCoeffs(k: int) {
     var kthCoeffs: [0..2*k-1, 0..2*k-1] real;
     // FIXME: Ideally I want to slice a 2d matrix out of the 3d matrix.
     //        Current copy code is a workaround.
-    // var kthCoeffs: [1..2*k, 1..2*k] real = coeffs[k, 1..2*k, 1..2*k];
 
     for (i, j) in kthCoeffs.domain do 
       kthCoeffs(i, j) = hg_coeffs(k, i, j);

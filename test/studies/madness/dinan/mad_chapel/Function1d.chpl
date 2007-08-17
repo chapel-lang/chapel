@@ -1,5 +1,8 @@
-import java.util.*;
-import java.text.*;
+use Math;
+use FTree;
+use Quadrature;
+use TwoScale;
+
 
 /** Multiresolution representation of 1-d functions using a multiwavelet
     basis (similar to discontinuous spectral element with a hierarchal
@@ -12,25 +15,13 @@ import java.text.*;
     compress(),
     and reconstruct()
 */
-public class Function1d {
-
-    // Provide defaults in the class to make it easier to have all instances
-    // be consistent.    
-    private static int autorefine = 1; 
-
-    // per instance vars
-    // use first k Legendre polynomials as the basis in each box
-    private int k = 3;
-    // truncation threshold for small wavelet coefficients
-    private double thresh = 1e-5;
-    // analytic function f(x) to be projected into the numerical represntation
-    private Fn1d f = null;
-    // initial level of refinement
-    private int initial_level = 2;
-    // maximum level of refinement mostly as a sanity check
-    private int max_level = 30;
-    // keep track of what basis we are in
-    private int compressed = 0;
+class Function1d {
+    var k             = 3;    // use first k Legendre polynomials as the basis in each box
+    var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
+    var f: Fn1d       = nil;  // analytic function f(x) to be projected into the numerical represntation
+    var initial_level = 2;    // initial level of refinement
+    var max_level     = 30;   // maximum level of refinement mostly as a sanity check
+    var compressed    = 0;    // keep track of what basis we are in
 
     // the adaptively refined coefficients (s for scaling function or polynomials,
     // and d for wavelets) are represented using HashMap[]
@@ -38,104 +29,59 @@ public class Function1d {
     // s[n][l] -> if it exists is a vector of coefficients on level n box l
 
     // hashes for sum and difference coeffs
-    private HashMap[] s = new HashMap[max_level+1];
-    private HashMap[] d = new HashMap[max_level+1];
+    var s = FTree();
+    var d = FTree();
 
     // two scale relationship matrices
-    private Tensor2d hg;
-    private Tensor2d hgT;
+    var hg, hgT;
 
     // Quadrature stuff
-    private int quad_npt;
-    private Tensor1d quad_x;    // points
-    private Tensor1d quad_w;    // weights
-    private Tensor2d quad_phi;  // phi[point,i]
-    private Tensor2d quad_phiT; // phi[point,i] transpose
-    private Tensor2d quad_phiw; // phi[point,i]*weight[point]
+    var quad_npt;
+    var quad_x;    // points  -- FIXME: This could be a tuple
+    var quad_w;    // weights
+    var quad_phi;  // phi[point,i]
+    var quad_phiT; // phi[point,i] transpose
+    var quad_phiw; // phi[point,i]*weight[point]
     
     // blocks of the block tridiagonal derivative operator
-    private Tensor2d rm;
-    private Tensor2d ro;
-    private Tensor2d rp;
+    var rm, r0, rp;
     
     // constructors and helpers
 
-    private void init(){
-
-        // create empty HashMaps for s and d
-        for(int i = 0; i < this.max_level+1; i++)
-        {
-            this.s[i] = new HashMap();
-            this.d[i] = new HashMap();
-        }
-
-        // initialize two scale relationship matrices
-        init_twoscale(this.k);
-        // initialize quatrature rule
-        init_quadrature(this.k);
+    def initialize() {
+        init_twoscale(k);
+        init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
         // self.rm, self.r0, self.rp = make_dc_periodic(k)
 
         // initial refinement of analytic function f(x)
-        if(this.f != null)
-            // remember: 1<<initial_level == 2**initial_level
-            for(int l = 0; l < 1<<this.initial_level; l++)
-                this.refine(this.initial_level,l);
+        if f != nil then
+            for l in 0..2**initial_level-1 do
+                refine(initial_level, l);
         
     }
-    
-    private void init_twoscale(int k){
-        this.hg = new Tensor2d(TwoScaleCoeffs.getCoeffs(this.k));
-        this.hgT = hg.transpose();
+
+    def init_twoscale(order: int) {
+        hg  = twoScaleCoeffs(order);
+        hgT = transpose(hg);
     }
+    
+    def init_quadrature(order: int) {
+        quad_x   = getGLPoints(order);
+        quad_w   = getGLWeights(order);
+        quad_npt = quad_w.numElements;
 
-    private void init_quadrature(int order){
-        this.quad_x = new Tensor1d(Quadrature.getGLPoints(order));
-        double[] quad_x = this.quad_x.getArray();
-        this.quad_w = new Tensor1d(Quadrature.getGLWeights(order));
-        double[] quad_w = this.quad_w.getArray();
-        this.quad_npt = this.quad_w.getN();
-        this.quad_phi  = new Tensor2d(this.quad_npt, this.k);
-        double[][] quad_phi = this.quad_phi.getArray();
-        this.quad_phiw = new Tensor2d(this.quad_npt, this.k);
-        double[][] quad_phiw = this.quad_phiw.getArray();
-
-        for(int i = 0; i < this.quad_npt; i++)
-        {
-            double[] p = TwoScaleCoeffs.phi(quad_x[i],this.k);
-            for(int m = 0; m < this.k; m++)
-            {
-                quad_phi[i][m] = p[m];
+        for i in 0..quad_npt {
+            var p = phi(quad_x[i], k);
+            for m in 0..k {
+                quad_phi[i][m]  = p[m];
                 quad_phiw[i][m] = quad_w[i]*p[m];
             }
         }
-        this.quad_phiT = this.quad_phi.transpose();
+        quad_phiT = transpose(quad_phi);
     }
 
-    /** Constructor no args
-     */
-    Function1d(){
-        init();
-    }
-
-    /** Constructor takes analytic function
-     */
-    Function1d(Fn1d f){
-        this.f = f;
-
-        init();
-    }
-
-    /** Constructor takes more args
-     */
-    Function1d(int k, double thresh, Fn1d f){
-        this.k = k;
-        this.thresh = thresh;
-        this.f = f;
-
-        init();
-    }
 
     /** s[n][l] = integral(phi[n][l](x) * f(x))
         for box (n,l) project f(x) using quadrature rule

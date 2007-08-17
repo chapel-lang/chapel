@@ -10,8 +10,9 @@ class Tensor1d {
         @param A    array of doubles.
     */
     def dupFrom(B: [] real) {
-        A.domain = B.domain;
-        A = B;
+        var remap: [0..B.numElements-1] => B;
+        A.domain = remap.domain;
+        A = remap;
         return this;
     }
 

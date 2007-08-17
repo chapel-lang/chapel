@@ -3,7 +3,7 @@ Tabulation of the twoscale coefficients, and a routine to compute the
 scaling functions (Legendre polyn scaled and shifted to the unit
 interval) solely to make the 1d example standalone.
 */
-module TwoScaleCoeffs {
+module TwoScale {
     use Math;
     use hg;
   
