@@ -342,11 +342,10 @@ ClassType::copyInner(ASTMap* map) {
 }
 
 
-void ClassType::addDeclarations(AList* stmts, bool tail) {
+void ClassType::addDeclarations(Expr* expr, bool tail) {
   Vec<BaseAST*> asts;
 
-  for_alist(expr, stmts)
-    collect_top_asts(&asts, expr);
+  collect_top_asts(&asts, expr);
 
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {

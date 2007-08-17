@@ -692,7 +692,7 @@ setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
 
 
 DefExpr*
-build_class(const char* name, Type* type, AList* decls) {
+build_class(const char* name, Type* type, BlockStmt* decls) {
   ClassType* ct = toClassType(type);
 
   if (!ct) {

@@ -117,7 +117,7 @@ class ClassType : public Type {
   ~ClassType();
   virtual void verify(); 
   COPY_DEF(ClassType);
-  void addDeclarations(AList* stmts, bool tail = true);
+  void addDeclarations(Expr* expr, bool tail = true);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 

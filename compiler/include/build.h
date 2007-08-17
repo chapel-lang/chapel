@@ -44,7 +44,7 @@ void setVarSymbolAttributes(BlockStmt* stmts,
                             varType vartag,
                             consType constag);
 
-DefExpr* build_class(const char* name, Type* type, AList* decls);
+DefExpr* build_class(const char* name, Type* type, BlockStmt* decls);
 DefExpr*
 build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);

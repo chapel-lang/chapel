@@ -196,11 +196,11 @@ Is this "while x"(i); or "while x(i)";?
 %type <vpch> pragma_ls
 
 %type <pblockstmt> program stmt_ls
-%type <palist> decl_stmt_ls class_body_stmt_ls
+%type <pblockstmt> class_body_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
-%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
+%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
@@ -323,7 +323,14 @@ non_empty_stmt:
 | yield_stmt
 | assign_stmt
 | block_stmt
-| decl_stmt
+| use_stmt
+| mod_decl_stmt
+| fn_decl_stmt
+| extern_fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| typedef_decl_stmt
+| var_decl_stmt
 | on_stmt
 | serial_stmt
 | error
@@ -634,7 +641,7 @@ serial_stmt:
 
 class_body_stmt_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = new BlockStmt(); }
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
       $3->body->first()->addPragmas($2);
@@ -649,30 +656,6 @@ class_body_stmt:
 | class_decl_stmt
 | enum_decl_stmt
 | typevar_decl_stmt
-| var_decl_stmt
-;
-
-
-decl_stmt_ls:
-  /* nothing */
-    { $$ = new AList(); }
-| decl_stmt_ls pragma_ls decl_stmt
-    {
-      $3->body->first()->addPragmas($2);
-      delete $2;
-      $1->insertAtTail($3);
-    }
-;
-
-
-decl_stmt:
-  use_stmt
-| mod_decl_stmt
-| fn_decl_stmt
-| extern_fn_decl_stmt
-| class_decl_stmt
-| enum_decl_stmt
-| typedef_decl_stmt
 | var_decl_stmt
 ;
 
@@ -1102,7 +1085,7 @@ tuple_type:
 
 
 anon_record_type:
-  TRECORD TLCBR decl_stmt_ls TRCBR
+  TRECORD TLCBR class_body_stmt_ls TRCBR
     {
       $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }

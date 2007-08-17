@@ -370,7 +370,7 @@ static void build_constructor(ClassType* ct) {
 
     // Remove the DefPoint for this constructor, add it to the outer
     // class's method list.
-    outerType->addDeclarations(new AList(fn->defPoint->remove()), true);
+    outerType->addDeclarations(fn->defPoint->remove(), true);
 
     // Save the pointer to the outer class
     ct->fields->insertAtHead(new DefExpr(outer));
