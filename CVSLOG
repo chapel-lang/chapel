@@ -114325,3 +114325,26 @@ Modified files:
 	                                               TwoScaleCoeffs.chpl 
 	                                               hg_coeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/17/07 12:28:03 -- bradc
+
+Log message:
+	Added a flush() call to the Writer class and made our
+	write() call invoke flush() after writing out all of its
+	arguments but before releasing the file's lock.  This
+	seems to fix the races on output not getting flushed before
+	GASNet exits, though I'm not sure why this would have any
+	effect.  Am continuing to follow up with the GASNet team to
+	try and understand this.
+	
+	This may have a long-term performance impact if we end up
+	wanting/needing to minimize flush() calls.  In such an
+	event, we should probably expose a flush() call to the user
+	and clarify the semantics of when a flush() call will be
+	invoked on the user's behalf.  For now, I think flushing
+	on every write is reasonable.
+
+Modified files:
+	chapel/modules/standard/: ChapelIO.chpl 
+
