@@ -114389,3 +114389,37 @@ Log message:
 Added files:
 	chapel/test/studies/matrixlib/QR/: qr.chpl qr.good prolate5.dat 
 
+---------------------------------------------------------------------------
+
+08/17/07 15:57:19 -- bradc
+
+Log message:
+	In composing a response to Aniruddha's classWithArray
+	future bug, I tried a few other variations, most of
+	which didn't work either, for a variety of reasons.
+	Moved the original test into a subdirectory, along with
+	my variations and added a README to sort them out.
+
+Added files:
+	chapel/test/users/shetag/classWithArray/: .cvsignore README 
+	                                          classWithArray-init-works.chpl 
+	                                          classWithArray-init-works.good 
+	                                          classWithArray-init.chpl 
+	                                          classWithArray-init.future 
+	                                          classWithArray-init.good 
+	                                          classWithArray-init2.chpl 
+	                                          classWithArray-init2.future 
+	                                          classWithArray-init2.good 
+	                                          classWithArray-init3.chpl 
+	                                          classWithArray-init3.future 
+	                                          classWithArray-init3.good 
+	                                          classWithArray-orig.chpl 
+	                                          classWithArray-orig.notest 
+	                                          classWithArray.chpl 
+	                                          classWithArray.future 
+	                                          classWithArray.good 
+Removed files:
+	chapel/test/users/shetag/: classWithArray.chpl 
+	                           classWithArray.future 
+	                           classWithArray.good 
+
