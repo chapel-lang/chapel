@@ -114302,3 +114302,13 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+08/16/07 17:10:05 -- dinan
+
+Log message:
+	Madness function tree.  Implemented as an (int, int) associative domain.
+
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+
