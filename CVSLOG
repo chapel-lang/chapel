@@ -114285,3 +114285,20 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y modulefinder.lex 
 	                         parser.cpp 
 
+---------------------------------------------------------------------------
+
+08/16/07 17:02:27 -- deitz
+
+Log message:
+	Changed a couple more pointers to ALists into pointers to BlockStmts.
+	
+	Unified the way anonymous record blocks and all other
+	class/record/union blocks are parsed.  We used to allow for modules
+	and external functions in anonymous records, but not regular records!
+
+Modified files:
+	chapel/compiler/AST/: build.cpp type.cpp 
+	chapel/compiler/include/: build.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+
