@@ -114449,3 +114449,16 @@ Modified files:
 	                         parallel.cpp scalarReplace.cpp 
 	                         scopeResolve.cpp semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+08/17/07 17:38:47 -- dinan
+
+Log message:
+	This is a reindexing test as well as a future for indefinite reindexing that we
+	discussed at the last group meeting.
+
+Added files:
+	chapel/test/arrays/dinan/: indef_reindex.chpl 
+	                           indef_reindex.future reindex.chpl 
+	                           reindex.good 
+
