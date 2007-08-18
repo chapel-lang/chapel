@@ -114423,3 +114423,29 @@ Removed files:
 	                           classWithArray.future 
 	                           classWithArray.good 
 
+---------------------------------------------------------------------------
+
+08/17/07 17:05:59 -- deitz
+
+Log message:
+	Switched all ALists in BaseASTs (e.g. CallExpr::argList and
+	BlockStmt::body) to no longer be dynamically allocated via a pointer
+	but rather just inline.  Made some other cleanup changes.  ALists are
+	currently only allocated during parsing and leaked then.  No other
+	leaks exist.
+	
+	This speeds up compilation on jacobi by about 4%.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp build.cpp expr.cpp iterator.cpp 
+	                      stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         cullOverReferences.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp scalarReplace.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+
