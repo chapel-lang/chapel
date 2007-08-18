@@ -216,7 +216,7 @@ void scopeResolve(Symbol* base) {
                     name_matches_method(name, type)) {
                   CallExpr* call = toCallExpr(symExpr->parentExpr);
                   if (call && call->baseExpr == symExpr &&
-                      call->argList->length() >= 2 &&
+                      call->numActuals() >= 2 &&
                       toSymExpr(call->get(1)) &&
                       toSymExpr(call->get(1))->var == gMethodToken) {
                     symExpr->var = new UnresolvedSymbol(name);

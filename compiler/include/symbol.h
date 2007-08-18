@@ -153,7 +153,7 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  AList* formals;
+  AList formals;
   DefExpr* setter; // implicit setter argument to var functions
   Type* retType;
   BlockStmt* where;
@@ -220,6 +220,7 @@ class FnSymbol : public Symbol {
   Symbol* getReturnSymbol();
   Symbol* getReturnLabel();
 
+  int numFormals();
   ArgSymbol* getFormal(int i); // return ith formal
 };
 

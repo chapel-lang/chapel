@@ -109,7 +109,7 @@ static FnSymbol* function_exists(const char* name,
       continue;
 
     if (numFormals != -1)
-      if (numFormals != fn->formals->length())
+      if (numFormals != fn->numFormals())
         continue;
 
     if (formalTypeName1)
@@ -136,7 +136,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     collect_asts(&asts, fn);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isNamed(field->name) && call->argList->length() == 2) {
+        if (call->isNamed(field->name) && call->numActuals() == 2) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
               call->get(2)->typeInfo() == ct) {
             Expr* arg2 = call->get(2);
@@ -180,7 +180,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
   forv_Vec(FnSymbol, fn, gFns) {
-    if (!strcmp("main", fn->name) && !fn->formals->length()) {
+    if (!strcmp("main", fn->name) && !fn->numFormals()) {
       if (!match) {
         match = fn;
       } else {
@@ -274,10 +274,10 @@ static void build_enum_enumerate_function(EnumType* et) {
 
   // Generate the tuple of enum values for the given enum type
   CallExpr* call = new CallExpr("_construct__tuple");
-  for_defs(constant, et->constants) {
+  for_enums(constant, et) {
     call->insertAtTail(constant->sym);
   }
-  call->insertAtHead(new_IntSymbol(call->argList->length()));
+  call->insertAtHead(new_IntSymbol(call->numActuals()));
 
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   normalize(fn);
@@ -310,7 +310,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg2);
 
   CondStmt* cond = NULL;
-  for_defs(constant, et->constants) {
+  for_enums(constant, et) {
     cond = new CondStmt(
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
              new CallExpr(PRIMITIVE_RETURN, constant->sym),
@@ -334,7 +334,7 @@ static void build_enum_init_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("_init");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
   fn->insertFormalAtTail(arg1);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, toDefExpr(et->constants->first())->sym));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, toDefExpr(et->constants.first())->sym));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
@@ -460,7 +460,7 @@ static void build_record_hash_function(ClassType *ct) {
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   fn->insertFormalAtTail(arg);
 
-  if (ct->fields->length() == 0) {
+  if (ct->fields.length() == 0) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0)));
   } else {
     CallExpr *call = NULL;
@@ -575,7 +575,7 @@ static void buildDefaultReadFunction(EnumType* et) {
                                 new_StringSymbol("***Error: Not of "), 
                                 new_StringSymbol(et->symbol->name), 
                                 new_StringSymbol(" type***"));
-  for_defs_backward(constant, et->constants) {
+  for_enums_backward(constant, et) {
     Expr* cond = new CallExpr("==", valString, new_StringSymbol(constant->sym->name));
     Expr* thenStmt = new CallExpr("=", arg, constant->sym);
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
@@ -674,7 +674,7 @@ static void buildStringCastFunction(EnumType* et) {
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
-  for_defs(constant, et->constants) {
+  for_enums(constant, et) {
     fn->insertAtTail(
       new CondStmt(
         new CallExpr("==", arg, constant->sym),

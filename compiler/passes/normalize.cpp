@@ -225,7 +225,7 @@ static void normalize_returns(FnSymbol* fn) {
   }
   if (rets.n == 1) {
     CallExpr* ret = rets.v[0];
-    if (ret == fn->body->body->last() && toSymExpr(ret->get(1)))
+    if (ret == fn->body->body.last() && toSymExpr(ret->get(1)))
       return;
   }
   SymExpr* retSym = toSymExpr(rets.v[0]->get(1));
@@ -456,7 +456,7 @@ fix_def_expr(VarSymbol* var) {
           }
         } else if (EnumSymbol* sym = toEnumSymbol(symExpr->var)) {
           if (EnumType* et = toEnumType(sym->type)) {
-            for_defs(constant, et->constants) {
+            for_enums(constant, et) {
               if (!strcmp(constant->sym->name, value)) {
                 init->replace(new SymExpr(constant->sym));
                 init = var->defPoint->init;
@@ -590,12 +590,12 @@ static void fixup_array_formals(FnSymbol* fn) {
         SymExpr* sym = toSymExpr(call->get(1));
         DefExpr* def = toDefExpr(call->get(1));
         DefExpr* parent = toDefExpr(call->parentExpr);
-        if (call->argList->length() == 1)
+        if (call->numActuals() == 1)
           if (!parent || !toArgSymbol(parent->sym) ||
               parent->exprType != call)
             USR_FATAL(call, "array without element type can only "
                       "be used as a formal argument type");
-        if (def || (sym && sym->var == gNil) || call->argList->length() == 1) {
+        if (def || (sym && sym->var == gNil) || call->numActuals() == 1) {
           if (!parent || !toArgSymbol(parent->sym)
               || parent->exprType != call)
             USR_FATAL(call, "array with empty or queried domain can "
@@ -605,8 +605,8 @@ static void fixup_array_formals(FnSymbol* fn) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn, fn->argScope);
           }
-          Expr* expr = fn->where->body->only();
-          if (call->argList->length() == 2)
+          Expr* expr = fn->where->body.only();
+          if (call->numActuals() == 2)
             expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
                               new CallExpr(".", parent->sym, new_StringSymbol("eltType")))));
@@ -744,7 +744,7 @@ replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
       if (se->var == def->sym) {
         if (formal->variableExpr) {
           CallExpr* parent = toCallExpr(se->parentExpr);
-          if (!parent || parent->argList->length() != 1)
+          if (!parent || parent->numActuals() != 1)
             USR_FATAL(se, "illegal access to query type or parameter");
           se->replace(new SymExpr(formal));
           parent->replace(se);
@@ -766,7 +766,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
     insert_help(fn->where, NULL, fn, fn->argScope);
   }
-  Expr* where = fn->where->body->only();
+  Expr* where = fn->where->body.only();
   Expr* clause;
   if (formal->variableExpr)
     clause = new CallExpr(PRIMITIVE_TUPLE_AND_EXPAND, formal,
@@ -794,7 +794,7 @@ fixup_query_formals(FnSymbol* fn) {
       formal->type = dtAny;
     } else if (CallExpr* call = toCallExpr(formal->defPoint->exprType)) {
       // clone query primitive types
-      if (call->argList->length() == 1) {
+      if (call->numActuals() == 1) {
         if (DefExpr* def = toDefExpr(call->get(1))) {
           if (call->isNamed("int") || call->isNamed("uint")) {
             for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
@@ -880,7 +880,7 @@ fixup_query_formals(FnSymbol* fn) {
 
 
 static void change_method_into_constructor(FnSymbol* fn) {
-  if (fn->formals->length() <= 1)
+  if (fn->numFormals() <= 1)
     return;
   if (fn->getFormal(1)->type != dtMethodToken)
     return;
@@ -897,8 +897,8 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
   ASTMap map;
   map.put(fn->getFormal(2), fn->_this);
-  fn->formals->get(2)->remove();
-  fn->formals->get(1)->remove();
+  fn->formals.get(2)->remove();
+  fn->formals.get(1)->remove();
   update_symbols(fn, &map);
   fn->defPoint->remove();
   fn->name = canonicalize_string(stringcat("_construct_", fn->name));

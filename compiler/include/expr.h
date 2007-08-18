@@ -87,7 +87,7 @@ class SymExpr : public Expr {
 class CallExpr : public Expr {
  public:
   Expr* baseExpr;
-  AList* argList;
+  AList argList;
   PrimitiveOp* primitive;
   bool partialTag;
   bool methodTag;
@@ -121,6 +121,7 @@ class CallExpr : public Expr {
   FnSymbol* isResolved(void);
   bool isNamed(const char*);
 
+  int numActuals();
   Expr* get(int index);
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);

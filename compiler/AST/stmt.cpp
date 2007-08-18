@@ -23,33 +23,35 @@ void codegenStmt(FILE* outfile, Expr* stmt) {
 BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
-  body(init_body),
+  body(),
   loopInfo(NULL),
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL)
 {
-  body->parent = this;
+  body.parent = this;
+  body.insertAtTail(init_body);
 }
 
 
 BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
-  body(new AList(init_body)),
+  body(),
   loopInfo(NULL),
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL)
 {
-  body->parent = this;
+  body.parent = this;
+  if (init_body)
+    body.insertAtTail(init_body);
 }
 
 
 BlockStmt::~BlockStmt() {
   if (blkScope && blkScope->astParent == this)
     delete blkScope;
-  delete body;
 }
 
 
@@ -58,14 +60,17 @@ void BlockStmt::verify() {
   if (astType != STMT_BLOCK) {
     INT_FATAL(this, "Bad BlockStmt::astType");
   }
-  if (body->parent != this)
+  if (body.parent != this)
     INT_FATAL(this, "Bad AList::parent in BlockStmt");
 }
 
 
 BlockStmt*
 BlockStmt::copyInner(ASTMap* map) {
-  BlockStmt* _this = new BlockStmt(COPY_INT(body), blockTag);
+  BlockStmt* _this = new BlockStmt();
+  _this->blockTag = blockTag;
+  for_alist(expr, body)
+    _this->insertAtTail(COPY_INT(expr));
   _this->loopInfo = COPY_INT(loopInfo);
   return _this;
 }
@@ -88,7 +93,7 @@ codegenCobegin( FILE* outfile, AList* body) {
   // gen code for the function pointer array
   fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist(stmt, body) {
+  for_alist(stmt, *body) {
     if (CallExpr *cexpr=toCallExpr(stmt)) {
       if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
@@ -108,9 +113,9 @@ codegenCobegin( FILE* outfile, AList* body) {
   // ok, walk through again and gen code for the argument array
   fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
   stmt_cnt = 0;
-  for_alist(stmt, body) {
+  for_alist(stmt, *body) {
     if (CallExpr *cexpr=toCallExpr(stmt)) {
-      Expr *actuals = toExpr(cexpr->argList->first());
+      Expr *actuals = cexpr->get(1);
       // pass exactly one class object containing ptrs to locals
       fprintf (outfile, "(_chpl_threadarg_t)");
       if (actuals) {
@@ -149,12 +154,12 @@ codegenBegin( FILE* outfile, AList* body) {
     INT_FATAL("begin codegen - expect only one function call");
 
   fprintf( outfile, "_chpl_begin( ");
-  for_alist(stmt, body) {
+  for_alist(stmt, *body) {
     if (CallExpr *cexpr=toCallExpr(stmt)) {
       if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
         fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
         fprintf (outfile, "(_chpl_threadarg_t) ");
-        if (Expr *actuals = toExpr(cexpr->argList->first())) {
+        if (Expr *actuals = cexpr->get(1)) {
           actuals->codegen (outfile);
         } else {
           fprintf( outfile, "NULL");
@@ -210,14 +215,12 @@ void BlockStmt::codegen(FILE* outfile) {
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
 
-  if (body) {
-    if (blockTag == BLOCK_COBEGIN) {
-      codegenCobegin( outfile, body);
-    } else if (blockTag == BLOCK_BEGIN) {
-      codegenBegin( outfile, body);
-    } else {
-      body->codegen(outfile, "");
-    }
+  if (blockTag == BLOCK_COBEGIN) {
+    codegenCobegin(outfile, &body);
+  } else if (blockTag == BLOCK_BEGIN) {
+    codegenBegin(outfile, &body);
+  } else {
+    body.codegen(outfile, "");
   }
 
   if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
@@ -235,25 +238,25 @@ void BlockStmt::codegen(FILE* outfile) {
 
 void
 BlockStmt::insertAtHead(Expr* ast) {
-  body->insertAtHead(ast);
+  body.insertAtHead(ast);
 }
 
 
 void
 BlockStmt::insertAtTail(Expr* ast) {
-  body->insertAtTail(ast);
+  body.insertAtTail(ast);
 }
 
 
 void
 BlockStmt::insertAtHead(AList* ast) {
-  body->insertAtHead(ast);
+  body.insertAtHead(ast);
 }
 
 
 void
 BlockStmt::insertAtTail(AList* ast) {
-  body->insertAtTail(ast);
+  body.insertAtTail(ast);
 }
 
 
@@ -265,6 +268,12 @@ BlockStmt::isLoop(void) {
     blockTag == BLOCK_FOR ||
     blockTag == BLOCK_FORALL ||
     blockTag == BLOCK_ORDERED_FORALL;
+}
+
+
+int
+BlockStmt::length(void) {
+  return body.length();
 }
 
 
@@ -325,7 +334,7 @@ CondStmt::copyInner(ASTMap* map) {
 
 void CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == condExpr) {
-    condExpr = toExpr(new_ast);
+    condExpr = new_ast;
   } else if (old_ast == thenStmt) {
     thenStmt = toBlockStmt(new_ast);
   } else if (old_ast == elseStmt) {

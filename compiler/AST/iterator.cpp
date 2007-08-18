@@ -835,7 +835,7 @@ void lowerIterator(FnSymbol* fn) {
     Symbol* field =
       new VarSymbol(astr("_", istr(i++), "_", local->name), type);
     local2field.put(local, field);
-    ii->classType->fields->insertAtTail(new DefExpr(field));
+    ii->classType->fields.insertAtTail(new DefExpr(field));
   }
 
   Symbol* value = local2field.get(fn->getReturnSymbol());

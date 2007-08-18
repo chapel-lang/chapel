@@ -33,7 +33,7 @@ enum BlockTag {
 class BlockStmt : public Expr {
  public:
   BlockTag blockTag;
-  AList* body;
+  AList body;
   CallExpr* loopInfo;
   SymScope* blkScope;
   LabelSymbol* pre_loop;
@@ -54,6 +54,7 @@ class BlockStmt : public Expr {
   void insertAtTail(AList* ast);
 
   bool isLoop(void);
+  int length(void);
 };
 
 

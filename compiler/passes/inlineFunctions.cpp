@@ -33,7 +33,7 @@ static void inline_call(CallExpr* call, Vec<BaseAST*>& new_asts) {
   mapFormalsToActuals(call, &map);
   BlockStmt* block = fn->body->copy(&map);
   reset_file_info(block, call->lineno, call->filename);
-  CallExpr* return_stmt = toCallExpr(block->body->last());
+  CallExpr* return_stmt = toCallExpr(block->body.last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(call, "Cannot inline function, function is not normalized");
   Expr* return_value = return_stmt->get(1);

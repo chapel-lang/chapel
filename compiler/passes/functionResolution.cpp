@@ -516,12 +516,12 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       // check for cached stamped out function
       if (Vec<FnSymbol*>* cfns = varArgsCache.get(fn)) {
         forv_Vec(FnSymbol, cfn, *cfns) {
-          if (cfn->formals->length() == numActuals)
+          if (cfn->numFormals() == numActuals)
             return cfn;
         }
       }
 
-      int numCopies = numActuals - fn->formals->length() + 1;
+      int numCopies = numActuals - fn->numFormals() + 1;
       if (numCopies <= 0)
         return NULL;
 
@@ -615,7 +615,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
   int num_actuals = actual_types->n;
-  int num_formals = fn->formals ? fn->formals->length() : 0;
+  int num_formals = fn->numFormals();
 
   Vec<Type*> formal_actuals;
   Vec<Symbol*> formal_params;
@@ -684,7 +684,7 @@ build_default_wrapper(FnSymbol* fn,
                       Vec<ArgSymbol*>* actual_formals) {
   FnSymbol* wrapper = fn;
   int num_actuals = actual_formals->n;
-  int num_formals = fn->formals ? fn->formals->length() : 0;
+  int num_formals = fn->numFormals();
   if (num_formals > num_actuals) {
     Vec<Symbol*> defaults;
     for_formals(formal, fn) {
@@ -1024,7 +1024,7 @@ const char* fn2string(FnSymbol* fn) {
   if (!fn->noParens)
     str = stringcat(str, "(");
   bool first = false;
-  for (int i = start; i < fn->formals->length(); i++) {
+  for (int i = start; i < fn->numFormals(); i++) {
     ArgSymbol* arg = fn->getFormal(i+1);
     if (!first)
       first = true;
@@ -1230,7 +1230,7 @@ resolve_type_expr(Expr* expr) {
 
 static void
 checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
-  if (call->primitive || call->argList->length() != 1)
+  if (call->primitive || call->numActuals() != 1)
     return;
   if (call->isNamed("-")) {
     if (atypes->v[0] == dtUInt[INT_SIZE_64]) {
@@ -1243,7 +1243,7 @@ checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
 
 static void
 checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
-  if (call->primitive || call->argList->length() != 2)
+  if (call->primitive || call->numActuals() != 2)
     return;
   if (call->isNamed("+") ||
       call->isNamed("-") ||
@@ -1300,7 +1300,7 @@ static void
 makeNoop(CallExpr* call) {
   if (call->baseExpr)
     call->baseExpr->remove();
-  while (call->argList->length())
+  while (call->numActuals())
     call->get(1)->remove();
   call->primitive = primitives[PRIMITIVE_NOOP];
 }
@@ -1527,7 +1527,7 @@ resolveCall(CallExpr* call) {
     makeNoop(call);
     // increase tuple rank
     if (parent && parent->isNamed("_construct__tuple")) {
-      parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->argList->length()-1)));
+      parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
     }
   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
     Type* t= call->get(1)->typeInfo();
@@ -1871,7 +1871,7 @@ preFold(Expr* expr) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* type = toTypeSymbol(sym->var)) {
-        if (call->argList->length() == 1) {
+        if (call->numActuals() == 1) {
           if (SymExpr* arg = toSymExpr(call->get(1))) {
             if (VarSymbol* var = toVarSymbol(arg->var)) {
               if (var->immediate) {
@@ -1945,7 +1945,7 @@ preFold(Expr* expr) {
       }
     }
 
-    if (call->argList->length() == 2) {
+    if (call->numActuals() == 2) {
       if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (symExpr->var == gMethodToken) {
           Type* type = call->get(2)->typeInfo();
@@ -1999,7 +1999,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isNamed("_copy")) {
-      if (call->argList->length() == 1) {
+      if (call->numActuals() == 1) {
         if (SymExpr* symExpr = toSymExpr(call->get(1))) {
           if (VarSymbol* var = toVarSymbol(symExpr->var)) {
             if (var->immediate) {
@@ -2069,8 +2069,8 @@ preFold(Expr* expr) {
         if (VarSymbol* var = toVarSymbol(sym->var)) {
           if (var->immediate) {
             int rank = var->immediate->int_value();
-            if (rank != call->argList->length() - 1) {
-              if (call->argList->length() != 2)
+            if (rank != call->numActuals() - 1) {
+              if (call->numActuals() != 2)
                 INT_FATAL(call, "bad homogeneous tuple");
               Expr* actual = call->get(2);
               for (int i = 1; i < rank; i++) {
@@ -2089,7 +2089,7 @@ preFold(Expr* expr) {
         if (se->var->isTypeVariable) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move);
-          for (int i = 2; i <= call->argList->length(); i++) {
+          for (int i = 2; i <= call->numActuals(); i++) {
             Expr* actual = call->get(i);
             VarSymbol* tmp = new VarSymbol("_tmp");
             tmp->isCompilerTemp = true;
@@ -2108,7 +2108,7 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
-               call->argList->length() == 2) {
+               call->numActuals() == 2) {
       result = expand_for_loop(call);
     } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
       bool removed = false;
@@ -2169,7 +2169,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   INT_ASSERT(type1 && type2);
 
   // Loop over the enum values to find the int value of e1
-  for_defs(constant, type1->constants) {
+  for_enums(constant, type1) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
@@ -2180,7 +2180,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   }
   // Loop over the enum values to find the int value of e2
   count = 0;
-  for_defs(constant, type2->constants) {
+  for_enums(constant, type2) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
@@ -2647,9 +2647,9 @@ static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name)
     return false;
-  if (fn->formals->length() != gn->formals->length())
+  if (fn->numFormals() != gn->numFormals())
     return false;
-  for (int i = 3; i <= fn->formals->length(); i++) {
+  for (int i = 3; i <= fn->numFormals(); i++) {
     ArgSymbol* fa = fn->getFormal(i);
     ArgSymbol* ga = gn->getFormal(i);
     if (strcmp(fa->name, ga->name))
@@ -2663,9 +2663,9 @@ static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name)
     return false;
-  if (fn->formals->length() != gn->formals->length())
+  if (fn->numFormals() != gn->numFormals())
     return false;
-  for (int i = 3; i <= fn->formals->length(); i++) {
+  for (int i = 3; i <= fn->numFormals(); i++) {
     ArgSymbol* fa = fn->getFormal(i);
     ArgSymbol* ga = gn->getFormal(i);
     if (strcmp(fa->name, ga->name))
@@ -2703,7 +2703,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
         collectInstantiatedClassTypes(icts, ct);
         forv_Vec(Type, ict, icts) {
           subs.put(cfn->getFormal(2), ict);
-          for (int i = 3; i <= cfn->formals->length(); i++) {
+          for (int i = 3; i <= cfn->numFormals(); i++) {
             ArgSymbol* arg = cfn->getFormal(i);
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
@@ -2731,7 +2731,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
         }
       } else {
         ASTMap subs;
-        for (int i = 3; i <= cfn->formals->length(); i++) {
+        for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
             INT_FATAL(arg, "unhandled case");
@@ -2790,7 +2790,7 @@ build_ddf() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->isWrapper || !resolvedFns.set_in(fn))
       continue;
-    if (fn->formals->length() > 1) {
+    if (fn->numFormals() > 1) {
       if (fn->getFormal(1)->type == dtMethodToken) {
         if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
           if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
@@ -2860,7 +2860,7 @@ resolve() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = toEnumType(type->type)) {
-      for_defs(def, et->constants) {
+      for_enums(def, et) {
         if (def->init) {
           resolve_type_expr(def->init);
         }
@@ -3063,7 +3063,7 @@ pruneResolvedTree() {
         }
       } else if (FnSymbol* fn = call->isResolved()) {
         // Remove method token actuals
-        for (int i = fn->formals->length(); i >= 1; i--) {
+        for (int i = fn->numFormals(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
               formal->isTypeVariable)
@@ -3242,7 +3242,7 @@ instantiate(FnSymbol* fn, ASTMap* subs) {
   if (!ifn->isGeneric && ifn->where) {
     resolveFormals(ifn);
     resolveBody(ifn->where);
-    SymExpr* symExpr = toSymExpr(ifn->where->body->last());
+    SymExpr* symExpr = toSymExpr(ifn->where->body.last());
     if (!symExpr)
       USR_FATAL(ifn->where, "Illegal where clause");
     if (!strcmp(symExpr->var->name, "false"))

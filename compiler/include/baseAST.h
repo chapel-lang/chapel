@@ -81,7 +81,6 @@ extern const char* astTypeName[];
   }                                                                     \
   virtual type* copyInner(ASTMap* map)
 
-#define COPY(c) (c ? c->copy() : NULL)
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
 typedef struct _ASTContext {

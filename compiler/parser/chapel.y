@@ -75,13 +75,13 @@ Is this "while x"(i); or "while x(i)";?
   consType ct;
   intentTag pt;
   BlockTag btag;
-  fnType ft;
 
   Expr* pexpr;
   DefExpr* pdefexpr;
   BlockStmt* pblockstmt;
 
   Type* ptype;
+  EnumType* pet;
 
   Symbol* psym;
   FnSymbol* pfnsym;
@@ -186,12 +186,11 @@ Is this "while x"(i); or "while x(i)";?
 %type <ct> var_const_tag
  
 %type <pt> formal_tag
-%type <ft> fn_tag
 %type <btag> for_tag
 
 %type <boolval> fnretref fn_param
 
-%type <pch> identifier fname opt_identifier
+%type <pch> identifier fn_identifier opt_identifier
 %type <pch> pragma
 %type <vpch> pragma_ls
 
@@ -220,6 +219,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> type anon_record_type tuple_type type_binding_expr opt_domain
 %type <pexpr> composable_type variable_type parenop_type memberaccess_type
 %type <ptype> class_tag
+%type <pet> enum_ls
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
@@ -228,9 +228,8 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
 %type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
 %type <pdefexpr> formal enum_item
-%type <palist> formal_ls opt_formal_ls enum_ls
 
-%type <pfnsym> function
+%type <pfnsym> fn_decl_stmt_inner formal_ls opt_formal_ls
 
 /* These are declared in increasing order of precedence. */
 
@@ -293,7 +292,7 @@ stmt_ls:
     { $$ = new BlockStmt(); }
 | stmt_ls pragma_ls stmt
     {
-      $3->body->first()->addPragmas($2);
+      $3->body.first()->addPragmas($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -644,7 +643,7 @@ class_body_stmt_ls:
     { $$ = new BlockStmt(); }
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
-      $3->body->first()->addPragmas($2);
+      $3->body.first()->addPragmas($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -665,6 +664,7 @@ use_stmt:
     { $$ = $2; }
 ;
 
+
 use_stmt_ls:
   lvalue
     { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_USE, $1)); }
@@ -675,6 +675,7 @@ use_stmt_ls:
     }
 ;
 
+
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
     {
@@ -683,81 +684,76 @@ mod_decl_stmt:
 ;
 
 
-fn_decl_stmt:
-  fn_tag function opt_formal_ls fn_param fnretref opt_type where parsed_block_stmt
+formal_ls:
+  /* nothing */
+    { $$ = new FnSymbol("_"); }
+| formal
     {
-      $2->fnClass = $1;
-      $2->isParam = $4;
-      $2->retRef = $5;
-      if ($5)
-        $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      $2->retExprType = $6;
-      if ($7)
-        $2->where = new BlockStmt($7);
-      $2->body = new BlockStmt($8);
+      $$ = new FnSymbol("_");
+      $$->insertFormalAtTail($1);
+    }
+| TLP tuple_var_decl_stmt_inner_ls TRP
+    {
+      $$ = new FnSymbol("_");
+      build_tuple_arg($$, $2, NULL);
+    }
+| formal_ls TCOMMA formal
+    { $1->insertFormalAtTail($3); }
+| formal_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
+    { build_tuple_arg($1, $4, NULL); }
+;
 
-      if (!$3)
-        $2->noParens = true;
-      else {
-        for_alist(expr, $3) {
-          if (DefExpr* def = toDefExpr(expr)) {
-            def->remove();
-            $2->insertFormalAtTail(def);
-          } else if (BlockStmt* tupledefs = toBlockStmt(expr)) {
-            build_tuple_arg($2, tupledefs, NULL);
-          }
-        }
-      }
+
+opt_formal_ls:
+  { $$ = new FnSymbol("_"); $$->noParens = true; }
+| TLP formal_ls TRP
+  { $$ = $2; }
+;
+
+
+fn_decl_stmt_inner:
+  fn_identifier opt_formal_ls
+    { $$ = $2; $$->name = astr($1); $$->cname = $$->name; }
+| type_binding_expr TDOT identifier opt_formal_ls
+    {
+      $$ = $4;
+      $$->name = astr($3);
+      $$->cname = $$->name;
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
+      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
+      if (strcmp("this", $3))
+        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    }
+;
+
+
+fn_decl_stmt:
+  TDEF fn_decl_stmt_inner fn_param fnretref opt_type where parsed_block_stmt
+    {
+      $2->isParam = $3;
+      $2->retRef = $4;
+      if ($4)
+        $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+      $2->retExprType = $5;
+      if ($6)
+        $2->where = new BlockStmt($6);
+      $2->insertAtTail($7);
       $$ = build_chpl_stmt(new DefExpr($2));
     }
 ;
 
 
 extern_fn_decl_stmt:
-  TEXTERN TDEF identifier TLP formal_ls TRP opt_type TSEMI
+  TEXTERN TDEF fn_decl_stmt_inner opt_type TSEMI
     {
-      FnSymbol* fn = new FnSymbol($3);
+      FnSymbol* fn = $3;
       fn->isExtern = true;
-      if ($7)
-        fn->retExprType = $7;
+      if ($4)
+        fn->retExprType = $4;
       else
         fn->retType = dtVoid;
-      for_alist(expr, $5) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          def->remove();
-          fn->insertFormalAtTail(def);
-        } else
-          USR_FATAL(expr, "illegal extern function definition");
-      }
       $$ = build_chpl_stmt(new DefExpr(fn));
     }
-;
-
-
-fn_tag:
-  TDEF
-    { $$ = FN_FUNCTION; }
-;
-
-
-opt_formal_ls:
-  { $$ = NULL; }
-| TLP formal_ls TRP
-  { $$ = $2; }
-;
-
-
-formal_ls:
-  /* nothing */
-    { $$ = new AList(); }
-| formal
-    { $$ = new AList($1); }
-| TLP tuple_var_decl_stmt_inner_ls TRP
-    { $$ = new AList($2); }
-| formal_ls TCOMMA formal
-    { $1->insertAtTail($3); }
-| formal_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
-    { $1->insertAtTail($4); }
 ;
 
 
@@ -802,7 +798,7 @@ fnretref:
 ;
 
 
-fname:
+fn_identifier:
   identifier
 | TASSIGN 
   { $$ = "="; } 
@@ -846,7 +842,8 @@ fname:
   { $$ = "!"; }
 | TBY
   { $$ = "by"; } 
-  ;
+;
+
 
 where:
   /* nothing */
@@ -855,22 +852,10 @@ where:
     { $$ = $2; }
 ;
 
+
 type_binding_expr:
   variable_expr
   /* | parenop_expr */;
-
-function:
-  fname
-    { $$ = new FnSymbol($1); }
-| type_binding_expr TDOT fname
-    {
-      $$ = new FnSymbol($3);
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
-      if (strcmp("this", $3))
-        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    }
-;
 
 
 class_decl_stmt:
@@ -879,7 +864,7 @@ class_decl_stmt:
       DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
       delete $2;
-      toClassType(toTypeSymbol(def->sym)->type)->inherits->insertAtTail($4);
+      toClassType(toTypeSymbol(def->sym)->type)->inherits.insertAtTail($4);
       $$ = build_chpl_stmt(def);
     }
 ;
@@ -906,21 +891,29 @@ opt_inherit_expr_ls:
 enum_decl_stmt:
   TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
     {
-      EnumType* pdt = new EnumType($5);
+      EnumType* pdt = $5;
       TypeSymbol* pst = new TypeSymbol($3, pdt);
+      $5->symbol = pst;
       pst->addPragmas($2);
       delete $2;
-      DefExpr* def_expr = new DefExpr(pst);
-      $$ = build_chpl_stmt(def_expr);
+      $$ = build_chpl_stmt(new DefExpr(pst));
     }
 ;
 
 
 enum_ls:
   enum_item
-    { $$ = new AList($1); }
+    {
+      $$ = new EnumType();
+      $1->sym->type = $$;
+      $$->constants.insertAtTail($1);
+      $$->defaultValue = $1->sym;
+    }
 | enum_ls TCOMMA enum_item
-    { $1->insertAtTail($3); }
+    {
+      $1->constants.insertAtTail($3);
+      $3->sym->type = $1;
+    }
 ;
 
 
@@ -1076,8 +1069,8 @@ tuple_type:
   TLP type_ls TRP
     {
       CallExpr* call = new CallExpr("_tuple", new_IntSymbol($2->length()));
-      for_alist(expr, $2) {
-        call->argList->insertAtTail(new CallExpr("_init", expr->remove()));
+      for_alist(expr, *$2) {
+        call->insertAtTail(new CallExpr("_init", expr->remove()));
       }
       $$ = call;
     }
@@ -1330,11 +1323,11 @@ tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
       if ($2->length() == 1) {
-        $$ = toExpr($2->get(1));
+        $$ = $2->get(1);
         $$->remove();
       } else {
         CallExpr* tupleCall = new CallExpr("_tuple", $2);
-        tupleCall->insertAtHead(new_IntSymbol(tupleCall->argList->length()));
+        tupleCall->insertAtHead(new_IntSymbol(tupleCall->numActuals()));
         $$ = tupleCall;
       }
     }

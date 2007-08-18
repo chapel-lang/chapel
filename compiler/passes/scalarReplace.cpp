@@ -300,7 +300,7 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
   ct->symbol->defPoint->remove();
   ct->refType->symbol->defPoint->remove();
 
-  Type* fieldType = toDefExpr(ct->fields->only())->sym->type;
+  Type* fieldType = toDefExpr(ct->fields.only())->sym->type;
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {

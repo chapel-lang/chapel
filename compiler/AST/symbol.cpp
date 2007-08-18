@@ -525,7 +525,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(SYMBOL_FN, initName),
-  formals(new AList()),
+  formals(),
   setter(NULL),
   retType(dtUnknown),
   where(NULL),
@@ -553,7 +553,7 @@ FnSymbol::FnSymbol(const char* initName) :
 {
   substitutions.clear();
   gFns.add(this);
-  formals->parent = this;
+  formals.parent = this;
 }
 
 
@@ -572,7 +572,6 @@ FnSymbol::~FnSymbol() {
     delete calledBy;
   if (argScope)
     delete argScope;
-  delete formals;
 }
 
 
@@ -582,11 +581,11 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::astType");
   }
   if (normalized && !hasPragma("auto ii")) {
-    CallExpr* last = toCallExpr(body->body->last());
+    CallExpr* last = toCallExpr(body->body.last());
     if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
   }
-  if (formals->parent != this)
+  if (formals.parent != this)
     INT_FATAL(this, "Bad AList::parent in FnSymbol");
 }
 
@@ -639,7 +638,7 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 static bool
 returns_void(FnSymbol* fn) {
-  CallExpr* ret = toCallExpr(fn->body->body->last());
+  CallExpr* ret = toCallExpr(fn->body->body.last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(fn, "Function is not in normal form");
   return ret->typeInfo() == dtVoid;
@@ -650,7 +649,7 @@ static CallExpr*
 make_method_call_partial(CallExpr* call) {
   call->partialTag = true;
   CallExpr* outer = new CallExpr(call);
-  while (call->argList->length() > 2) {
+  while (call->numActuals() > 2) {
     Expr* arg = call->get(3);
     arg->remove();
     outer->insertAtTail(arg);
@@ -700,8 +699,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
       if (ts->hasPragma( "synchronization primitive")) {
         // check if this is a member access
         DefExpr *mt;
-        if ((this->formals->length() > 0) &&
-            (mt = toDefExpr(this->formals->get(1))) &&
+        if ((this->numFormals() > 0) &&
+            (mt = toDefExpr(this->formals.get(1))) &&
             (mt->sym->type == dtMethodToken) &&
             (_this == this->getFormal(2))) {
           // call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
@@ -878,10 +877,10 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   if (isMethod && !noParens)
     actualCall = make_method_call_partial(actualCall);
   BaseAST* indices = indicesCall;
-  if (indicesCall->argList->length() == 1)
-    indices = indicesCall->argList->only()->remove();
+  if (indicesCall->numActuals() == 1)
+    indices = indicesCall->get(1)->remove();
   else
-    indicesCall->insertAtHead(new_IntSymbol(indicesCall->argList->length()));
+    indicesCall->insertAtHead(new_IntSymbol(indicesCall->numActuals()));
   if (returns_void(this)) {
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices, iterator,
@@ -933,7 +932,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   clone->instantiatedFrom = fn;
 
   FnSymbol* root = fn;
-  while (root->instantiatedFrom && root->formals->length() == root->instantiatedFrom->formals->length())
+  while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
     root = root->instantiatedFrom;
 
   if (fn->instantiatedFrom)
@@ -1018,7 +1017,7 @@ static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = toClassType(fn->retType);
   int64 size = toVarSymbol(tuple->substitutions.v[0].value)->immediate->int_value();
-  Expr* last = fn->body->body->last();
+  Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
@@ -1026,7 +1025,7 @@ instantiate_tuple(FnSymbol* fn) {
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringSymbol(name), arg));
     VarSymbol* field = new VarSymbol(name);
-    tuple->fields->insertAtTail(new DefExpr(field));
+    tuple->fields.insertAtTail(new DefExpr(field));
   }
   fn->removePragma("tuple");
 }
@@ -1037,7 +1036,7 @@ instantiate_tuple_get(FnSymbol* fn) {
   if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();
-  if (index <= 0 || index >= toClassType(fn->_this->type)->fields->length()) {
+  if (index <= 0 || index >= toClassType(fn->_this->type)->fields.length()) {
     fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", intstring(index), ")")))));
   } else {
     char* name = stringcat("x", intstring(index));
@@ -1049,13 +1048,13 @@ instantiate_tuple_get(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_copy(FnSymbol* fn) {
-  if (fn->formals->length() != 1)
+  if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple copy function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
   ClassType* ct = toClassType(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
-  for (int i = 1; i < ct->fields->length(); i++)
+  for (int i = 1; i < ct->fields.length(); i++)
     call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
@@ -1065,13 +1064,13 @@ instantiate_tuple_copy(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_init(FnSymbol* fn) {
-  if (fn->formals->length() != 1)
+  if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple init function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
   ClassType* ct = toClassType(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
-  for (int i = 1; i < ct->fields->length(); i++)
+  for (int i = 1; i < ct->fields.length(); i++)
     call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
@@ -1081,17 +1080,17 @@ instantiate_tuple_init(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_hash( FnSymbol* fn) {
-  if (fn->formals->length() != 1)
+  if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
   ClassType  *ct = toClassType(arg->type);
   CallExpr *ret;
-  if (ct->fields->length() < 0) {
+  if (ct->fields.length() < 0) {
     ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call = NULL;
     bool first = true;
-    for (int i=1; i<ct->fields->length(); i++) {
+    for (int i=1; i<ct->fields.length(); i++) {
       CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
       if (first) {
         call =  new CallExpr( "_indefinite_hash", field_access);
@@ -1170,7 +1169,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
   // return cached if we did this instantiation already
   FnSymbol* root = this;
-  while (root->instantiatedFrom && root->formals->length() == root->instantiatedFrom->formals->length())
+  while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
     root = root->instantiatedFrom;
 
   ASTMap all_substitutions;
@@ -1322,8 +1321,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
   instantiatedTo->add(newfn);
 
-  if (newfn->formals->length() > 1 &&
-      newfn->getFormal(1)->type == dtMethodToken)
+  if (newfn->numFormals() > 1 && newfn->getFormal(1)->type == dtMethodToken)
     newfn->getFormal(2)->type->methods.add(newfn);
 
   //normalize(newfn);
@@ -1338,7 +1336,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
   fprintf(outfile, "(");
-  if (formals->length() == 0) {
+  if (numFormals() == 0) {
     fprintf(outfile, "void");
   } else {
     bool first = true;
@@ -1447,7 +1445,7 @@ FnSymbol::insertAtTail(Expr* ast) {
 
 Symbol*
 FnSymbol::getReturnSymbol() {
-  CallExpr* ret = toCallExpr(body->body->last());
+  CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   SymExpr* sym = toSymExpr(ret->get(1));
@@ -1459,7 +1457,7 @@ FnSymbol::getReturnSymbol() {
 
 Symbol*
 FnSymbol::getReturnLabel() {
-  CallExpr* ret = toCallExpr(body->body->last());
+  CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   if (DefExpr* def = toDefExpr(ret->prev))
@@ -1471,7 +1469,7 @@ FnSymbol::getReturnLabel() {
 
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
-  CallExpr* ret = toCallExpr(body->body->last());
+  CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   Expr* last = ret;
@@ -1484,7 +1482,7 @@ FnSymbol::insertBeforeReturn(Expr* ast) {
 
 void
 FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
-  CallExpr* ret = toCallExpr(body->body->last());
+  CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
@@ -1506,9 +1504,9 @@ FnSymbol::insertAtTail(AList* ast) {
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
   if (ArgSymbol* arg = toArgSymbol(ast))
-    formals->insertAtHead(new DefExpr(arg));
+    formals.insertAtHead(new DefExpr(arg));
   else if (DefExpr* def = toDefExpr(ast))
-    formals->insertAtHead(def);
+    formals.insertAtHead(def);
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtHead");
 }
@@ -1517,17 +1515,23 @@ FnSymbol::insertFormalAtHead(BaseAST* ast) {
 void
 FnSymbol::insertFormalAtTail(BaseAST* ast) {
   if (ArgSymbol* arg = toArgSymbol(ast))
-    formals->insertAtTail(new DefExpr(arg));
+    formals.insertAtTail(new DefExpr(arg));
   else if (DefExpr* def = toDefExpr(ast))
-    formals->insertAtTail(def);
+    formals.insertAtTail(def);
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtTail");
 }
 
 
+int
+FnSymbol::numFormals() {
+  return formals.length();
+}
+
+
 ArgSymbol*
 FnSymbol::getFormal(int i) {
-  return toArgSymbol(toDefExpr(formals->get(i))->sym);
+  return toArgSymbol(toDefExpr(formals.get(i))->sym);
 }
 
 

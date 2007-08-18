@@ -192,7 +192,7 @@ checkResolved(void) {
 
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = toEnumType(type->type)) {
-      for_defs(def, et->constants) {
+      for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (toVarSymbol(sym->var)->consClass != VAR_PARAM &&

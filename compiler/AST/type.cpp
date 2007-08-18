@@ -173,18 +173,15 @@ void PrimitiveType::verify() {
 }
 
 
-EnumType::EnumType(AList* init_constants) :
-  Type(TYPE_ENUM, toDefExpr(init_constants->first())->sym),
-  constants(init_constants)
+EnumType::EnumType() :
+  Type(TYPE_ENUM, NULL),
+  constants()
 {
-  for_defs(def, constants)
-    def->sym->type = this;
-  constants->parent = this;
+  constants.parent = this;
 }
 
 
 EnumType::~EnumType() {
-  delete constants;
 }
 
 
@@ -193,14 +190,16 @@ void EnumType::verify() {
   if (astType != TYPE_ENUM) {
     INT_FATAL(this, "Bad EnumType::astType");
   }
-  if (constants->parent != this)
+  if (constants.parent != this)
     INT_FATAL(this, "Bad AList::parent in EnumType");
 }
 
 
 EnumType*
 EnumType::copyInner(ASTMap* map) {
-  EnumType* copy = new EnumType(COPY_INT(constants));
+  EnumType* copy = new EnumType();
+  for_enums(def, this)
+    copy->constants.insertAtTail(COPY_INT(def));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -218,7 +217,7 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef enum {");
   bool first = true;
-  for_defs(constant, constants) {
+  for_enums(constant, this) {
     if (!first) {
       fprintf(outfile, ", ");
     }
@@ -291,8 +290,8 @@ ClassType::ClassType(ClassTag initClassTag) :
   classTag(initClassTag),
   isIterator(false),
   structScope(NULL),
-  fields(new AList()),
-  inherits(new AList()),
+  fields(),
+  inherits(),
   outer(NULL)
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
@@ -300,16 +299,14 @@ ClassType::ClassType(ClassTag initClassTag) :
     defaultValue = gNil;
   }
   methods.clear();
-  fields->parent = this;
-  inherits->parent = this;
+  fields.parent = this;
+  inherits.parent = this;
 }
 
 
 ClassType::~ClassType() {
   if (structScope)
     delete structScope;
-  delete fields;
-  delete inherits;
 }
 
 
@@ -322,7 +319,7 @@ void ClassType::verify() {
       classTag != CLASS_RECORD &&
       classTag != CLASS_UNION)
     INT_FATAL(this, "Bad ClassType::classTag");
-  if (fields->parent != this || inherits->parent != this)
+  if (fields.parent != this || inherits.parent != this)
     INT_FATAL(this, "Bad AList::parent in ClassType");
 }
 
@@ -332,8 +329,10 @@ ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
   copy_type->isIterator = isIterator;
   copy_type->outer = outer;
-  copy_type->fields->insertAtTail(COPY_INT(fields));
-  copy_type->inherits->insertAtTail(COPY_INT(inherits));
+  for_alist(expr, fields)
+    copy_type->fields.insertAtTail(COPY_INT(expr));
+  for_alist(expr, inherits)
+    copy_type->inherits.insertAtTail(COPY_INT(expr));
   for_fields(field, copy_type) {
     if (FnSymbol* fn = toFnSymbol(field))
       copy_type->methods.add(fn);
@@ -360,9 +359,9 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
       if (def->parentSymbol || def->list)
         def->remove();
       if (tail)
-        fields->insertAtTail(def);
+        fields.insertAtTail(def);
       else
-        fields->insertAtHead(def);
+        fields.insertAtHead(def);
     }
   }
 }
@@ -446,7 +445,7 @@ Symbol* ClassType::getField(const char* name) {
 
 
 Symbol* ClassType::getField(int i) {
-  return toDefExpr(fields->get(i))->sym;
+  return toDefExpr(fields.get(i))->sym;
 }
 
 

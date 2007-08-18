@@ -28,7 +28,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
   // Find all the args that should be heap allocated -> heapList
   forv_Vec(BlockStmt, block, blocks) {
     if (block->blockTag == BLOCK_BEGIN) {
-      CallExpr* call = toCallExpr(block->body->tail);
+      CallExpr* call = toCallExpr(block->body.tail);
       INT_ASSERT(call);
       for_alist(expr, block->body) {
         if (CallExpr* move = toCallExpr(expr)) {
@@ -120,7 +120,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                                                 var->refc,
                                                 var->refcMutex));
                 BlockStmt *mainfb = toBlockStmt(def->parentExpr);
-                Expr      *laststmt = mainfb->body->last();
+                Expr      *laststmt = mainfb->body.last();
                 CallExpr* ret = toCallExpr(laststmt);
                 if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
                   laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
@@ -188,7 +188,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
           Symbol  *var = s->var; // arg or var
           var->isConcurrent = true;
           VarSymbol* field = new VarSymbol(astr("_", intstring(i), "_", var->name), var->type);
-          ctype->fields->insertAtTail(new DefExpr(field));
+          ctype->fields.insertAtTail(new DefExpr(field));
           i++;
         }
         mod->block->insertAtHead(new DefExpr(new_c));
@@ -297,15 +297,15 @@ insertWideReferences(void) {
               TypeSymbol* ts =
                 new TypeSymbol(astr("_wide_", base->symbol->cname), wide);
               theProgram->block->insertAtTail(new DefExpr(ts));
-              wide->fields->insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
-              wide->fields->insertAtTail(new DefExpr(new VarSymbol("addr", base)));
+              wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+              wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", base)));
             }
             VarSymbol* tmp = new VarSymbol("_tmp", wide);
             on->insertBefore(new DefExpr(tmp));
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(1), locale));
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(2), actual->remove()));
             VarSymbol* field = new VarSymbol(astr("_f", intstring(i)), wide);
-            ct->fields->insertAtTail(new DefExpr(field));
+            ct->fields.insertAtTail(new DefExpr(field));
             i++;
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ci, field, tmp));
             Vec<SymExpr*> usedefs;
@@ -359,7 +359,7 @@ insertWideReferences(void) {
             formal->defPoint->remove();
           }
           call->insertAtTail(ci);
-          fn->formals->insertAtTail(new DefExpr(arg));
+          fn->formals.insertAtTail(new DefExpr(arg));
           on->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, ci));
         }
       }

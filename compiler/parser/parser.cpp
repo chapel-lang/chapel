@@ -30,11 +30,12 @@ static char* filenameToModulename(char* filename) {
   return modulename;
 }
 
-bool containsOnlyModules(AList* stmts) {
-  for_alist(stmt, stmts) {
+static bool
+containsOnlyModules(BlockStmt* block) {
+  for_alist(stmt, block->body) {
     bool isModuleDef = false;
     if (BlockStmt* block = toBlockStmt(stmt))
-      stmt = block->body->first();
+      stmt = block->body.first();
     if (DefExpr* defExpr = toDefExpr(stmt))
       if (toModuleSymbol(defExpr->sym))
         isModuleDef = true;
@@ -64,12 +65,12 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   closeInputFile(yyin);
 
-  if (!containsOnlyModules(yyblock->body)) {
+  if (!containsOnlyModules(yyblock)) {
     char* modulename = filenameToModulename(filename);
     if (!strcmp(modulename, "ChapelStandard")) {
       // Put the code from the ChapelStandard file into the program module
       // instead of creating a new module for it.
-      theProgram->initFn->insertAtTail(yyblock->body);
+      theProgram->initFn->insertAtTail(&yyblock->body);
       return NULL;
     } else
       newModule = build_module(modulename, moduletype, yyblock);
@@ -79,7 +80,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   } else {
     for_alist(stmt, yyblock->body) {
       if (BlockStmt* block = toBlockStmt(stmt))
-        stmt = block->body->first();
+        stmt = block->body.first();
       if (DefExpr* defExpr = toDefExpr(stmt))
         if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym)) {
           theProgram->block->insertAtTail(defExpr->remove());

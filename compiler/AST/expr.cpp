@@ -311,9 +311,9 @@ DefExpr::copyInner(ASTMap* map) {
 
 void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == init) {
-    init = toExpr(new_ast);
+    init = new_ast;
   } else if (old_ast == exprType) {
-    exprType = toExpr(new_ast);
+    exprType = new_ast;
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild");
   }
@@ -372,7 +372,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(NULL),
   partialTag(false),
   methodTag(false),
@@ -389,14 +389,14 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(prim),
   partialTag(false),
   methodTag(false),
@@ -406,13 +406,13 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(primitives[prim]),
   partialTag(false),
   methodTag(false),
@@ -422,7 +422,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 
@@ -430,7 +430,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
-  argList(new AList()),
+  argList(),
   primitive(NULL),
   partialTag(false),
   methodTag(false),
@@ -440,14 +440,14 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 
 CallExpr::CallExpr(BaseAST* base, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(NULL),
   partialTag(false),
   methodTag(false),
@@ -461,53 +461,51 @@ CallExpr::CallExpr(BaseAST* base, AList* args) :
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
   }
   callExprHelper(this, args);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(prim),
   partialTag(false),
   methodTag(false),
   square(false)
 {
   callExprHelper(this, args);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
-  argList(new AList()),
+  argList(),
   primitive(primitives[prim]),
   partialTag(false),
   methodTag(false),
   square(false)
 {
   callExprHelper(this, args);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 CallExpr::CallExpr(const char* name, AList* args) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
-  argList(new AList()),
+  argList(),
   primitive(NULL),
   partialTag(false),
   methodTag(false),
   square(false)
 {
   callExprHelper(this, args);
-  argList->parent = this;
+  argList.parent = this;
 }
 
 
-CallExpr::~CallExpr() {
-  delete argList;
-}
+CallExpr::~CallExpr() { }
 
 
 void CallExpr::verify() {
@@ -515,14 +513,14 @@ void CallExpr::verify() {
   if (astType != EXPR_CALL) {
     INT_FATAL(this, "Bad CallExpr::astType");
   }
-  if (argList->parent != this)
+  if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
   if (normalized && isPrimitive(PRIMITIVE_RETURN)) {
     FnSymbol* fn = toFnSymbol(parentSymbol);
     SymExpr* sym = toSymExpr(get(1));
     if (!fn)
       INT_FATAL(this, "Return is not in a function.");
-    if (fn->body->body->last() != this)
+    if (fn->body->body.last() != this)
       INT_FATAL(this, "Return is in middle of function.");
     if (!sym)
       INT_FATAL(this, "Return does not return a symbol.");
@@ -534,9 +532,11 @@ CallExpr*
 CallExpr::copyInner(ASTMap* map) {
   CallExpr *_this = 0;
   if (primitive)
-    _this = new CallExpr(primitive, COPY_INT(argList));
+    _this = new CallExpr(primitive);
   else
-    _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
+    _this = new CallExpr(COPY_INT(baseExpr));
+  for_actuals(expr, this)
+    _this->insertAtTail(COPY_INT(expr));
   _this->primitive = primitive;;
   _this->partialTag = partialTag;
   _this->methodTag = methodTag;
@@ -547,7 +547,7 @@ CallExpr::copyInner(ASTMap* map) {
 
 void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == baseExpr) {
-    baseExpr = toExpr(new_ast);
+    baseExpr = new_ast;
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
@@ -557,30 +557,30 @@ void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 void
 CallExpr::insertAtHead(BaseAST* ast) {
   if (Symbol* a = toSymbol(ast))
-    argList->insertAtHead(new SymExpr(a));
+    argList.insertAtHead(new SymExpr(a));
   else
-    argList->insertAtHead(toExpr(ast));
+    argList.insertAtHead(toExpr(ast));
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
   if (Symbol* a = toSymbol(ast))
-    argList->insertAtTail(new SymExpr(a));
+    argList.insertAtTail(new SymExpr(a));
   else
-    argList->insertAtTail(toExpr(ast));
+    argList.insertAtTail(toExpr(ast));
 }
 
 
 void
 CallExpr::insertAtHead(AList* ast) {
-  argList->insertAtHead(ast);
+  argList.insertAtHead(ast);
 }
 
 
 void
 CallExpr::insertAtTail(AList* ast) {
-  argList->insertAtTail(ast);
+  argList.insertAtTail(ast);
 }
 
 
@@ -598,8 +598,13 @@ bool CallExpr::isNamed(const char* name) {
 }
 
 
+int CallExpr::numActuals() {
+  return argList.length();
+}
+
+
 Expr* CallExpr::get(int index) {
-  return toExpr(argList->get(index));
+  return argList.get(index);
 }
 
 
@@ -1500,7 +1505,7 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (SymExpr* variable = toSymExpr(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
-      if (argList->length() == 0) {
+      if (numActuals() == 0) {
         fprintf(outfile, "0");
         if (getStmtExpr() && getStmtExpr() == this)
           fprintf(outfile, ";\n");
@@ -1525,7 +1530,7 @@ void CallExpr::codegen(FILE* outfile) {
   if (SymExpr* variable = toSymExpr(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
       ClassType* ct = toClassType(toFnSymbol(variable->var)->retType);
-      toDefExpr(ct->fields->get(2))->sym->type->codegen(outfile);
+      toDefExpr(ct->fields.get(2))->sym->type->codegen(outfile);
       fprintf(outfile, ", ");
     }
   }
@@ -1576,7 +1581,7 @@ NamedExpr::copyInner(ASTMap* map) {
 
 void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == actual) {
-    actual = toExpr(new_ast);
+    actual = new_ast;
   } else {
     INT_FATAL(this, "Unexpected case in NamedExpr::replaceChild");
   }
@@ -1652,7 +1657,7 @@ get_constant(Expr *e) {
 #define AST_RET_CHILD(_t, _m) \
   if (((_t*)expr)->_m) return getFirstExpr(((_t*)expr)->_m)
 #define AST_RET_LIST(_t, _m) \
-  if (((_t*)expr)->_m->head) return getFirstExpr(((_t*)expr)->_m->head)
+  if (((_t*)expr)->_m.head) return getFirstExpr(((_t*)expr)->_m.head)
 
 Expr* getFirstExpr(Expr* expr) {
   switch (expr->astType) {
@@ -1685,16 +1690,16 @@ Expr* getNextExpr(Expr* expr) {
   if (expr->next)
     return getFirstExpr(expr->next);
   if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
-    if (expr == parent->baseExpr && parent->argList->head)
-      return getFirstExpr(parent->argList->head);
+    if (expr == parent->baseExpr && parent->argList.head)
+      return getFirstExpr(parent->argList.head);
   } else if (CondStmt* parent = toCondStmt(expr->parentExpr)) {
     if (expr == parent->condExpr && parent->thenStmt)
       return getFirstExpr(parent->thenStmt);
     else if (expr == parent->thenStmt && parent->elseStmt)
       return getFirstExpr(parent->elseStmt);
   } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
-    if (expr == parent->loopInfo && parent->body->head)
-      return getFirstExpr(parent->body->head);
+    if (expr == parent->loopInfo && parent->body.head)
+      return getFirstExpr(parent->body.head);
   }
   if (expr->parentExpr)
     return expr->parentExpr;

@@ -148,7 +148,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits->length() == 0 && !ct->symbol->hasPragma("no object")) {
+  if (ct->inherits.length() == 0 && !ct->symbol->hasPragma("no object")) {
     if (ct->classTag == CLASS_RECORD) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
@@ -174,15 +174,13 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     if (ct->classTag == CLASS_CLASS && pt->classTag == CLASS_RECORD)
       USR_FATAL(expr, "Class %s inherits from record %s",
                 ct->symbol->name, pt->symbol->name);
-    if (pt->inherits) {
-      localSeenPtr->set_add(ct);
-      add_class_to_hierarchy(pt, localSeenPtr);
-    }
+    localSeenPtr->set_add(ct);
+    add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
     for_fields_backward(field, pt) {
       if (toVarSymbol(field))
-        ct->fields->insertAtHead(field->defPoint->copy());
+        ct->fields.insertAtHead(field->defPoint->copy());
     }
   }
 }
@@ -373,7 +371,7 @@ static void build_constructor(ClassType* ct) {
     outerType->addDeclarations(fn->defPoint->remove(), true);
 
     // Save the pointer to the outer class
-    ct->fields->insertAtHead(new DefExpr(outer));
+    ct->fields.insertAtHead(new DefExpr(outer));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
                                   new SymExpr(myThis),
                                   new_StringSymbol("outer"),
@@ -383,7 +381,7 @@ static void build_constructor(ClassType* ct) {
 
   forv_Vec(FnSymbol, method, ct->methods) {
     if (method && !strcmp(method->name, "initialize")) {
-      if (method->formals->length() == 2) {
+      if (method->numFormals() == 2) {
         fn->insertAtTail(new CallExpr("initialize"));
         break;
       }
@@ -445,7 +443,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 void initializeOuterModules(ModuleSymbol* mod) {
   for_alist(stmt, mod->block->body) {
     if (BlockStmt* b = toBlockStmt(stmt))
-      stmt = b->body->first();
+      stmt = b->body.first();
     if (DefExpr* def = toDefExpr(stmt)) {
       if (ModuleSymbol* m = toModuleSymbol(def->sym)) {
         if (mod != theProgram) {
@@ -485,7 +483,7 @@ void cleanup(void) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (CallExpr *call = toCallExpr(ast)) {
-      if (call->isNamed("_build_array_type") && call->argList->length() == 4) {
+      if (call->isNamed("_build_array_type") && call->numActuals() == 4) {
         if (call->getStmtExpr()) {
           if (DefExpr *def = toDefExpr(call->getStmtExpr())) {
             CallExpr *tinfo = toCallExpr(def->exprType);

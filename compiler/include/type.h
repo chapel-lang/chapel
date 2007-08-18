@@ -73,9 +73,9 @@ class Type : public BaseAST {
 
 class EnumType : public Type {
  public:
-  AList* constants; // EnumSymbols
+  AList constants; // EnumSymbols
 
-  EnumType(AList* init_constants);
+  EnumType();
   ~EnumType();
   virtual void verify(); 
   COPY_DEF(EnumType);
@@ -109,8 +109,8 @@ class ClassType : public Type {
   ClassTag classTag;
   bool isIterator;
   SymScope* structScope;
-  AList* fields;
-  AList* inherits; // used from parsing, sets dispatchParents
+  AList fields;
+  AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
 
   ClassType(ClassTag initClassTag);

@@ -79,9 +79,9 @@ buildLabelStmt(const char* name) {
 
 static bool stmtIsGlob(Expr* stmt) {
   if (BlockStmt* block = toBlockStmt(stmt)) {
-    if (block->body->length() != 1)
+    if (block->length() != 1)
       return false;
-    stmt = block->body->only();
+    stmt = block->body.only();
   }
   if (DefExpr* def = toDefExpr(stmt))
     if (toFnSymbol(def->sym) ||
@@ -113,8 +113,8 @@ void createInitFn(ModuleSymbol* mod) {
   for_alist(stmt, mod->block->body) {
     if (1 || !stmtIsGlob(stmt)) {
       if (BlockStmt* block = toBlockStmt(stmt)) {
-        if (block->body->length() == 1) {
-          if (DefExpr* def = toDefExpr(block->body->only())) {
+        if (block->length() == 1) {
+          if (DefExpr* def = toDefExpr(block->body.only())) {
             if (toModuleSymbol(def->sym)) {
               // Don't move module definitions into the init function
               continue;
@@ -140,7 +140,7 @@ ModuleSymbol* build_module(const char* name, modType type, BlockStmt* block) {
 CallExpr* build_primitive_call(AList* exprs) {
   if (exprs->length() == 0)
     INT_FATAL("primitive has no name");
-  Expr* expr = toExpr(exprs->get(1));
+  Expr* expr = exprs->get(1);
   expr->remove();
   SymExpr* symExpr = toSymExpr(expr);
   if (!symExpr)
@@ -233,9 +233,9 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
-  if ((body->body->length() == 1) &&
-      toBlockStmt(body->body->only())) {
-    BlockStmt* block = toBlockStmt(body->body->only());
+  if ((body->length() == 1) &&
+      toBlockStmt(body->body.only())) {
+    BlockStmt* block = toBlockStmt(body->body.only());
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   } else {
     body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
@@ -359,7 +359,7 @@ BlockStmt* build_for_block(BlockTag tag,
   CallExpr* icall = toCallExpr(iterator);
   if (icall && icall->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
     body->loopInfo = icall;
-    if (icall->argList->length() == 4) {
+    if (icall->numActuals() == 4) {
       VarSymbol* tmp;
       Expr* actual;
       tmp = new VarSymbol("_tmp");
@@ -521,13 +521,13 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
     CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
       INT_FATAL("error in build_select");
-    if (conds->argList->length() == 0) {
+    if (conds->numActuals() == 0) {
       if (otherwise)
         USR_FATAL(selectCond, "Select has multiple otherwise clauses");
       otherwise = when;
     } else {
       Expr* expr = NULL;
-      for_alist(whenCond, conds->argList) {
+      for_actuals(whenCond, conds) {
         whenCond->remove();
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
@@ -570,13 +570,13 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
     CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
       INT_FATAL("error in build_select");
-    if (conds->argList->length() == 0) {
+    if (conds->numActuals() == 0) {
       if (has_otherwise)
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
-      for_alist(expr, exprs) {
+      for_alist(expr, *exprs) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -590,11 +590,11 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
         when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     } else {
-      if (conds->argList->length() != exprs->length())
+      if (conds->numActuals() != exprs->length())
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
-      for_alist(expr, conds->argList) {
+      for_actuals(expr, conds) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -784,8 +784,8 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     /* Only the top-level call to this function should modify the actual
        function where clause. */
     if (fn->where) {
-      where = buildLogicalAnd(fn->where->body->head->remove(), where);
-      fn->where->body->insertAtHead(where);
+      where = buildLogicalAnd(fn->where->body.head->remove(), where);
+      fn->where->body.insertAtHead(where);
     } else {
       fn->where = new BlockStmt(where);
     }

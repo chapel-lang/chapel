@@ -46,7 +46,7 @@ void cullOverReferences() {
       fn->defPoint->insertBefore(new DefExpr(copy));
       VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
       INT_ASSERT(ret->type);
-      CallExpr* call = toCallExpr(copy->body->body->last());
+      CallExpr* call = toCallExpr(copy->body->body.last());
       if (!call || !call->isPrimitive(PRIMITIVE_RETURN))
         INT_FATAL(fn, "function is not normal");
       SymExpr* se = toSymExpr(call->get(1));
