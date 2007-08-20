@@ -114501,3 +114501,24 @@ Added files:
 	chapel/test/arrays/dinan/: indef_reindex.good 
 	chapel/test/trivial/dinan/: sci_notation.good 
 
+---------------------------------------------------------------------------
+
+08/20/07 11:42:30 -- dinan
+
+Log message:
+	Checkpoint ..
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               TwoScaleCoeffs.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: HgCoeffs.chpl 
+	                                               Makefile 
+	                                               Tensor.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Tensor1d.chpl 
+	                                               Tensor2d.chpl 
+	                                               hg_coeffs.chpl 
+
