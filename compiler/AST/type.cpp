@@ -514,7 +514,11 @@ void initPrimitiveTypes(void) {
   rootScope->define(theProgram);
   createInitFn(theProgram);
   if (fNoStdIncs)
-    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr("ChapelBase")));
+    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
+                                       new SymExpr("ChapelBase")));
+  else
+    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
+                                       new SymExpr("ChapelStandard")));
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;

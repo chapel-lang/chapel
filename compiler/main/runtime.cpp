@@ -2,6 +2,7 @@
 
 ModuleSymbol* baseModule = NULL;
 ModuleSymbol* fileModule = NULL;
+ModuleSymbol* standardModule = NULL;
 ModuleSymbol* tupleModule = NULL;
 ModuleSymbol* theProgram = NULL;
 ModuleSymbol* domainModule = NULL;

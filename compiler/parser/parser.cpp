@@ -67,13 +67,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   if (!containsOnlyModules(yyblock)) {
     char* modulename = filenameToModulename(filename);
-    if (!strcmp(modulename, "ChapelStandard")) {
-      // Put the code from the ChapelStandard file into the program module
-      // instead of creating a new module for it.
-      theProgram->initFn->insertAtTail(&yyblock->body);
-      return NULL;
-    } else
-      newModule = build_module(modulename, moduletype, yyblock);
+    newModule = build_module(modulename, moduletype, yyblock);
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));

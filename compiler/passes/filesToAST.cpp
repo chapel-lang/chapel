@@ -19,7 +19,7 @@ static ModuleSymbol* parseStandardModule(const char* name) {
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
   if (!fNoStdIncs) {
-    parseStandardModule("ChapelStandard.chpl");
+    standardModule = parseStandardModule("ChapelStandard.chpl");
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
     tupleModule = parseStandardModule("ChapelTuple.chpl");

@@ -8,6 +8,7 @@
 
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* fileModule;
+extern ModuleSymbol* standardModule;
 extern ModuleSymbol* tupleModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* domainModule;
