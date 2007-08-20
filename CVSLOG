@@ -114490,3 +114490,14 @@ Added files:
 	chapel/test/trivial/dinan/: sci_notation.chpl 
 	                            sci_notation.future 
 
+---------------------------------------------------------------------------
+
+08/20/07 10:10:17 -- dinan
+
+Log message:
+	Whoops, forgot the goods.
+
+Added files:
+	chapel/test/arrays/dinan/: indef_reindex.good 
+	chapel/test/trivial/dinan/: sci_notation.good 
+
