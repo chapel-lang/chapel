@@ -30,7 +30,7 @@ binaryLiteral   0b{bit}+
 hexLiteral      0x{hexDigit}+
 intLiteral      {digit}+|{binaryLiteral}|{hexLiteral}
 exponent        [Ee][\+\-]?{digit}+
-floatLiteral    {digit}*"."{digit}+{exponent}?
+floatLiteral    {digit}*"."{digit}+{exponent}?|{digit}+{exponent}
 
 
 %%
