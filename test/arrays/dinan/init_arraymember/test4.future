@@ -1,0 +1,1 @@
+bug: Generated code seg faults when initializing an array member from a function call
