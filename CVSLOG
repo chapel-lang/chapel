@@ -114572,3 +114572,14 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+08/20/07 14:13:23 -- dinan
+
+Log message:
+	Interesting, this code causes a seg fault during code generation.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+
