@@ -114479,3 +114479,14 @@ Modified files:
 	chapel/compiler/parser/: parser.cpp 
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+08/20/07 09:56:38 -- dinan
+
+Log message:
+	Future for constants of the form "1e-5"
+
+Added files:
+	chapel/test/trivial/dinan/: sci_notation.chpl 
+	                            sci_notation.future 
+
