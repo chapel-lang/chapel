@@ -91,41 +91,40 @@ localCopyPropagationCore(BasicBlock* bb,
                          Vec<SymExpr*>& defSet) {
 
   forv_Vec(Expr, expr, bb->exprs) {
-    if (CallExpr* call = toCallExpr(expr)) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, expr);
 
-      Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
-
-      //
-      // replace uses with available copies
-      //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (useSet.set_in(se)) {
-            if (Symbol* sym = available.get(se->var)) {
-              if (!invalidateCopies(se, defSet, useSet))
-                se->var = sym;
-            }
+    //
+    // replace uses with available copies
+    //
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* se = toSymExpr(ast)) {
+        if (useSet.set_in(se)) {
+          if (Symbol* sym = available.get(se->var)) {
+            if (!invalidateCopies(se, defSet, useSet))
+              se->var = sym;
           }
         }
       }
+    }
 
-      //
-      // invalidate available copies based on defs
-      //  also if a reference to a variable is taken since the reference
-      //  can be assigned
-      //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (invalidateCopies(se, defSet, useSet)) {
-            removeAvailable(available, reverseAvailable, se->var);
-          }
+    //
+    // invalidate available copies based on defs
+    //  also if a reference to a variable is taken since the reference
+    //  can be assigned
+    //
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* se = toSymExpr(ast)) {
+        if (invalidateCopies(se, defSet, useSet)) {
+          removeAvailable(available, reverseAvailable, se->var);
         }
       }
+    }
 
-      //
-      // insert pairs into available copies map
-      //
+    //
+    // insert pairs into available copies map
+    //
+    if (CallExpr* call = toCallExpr(expr))
       if (call->isPrimitive(PRIMITIVE_MOVE))
         if (SymExpr* rhs = toSymExpr(call->get(2)))
           if (SymExpr* lhs = toSymExpr(call->get(1)))
@@ -133,7 +132,6 @@ localCopyPropagationCore(BasicBlock* bb,
               if (defSet.set_in(lhs))
                 if (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate())
                   makeAvailable(available, reverseAvailable, lhs->var, rhs->var);
-    }
   }
 }
 
