@@ -5,7 +5,7 @@ interval) solely to make the 1d example standalone.
 */
 module TwoScale {
     use Math;
-    use hg;
+    use HgCoeffs;
   
     /** Return the two scale coeffs for k.
         @param k    two scale coeffs for k
@@ -104,6 +104,7 @@ module TwoScale {
     }
 
     // test things out to see if they work
+    /*
     def main () {
         for k in 1..getMaxK() {            
             var hg = getCoeffs(k);
@@ -116,4 +117,5 @@ module TwoScale {
         // test exception
         var hg = getCoeffs(getMaxK()+1);
     }
+    */
 }

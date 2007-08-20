@@ -13,6 +13,7 @@ class FTree {
   }
 }
 
+/*
 def main() {
   var f = FTree();
 
@@ -23,3 +24,4 @@ def main() {
   for (i, j) in [0..2, 0..2] do
     writeln("(",i,", ",j,") = ", f[i, j]);
 }
+*/

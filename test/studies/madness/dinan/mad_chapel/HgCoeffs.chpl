@@ -1,4 +1,4 @@
-module hg {
+//module hg {
   config const hg_inputfile = "hg_coeffs.dat";
   var hg_maxK: int;
 
@@ -48,4 +48,4 @@ module hg {
 
   // --- Initialization --- //
   hg_readCoeffs(hg_inputfile);
-}
+//}

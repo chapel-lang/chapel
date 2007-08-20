@@ -75,6 +75,3 @@ class DTest3: Fn1d {
 }
 
 var dtest3 = DTest3();
-
-def main() {
-}
