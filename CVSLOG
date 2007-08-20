@@ -114522,3 +114522,22 @@ Removed files:
 	                                               Tensor2d.chpl 
 	                                               hg_coeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/20/07 11:48:04 -- deitz
+
+Log message:
+	Reworked the implementation of the available copies map in copy
+	propagation to hash in both directions via a reverse hash map where
+	the values in the reverse hash map are vectors of keys in the forward
+	hash map.  This allows us to speed up the code to invalidate available
+	copies and lowers the asymptotic complexity from O(n^2) to O(n).
+	
+	This speeds up the time spent in the copy propagation pass by 41% for
+	trivial/shannon/compSampler (1.885 -> 1.107 seconds) and by 69% for
+	npb/ft/ft-serial (3.894 -> 1.212 seconds).  There is no measurable
+	change for arrays/deitz/jacobi.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
