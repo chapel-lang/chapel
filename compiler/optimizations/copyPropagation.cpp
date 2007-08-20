@@ -15,77 +15,125 @@ bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
     !var->isConcurrent;
 }
 
-bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet) {
+bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& useSet) {
   if (defSet.set_in(se))
     return true;
-  if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-    if (parent->isPrimitive(PRIMITIVE_SET_REF))
-      return true;
-    if (isRecordType(se->var->type)) {
-      if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
+  if (useSet.set_in(se)) {
+    if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+      if (parent->isPrimitive(PRIMITIVE_SET_REF))
         return true;
-      if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)
-        return true;
+      if (isRecordType(se->var->type)) {
+        if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
+          return true;
+        if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)
+          return true;
+      }
     }
   }
   return false;
 }
 
+//
+// The keys in the ReverseAvailableMap are the values in the
+// AvailableMap.  Its values are the keys in the AvailableMap so there
+// may be more than one.
+//
 typedef Map<Symbol*,Symbol*> AvailableMap;
 typedef MapElem<Symbol*,Symbol*> AvailableMapElem;
+typedef Map<Symbol*,Vec<Symbol*>*> ReverseAvailableMap;
+
+
+static void
+makeAvailable(AvailableMap& available,
+              ReverseAvailableMap& reverseAvailable,
+              Symbol* key,
+              Symbol* value) {
+  Vec<Symbol*>* keys = reverseAvailable.get(value);
+  if (!keys)
+    keys = new Vec<Symbol*>();
+  keys->add(key);
+  reverseAvailable.put(value, keys);
+  available.put(key, value);
+}
+
+
+static void
+removeAvailable(AvailableMap& available,
+                ReverseAvailableMap& reverseAvailable,
+                Symbol* sym) {
+  Vec<Symbol*>* keys = reverseAvailable.get(sym);
+  if (keys) {
+    forv_Vec(Symbol, key, *keys) {
+      if (sym == available.get(key))
+        available.put(key, NULL);
+    }
+  }
+  available.put(sym, NULL);
+}
+
+
+static void
+freeAvailable(AvailableMap& available,
+              ReverseAvailableMap& reverseAvailable) {
+  Vec<Symbol*> values;
+  reverseAvailable.get_keys(values);
+  forv_Vec(Symbol, value, values) {
+    delete reverseAvailable.get(value);
+  }
+}
+
 
 static void
 localCopyPropagationCore(BasicBlock* bb,
                          AvailableMap& available,
+                         ReverseAvailableMap& reverseAvailable,
                          Vec<SymExpr*>& useSet,
                          Vec<SymExpr*>& defSet) {
 
   forv_Vec(Expr, expr, bb->exprs) {
+    if (CallExpr* call = toCallExpr(expr)) {
 
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, expr);
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, expr);
 
-    //
-    // replace uses with available copies
-    //
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (useSet.set_in(se)) {
-          if (Symbol* sym = available.get(se->var)) {
-            if (!invalidateCopies(se, defSet))
-              se->var = sym;
+      //
+      // replace uses with available copies
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          if (useSet.set_in(se)) {
+            if (Symbol* sym = available.get(se->var)) {
+              if (!invalidateCopies(se, defSet, useSet))
+                se->var = sym;
+            }
           }
         }
       }
-    }
 
-    //
-    // invalidate available copies based on defs
-    //  also if a reference to a variable is taken since the reference
-    //  can be assigned
-    //
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (invalidateCopies(se, defSet)) {
-          form_Map(AvailableMapElem, pair, available) {
-            if (pair->key == se->var || pair->value == se->var)
-              available.put(pair->key, NULL);
+      //
+      // invalidate available copies based on defs
+      //  also if a reference to a variable is taken since the reference
+      //  can be assigned
+      //
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          if (invalidateCopies(se, defSet, useSet)) {
+            removeAvailable(available, reverseAvailable, se->var);
           }
         }
       }
-    }
 
-    //
-    // insert pairs into available copies map
-    //
-    if (CallExpr* call = toCallExpr(expr))
+      //
+      // insert pairs into available copies map
+      //
       if (call->isPrimitive(PRIMITIVE_MOVE))
-        if (SymExpr* lhs = toSymExpr(call->get(1)))
-          if (SymExpr* rhs = toSymExpr(call->get(2)))
-            if (lhs->var != rhs->var &&
-                defSet.set_in(lhs) &&
-                (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate()))
-              available.put(lhs->var, rhs->var);
+        if (SymExpr* rhs = toSymExpr(call->get(2)))
+          if (SymExpr* lhs = toSymExpr(call->get(1)))
+            if (lhs->var != rhs->var)
+              if (defSet.set_in(lhs))
+                if (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate())
+                  makeAvailable(available, reverseAvailable, lhs->var, rhs->var);
+    }
   }
 }
 
@@ -128,7 +176,8 @@ void localCopyPropagation(FnSymbol* fn) {
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     AvailableMap available;
-    localCopyPropagationCore(bb, available, useSet, defSet);
+    ReverseAvailableMap reverseAvailable;
+    localCopyPropagationCore(bb, available, reverseAvailable, useSet, defSet);
   }
 }
 
@@ -214,7 +263,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
-          if (invalidateCopies(se, defSet)) {
+          if (invalidateCopies(se, defSet, useSet)) {
             for (int i = start; i < _LHS.n; i++) {
               if (_LHS.v[i]) {
                 if (_LHS.v[i]->var == se->var || _RHS.v[i]->var == se->var) {
@@ -331,7 +380,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
-          if (invalidateCopies(se, defSet)) {
+          if (invalidateCopies(se, defSet, useSet)) {
             for (int j = 0; j < start; j++) {
               if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
                 KILL.v[i]->v[j] = true;
@@ -371,15 +420,16 @@ void globalCopyPropagation(FnSymbol* fn) {
   for (int i = 0; i < fn->basicBlocks->n; i++) {
     BasicBlock* bb = fn->basicBlocks->v[i];
     AvailableMap available;
+    ReverseAvailableMap reverseAvailable;
     bool proceed = false;
     for (int j = 0; j < LHS.n; j++) {
       if (IN.v[i]->v[j]) {
-        available.put(LHS.v[j]->var, RHS.v[j]->var);
+        makeAvailable(available, reverseAvailable, LHS.v[j]->var, RHS.v[j]->var);
         proceed = true;
       }
     }
     if (proceed)
-      localCopyPropagationCore(bb, available, useSet, defSet);
+      localCopyPropagationCore(bb, available, reverseAvailable, useSet, defSet);
   }
 
   forv_Vec(Vec<bool>, copy, COPY)
