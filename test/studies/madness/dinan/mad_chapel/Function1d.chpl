@@ -18,23 +18,24 @@ class Function1d {
     var d = FTree();
 
     // two scale relationship matrices
-    var hg, hgT;
+    var hg  = getCoeffs(k); //FIXME: rename this fcn
+    var hgT = transpose(tensorDup(hg)); // FIXME: need to copy hg here
 
     // Quadrature stuff
-    var quad_npt;
-    var quad_x;    // points
-    var quad_w;    // weights
-    var quad_phi;  // phi[point,i]
-    var quad_phiT; // phi[point,i] transpose
-    var quad_phiw; // phi[point,i]*weight[point]
+    var quad_x    = getGLPoints(k);    // points
+    var quad_w    = getGLWeights(k);   // weights
+    var quad_npt  = quad_w.numElements;
+    var quad_phi:  [0..quad_npt-1, 0..k-1] real;  // phi[point,i]
+    var quad_phiT: [0..quad_npt-1, 0..k-1] real;  // phi[point,i] transpose
+    var quad_phiw: [0..quad_npt-1, 0..k-1] real;  // phi[point,i]*weight[point]
     
     // blocks of the block tridiagonal derivative operator
-    var rm, r0, rp;
+    //var rm, r0, rp;
     
     // constructors and helpers
 
     def initialize() {
-        init_twoscale(k);
+      writeln("Creating Function: k=", k, " thresh=", thresh);
         init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
@@ -47,21 +48,16 @@ class Function1d {
         
     }
 
-    def init_twoscale(order: int) {
-        hg  = twoScaleCoeffs(order);
-        hgT = transpose(hg);
-    }
-    
     def init_quadrature(order: int) {
-        quad_x   = getGLPoints(order);
-        quad_w   = getGLWeights(order);
-        quad_npt = quad_w.numElements;
+        //quad_x   = getGLPoints(order);
+        //quad_w   = getGLWeights(order);
+        //quad_npt = quad_w.numElements;
 
         for i in 0..quad_npt {
             var p = phi(quad_x[i], k);
             for m in 0..k {
-                quad_phi[i][m]  = p[m];
-                quad_phiw[i][m] = quad_w[i]*p[m];
+                quad_phi[i, m]  = p[m];
+                quad_phiw[i, m] = quad_w[i]*p[m];
             }
         }
         quad_phiT = transpose(quad_phi);
@@ -137,5 +133,6 @@ def main() {
 
   writeln("Mad Chapel -- One Step Beyond");
 
-  var F = Function1d();//f=test1);
+  var F: Function1d;
+//  var F2 = Function1d(f=test1);
 }
