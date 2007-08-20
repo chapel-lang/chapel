@@ -114597,3 +114597,16 @@ Modified files:
 Removed files:
 	chapel/test/trivial/dinan/: sci_notation.future 
 
+---------------------------------------------------------------------------
+
+08/20/07 15:57:32 -- diten
+
+Log message:
+	Add a simplified test case for a seg fault during code generation that Jim
+	found.
+
+Added files:
+	chapel/test/classes/diten/: class_with_domain_and_array.chpl 
+	                            class_with_domain_and_array.future 
+	                            class_with_domain_and_array.good 
+
