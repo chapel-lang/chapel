@@ -114583,3 +114583,17 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/20/07 15:19:29 -- deitz
+
+Log message:
+	Enabled the ability to write a real literal without the fractional part if
+	an exponent is specified, e.g., 1e4.  Removed a .future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex 
+	chapel/spec/: Types.tex 
+Removed files:
+	chapel/test/trivial/dinan/: sci_notation.future 
+
