@@ -65,6 +65,7 @@ class CondStmt : public Expr {
   BlockStmt* elseStmt;
 
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
+  Expr* fold_cond_stmt();
   virtual void verify();
   COPY_DEF(CondStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);

@@ -73,6 +73,8 @@ void deadExpressionElimination(FnSymbol* fn) {
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
               expr->remove();
+    } else if (CondStmt* cond = toCondStmt(ast)) {
+      cond->fold_cond_stmt();
     }
   }
 }

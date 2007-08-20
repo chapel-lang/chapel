@@ -296,6 +296,36 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 }
 
 
+Expr*
+CondStmt::fold_cond_stmt() {
+  Expr* result = NULL;
+  if (SymExpr* cond = toSymExpr(condExpr)) {
+    if (VarSymbol* var = toVarSymbol(cond->var)) {
+      if (var->immediate &&
+          var->immediate->const_kind == NUM_KIND_UINT &&
+          var->immediate->num_index == INT_SIZE_1) {
+        result = new CallExpr(PRIMITIVE_NOOP);
+        this->insertBefore(result);
+        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
+          Expr* then_stmt = thenStmt;
+          then_stmt->remove();
+          this->replace(then_stmt);
+        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
+          Expr* else_stmt = elseStmt;
+          if (else_stmt) {
+            else_stmt->remove();
+            this->replace(else_stmt);
+          } else {
+            this->remove();
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+
 void CondStmt::verify() {
   Expr::verify();
   if (astType != STMT_COND) {

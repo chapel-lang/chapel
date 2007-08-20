@@ -1795,33 +1795,6 @@ expand_for_loop(CallExpr* call) {
   return result;
 }
 
-static Expr* fold_cond_stmt(CondStmt* if_stmt) {
-  Expr* result = NULL;
-  if (SymExpr* cond = toSymExpr(if_stmt->condExpr)) {
-    if (VarSymbol* var = toVarSymbol(cond->var)) {
-      if (var->immediate &&
-          var->immediate->const_kind == NUM_KIND_UINT &&
-          var->immediate->num_index == INT_SIZE_1) {
-        result = new CallExpr(PRIMITIVE_NOOP);
-        if_stmt->insertBefore(result);
-        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
-          Expr* then_stmt = if_stmt->thenStmt;
-          then_stmt->remove();
-          if_stmt->replace(then_stmt);
-        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
-          Expr* else_stmt = if_stmt->elseStmt;
-          if (else_stmt) {
-            else_stmt->remove();
-            if_stmt->replace(else_stmt);
-          } else {
-            if_stmt->remove();
-          }
-        }
-      }
-    }
-  }
-  return result;
-}
 
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
@@ -2458,7 +2431,7 @@ postFold(Expr* expr) {
 
   if (CondStmt* cond = toCondStmt(result->parentExpr)) {
     if (cond->condExpr == result) {
-      if (Expr* expr = fold_cond_stmt(cond)) {
+      if (Expr* expr = cond->fold_cond_stmt()) {
         result = expr;
       }
     }
