@@ -114541,3 +114541,22 @@ Log message:
 Modified files:
 	chapel/compiler/optimizations/: copyPropagation.cpp 
 
+---------------------------------------------------------------------------
+
+08/20/07 13:54:43 -- diten
+
+Log message:
+	Make the fold_cond_stmt function that was static in functionResolution.cpp into
+	a method in the CondStmt class. Then, it can be called when CondStmts are
+	encountered in the dead code elimination phase to remove dead branches that
+	weren't caught in function resolution because of setter fields not being
+	defined yet.
+	
+	This cuts the number of lines of C generated for the standard modules by 99.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/optimizations/: deadCodeElimination.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
