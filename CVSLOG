@@ -114878,3 +114878,16 @@ Added files:
 	                              readDirInsteadOfFile.future 
 	                              readDirInsteadOfFile.good 
 
+---------------------------------------------------------------------------
+
+08/21/07 16:50:18 -- dinan
+
+Log message:
+	Worked around arrays of arrays using an array of records.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               Makefile 
+	                                               Tensor.chpl 
+
