@@ -4,7 +4,7 @@ class FTree {
 }
 
 class Function1d {
-  var s: FTree();
+  var s = FTree();
 }
 
 def main() {
