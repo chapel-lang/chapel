@@ -114610,3 +114610,36 @@ Added files:
 	                            class_with_domain_and_array.future 
 	                            class_with_domain_and_array.good 
 
+---------------------------------------------------------------------------
+
+08/20/07 16:58:24 -- dinan
+
+Log message:
+	Several tests that attempt to initialize an array member from a function.  Most
+	of these are futures except for test6.chpl which uses initialize() as a
+	workaround.
+
+Added files:
+	chapel/test/arrays/dinan/init_arraymember/: test.chpl 
+	                                            test.future 
+	                                            test.good test1.chpl 
+	                                            test1.future 
+	                                            test1.good 
+	                                            test2.chpl 
+	                                            test2.future 
+	                                            test2.good 
+	                                            test3.chpl 
+	                                            test3.future 
+	                                            test3.good 
+	                                            test4.chpl 
+	                                            test4.future 
+	                                            test4.good 
+	                                            test5.chpl 
+	                                            test5.future 
+	                                            test5.good 
+	                                            test6.chpl 
+	                                            test6.good 
+	                                            test7.chpl 
+	                                            test7.future 
+	                                            test7.good 
+
