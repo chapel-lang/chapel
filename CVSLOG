@@ -114809,3 +114809,45 @@ Added files:
 	                              where_array_ranks.future 
 	                              where_array_ranks.good 
 
+---------------------------------------------------------------------------
+
+08/21/07 16:12:32 -- diten
+
+Log message:
+	Add the compiler command line flag --main-module which takes a module name as
+	an argument. The module specified must be a top level module.  If it contains
+	a zero argument function called main, that is used as the program entry point,
+	and if not, a zero argument main function that uses the specified module is
+	inserted into that module.
+	
+	The tests added in modules/diten/main-module-flag/ show the expected behavior
+	pretty well.
+	
+	Updated the tests that check the help message to add the new flag.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+Added files:
+	chapel/test/modules/diten/main-module-flag/: 
+	                                             main_with_formals.chpl 
+	                                             main_with_formals.good 
+	                                             multiple_mains1.chpl 
+	                                             multiple_mains1.good 
+	                                             multiple_mains2.chpl 
+	                                             multiple_mains2.compopts 
+	                                             multiple_mains2.good 
+	                                             multiple_mains3.chpl 
+	                                             multiple_mains3.compopts 
+	                                             multiple_mains3.good 
+	                                             multiple_modules_no_main1.chpl 
+	                                             multiple_modules_no_main1.good 
+	                                             multiple_modules_no_main2.chpl 
+	                                             multiple_modules_no_main2.compopts 
+	                                             multiple_modules_no_main2.good 
+	                                             multiple_modules_no_main3.chpl 
+	                                             multiple_modules_no_main3.compopts 
+	                                             multiple_modules_no_main3.good 
+
