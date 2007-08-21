@@ -114733,3 +114733,61 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/21/07 13:25:18 -- bradc
+
+Log message:
+	Hacking the GASNet code in order to resolve the races
+	on stdout/stderr w.r.t. exiting, which also seems to
+	resolve the deadlock on programs that read from stdin.
+	Thanks to Dan Bonachea to suggesting this hack.  In his
+	words:
+	
+	----------------------------------------------------
+	AMUDP (which underlies udp-conduit) has two possible
+	modes of operation for output forwarding:
+	
+	In the first mode, AMUDP will fork the workers or ssh
+	processes and leave stdout alone, leaving it up to the
+	ssh client and kernel to deliver and combine stdout
+	from the workers to the console.
+	
+	In the second mode, AMUDP creates its own sockets to
+	perform stdout redirection (ie using dup2() to replace
+	FD_STDIN with  its own socket that connects to the console
+	process). Sometimes  this option can help with output
+	problems, although it results in more sockets on the console
+	process (reducing scalability wrt file descriptor limits).
+	I've seen at some cases (on non-Linux OS's like HPUX-64)
+	where this results in flaky output behavior similar to what
+	you describe. In at least one case this is due to some wacky
+	behavior in fcntrl(FIONREAD), but I suspect another issue
+	might be the separation between the stdout socket and the
+	control socket (used to coordinate shutdowns) might allow
+	a race where the shutdown message beats some final stdout
+	output to the console process (in fact there's a comment to
+	that effect around amudp_spmd.cpp:799). This is one reason
+	why a "superstitious" pause before exit could possibly solve
+	the output loss (admittedly a dirty solution).
+	----------------------------------------------------
+	
+	In future versions, this choice will be settable using
+	an environment variable.  For now, I've hardcoded it
+	to the first mode, which seems to have solved all of our
+	woes.  Dan also has a patch that he may have me try that
+	ought to solve the output race problem in the second
+	mode.
+	
+	As part of this change, I also backed out my addition
+	of a virtual flush() call and invocations to that call
+	within write() from the other day.  While they might
+	still be good ideas, I didn't want them to get rushed
+	in simply due to superstition in the GASNet calls (which
+	it turned out to be -- they simply made the race less
+	likely to occur; didn't solve it).
+
+Modified files:
+	chapel/modules/standard/: ChapelIO.chpl 
+	chapel/third-party/gasnet/other/amudp/: amudp_internal.h 
+
