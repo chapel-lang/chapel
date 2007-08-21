@@ -114695,3 +114695,16 @@ Log message:
 Modified files:
 	chapel/util/pastPerformance/: getoldperf 
 
+---------------------------------------------------------------------------
+
+08/21/07 10:59:05 -- dinan
+
+Log message:
+	Phi norms verified.  Having problems with "abstract" base class Fn1d.  Fn1d.f()
+	is declared to return real but is unimplemented in the base class so the
+	compiler insists that on any instance, Fn1d.f() does not return anything.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+
