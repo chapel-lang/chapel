@@ -1,27 +1,38 @@
+record Coeff {
+  var dom  : domain(1);
+  var data : [dom] real;
+}
+
 class FTree {
-  type coeff_t = real;
-  type idx_t   = 2*int;
+  var  order    : int;
+  var  coeffDom = [0..order-1];
+  type idx_t    = 2*int;
 
   var  indices: domain(idx_t);
-  var  nodes  : [indices] coeff_t;
+  var  nodes  : [indices] Coeff;
 
+  def initialize() {
+    if order == 0 then
+      halt("FTree must be initialized with an order > 0");
+  }
+  
   def this(lvl: int, idx: int) var {
-    if !indices.member((lvl, idx)) then
+    if !indices.member((lvl, idx)) {
       indices += ((lvl, idx));
+      nodes[(lvl, idx)] = Coeff(coeffDom);
+    }
 
-    return nodes[(lvl, idx)];
+    return nodes[(lvl, idx)].data;
   }
 }
 
-/*
 def main() {
-  var f = FTree();
-
+  var f = FTree(2);
+  
   for (i, j) in [0..2, 0..2] do
-    f[i, j] = i*3+j;
+    f[i, j] = (i, j);
 
 
   for (i, j) in [0..2, 0..2] do
     writeln("(",i,", ",j,") = ", f[i, j]);
 }
-*/

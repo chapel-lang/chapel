@@ -17,7 +17,7 @@ SOURCES= Fn1d.chpl       \
 all: 1d
 
 1d: $(SOURCES)
-	$(CC) $(CFLAGS) -o $@ $+
+	$(CC) $(CFLAGS) --main-module Function1d -o $@ $+
 
 
 .PHONY: clean

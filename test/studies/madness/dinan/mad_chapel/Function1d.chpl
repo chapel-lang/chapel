@@ -14,8 +14,8 @@ class Function1d {
     var compressed    = false;// keep track of what basis we are in
 
     // hashes for sum and difference coeffs
-    var s = FTree();
-    var d = FTree();
+    var s = FTree(order=k);
+    var d = FTree(order=k);
 
     // two-scale relationship matrices
     var hgDom = [0..2*k-1, 0..2*k-1];
@@ -143,8 +143,8 @@ class Function1d {
         if((nf < thresh) || (n >= (max_level-1)))
         {
             // HashMap.put(Object key, Object value)
-            //this.s[n+1].put(new Integer(2*l  ), s0);
-            //this.s[n+1].put(new Integer(2*l+1), s1);
+            s[n+1, 2*l]   = s0;
+            s[n+1, 2*l+1] = s1;
         }
         else
         {
