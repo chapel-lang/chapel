@@ -42,6 +42,7 @@ Miscellaneous Flags:
       --explain-call <call>[:<module>][:<line>]
                                          Explain resolution of call
       --instantiate-max <max>            Limit number of instantiations
+      --main-module                      Specify module where main is located
       --no-warnings                      Disable output of warnings
   -s, --set <name>[=<value>]             Set config param value
 

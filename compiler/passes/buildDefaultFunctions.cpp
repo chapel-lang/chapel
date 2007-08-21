@@ -5,6 +5,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "symscope.h"
 
 
 static void build_chpl_main(void);
@@ -179,13 +180,32 @@ static void build_getter(ClassType* ct, Symbol *field) {
 
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (!strcmp("main", fn->name) && !fn->numFormals()) {
-      if (!match) {
-        match = fn;
-      } else {
-        USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
-                  match->stringLoc());
+  if (strlen(mainModuleName) != 0) {
+    SymScope* progScope = theProgram->block->blkScope;
+    ModuleSymbol* module = toModuleSymbol(progScope->table.get(mainModuleName));
+    if (!module)
+      USR_FATAL("Couldn't find module %s", mainModuleName);
+    Vec<FnSymbol*>* mainfns = module->block->blkScope->visibleFunctions.get(canonicalize_string("main"));
+    if (!mainfns)
+      return NULL;
+    forv_Vec(FnSymbol, fn, *mainfns) {
+      if (!fn->numFormals()) {
+        if (!match) {
+          match = fn;
+        } else {
+          USR_FATAL(fn, "main multiply defined in module %s -- first occurrence at %s", mainModuleName, match->stringLoc());
+        }
+      }
+    }
+  } else {
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (!strcmp("main", fn->name) && !fn->numFormals()) {
+        if (!match) {
+          match = fn;
+        } else {
+          USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
+                    match->stringLoc());
+        }
       }
     }
   }
@@ -201,8 +221,18 @@ static void build_chpl_main(void) {
       chpl_main->retType = dtVoid;
       userModules.v[0]->block->insertAtTail(new DefExpr(chpl_main));
       normalize(chpl_main);
-    } else
+    } else if (strlen(mainModuleName) != 0) { 
+      SymScope* progScope = theProgram->block->blkScope;
+      ModuleSymbol* module = toModuleSymbol(progScope->table.get(mainModuleName));
+      if (!module)
+        USR_FATAL("Couldn't find module %s at program scope", mainModuleName);
+      chpl_main = new FnSymbol("main");
+      chpl_main->retType = dtVoid;
+      module->block->insertAtTail(new DefExpr(chpl_main));
+      normalize(chpl_main);
+    } else {
       USR_FATAL("Code defines multiple modules but no main function.");
+    }
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
     USR_FATAL(chpl_main, "Main function must be defined at module scope");
   currentLineno = -1;

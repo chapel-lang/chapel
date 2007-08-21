@@ -56,7 +56,9 @@ int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
-char configParamString[FILENAME_MAX] = "";
+//char configParamString[FILENAME_MAX] = "";
+char mainModuleName[256] = "";
+
 Map<const char*, const char*> configParamMap;
 bool debugCCode = false;
 bool optimizeCCode = false;
@@ -112,8 +114,9 @@ static ArgumentDescription arg_desc[] = {
  {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
+ {"main-module", ' ', NULL, "Specify module where main is located", "S256", mainModuleName, NULL, NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
- {"set", 's', "<name>[=<value>]", "Set config param value", "S", configParamString, NULL, readConfigParam},
+ {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfigParam},
 
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
@@ -201,7 +204,6 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
   clean_exit(status);
 }
-
 
 static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
