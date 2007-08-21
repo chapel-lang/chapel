@@ -114708,3 +114708,14 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 11:54:32 -- dinan
+
+Log message:
+	Fixed abstract base class method Fn1d.f()
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Fn1d.chpl 
+	                                               Function1d.chpl 
+
