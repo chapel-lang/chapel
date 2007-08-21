@@ -114682,3 +114682,16 @@ Modified files:
 	                                               Makefile 
 	                                               Quadrature.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 10:57:00 -- bradc
+
+Log message:
+	Adding a sanity check for the getoldperf script which
+	checks against a mistake I make every time I run it --
+	forgetting to set the CHPL_TEST_PERF_DIR environment
+	variable to indicate where output should be copied to.
+
+Modified files:
+	chapel/util/pastPerformance/: getoldperf 
+
