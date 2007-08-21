@@ -114643,3 +114643,13 @@ Added files:
 	                                            test7.future 
 	                                            test7.good 
 
+---------------------------------------------------------------------------
+
+08/20/07 17:00:57 -- deitz
+
+Log message:
+	Fixed future to use "var s = Ftree()" to initialize a field rather than "var s: Ftree()" since it captures the same issue and will continue to parse even if we disallow the latter.
+
+Modified files:
+	chapel/test/classes/diten/: class_with_domain_and_array.chpl 
+
