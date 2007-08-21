@@ -9,7 +9,8 @@ def transpose(A: [] real) where A.rank == 2 {
   return A;
 }
 
-def transform(in V, in M) { }
+// FIXME: not implemented
+def transform(in V, in M) { return V; }
 
 // Frobenius Norm -- 2-norm for Vectors
 def normf(in A) where A.rank == 1 {

@@ -6,7 +6,7 @@ use TwoScale;
 use Fn1d;
 
 class Function1d {
-    var k             = 3;    // use first k Legendre polynomials as the basis in each box
+    var k             = 5;    // use first k Legendre polynomials as the basis in each box
     var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
     var f: Fn1d       = nil;  // analytic function f(x) to be projected into the numerical represntation
     var initial_level = 2;    // initial level of refinement
@@ -52,9 +52,9 @@ class Function1d {
         // rm, r0, rp = make_dc_periodic(k)
 
         // initial refinement of analytic function f(x)
-        //if f != nil then
-        //    for l in 0..2**initial_level-1 do
-        //        refine(initial_level, l);
+        if f != nil then
+            for l in 0..2**initial_level-1 do
+                refine(initial_level, l);
        
         writeln("done.");
     }
@@ -85,7 +85,20 @@ class Function1d {
         @return    s[n][l] = integral(phi[n][l](x) * f(x))
     */
     def project(n: int, l: int) {
-    }/* 
+       var s     : [quadDom] real;
+       var h     = 0.5 ** n;
+       var scale = sqrt(h);
+
+       for mu in 0..k-1 { // quadDom.dim(1)
+            var x  = (l + quad_x[mu]) * h;
+            var fx = f.f(x);
+            for i in 0..k-1 do // quadDom.dim(2)
+                s[i] += scale * fx * quad_phiw[mu, i];
+       }
+
+       return s;
+    }
+    /* 
         Tensor1d s = new Tensor1d(this.k);
         double[] A = s.getArray();
         double[] quad_x = this.quad_x.getArray();
@@ -148,5 +161,10 @@ def main() {
   var F: Function1d = nil;
   var F2 = Function1d();
 
-  writeln("Phi Norms:\n", F2.quad_phi);
+  writeln("Phi Norms:\n", F2.quad_phi,
+          "\nPhi Transpose:\n", F2.quad_phiT,
+          "\nPhi Weights:\n", F2.quad_phiw
+  );
+
+  var F3 = Function1d(f=test1);
 }
