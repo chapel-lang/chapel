@@ -52,9 +52,11 @@ class Function1d {
         // rm, r0, rp = make_dc_periodic(k)
 
         // initial refinement of analytic function f(x)
-        if f != nil then
+        if f != nil {
+            writeln("  performing initial refinement of f(x)");
             for l in 0..2**initial_level-1 do
                 refine(initial_level, l);
+        }
        
         writeln("done.");
     }
@@ -89,7 +91,7 @@ class Function1d {
        var h     = 0.5 ** n;
        var scale = sqrt(h);
 
-       for mu in 0..k-1 { // quadDom.dim(1)
+       for mu in 0..k-1 {      // quadDom.dim(1)
             var x  = (l + quad_x[mu]) * h;
             var fx = f.f(x);
             for i in 0..k-1 do // quadDom.dim(2)
@@ -125,7 +127,9 @@ class Function1d {
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
         var s: [0..2*k-1] real;
-        
+       
+        writeln("   refine at (", n, ", ", l, ")");
+
         s[0..k-1]   = s0;
         s[k..2*k-1] = s1;
 
@@ -156,9 +160,12 @@ class Function1d {
 def main() {
   use MadFn1d;
 
-  writeln("Mad Chapel -- One Step Beyond");
+  writeln("Mad Chapel -- One Step Beyond\n");
 
-  var F: Function1d = nil;
+  writeln("** var F1 : Function1d = nil;");
+  var F1 : Function1d = nil;
+  
+  writeln("\n** var F2 = Function1d();");
   var F2 = Function1d();
 
   writeln("Phi Norms:\n", F2.quad_phi,
@@ -166,5 +173,12 @@ def main() {
           "\nPhi Weights:\n", F2.quad_phiw
   );
 
+  writeln("\n** var F3 = Function1d(f=test1);");
   var F3 = Function1d(f=test1);
+
+  writeln("Phi Norms:\n", F2.quad_phi,
+          "\nPhi Transpose:\n", F2.quad_phiT,
+          "\nPhi Weights:\n", F2.quad_phiw
+  );
+
 }
