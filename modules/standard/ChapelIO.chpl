@@ -239,7 +239,6 @@ class Writer {
       need_release = lockWrite();
     for param i in 1..n do
       args(i).writeThis(this);
-    flush();
     if need_release then
       //      on locale(0) do  // ahh!!! new instance to write; want to use array
         unlockWrite();
@@ -249,8 +248,6 @@ class Writer {
   }
   def writeln() {
     write("\n");
-  }
-  def flush() {
   }
 }
 

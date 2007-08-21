@@ -29,7 +29,7 @@
 #endif
 
 /* AMUDP system configuration parameters */
-#if PLATFORM_OS_SUPERUX || PLATFORM_OS_HPUX
+#if PLATFORM_OS_SUPERUX || PLATFORM_OS_HPUX || 1
   /* broken on SuperUX due to a bad FIONREAD implementation, which causes numBytesWaiting to fail
      also seems to possibly be some issue with a redirected stdout always triggering select, even when
      no output is waiting
