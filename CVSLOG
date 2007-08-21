@@ -114669,3 +114669,16 @@ Modified files:
 Removed files:
 	chapel/test/classes/diten/: class_with_domain_and_array.future 
 
+---------------------------------------------------------------------------
+
+08/20/07 17:34:51 -- dinan
+
+Log message:
+	Worked around array member problems.  Function1d does something now!  It
+	computes and outputs the phi coefficient matrix.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Makefile 
+	                                               Quadrature.chpl 
+
