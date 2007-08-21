@@ -114851,3 +114851,30 @@ Added files:
 	                                             multiple_modules_no_main3.compopts 
 	                                             multiple_modules_no_main3.good 
 
+---------------------------------------------------------------------------
+
+08/21/07 16:46:08 -- bradc
+
+Log message:
+	Filing two futures that have kept me and our main NSF user
+	confused for days.  The first shows that if the -s flag is
+	used on a config param that is not defined by the source
+	code, the compiler doesn't complain.  The second shows that
+	if the user tries to specify a directory as a filename, we
+	don't complain, but the lexer chokes.  In combination,
+	using "-savec output" with one dash rather than two becomes
+	a deadly combination when a subdirectory called output
+	already exists.
+	
+	I'm going to work on the readDirInsteadOfFile problem now.
+
+Added files:
+	chapel/test/compflags/bradc/: badConfigParam.chpl 
+	                              badConfigParam.compopts 
+	                              badConfigParam.future 
+	                              badConfigParam.good 
+	                              readDirInsteadOfFile.chpl 
+	                              readDirInsteadOfFile.compopts 
+	                              readDirInsteadOfFile.future 
+	                              readDirInsteadOfFile.good 
+
