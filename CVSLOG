@@ -114791,3 +114791,21 @@ Modified files:
 	chapel/modules/standard/: ChapelIO.chpl 
 	chapel/third-party/gasnet/other/amudp/: amudp_internal.h 
 
+---------------------------------------------------------------------------
+
+08/21/07 13:43:49 -- dinan
+
+Log message:
+	Having a where clause with multiple array ranks in it:
+	
+	  eg:  def f(x, y) where x.rank == 1 && y.rank == 2 { ... }
+	
+	Causes this error:
+	
+	  error: only() called on list with more than one element [alist.cpp:50]
+
+Added files:
+	chapel/test/functions/dinan/: where_array_ranks.chpl 
+	                              where_array_ranks.future 
+	                              where_array_ranks.good 
+
