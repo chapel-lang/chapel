@@ -396,6 +396,8 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
       if (def->sym->type && !types.set_in(def->sym->type->symbol))
         pruneVisit(def->sym->type->symbol, fns, types);
   }
+  if (ts->hasPragma("data class"))
+    pruneVisit(toType(ts->type->substitutions.v[0].value)->symbol, fns, types);
 }
 
 
