@@ -318,6 +318,8 @@ static void build_enum_cast_function(EnumType* et) {
   }
   fn->insertAtTail(cond);
   fn->insertAtTail(new CallExpr("halt", new_StringSymbol("illegal conversion of string \\\""), arg2, new_StringSymbol("\\\" to "), new_StringSymbol(et->symbol->name)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, 
+                                toDefExpr(et->constants.first())->sym));
 
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   def = new DefExpr(fn);
