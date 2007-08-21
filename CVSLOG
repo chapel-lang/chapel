@@ -114653,3 +114653,19 @@ Log message:
 Modified files:
 	chapel/test/classes/diten/: class_with_domain_and_array.chpl 
 
+---------------------------------------------------------------------------
+
+08/20/07 17:03:42 -- deitz
+
+Log message:
+	Fixed a bug in which a type would be considered dead and removed from
+	the AST if it was used only as the base type of the internal ddata
+	vector class.
+	
+	Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+Removed files:
+	chapel/test/classes/diten/: class_with_domain_and_array.future 
+
