@@ -114719,3 +114719,17 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Fn1d.chpl 
 	                                               Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 12:41:59 -- bradc
+
+Log message:
+	This is a trivial change: in our cast string-to-enum function,
+	I've added a return statement after a halt statement (i.e.,
+	one that should never be reached) in order to reduce the number
+	of warnings encountered in GASNet testing due to its use of
+	more warning flags on the generated code.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
