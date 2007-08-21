@@ -7,7 +7,7 @@ use Fn1d;
 
 class Function1d {
     var k             = 3;    // use first k Legendre polynomials as the basis in each box
-    var thresh        = 0.00001;// FIXME 1e-5 // truncation threshold for small wavelet coefficients
+    var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
     var f: Fn1d       = nil;  // analytic function f(x) to be projected into the numerical represntation
     var initial_level = 2;    // initial level of refinement
     var max_level     = 30;   // maximum level of refinement mostly as a sanity check
@@ -17,17 +17,21 @@ class Function1d {
     var s = FTree();
     var d = FTree();
 
-    // two scale relationship matrices
-    var hg  = getCoeffs(k); //FIXME: rename this fcn
-    var hgT = transpose(tensorDup(hg)); // FIXME: need to copy hg here
+    // two-scale relationship matrices
+    var hgDom = [0..2*k-1, 0..2*k-1];
+    var hg    : [hgDom] real;
+    var hgT   : [hgDom] real;
 
     // Quadrature stuff
-    var quad_x    = getGLPoints(k);    // points
-    var quad_w    = getGLWeights(k);   // weights
-    var quad_npt  = quad_w.numElements;
-    var quad_phi:  [0..quad_npt-1, 0..k-1] real;  // phi[point,i]
-    var quad_phiT: [0..quad_npt-1, 0..k-1] real;  // phi[point,i] transpose
-    var quad_phiw: [0..quad_npt-1, 0..k-1] real;  // phi[point,i]*weight[point]
+    var quadDom   = [0..k-1];
+    var quad_x    : [quadDom] real;    // points
+    var quad_w    : [quadDom] real;    // weights
+    var quad_npt  = k;
+
+    var quad_phiDom = [0..k-1, 0..k-1];
+    var quad_phi    : [quad_phiDom] real;  // phi[point,i]
+    var quad_phiT   : [quad_phiDom] real;  // phi[point,i] transpose
+    var quad_phiw   : [quad_phiDom] real;  // phi[point,i]*weight[point]
     
     // blocks of the block tridiagonal derivative operator
     //var rm, r0, rp;
@@ -35,7 +39,13 @@ class Function1d {
     // constructors and helpers
 
     def initialize() {
-      writeln("Creating Function: k=", k, " thresh=", thresh);
+        writeln("Creating Function: k=", k, " thresh=", thresh);
+
+        writeln("  initializing two-scale relation coefficients");
+        hg  = getCoeffs(k); //FIXME: rename this fcn
+        hgT = transpose(tensorDup(hg));
+
+        writeln("  initializing quadrature coefficients");
         init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
@@ -45,22 +55,25 @@ class Function1d {
         //if f != nil then
         //    for l in 0..2**initial_level-1 do
         //        refine(initial_level, l);
-        
+       
+        writeln("done.");
     }
 
     def init_quadrature(order: int) {
-        //quad_x   = getGLPoints(order);
-        //quad_w   = getGLWeights(order);
-        //quad_npt = quad_w.numElements;
+        quad_x   = getGLPoints(k);
+        quad_w   = getGLWeights(k);
+        if (quad_npt != quad_w.numElements) then
+          halt("quadrature length mismatch");
 
-        for i in 0..quad_npt {
+        for i in 0..quad_npt-1 {
             var p = phi(quad_x[i], k);
-            for m in 0..k {
+            for m in 0..k-1 {
                 quad_phi[i, m]  = p[m];
                 quad_phiw[i, m] = quad_w[i]*p[m];
             }
         }
-        quad_phiT = transpose(quad_phi);
+
+        quad_phiT = transpose(tensorDup(quad_phi));
     }
 
 
@@ -72,8 +85,7 @@ class Function1d {
         @return    s[n][l] = integral(phi[n][l](x) * f(x))
     */
     def project(n: int, l: int) {
-    }
-    /*
+    }/* 
         Tensor1d s = new Tensor1d(this.k);
         double[] A = s.getArray();
         double[] quad_x = this.quad_x.getArray();
@@ -88,15 +100,14 @@ class Function1d {
                 A[i] += scale * f * quad_phiw[mu][i];
         }
         return s;
-    }
-    */
+    }*/
+    
 
     /** refine numerical representation of f(x) to desired tolerance
         @param n   level
         @param l   box index
     */
     def refine(n: int, l: int) {
-
         // project f(x) at next level
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
@@ -126,13 +137,16 @@ class Function1d {
             refine(n+1, 2*l+1);
         }
     }
+
 }
 
 def main() {
-  //use MadFn1d;
+  use MadFn1d;
 
   writeln("Mad Chapel -- One Step Beyond");
 
-  var F: Function1d;
-//  var F2 = Function1d(f=test1);
+  var F: Function1d = nil;
+  var F2 = Function1d();
+
+  writeln("Phi Norms:\n", F2.quad_phi);
 }

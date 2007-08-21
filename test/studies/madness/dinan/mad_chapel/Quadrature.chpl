@@ -9,7 +9,7 @@
     @exception  IllegalArgumentException k is out of bounds!
  */
 def getGLPoints(k: int) {
-  var points:  [1..k] real;
+  var points:  [0..k-1] real;
 
   select k {
     when 1 do
@@ -53,7 +53,7 @@ def getGLPoints(k: int) {
     @exception  IllegalArgumentException k is out of bounds!
  */
 def getGLWeights(k: int) {
-  var weights:  [1..k] real;
+  var weights:  [0..k-1] real;
 
   select k {
     when 1 do

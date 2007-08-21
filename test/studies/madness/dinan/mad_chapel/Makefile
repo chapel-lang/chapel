@@ -1,5 +1,9 @@
+GENC   = gen_c
+
 CC     = chpl
-CFLAGS =
+CFLAGS = -g --savec=$(GENC) --short-names --print-passes
+#CFLAGS = -g --savec=$(GENC) --short-names --print-passes --ccflags "-Wall"
+#CFLAGS = -g --savec=$(GENC) --no-cg-cpp-lines --short-names --print-passes --ccflags "-Wall"
 
 SOURCES= Fn1d.chpl       \
          FTree.chpl      \
@@ -13,10 +17,11 @@ SOURCES= Fn1d.chpl       \
 all: 1d
 
 1d: $(SOURCES)
-	$(CC) -o $@ $+
+	$(CC) $(CFLAGS) -o $@ $+
 
 
 .PHONY: clean
         
 clean:
 	rm -f 1d
+	rm -rf $(GENC)
