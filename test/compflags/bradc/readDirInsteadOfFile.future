@@ -1,0 +1,4 @@
+bug: trying to compile directory
+
+For some reason, we don't get a nice error when trying to open
+a directory rather than a file.
