@@ -45,6 +45,11 @@ $tokctr = "$tokctdir/tokencount.cron";
 $compdir = "$tmpdir/chapel/compiler";
 $bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_PLATFORM'}";
 $currhome = "$ENV{'CHPL_HOME'}";
+$perfdir = "$ENV{'CHPL_TEST_PERF_DIR'}";
+if ($perfdir eq "") {
+    print "Error: CHPL_TEST_PERF_DIR must be set to indicate where .dat files should go\n";
+    exit(1);
+}
 
 
 $somethingfailed = 0;
