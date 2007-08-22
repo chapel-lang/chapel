@@ -139,19 +139,19 @@ void genCFilenames(char* modulename, char** outfilename) {
 }
 
 
-static FILE* openfile(const char* outfilename, const char* mode = "w") {
-  FILE* outfile;
+static FILE* openfile(const char* filename, const char* mode = "w") {
+  FILE* newfile;
 
-  outfile = fopen(outfilename, mode);
-  if (outfile == NULL) {
+  newfile = fopen(filename, mode);
+  if (newfile == NULL) {
     const char* errorstr = "opening ";
-    const char* errormsg = stringcat(errorstr, outfilename, ": ", 
+    const char* errormsg = stringcat(errorstr, filename, ": ", 
                                      strerror(errno));
 
     USR_FATAL(errormsg);
   }
 
-  return outfile;
+  return newfile;
 }
 
 
@@ -217,8 +217,14 @@ static char** inputFilenames = {NULL};
 void testInputFiles(int numFilenames, char* filename[]) {
   inputFilenames = (char**)malloc((numFilenames+1)*sizeof(char*));
   int i;
+  char achar;
   for (i=0; i<numFilenames; i++) {
     FILE* testfile = openInputFile(filename[i]);
+    if (fscanf(testfile, "%c", &achar) != 1) {
+      USR_FATAL(stringcat("input file '", filename[i], 
+                          "' is either empty or a directory"));
+    }
+    
     closeInputFile(testfile);
     inputFilenames[i] = stringcpy(filename[i]);
   }
