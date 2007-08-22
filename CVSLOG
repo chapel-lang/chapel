@@ -115133,3 +115133,19 @@ Modified files:
 Removed files:
 	chapel/test/compflags/bradc/: badConfigParam.future 
 
+---------------------------------------------------------------------------
+
+08/22/07 14:57:25 -- dinan
+
+Log message:
+	Semantic futures for out-of-bounds accesses to associative domains/arrays.
+	Presently these out-of-bounds accesses don't result in an error.
+
+Added files:
+	chapel/test/domains/dinan/: assoc_array_access_oob.chpl 
+	                            assoc_array_access_oob.future 
+	                            assoc_array_access_oob.good 
+	                            assoc_domain_remove_oob.chpl 
+	                            assoc_domain_remove_oob.future 
+	                            assoc_domain_remove_oob.good 
+
