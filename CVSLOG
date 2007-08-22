@@ -114915,3 +114915,16 @@ Modified files:
 	                         inlineFunctions.cpp 
 	                         insertLineNumbers.cpp 
 
+---------------------------------------------------------------------------
+
+08/21/07 17:29:56 -- bradc
+
+Log message:
+	Modifying some routines in standard modules to return
+	values along all paths (in particular after halt()
+	statements) to get rid of warnings in the generated C
+	code.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleAssociative.chpl Time.chpl 
+
