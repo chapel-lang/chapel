@@ -2,8 +2,8 @@ GENC   = gen_c
 
 CC     = chpl
 CFLAGS = --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
-#CFLAGS = -g --savec=$(GENC) --short-names --print-passes --ccflags "-Wall"
-#CFLAGS = -g --savec=$(GENC) --no-cg-cpp-lines --short-names --print-passes --ccflags "-Wall"
+#CFLAGS += --ccflags "-Wall"
+#CFLAGS += --no-cg-cpp-lines
 
 SOURCES= Fn1d.chpl       \
          FTree.chpl      \
@@ -16,12 +16,20 @@ SOURCES= Fn1d.chpl       \
 
 all: 1d
 
+
 1d: $(SOURCES)
 	$(CC) $(CFLAGS) --main-module Function1d -o $@ $+
 
 
+.PHONY: distrib
+DISTDIR = mad_chapel
+distrib: clean
+	mkdir $(DISTDIR)
+	tar -X DIST_EXCLUDE --exclude=$(DISTDIR) -c * | tar -C $(DISTDIR) -xf -
+	@echo "++ Distribution has been built in $(DISTDIR)"
+
+
 .PHONY: clean
-        
 clean:
 	rm -f 1d
 	rm -rf $(GENC)
