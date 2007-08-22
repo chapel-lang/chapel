@@ -115269,3 +115269,36 @@ Log message:
 Modified files:
 	chapel/test/arrays/bradc/: noelemtype.good 
 
+---------------------------------------------------------------------------
+
+08/22/07 16:39:49 -- bradc
+
+Log message:
+	dos2unix and reformatting of Chapel text.
+	
+	Also converted this so that it's a valid test now.  Would also
+	be interesting to add performance keys to it.  Oh heck, maybe
+	I'll just do that next.
+
+Modified files:
+	chapel/test/users/franzf/v0/chpl/: Makefile fft.chpl 
+	                                   fft_1024.chpl fft_128.chpl 
+	                                   fft_16.chpl fft_2.chpl 
+	                                   fft_2048.chpl fft_256.chpl 
+	                                   fft_32.chpl fft_4.chpl 
+	                                   fft_512.chpl fft_64.chpl 
+	                                   fft_8.chpl main.chpl 
+	                                   omega.chpl 
+Added files:
+	chapel/test/users/franzf/v0/chpl/: .cvsignore fft.notest 
+	                                   fft_1024.notest 
+	                                   fft_128.notest fft_16.notest 
+	                                   fft_2.notest fft_2048.notest 
+	                                   fft_256.notest fft_32.notest 
+	                                   fft_4.notest fft_512.notest 
+	                                   fft_64.notest fft_8.notest 
+	                                   main.compopts main.good 
+	                                   omega.notest 
+Removed files:
+	chapel/test/users/franzf/v0/chpl/: NOTEST 
+
