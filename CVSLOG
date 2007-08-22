@@ -114901,3 +114901,17 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 17:13:55 -- deitz
+
+Log message:
+	Refactored, documented, and improved compute_call_sites and inlining.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: optimizations.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp 
+	                         insertLineNumbers.cpp 
+
