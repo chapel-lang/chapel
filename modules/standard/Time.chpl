@@ -75,6 +75,8 @@ def _convert_microseconds(unit: TimeUnits, us: real) {
     when hours do return us / 3600.0e+6;
   }
   halt("internal error in module Time");
+  // will never get here, but to avoid warnings:
+  return -1.0;
 }
 
 pragma "inline" def sleep(t: uint) {

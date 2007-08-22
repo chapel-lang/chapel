@@ -194,6 +194,8 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       return table(i);
     else
       halt( "index not found: ", ind);
+    // will never get here, but to avoid compiler warnings:
+    return 0;
   }
 
   def buildArray(type eltType) {
