@@ -115081,3 +115081,17 @@ Added files:
 	                                   main.chpl omega.chpl 
 	                                   output.txt 
 
+---------------------------------------------------------------------------
+
+08/22/07 10:55:31 -- dinan
+
+Log message:
+	Cleanups.  Updated "where" clauses with array rank fix.
+	
+	If you want to see the progress of mad chapel, this would be a good commit to
+	try.  Just "make" and then run "./1d".
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+
