@@ -1,0 +1,14 @@
+$ ./fft --NUMRUNS=1000
+Spiral 5.0 Chapel FFT example
+
+fft_2: 2.0us = 5.0Mflop/s
+fft_4: 3.0us = 13.3333Mflop/s
+fft_8: 5.0us = 24.0Mflop/s
+fft_16: 11.0us = 29.0909Mflop/s
+fft_32: 27.0us = 29.6296Mflop/s
+fft_64: 53.0us = 36.2264Mflop/s
+fft_128: 130.0us = 34.4615Mflop/s
+fft_256: 284.0us = 36.0563Mflop/s
+fft_512: 773.0us = 29.806Mflop/s
+fft_1024: 1706.0us = 30.0117Mflop/s
+fft_2048: 4144.0us = 27.1815Mflop/s
