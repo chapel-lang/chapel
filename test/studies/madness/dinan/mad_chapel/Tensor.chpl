@@ -12,7 +12,7 @@ def transpose(A: [] real) where A.rank == 2 {
 }
 
 // Transform a vector by a matrix
-def transform(in V: [] real, in M: [] real) where V.rank == 1 /* FIXME: && M.rank == 2 */ {
+def transform(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [V.domain] real = 0.0;
 
     if V.domain.dim(1) != M.domain.dim(1) then

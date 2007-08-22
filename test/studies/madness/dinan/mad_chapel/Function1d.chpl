@@ -112,7 +112,7 @@ class Function1d {
         var s1 = project(n+1, 2*l+1);
         var s: [0..2*k-1] real;
 
-        writeln("   refine at (", n, ", ", l, ")");
+        //writeln("   refine at (", n, ", ", l, ")");
 
         s[0..k-1]   = s0;
         s[k..2*k-1] = s1;
@@ -137,26 +137,24 @@ class Function1d {
     }
 
 
+    /* 
+       Evaluate numerical representation of f at x.  Performed in scaling
+       function basis only.
+     */
     def this(x) {
-        /* 
-           Evaluate function at x ... scaling function basis only
-           call to self after creation
-           looks like a Function evaluation
-           say g = Function(5,1e-3,f) so g(1.0) should be similar to f(1.0)
-         */
         if compressed then reconstruct();
         return evaluate(0, 0, x);
     }
 
 
-    def evaluate(in n=0, in l=0, in x): real {
-        /*
-           eval f(x) using adaptively refined numerical representation of f(x)
-           answer should be within tolerance of the analytical f(x)
+    /*
+       eval f(x) using adaptively refined numerical representation of f(x)
+       answer should be within tolerance of the analytical f(x)
 
-           Descend tree looking for box (n,l) with scaling function
-           coefficients containing the point x.
-         */
+       Descend tree looking for box (n,l) with scaling function
+       coefficients containing the point x.
+     */
+    def evaluate(in n=0, in l=0, in x): real {
         if s.has_coeffs(n, l) {
             var p = phi(x, k);
             return inner(s[n, l], p)*sqrt(2.0**n);
@@ -183,21 +181,21 @@ def main() {
     writeln("\n** var F2 = Function1d();");
     var F2 = Function1d();
 
-    writeln("Phi Norms:\n", F2.quad_phi,
-            "\nPhi Transpose:\n", F2.quad_phiT,
-            "\nPhi Weights:\n", F2.quad_phiw
-           );
+    //writeln("Phi Norms:\n", F2.quad_phi,
+    //        "\nPhi Transpose:\n", F2.quad_phiT,
+    //        "\nPhi Weights:\n", F2.quad_phiw
+    //       );
 
     writeln("\n** var F3 = Function1d(f=test3);");
     var test3 = Fn_Test3();
     var F3    = Function1d(k=7, thresh=1e-10, f=test3);
 
-    writeln("Phi Norms:\n", F2.quad_phi,
-            "\nPhi Transpose:\n", F2.quad_phiT,
-            "\nPhi Weights:\n", F2.quad_phiw
-           );
+    //writeln("Phi Norms:\n", F2.quad_phi,
+    //        "\nPhi Transpose:\n", F2.quad_phiT,
+    //        "\nPhi Weights:\n", F2.quad_phiw
+    //       );
 
-    writeln("\nTesting function evaluation on [0, 1]:");
+    writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
 
     for i in 1..10 do
         writeln(" -- ", 0.1*i, ": (analytic) test3=", test3.f(0.1*i), " (numeric) F3=", F3(0.1*i));
