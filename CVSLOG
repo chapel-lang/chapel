@@ -115198,3 +115198,26 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/07 15:46:08 -- dinan
+
+Log message:
+	Changed the error message:
+	
+	  no_element_type_error.chpl:2: error: array without element type can only be
+	  used as a formal argument type
+	
+	To:
+	
+	  no_element_type_error.chpl:2: error: array declaration has no element type
+	
+	Also added a test with an example of an array alias typo that generates this
+	error message.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/arrays/dinan/: no_element_type_error.chpl 
+	                           no_element_type_error.good 
+
