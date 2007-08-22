@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,14 +40,14 @@ def init_fft4() {
 }
 
 def fft4(Y: [0..3] complex, X: [0..3] complex) {
-    var a213898, t191225, t191226, t191227:complex;
-    t191225 = (X(0) + X(2));
-    t191226 = (X(0) - X(2));
-    t191227 = (X(1) + X(3));
-    Y(0) = (t191225 + t191227);
-    Y(2) = (t191225 - t191227);
-    a213898 = (1.0i*(X(1) - X(3)));
-    Y(1) = (t191226 + a213898);
-    Y(3) = (t191226 - a213898);
+  var a213898, t191225, t191226, t191227:complex;
+  t191225 = (X(0) + X(2));
+  t191226 = (X(0) - X(2));
+  t191227 = (X(1) + X(3));
+  Y(0) = (t191225 + t191227);
+  Y(2) = (t191225 - t191227);
+  a213898 = (1.0i*(X(1) - X(3)));
+  Y(1) = (t191226 + a213898);
+  Y(3) = (t191226 - a213898);
 
 }

@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -34,39 +34,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************/
 
 use omega, fft_2, fft_4, fft_8, fft_16, fft_32, fft_64, fft_128, 
-    fft_256, fft_512, fft_1024, fft_2048;
+  fft_256, fft_512, fft_1024, fft_2048;
 
 def init_fft(n : int) {
-    select n {
-        when 2 do init_fft2();
-        when 4 do init_fft4();
-        when 8 do init_fft8();
-        when 16 do init_fft16();
-        when 32 do init_fft32();
-        when 64 do init_fft64();
-        when 128 do init_fft128();
-        when 256 do init_fft256();
-        when 512 do init_fft512();
-        when 1024 do init_fft1024();
-        when 2048 do init_fft2048();
-        otherwise writeln("Error: unsupported FFT size.");
-    }
+  select n {
+  when 2 do init_fft2();
+  when 4 do init_fft4();
+  when 8 do init_fft8();
+  when 16 do init_fft16();
+  when 32 do init_fft32();
+  when 64 do init_fft64();
+  when 128 do init_fft128();
+  when 256 do init_fft256();
+  when 512 do init_fft512();
+  when 1024 do init_fft1024();
+  when 2048 do init_fft2048();
+  otherwise writeln("Error: unsupported FFT size.");
+  }
 }
 
 def fft(n: int, Y, X) {
-    select n {
-        when 2 do fft2(Y, X);
-        when 4 do fft4(Y, X);
-        when 8 do fft8(Y, X);
-        when 16 do fft16(Y, X);
-        when 32 do fft32(Y, X);
-        when 64 do fft64(Y, X);
-        when 128 do fft128(Y, X);
-        when 256 do fft256(Y, X);
-        when 512 do fft512(Y, X);
-        when 1024 do fft1024(Y, X);
-        when 2048 do fft2048(Y, X);
-        otherwise writeln("Error: unsupported FFT size.");
-    }
+  select n {
+  when 2 do fft2(Y, X);
+  when 4 do fft4(Y, X);
+  when 8 do fft8(Y, X);
+  when 16 do fft16(Y, X);
+  when 32 do fft32(Y, X);
+  when 64 do fft64(Y, X);
+  when 128 do fft128(Y, X);
+  when 256 do fft256(Y, X);
+  when 512 do fft512(Y, X);
+  when 1024 do fft1024(Y, X);
+  when 2048 do fft2048(Y, X);
+  otherwise writeln("Error: unsupported FFT size.");
+  }
    
 }

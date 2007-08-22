@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,32 +40,30 @@ def init_fft8() {
 }
 
 def fft8(Y: [0..7] complex, X: [0..7] complex) {
-    var a213919, s92096, s92097, s92098, s92099, t191288, t191289, t191290, t191291, t191292, t191293, t191294, t191295, t191296, t191297, t191298:complex;
-    t191288 = (X(0) + X(4));
-    t191289 = (X(0) - X(4));
-    t191290 = (X(2) + X(6));
-    t191291 = (t191288 + t191290);
-    t191292 = (t191288 - t191290);
-    a213919 = (1.0i*(X(2) - X(6)));
-    t191293 = (t191289 + a213919);
-    t191294 = (t191289 - a213919);
-    t191295 = (X(1) + X(5));
-    s92096 = ((0.70710678118654757 + 1.0i * 0.70710678118654757)*(X(1) - X(
-5)));
-    t191296 = (X(3) + X(7));
-    s92097 = ((-0.70710678118654757 + 1.0i * 0.70710678118654757)*(X(3) - X(
-7)));
-    t191297 = (t191295 + t191296);
-    s92098 = (1.0i*(t191295 - t191296));
-    t191298 = (s92096 + s92097);
-    s92099 = (1.0i*(s92096 - s92097));
-    Y(0) = (t191291 + t191297);
-    Y(4) = (t191291 - t191297);
-    Y(1) = (t191293 + t191298);
-    Y(5) = (t191293 - t191298);
-    Y(2) = (t191292 + s92098);
-    Y(6) = (t191292 - s92098);
-    Y(3) = (t191294 + s92099);
-    Y(7) = (t191294 - s92099);
+  var a213919, s92096, s92097, s92098, s92099, t191288, t191289, t191290, t191291, t191292, t191293, t191294, t191295, t191296, t191297, t191298:complex;
+  t191288 = (X(0) + X(4));
+  t191289 = (X(0) - X(4));
+  t191290 = (X(2) + X(6));
+  t191291 = (t191288 + t191290);
+  t191292 = (t191288 - t191290);
+  a213919 = (1.0i*(X(2) - X(6)));
+  t191293 = (t191289 + a213919);
+  t191294 = (t191289 - a213919);
+  t191295 = (X(1) + X(5));
+  s92096 = ((0.70710678118654757 + 1.0i * 0.70710678118654757)*(X(1) - X(5)));
+  t191296 = (X(3) + X(7));
+  s92097 = ((-0.70710678118654757 + 1.0i * 0.70710678118654757)*(X(3) - X(7)));
+  t191297 = (t191295 + t191296);
+  s92098 = (1.0i*(t191295 - t191296));
+  t191298 = (s92096 + s92097);
+  s92099 = (1.0i*(s92096 - s92097));
+  Y(0) = (t191291 + t191297);
+  Y(4) = (t191291 - t191297);
+  Y(1) = (t191293 + t191298);
+  Y(5) = (t191293 - t191298);
+  Y(2) = (t191292 + s92098);
+  Y(6) = (t191292 - s92098);
+  Y(3) = (t191294 + s92099);
+  Y(7) = (t191294 - s92099);
 
 }

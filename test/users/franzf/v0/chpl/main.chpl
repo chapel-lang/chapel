@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,41 +40,45 @@ config const MIN_SIZE = 1;
 config const MAX_SIZE = 11;
 config const EPS = 1.0E-5;
 
+config param printTimings = true;
 
 def main() {
-    var startTime:real, execTime:real;
-    var numruns : int = NUMRUNS;
+  var startTime:real, execTime:real;
+  var numruns : int = NUMRUNS;
 
-    writeln("Spiral 5.0 Chapel FFT example\n");
+  writeln("Spiral 5.0 Chapel FFT example\n");
 
-    for n in [MIN_SIZE..MAX_SIZE] {
-        var N : int = 2**n;
-        const Ndom: domain(1) = [0..N-1];
-        type Ntype = [Ndom] complex;
-        var X : Ntype, Y : Ntype;
-        const ops = 5.0 * N * log2(N);
+  for n in [MIN_SIZE..MAX_SIZE] {
+    var N : int = 2**n;
+    const Ndom: domain(1) = [0..N-1];
+    type Ntype = [Ndom] complex;
+    var X : Ntype, Y : Ntype;
+    const ops = 5.0 * N * log2(N);
     
-        //  initialization
-        numruns = (numruns*0.7):int;
-        X(0) = 1+1.0i;
-        forall i in [1..N-1] {
-            X(i) = 0;
-        }
-        init_fft(N);
-        
-        //  check computation
-        fft(N, Y, X);
-        forall i in Ndom {
-            if abs(Y(i) - (1+1.0i)) > 1.0e-5 then 
-            writeln("Error: result incorrect.");
-        }    
-    
-        //  benchmark computation
-        startTime = getCurrentTime(microseconds);
-        for i in [1..NUMRUNS] {
-            fft(N, Y, X);
-        }
-        execTime = (getCurrentTime(microseconds) - startTime)/NUMRUNS;
-        writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
+    //  initialization
+    numruns = (numruns*0.7):int;
+    X(0) = 1+1.0i;
+    forall i in [1..N-1] {
+      X(i) = 0;
     }
+    init_fft(N);
+    
+    //  check computation
+    fft(N, Y, X);
+    forall i in Ndom {
+      if abs(Y(i) - (1+1.0i)) > 1.0e-5 then 
+        writeln("Error: result incorrect.");
+    }    
+    
+    //  benchmark computation
+    startTime = getCurrentTime(microseconds);
+    for i in [1..NUMRUNS] {
+      fft(N, Y, X);
+    }
+    execTime = (getCurrentTime(microseconds) - startTime)/NUMRUNS;
+    if (printTimings) then
+      writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
+    else
+      writeln("fft_", N);
+  }
 }

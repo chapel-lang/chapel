@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,7 +40,7 @@ def init_fft2() {
 }
 
 def fft2(Y: [0..1] complex, X: [0..1] complex) {
-    Y(0) = (X(0) + X(1));
-    Y(1) = (X(0) - X(1));
+  Y(0) = (X(0) + X(1));
+  Y(1) = (X(0) - X(1));
 
 }
