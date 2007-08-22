@@ -1,1 +1,1 @@
-noelemtype.chpl:5: error: array without element type can only be used as a formal argument type
+noelemtype.chpl:5: error: array declaration has no element type
