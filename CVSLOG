@@ -115000,3 +115000,20 @@ Modified files:
 	                                               Makefile 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/22/07 10:39:00 -- diten
+
+Log message:
+	Only force an explicit main function if there is more than one top-level user
+	module defined.  Previously, a main function was required if there were nested
+	modules.
+	
+	Add a test that defines nested modules but no main().
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+Added files:
+	chapel/test/modules/diten/: nested_modules_no_main.chpl 
+	                            nested_modules_no_main.good 
+
