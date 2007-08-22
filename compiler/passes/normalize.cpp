@@ -612,8 +612,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         if (call->numActuals() == 1)
           if (!parent || !toArgSymbol(parent->sym) ||
               parent->exprType != call)
-            USR_FATAL(call, "array without element type can only "
-                      "be used as a formal argument type");
+            USR_FATAL(call, "array declaration has no element type");
         if (def || (sym && sym->var == gNil) || call->numActuals() == 1) {
           if (!parent || !toArgSymbol(parent->sym)
               || parent->exprType != call)
