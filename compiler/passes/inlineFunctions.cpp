@@ -26,17 +26,21 @@ inlineCall(CallExpr* call) {
   //
   ASTMap map;
   for_formals_actuals(formal, actual, call) {
-    if (formal->requiresCPtr()) {
-      if (SymExpr* se = toSymExpr(actual))
+    if (SymExpr* se = toSymExpr(actual)) {
         map.put(formal, se->var);
-      else
-        INT_FATAL(actual, "illegal reference actual encountered in inlining");
     } else {
+
+      //
+      // try to eliminate temporaries
+      //
+      if (formal->requiresCPtr())
+        INT_FATAL(actual, "illegal reference actual encountered in inlining");
       VarSymbol* temp = new VarSymbol("_tmp", actual->typeInfo());
       temp->isCompilerTemp = true;
       stmt->insertBefore(new DefExpr(temp));
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, temp, actual->remove()));
       map.put(formal, temp);
+
     }
   }
 
@@ -82,6 +86,12 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
       }
     }
   }
+  collapseBlocks(fn->body);
+  removeUnnecessaryGotos(fn);
+  if (!fNoCopyPropagation)
+    localCopyPropagation(fn);
+  deadVariableElimination(fn);
+  deadExpressionElimination(fn);
   forv_Vec(CallExpr, call, *fn->calledBy) {
     inlineCall(call);
     if (report_inlining)
