@@ -115017,3 +115017,67 @@ Added files:
 	chapel/test/modules/diten/: nested_modules_no_main.chpl 
 	                            nested_modules_no_main.good 
 
+---------------------------------------------------------------------------
+
+08/22/07 10:44:55 -- bradc
+
+Log message:
+	First SPIRAL-generated Chapel code, as sent to us by Franz,
+	along with the equivalent C code.  He reports far poorer
+	performance, but wasn't compiling with --no-bounds-checks.
+	I also suggested he rewrite his for loops to use ranges rather
+	than domains.
+	
+	This code really bogs down our compiler, particularly in
+	inlineFunctions-deadCodeElimination.  Checking it in in
+	NOTEST mode so that we can use it as motivation for compiler
+	performance improvements.  Once it compiles in a reasonable
+	amount of time, it'd be nice to make this into a real test.
+	
+	From my current compile:
+	
+	                           parse :   0.189 seconds
+	                     checkParsed :   0.095 seconds
+	                         cleanup :   0.303 seconds
+	                    scopeResolve :   0.438 seconds
+	                  flattenClasses :   0.009 seconds
+	                       normalize :   0.760 seconds
+	                 checkNormalized :   0.000 seconds
+	           buildDefaultFunctions :   0.198 seconds
+	                         resolve :   5.495 seconds
+	                   checkResolved :   0.137 seconds
+	                flattenFunctions :   0.103 seconds
+	                  lowerIterators :   0.251 seconds
+	              cullOverReferences :   0.158 seconds
+	                        parallel :   0.135 seconds
+	                 inlineFunctions : 138.086 seconds
+	                   scalarReplace : 290.918 seconds
+	                  refPropagation : 105.693 seconds
+	                 copyPropagation : 162.485 seconds
+	             deadCodeElimination : 221.734 seconds
+	                           prune :   0.452 seconds
+	            insertWideReferences :   0.043 seconds
+	                  copyCollection :   0.004 seconds
+	               insertLineNumbers :   1.105 seconds
+	                         codegen : 828.126 seconds
+	             time between passes : 292.600 seconds
+	                      total time :2049.518 seconds
+
+Added files:
+	chapel/test/users/franzf/v0/c99/: C99.zip Makefile NOTEST 
+	                                  fft1024.c fft128.c fft16.c 
+	                                  fft2.c fft2048.c fft256.c 
+	                                  fft32.c fft4.c fft512.c 
+	                                  fft64.c fft8.c libfft.c 
+	                                  libfft.h main.c omega64c.h 
+	                                  output.txt 
+	chapel/test/users/franzf/v0/chpl/: Makefile NOTEST chpl.zip 
+	                                   fft.chpl fft_1024.chpl 
+	                                   fft_128.chpl fft_16.chpl 
+	                                   fft_2.chpl fft_2048.chpl 
+	                                   fft_256.chpl fft_32.chpl 
+	                                   fft_4.chpl fft_512.chpl 
+	                                   fft_64.chpl fft_8.chpl 
+	                                   main.chpl omega.chpl 
+	                                   output.txt 
+
