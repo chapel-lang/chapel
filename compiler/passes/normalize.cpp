@@ -605,7 +605,7 @@ static void fixup_array_formals(FnSymbol* fn) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn, fn->argScope);
           }
-          Expr* expr = fn->where->body.only();
+          Expr* expr = fn->where->body.tail;
           if (call->numActuals() == 2)
             expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
@@ -766,7 +766,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
     insert_help(fn->where, NULL, fn, fn->argScope);
   }
-  Expr* where = fn->where->body.only();
+  Expr* where = fn->where->body.tail;
   Expr* clause;
   if (formal->variableExpr)
     clause = new CallExpr(PRIMITIVE_TUPLE_AND_EXPAND, formal,
