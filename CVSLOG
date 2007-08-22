@@ -114891,3 +114891,13 @@ Modified files:
 	                                               Makefile 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 17:07:35 -- dinan
+
+Log message:
+	Added code to store scaling coefficients in the FTree.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+
