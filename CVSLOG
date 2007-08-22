@@ -115259,3 +115259,13 @@ Modified files:
 	chapel/compiler/main/: passlist.h runpasses.cpp 
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/07 16:23:30 -- dinan
+
+Log message:
+	Updated with the new error message.
+
+Modified files:
+	chapel/test/arrays/bradc/: noelemtype.good 
+
