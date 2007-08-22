@@ -2898,9 +2898,13 @@ resolve() {
           call->replace(new CallExpr(if_fn));
           tmp->replace(call);
           subcall->baseExpr->replace(new SymExpr(fn));
-          if (SymExpr* se = toSymExpr(subcall->get(2)))
-            se->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, se->var));
-          else if (CallExpr* ce = toCallExpr(subcall->get(2)))
+          if (SymExpr* se = toSymExpr(subcall->get(2))) {
+            VarSymbol* tmp = new VarSymbol("_tmp", type);
+            tmp->isCompilerTemp = true;
+            se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+            se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, type->symbol, se->var)));
+            se->replace(new SymExpr(tmp));
+          } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
             if (ce->isPrimitive(PRIMITIVE_CAST))
               ce->get(1)->replace(new SymExpr(type->symbol));
             else

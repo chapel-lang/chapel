@@ -82,25 +82,19 @@ void clear_file_info(BaseAST* baseAST) {
 
 
 void compute_call_sites() {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = toFnSymbol(ast)) {
-      if (fn->calledBy)
-        fn->calledBy->clear();
-      else
-        fn->calledBy = new Vec<CallExpr*>();
-    }
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->calledBy)
+      fn->calledBy->clear();
+    else
+      fn->calledBy = new Vec<CallExpr*>();
   }
-  forv_Vec(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (!call->primitive && call->findFnSymbol()) {
-        if (call->findFnSymbol()->calledBy) { // yuck, got some
-                                              // functions being
-                                              // called that are no
-                                              // longer in the tree,
-                                              // e.g., _INIT_CONFIG
-          call->findFnSymbol()->calledBy->add(call);
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->calledBy) { // yuck, got some functions being called
+                            // that are no longer in the tree, e.g.,
+                            // _INIT_CONFIG
+          fn->calledBy->add(call);
         }
       }
     }

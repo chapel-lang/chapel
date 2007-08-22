@@ -2,7 +2,6 @@
 #define _OPTIMIZATIONS_H_
 
 void collapseBlocks(BlockStmt* block);
-void inlineCall(CallExpr* call);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);

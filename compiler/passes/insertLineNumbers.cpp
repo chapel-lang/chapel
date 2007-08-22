@@ -58,6 +58,8 @@ insertLineNumber(CallExpr* call) {
 }
 
 void insertLineNumbers() {
+  compute_call_sites();
+
   // loop over all primitives that require a line number and filename
   // and pass them an actual line number and filename
   forv_Vec(BaseAST, ast, gAsts) {
@@ -67,9 +69,6 @@ void insertLineNumbers() {
       }
     }
   }
-
-  // compute call graph
-  compute_call_sites();
 
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
