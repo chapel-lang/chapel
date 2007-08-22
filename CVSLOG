@@ -115233,3 +115233,18 @@ Added files:
 	                           no_element_type.future 
 	                           no_element_type.good 
 
+---------------------------------------------------------------------------
+
+08/22/07 16:17:10 -- bradc
+
+Log message:
+	Aesthetic update -- changed files to UNIX format and
+	made them use 2-space indenting.
+
+Modified files:
+	chapel/test/users/franzf/v0/c99/: Makefile fft1024.c fft128.c 
+	                                  fft16.c fft2.c fft2048.c 
+	                                  fft256.c fft32.c fft4.c 
+	                                  fft512.c fft64.c fft8.c 
+	                                  libfft.c main.c 
+
