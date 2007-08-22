@@ -114973,3 +114973,13 @@ Modified files:
 Removed files:
 	chapel/test/functions/dinan/: where_array_ranks.future 
 
+---------------------------------------------------------------------------
+
+08/22/07 10:06:08 -- dinan
+
+Log message:
+	Whoops, this test was not a future.
+
+Removed files:
+	chapel/test/arrays/dinan/init_arraymember/: test3.future 
+
