@@ -115095,3 +115095,15 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/22/07 11:04:24 -- diten
+
+Log message:
+	Remove a .future and an extra newline in its .good.
+
+Modified files:
+	chapel/test/modules/dinan/: module_reused_without_main.good 
+Removed files:
+	chapel/test/modules/dinan/: module_reused_without_main.future 
+
