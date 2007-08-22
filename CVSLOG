@@ -115149,3 +115149,52 @@ Added files:
 	                            assoc_domain_remove_oob.future 
 	                            assoc_domain_remove_oob.good 
 
+---------------------------------------------------------------------------
+
+08/22/07 15:23:04 -- deitz
+
+Log message:
+	Removed inline temporaries whenever possible, i.e., whenever the
+	actual is a symbol.  There are cases where the actual is not a symbol
+	and these should be looked into as in the normalized representation I
+	think they should be symbols.  It looks like primitives are allowed
+	there too.
+	
+	Before inlining a function, applied the following optimizations to it:
+	collapseBlocks, removeUnnecessaryGotos, localCopyPropagation (if not
+	disabled), deadVariableElimination, and deadExpressionElimination.
+	
+	In combination, these two changes result in significant speedup with
+	most of the gain coming from the latter.
+	
+	This change significantly speeds up the compilation of
+	users/franzf/v0/chpl from
+	
+	                 inlineFunctions :  10.681 seconds
+	                   scalarReplace :  25.917 seconds
+	                  refPropagation :  14.324 seconds
+	                 copyPropagation :  14.991 seconds
+	             deadCodeElimination :   5.236 seconds
+	
+	to
+	
+	                 inlineFunctions :   3.091 seconds
+	                   scalarReplace :   7.867 seconds
+	                  refPropagation :   3.999 seconds
+	                 copyPropagation :   5.651 seconds
+	             deadCodeElimination :   3.765 seconds
+	
+	The initial results on chevy were not as bad as solitary (see bradc
+	above) because of increased memory.  This change decreases the amount
+	of memory to store the IR from about 327MB to 97MB after inlining.
+	The vast majority of time is now spent in compiling the C code
+	produced by the Chapel compiler.  Depending on the amount of memory
+	Franz has on his system, his results will vary.  Note that our release
+	was cut before I made copyPropagation into O(n) from O(n^2) though.
+	
+	Also this change shows a speedup of 37% for compilation time of
+	test/npb/ft/ft-serial and 19% (or another second faster) for Jacobi.
+
+Modified files:
+	chapel/compiler/passes/: inlineFunctions.cpp 
+
