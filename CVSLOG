@@ -115119,3 +115119,17 @@ Modified files:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: DIST_EXCLUDE 
 
+---------------------------------------------------------------------------
+
+08/22/07 12:22:33 -- diten
+
+Log message:
+	Add a check that all config params set via --set or -s are defined in the code.
+	As each config param is looked up, add its name to a vector, then check that
+	all names defined with -s are in the vector.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/compflags/bradc/: badConfigParam.future 
+
