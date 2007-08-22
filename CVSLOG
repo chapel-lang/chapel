@@ -115248,3 +115248,14 @@ Modified files:
 	                                  fft512.c fft64.c fft8.c 
 	                                  libfft.c main.c 
 
+---------------------------------------------------------------------------
+
+08/22/07 16:21:10 -- deitz
+
+Log message:
+	Factored makeBinary into its own pass, separate from codegen.
+
+Modified files:
+	chapel/compiler/main/: passlist.h runpasses.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+
