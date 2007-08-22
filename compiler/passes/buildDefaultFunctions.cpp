@@ -216,7 +216,17 @@ static FnSymbol* chpl_main_exists(void) {
 static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
   if (!chpl_main) {
-    if (userModules.n == 1) {
+    int rootUserModuleCount = 0;
+    for_alist(expr, theProgram->block->body) {
+      if (DefExpr* def = toDefExpr(expr)) {
+        if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+          if (mod->modtype == MOD_USER) {
+            rootUserModuleCount++;
+          }
+        }
+      }
+    }
+    if (rootUserModuleCount == 1) {
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
       userModules.v[0]->block->insertAtTail(new DefExpr(chpl_main));
