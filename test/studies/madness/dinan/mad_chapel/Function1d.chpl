@@ -140,14 +140,11 @@ class Function1d {
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
         var nf = normf(d[k..2*k-1]);
-        if((nf < thresh) || (n >= (max_level-1)))
-        {
-            // HashMap.put(Object key, Object value)
-            s[n+1, 2*l]   = s0;
-            s[n+1, 2*l+1] = s1;
+        if((nf < thresh) || (n >= (max_level-1))) {
+            this.s[n+1, 2*l]   = s0;
+            this.s[n+1, 2*l+1] = s1;
         }
-        else
-        {
+        else {
             // these recursive calls on sub-trees can go in parallel
             // if the HashMap is syncronized
             refine(n+1, 2*l  );
