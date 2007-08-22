@@ -1,6 +1,0 @@
-feature request: config param -s checking
-
-This test demonstrates that currently we don't check the -s options
-provided to the compiler to make sure that they are all config params.
-This would be nice to do in order to avoid confusion when accidentally
-mis-typing --s* flags as -s*.

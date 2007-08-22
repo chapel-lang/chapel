@@ -14,6 +14,7 @@
 #include "symscope.h"
 
 bool normalized = false;
+Vec<const char*> usedConfigParams;
 
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
@@ -27,7 +28,7 @@ static void tag_global(FnSymbol* fn);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
-
+static void checkConfigParams();
 
 static void
 checkUseBeforeDefs() {
@@ -202,6 +203,7 @@ void normalize(BaseAST* base) {
       hack_resolve_types(a);
     }
   }
+  checkConfigParams();
 }
 
 
@@ -441,6 +443,7 @@ fix_def_expr(VarSymbol* var) {
   }
   if (var->varClass == VAR_CONFIG && var->consClass == VAR_PARAM) {
     if (const char* value = configParamMap.get(canonicalize_string(var->name))) {
+      usedConfigParams.add(canonicalize_string(var->name));
       if (SymExpr* symExpr = toSymExpr(init)) {
         if (VarSymbol* varSymbol = toVarSymbol(symExpr->var)) {
           if (varSymbol->immediate) {
@@ -513,6 +516,22 @@ fix_def_expr(VarSymbol* var) {
       new CallExpr(PRIMITIVE_MOVE, constTemp,
         new CallExpr("_copy", init->remove())));
 
+  }
+}
+
+
+static void checkConfigParams() {
+  bool anyBadConfigParams = false;
+  Vec<const char*> configParamSetNames;
+  configParamMap.get_keys(configParamSetNames);
+  forv_Vec(const char, name, configParamSetNames) {
+    if (!usedConfigParams.in(name)) {
+      USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
+      anyBadConfigParams = true;
+    }
+  }
+  if (anyBadConfigParams) {
+    USR_STOP();
   }
 }
 
