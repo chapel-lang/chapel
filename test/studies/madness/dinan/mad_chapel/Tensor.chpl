@@ -30,3 +30,8 @@ def transform(in V: [] real, in M: [] real) where V.rank == 1 /* FIXME: && M.ran
 def normf(in A) where A.rank == 1 {
     return sqrt(+ reduce A**2);
 }
+
+// Inner product of A and B
+def inner(in A, in B) where A.rank == B.rank {
+    return + reduce A*B;
+}

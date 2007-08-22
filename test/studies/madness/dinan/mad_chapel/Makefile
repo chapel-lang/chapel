@@ -1,7 +1,7 @@
 GENC   = gen_c
 
 CC     = chpl
-CFLAGS = -g --savec=$(GENC) --short-names --print-passes
+CFLAGS = --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
 #CFLAGS = -g --savec=$(GENC) --short-names --print-passes --ccflags "-Wall"
 #CFLAGS = -g --savec=$(GENC) --no-cg-cpp-lines --short-names --print-passes --ccflags "-Wall"
 

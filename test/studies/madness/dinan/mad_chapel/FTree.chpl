@@ -6,15 +6,17 @@ record Coeff {
 class FTree {
   var  order    : int;
   var  coeffDom = [0..order-1];
-  type idx_t    = 2*int;
+  var  idx_t    : 2*int;         // FIXME: Can't write domain(2*int)
 
-  var  indices: domain(idx_t);
-  var  nodes  : [indices] Coeff;
+  var  indices: domain(idx_t);   // Indexed by 2-tuples of integers
+  var  nodes  : [indices] Coeff; // Associative Mapping: (:int, :int) => Coeff
+
 
   def initialize() {
     if order == 0 then
       halt("FTree must be initialized with an order > 0");
   }
+  
   
   def this(lvl: int, idx: int) var {
     if !indices.member((lvl, idx)) {
@@ -24,7 +26,13 @@ class FTree {
 
     return nodes[(lvl, idx)].data;
   }
+
+  
+  def has_coeffs(lvl: int, idx: int) {
+    return indices.member((lvl, idx));
+  }
 }
+
 
 def main() {
   var f = FTree(2);
