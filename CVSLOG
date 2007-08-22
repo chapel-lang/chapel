@@ -114983,3 +114983,20 @@ Log message:
 Removed files:
 	chapel/test/arrays/dinan/init_arraymember/: test3.future 
 
+---------------------------------------------------------------------------
+
+08/22/07 10:32:39 -- dinan
+
+Log message:
+	Numerical function evaluation is working.  We can take the numerical (scaling
+	function basis) representation of the analytic function f() and evaluate it on
+	a particular value.  This is a huge sanity check for all of the underlying
+	mathematical machinery -- so far things look good.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               Makefile 
+	                                               Tensor.chpl 
+
