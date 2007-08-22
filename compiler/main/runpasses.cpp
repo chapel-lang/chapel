@@ -62,7 +62,7 @@ static void runPass(const char *passName, void (*pass)(void)) {
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
     totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                            (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
-    if (!strcmp(passName, "codegen")) {
+    if (!strcmp(passName, "makeBinary")) {
       fprintf(stderr, "%32s :%8.3f seconds\n", "time between passes",
               timeBetweenPasses);
       fprintf(stderr, "%32s :%8.3f seconds\n", "total time",

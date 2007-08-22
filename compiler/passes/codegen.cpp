@@ -464,8 +464,6 @@ void codegen(void) {
   codegen_cid2size(memoryfile.fptr);
   closeCFile(&memoryfile);
   beautify(&memoryfile);
-
   closeCFile(&mainfile);
   beautify(&mainfile);
-  makeBinary();
 }

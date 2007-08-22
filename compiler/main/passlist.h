@@ -20,6 +20,7 @@ void inlineFunctions();
 void insertWideReferences();
 void insertLineNumbers();
 void lowerIterators();
+void makeBinary();
 void normalize();
 void parallel();
 void parse();
@@ -71,7 +72,8 @@ PassInfo passlist[] = {
   // AST to C
   RUN(copyCollection),    // insert code needed for copying garbage collection
   RUN(insertLineNumbers), // insert line numbers for error messages
-  RUN(codegen),           // generate C code and build it
+  RUN(codegen),           // generate C code
+  RUN(makeBinary),        // invoke underlying C compiler
   LAST
 };
 
