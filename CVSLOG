@@ -115221,3 +115221,15 @@ Added files:
 	chapel/test/arrays/dinan/: no_element_type_error.chpl 
 	                           no_element_type_error.good 
 
+---------------------------------------------------------------------------
+
+08/22/07 15:53:53 -- dinan
+
+Log message:
+	Feature request future: Allow array element types to be inferred
+
+Added files:
+	chapel/test/arrays/dinan/: no_element_type.chpl 
+	                           no_element_type.future 
+	                           no_element_type.good 
+
