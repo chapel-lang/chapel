@@ -115107,3 +115107,15 @@ Modified files:
 Removed files:
 	chapel/test/modules/dinan/: module_reused_without_main.future 
 
+---------------------------------------------------------------------------
+
+08/22/07 11:13:53 -- dinan
+
+Log message:
+	added "make distrib" target for making a cleaner, distributable tarball
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Makefile 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: DIST_EXCLUDE 
+
