@@ -114928,3 +114928,33 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleAssociative.chpl Time.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/07 17:32:36 -- bradc
+
+Log message:
+	Fixed a bug in which trying to give the Chapel compiler
+	a directory didn't result in any sort of warning.  For
+	some reason, fopen() doesn't seem to complain about this
+	even though at least one web reference says it should.
+	Maybe the standard changed recently.
+	
+	So now, I try to read a character from each input file
+	as part of our "make sure these are all files" check
+	which already existed.  If I can't read a character,
+	I report an error complaining that the file is either
+	empty or that it's a directory.  If anyone knows of a
+	portable way to distinguish these two, let me know.
+	
+	Added emptyFile.chpl to lock in this behavior, even
+	though I'd be happy to have it accept the empty file
+	or do something less "either a or b is wrong".
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/test/compflags/bradc/: readDirInsteadOfFile.good 
+Added files:
+	chapel/test/compflags/bradc/: emptyFile.chpl emptyFile.good 
+Removed files:
+	chapel/test/compflags/bradc/: readDirInsteadOfFile.future 
+
