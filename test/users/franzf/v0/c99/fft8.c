@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,38 +40,38 @@ void init_fft8() {
 }
 
 void fft8(_Complex double  *Y, _Complex double  *X) {
-    _Complex double a1269, a1270, a1271, a1272, a1273, a1274, a1275, a1276, a1277, s120, s121, s122, s123, t1048, t1049, t1050, t1051, t1052, t1053, t1054, t1055, t1056, t1057, t1058;
-    a1269 = *(X);
-    a1270 = *((X + 4));
-    t1048 = (a1269 + a1270);
-    t1049 = (a1269 - a1270);
-    a1271 = *((X + 2));
-    a1272 = *((X + 6));
-    t1050 = (a1271 + a1272);
-    t1051 = (t1048 + t1050);
-    t1052 = (t1048 - t1050);
-    a1273 = (__I__*(a1271 - a1272));
-    t1053 = (t1049 + a1273);
-    t1054 = (t1049 - a1273);
-    a1274 = *((X + 1));
-    a1275 = *((X + 5));
-    t1055 = (a1274 + a1275);
-    s120 = ((0.70710678118654757 + __I__ * 0.70710678118654757)*(a1274 - a1275));
-    a1276 = *((X + 3));
-    a1277 = *((X + 7));
-    t1056 = (a1276 + a1277);
-    s121 = ((-0.70710678118654757 + __I__ * 0.70710678118654757)*(a1276 - a1277));
-    t1057 = (t1055 + t1056);
-    s122 = (__I__*(t1055 - t1056));
-    t1058 = (s120 + s121);
-    s123 = (__I__*(s120 - s121));
-    *(Y) = (t1051 + t1057);
-    *((Y + 4)) = (t1051 - t1057);
-    *((Y + 1)) = (t1053 + t1058);
-    *((Y + 5)) = (t1053 - t1058);
-    *((Y + 2)) = (t1052 + s122);
-    *((Y + 6)) = (t1052 - s122);
-    *((Y + 3)) = (t1054 + s123);
-    *((Y + 7)) = (t1054 - s123);
+  _Complex double a1269, a1270, a1271, a1272, a1273, a1274, a1275, a1276, a1277, s120, s121, s122, s123, t1048, t1049, t1050, t1051, t1052, t1053, t1054, t1055, t1056, t1057, t1058;
+  a1269 = *(X);
+  a1270 = *((X + 4));
+  t1048 = (a1269 + a1270);
+  t1049 = (a1269 - a1270);
+  a1271 = *((X + 2));
+  a1272 = *((X + 6));
+  t1050 = (a1271 + a1272);
+  t1051 = (t1048 + t1050);
+  t1052 = (t1048 - t1050);
+  a1273 = (__I__*(a1271 - a1272));
+  t1053 = (t1049 + a1273);
+  t1054 = (t1049 - a1273);
+  a1274 = *((X + 1));
+  a1275 = *((X + 5));
+  t1055 = (a1274 + a1275);
+  s120 = ((0.70710678118654757 + __I__ * 0.70710678118654757)*(a1274 - a1275));
+  a1276 = *((X + 3));
+  a1277 = *((X + 7));
+  t1056 = (a1276 + a1277);
+  s121 = ((-0.70710678118654757 + __I__ * 0.70710678118654757)*(a1276 - a1277));
+  t1057 = (t1055 + t1056);
+  s122 = (__I__*(t1055 - t1056));
+  t1058 = (s120 + s121);
+  s123 = (__I__*(s120 - s121));
+  *(Y) = (t1051 + t1057);
+  *((Y + 4)) = (t1051 - t1057);
+  *((Y + 1)) = (t1053 + t1058);
+  *((Y + 5)) = (t1053 - t1058);
+  *((Y + 2)) = (t1052 + s122);
+  *((Y + 6)) = (t1052 - s122);
+  *((Y + 3)) = (t1054 + s123);
+  *((Y + 7)) = (t1054 - s123);
 
 }

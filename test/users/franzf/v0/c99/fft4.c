@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,18 +40,18 @@ void init_fft4() {
 }
 
 void fft4(_Complex double  *Y, _Complex double  *X) {
-    _Complex double a230, a231, a232, a233, a234, t149, t150, t151;
-    a230 = *(X);
-    a231 = *((X + 2));
-    t149 = (a230 + a231);
-    t150 = (a230 - a231);
-    a232 = *((X + 1));
-    a233 = *((X + 3));
-    t151 = (a232 + a233);
-    *(Y) = (t149 + t151);
-    *((Y + 2)) = (t149 - t151);
-    a234 = (__I__*(a232 - a233));
-    *((Y + 1)) = (t150 + a234);
-    *((Y + 3)) = (t150 - a234);
+  _Complex double a230, a231, a232, a233, a234, t149, t150, t151;
+  a230 = *(X);
+  a231 = *((X + 2));
+  t149 = (a230 + a231);
+  t150 = (a230 - a231);
+  a232 = *((X + 1));
+  a233 = *((X + 3));
+  t151 = (a232 + a233);
+  *(Y) = (t149 + t151);
+  *((Y + 2)) = (t149 - t151);
+  a234 = (__I__*(a232 - a233));
+  *((Y + 1)) = (t150 + a234);
+  *((Y + 3)) = (t150 - a234);
 
 }

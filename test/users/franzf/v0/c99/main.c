@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -46,56 +46,51 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define EPS				1E-5
 
 
-int main(int argc, char **argv)
-{
-	int i, n, numruns = NUMRUNS;
-	clock_t start, finish;
-    double gflop, duration, runtime;
-    _Complex double *x, *y;
-    fft_func *fft;
+int main(int argc, char **argv) {
+  int i, n, numruns = NUMRUNS;
+  clock_t start, finish;
+  double gflop, duration, runtime;
+  _Complex double *x, *y;
+  fft_func *fft;
 
-    printf("Spiral 5.0 Chapel FFT example -- C99 version\n");
-
-    for (n = MIN_SIZE; n <= MAX_SIZE; n *= 2, numruns *=0.6) {
-	    //  initialization
-	    x = (_Complex double *) malloc(n * sizeof(_Complex double));
-	    y = (_Complex double *) malloc(n * sizeof(_Complex double));
-   
-	    x[0] = 1 + __I__;	
-	    for (i = 1; i < n; i++)
-			x[i] = 0; 
-		fft = init_fft(n);
-
-		//  check computation
-		fft(y, x);
-
-	    for (i = 0; i < n; i++)
-			if (cabs(y[i] - (1 + __I__)) > EPS) {
-				printf("Error: result incorrect.\n\n");
-				exit(1);
-			}
-
-		if (!(fft)) {
-			printf("Error: unsupported FFT size.\n\n");
-	        exit(1);
-	    }
-
-	    //  benchmark computation
-		start = clock();
-		for (i=0; i< numruns; i++) 
-			fft(y, x);
-		finish = clock();
-		duration = (double)(finish - start) / CLOCKS_PER_SEC;
-		runtime = 1E9 * duration /numruns;
-
-	    gflop = (5.0 * n * log((double)n) / (log(2.0) * runtime));
-		printf("fft_%d: %d ns = %.3f Gflop/s\n", n, (int)runtime, gflop);
-
-        free(x);
-        free(y);
-	}   
+  printf("Spiral 5.0 Chapel FFT example -- C99 version\n");
+  
+  for (n = MIN_SIZE; n <= MAX_SIZE; n *= 2, numruns *=0.6) {
+    //  initialization
+    x = (_Complex double *) malloc(n * sizeof(_Complex double));
+    y = (_Complex double *) malloc(n * sizeof(_Complex double));
+    
+    x[0] = 1 + __I__;	
+    for (i = 1; i < n; i++)
+      x[i] = 0; 
+    fft = init_fft(n);
+    
+    //  check computation
+    fft(y, x);
+    
+    for (i = 0; i < n; i++)
+      if (cabs(y[i] - (1 + __I__)) > EPS) {
+        printf("Error: result incorrect.\n\n");
+        exit(1);
+      }
+    
+    if (!(fft)) {
+      printf("Error: unsupported FFT size.\n\n");
+      exit(1);
+    }
+    
+    //  benchmark computation
+    start = clock();
+    for (i=0; i< numruns; i++) 
+      fft(y, x);
+    finish = clock();
+    duration = (double)(finish - start) / CLOCKS_PER_SEC;
+    runtime = 1E9 * duration /numruns;
+    
+    gflop = (5.0 * n * log((double)n) / (log(2.0) * runtime));
+    printf("fft_%d: %d ns = %.3f Gflop/s\n", n, (int)runtime, gflop);
+    
+    free(x);
+    free(y);
+  }   
 }
-
-
-
-

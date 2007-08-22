@@ -12,11 +12,11 @@ met:
 * Redistributions of source code must retain the above copyright
   notice, reference to Spiral, this list of conditions and the
   following disclaimer.
-* Redistributions in binary form must reproduce the above
+  * Redistributions in binary form must reproduce the above
   copyright notice, this list of conditions and the following
   disclaimer in the documentation and/or other materials provided
   with the distribution.
-* Neither the name of Carnegie Mellon University nor the name of its
+  * Neither the name of Carnegie Mellon University nor the name of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -40,10 +40,10 @@ void init_fft2() {
 }
 
 void fft2(_Complex double  *Y, _Complex double  *X) {
-    _Complex double a15, a16;
-    a15 = *(X);
-    a16 = *((X + 1));
-    *(Y) = (a15 + a16);
-    *((Y + 1)) = (a15 - a16);
+  _Complex double a15, a16;
+  a15 = *(X);
+  a16 = *((X + 1));
+  *(Y) = (a15 + a16);
+  *((Y + 1)) = (a15 - a16);
 
 }
