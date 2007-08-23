@@ -115373,3 +115373,15 @@ Removed files:
 	chapel/test/studies/madness/dinan/mad_chapel/: HgCoeffs.chpl 
 	                                               TwoScaleCoeffs.chpl 
 
+---------------------------------------------------------------------------
+
+08/23/07 13:46:35 -- bradc
+
+Log message:
+	Just noticed that the current compiler allows
+	array operations on rank-mismatched arrays.
+
+Added files:
+	chapel/test/arrays/bradc/: rankMismatch.chpl rankMismatch.future 
+	                           rankMismatch.good 
+
