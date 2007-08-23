@@ -115440,3 +115440,31 @@ Modified files:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: FTree-broken.chpl 
 
+---------------------------------------------------------------------------
+
+08/23/07 14:11:02 -- bradc
+
+Log message:
+	Checking in a new FFT update from Franz.  Makes a couple
+	of simple changes that should have a small but noticeable
+	effect on performance:
+	
+	- uses ranges rather than domains to control simple for
+	  loops
+	
+	- eliminates domains from formal arguments to avoid
+	  reindexing overhead
+	
+	This version also changes the loop structures from the
+	C version.
+
+Modified files:
+	chapel/test/users/franzf/v0/chpl/: .cvsignore chpl.zip 
+	                                   fft_1024.chpl fft_128.chpl 
+	                                   fft_16.chpl fft_2.chpl 
+	                                   fft_2048.chpl fft_256.chpl 
+	                                   fft_32.chpl fft_4.chpl 
+	                                   fft_512.chpl fft_64.chpl 
+	                                   fft_8.chpl main.chpl 
+	                                   output.txt 
+
