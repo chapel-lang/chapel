@@ -115423,3 +115423,20 @@ Log message:
 Added files:
 	chapel/test/users/shetag/: assoc.chpl assoc.future assoc.good 
 
+---------------------------------------------------------------------------
+
+08/23/07 13:59:00 -- dinan
+
+Log message:
+	Cleaned up Quadrature code.
+	
+	Added FTree-broken.chpl.  This code does not have the valid bit workaround.  If
+	you substitute this module for FTree.chpl you should see the associative arrays
+	bug.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Quadrature.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree-broken.chpl 
+
