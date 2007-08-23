@@ -1,0 +1,5 @@
+bug: associative array deletes
+
+For some reason, deleting elements from an associative
+domain in a particular order messes up the iterator over
+that domain.
