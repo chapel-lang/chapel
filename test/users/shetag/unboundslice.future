@@ -1,0 +1,4 @@
+bug: unbounded slice assignment yields out-of-bounds error
+
+Not sure why, but using an unbounded slice as the destination
+of an assignment seems to result in an out-of-bounds error.
