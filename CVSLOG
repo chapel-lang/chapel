@@ -115411,3 +115411,15 @@ Added files:
 	                                          initArrWithFn.future 
 	                                          initArrWithFn.good 
 
+---------------------------------------------------------------------------
+
+08/23/07 13:58:46 -- bradc
+
+Log message:
+	Adding Aniruddha bug indicating that deletes from
+	associative arrays cause problems with their
+	iterators.
+
+Added files:
+	chapel/test/users/shetag/: assoc.chpl assoc.future assoc.good 
+
