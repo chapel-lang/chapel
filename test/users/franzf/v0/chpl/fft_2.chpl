@@ -39,7 +39,7 @@ def init_fft2() {
 
 }
 
-def fft2(Y: [0..1] complex, X: [0..1] complex) {
+def fft2(Y: [] complex, X: [] complex) {
   Y(0) = (X(0) + X(1));
   Y(1) = (X(0) - X(1));
 

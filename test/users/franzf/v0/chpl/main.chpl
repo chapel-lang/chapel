@@ -58,21 +58,21 @@ def main() {
     //  initialization
     numruns = (numruns*0.7):int;
     X(0) = 1+1.0i;
-    forall i in [1..N-1] {
+    forall i in 1..N-1 {
       X(i) = 0;
     }
     init_fft(N);
     
     //  check computation
     fft(N, Y, X);
-    forall i in Ndom {
+    forall i in 0..N-1 {
       if abs(Y(i) - (1+1.0i)) > 1.0e-5 then 
         writeln("Error: result incorrect.");
     }    
     
     //  benchmark computation
     startTime = getCurrentTime(microseconds);
-    for i in [1..NUMRUNS] {
+    for i in 1..NUMRUNS {
       fft(N, Y, X);
     }
     execTime = (getCurrentTime(microseconds) - startTime)/NUMRUNS;
