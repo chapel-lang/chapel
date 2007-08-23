@@ -115468,3 +115468,19 @@ Modified files:
 	                                   fft_8.chpl main.chpl 
 	                                   output.txt 
 
+---------------------------------------------------------------------------
+
+08/23/07 14:41:37 -- dinan
+
+Log message:
+	Checkpoint.  Weird, this() isn't virtual??
+	
+	Cleanups all around.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Fn1d.chpl 
+	                                               Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               Tensor.chpl 
+
