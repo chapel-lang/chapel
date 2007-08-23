@@ -4,11 +4,10 @@ def tensorDup(A) {
     return B;
 }
 
-// In place transpose for rank 2 matrices
-def transpose(A: [] real) where A.rank == 2 {
+// Copy matrix B's transpose into matrix A
+def transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do
-        if i < j then A[i, j] <=> A[j, i];
-    return A;
+        A[i, j] = B[j, i];
 }
 
 // Transform a vector by a matrix

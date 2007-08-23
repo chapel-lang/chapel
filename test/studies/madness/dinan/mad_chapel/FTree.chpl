@@ -34,13 +34,13 @@ class FTree {
     }
 
 
-    // Iterator over all coefficients (FIXME unordered?)
+    // Unordered iterator over all coefficients
     def these() {
       //yield indices.these();
 
       // workaround
       for i in indices do
-        if has_coeffs(i.dim(1), i.dim(2)) then yield i;
+        if has_coeffs(i(1), i(2)) then yield i;
     }
 
 

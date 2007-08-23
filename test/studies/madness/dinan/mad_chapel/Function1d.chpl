@@ -13,38 +13,34 @@ class Function1d {
     var max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var compressed    = false;// keep track of what basis we are in
 
-    // hashes for sum and difference coeffs
+    // Sum and Difference coefficients
     var s = FTree(order=k);
     var d = FTree(order=k);
 
-    // two-scale relationship matrices
+    // Two-Scale relationship matrices
     var hgDom = [0..2*k-1, 0..2*k-1];
     var hg    : [hgDom] real;
     var hgT   : [hgDom] real;
 
-    // Quadrature stuff
+    // Quadrature coefficients
     var quadDom   = [0..k-1];
-    var quad_x    : [quadDom] real;    // points
-    var quad_w    : [quadDom] real;    // weights
-    var quad_npt  = k;
+    var quad_x    : [quadDom] real; // points
+    var quad_w    : [quadDom] real; // weights
 
     var quad_phiDom = [0..k-1, 0..k-1];
-    var quad_phi    : [quad_phiDom] real;  // phi[point,i]
-    var quad_phiT   : [quad_phiDom] real;  // phi[point,i] transpose
-    var quad_phiw   : [quad_phiDom] real;  // phi[point,i]*weight[point]
+    var quad_phi    : [quad_phiDom] real; // phi[point,i]
+    var quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
+    var quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
     //var rm, r0, rp;
-
-    // constructors and helpers
 
     def initialize() {
         writeln("Creating Function: k=", k, " thresh=", thresh);
 
         writeln("  initializing two-scale relation coefficients");
-        hg  = hg_getCoeffs(k); //FIXME: rename this fcn
-        hgT = hg;
-        transpose(hgT);
+        hg  = hg_getCoeffs(k);
+        transposeCopy(hgT, hg);
 
         writeln("  initializing quadrature coefficients");
         init_quadrature(k);
@@ -65,37 +61,32 @@ class Function1d {
     def init_quadrature(order: int) {
         quad_x   = gl_getPoints(k);
         quad_w   = gl_getWeights(k);
-        if (quad_npt != quad_w.numElements) then
-            halt("quadrature length mismatch");
 
-        for i in 0..quad_npt-1 {
+        for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
-            for m in 0..k-1 {
+            for m in quad_phiDom.dim(2) {
                 quad_phi[i, m]  = p[m];
                 quad_phiw[i, m] = quad_w[i]*p[m];
             }
         }
 
-        quad_phiT = transpose(tensorDup(quad_phi));
+        transposeCopy(quad_phiT, quad_phi);
     }
 
 
     /** s[n][l] = integral(phi[n][l](x) * f(x))
-      for box (n,l) project f(x) using quadrature rule
-      into scaling function basis
-      @param n   level
-      @param l   box index
-      @return    s[n][l] = integral(phi[n][l](x) * f(x))
+        for box (n,l) project f(x) using quadrature rule
+        into scaling function basis
      */
     def project(n: int, l: int) {
         var s     : [quadDom] real;
         var h     = 0.5 ** n;
         var scale = sqrt(h);
 
-        for mu in 0..k-1 {      // quadDom.dim(1)
+        for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
-            var fx = f.f(x);
-            for i in 0..k-1 do // quadDom.dim(2)
+            var fx = f(x);
+            for i in quad_phiDom.dim(2) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
 
@@ -103,17 +94,13 @@ class Function1d {
     }
 
 
-    /** refine numerical representation of f(x) to desired tolerance
-      @param n   level
-      @param l   box index
+    /** Refine numerical representation of f(x) to desired tolerance
      */
     def refine(n: int, l: int) {
         // project f(x) at next level
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
         var s: [0..2*k-1] real;
-
-        //writeln("   refine at (", n, ", ", l, ")");
 
         s[0..k-1]   = s0;
         s[k..2*k-1] = s1;
@@ -138,9 +125,8 @@ class Function1d {
     }
 
 
-    /* 
-       Evaluate numerical representation of f at x.  Performed in scaling
-       function basis only.
+    /** Evaluate numerical representation of f at x.  Performed in scaling
+        function basis only.
      */
     def this(x) {
         if compressed then reconstruct();
@@ -148,12 +134,11 @@ class Function1d {
     }
 
 
-    /*
-       eval f(x) using adaptively refined numerical representation of f(x)
-       answer should be within tolerance of the analytical f(x)
+    /** eval f(x) using adaptively refined numerical representation of f(x)
+        answer should be within tolerance of the analytical f(x)
 
-       Descend tree looking for box (n,l) with scaling function
-       coefficients containing the point x.
+        Descend tree looking for box (n,l) with scaling function
+        coefficients containing the point x.
      */
     def evaluate(in n=0, in l=0, in x): real {
         if s.has_coeffs(n, l) {
@@ -167,11 +152,11 @@ class Function1d {
         }
     }
 
-    /*
-       change from scaling function basis to multi-wavelet basis (s -> d)
-       tree is filled out with s[0][0] and d
-       n is level in tree
-       l is box index
+
+    /** change from scaling function basis to multi-wavelet basis (s -> d)
+        tree is filled out with s[0][0] and d
+        n is level in tree
+        l is box index
      */
     def compress(n=0, l=0) {
         if compressed then return;
@@ -199,11 +184,10 @@ class Function1d {
     }
 
 
-    /* 
-       change from multi-wavelet basis to scaling function basis (d -> s)
-       tree just has s at leaves
-       n is level in tree
-       l is box index
+    /** change from multi-wavelet basis to scaling function basis (d -> s)
+        tree just has s at leaves
+        n is level in tree
+        l is box index
      */
     def reconstruct(n=0, l=0) {
         if !compressed then return;
@@ -231,9 +215,9 @@ class Function1d {
         if n == 0 then compressed = false;
     }
 
+
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
-        @param printcoeff  print all coeff
     */
     def summarize() {
         writeln("\n-----------------------------------------------------");
@@ -241,7 +225,7 @@ class Function1d {
         for n in 0..max_level {
             var sum     = 0.0;
             var ncoeffs = 0;
-            for i in s.indices {
+            for i in s {
                 var lvl = i(1);
                 var idx = i(2);
                 if (lvl == n && s.has_coeffs(lvl, idx)) {
@@ -258,7 +242,7 @@ class Function1d {
         for n in 0..max_level {
             var sum     = 0.0;
             var ncoeffs = 0;
-            for i in d.indices {
+            for i in d {
                 var lvl = i(1);
                 var idx = i(2);
                 if (lvl == n && d.has_coeffs(lvl, idx)) {
@@ -273,7 +257,19 @@ class Function1d {
 
         writeln("-----------------------------------------------------\n");
     }
+
+
+    /** Evaluate the analytic and numerical functions over the given interval
+        and print the error.
+    */
+    def evalNPT(npt) {
+        for i in 1..npt do
+            writeln(" -- ", i/npt:real, ": f_analytic()=", f(i/npt:real),
+                    " F_numeric()=", this(i/npt:real), " err=", this(i/npt:real)-f(i/npt:real));
+    }
 }
+
+
 
 def main() {
     use MadFn1d;
@@ -288,30 +284,21 @@ def main() {
     var F2 = Function1d();
 
     writeln("\n** var F3 = Function1d(f=test3);");
-    var test3 = Fn_Test3();
-    var F3    = Function1d(k=5, thresh=1e-5, f=test3);
+    var F3 = Function1d(k=5, thresh=1e-5, f=Fn_Test3());
 
     F3.summarize();
 
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
-
-    for i in 1..npt do
-        writeln(" -- ", i/npt:real, ": (analytic) test3=", test3.f(i/npt:real),
-            " (numeric) F3=", F3(i/npt:real), " err=",
-            F3(i/npt:real)-test3.f(i/npt:real));
+    F3.evalNPT(10);
 
     writeln("\nCompressing F3 ...");
     F3.compress();
     F3.summarize();
+
     writeln("Reconstructing F3 ...");
     F3.reconstruct();
+    F3.summarize();
 
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
-
-    for i in 1..npt do
-        writeln(" -- ", i/npt:real, ": (analytic) test3=", test3.f(i/npt:real),
-            " (numeric) F3=", F3(i/npt:real), " err=",
-            F3(i/npt:real)-test3.f(i/npt:real));
-
-    F3.summarize();
+    F3.evalNPT(10);
 }

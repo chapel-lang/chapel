@@ -8,7 +8,7 @@ const PI = 3.14159265358979323846;
 
 /** gaussian with square normalized to 1 */
 class Fn_Test1: Fn1d {
-    def f(x: real): real {
+    def this(x: real): real {
         var a = 500.0;
         return (2*a/PI)**0.25 * exp(-a * (x-0.5)**2.0);
     }
@@ -17,7 +17,7 @@ class Fn_Test1: Fn1d {
 
 /** derivative of test1 */
 class Fn_DTest1: Fn1d {
-    def f(x: real): real {
+    def this(x: real): real {
         var a = 500.0;
         return -2.0*a*(x-0.5) * (2*a/PI) ** 0.25 * exp(-a * (x-0.5)**2.0);
     }
@@ -28,8 +28,8 @@ class Fn_DTest1: Fn1d {
 class Fn_Test2: Fn1d {
     var g = Fn_Test1();
 
-    def f(x: real): real {
-        return g.f(x-0.3) + g.f(x) + g.f(x+0.3);
+    def this(x: real): real {
+        return g.this(x-0.3) + g.f(x) + g.f(x+0.3);
     }
 };
 
@@ -38,8 +38,8 @@ class Fn_Test2: Fn1d {
 class Fn_DTest2: Fn1d {
     var g = Fn_DTest1();
 
-    def f(x: real): real {
-        return g.f(x-0.3) + g.f(x) + g.f(x+0.3);
+    def this(x: real): real {
+        return g.this(x-0.3) + g.f(x) + g.f(x+0.3);
     }
 };
 
@@ -49,7 +49,7 @@ class Fn_DTest2: Fn1d {
   the test code below.
  */
 class Fn_Test3: Fn1d {
-    def f(x: real): real {
+    def this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) then
             return 0.0;
@@ -61,7 +61,7 @@ class Fn_Test3: Fn1d {
 
 /** derivative of test3 */
 class Fn_DTest3: Fn1d {
-    def f(x: real): real {
+    def this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) {
             return 0.0;
