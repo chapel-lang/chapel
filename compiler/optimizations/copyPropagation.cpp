@@ -10,7 +10,6 @@
 bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
   return
     var != fn->getReturnSymbol() &&
-    !is_complex_type(var->type) &&
     var->type->refType &&
     !var->isConcurrent;
 }
@@ -26,6 +25,11 @@ bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& useSet)
         if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
           return true;
         if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)
+          return true;
+      }
+      if (is_complex_type(se->var->type)) {
+        if (parent->isPrimitive(PRIMITIVE_GET_REAL) ||
+            parent->isPrimitive(PRIMITIVE_GET_IMAG))
           return true;
       }
     }
