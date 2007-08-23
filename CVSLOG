@@ -115302,3 +115302,15 @@ Added files:
 Removed files:
 	chapel/test/users/franzf/v0/chpl/: NOTEST 
 
+---------------------------------------------------------------------------
+
+08/22/07 17:09:53 -- bradc
+
+Log message:
+	Adding performance keys and compiler options for Franz'
+	FFT test.
+
+Added files:
+	chapel/test/users/franzf/v0/chpl/: main.perfcompopts 
+	                                   main.perfkeys 
+
