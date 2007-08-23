@@ -115385,3 +115385,29 @@ Added files:
 	chapel/test/arrays/bradc/: rankMismatch.chpl rankMismatch.future 
 	                           rankMismatch.good 
 
+---------------------------------------------------------------------------
+
+08/23/07 13:50:41 -- bradc
+
+Log message:
+	Some new bugs submitted by Aniruddha.  Two perform
+	operations on array slices that result in out-of-bounds
+	errors or similar problems.  I'm not positive what
+	I'd expect these tests to do today, but these errors
+	aren't it.  (there are questions here about arrays
+	of different ranks, tensor vs. zipper slicing, etc.)
+	
+	The other test is yet another test of a class with
+	an array member -- it probably doesn't show anything
+	new, but I want to track codes sent to use by users
+	to make sure we fix them and can report when we do.
+
+Added files:
+	chapel/test/users/shetag/: unboundslice.chpl unboundslice.future 
+	                           unboundslice.good unboundslice2.chpl 
+	                           unboundslice2.future 
+	                           unboundslice2.good 
+	chapel/test/users/shetag/classWithArray/: initArrWithFn.chpl 
+	                                          initArrWithFn.future 
+	                                          initArrWithFn.good 
+
