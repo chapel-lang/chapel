@@ -115314,3 +115314,23 @@ Added files:
 	chapel/test/users/franzf/v0/chpl/: main.perfcompopts 
 	                                   main.perfkeys 
 
+---------------------------------------------------------------------------
+
+08/22/07 18:53:51 -- dinan
+
+Log message:
+	Implemented compress() and reconstruct() that converts the numerical
+	representation between the scaling and multiwavelet bases using the two-scale
+	relationship.  Also implemented summarize() that outputs the 2-norms of the sum
+	and difference coefficients in each level of the function tree for debugging.
+	
+	I ran into a bug in associative domains where things go bad removing something
+	from the domain and then trying to add it back in.  Worked around it for now by
+	adding valid flags to everything in the array so nothing has to be deleted.  I
+	plan to tackle this further tomorrow.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               Tensor.chpl 
+
