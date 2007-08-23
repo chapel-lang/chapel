@@ -166,12 +166,117 @@ class Function1d {
         }
     }
 
+    /*
+       change from scaling function basis to multi-wavelet basis (s -> d)
+       tree is filled out with s[0][0] and d
+       n is level in tree
+       l is box index
+     */
+    def compress(n=0, l=0) {
+        if compressed then return;
 
-    def reconstruct() { }
+        // sub-trees can be done in parallel
+        if !s.has_coeffs(n+1,   2*l) then compress(n+1,   2*l);
+        if !s.has_coeffs(n+1, 2*l+1) then compress(n+1, 2*l+1);
+
+        var sc: [0..2*k-1] real;
+        sc[0..k-1]   = s[n+1,   2*l];
+        sc[k..2*k-1] = s[n+1, 2*l+1];
+
+        // apply the two scale relationship to get difference coeff
+        // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
+        var dc = sc*hgT;
+
+        var dc_upper: [0..k-1] => dc[k..2*k-1];  // Reindex the upper half of dc
+        s[n, l] = dc[0..k-1];
+        d[n, l] = dc_upper;
+        
+        s.remove(n+1,   2*l);
+        s.remove(n+1, 2*l+1);
+
+        if n==0 then compressed = true;
+    }
+
+
+    /* 
+       change from multi-wavelet basis to scaling function basis (d -> s)
+       tree just has s at leaves
+       n is level in tree
+       l is box index
+     */
+    def reconstruct(n=0, l=0) {
+        if !compressed then return;
+
+        if d.has_coeffs(n, l) {
+            var dc: [0..2*k-1] real;
+            dc[0..k-1]   = s[n, l];
+            dc[k..2*k-1] = d[n, l];
+            d.remove(n, l);
+            s.remove(n, l);
+
+            // apply the two scale relationship to get difference coeff
+            // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
+            var sc = dc*hg;
+            
+            var sc_upper: [0..k-1] => sc[k..2*k-1]; // Reindex the upper half of s
+            s[n+1, 2*l  ] = sc[0..k-1];
+            s[n+1, 2*l+1] = sc_upper;
+            
+            // sub-trees can be done in parallel
+            reconstruct(n+1, 2*l);
+            reconstruct(n+1, 2*l+1);
+        }
+        
+        if n == 0 then compressed = false;
+    }
+
+    /** Mostly for debugging, print summary of coefficients,
+        optionally printing the norm of each block
+        @param printcoeff  print all coeff
+    */
+    def summarize() {
+        writeln("\n-----------------------------------------------------");
+        writeln("sum coefficients:");
+        for n in 0..max_level {
+            var sum     = 0.0;
+            var ncoeffs = 0;
+            for i in s.indices {
+                var lvl = i(1);
+                var idx = i(2);
+                if (lvl == n && s.has_coeffs(lvl, idx)) {
+                    var t = normf(s[lvl, idx]);
+                    sum  += t**2;
+                    ncoeffs += 1;
+                }
+            }
+            if ncoeffs != 0 then
+                writeln("   level ", n, "   #boxes=", ncoeffs, "  norm=", sqrt(sum));
+        }
+
+        writeln("difference coefficients:");
+        for n in 0..max_level {
+            var sum     = 0.0;
+            var ncoeffs = 0;
+            for i in d.indices {
+                var lvl = i(1);
+                var idx = i(2);
+                if (lvl == n && d.has_coeffs(lvl, idx)) {
+                    var t = normf(d[lvl, idx]);
+                    sum  += t**2;
+                    ncoeffs += 1;
+                }
+            }
+            if ncoeffs != 0 then
+                writeln("   level ", n, "   #boxes=", ncoeffs, "  norm=", sqrt(sum));
+        }
+
+        writeln("-----------------------------------------------------\n");
+    }
 }
 
 def main() {
     use MadFn1d;
+    var npt = 10;
 
     writeln("Mad Chapel -- One Step Beyond\n");
 
@@ -181,22 +286,31 @@ def main() {
     writeln("\n** var F2 = Function1d();");
     var F2 = Function1d();
 
-    //writeln("Phi Norms:\n", F2.quad_phi,
-    //        "\nPhi Transpose:\n", F2.quad_phiT,
-    //        "\nPhi Weights:\n", F2.quad_phiw
-    //       );
-
     writeln("\n** var F3 = Function1d(f=test3);");
     var test3 = Fn_Test3();
-    var F3    = Function1d(k=7, thresh=1e-10, f=test3);
+    var F3    = Function1d(k=5, thresh=1e-5, f=test3);
 
-    //writeln("Phi Norms:\n", F2.quad_phi,
-    //        "\nPhi Transpose:\n", F2.quad_phiT,
-    //        "\nPhi Weights:\n", F2.quad_phiw
-    //       );
+    F3.summarize();
 
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
 
-    for i in 1..10 do
-        writeln(" -- ", 0.1*i, ": (analytic) test3=", test3.f(0.1*i), " (numeric) F3=", F3(0.1*i));
+    for i in 1..npt do
+        writeln(" -- ", i/npt:real, ": (analytic) test3=", test3.f(i/npt:real),
+            " (numeric) F3=", F3(i/npt:real), " err=",
+            F3(i/npt:real)-test3.f(i/npt:real));
+
+    writeln("\nCompressing F3 ...");
+    F3.compress();
+    F3.summarize();
+    writeln("Reconstructing F3 ...");
+    F3.reconstruct();
+
+    writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
+
+    for i in 1..npt do
+        writeln(" -- ", i/npt:real, ": (analytic) test3=", test3.f(i/npt:real),
+            " (numeric) F3=", F3(i/npt:real), " err=",
+            F3(i/npt:real)-test3.f(i/npt:real));
+
+    F3.summarize();
 }

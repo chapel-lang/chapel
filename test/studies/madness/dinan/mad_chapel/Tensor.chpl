@@ -15,13 +15,24 @@ def transpose(A: [] real) where A.rank == 2 {
 def transform(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [V.domain] real = 0.0;
 
-    if V.domain.dim(1) != M.domain.dim(1) then
-        halt("Tensor1d:transform: C and A dims must match");
+    if V.domain.dim(1) != M.domain.dim(2) then
+        halt("transform: Vector and matrix dims must match");
 
-    for i in M.domain.dim(1) {
-        for ip in M.domain.dim(2) do
-            R[i] += V[ip] * M[ip, i];
-    }
+    for (i, j) in M.domain do
+        R[i] += V[j] * M[j, i];
+
+    return R;
+}
+
+// Vector-Matrix multiplication
+def *(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
+    var R: [M.domain.dim(2)] real = 0.0;
+
+    if V.domain.dim(1) != M.domain.dim(1) then
+        halt("*: Vector and matrix dims must match");
+
+    for (i, j) in M.domain do
+        R[i] += V[j] * M[i, j];
 
     return R;
 }
