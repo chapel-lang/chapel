@@ -63,8 +63,8 @@ class Function1d {
     }
 
     def init_quadrature(order: int) {
-        quad_x   = getGLPoints(k);
-        quad_w   = getGLWeights(k);
+        quad_x   = gl_getPoints(k);
+        quad_w   = gl_getWeights(k);
         if (quad_npt != quad_w.numElements) then
             halt("quadrature length mismatch");
 
