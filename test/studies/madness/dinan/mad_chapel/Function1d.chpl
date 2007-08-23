@@ -42,8 +42,9 @@ class Function1d {
         writeln("Creating Function: k=", k, " thresh=", thresh);
 
         writeln("  initializing two-scale relation coefficients");
-        hg  = getCoeffs(k); //FIXME: rename this fcn
-        hgT = transpose(tensorDup(hg));
+        hg  = hg_getCoeffs(k); //FIXME: rename this fcn
+        hgT = hg;
+        transpose(hgT);
 
         writeln("  initializing quadrature coefficients");
         init_quadrature(k);

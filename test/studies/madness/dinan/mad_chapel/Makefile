@@ -8,11 +8,10 @@ CFLAGS = --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
 SOURCES= Fn1d.chpl       \
          FTree.chpl      \
          Function1d.chpl \
-         HgCoeffs.chpl   \
          MadFn1d.chpl    \
          Quadrature.chpl \
          Tensor.chpl     \
-         TwoScaleCoeffs.chpl
+         TwoScale.chpl
 
 all: 1d
 

@@ -6,7 +6,7 @@ def tensorDup(A) {
 
 // In place transpose for rank 2 matrices
 def transpose(A: [] real) where A.rank == 2 {
-    for (i, j) in A.domain do
+    forall (i, j) in A.domain do
         if i < j then A[i, j] <=> A[j, i];
     return A;
 }
@@ -15,7 +15,7 @@ def transpose(A: [] real) where A.rank == 2 {
 def transform(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [V.domain] real = 0.0;
 
-    if V.domain.dim(1) != M.domain.dim(2) then
+    if V.domain.dim(1) != M.domain.dim(1) then
         halt("transform: Vector and matrix dims must match");
 
     for (i, j) in M.domain do
@@ -28,7 +28,7 @@ def transform(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
 def *(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [M.domain.dim(2)] real = 0.0;
 
-    if V.domain.dim(1) != M.domain.dim(1) then
+    if V.domain.dim(1) != M.domain.dim(2) then
         halt("*: Vector and matrix dims must match");
 
     for (i, j) in M.domain do

@@ -1,7 +1,7 @@
 record Coeff {
     var dom  : domain(1);
     var data : [dom] real;
-    var valid: bool = true;
+    var valid: bool = true; // FIXME: workaround remove bug using valid bit
 }
 
 class FTree {
@@ -34,7 +34,20 @@ class FTree {
     }
 
 
+    // Iterator over all coefficients (FIXME unordered?)
+    def these() {
+      //yield indices.these();
+
+      // workaround
+      for i in indices do
+        if has_coeffs(i.dim(1), i.dim(2)) then yield i;
+    }
+
+
     def has_coeffs(lvl: int, idx: int) {
+        // return indices.member((lvl, idx));
+
+        // FIXME: remove workaround:
         if indices.member((lvl, idx)) then
           return nodes[(lvl, idx)].valid;
         else return false;
@@ -46,7 +59,7 @@ class FTree {
         //writeln("FTree:  removing (", lvl, ", ", idx, ")");
         if indices.member((lvl, idx)) then
             //indices.remove((lvl, idx));
-            nodes[(lvl, idx)].valid = false;
+            nodes[(lvl, idx)].valid = false;  // FIXME: workaround remove bug
     }
 }
 
@@ -57,6 +70,8 @@ def main() {
     for (i, j) in [0..2, 0..2] do
         f[i, j] = (i, j);
 
+    for i in f do writeln(i);
+    for i in f(1) do writeln(i);
 
     for (i, j) in [0..2, 0..2] do
         writeln("(",i,", ",j,") = ", f[i, j]);
