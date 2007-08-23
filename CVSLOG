@@ -115354,3 +115354,22 @@ Log message:
 Modified files:
 	chapel/etc/vim/syntax/: chpl.vim 
 
+---------------------------------------------------------------------------
+
+08/23/07 12:13:28 -- dinan
+
+Log message:
+	Combined the TwoScaleCoeffs and HgCoeffs modules into TwoScale.  Added an
+	iterator to FTree.  Other cleanups.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               Makefile 
+	                                               Tensor.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: TwoScale.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: HgCoeffs.chpl 
+	                                               TwoScaleCoeffs.chpl 
+
