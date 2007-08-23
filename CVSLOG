@@ -115334,3 +115334,13 @@ Modified files:
 	                                               Function1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/23/07 10:56:27 -- deitz
+
+Log message:
+	Enabled copy propagation on variables of complex type.
+
+Modified files:
+	chapel/compiler/optimizations/: copyPropagation.cpp 
+
