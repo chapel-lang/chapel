@@ -115610,3 +115610,17 @@ Added files:
 	                              array_return_from_recursive.future 
 	                              array_return_from_recursive.good 
 
+---------------------------------------------------------------------------
+
+08/24/07 16:15:26 -- dinan
+
+Log message:
+	Tripped over this bug while writing the array return future:
+	
+	bug: Recursive function with a missing "return" leads to a runtime seg fault
+
+Added files:
+	chapel/test/functions/dinan/: recursive_return_oops.chpl 
+	                              recursive_return_oops.future 
+	                              recursive_return_oops.good 
+
