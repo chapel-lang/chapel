@@ -115552,3 +115552,21 @@ Modified files:
 Removed files:
 	chapel/test/modules/bradc/: multipleModulesSameName.future 
 
+---------------------------------------------------------------------------
+
+08/24/07 14:23:59 -- dinan
+
+Log message:
+	unimplemented feature: Not able to override these() in a subclass
+	
+	Overriding these() in a subclass results in a type conflict:
+	
+	$ chpl dyndispatch_these.chpl --no-devel
+	dyndispatch_these.chpl:4: error: conflicting return type specified for ':A.these(): _ic_these_A'
+	dyndispatch_these.chpl:11: error:   overridden by ':B.these(): _ic_these_B'
+
+Added files:
+	chapel/test/classes/dinan/: dyndispatch_these.chpl 
+	                            dyndispatch_these.future 
+	                            dyndispatch_these.good 
+
