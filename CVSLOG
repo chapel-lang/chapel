@@ -115593,3 +115593,20 @@ Added files:
 	chapel/test/modules/dinan/: use_module_in_same_file.chpl 
 	                            use_module_in_same_file.good 
 
+---------------------------------------------------------------------------
+
+08/24/07 16:08:07 -- dinan
+
+Log message:
+	unimplemented feature: Specifying array return types
+	
+	This test has a recursive function that returns an array.  This can't presently
+	be done in Chapel since type inference breaks down on recursive functions and
+	array return types are not supported.  This test comes from the get_coeffs()
+	function in Madness.
+
+Added files:
+	chapel/test/functions/dinan/: array_return_from_recursive.chpl 
+	                              array_return_from_recursive.future 
+	                              array_return_from_recursive.good 
+
