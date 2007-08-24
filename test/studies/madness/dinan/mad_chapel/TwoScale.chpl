@@ -74,7 +74,7 @@ def hg_getMaxK(): int {
   @param order   max order of polynomials to evaluate
   @return        double[] first k polynomials evaluated at point x
  */
-def pn(x: real, order: int) /* FIXME: :[order+1] real */ {
+def pn(x: real, order: int) {
     var p: [0..order] real;
     p[0] = 1.0;
     if(order == 0)
@@ -101,7 +101,7 @@ def pn(x: real, order: int) /* FIXME: :[order+1] real */ {
   @param k    evaluate first k polynomials
   @return     double[] first k polynomials evaluated at point x
  */ 
-def phi(x: real, k: int) /* FIXME: :[k] real */ {
+def phi(x: real, k: int) {
     var p: [0..k-1] real = 0.0;
     var order = k-1;
 

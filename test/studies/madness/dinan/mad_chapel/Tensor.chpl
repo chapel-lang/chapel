@@ -1,7 +1,9 @@
-// Array copy routine
-def tensorDup(A) {
-    var B = A;
-    return B;
+// Constant empty vector
+const None: [0..-1] real;
+
+// Check if we have None
+def isNone(x) {
+    return x.numElements == 0;
 }
 
 // Copy matrix B's transpose into matrix A
