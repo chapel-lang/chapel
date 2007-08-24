@@ -115537,3 +115537,18 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/inherit/: test_virtual_this.future 
 
+---------------------------------------------------------------------------
+
+08/24/07 11:05:08 -- diten
+
+Log message:
+	In checking for redefinition of symbols, symbols at root scope were getting
+	ignored, but shouldn't be. Not ignoring them fixes
+	modules/bradc/multipleModulesSameName.chpl
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/modules/bradc/: multipleModulesSameName.chpl 
+Removed files:
+	chapel/test/modules/bradc/: multipleModulesSameName.future 
+
