@@ -352,8 +352,7 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
         methods.add(fn);
         fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
         fn->insertFormalAtHead(new DefExpr(fn->_this));
-        if (strcmp("this", fn->name))
-          fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+        fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }
       if (def->parentSymbol || def->list)

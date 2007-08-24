@@ -1033,7 +1033,7 @@ instantiate_tuple(FnSymbol* fn) {
 
 FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
-  VarSymbol* var = toVarSymbol(fn->substitutions.get(fn->instantiatedFrom->getFormal(2)));
+  VarSymbol* var = toVarSymbol(fn->substitutions.get(fn->instantiatedFrom->getFormal(3)));
   if (!var || var->immediate->const_kind != NUM_KIND_INT)
     return fn;
   int64 index = var->immediate->int_value();

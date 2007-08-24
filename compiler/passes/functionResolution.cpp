@@ -960,14 +960,16 @@ const char* call2string(CallExpr* call,
   if (atypes.n > 1)
     if (atypes.v[0] == dtMethodToken)
       method = true;
+  if (!strcmp("this", name)) {
+    _this = true;
+    method = false;
+  }
   if (method) {
     if (aparams.v[1] && aparams.v[1]->isTypeVariable)
       str = stringcat(str, type2string(atypes.v[1]), ".");
     else
       str = stringcat(str, ":", type2string(atypes.v[1]), ".");
   }
-  if (!strcmp("this", name))
-    _this = true;
   if (!strncmp("_construct_", name, 11)) {
     str = stringcat(str, name+11);
   } else if (!_this) {
@@ -980,7 +982,7 @@ const char* call2string(CallExpr* call,
   if (method)
     start = 2;
   if (_this)
-    start = 1;
+    start = 2;
   for (int i = start; i < atypes.n; i++) {
     if (!first)
       first = true;
@@ -1011,7 +1013,7 @@ const char* fn2string(FnSymbol* fn) {
     fn = fn->instantiatedFrom;
   if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
-      str = stringcat(":", type2string(fn->getFormal(1)->type));
+      str = stringcat(":", type2string(fn->getFormal(2)->type));
       start = 1;
     } else {
       str = stringcat(":", type2string(fn->getFormal(2)->type), ".", fn->name);
@@ -1337,6 +1339,7 @@ resolveCall(CallExpr* call) {
         Expr* base = call->baseExpr;
         base->replace(new SymExpr("this"));
         call->insertAtHead(base);
+        call->insertAtHead(gMethodToken);
       }
     }
 
@@ -1353,6 +1356,7 @@ resolveCall(CallExpr* call) {
         base->replace(new SymExpr("this"));
         CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
+        call->insertAtHead(gMethodToken);
         call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
         call->getStmtExpr()->insertBefore(move);
         resolveCall(move);
@@ -1413,7 +1417,7 @@ resolveCall(CallExpr* call) {
         } else if (!strcmp("this", name)) {
           USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'",
                          (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
-                         type2string(atypes.v[0]),
+                         type2string(atypes.v[1]),
                          call2string(call, name, atypes, aparams, anames));
           USR_STOP();
         } else {

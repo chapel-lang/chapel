@@ -721,8 +721,7 @@ fn_decl_stmt_inner:
       $$->cname = $$->name;
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
       $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
-      if (strcmp("this", $3))
-        $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }
 ;
 
