@@ -152,6 +152,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->defSetGet = true;
   fn->addPragma("inline");
+  fn->isCompilerTemp = true;
   if (ct->symbol->hasPragma( "synchronization primitive")) 
     fn->addPragma( "synchronization primitive");
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -217,11 +218,13 @@ static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
   if (!chpl_main) {
     int rootUserModuleCount = 0;
+    ModuleSymbol* rootUserModule = NULL;
     for_alist(expr, theProgram->block->body) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
           if (mod->modtype == MOD_USER) {
             rootUserModuleCount++;
+            rootUserModule = mod;
           }
         }
       }
@@ -229,7 +232,7 @@ static void build_chpl_main(void) {
     if (rootUserModuleCount == 1) {
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
-      userModules.v[0]->block->insertAtTail(new DefExpr(chpl_main));
+      rootUserModule->block->insertAtTail(new DefExpr(chpl_main));
       normalize(chpl_main);
     } else if (strlen(mainModuleName) != 0) { 
       SymScope* progScope = theProgram->block->blkScope;

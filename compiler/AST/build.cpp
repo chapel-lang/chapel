@@ -93,6 +93,7 @@ static bool stmtIsGlob(Expr* stmt) {
 
 
 void createInitFn(ModuleSymbol* mod) {
+  static int moduleNumber = 0;
   currentLineno = mod->lineno;
   currentFilename = mod->filename;
 
@@ -101,7 +102,7 @@ void createInitFn(ModuleSymbol* mod) {
 
   if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
-    VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime"));
+    VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime", intstring(moduleNumber++)));
     theProgram->initFn->insertAtHead(new DefExpr(guard, new SymExpr(gTrue)));
     mod->initFn->insertAtTail(
       new CondStmt(

@@ -449,7 +449,7 @@ void initializeOuterModules(ModuleSymbol* mod) {
         if (mod != theProgram) {
           if (!m->initFn || !mod->initFn)
             INT_FATAL("Module with no initialization function");
-          m->initFn->insertAtTail(new CallExpr(mod->initFn));
+          m->initFn->insertAtHead(new CallExpr(mod->initFn));
         }
         initializeOuterModules(m);
       }

@@ -1,9 +1,17 @@
 module a {
-  module b { var a: int; }
+  var x = 2;
+  writeln("a");
+  module b { var aaa = x; writeln("a.b ", aaa); }
 }
 
-module b {}
+module b { writeln("b"); }
 
 def main() {
+  use a.b;
+  foo();
+}
+
+def foo() {
   use b;
 }
+

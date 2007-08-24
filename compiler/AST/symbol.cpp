@@ -615,6 +615,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->isMethod = isMethod;
   copy->visible = visible;
   copy->global = global;
+  copy->isCompilerTemp = isCompilerTemp;
   copy->isParam = isParam;
   copy->canParam = canParam;
   return copy;
