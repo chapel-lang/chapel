@@ -115505,3 +115505,16 @@ Modified files:
 Removed files:
 	chapel/test/modules/diten/: nested_module_collision.future 
 
+---------------------------------------------------------------------------
+
+08/24/07 09:11:11 -- deitz
+
+Log message:
+	Filed a future against Jim's observation that the "this" function does not
+	result in dynamic dispatch.
+
+Added files:
+	chapel/test/classes/deitz/inherit/: test_virtual_this.chpl 
+	                                    test_virtual_this.good 
+	                                    test_virtual_this.future 
+
