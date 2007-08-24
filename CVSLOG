@@ -115484,3 +115484,24 @@ Modified files:
 	                                               MadFn1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/24/07 08:45:36 -- diten
+
+Log message:
+	Fix 3 --baseline regressions.  Mark getter functions as compiler temps and
+	when functions get cloned, make sure the isCompilerTemp field gets copied.
+	
+	Also, fix a future about modules that would have name collisions if in the same
+	scope, but at different scopes. At this point, the only problem was the bool
+	value that prevents module initialization functions from being run multiple
+	times. Mangle the names of those symbols by appending a number to the end.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	chapel/test/modules/diten/: nested_module_collision.chpl 
+	                            nested_module_collision.good 
+Removed files:
+	chapel/test/modules/diten/: nested_module_collision.future 
+
