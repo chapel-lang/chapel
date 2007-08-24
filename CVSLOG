@@ -115581,3 +115581,15 @@ Added files:
 	chapel/test/modules/dinan/: module_name_sameas_file_name.chpl 
 	                            module_name_sameas_file_name.good 
 
+---------------------------------------------------------------------------
+
+08/24/07 15:57:55 -- dinan
+
+Log message:
+	Another simple module test I had hanging around.  Uses a module from the same
+	file where it is defined.
+
+Added files:
+	chapel/test/modules/dinan/: use_module_in_same_file.chpl 
+	                            use_module_in_same_file.good 
+
