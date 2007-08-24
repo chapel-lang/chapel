@@ -13,8 +13,6 @@ static void
 check_redefinition(Symbol* sym) {
   if (sym->isCompilerTemp)
     return;
-  if (sym->parentScope == theProgram->block->blkScope)
-    return;
   if (sym->overloadNext) {
     int count = 0;
     for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {

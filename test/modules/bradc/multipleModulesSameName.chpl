@@ -1,5 +1,5 @@
 module foo {
-  var x;
+  var x: int;
 
   def main() {
     writeln("In foo");
@@ -8,6 +8,6 @@ module foo {
 
 
 module foo {
-  var y;
+  var y: int;
 
 }

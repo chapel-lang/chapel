@@ -1,4 +1,0 @@
-error message: module naming collision
-
-This code shows that if user code contains two modules of the
-same name, the error message that we create could be clearer.
