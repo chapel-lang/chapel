@@ -115518,3 +115518,22 @@ Added files:
 	                                    test_virtual_this.good 
 	                                    test_virtual_this.future 
 
+---------------------------------------------------------------------------
+
+08/24/07 10:37:27 -- deitz
+
+Log message:
+	Added a method token formal to all 'this' methods to make the 'this'
+	method look more similar to other methods.  Added a method token
+	actual to all calls to 'this' methods.
+	
+	Since dynamic dispatch keys off of the method token, this fixes
+	dynamic dispatch on 'this' methods.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+Removed files:
+	chapel/test/classes/deitz/inherit/: test_virtual_this.future 
+
