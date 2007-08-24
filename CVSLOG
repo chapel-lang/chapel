@@ -115624,3 +115624,16 @@ Added files:
 	                              recursive_return_oops.future 
 	                              recursive_return_oops.good 
 
+---------------------------------------------------------------------------
+
+08/24/07 16:52:13 -- dinan
+
+Log message:
+	Implemented norm2() on Functions.  Working on adaptive refinement, not getting
+	the right numerical results yet..
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+	                                               TwoScale.chpl 
+
