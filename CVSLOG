@@ -115570,3 +115570,14 @@ Added files:
 	                            dyndispatch_these.future 
 	                            dyndispatch_these.good 
 
+---------------------------------------------------------------------------
+
+08/24/07 15:55:31 -- dinan
+
+Log message:
+	Simple test where a file contains a module with the same name as the file.
+
+Added files:
+	chapel/test/modules/dinan/: module_name_sameas_file_name.chpl 
+	                            module_name_sameas_file_name.good 
+
