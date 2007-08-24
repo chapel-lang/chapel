@@ -1,0 +1,6 @@
+unimplemented feature: Specifying array return types
+
+This test has a recursive function that returns an array.  This can't presently
+be done in Chapel since type inference breaks down on recursive functions and
+array return types are not supported.  This test comes from the get_coeffs()
+function in Madness.
