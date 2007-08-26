@@ -2,9 +2,11 @@ def f(x) {
     if x == 0 {
         var y : [1..10] int;
         return y;
+    }
 
-    } else 
-        /* return */ f(x-1);
+    return 5;
 }
 
-var x = f(10);
+def main() {
+  var x = f(10);
+}

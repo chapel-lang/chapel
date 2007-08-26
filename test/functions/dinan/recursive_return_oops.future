@@ -1,1 +1,0 @@
-bug: Recursive function with a missing "return" leads to a runtime seg fault
