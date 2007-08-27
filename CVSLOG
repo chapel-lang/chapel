@@ -115813,3 +115813,34 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: ChapelBase.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 14:19:05 -- dinan
+
+Log message:
+	Well, it finally happened, I broke the 1000 lines mark:
+	
+	$ wc -l *.chpl *.dat
+	    8 Fn1d.chpl
+	   71 FTree-broken.chpl
+	   78 FTree.chpl
+	  473 Function1d.chpl
+	   74 MadFn1d.chpl
+	  104 Quadrature.chpl
+	   50 Tensor.chpl
+	  162 TwoScale.chpl
+	  133 hg_coeffs.dat (we should count this since it counted in java and python)
+	 1153 total
+	
+	For comparison, the Java implementation doesn't even do differentiation and it
+	is over 2000 lines long.  The python code is around 1200 lines and has slightly
+	more functionality (add, subtract, and gaxpy) but it is nowhere near as
+	beautiful as the Chapel version IMHO.
+	
+	Cleanups all around.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+	                                               TwoScale.chpl 
+
