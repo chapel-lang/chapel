@@ -29,17 +29,17 @@ class Fn_Test2: Fn1d {
     var g = Fn_Test1();
 
     def this(x: real): real {
-        return g.this(x-0.3) + g.f(x) + g.f(x+0.3);
+        return g.this(x-0.3) + g(x) + g(x+0.3);
     }
 };
 
 
 /** derivative of test2 */
 class Fn_dTest2: Fn1d {
-    var g = Fn_DTest1();
+    var g = Fn_dTest1();
 
     def this(x: real): real {
-        return g.this(x-0.3) + g.f(x) + g.f(x+0.3);
+        return g.this(x-0.3) + g(x) + g(x+0.3);
     }
 };
 

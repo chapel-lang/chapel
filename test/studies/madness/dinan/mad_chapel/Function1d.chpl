@@ -6,6 +6,7 @@ use TwoScale;
 use Fn1d;
 
 config const verbose = false;
+config const debug   = false;
 
 class Function1d {
     var k             = 5;    // use first k Legendre polynomials as the basis in each box
@@ -41,32 +42,32 @@ class Function1d {
     var rp    : [dcDom] real;
 
     def initialize() {
-        if verbose then writeln("Creating Function1d: k=", k, " thresh=", thresh);
+        if debug then writeln("Creating Function1d: k=", k, " thresh=", thresh);
 
-        if verbose then writeln("  initializing two-scale relation coefficients");
+        if debug then writeln("  initializing two-scale relation coefficients");
         hg  = hg_getCoeffs(k);
         transposeCopy(hgT, hg);
 
-        if verbose then writeln("  initializing quadrature coefficients");
+        if debug then writeln("  initializing quadrature coefficients");
         init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
-        if verbose then writeln("  initializing tridiagonal derivative operator");
+        if debug then writeln("  initializing tridiagonal derivative operator");
         make_dc_periodic(k);
 
         // initial refinement of analytic function f(x)
         if f != nil {
-            if verbose then writeln("  performing initial refinement of f(x)");
+            if debug then writeln("  performing initial refinement of f(x)");
             for l in 0..2**initial_level-1 do
                 refine(initial_level, l);
         }
 
-        if verbose then writeln("done.");
+        if debug then writeln("done.");
     }
 
 
     /** Initialize the quadrature coefficient matricies.
-      */
+     */
     def init_quadrature(order: int) {
         quad_x   = gl_getPoints(k);
         quad_w   = gl_getWeights(k);
@@ -250,7 +251,7 @@ class Function1d {
         the tree of scaling function coefficients.
      */
     def recur_down(n, l) {
-        if verbose then writeln(" + recur_down(", n, ", ", l, ")");
+        if debug then writeln(" + recur_down(", n, ", ", l, ")");
 
         var sc : [0..2*k-1] real;
         sc[0..k-1] = s[n, l];
@@ -274,7 +275,7 @@ class Function1d {
         Else, return None (corresponding child boxes exist at a finer scale)
      */
     def get_coeffs(_n, _l) {
-        if verbose then writeln(" @ get_coeffs(", _n, ", ", _l, ")");
+        if debug then writeln(" @ get_coeffs(", _n, ", ", _l, ")");
         var n = _n, l = _l;
 
         // Walk up the tree to find scaling coeffs
@@ -310,7 +311,7 @@ class Function1d {
      */
     def sclean(n=0, l=0, in cleaning=false) {
         if cleaning { //then
-            if verbose then writeln(" + sclean deleting (", n, ", ", l, ")");
+            if debug then writeln(" + sclean deleting (", n, ", ", l, ")");
             s.remove(n, l);
         } else
             cleaning = s.has_coeffs(n, l);
@@ -332,7 +333,7 @@ class Function1d {
      */
     def diff() {
         def diffHelper(n = 0, l = 0, result) {
-            if verbose then writeln(" * diff(", n, ", ", l, ")");
+            if debug then writeln(" * diff(", n, ", ", l, ")");
             if !s.has_coeffs(n, l) {
                 // Sub trees can run in parallel
                 // Run down tree until we hit scaling function coefficients
@@ -341,7 +342,7 @@ class Function1d {
             } else {
                 // These can also go in parallel since may involve
                 // recurring up & down the tree.
-                if verbose then writeln(" * diff: coeffs at (", n, ", ", l, ")");
+                if debug then writeln(" * diff: coeffs at (", n, ", ", l, ")");
                 var sm = get_coeffs(n, l-1);
                 var sp = get_coeffs(n, l+1);
                 var s0 = s[n, l];
@@ -417,11 +418,13 @@ class Function1d {
 
     /** Evaluate the analytic and numerical functions over the given interval
         and print the error.
-    */
+     */
     def evalNPT(npt) {
-        for i in 1..npt do
-            writeln(" -- ", i/npt:real, ": f_analytic()=", f(i/npt:real),
-                    " F_numeric()=", this(i/npt:real), " err=", this(i/npt:real)-f(i/npt:real));
+        for i in 1..npt {
+            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            writeln(" -- ", i/npt:real, ": f_analytic()=", fval, " F_numeric()=", Fval,
+                " err=", Fval-fval, if (Fval-fval) > thresh then "  !! > thresh" else "");
+        }
     }
 }
 
@@ -433,37 +436,42 @@ def main() {
 
     writeln("Mad Chapel -- One Step Beyond\n");
 
-    writeln("** var F1 : Function1d = nil;");
-    var F1 : Function1d = nil;
+    var fcn  : [1..3] Fn1d = (Fn_Test1():Fn1d,  Fn_Test2():Fn1d,  Fn_Test3():Fn1d);
+    var dfcn : [1..3] Fn1d = (Fn_dTest1():Fn1d, Fn_dTest2():Fn1d, Fn_dTest3():Fn1d);
 
-    writeln("\n** var F2 = Function1d();");
-    var F2 = Function1d();
+    for i in fcn.domain {
+        writeln("** Testing function ", i);
+        var F = Function1d(k=5, thresh=1e-5, f=fcn[i]);
 
-    writeln("\n** var F3 = Function1d(f=test3);");
-    var F3 = Function1d(k=5, thresh=1e-5, f=Fn_Test3());
-    
-    writeln("F3.norm2() = ", F3.norm2());
-    if verbose then F3.summarize();
+        writeln("F", i, ".norm2() = ", F.norm2());
 
-    writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
-    F3.evalNPT(10);
+        if verbose {
+            F.summarize();
+            writeln("Evaluating F", i, " on [0, 1]:");
+            F.evalNPT(npt);
+            writeln();
+        }
 
-    writeln("\nCompressing F3 ...");
-    F3.compress();
-    if verbose then F3.summarize();
+        writeln("Compressing F", i, " ...");
+        F.compress();
+        if verbose then F.summarize();
 
-    writeln("Reconstructing F3 ...");
-    F3.reconstruct();
-    F3.summarize();
+        writeln("Reconstructing F", i, " ...");
+        F.reconstruct();
+        writeln("F", i, ".norm2() = ", F.norm2());
+        if verbose then F.summarize();
 
-    writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
-    F3.evalNPT(10);
+        writeln("Evaluating F", i, " on [0, 1]:");
+        F.evalNPT(npt);
 
-    writeln("\nDifferentiating F3 ...");
-    var dF3 = F3.diff();
-    dF3.f = Fn_dTest3():Fn1d; // Fudge it for the sake of evalNPT()
-    if verbose then dF3.summarize();
+        writeln("\nDifferentiating F", i, " ...");
+        var dF = F.diff();
+        dF.f = dfcn[i]:Fn1d; // Fudge it for the sake of evalNPT()
+        if verbose then dF.summarize();
 
-    writeln("\nEvaluating dF3 on [0, 1] (singularity at 0.5):");
-    dF3.evalNPT(10);
+        writeln("\nEvaluating dF", i, " on [0, 1]:");
+        dF.evalNPT(npt);
+
+        if i < 3 then writeln("\n======================================================================\n");
+    }
 }
