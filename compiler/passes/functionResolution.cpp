@@ -250,7 +250,7 @@ canInstantiate(Type* actualType, Type* formalType) {
 // results in a coercion.
 static bool
 canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn) {
-  if (actualType->symbol->hasPragma( "synchronization primitive")) {
+  if (actualType->symbol->hasPragma( "sync")) {
     if (actualType->isGeneric) {
       return false;
     } else {

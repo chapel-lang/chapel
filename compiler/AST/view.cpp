@@ -445,10 +445,11 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n");
           fprintf(html_file, "<LI>");
           if (DefExpr *def = toDefExpr( ast))
-            if (def->sym->hasPragma( "sync var")) {
-              fprintf( html_file, "<B>sync</B> ");
-            } else if (def->sym->hasPragma( "single var")) {
-              fprintf( html_file, "<B>single</B> ");
+            if (def->sym->hasPragma( "sync")) {
+              if (def->sym->hasPragma( "single"))
+                fprintf( html_file, "<B>single</B> ");
+              else
+                fprintf( html_file, "<B>sync</B> ");
             }
           fprintf(html_file, "<B>type ");
           html_print_symbol( html_file, pass, e->sym, true);
@@ -457,10 +458,11 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           fprintf(html_file, "<B>type </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (VarSymbol* vs=toVarSymbol(e->sym)) {
-          if (vs->type->symbol->hasPragma( "sync var")) {
-            fprintf( html_file, "<B>sync </B>");
-          } else if (vs->type->symbol->hasPragma( "single var")) {
-            fprintf( html_file, "<B>single </B>");
+          if (vs->type->symbol->hasPragma("sync")) {
+            if (vs->type->symbol->hasPragma( "single"))
+              fprintf( html_file, "<B>single </B>");
+            else
+              fprintf( html_file, "<B>sync </B>");
           }
           fprintf(html_file, "<B>var </B> ");
           html_print_symbol( html_file, pass, e->sym, true);

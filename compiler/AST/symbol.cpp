@@ -686,7 +686,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
       wrapper_formal->type = ts->type;
-      if (ts->hasPragma( "synchronization primitive")) {
+      if (ts->hasPragma("sync")) {
         // check if this is a member access
         DefExpr *mt;
         if ((this->numFormals() > 0) &&
@@ -694,12 +694,12 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
             (mt->sym->type == dtMethodToken) &&
             (_this == this->getFormal(2))) {
           // call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
-          call->insertAtTail( new CallExpr( "value", gMethodToken, wrapper_formal));
+          call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
         } else {
-          if (ts->hasPragma( "sync var"))
-            call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
-          else   // else, single var case
-            call->insertAtTail( new CallExpr( "readFF", wrapper_formal));
+          if (ts->hasPragma("single"))
+            call->insertAtTail(new CallExpr("readFF", wrapper_formal));
+          else
+            call->insertAtTail(new CallExpr("readFE", wrapper_formal));
         }
       } else if (ts->hasPragma("ref")) {
         // && !formal->isTypeVariable) {  -- see note in resolution pruning
@@ -764,7 +764,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_type = formal->defPoint->exprType->copy();
       else if (formal->type != dtUnknown && !formal->type->isGeneric)
         temp_type = new SymExpr(formal->type->symbol);
-      if (formal->type->symbol->hasPragma("synchronization primitive") ||
+      if (formal->type->symbol->hasPragma("sync") ||
           formal->type->symbol->hasPragma("ref"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
@@ -1120,9 +1120,9 @@ count_instantiate_with_recursion(Type* t) {
 
 static Type*
 getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
-  if (t->symbol->hasPragma( "synchronization primitive") &&
+  if (t->symbol->hasPragma( "sync") &&
       !fn->hasPragma("ref")) {
-    if (!fn->hasPragma("synchronization primitive") ||
+    if (!fn->hasPragma("sync") ||
         (fn->isMethod && (t->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
       Symbol* arg = toSymbol(key);
@@ -1269,7 +1269,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     retType->symbol->defPoint->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
-    if (clone->hasPragma( "synchronization primitive"))
+    if (clone->hasPragma( "sync"))
       clone->type->defaultValue = NULL;
     clone->type->substitutions.copy(retType->substitutions);
     clone->type->dispatchParents.copy(retType->dispatchParents);

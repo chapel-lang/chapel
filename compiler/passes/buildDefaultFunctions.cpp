@@ -153,8 +153,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->defSetGet = true;
   fn->addPragma("inline");
   fn->isCompilerTemp = true;
-  if (ct->symbol->hasPragma( "synchronization primitive")) 
-    fn->addPragma( "synchronization primitive");
+  if (ct->symbol->hasPragma( "sync")) 
+    fn->addPragma( "sync");
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);

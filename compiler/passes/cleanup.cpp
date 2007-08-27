@@ -254,7 +254,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
-  if (ct->symbol->hasPragma("synchronization primitive"))
+  if (ct->symbol->hasPragma("sync"))
     ct->defaultValue = NULL;
   char* name;
   if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
@@ -401,8 +401,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);
-    if (ts->hasPragma("synchronization primitive"))
-      fn->addPragma("synchronization primitive");
+    if (ts->hasPragma("sync"))
+      fn->addPragma("sync");
   }
 }
 
