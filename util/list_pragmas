@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+@lines = (`grepmod pragma`, `grepchpl addPragma`);
+foreach $line (@lines) {
+    @pragmas = $line =~ m/ragma.*?\"(.*?)\"/g;
+    foreach $pragma (@pragmas) {
+        $all_pragmas{$pragma} = 1;
+    }
+}
+
+foreach $pragma (sort keys %all_pragmas) {
+    print "$pragma\n";
+}
