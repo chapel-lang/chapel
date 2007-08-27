@@ -115895,3 +115895,17 @@ Modified files:
 	                         functionResolution.cpp 
 	chapel/modules/standard/: ChapelBase.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 16:01:15 -- dinan
+
+Log message:
+	Wrote a new main() that runs all of the sample functions in MadFn1d.  Also
+	added verbose and debug config vars.  Verbose will cause the coefficient
+	summaries to be printed out.  Debug will cause (tons of) debugging info to be
+	printed out.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               MadFn1d.chpl 
+
