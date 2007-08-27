@@ -115691,3 +115691,47 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleAssociative.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 11:41:01 -- bradc
+
+Log message:
+	Fixing a few more associative domain/array bugs:
+	(1) accessing an associative array out-of-bounds
+	now results in an out-of-bounds halt message; (2)
+	removing an index from an associative array results
+	in a similar halt message.
+	
+	Fixed up some tests of Wayne's that assumed that
+	an index could be removed from an indefinite
+	domain even if it wasn't in there (I can't think
+	of a reason to support this presently, and the
+	spec doesn't say either way, so would prefer to
+	throw the error until that creates a problem).
+	
+	Made slight mods to Jim's motivating tests to
+	have them print the domain/array if a halt
+	isn't reached, just as a sanity check that
+	they're working.
+	
+	Removed Aniruddha associative array future which
+	my previous check-in fixed.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleAssociative.chpl 
+	chapel/test/domains/indefinite/waynew/: add_remove.chpl 
+	                                        add_remove.good 
+	                                        add_remove2.chpl 
+	                                        add_remove2.good 
+	                                        indef4.chpl 
+	chapel/test/domains/dinan/: assoc_array_access_oob.chpl 
+	                            assoc_array_access_oob.good 
+	                            assoc_domain_remove_oob.chpl 
+	                            assoc_domain_remove_oob.good 
+Added files:
+	chapel/test/domains/dinan/: .cvsignore 
+Removed files:
+	chapel/test/users/shetag/: assoc.future 
+	chapel/test/domains/dinan/: assoc_array_access_oob.future 
+	                            assoc_domain_remove_oob.future 
+
