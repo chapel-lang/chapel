@@ -115768,3 +115768,17 @@ Log message:
 Modified files:
 	chapel/modules/standard/: ChapelArray.chpl ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 12:06:29 -- dinan
+
+Log message:
+	Fixed chained these() in FTree-broken, added matrix-vector multiply to Tensor,
+	cleanups to class names in MadFn1d, Function1d: differentiation is working!!
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree-broken.chpl 
+	                                               Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               Tensor.chpl 
+
