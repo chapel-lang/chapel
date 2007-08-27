@@ -768,11 +768,26 @@ pragma "inline" def _cast(type t, x: complex(?w)) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: t) where !_isPrimitiveType(t)
-  return x;
+pragma "inline" def _cast(type t, x: enumerated) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where x:object & t:x
+pragma "inline" def _cast(type t, x) where t:value & x:t {
+  var y: t;
+  y = x;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x) where t:object & x:t
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x) where t:object & x:_nilType
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x) where x:object & t:x & (x.type != t)
   return __primitive("dynamic_cast", t, x);
+
+pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
+  return nil;
 
 // handle default iterators
 pragma "inline" def _getIterator(ic: _iteratorClass)

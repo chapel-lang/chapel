@@ -3080,9 +3080,18 @@ pruneResolvedTree() {
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
           tmp->isCompilerTemp = true;
           fn->insertAtHead(new DefExpr(tmp));
-          ASTMap map;
-          map.put(formal, tmp);
-          update_symbols(fn->body, &map);
+          forv_Vec(SymExpr, se, formal->uses) {
+
+            // why? because dereference is inserted on type formals
+            // that are coerced; see note in coercion_wrapper
+            if (CallExpr* call = toCallExpr(se->parentExpr))
+              if (call->isPrimitive(PRIMITIVE_GET_REF))
+                se->getStmtExpr()->remove();
+
+            se->var = tmp;
+          }
+          forv_Vec(SymExpr, se, formal->defs)
+            se->var = tmp;
         }
       }
     }

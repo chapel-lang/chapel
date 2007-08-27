@@ -712,16 +712,15 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
           else   // else, single var case
             call->insertAtTail( new CallExpr( "readFF", wrapper_formal));
         }
-      } else if (ts->hasPragma("ref") && !formal->isTypeVariable) {
+      } else if (ts->hasPragma("ref")) {
+        // && !formal->isTypeVariable) {  -- see note in resolution pruning
         VarSymbol* tmp = new VarSymbol("_tmp");
         tmp->isCompilerTemp = true;
         wrapper->insertAtTail(new DefExpr(tmp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
         call->insertAtTail(tmp);
-      } else if (formal->type == dtString && toEnumType(wrapper_formal->type)) {
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
       } else {
-        call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
       }
     } else {
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
