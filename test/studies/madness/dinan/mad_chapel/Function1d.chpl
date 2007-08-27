@@ -73,9 +73,9 @@ class Function1d {
 
         for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
-            quad_phi [i, quad_phiDom.dim(2)] = p;            // FIXME: quad_phi [i, ..] = p;
-            quad_phiw[i, quad_phiDom.dim(2)] = quad_w[i] * p;//        quad_phiw[i, ..] = ...;
-            quad_phiT[quad_phiDom.dim(2), i] = p;
+            quad_phi [i..i, ..] = p;            // FIXME: quad_phi [i, ..] = p;
+            quad_phiw[i..i, ..] = quad_w[i] * p;//        quad_phiw[i, ..] = ...;
+            quad_phiT[.., i..i] = p;
         }
     }
 
@@ -302,6 +302,7 @@ class Function1d {
         return s[_n, _l];
     }
 
+
     /** Differentiation (also inner and mul) may leave scaling function
         coefficients below their original level.  Recur down to the
         locally first box with scaling function coefficients.
@@ -345,7 +346,7 @@ class Function1d {
                 var sp = get_coeffs(n, l+1);
                 var s0 = s[n, l];
 
-                // We definitely have s0, check if we found sm and sp at this level
+                // We have s0, check if we found sm and sp at this level
                 if !isNone(sm) && !isNone(sp) {
                     var r = rp*sm + r0*s0 + rm*sp;
                     result.s[n, l] = r * 2.0**n;
@@ -372,12 +373,7 @@ class Function1d {
      */
     def norm2() {
         if compressed then reconstruct();
-        
-        var sum = 0.0;
-        for i in s do
-            sum += normf(s[i(1), i(2)])**2;
-
-        return sqrt(sum);
+        return sqrt(+ reduce [i in s] normf(s[i(1), i(2)])**2);
     }
 
 
