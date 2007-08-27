@@ -115855,3 +115855,13 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 14:47:08 -- deitz
+
+Log message:
+	Added a script to print out all of the pragmas used in the Chapel compiler.
+
+Added files:
+	chapel/util/: list_pragmas 
+
