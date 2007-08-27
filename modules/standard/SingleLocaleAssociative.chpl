@@ -78,8 +78,15 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def these() {
-    for i in 0..num_inds-1 do
-      yield inds(i).data;
+    var i = 0;
+    var numFound = 0;
+    while numFound < num_inds {
+      if (inds(i).valid) {
+        numFound += 1;
+        yield inds(i).data;
+      }
+      i += 1;
+    }
   }
 
   // internal routines
