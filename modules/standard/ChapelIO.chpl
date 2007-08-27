@@ -309,3 +309,9 @@ def _debugWriteln(args: string ...?n) {
 def _debugWriteln() {
   _debugWrite("\n");
 }
+
+def _ddata.writeThis(f: Writer) {
+  for i in 0..size-2 do
+    f.write(this(i), " ");
+  f.write(this(size-1));
+}

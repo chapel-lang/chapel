@@ -77,6 +77,8 @@ record range {
     } else {
       compilerError("unexpected boundedness case in range.this()");
     }
+    // will never get here, but to avoid compiler errors
+    //    return range(eltType, bounded, stridable, _low, _high, subrange.stride);
   }
 
   def these() {
