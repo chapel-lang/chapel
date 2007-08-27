@@ -115749,3 +115749,22 @@ Modified files:
 	chapel/modules/standard/: ChapelArray.chpl ChapelIO.chpl 
 	                          ChapelRange.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 11:45:22 -- bradc
+
+Log message:
+	Oops -- in previous commit, didn't mean to commit
+	these two files, tried to abort, but failed to do
+	so.  Backing out these changes (which were commented
+	out, but still...)
+	
+	The thing I was about to say in the previous log message
+	but didn't get to is that I added the routine in
+	question to the ChapelIO.chpl module rather than the
+	ChapelBase.chpl module (where ddata is defined) is so
+	that it would work even with the --nostdincs flag.
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl ChapelRange.chpl 
+
