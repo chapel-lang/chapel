@@ -115792,3 +115792,24 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 14:15:40 -- deitz
+
+Log message:
+	Reworked the implementation of coercions (implicit conversions) via
+	the coercion wrapper such that it always uses the _cast function when
+	inserting an explicit conversion.
+	
+	Reworked the _cast functions so that they never require a coercion
+	wrapper for inserting explicit conversions.  This can lead to a
+	circularity that foils functions resolution.
+	
+	Note that coercion wrappers are also built for dereferencing arguments
+	and reading from sync variables.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+
