@@ -115882,3 +115882,16 @@ Modified files:
 	chapel/modules/standard/: ChapelTuple.chpl 
 	chapel/util/: list_pragmas 
 
+---------------------------------------------------------------------------
+
+08/27/07 15:50:56 -- deitz
+
+Log message:
+	Unified sync pragmas used for coercion wrappers.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp view.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: ChapelBase.chpl 
+
