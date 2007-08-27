@@ -115844,3 +115844,14 @@ Modified files:
 	                                               Tensor.chpl 
 	                                               TwoScale.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 14:37:17 -- dinan
+
+Log message:
+	Beautified computation of the quadrature coefficient matrices.  Rewrote norm2()
+	in the map-reduce style.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+
