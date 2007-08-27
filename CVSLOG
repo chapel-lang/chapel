@@ -115926,3 +115926,15 @@ Log message:
 Modified files:
 	chapel/modules/standard/: SingleLocaleAssociative.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 16:37:47 -- bradc
+
+Log message:
+	Reworded an error message for improved clarity.
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/test/compflags/bradc/: emptyFile.good 
+	                              readDirInsteadOfFile.good 
+
