@@ -5,6 +5,8 @@ use Quadrature;
 use TwoScale;
 use Fn1d;
 
+config const verbose = false;
+
 class Function1d {
     var k             = 5;    // use first k Legendre polynomials as the basis in each box
     var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
@@ -249,7 +251,7 @@ class Function1d {
         the tree of scaling function coefficients.
      */
     def recur_down(n, l) {
-        writeln(" + recur_down(", n, ", ", l, ")");
+        if verbose then writeln(" + recur_down(", n, ", ", l, ")");
 
         var sc : [0..2*k-1] real;
         sc[0..k-1] = s[n, l];
@@ -273,7 +275,7 @@ class Function1d {
         Else, return None (corresponding child boxes exist at a finer scale)
      */
     def get_coeffs(_n, _l) {
-        writeln(" @ get_coeffs(", _n, ", ", _l, ")");
+        if verbose then writeln(" @ get_coeffs(", _n, ", ", _l, ")");
         var n = _n, l = _l;
 
         // Walk up the tree to find scaling coeffs
@@ -308,7 +310,7 @@ class Function1d {
      */
     def sclean(n=0, l=0, in cleaning=false) {
         if cleaning { //then
-            writeln(" + sclean deleting (", n, ", ", l, ")");
+            if verbose then writeln(" + sclean deleting (", n, ", ", l, ")");
             s.remove(n, l);
         } else
             cleaning = s.has_coeffs(n, l);
@@ -330,7 +332,7 @@ class Function1d {
      */
     def diff() {
         def diffHelper(n = 0, l = 0, result) {
-            writeln(" * diff(", n, ", ", l, ")");
+            if verbose then writeln(" * diff(", n, ", ", l, ")");
             if !s.has_coeffs(n, l) {
                 // Sub trees can run in parallel
                 // Run down tree until we hit scaling function coefficients
@@ -339,13 +341,13 @@ class Function1d {
             } else {
                 // These can also go in parallel since may involve
                 // recurring up & down the tree.
-                writeln(" * coeffs at (", n, ", ", l, ")");
+                if verbose then writeln(" * coeffs at (", n, ", ", l, ")");
                 var sm = get_coeffs(n, l-1);
                 var sp = get_coeffs(n, l+1);
                 var s0 = s[n, l];
 
                 if !isNone(sm) /* && !isNone(s0) */ && !isNone(sp) {
-                    writeln(" * performing differentiation");
+                    if verbose then writeln(" * performing differentiation");
                     var r = rp*sm + r0*s0 + rm*sp;
                     result.s[n, l] = r * 2.0**n;
                 } else {
@@ -470,9 +472,9 @@ def main() {
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
     F3.evalNPT(10);
 
-    writeln("\nTaking derivative of F3");
+    writeln("\nDifferentiating F3 ...");
     var dF3 = F3.diff();
-    dF3.f = Fn_dTest3():Fn1d;
+    dF3.f = Fn_dTest3():Fn1d; // Fudge it for the sake of evalNPT()
     dF3.summarize();
     writeln("\nEvaluating dF3 on [0, 1] (singularity at 0.5):");
     dF3.evalNPT(10);
