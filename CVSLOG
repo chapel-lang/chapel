@@ -115680,3 +115680,14 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 10:27:26 -- bradc
+
+Log message:
+	Fixing bug in SingleLocaleAssociative these() iterator in
+	which deleted items could be yielded.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleAssociative.chpl 
+
