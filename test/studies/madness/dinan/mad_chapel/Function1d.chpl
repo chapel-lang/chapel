@@ -33,7 +33,10 @@ class Function1d {
     var quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
-    //var rm, r0, rp;
+    var dcDom = [0..k-1, 0..k-1];
+    var rm    : [dcDom] real;
+    var r0    : [dcDom] real;
+    var rp    : [dcDom] real;
 
     def initialize() {
         writeln("Creating Function: k=", k, " thresh=", thresh);
@@ -46,7 +49,8 @@ class Function1d {
         init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
-        // rm, r0, rp = make_dc_periodic(k)
+        writeln("  initializing tridiagonal derivative operator");
+        make_dc_periodic(k);
 
         // initial refinement of analytic function f(x)
         if f != nil {
@@ -71,6 +75,29 @@ class Function1d {
         }
 
         transposeCopy(quad_phiT, quad_phi);
+    }
+
+
+    /** Return the level-0 blocks rm, r0, rp of the central
+        difference derivative operator with periodic boundary
+        conditions on either side.
+     */
+    def make_dc_periodic(k) {
+        var iphase = 1.0;
+        for i in 0..k-1 {
+            var jphase = 1.0;
+            for j in 0..k-1 {
+                var gammaij = sqrt((2*i+1) * (2*j+1));
+                var Kij = 
+                    if (i-j) > 0 && ((i-j) % 2) == 1 then
+                        2.0 else 0.0;
+                r0[i,j] = 0.5*(1.0 - iphase*jphase - 2.0*Kij)*gammaij;
+                rm[i,j] = 0.5*jphase*gammaij;
+                rp[i,j] =-0.5*iphase*gammaij;
+                jphase = -jphase;
+            }
+            iphase = -iphase;
+        }
     }
 
 
@@ -246,19 +273,20 @@ class Function1d {
         Else, return None (corresponding child boxes exist at a finer scale)
      */
     def get_coeffs(_n, _l) {
+        writeln(" @ get_coeffs(", _n, ", ", _l, ")");
         var n = _n, l = _l;
 
         // Walk up the tree to find scaling coeffs
         while n >= 0 {
-          if l < 0 || l >= 2**n {
-            var coeffs : [0..k-1] real;
-            return coeffs;
-          }
+            if l < 0 || l >= 2**n {
+                var coeffs : [0..k-1] real;
+                return coeffs;
+            }
 
-          if s.has_coeffs(n, l) then break;
+            if s.has_coeffs(n, l) then break;
 
-          n -= 1;
-          l  = l/2;
+            n -= 1;
+            l  = l/2;
         }
 
         // Didn't find coeffs, they must be below (_n, _l)
@@ -266,8 +294,8 @@ class Function1d {
 
         // Recur down to (_n, _l)
         for i in n.._n-1 {
-          l = _l/(2**(_n-i));
-          recur_down(i, l);
+            l = _l/(2**(_n-i));
+            recur_down(i, l);
         }
 
         return s[_n, _l];
@@ -294,6 +322,49 @@ class Function1d {
         }
     }
 
+
+    /** Differentiate the function, which corresponds to application
+      of a block triadiagonal matrix.  For an adaptively refined
+      target function we may need to refine boxes down until three
+      boxes exist in the same scale.
+     */
+    def diff() {
+        def diffHelper(n = 0, l = 0, result) {
+            writeln(" * diff(", n, ", ", l, ")");
+            if !s.has_coeffs(n, l) {
+                // Sub trees can run in parallel
+                // Run down tree until we hit scaling function coefficients
+                diffHelper(n+1, 2*l  , result);
+                diffHelper(n+1, 2*l+1, result);
+            } else {
+                // These can also go in parallel since may involve
+                // recurring up & down the tree.
+                writeln(" * coeffs at (", n, ", ", l, ")");
+                var sm = get_coeffs(n, l-1);
+                var sp = get_coeffs(n, l+1);
+                var s0 = s[n, l];
+
+                if !isNone(sm) /* && !isNone(s0) */ && !isNone(sp) {
+                    writeln(" * performing differentiation");
+                    var r = rp*sm + r0*s0 + rm*sp;
+                    result.s[n, l] = r * 2.0**n;
+                } else {
+                    recur_down(n, l);
+                    // Sub trees can run in parallel
+                    diffHelper(n+1, 2*l  , result);
+                    diffHelper(n+1, 2*l+1, result);
+                }
+            }
+        }
+
+        if compressed then reconstruct();
+        var result = Function1d(k, thresh);
+
+        diffHelper(0, 0, result);
+
+        sclean();
+        return result;
+    }
     
     /** Return sqrt(integral(f(x)**2))
      */
@@ -398,4 +469,11 @@ def main() {
 
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
     F3.evalNPT(10);
+
+    writeln("\nTaking derivative of F3");
+    var dF3 = F3.diff();
+    dF3.f = Fn_dTest3():Fn1d;
+    dF3.summarize();
+    writeln("\nEvaluating dF3 on [0, 1] (singularity at 0.5):");
+    dF3.evalNPT(10);
 }

@@ -25,6 +25,19 @@ def *(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
     return R;
 }
 
+// Matrix-Vector multiplication 
+def *(in M: [] real, in V: [] real) where V.rank == 1 && M.rank == 2 {
+    var R: [M.domain.dim(1)] real = 0.0;
+
+    if V.domain.dim(1) != M.domain.dim(2) then
+        halt("*: Vector and matrix dims must match");
+
+    for (i, j) in M.domain do
+        R[i] += V[j] * M[i, j];
+
+    return R;
+}
+
 // Frobenius Norm -- 2-norm for Vectors
 def normf(in A) where A.rank == 1 {
     return sqrt(+ reduce A**2);
