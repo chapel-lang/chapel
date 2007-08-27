@@ -251,17 +251,6 @@ void Symbol::removePragma(const char* str) {
 }
 
 
-const char* Symbol::hasPragmaPrefix(const char* str) {
-  forv_Vec(const char, pragma, pragmas) {
-    if (!strncmp(pragma, str, strlen(str)))
-      return pragma;
-  }
-  if (!toModuleSymbol(this) && getModule())
-    return getModule()->hasPragmaPrefix(str);
-  return NULL;
-}
-
-
 bool Symbol::isImmediate() {
   return false;
 }

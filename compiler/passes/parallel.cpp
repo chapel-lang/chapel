@@ -178,9 +178,6 @@ thread_args(Vec<BlockStmt*>& blocks) {
                                                       fname),
                                             ctype);
 
-        // disable reference counting, handle manually
-        new_c->addPragma("no gc");
-        
         // add the function args as fields in the class
         int i = 1;
         for_actuals(arg, fcall) {
@@ -277,7 +274,6 @@ insertWideReferences(void) {
         if (CallExpr* call = toCallExpr(on->get(2))) {
           ClassType* ct = new ClassType(CLASS_CLASS);
           TypeSymbol* cts = new TypeSymbol("_on_arg_class", ct);
-          cts->addPragma("no gc");
           VarSymbol* locale = new VarSymbol("_tmp", dtInt[INT_SIZE_32]);
           on->insertBefore(new DefExpr(locale));
           on->insertBefore(new CallExpr(PRIMITIVE_MOVE, locale, new CallExpr(PRIMITIVE_LOCALE_ID)));

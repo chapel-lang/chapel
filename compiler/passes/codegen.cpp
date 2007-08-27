@@ -85,8 +85,6 @@ static void codegen_header(void) {
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;
 
-  chpl_main->addPragma("rename _chpl_main");
-
   // reserved C words that require renaming to compile
   cnames.put("abs", 1);
   cnames.put("cos", 1);
@@ -155,8 +153,8 @@ static void codegen_header(void) {
       if (sym->name == sym->cname)
         sym->cname = stringcpy(sym->name);
 
-      if (const char* pragma = sym->hasPragmaPrefix("rename"))
-        sym->cname = stringcpy(pragma+7);
+      if (sym == chpl_main)
+        sym->cname = astr("_chpl_main");
 
       if (VarSymbol* vs = toVarSymbol(ast))
         if (vs->immediate)

@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 
-@lines = (`grepmod pragma`, `grepchpl addPragma`);
+@lines = `grepchpl hasPragma`;
 foreach $line (@lines) {
-    @pragmas = $line =~ m/ragma.*?\"(.*?)\"/g;
+    @pragmas = $line =~ m/hasPragma.*?\"(.*?)\"/g;
     foreach $pragma (@pragmas) {
         $all_pragmas{$pragma} = 1;
     }
@@ -10,4 +10,28 @@ foreach $line (@lines) {
 
 foreach $pragma (sort keys %all_pragmas) {
     print "$pragma\n";
+}
+
+@lines = `grepchpl addPragma`;
+foreach $line (@lines) {
+    @pragmas = $line =~ m/addPragma.*?\"(.*?)\"/g;
+    foreach $pragma (@pragmas) {
+        if (!$all_pragmas{$pragma}) {
+            print STDERR "error: pragma \"$pragma\" is defined but not used\n";
+            print STDERR "error: $line";
+        }            
+        $all_pragmas{$pragma} = 1;
+    }
+}
+
+@lines = `grepmod pragma`;
+foreach $line (@lines) {
+    @pragmas = $line =~ m/pragma.*?\"(.*?)\"/g;
+    foreach $pragma (@pragmas) {
+        if (!$all_pragmas{$pragma}) {
+            print STDERR "error: pragma \"$pragma\" is defined but not used\n";
+            print STDERR "error: $line";
+        }            
+        $all_pragmas{$pragma} = 1;
+    }
 }

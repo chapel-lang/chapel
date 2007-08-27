@@ -28,7 +28,7 @@ pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
   }
 }
 
-pragma "scalar replace tuples" pragma "tuple" record _tuple {
+pragma "tuple" record _tuple {
   param size : int;
 
   pragma "inline" pragma "tuple get" def this(param i : int) var
@@ -822,7 +822,6 @@ pragma "inline" def <=(a: _tuple, b: _tuple) {
   return true;
 }
 
-pragma "scalar replace tuples"
 record _square_tuple {
   param size: int;
   var tuple;
