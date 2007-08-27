@@ -44,6 +44,7 @@ def normf(in A) where A.rank == 1 {
 }
 
 // Inner product of A and B
+// FIXME: def *(in A, in B) where A.rank == 1 && B.rank == 1 ??
 def inner(in A, in B) where A.rank == B.rank {
     return + reduce A*B;
 }

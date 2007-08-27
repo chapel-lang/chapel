@@ -12,7 +12,7 @@ config const hg_inputfile = "hg_coeffs.dat";
 // FIXME: Module-Private Stuff
 var hg_MaxK   : int;
 var hg_coeffs : [0..-1, 0..-1, 0..-1] real;
-var phi_norms : [1..0] real;
+var phi_norms : [0..-1] real;
 var phi_initialized = false;
 
 
@@ -35,7 +35,8 @@ def hg_getCoeffs(k: int) {
 }
 
 
-// Read two scale coeffs from a file
+/** Read two scale coeffs from a file
+ */
 def hg_readCoeffs(inputfile) {
     var max_k: int;
     var coeffData = file(inputfile, path='./', mode='r');
@@ -52,7 +53,7 @@ def hg_readCoeffs(inputfile) {
         for (j, k) in [0..i*2-1, 0..i*2-1] {
             var x: real;
             coeffData.read(x);
-            hg_coeffs(i, j, k) = x;
+            hg_coeffs[i, j, k] = x;
         }
     }
 
@@ -61,45 +62,45 @@ def hg_readCoeffs(inputfile) {
 
 
 /** Return maximum k.
-  @return     Maximum value of k
+    @return     Maximum value of k
  */
 def hg_getMaxK(): int {
     return hg_MaxK;
 }
 
-/**
-  Evaluate the Legendre polynomials up to the given order at x
-  defined on [-1,1]
-  @param x       point at which to evaluate polynomials
-  @param order   max order of polynomials to evaluate
-  @return        double[] first k polynomials evaluated at point x
+
+/** Evaluate the Legendre polynomials up to the given order at x
+    defined on [-1,1]
+    @param x       point at which to evaluate polynomials
+    @param order   max order of polynomials to evaluate
+    @return        double[] first k polynomials evaluated at point x
  */
 def pn(x: real, order: int) {
     var p: [0..order] real;
+
     p[0] = 1.0;
-    if(order == 0)
-        return p;
+    if order == 0 then return p;
     p[1] = x;
+
     for n in 1..order-1 do
         p[n+1] = n*(x*p[n] - p[n-1])/(n+1) + x*p[n];
     return p;
 }
 
 
-/**
-  Evaluate the shifted normalized Legendre polynomials up to the
-  given order at x defined on [0,1].
+/** Evaluate the shifted normalized Legendre polynomials up to the
+    given order at x defined on [0,1].
 
-  These are also our scaling functions, phi_i(x) , i=0..k-1
+    These are also our scaling functions, phi_i(x) , i=0..k-1
 
-  In addition to forming an orthonormal basis on [0,1] we have
-  phi_j(1/2-x) = (-1)^j phi_j(1/2+x)
+    In addition to forming an orthonormal basis on [0,1] we have
+    phi_j(1/2-x) = (-1)^j phi_j(1/2+x)
 
-  (the wavelets are similar with phase (-1)^(j+k)).
+    (the wavelets are similar with phase (-1)^(j+k)).
 
-  @param x    point at which to evaluate polynomials
-  @param k    evaluate first k polynomials
-  @return     double[] first k polynomials evaluated at point x
+    @param x    point at which to evaluate polynomials
+    @param k    evaluate first k polynomials
+    @return     double[] first k polynomials evaluated at point x
  */ 
 def phi(x: real, k: int) {
     var p: [0..k-1] real = 0.0;

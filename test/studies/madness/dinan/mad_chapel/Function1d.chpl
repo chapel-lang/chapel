@@ -41,42 +41,42 @@ class Function1d {
     var rp    : [dcDom] real;
 
     def initialize() {
-        writeln("Creating Function: k=", k, " thresh=", thresh);
+        if verbose then writeln("Creating Function1d: k=", k, " thresh=", thresh);
 
-        writeln("  initializing two-scale relation coefficients");
+        if verbose then writeln("  initializing two-scale relation coefficients");
         hg  = hg_getCoeffs(k);
         transposeCopy(hgT, hg);
 
-        writeln("  initializing quadrature coefficients");
+        if verbose then writeln("  initializing quadrature coefficients");
         init_quadrature(k);
 
         // blocks of the block tridiagonal derivative operator
-        writeln("  initializing tridiagonal derivative operator");
+        if verbose then writeln("  initializing tridiagonal derivative operator");
         make_dc_periodic(k);
 
         // initial refinement of analytic function f(x)
         if f != nil {
-            writeln("  performing initial refinement of f(x)");
+            if verbose then writeln("  performing initial refinement of f(x)");
             for l in 0..2**initial_level-1 do
                 refine(initial_level, l);
         }
 
-        writeln("done.");
+        if verbose then writeln("done.");
     }
 
+
+    /** Initialize the quadrature coefficient matricies.
+      */
     def init_quadrature(order: int) {
         quad_x   = gl_getPoints(k);
         quad_w   = gl_getWeights(k);
 
         for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
-            for m in quad_phiDom.dim(2) {
-                quad_phi[i, m]  = p[m];
-                quad_phiw[i, m] = quad_w[i]*p[m];
-            }
+            quad_phi [i, quad_phiDom.dim(2)] = p;            // FIXME: quad_phi [i, ..] = p;
+            quad_phiw[i, quad_phiDom.dim(2)] = quad_w[i] * p;//        quad_phiw[i, ..] = ...;
+            quad_phiT[quad_phiDom.dim(2), i] = p;
         }
-
-        transposeCopy(quad_phiT, quad_phi);
     }
 
 
@@ -86,12 +86,12 @@ class Function1d {
      */
     def make_dc_periodic(k) {
         var iphase = 1.0;
-        for i in 0..k-1 {
+        for i in dcDom.dim(1) {
             var jphase = 1.0;
-            for j in 0..k-1 {
+
+            for j in dcDom.dim(2) {
                 var gammaij = sqrt((2*i+1) * (2*j+1));
-                var Kij = 
-                    if (i-j) > 0 && ((i-j) % 2) == 1 then
+                var Kij = if (i-j) > 0 && ((i-j) % 2) == 1 then
                         2.0 else 0.0;
                 r0[i,j] = 0.5*(1.0 - iphase*jphase - 2.0*Kij)*gammaij;
                 rm[i,j] = 0.5*jphase*gammaij;
@@ -129,22 +129,21 @@ class Function1d {
         // project f(x) at next level
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
-        var s: [0..2*k-1] real;
+        var sc : [0..2*k-1] real;
 
-        s[0..k-1]   = s0;
-        s[k..2*k-1] = s1;
+        sc[0..k-1]   = s0;
+        sc[k..2*k-1] = s1;
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops
-        //var d = transform(s, hgT);
-        var d = s*hgT;
+        var dc = sc*hgT;
 
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
-        var nf = normf(d[k..2*k-1]);
+        var nf = normf(dc[k..2*k-1]);
         if((nf < thresh) || (n >= (max_level-1))) {
-            this.s[n+1, 2*l]   = s0;
-            this.s[n+1, 2*l+1] = s1;
+            s[n+1, 2*l]   = s0;
+            s[n+1, 2*l+1] = s1;
         }
         else {
             // these recursive calls on sub-trees can go in parallel
@@ -326,9 +325,9 @@ class Function1d {
 
 
     /** Differentiate the function, which corresponds to application
-      of a block triadiagonal matrix.  For an adaptively refined
-      target function we may need to refine boxes down until three
-      boxes exist in the same scale.
+        of a block triadiagonal matrix.  For an adaptively refined
+        target function we may need to refine boxes down until three
+        boxes exist in the same scale.
      */
     def diff() {
         def diffHelper(n = 0, l = 0, result) {
@@ -341,13 +340,13 @@ class Function1d {
             } else {
                 // These can also go in parallel since may involve
                 // recurring up & down the tree.
-                if verbose then writeln(" * coeffs at (", n, ", ", l, ")");
+                if verbose then writeln(" * diff: coeffs at (", n, ", ", l, ")");
                 var sm = get_coeffs(n, l-1);
                 var sp = get_coeffs(n, l+1);
                 var s0 = s[n, l];
 
-                if !isNone(sm) /* && !isNone(s0) */ && !isNone(sp) {
-                    if verbose then writeln(" * performing differentiation");
+                // We definitely have s0, check if we found sm and sp at this level
+                if !isNone(sm) && !isNone(sp) {
                     var r = rp*sm + r0*s0 + rm*sp;
                     result.s[n, l] = r * 2.0**n;
                 } else {
@@ -367,7 +366,8 @@ class Function1d {
         sclean();
         return result;
     }
-    
+   
+
     /** Return sqrt(integral(f(x)**2))
      */
     def norm2() {
@@ -386,16 +386,14 @@ class Function1d {
      */
     def summarize() {
         writeln("\n-----------------------------------------------------");
+        writeln("k=", k, " thresh=", thresh, " compressed=", compressed);
         writeln("sum coefficients:");
         for n in 0..max_level {
-            var sum     = 0.0;
-            var ncoeffs = 0;
+            var sum = 0.0, ncoeffs = 0;
             for i in s {
-                var lvl = i(1);
-                var idx = i(2);
+                var (lvl, idx) = i;
                 if (lvl == n && s.has_coeffs(lvl, idx)) {
-                    var t = normf(s[lvl, idx]);
-                    sum  += t**2;
+                    sum     += normf(s[lvl, idx])**2;
                     ncoeffs += 1;
                 }
             }
@@ -405,14 +403,11 @@ class Function1d {
 
         writeln("difference coefficients:");
         for n in 0..max_level {
-            var sum     = 0.0;
-            var ncoeffs = 0;
+            var sum = 0.0, ncoeffs = 0;
             for i in d {
-                var lvl = i(1);
-                var idx = i(2);
+                var (lvl, idx) = i;
                 if (lvl == n && d.has_coeffs(lvl, idx)) {
-                    var t = normf(d[lvl, idx]);
-                    sum  += t**2;
+                    sum     += normf(d[lvl, idx])**2;
                     ncoeffs += 1;
                 }
             }
@@ -450,20 +445,16 @@ def main() {
 
     writeln("\n** var F3 = Function1d(f=test3);");
     var F3 = Function1d(k=5, thresh=1e-5, f=Fn_Test3());
-    var a = F3.get_coeffs(20, 5);
-    writeln("Coeffs at (20, 5) = ", a);
-    F3.sclean();
     
     writeln("F3.norm2() = ", F3.norm2());
-
-    F3.summarize();
+    if verbose then F3.summarize();
 
     writeln("\nEvaluating F3 on [0, 1] (singularity at 0.5):");
     F3.evalNPT(10);
 
     writeln("\nCompressing F3 ...");
     F3.compress();
-    F3.summarize();
+    if verbose then F3.summarize();
 
     writeln("Reconstructing F3 ...");
     F3.reconstruct();
@@ -475,7 +466,8 @@ def main() {
     writeln("\nDifferentiating F3 ...");
     var dF3 = F3.diff();
     dF3.f = Fn_dTest3():Fn1d; // Fudge it for the sake of evalNPT()
-    dF3.summarize();
+    if verbose then dF3.summarize();
+
     writeln("\nEvaluating dF3 on [0, 1] (singularity at 0.5):");
     dF3.evalNPT(10);
 }
