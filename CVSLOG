@@ -115735,3 +115735,17 @@ Removed files:
 	chapel/test/domains/dinan/: assoc_array_access_oob.future 
 	                            assoc_domain_remove_oob.future 
 
+---------------------------------------------------------------------------
+
+08/27/07 11:42:05 -- bradc
+
+Log message:
+	Adding a ddata write method to ChapelIO.chpl so that
+	ddata structures can be debugged more easily by
+	developers (users should never be able to access this
+	routine...).
+
+Modified files:
+	chapel/modules/standard/: ChapelArray.chpl ChapelIO.chpl 
+	                          ChapelRange.chpl 
+
