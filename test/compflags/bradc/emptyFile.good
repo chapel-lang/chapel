@@ -1,1 +1,1 @@
-error: input file 'emptyFile.chpl' is either empty or a directory
+error: source file 'emptyFile.chpl' is either empty or a directory

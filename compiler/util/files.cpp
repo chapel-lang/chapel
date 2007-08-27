@@ -221,7 +221,7 @@ void testInputFiles(int numFilenames, char* filename[]) {
   for (i=0; i<numFilenames; i++) {
     FILE* testfile = openInputFile(filename[i]);
     if (fscanf(testfile, "%c", &achar) != 1) {
-      USR_FATAL(stringcat("input file '", filename[i], 
+      USR_FATAL(stringcat("source file '", filename[i], 
                           "' is either empty or a directory"));
     }
     
