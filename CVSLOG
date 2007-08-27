@@ -115668,3 +115668,15 @@ Removed files:
 	                              recursive_return_oops.future 
 	                              recursive_return_oops.good 
 
+---------------------------------------------------------------------------
+
+08/27/07 09:57:52 -- dinan
+
+Log message:
+	Adaptive refinement is working.  Merged transform() and *() tensor functions.  To work around recursive functions that
+	return arrays, I reimplemented get_coeffs() as an iterative function.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Tensor.chpl 
+
