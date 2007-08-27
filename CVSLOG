@@ -115909,3 +115909,20 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 	                                               MadFn1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 16:32:54 -- bradc
+
+Log message:
+	Fixed a bug in the member function which occurred
+	when an associative domain was full of actual data
+	and "deleted" slot sentinels.  A sentinel value
+	(NOPLACE, as in "no place that this could be") was
+	returned that was not checked against before using
+	it to access into a variable.  Simple fix once it
+	was found, that allows Jim to jettison his
+	associative domain/array workarounds.
+
+Modified files:
+	chapel/modules/standard/: SingleLocaleAssociative.chpl 
+
