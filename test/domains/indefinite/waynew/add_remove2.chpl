@@ -12,7 +12,6 @@ for i in 1..10 {
 }
 
 
-intd.remove((53, 0));
 intd.remove((4, 4));
 intd.remove((8, 8));
 icheck(0);
@@ -24,6 +23,7 @@ icheck(6);
 icheck(4);
 intd.add((4,4));
 icheck(4);
+intd.remove((53, 0));
 
 def icheck( i:int) {
   writeln( "member(", (i,i), ") = ", intd.member( (i,i)));

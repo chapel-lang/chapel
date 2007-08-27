@@ -197,6 +197,8 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def _get_index(ind : ind_type) {
     var i = _map(ind);
+    if (table(i) < 0) then
+      halt("array index out of bounds: ", ind);
     if (i >= 0) then
       return table(i);
     else
@@ -237,16 +239,18 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   def remove( ind: ind_type) {
     var ind_pos = _map(ind);
     if (ind_pos >= 0) {
-    var table_i = table(ind_pos);
-    if (table_i >= 0) {
-      inds(table_i).valid = false;
-      num_inds -= 1;
-      free_inds.push( table_i);
-      table(ind_pos) = _DELETED;
-
-      for ia in _arrs2 do
-        ia.purge( table_i);
-    }
+      var table_i = table(ind_pos);
+      if (table_i >= 0) {
+        inds(table_i).valid = false;
+        num_inds -= 1;
+        free_inds.push( table_i);
+        table(ind_pos) = _DELETED;
+        
+        for ia in _arrs2 do
+          ia.purge( table_i);
+      } else {
+        halt("index not in domain: ", ind);
+      }
     }
 
     if (size > _MIN_SIZE) then

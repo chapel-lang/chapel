@@ -9,7 +9,8 @@ def icheck( i) {
 
 for i in 1..ITERATIONS {
   for d in 1..2*SIZE {       // empty domain
-    idomain.remove(d:uint);
+    if (idomain.member(d:uint)) then
+      idomain.remove(d:uint);
   }
 
   for d in 1..SIZE {         // add everybody
@@ -17,11 +18,13 @@ for i in 1..ITERATIONS {
   }
 
   for d in 1..SIZE/2 {       // delete half
-    idomain.remove(d:uint);
+    if (idomain.member(d:uint)) then
+      idomain.remove(d:uint);
   }
 
   for d in SIZE+1..2*SIZE {  // add some
-    idomain.remove(d:uint);
+    if (idomain.member(d:uint)) then
+      idomain.remove(d:uint);
   }
 
   for d in 1..SIZE {         // try to add some existing
@@ -30,7 +33,8 @@ for i in 1..ITERATIONS {
   }
 
   for d in SIZE/2..SIZE {    // delete some
-    idomain.remove(d:uint);
+    if (idomain.member(d:uint)) then
+      idomain.remove(d:uint);
   }
 }
 
