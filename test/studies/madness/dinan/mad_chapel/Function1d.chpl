@@ -8,7 +8,7 @@ use Fn1d;
 class Function1d {
     var k             = 5;    // use first k Legendre polynomials as the basis in each box
     var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    var f: Fn1d       = nil;  // analytic function f(x) to be projected into the numerical represntation
+    var f: Fn1d       = nil;  // analytic f(x) to project into the numerical represntation
     var initial_level = 2;    // initial level of refinement
     var max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var compressed    = false;// keep track of what basis we are in
@@ -107,7 +107,8 @@ class Function1d {
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops
-        var d = transform(s, hgT);
+        //var d = transform(s, hgT);
+        var d = s*hgT;
 
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
@@ -220,13 +221,13 @@ class Function1d {
         the corresponding coefficients on level n+1 and insert the results into
         the tree of scaling function coefficients.
      */
-    def recur_down(n, l, sc) {
+    def recur_down(n, l) {
         writeln(" + recur_down(", n, ", ", l, ")");
 
-        var dc : [0..2*k-1] real;
-        dc[0..k-1] = sc;
+        var sc : [0..2*k-1] real;
+        sc[0..k-1] = s[n, l];
 
-        var new_sc = dc*hg;
+        var new_sc = sc*hg;
         var new_sc_upper : [0..k-1] => new_sc[k..2*k-1];
         s[n+1, 2*l  ] = new_sc[0..k-1];
         s[n+1, 2*l+1] = new_sc_upper;
@@ -244,65 +245,33 @@ class Function1d {
 
         Else, return None (corresponding child boxes exist at a finer scale)
      */
-    
-    // FIXME: Can't specify array return type and type can't be inferred
-    //        because of the recursion.
-    /* def get_coeffs(n, l) {
-        if l < 0 || l >= 2**n then {
-            var zero : [0..k-1] real;
-            return zero;
+    def get_coeffs(_n, _l) {
+        var n = _n, l = _l;
+
+        // Walk up the tree to find scaling coeffs
+        while n >= 0 {
+          if l < 0 || l >= 2**n {
+            var coeffs : [0..k-1] real;
+            return coeffs;
+          }
+
+          if s.has_coeffs(n, l) then break;
+
+          n -= 1;
+          l  = l/2;
         }
 
-        if s.has_coeffs(n, l) then return s[n, l];
+        // Didn't find coeffs, they must be below (_n, _l)
+        if n < 0 then return None;
 
-        if n > 0 {
-            var sc = get_coeffs(n-1, l/2);
-            if isNone(sc) then
-                return None;
-        } else {
-            return None; // No parent was found
-        
-
-        recur_down(n-1, l/2, s);
-        
-        return s[n, l];
-    } */  
-    // FIXME: This is a workaround implementation of get_coeffs
-    //        Result of get_coeffs will be put into the coeffs parameter
-    //        coeffs should probably be a degenerate array but we won't assume that.
-    def get_coeffs(n, l, coeffs) {
-        if l < 0 || l >= 2**n then {
-            coeffs.domain = [0..k-1];
-            coeffs = 0.0;
-            return;
+        // Recur down to (_n, _l)
+        for i in n.._n-1 {
+          l = _l/(2**(_n-i));
+          recur_down(i, l);
         }
 
-        // Found Coeffs
-        if s.has_coeffs(n, l) then {
-            coeffs.domain = [0..k-1];
-            coeffs = s[n, l];
-            return;
-        }
-
-        // No coeffs found.  They must be below (n, l) in the tree
-        if n < 0 {
-            coeffs.domain = [0..-1];
-            return;
-        }
-
-        // Recursive case:
-        get_coeffs(n-1, l/2, coeffs);
-
-        if isNone(coeffs) then
-            return;
-        else {
-            recur_down(n-1, l/2, coeffs);
-            coeffs.domain = [0..k-1];
-            coeffs = s[n, l];
-            return;
-        }
+        return s[_n, _l];
     }
-     
 
     /** Differentiation (also inner and mul) may leave scaling function
         coefficients below their original level.  Recur down to the
@@ -408,9 +377,8 @@ def main() {
 
     writeln("\n** var F3 = Function1d(f=test3);");
     var F3 = Function1d(k=5, thresh=1e-5, f=Fn_Test3());
-    var a: [0..-1] real;
-    F3.get_coeffs(30, 0, a);
-    writeln("Coeffs at (30, 0) = ", a);
+    var a = F3.get_coeffs(20, 5);
+    writeln("Coeffs at (20, 5) = ", a);
     F3.sclean();
     
     writeln("F3.norm2() = ", F3.norm2());
