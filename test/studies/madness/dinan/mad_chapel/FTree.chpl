@@ -1,7 +1,6 @@
 record Coeff {
     var dom  : domain(1);
     var data : [dom] real;
-    var valid: bool = true; // FIXME: workaround remove bug using valid bit
 }
 
 class FTree {
@@ -19,47 +18,38 @@ class FTree {
     }
 
 
-    // Access an element in the associative domain.  If the element
-    // doesn't exist it will be created.
+    /** Access an element in the associative domain.  If the element
+        doesn't exist it will be created.
+     */
     def this(lvl: int, idx: int) var {
-        //writeln("FTree: accessing (", lvl, ", ", idx, ")");
         if !indices.member((lvl, idx)) {
-            //writeln("        creating (", lvl, ", ", idx, ")");
             indices += ((lvl, idx));
             nodes[(lvl, idx)] = Coeff(coeffDom);
         }
 
-        nodes[(lvl, idx)].valid = true;
         return nodes[(lvl, idx)].data;
     }
 
 
-    // Unordered iterator over all coefficients
+    /** Unordered iterator over all coefficients
+     */
     def these() {
-      //yield indices.these();
-
-      // workaround
-      for i in indices do
-        if has_coeffs(i(1), i(2)) then yield i;
+      for i in indices yield i;
     }
 
 
+    /** Check if there are coefficients in box (lvl, idx)
+     */
     def has_coeffs(lvl: int, idx: int) {
-        // return indices.member((lvl, idx));
-
-        // FIXME: remove workaround:
-        if indices.member((lvl, idx)) then
-          return nodes[(lvl, idx)].valid;
-        else return false;
+        return indices.member((lvl, idx));
     }
 
-    // Remove an element from the associative domain.  If the element
-    // does not exist, it is ignored.
+
+    /** Remove an element from the associative domain.  If the element
+        does not exist, it is ignored.
+     */
     def remove(lvl: int, idx: int) {
-        //writeln("FTree:  removing (", lvl, ", ", idx, ")");
-        if indices.member((lvl, idx)) then
-            //indices.remove((lvl, idx));
-            nodes[(lvl, idx)].valid = false;  // FIXME: workaround remove bug
+        if indices.member((lvl, idx)) then indices.remove((lvl, idx));
     }
 }
 
@@ -67,12 +57,16 @@ class FTree {
 def main() {
     var f = FTree(2);
 
-    for (i, j) in [0..2, 0..2] do
-        f[i, j] = (i, j);
+    for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);
 
-    for i in f do writeln(i);
-    for i in f(1) do writeln(i);
-
+    for (i, j) in [1..0, 1..0] do f.remove(i, j);
+    
+    for (i, j) in [0..1, 0..1] do f[i, j] = (-(i:real), -(j:real));
+    
+    for (i, j) in [2..1, 2..1] do f.remove(i, j);
+    
+    for (i, j) in [1..2, 1..2] do f[i, j] = (-(i:real), -(j:real));
+    
     for (i, j) in [0..2, 0..2] do
         writeln("(",i,", ",j,") = ", f[i, j]);
 }
