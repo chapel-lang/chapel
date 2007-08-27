@@ -115782,3 +115782,13 @@ Modified files:
 	                                               MadFn1d.chpl 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 12:10:05 -- dinan
+
+Log message:
+	Taming the verbosity.  :)
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+
