@@ -115938,3 +115938,15 @@ Modified files:
 	chapel/test/compflags/bradc/: emptyFile.good 
 	                              readDirInsteadOfFile.good 
 
+---------------------------------------------------------------------------
+
+08/27/07 16:44:48 -- dinan
+
+Log message:
+	Removed associative arrays workaround.  Thanks, Brad!  :)
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree-broken.chpl 
+
