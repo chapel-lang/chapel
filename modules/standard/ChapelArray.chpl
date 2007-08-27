@@ -345,11 +345,6 @@ record _array {
 }
 
 pragma "inline" def =(a: _array, b) {
-  /*
-  if (a._dom._value == nil) {
-    a._dom._value = b._dom._value;
-  }
-  */
   for (i,bb) in (a._dom,b) do
     a(i) = bb;
   return a;
