@@ -115865,3 +115865,20 @@ Log message:
 Added files:
 	chapel/util/: list_pragmas 
 
+---------------------------------------------------------------------------
+
+08/27/07 15:16:03 -- deitz
+
+Log message:
+	Removed some unused pragmas and the now-unused prefix pragma detection
+	routine.
+	
+	Improved the list_pragmas script to identify unused pragmas.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: codegen.cpp parallel.cpp 
+	chapel/modules/standard/: ChapelTuple.chpl 
+	chapel/util/: list_pragmas 
+
