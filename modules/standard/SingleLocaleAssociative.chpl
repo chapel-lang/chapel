@@ -261,8 +261,12 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
 
   def member( ind: ind_type) {
-    var ind_pos = table(_map(ind));
-    return (ind_pos >= 0);
+    const mapind = _map(ind);
+    if (mapind >= 0) {
+      var ind_pos = table(mapind);
+      return (ind_pos >= 0);
+    }
+    return false;
   }
 
   def numIndices {
