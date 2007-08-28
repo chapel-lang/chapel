@@ -980,6 +980,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
                      get_width( t), get_width( t)/2, get_width( t)/2);
           }
+        } else if (t == dtBool) {
+          fprintf(outfile, "true");
         } else {
           INT_FATAL( t, "not arithmetic type");
         }
@@ -999,6 +1001,8 @@ void CallExpr::codegen(FILE* outfile) {
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( 0.0, 0.0)", get_width( t));
           }
+        } else if (t == dtBool) {
+          fprintf(outfile, "false");
         } else {
           INT_FATAL( t, "not arithmetic type");
         }
