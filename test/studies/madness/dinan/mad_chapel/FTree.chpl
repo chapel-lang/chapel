@@ -38,6 +38,16 @@ class FTree {
     }
 
 
+    /** Return a copy of this FTree
+     */
+    def copy() {
+        var t = FTree(order);
+        t.indices = indices;
+        t.nodes   = nodes;
+        return t;
+    }
+
+
     /** Check if there are coefficients in box (lvl, idx)
      */
     def has_coeffs(lvl: int, idx: int) {

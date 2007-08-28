@@ -104,6 +104,13 @@ class Function1d {
     }
 
 
+    /** Return a copy of this Function
+     */
+    def copy() {
+        return Function1d(k, thresh, f, initial_level, max_level, compressed, s.copy(), d.copy());
+    }
+
+
     /** s[n][l] = integral(phi[n][l](x) * f(x))
         for box (n,l) project f(x) using quadrature rule
         into scaling function basis
