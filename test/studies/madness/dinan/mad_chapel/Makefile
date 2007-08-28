@@ -13,11 +13,18 @@ SOURCES= Fn1d.chpl       \
          Tensor.chpl     \
          TwoScale.chpl
 
-all: 1d
+TARGETS= test_diff       \
+         test_gaxpy
+
+all: $(TARGETS)
 
 
-1d: $(SOURCES)
-	$(CC) $(CFLAGS) --main-module Function1d -o $@ $+
+test_diff: $(SOURCES) test_diff.chpl
+	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+
+
+test_gaxpy: $(SOURCES) test_gaxpy.chpl
+	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 
 .PHONY: distrib
@@ -30,5 +37,5 @@ distrib: clean
 
 .PHONY: clean
 clean:
-	rm -f 1d
+	rm -f $(TARGETS)
 	rm -rf $(GENC)

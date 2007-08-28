@@ -46,7 +46,7 @@ def hg_readCoeffs(inputfile) {
     hg_MaxK = max_k;
 
     hg_coeffs.domain = [0..max_k, 0..2*max_k-1, 0..2*max_k-1];
-    writeln("HG: Reading ", max_k, " sets of twoscale coeffs from: ", inputfile, "\n");
+    //writeln("HG: Reading ", max_k, " sets of twoscale coeffs from: ", inputfile, "\n");
 
     // hg_coeffs[0, , ] is not used
     for i in 1..max_k {

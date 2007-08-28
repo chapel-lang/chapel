@@ -385,6 +385,55 @@ class Function1d {
     }
 
 
+    /** Perform GAXPY in the multi-wavelet (compressed) basis
+        this = alpha*this + beta*other (other is not changed).
+     */
+    def gaxpy(alpha, other, beta) {
+        // recursive "iteration" for gaxpy
+        def gaxpy_iter(alpha, other, beta, n=0, l=0) {
+            if d.has_coeffs(n, l) || other.d.has_coeffs(n, l) {
+                if d.has_coeffs(n, l) && other.d.has_coeffs(n, l) then
+                    d[n, l] = d[n, l]*alpha + other.d[n, l]*beta;
+
+                else if !d.has_coeffs(n, l) && other.d.has_coeffs(n, l) then
+                    d[n, l] = other.d[n, l] * beta;
+
+                else /* d.has_coeffs(n, l) && !other.d.has_coeffs(n, l) */
+                    d[n, l] *= alpha;
+
+                // calls on sub-trees can go in parallel
+                gaxpy_iter(alpha, other, beta, n+1, 2*l);
+                gaxpy_iter(alpha, other, beta, n+1, 2*l+1);
+            }
+        }
+
+        if !compressed then compress();
+        if !other.compressed then other.compress();
+
+        s[0, 0] = s[0, 0]*alpha + other.s[0, 0]*beta; // Do scaling coeffs
+        gaxpy_iter(alpha, other, beta);               // Do multi-wavelet coeffs
+
+        // return this so operations can be chained
+        return this;
+    }
+
+
+    /** Add this function to another and return the result in a new
+        function.  This and other are unchanged.
+     */ 
+    def add(other) {
+        return copy().gaxpy(1.0, other, 1.0);
+    }
+
+
+    /** Subtract this function from another and return the result in a new
+        function.  This and other are unchanged.
+     */ 
+    def subtract(other) {
+        return copy().gaxpy(1.0, other, -1.0);
+    }
+
+
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
      */
@@ -436,49 +485,15 @@ class Function1d {
 }
 
 
+/*************************************************************************/
+/* Standard operations on Function1d objects:                            */
+/*************************************************************************/
 
-def main() {
-    use MadFn1d;
-    var npt = 10;
 
-    writeln("Mad Chapel -- One Step Beyond\n");
+def +(F: Function1d, G: Function1d): Function1d {
+    return F.add(G);
+}
 
-    var fcn  : [1..3] Fn1d = (Fn_Test1():Fn1d,  Fn_Test2():Fn1d,  Fn_Test3():Fn1d);
-    var dfcn : [1..3] Fn1d = (Fn_dTest1():Fn1d, Fn_dTest2():Fn1d, Fn_dTest3():Fn1d);
-
-    for i in fcn.domain {
-        writeln("** Testing function ", i);
-        var F = Function1d(k=5, thresh=1e-5, f=fcn[i]);
-
-        writeln("F", i, ".norm2() = ", F.norm2());
-
-        if verbose {
-            F.summarize();
-            writeln("Evaluating F", i, " on [0, 1]:");
-            F.evalNPT(npt);
-            writeln();
-        }
-
-        writeln("Compressing F", i, " ...");
-        F.compress();
-        if verbose then F.summarize();
-
-        writeln("Reconstructing F", i, " ...");
-        F.reconstruct();
-        writeln("F", i, ".norm2() = ", F.norm2());
-        if verbose then F.summarize();
-
-        writeln("Evaluating F", i, " on [0, 1]:");
-        F.evalNPT(npt);
-
-        writeln("\nDifferentiating F", i, " ...");
-        var dF = F.diff();
-        dF.f = dfcn[i]:Fn1d; // Fudge it for the sake of evalNPT()
-        if verbose then dF.summarize();
-
-        writeln("\nEvaluating dF", i, " on [0, 1]:");
-        dF.evalNPT(npt);
-
-        if i < 3 then writeln("\n======================================================================\n");
-    }
+def -(F: Function1d, G: Function1d): Function1d {
+    return F.subtract(G);
 }
