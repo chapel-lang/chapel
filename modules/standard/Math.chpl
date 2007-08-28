@@ -4,6 +4,7 @@ pragma "inline" def abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 pragma "inline" def conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
+pragma "inline" def isnan(x: real) return __primitive("isnan", x);
 pragma "inline" def acos(x : real) return __primitive("acos", x);
 pragma "inline" def acosh(x : real) return __primitive("acosh", x);
 pragma "inline" def asin(x : real) return __primitive("asin", x);

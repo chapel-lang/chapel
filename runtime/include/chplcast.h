@@ -19,10 +19,8 @@
 #define _string_to_imag32(s) ((_imag32)atof(s))
 #define _string_to_imag64(s) ((_imag64)atof(s))
 #define _string_to_imag128(s) ((_imag128)atof(s))
-_complex64 _string_to_complex64(_string s);
-_complex128 _string_to_complex128(_string s);
-_complex256 _string_to_complex256(_string s);
 #define _string_to_bool(s) (string_equal(s, "true"))
+_string _string_get_imag_part(_string s);
 
 /* every other primitive type to string */
 _string _int8_to_string(_int8 x);
@@ -39,9 +37,6 @@ _string _real128_to_string(_real128 x);
 _string _imag32_to_string(_imag32 x);
 _string _imag64_to_string(_imag64 x);
 _string _imag128_to_string(_imag128 x);
-_string _complex64_to_string(_complex64 x);
-_string _complex128_to_string(_complex128 x);
-_string _complex256_to_string(_complex256 x);
 #define _bool_to_string(x) ((x) ? "true" : "false")
 
 #endif

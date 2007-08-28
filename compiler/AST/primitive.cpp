@@ -390,6 +390,7 @@ initPrimitive() {
   prim_def("_config_has_value", returnInfoBool);
   prim_def("_config_get_value", returnInfoString);
 
+  prim_def("isnan", returnInfoBool);
   prim_def("acos", returnInfoReal64, true);
   prim_def("acosh", returnInfoReal64, true);
   prim_def("asin", returnInfoReal64, true);
@@ -440,6 +441,7 @@ initPrimitive() {
   prim_def("string_select", returnInfoString, true);
   prim_def("string_strided_select", returnInfoString, true);
   prim_def("string_length", returnInfoInt32);
+  prim_def("_string_get_imag_part", returnInfoString, true);
   prim_def("ascii", returnInfoInt32);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoInt64);

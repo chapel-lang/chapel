@@ -33,10 +33,26 @@ def numBytes(type t) param return numBits(t)/bitsPerByte;
 // min(type) -- returns the minimum value a type can store
 //
 
-def min(type t) return __primitive( "_min", t);
+def min(type t) where _isIntegralType(t) | _isFloatType(t)
+  return __primitive( "_min", t);
+
+def min(type t) where _isComplexType(t) {
+  var x: t;
+  x.re = min(x.re.type);
+  x.im = min(x.im.type);
+  return x;
+}
 
 //
 // min(type) -- returns the maximum value a type can store
 //
 
-def max(type t) return __primitive( "_max", t);
+def max(type t) where _isIntegralType(t) | _isFloatType(t)
+  return __primitive( "_max", t);
+
+def max(type t) where _isComplexType(t) {
+  var x: t;
+  x.re = max(x.re.type);
+  x.im = max(x.im.type);
+  return x;
+}

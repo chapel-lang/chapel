@@ -1296,8 +1296,6 @@ literal:
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      //      char cstr[256];
-      //      sprintf( cstr, "_chpl_complex128(0.0, %s)", yytext);
       $$ = new SymExpr(new_ImagSymbol(yytext, strtod(yytext, NULL)));
     }
 | STRINGLITERAL

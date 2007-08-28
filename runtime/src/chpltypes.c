@@ -120,24 +120,6 @@ object2int( _chpl_object o) {
 }
 
 
-_complex64 
-_chpl_complex64( _real32 r, _real32 i) {
-  _complex64 ret_c = {r, i};
-  return ret_c;
-}
-
-_complex128 
-_chpl_complex128( _real64 r, _real64 i) {
-  _complex128 ret_c = {r, i};
-  return ret_c;
-}
-
-_complex256 
-_chpl_complex256( _real128 r, _real128 i) {
-  _complex256 ret_c = {r, i};
-  return ret_c;
-}
-
 _timervalue* _now_timer_help(_timervalue* time) {
   struct timezone tz;
   gettimeofday(time, &tz);

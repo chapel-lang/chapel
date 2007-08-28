@@ -370,9 +370,9 @@ pragma "inline" def _cond_test(x) {
 //
 //  bug?  in setters, parameterize real argument over complex bit width
 //
-pragma "ref this"
+pragma "inline" pragma "ref this"
 def complex.re var return __primitive( "complex_get_real", this);
-pragma "ref this"
+pragma "inline" pragma "ref this"
 def complex.im var return __primitive( "complex_get_imag", this);
 
 //
@@ -737,12 +737,18 @@ def _isPrimitiveType(type t) param return
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) | (t == real(128)) |
   (t == imag(32)) | (t == imag(64)) | (t == imag(128)) |
-  (t == complex(64)) | (t == complex(128)) | (t == complex(256)) |
   (t == string);
 
 def _isIntegralType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64));
+
+def _isComplexType(type t) param return
+  (t == complex(64)) | (t == complex(128)) | (t == complex(256));
+
+def _isFloatType(type t) param return
+  (t == real(32)) | (t == real(64)) | (t == real(128)) |
+  (t == imag(32)) | (t == imag(64)) | (t == imag(128));
 
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
@@ -757,9 +763,6 @@ pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" def _cast(type t, x: imag(?w)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" def _cast(type t, x: complex(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
@@ -782,6 +785,71 @@ pragma "inline" def _cast(type t, x) where t:object & x:_nilType
 
 pragma "inline" def _cast(type t, x) where x:object & t:x & (x.type != t)
   return __primitive("dynamic_cast", t, x);
+
+//
+// casts to complex
+//
+pragma "inline" def _cast(type t, x: bool) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x:y.re.type;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t) {
+  var y: t;
+  y.im = x:y.im.type;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x.re:y.re.type;
+  y.im = x.im:y.im.type;
+  return y;
+}
+
+def _cast(type t, x: string) where _isComplexType(t) {
+  var y: t;
+  y.re = x:y.re.type;
+  var im = __primitive("_string_get_imag_part", x);
+  y.im = im:y.im.type;
+  return y;
+}
+
+//
+// casts from complex
+//
+pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
+  if isnan(x.re) || isnan(x.im) then
+    return "nan";
+  var re = x.re:string, op = " + ", im = x.im:string;
+  if x.im < 0 {
+    im = -x.im:string;
+    op = " - ";
+  } else if im == "-0.0" {
+    im = "0.0";
+    op = " - ";
+  }
+  return re + op + im + "i";
+}
 
 pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
   return nil;

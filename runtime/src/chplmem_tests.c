@@ -24,7 +24,6 @@ void _memtest_allocAndFree(_int32 lineno, _string filename) {
   _int64* i;
   _bool* b;
   _real64* f;
-  _complex64* c;
 
   resetMemStat();
 
@@ -39,16 +38,10 @@ void _memtest_allocAndFree(_int32 lineno, _string filename) {
   *f = 99.9;
   fprintf(stdout, "calloc'd a real\n");
   printMemStat(lineno, filename);
-  c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64", lineno, filename);
-  c->re = 1.2;
-  c->im = 2.3;
-  fprintf(stdout, "calloc'd a complex\n");
-  printMemStat(lineno, filename);
 
   _chpl_free(i, lineno, filename);
   _chpl_free(b, lineno, filename);
-  _chpl_free(c, lineno, filename);
-  fprintf(stdout, "freed the int, the bool, and the complex\n");
+  fprintf(stdout, "freed the int and the bool\n");
   printMemStat(lineno, filename);
 
   f = _chpl_realloc(f, 10, sizeof(_real64), "_real64", lineno, filename);

@@ -11,20 +11,20 @@
 /*
  *  string to complex
  */
-static _string _get_string_imag_part(_string s) {
+_string _string_get_imag_part(_string s) {
   const char* ps = s;
   while (*ps == ' ') // eat space
     ps++;
   if (*ps == '-' || *ps == '+') // eat sign
     ps++;
   if (!isdigit((int)*ps)) // test for digit
-    return NULL;
+    return "";
   while (isdigit((int)*ps)) // eat integral part
     ps++;
   if (*ps == '.') { // test for decimal
     ps++;
     if (!isdigit((int)*ps)) // test for digit
-      return NULL;
+      return "";
     while (isdigit((int)*ps)) // eat fractional part
       ps++;
   }
@@ -33,7 +33,7 @@ static _string _get_string_imag_part(_string s) {
     if (*ps == '+' || *ps == '-') // test for exponent sign
       ps++;
     if (!isdigit((int)*ps)) // test for digit
-      return NULL;
+      return "";
     while (isdigit((int)*ps)) // eat exponent part
       ps++;
   }
@@ -41,23 +41,8 @@ static _string _get_string_imag_part(_string s) {
     ps++;
   if (*ps == '+' || *ps == '-') // check for imaginary part
     return ++ps;
-  return NULL;
+  return "";
 }
-
-#define string_to_complex(type, realtype)               \
-  type _string_to##type(_string x) {                    \
-    _string im;                                         \
-    type c = {(realtype)0, (realtype)0};                \
-    c.re = (realtype)(atof(x));                         \
-    im = _get_string_imag_part(x);                      \
-    if (im)                                             \
-      c.im = (realtype)(atof(im));                      \
-    return c;                                           \
-  }
-
-string_to_complex(_complex64, _real32)
-string_to_complex(_complex128, _real64)
-string_to_complex(_complex256, _real128)
 
 /*
  *  int and uint to string
@@ -121,33 +106,3 @@ real_to_string(_real128, "%Lg")
 real_to_string(_imag32, "%lgi")
 real_to_string(_imag64, "%lgi")
 real_to_string(_imag128, "%Lgi")
-
-/*
- *  complex to string
- */
-#define complex_to_string(type, realtype)               \
-  _string type##_to_string(type x) {                    \
-    if (isnan(x.re) || isnan(x.im)) {                   \
-      return NANSTRING;                                 \
-    } else {                                            \
-      const char* re = realtype##_to_string(x.re);      \
-      const char* im;                                   \
-      realtype imval = x.im;                            \
-      const char* op = " + ";                           \
-      if (imval < 0) {                                  \
-        imval = -x.im;                                  \
-        op = " - ";                                     \
-      }                                                 \
-      im = realtype##_to_string(imval);                 \
-      if (strcmp(im, "-0.0") == 0) {                    \
-        /* is there a better test for -0.0? */          \
-        op = " - ";                                     \
-        im = "0.0";                                     \
-      }                                                 \
-      return _glom_strings(4, re, op, im, "i");         \
-    }                                                   \
-  }
-
-complex_to_string(_complex64, _real32);
-complex_to_string(_complex128, _real64);
-complex_to_string(_complex256, _real128);

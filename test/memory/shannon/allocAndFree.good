@@ -4,10 +4,8 @@ malloc'd abool
 totalMem=12, maxMem=12
 calloc'd a real
 totalMem=20, maxMem=20
-calloc'd a complex
-totalMem=28, maxMem=28
-freed the int, the bool, and the complex
-totalMem=8, maxMem=28
+freed the int and the bool
+totalMem=8, maxMem=20
 realloc'd 10 times the real
 totalMem=80, maxMem=80
 freed the real

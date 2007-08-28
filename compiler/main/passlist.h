@@ -10,6 +10,7 @@ void checkParsed();
 void checkResolved();
 void cleanup();
 void codegen();
+void complex2record();
 void copyCollection();
 void copyPropagation();
 void cullOverReferences();
@@ -60,6 +61,7 @@ PassInfo passlist[] = {
   RUN(parallel),           // parallel transforms
 
   // Optimizations
+  RUN(complex2record),      // change complex numbers into records
   RUN(inlineFunctions),     // function inlining
   RUN(scalarReplace),       // scalar replace all tuples
   RUN(refPropagation),      // reference propagation
