@@ -26,6 +26,16 @@ test_diff: $(SOURCES) test_diff.chpl
 test_gaxpy: $(SOURCES) test_gaxpy.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
+.PHONY: ps
+PSDIR = ps
+ps:
+	@mkdir $(PSDIR)
+	@for file in *.chpl; do out=$$(echo $$file|cut -d. -f1);    \
+	    vim -e -c "set printoptions=paper:letter"               \
+	    -c ":hardcopy > $(PSDIR)/$$out.ps" -c ":q" $$file;      \
+	done
+	@echo Postscript output is in $(PSDIR)
+
 
 .PHONY: distrib
 DISTDIR = mad_chapel
@@ -39,3 +49,4 @@ distrib: clean
 clean:
 	rm -f $(TARGETS)
 	rm -rf $(GENC)
+	rm -rf $(PSDIR)
