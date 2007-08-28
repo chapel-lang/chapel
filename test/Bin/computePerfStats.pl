@@ -59,5 +59,7 @@ print STATS "\n";
 if ($foundEverything == 1) {
     exit 0;
 } else {
+    print "output was:\n";
+    system("cat $testname.exec.out.tmp");
     exit 1;
 }
