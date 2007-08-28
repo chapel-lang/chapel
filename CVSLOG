@@ -115998,3 +115998,35 @@ Modified files:
 Added files:
 	chapel/compiler/passes/: complex2record.cpp 
 
+---------------------------------------------------------------------------
+
+08/28/07 11:22:48 -- bradc
+
+Log message:
+	In response to user issues on platforms with a non-gmake
+	compatible "make" utility, improved the mechanism for
+	determining and specifying what "make" utility to use on
+	the generated code as follows:
+	
+	- a new util script "chplmake" is used to determine
+	  what make utility should be used on a particular
+	  platform.  Currently, this utility returns gmake
+	  on any platform by default, except for cygwin which
+	  supports gmake using the name "make" by default.
+	
+	- if the user wants to override this default, they can
+	  set CHPL_MAKE to indicate the utility that should be
+	  used or specify it via the --make command-line flag
+	
+	Also updated the gen_release script to add the chplmake
+	utility to the release bundle.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/test/compflags/bradc/help/: userhelp.good 
+	chapel/util/: gen_release 
+Added files:
+	chapel/util/: chplmake 
+
