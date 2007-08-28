@@ -116074,3 +116074,16 @@ Log message:
 Modified files:
 	chapel/test/Bin/: computePerfStats.pl 
 
+---------------------------------------------------------------------------
+
+08/28/07 16:09:10 -- bradc
+
+Log message:
+	Converting GC malloc calls to const char* to avoid
+	warnings with GASNet.
+
+Modified files:
+	chapel/runtime/include/: chplcopygc.h 
+	chapel/runtime/src/: chplcopygc.c 
+	chapel/test/compflags/waynew/: .cvsignore 
+
