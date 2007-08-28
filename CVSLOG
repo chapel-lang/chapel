@@ -116030,3 +116030,24 @@ Modified files:
 Added files:
 	chapel/util/: chplmake 
 
+---------------------------------------------------------------------------
+
+08/28/07 11:39:56 -- dinan
+
+Log message:
+	Implemented GAXPY, function addition, and function subtraction.  Pulled out the
+	diff test into its own file and added a separate gaxpy test.  Only one
+	function left to go: multiplication!!
+	
+	Gaxpy is an important function because it is performed in the multi-wavelet
+	basis (eg, on the compressed tree) whereas differentiation is performed in the
+	scaling (reconstructed) basis.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Makefile 
+	                                               TwoScale.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: test_diff.chpl 
+	                                               test_gaxpy.chpl 
+
