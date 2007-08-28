@@ -28,6 +28,7 @@ Code Generation:
   -O, --[no-]optimize                    Optimize generated C code
       --savec <directory>                Save generated C code in directory
       --short-names                      Use short names
+      --make                             Make utility for generated code
 
 Linker Control:
       --ccflags <flags>                  Back-end C compiler flags

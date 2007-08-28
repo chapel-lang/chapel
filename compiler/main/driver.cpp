@@ -46,6 +46,7 @@ bool fSerial = false;
 bool fLocal = false;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
+char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
@@ -101,6 +102,7 @@ static ArgumentDescription arg_desc[] = {
  {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
+ {"make", ' ', NULL, "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
 
  {"", ' ', NULL, "Linker Control", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},

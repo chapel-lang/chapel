@@ -290,8 +290,18 @@ const char* createGDBFile(int argc, char* argv[]) {
 
 
 void makeBinary(void) {
+  if (chplmake[0] == '\0') {
+    char* tmpMakeNameFile = stringcat(intDirName, "/chplmake.out");
+    char* command = stringcat(chplhome, "/util/chplmake > ", tmpMakeNameFile);
+    mysystem(command, "querying default make");
+    FILE* makeNameFile = openfile(tmpMakeNameFile, "r");
+    if (fscanf(makeNameFile, "%s", chplmake) != 1) {
+      INT_FATAL("Unable to read make utility name");
+    }
+    closefile(makeNameFile);
+  }
   const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-  char* command = stringcat("make ", makeflags, intDirName, 
+  char* command = stringcat(chplmake, " ", makeflags, intDirName, 
                             "/Makefile");
   mysystem(command, "compiling generated source");
 }
