@@ -116062,3 +116062,15 @@ Log message:
 Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Makefile 
 
+---------------------------------------------------------------------------
+
+08/28/07 13:17:34 -- bradc
+
+Log message:
+	Made the script to compute performance stats print the
+	actual output file received if there is a mismatch to
+	help with debugging.
+
+Modified files:
+	chapel/test/Bin/: computePerfStats.pl 
+
