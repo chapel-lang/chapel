@@ -116051,3 +116051,14 @@ Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: test_diff.chpl 
 	                                               test_gaxpy.chpl 
 
+---------------------------------------------------------------------------
+
+08/28/07 12:56:34 -- dinan
+
+Log message:
+	Added a "make ps" target to generate highlighted postscript for each .chpl
+	source file.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Makefile 
+
