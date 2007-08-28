@@ -35,6 +35,7 @@ ps:
 	    -c ":hardcopy > $(PSDIR)/$$out.ps" -c ":q" $$file;      \
 	done
 	@echo Postscript output is in $(PSDIR)
+	@echo To 2-up any of the .ps files, do: "psnup -2 -pletter in.ps out.ps"
 
 
 .PHONY: distrib

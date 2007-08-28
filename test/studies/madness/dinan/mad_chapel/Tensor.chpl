@@ -13,7 +13,7 @@ def transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
 }
 
 // Vector-Matrix transformation
-def *(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
+def *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [M.domain.dim(2)] real = 0.0;
 
     if V.domain.dim(1) != M.domain.dim(1) then
@@ -26,7 +26,7 @@ def *(in V: [] real, in M: [] real) where V.rank == 1 && M.rank == 2 {
 }
 
 // Matrix-Vector multiplication 
-def *(in M: [] real, in V: [] real) where V.rank == 1 && M.rank == 2 {
+def *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [M.domain.dim(1)] real = 0.0;
 
     if V.domain.dim(1) != M.domain.dim(2) then
@@ -39,12 +39,11 @@ def *(in M: [] real, in V: [] real) where V.rank == 1 && M.rank == 2 {
 }
 
 // Frobenius Norm -- 2-norm for Vectors
-def normf(in A) where A.rank == 1 {
+def normf(A) where A.rank == 1 {
     return sqrt(+ reduce A**2);
 }
 
 // Inner product of A and B
-// FIXME: def *(in A, in B) where A.rank == 1 && B.rank == 1 ??
-def inner(in A, in B) where A.rank == B.rank {
+def inner(A, B) where A.rank == 1 && B.rank == 1 {
     return + reduce A*B;
 }

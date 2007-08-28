@@ -34,7 +34,7 @@ class FTree {
     /** Unordered iterator over all coefficients
      */
     def these() {
-      for i in indices yield i;
+      for i in indices yield nodes[i].data;
     }
 
 

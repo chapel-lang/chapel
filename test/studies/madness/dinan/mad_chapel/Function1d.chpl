@@ -9,37 +9,40 @@ config const verbose = false;
 config const debug   = false;
 
 class Function1d {
-    var k             = 5;    // use first k Legendre polynomials as the basis in each box
-    var thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    var f: Fn1d       = nil;  // analytic f(x) to project into the numerical represntation
-    var initial_level = 2;    // initial level of refinement
-    var max_level     = 30;   // maximum level of refinement mostly as a sanity check
-    var compressed    = false;// keep track of what basis we are in
+    const k             = 5;    // use first k Legendre polynomials as the basis in each box
+    const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
+    const f: Fn1d       = nil;  // analytic f(x) to project into the numerical represntation
+    const initial_level = 2;    // initial level of refinement
+    const max_level     = 30;   // maximum level of refinement mostly as a sanity check
+    var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var s = FTree(order=k);
-    var d = FTree(order=k);
+    var   s = FTree(order=k);
+    var   d = FTree(order=k);
+
+    // FIXME: Ideally all of these matrices should be const as well but they
+    //        can't be presently since they must be assigned in initialize()
 
     // Two-Scale relationship matrices
-    var hgDom = [0..2*k-1, 0..2*k-1];
-    var hg    : [hgDom] real;
-    var hgT   : [hgDom] real;
+    const hgDom = [0..2*k-1, 0..2*k-1];
+    var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
+    var   hgT   : [hgDom] real; //        hgT => transpose(hg);
 
     // Quadrature coefficients
-    var quadDom   = [0..k-1];
-    var quad_x    : [quadDom] real; // points
-    var quad_w    : [quadDom] real; // weights
+    const quadDom   = [0..k-1];
+    var   quad_x    : [quadDom] real; // points
+    var   quad_w    : [quadDom] real; // weights
 
-    var quad_phiDom = [0..k-1, 0..k-1];
-    var quad_phi    : [quad_phiDom] real; // phi[point,i]
-    var quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
-    var quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
+    const quad_phiDom = [0..k-1, 0..k-1];
+    var   quad_phi    : [quad_phiDom] real; // phi[point,i]
+    var   quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
+    var   quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
-    var dcDom = [0..k-1, 0..k-1];
-    var rm    : [dcDom] real;
-    var r0    : [dcDom] real;
-    var rp    : [dcDom] real;
+    const dcDom = [0..k-1, 0..k-1];
+    var   rm    : [dcDom] real;
+    var   r0    : [dcDom] real;
+    var   rp    : [dcDom] real;
 
     def initialize() {
         if debug then writeln("Creating Function1d: k=", k, " thresh=", thresh);
@@ -53,7 +56,7 @@ class Function1d {
 
         // blocks of the block tridiagonal derivative operator
         if debug then writeln("  initializing tridiagonal derivative operator");
-        make_dc_periodic(k);
+        make_dc_periodic();
 
         // initial refinement of analytic function f(x)
         if f != nil {
@@ -85,7 +88,7 @@ class Function1d {
         difference derivative operator with periodic boundary
         conditions on either side.
      */
-    def make_dc_periodic(k) {
+    def make_dc_periodic() {
         var iphase = 1.0;
         for i in dcDom.dim(1) {
             var jphase = 1.0;
@@ -107,7 +110,8 @@ class Function1d {
     /** Return a copy of this Function
      */
     def copy() {
-        return Function1d(k, thresh, f, initial_level, max_level, compressed, s.copy(), d.copy());
+        return Function1d(k=k, thresh=thresh, f=f, initial_level=initial_level,
+                max_level=max_level, compressed=compressed, s.copy(), d.copy());
     }
 
 
@@ -133,7 +137,7 @@ class Function1d {
 
     /** Refine numerical representation of f(x) to desired tolerance
      */
-    def refine(n: int, l: int) {
+    def refine(n, l) {
         // project f(x) at next level
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
@@ -381,7 +385,7 @@ class Function1d {
      */
     def norm2() {
         if compressed then reconstruct();
-        return sqrt(+ reduce [i in s] normf(s[i(1), i(2)])**2);
+        return sqrt(+ reduce [i in s] normf(i)**2);
     }
 
 
@@ -390,7 +394,7 @@ class Function1d {
      */
     def gaxpy(alpha, other, beta) {
         // recursive "iteration" for gaxpy
-        def gaxpy_iter(alpha, other, beta, n=0, l=0) {
+        def gaxpy_iter(n=0, l=0) {
             if d.has_coeffs(n, l) || other.d.has_coeffs(n, l) {
                 if d.has_coeffs(n, l) && other.d.has_coeffs(n, l) then
                     d[n, l] = d[n, l]*alpha + other.d[n, l]*beta;
@@ -402,8 +406,8 @@ class Function1d {
                     d[n, l] *= alpha;
 
                 // calls on sub-trees can go in parallel
-                gaxpy_iter(alpha, other, beta, n+1, 2*l);
-                gaxpy_iter(alpha, other, beta, n+1, 2*l+1);
+                gaxpy_iter(n+1, 2*l);
+                gaxpy_iter(n+1, 2*l+1);
             }
         }
 
@@ -411,7 +415,7 @@ class Function1d {
         if !other.compressed then other.compress();
 
         s[0, 0] = s[0, 0]*alpha + other.s[0, 0]*beta; // Do scaling coeffs
-        gaxpy_iter(alpha, other, beta);               // Do multi-wavelet coeffs
+        gaxpy_iter();                                 // Do multi-wavelet coeffs
 
         // return this so operations can be chained
         return this;
@@ -443,8 +447,7 @@ class Function1d {
         writeln("sum coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for i in s {
-                var (lvl, idx) = i;
+            for (lvl, idx) in s.indices {
                 if (lvl == n && s.has_coeffs(lvl, idx)) {
                     sum     += normf(s[lvl, idx])**2;
                     ncoeffs += 1;
@@ -457,8 +460,7 @@ class Function1d {
         writeln("difference coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for i in d {
-                var (lvl, idx) = i;
+            for (lvl, idx) in d.indices {
                 if (lvl == n && d.has_coeffs(lvl, idx)) {
                     sum     += normf(d[lvl, idx])**2;
                     ncoeffs += 1;
