@@ -115950,3 +115950,14 @@ Modified files:
 Removed files:
 	chapel/test/studies/madness/dinan/mad_chapel/: FTree-broken.chpl 
 
+---------------------------------------------------------------------------
+
+08/27/07 17:23:11 -- dinan
+
+Log message:
+	Implemented deep copy.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+
