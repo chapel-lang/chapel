@@ -87,7 +87,7 @@ void _chpl_gc_copy_collect(void) {
   _to_space = tmp;
 }
 
-void* _chpl_gc_malloc(size_t number, size_t size, char* description,
+void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
                       _int32 lineno, _string filename) {
   char* current = NULL;
   size_t chunk = number * size;

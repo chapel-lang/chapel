@@ -31,7 +31,7 @@ void _deleteRoot(void);
 
 /* Allocate space in the from-space.  If not enough space exists,
    run a garbage collection cycle. */
-void* _chpl_gc_malloc(size_t number, size_t size, char* description,
+void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
                       _int32 lineno, _string filename);
 
 /* Run a garbage collection cycle */

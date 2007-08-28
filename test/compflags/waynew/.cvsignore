@@ -3,3 +3,4 @@ a.out
 *.tmp
 Makefile
 *.h
+chplmake.out
