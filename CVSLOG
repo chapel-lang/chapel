@@ -116102,3 +116102,18 @@ Modified files:
 	                                               Makefile 
 	                                               Tensor.chpl 
 
+---------------------------------------------------------------------------
+
+08/28/07 16:32:25 -- deitz
+
+Log message:
+	Implemented | reduce and & reduce on bools.  Note that these are not
+	complete by any means.  It looks like reductions over complex types,
+	for example, will not work.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+Added files:
+	chapel/test/reductions/deitz/: test_bool_reductions.chpl 
+	                               test_bool_reductions.good 
+
