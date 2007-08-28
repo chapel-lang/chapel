@@ -116087,3 +116087,18 @@ Modified files:
 	chapel/runtime/src/: chplcopygc.c 
 	chapel/test/compflags/waynew/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/28/07 16:28:23 -- dinan
+
+Log message:
+	Updates from today's meeting.  Changed many vars to consts, removes some unused
+	function arguments, and changed FTree.these() to return an array of coeffs rather
+	than an index 2-tuple.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
+	                                               Function1d.chpl 
+	                                               Makefile 
+	                                               Tensor.chpl 
+
