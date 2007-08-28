@@ -115961,3 +115961,40 @@ Modified files:
 	chapel/test/studies/madness/dinan/mad_chapel/: FTree.chpl 
 	                                               Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/28/07 10:46:10 -- deitz
+
+Log message:
+	Added a pass called complex2record that converts the primitive complex
+	number type into a record.  This enables the compiler to optimize
+	complex numbers using its already-implemented record optimizations.
+	
+	Added two new primitives isnan and _string_get_imag_part to determine
+	if a real number is NAN and to get the imaginary part of a string that
+	contains a complex number.  This latter primitive can be written in
+	Chapel but is painful given the lack of string processing routines.
+	
+	Added _cast functions specific to complex numbers rather than relying
+	on primitives.  Since the complex is a record, these need to be at
+	module level instead of in the runtime.  Specialized min and max in
+	the modules to complex as well.
+	
+	This checkin has a profound effect on the franz code, decreasing
+	compilation time from 110 seconds to 56 seconds (C compilation time
+	from 71 seconds to 13 seconds), decreasing the lines of generated code
+	from 129890 to 85294, and improving the performance from 61 Mflop/s to
+	1342 Mflop/s for fft_2048.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/modules/standard/: ChapelBase.chpl Math.chpl Types.chpl 
+	chapel/runtime/include/: chplcast.h chpltypes.h 
+	chapel/runtime/src/: chplcast.c chplmem_tests.c chpltypes.c 
+	chapel/test/memory/shannon/: allocAndFree.good 
+Added files:
+	chapel/compiler/passes/: complex2record.cpp 
+
