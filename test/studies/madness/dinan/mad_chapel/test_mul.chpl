@@ -17,7 +17,7 @@ def main() {
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F1 = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var F1 = Function(k=5, thresh=1e-5, f=fcn[i], autorefine=false);
         var F2 = Function(k=5, thresh=1e-5, f=fcn[i]);
         var G = Function(k=5, thresh=1e-5, f=Fn_Unity());
 

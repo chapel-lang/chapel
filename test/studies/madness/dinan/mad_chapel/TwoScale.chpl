@@ -1,8 +1,7 @@
 /** TwoScale Module:
   
     Tabulation of the twoscale coefficients, and a routine to compute the
-    scaling functions (Legendre polyn scaled and shifted to the unit interval)
-    solely to make the 1d example standalone.
+    scaling functions (Legendre polyn scaled and shifted to the unit interval).
 */
 
 use Math;
@@ -16,9 +15,39 @@ var phi_norms : [0..-1] real;
 var phi_initialized = false;
 
 
-/** Return the two scale coeffs for k.
-    @param k    two scale coeffs for k
-    @return     Copy of the two-dimensional array (2*k by 2*k) of two scale coeffs
+/** Read two scale coeffs from the input file.
+ */
+def hg_readCoeffs(inputfile) {
+    var max_k: int;
+    var coeffData = file(inputfile, path='./', mode='r');
+
+    coeffData.open();
+    coeffData.read(max_k);
+    hg_MaxK = max_k;
+
+    hg_coeffs.domain = [0..max_k, 0..2*max_k-1, 0..2*max_k-1];
+
+    // hg_coeffs[0,..,..] is not used
+    for i in 1..max_k {
+        for (j, k) in [0..i*2-1, 0..i*2-1] {
+            var x: real;
+            coeffData.read(x);
+            hg_coeffs[i, j, k] = x;
+        }
+    }
+
+    coeffData.close();
+}
+
+
+/** Return maximum k.
+ */
+def hg_getMaxK(): int {
+    return hg_MaxK;
+}
+
+
+/** Return the twoscale coefficients for the multiwavelets of order k.
  */
 def hg_getCoeffs(k: int) {
     var kthCoeffs: [0..2*k-1, 0..2*k-1] real;
@@ -35,45 +64,12 @@ def hg_getCoeffs(k: int) {
 }
 
 
-/** Read two scale coeffs from a file
- */
-def hg_readCoeffs(inputfile) {
-    var max_k: int;
-    var coeffData = file(inputfile, path='./', mode='r');
-
-    coeffData.open();
-    coeffData.read(max_k);
-    hg_MaxK = max_k;
-
-    hg_coeffs.domain = [0..max_k, 0..2*max_k-1, 0..2*max_k-1];
-    //writeln("HG: Reading ", max_k, " sets of twoscale coeffs from: ", inputfile, "\n");
-
-    // hg_coeffs[0, , ] is not used
-    for i in 1..max_k {
-        for (j, k) in [0..i*2-1, 0..i*2-1] {
-            var x: real;
-            coeffData.read(x);
-            hg_coeffs[i, j, k] = x;
-        }
-    }
-
-    coeffData.close();
-}
-
-
-/** Return maximum k.
-    @return     Maximum value of k
- */
-def hg_getMaxK(): int {
-    return hg_MaxK;
-}
-
-
 /** Evaluate the Legendre polynomials up to the given order at x
     defined on [-1,1]
-    @param x       point at which to evaluate polynomials
-    @param order   max order of polynomials to evaluate
-    @return        double[] first k polynomials evaluated at point x
+    
+     * x       point at which to evaluate polynomials
+     * order   max order of polynomials to evaluate
+     * return  [] real first k polynomials evaluated at point x
  */
 def pn(x: real, order: int) {
     var p: [0..order] real;
@@ -98,9 +94,9 @@ def pn(x: real, order: int) {
 
     (the wavelets are similar with phase (-1)^(j+k)).
 
-    @param x    point at which to evaluate polynomials
-    @param k    evaluate first k polynomials
-    @return     double[] first k polynomials evaluated at point x
+     * x       point at which to evaluate polynomials
+     * k       evaluate first k polynomials
+     * return  double[] first k polynomials evaluated at point x
  */ 
 def phi(x: real, k: int) {
     var p: [0..k-1] real = 0.0;

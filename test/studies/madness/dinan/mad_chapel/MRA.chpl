@@ -1,3 +1,10 @@
+/** MRA -- MultiResolution Analysis Module
+
+    Multiresolution representation of 1-d functions using a multiwavelet
+    basis (similar to discontinuous spectral element with a hierarchal
+    decomposition).
+ */
+
 use Math;
 use Tensor;
 use FTree;
@@ -449,7 +456,7 @@ class Function {
     }
 
     
-    /** Recursively multiply f1 and f2 put the result into self
+    /** Recursively multiply f1 and f2 put the result into this
      */ 
     def multiply(f1, f2, n=0, l=0) {
         if f1.s.has_coeffs(n, l) && f2.s.has_coeffs(n, l) {
@@ -469,7 +476,7 @@ class Function {
                 // multiply f1.s[n+1][2*l] and f2.s[n+1][2*l]
                 var f = f1.s[n+1, 2*l] * quad_phiT;
                 var g = f2.s[n+1, 2*l] * quad_phiT;
-                f *= g;  // element-wise multiplication
+                f *= g; // Note: Element-wise multiplication
                 s[n+1, 2*l] = (f * quad_phiw) * scale_factor;
 
                 // multiply f1.s[n+1][2*l+1] and f2.s[n+1][2*l+1]
@@ -486,7 +493,7 @@ class Function {
                 f *= g;
 
                 // scale factor for this level = sqrt((2^d)^(n+1))
-                s[n, l] = (f * quad_phiw) * sqrt(2.0**(n)); // FIXME: n+1?
+                s[n, l] = (f * quad_phiw) * sqrt(2.0**(n));
             }
 
         } else {
@@ -566,7 +573,7 @@ class Function {
         for i in 1..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
             writeln(" -- ", i/npt:real, ": f_analytic()=", fval, " F_numeric()=", Fval,
-                " err=", Fval-fval, if (Fval-fval) > thresh then "  !! > thresh" else "");
+                " err=", Fval-fval, if abs(Fval-fval) > thresh then "  !! > thresh" else "");
         }
     }
 }

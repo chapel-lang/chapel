@@ -1,11 +1,10 @@
-/**
-   tabulation of gauss legendre quadrature rules on [0,1]
-   solely for the purpose of making the 1d example standalone
-*/
+/** Quadrature Module:
+  
+    Tabulation of gauss legendre quadrature rules on [0,1]
+ */
 
-/** Return Gauss-Legendre points for k.
-    @param k    k is order of quadrature rule
-    @return     Pointer to the one-dimensional array of Gauss-Legendre points
+
+/** Return Gauss-Legendre points for order k.
  */
 def gl_getPoints(k: int) {
     var ret: [0..k-1] real;
@@ -50,9 +49,8 @@ def gl_getPoints(k: int) {
     return ret;
 }
 
-/** Return Gauss-Legendre weights for k.
-    @param k    k is order of quadrature rule
-    @return     Pointer to the one-dimensional array of Gauss-Legendre weights
+
+/** Return Gauss-Legendre weights for order k.
  */
 def gl_getWeights(k: int) {
     var ret: [0..k-1] real;
@@ -95,10 +93,4 @@ def gl_getWeights(k: int) {
     }
 
     return ret;
-}
-
-def main() {
-    for i in 1..11 do
-        writeln("Points (", i, ") = ", gl_getPoints(i),
-                "\nWeights(", i, ") = ", gl_getWeights(i));
 }
