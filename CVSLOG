@@ -116117,3 +116117,13 @@ Added files:
 	chapel/test/reductions/deitz/: test_bool_reductions.chpl 
 	                               test_bool_reductions.good 
 
+---------------------------------------------------------------------------
+
+08/29/07 09:24:02 -- diten
+
+Log message:
+	Add isnan to the list of cnames that should be mangled if found in chpl code.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+
