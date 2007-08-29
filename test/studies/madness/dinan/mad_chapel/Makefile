@@ -5,12 +5,11 @@ CFLAGS = --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
 #CFLAGS += --ccflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
 
-SOURCES= Fn1d.chpl       \
-         FTree.chpl      \
-         Function1d.chpl \
-         MadFn1d.chpl    \
-         Quadrature.chpl \
-         Tensor.chpl     \
+SOURCES= AnalyticFcn.chpl  \
+         FTree.chpl        \
+         Function1d.chpl   \
+         Quadrature.chpl   \
+         Tensor.chpl       \
          TwoScale.chpl
 
 TARGETS= test_diff       \
@@ -20,15 +19,15 @@ TARGETS= test_diff       \
 all: $(TARGETS)
 
 
-test_diff: $(SOURCES) test_diff.chpl
+test_diff: $(SOURCES) test_diff.chpl MadAnalytics.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 
-test_gaxpy: $(SOURCES) test_gaxpy.chpl
+test_gaxpy: $(SOURCES) test_gaxpy.chpl MadAnalytics.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 
-test_mul: $(SOURCES) test_mul.chpl
+test_mul: $(SOURCES) test_mul.chpl MadAnalytics.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 

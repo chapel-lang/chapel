@@ -1,13 +1,13 @@
-/** Test functions for Function1d class
+/** Sample analytic functions 
  */
 
-use Fn1d;
+use AnalyticFcn;
 use Math;
 
 const PI = 3.14159265358979323846;
 
 /** gaussian with square normalized to 1 */
-class Fn_Test1: Fn1d {
+class Fn_Test1: AFcn {
     def this(x: real): real {
         var a = 500.0;
         return (2*a/PI)**0.25 * exp(-a * (x-0.5)**2.0);
@@ -16,7 +16,7 @@ class Fn_Test1: Fn1d {
 
 
 /** derivative of test1 */
-class Fn_dTest1: Fn1d {
+class Fn_dTest1: AFcn {
     def this(x: real): real {
         var a = 500.0;
         return -2.0*a*(x-0.5) * (2*a/PI) ** 0.25 * exp(-a * (x-0.5)**2.0);
@@ -25,7 +25,7 @@ class Fn_dTest1: Fn1d {
 
 
 /** superposition of multiple gaussians */
-class Fn_Test2: Fn1d {
+class Fn_Test2: AFcn {
     var g = Fn_Test1();
 
     def this(x: real): real {
@@ -35,7 +35,7 @@ class Fn_Test2: Fn1d {
 
 
 /** derivative of test2 */
-class Fn_dTest2: Fn1d {
+class Fn_dTest2: AFcn {
     var g = Fn_dTest1();
 
     def this(x: real): real {
@@ -48,7 +48,7 @@ class Fn_dTest2: Fn1d {
   ... note it is never computed exactly at the singularity except by
   the test code below.
  */
-class Fn_Test3: Fn1d {
+class Fn_Test3: AFcn {
     def this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) then
@@ -60,7 +60,7 @@ class Fn_Test3: Fn1d {
 
 
 /** derivative of test3 */
-class Fn_dTest3: Fn1d {
+class Fn_dTest3: AFcn {
     def this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) {

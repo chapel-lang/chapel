@@ -1,13 +1,13 @@
 use Function1d;
-use MadFn1d;
+use MadAnalytics;
 
 def main() {
     var npt = 10;
 
     writeln("Mad Chapel -- Differentiation Test\n");
 
-    var fcn  : [1..3] Fn1d = (Fn_Test1():Fn1d,  Fn_Test2():Fn1d,  Fn_Test3():Fn1d);
-    var dfcn : [1..3] Fn1d = (Fn_dTest1():Fn1d, Fn_dTest2():Fn1d, Fn_dTest3():Fn1d);
+    var fcn  : [1..3] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn);
+    var dfcn : [1..3] AFcn = (Fn_dTest1():AFcn, Fn_dTest2():AFcn, Fn_dTest3():AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
@@ -36,7 +36,7 @@ def main() {
 
         writeln("\nDifferentiating F", i, " ...");
         var dF = F.diff();
-        dF.f = dfcn[i]:Fn1d; // Fudge it for the sake of evalNPT()
+        dF.f = dfcn[i]:AFcn; // Fudge it for the sake of evalNPT()
         if verbose then dF.summarize();
 
         writeln("\nEvaluating dF", i, " on [0, 1]:");

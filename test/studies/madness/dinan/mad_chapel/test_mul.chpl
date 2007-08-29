@@ -1,9 +1,9 @@
 use Function1d;
-use Fn1d;
-use MadFn1d;
+use AnalyticFcn;
+use MadAnalytics;
 
-class Square: Fn1d {
-    var f: Fn1d;
+class Square: AFcn {
+    var f: AFcn;
     def this(x: real): real {
         return f(x)**2;
     }
@@ -14,8 +14,8 @@ def main() {
 
     writeln("Mad Chapel -- Multiplication Test\n");
 
-    var fcn  : [1..3] Fn1d = (Fn_Test1():Fn1d,  Fn_Test2():Fn1d,  Fn_Test3():Fn1d);
-    var dfcn : [1..3] Fn1d = (Fn_dTest1():Fn1d, Fn_dTest2():Fn1d, Fn_dTest3():Fn1d);
+    var fcn  : [1..3] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn);
+    var dfcn : [1..3] AFcn = (Fn_dTest1():AFcn, Fn_dTest2():AFcn, Fn_dTest3():AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
@@ -24,7 +24,7 @@ def main() {
 
         writeln("\nMultiplying F", i, " ...");
         var H = F * G;
-        H.f = Square(fcn[i]);
+        H.f = Square(fcn[i]):AFcn;
         if verbose then H.summarize();
 
         writeln("\nEvaluating F*G on [0, 1]:");
