@@ -1607,9 +1607,10 @@ resolveCall(CallExpr* call) {
       // do not resolve function return type yet
       if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
         if (fn->getReturnSymbol() == sym->var) {
-          if (sym->var->isCompilerTemp)
+          if (fn->retType == dtUnknown) {
             sym->var->type = dtUnknown;
-          return;
+            return;
+          }
         }
       }
 

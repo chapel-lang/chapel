@@ -242,6 +242,8 @@ static void normalize_returns(FnSymbol* fn) {
     retval->isCompilerTemp = true;
     if (fn->isParam)
       retval->consClass = VAR_PARAM;
+    if (fn->retExprType && !fn->retRef)
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("_init", fn->retExprType->copy())));
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
   }
@@ -250,10 +252,10 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
-      if (fn->retExprType && !fn->retRef) // how to handle retRef + cast?
-        ret_expr = new CallExpr("_cast", fn->retExprType->copy(), ret_expr);
       if (fn->retRef)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
+      else if (fn->retExprType)
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
       else
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
     }
@@ -921,4 +923,5 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->defPoint->remove();
   fn->name = canonicalize_string(stringcat("_construct_", fn->name));
   ct->symbol->defPoint->insertBefore(fn->defPoint);
+  fn->retType = ct;
 }

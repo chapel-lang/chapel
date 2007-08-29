@@ -48,7 +48,7 @@ record range {
 
   def low: eltType return _low;
   def high: eltType return _high;
-  def stride: eltType return _stride; // should be :int ??
+  def stride: int return _stride;
 
   def this(subrange: range(?eltType, ?boundedness, ?stridable)) {
     if (stride != 1 || _stride != 1) {

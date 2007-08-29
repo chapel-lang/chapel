@@ -674,7 +674,6 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
-  wrapper->retType = retType;
   wrapper->cname = stringcat("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   for_formals(formal, this) {
@@ -736,7 +735,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(this);
-  wrapper->retType = retType;
+  if (fnClass != FN_ITERATOR)
+    wrapper->retType = retType;
   wrapper->cname = stringcat("_default_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   ASTMap copy_map;
