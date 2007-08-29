@@ -116140,3 +116140,17 @@ Log message:
 Modified files:
 	chapel/util/: chplmake 
 
+---------------------------------------------------------------------------
+
+08/29/07 11:34:07 -- dinan
+
+Log message:
+	First pass at multiply, not verified.  Having a strange super class error.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               MadFn1d.chpl 
+	                                               Makefile 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: test_mul.chpl 
+
