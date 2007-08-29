@@ -8,7 +8,7 @@ $preset_chplmake=$ENV{'CHPL_MAKE'};
 if ($preset_make eq "") {
     $platform = `$utildirname/platform`;
     chomp($platform);
-    if ($platform eq "cygwin") {
+    if ($platform eq "cygwin" || $platform eq "darwin") {
         $chplmake = "make";
     } else {
         $chplmake = "gmake";
