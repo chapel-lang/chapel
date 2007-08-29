@@ -116187,3 +116187,25 @@ Modified files:
 	chapel/runtime/include/: arg.h gdb.h 
 	chapel/runtime/src/: arg.c gdb.c main.c 
 
+---------------------------------------------------------------------------
+
+08/29/07 13:22:09 -- dinan
+
+Log message:
+	Renamed Fn1d class to AFcn and Fn1d module to AnalyticFcn to get around
+	conflicting module/class names.  Multiplication test is working, results look
+	promising.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+	                                               Makefile 
+	                                               test_diff.chpl 
+	                                               test_gaxpy.chpl 
+	                                               test_mul.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: AnalyticFcn.chpl 
+	                                               MadAnalytics.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Fn1d.chpl 
+	                                               MadFn1d.chpl 
+
