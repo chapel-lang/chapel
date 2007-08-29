@@ -116154,3 +116154,36 @@ Modified files:
 Added files:
 	chapel/test/studies/madness/dinan/mad_chapel/: test_mul.chpl 
 
+---------------------------------------------------------------------------
+
+08/29/07 11:52:00 -- bradc
+
+Log message:
+	Two orthogonal changes that I was too lazy to tease apart:
+	
+	1) Moved the numLocales config const from ChapelLocale.chpl
+	   to ChapelBase.chpl so that the --nostdincs flasg would
+	   work for GASNet and other parallel runs.  This doesn't
+	   seem like too much of an abuse given that the number of
+	   locales is a fairly crucial piece of information for
+	   running Chapel programs.  The other Locale-related
+	   variables remain in ChapelLocale.chpl as they should.
+	
+	2) Refactored the runtime code related to the --gdb flag
+	   and launching the debugger.  In the old scheme, the
+	   presence of any "--gdb" string in the argv[] vector
+	   would have resulted in the debugger getting launched
+	   (even if it was an argument to some other flag, e.g.).
+	   This new scheme cleans that up and moves the launch of
+	   gdb into the main.c file, which should make it easier
+	   to create --gdb modes for parallel implementations
+	   (this refactoring was motivated by an attempt to get
+	   --gdb working nicely for GASNet which failed; making
+	   this change should make it easier the next time we
+	   attempt it).
+
+Modified files:
+	chapel/modules/standard/: ChapelBase.chpl ChapelLocale.chpl 
+	chapel/runtime/include/: arg.h gdb.h 
+	chapel/runtime/src/: arg.c gdb.c main.c 
+
