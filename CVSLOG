@@ -116127,3 +116127,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+08/29/07 10:00:27 -- bradc
+
+Log message:
+	GNU make is just called "make" on the Mac (and no gmake is
+	available by default), so edited the chplmake script to
+	make this the default on that platform (proof that the new
+	structure works once it's set up correctly! :)
+
+Modified files:
+	chapel/util/: chplmake 
+
