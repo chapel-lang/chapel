@@ -72,3 +72,19 @@ class Fn_dTest3: AFcn {
         }
     }
 }
+
+
+/** 1 over the whole interval */
+class Fn_Unity: AFcn {
+    def this(x: real): real {
+        return 1.0;
+    }
+}
+
+
+/** 1 over the whole interval */
+class Fn_dUnity: AFcn {
+    def this(x: real): real {
+        return 0.0;
+    }
+}

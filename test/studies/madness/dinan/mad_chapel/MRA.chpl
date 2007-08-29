@@ -8,7 +8,7 @@ use AnalyticFcn;
 config const verbose = false;
 config const debug   = false;
 
-class Function1d {
+class Function {
     const k             = 5;    // use first k Legendre polynomials as the basis in each box
     const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
     const f: AFcn       = nil;  // analytic f(x) to project into the numerical represntation
@@ -46,7 +46,7 @@ class Function1d {
     var   rp    : [dcDom] real;
 
     def initialize() {
-        if debug then writeln("Creating Function1d: k=", k, " thresh=", thresh);
+        if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing two-scale relation coefficients");
         hg  = hg_getCoeffs(k);
@@ -111,7 +111,7 @@ class Function1d {
     /** Return a deep copy of this Function
      */
     def copy() {
-        return Function1d(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 s.copy(), d.copy());
     }
@@ -121,7 +121,7 @@ class Function1d {
      */
     def skeletonCopy() {
         // Omit: f, compressed, s, d
-        return Function1d(k=k, thresh=thresh, initial_level=initial_level,
+        return Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -383,7 +383,7 @@ class Function1d {
         }
 
         if compressed then reconstruct();
-        var result = Function1d(k, thresh);
+        var result = Function(k, thresh);
 
         diffHelper(0, 0, result);
 
@@ -577,14 +577,14 @@ class Function1d {
 /*************************************************************************/
 
 
-def +(F: Function1d, G: Function1d): Function1d {
+def +(F: Function, G: Function): Function {
     return F.add(G);
 }
 
-def -(F: Function1d, G: Function1d): Function1d {
+def -(F: Function, G: Function): Function {
     return F.subtract(G);
 }
     
-def *(F: Function1d, G: Function1d): Function1d {
+def *(F: Function, G: Function): Function {
     return F.multiply(G);
 }

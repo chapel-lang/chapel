@@ -1,4 +1,4 @@
-use Function1d;
+use MRA;
 use MadAnalytics;
 
 def main() {
@@ -11,8 +11,8 @@ def main() {
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F = Function1d(k=5, thresh=1e-5, f=fcn[i]);
-        var G = Function1d(k=5, thresh=1e-5, f=fcn[i]);
+        var F = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var G = Function(k=5, thresh=1e-5, f=fcn[i]);
 
         writeln("\nAdding F", i, " ...");
         var H = F + G;

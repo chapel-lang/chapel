@@ -1,5 +1,4 @@
-use Function1d;
-use AnalyticFcn;
+use MRA;
 use MadAnalytics;
 
 class Square: AFcn {
@@ -14,21 +13,30 @@ def main() {
 
     writeln("Mad Chapel -- Multiplication Test\n");
 
-    var fcn  : [1..3] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn);
-    var dfcn : [1..3] AFcn = (Fn_dTest1():AFcn, Fn_dTest2():AFcn, Fn_dTest3():AFcn);
+    var fcn  : [1..4] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn, Fn_Unity():AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F = Function1d(k=5, thresh=1e-5, f=fcn[i]);
-        var G = Function1d(k=5, thresh=1e-5, f=fcn[i]);
+        var F1 = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var F2 = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var G = Function(k=5, thresh=1e-5, f=Fn_Unity());
 
-        writeln("\nMultiplying F", i, " ...");
-        var H = F * G;
-        H.f = Square(fcn[i]):AFcn;
-        if verbose then H.summarize();
+        writeln("\nMultiplying F", i, "*Unity ...");
+        var H1 = F1 * G;
+        H1.f = fcn[i];
+        if verbose then H1.summarize();
 
-        writeln("\nEvaluating F*G on [0, 1]:");
-        H.evalNPT(npt);
+        writeln("\nEvaluating F*Unity on [0, 1]:");
+        H1.evalNPT(npt);
+
+        writeln("\nMultiplying F",i,"*F",i," ...");
+        var H2 = F1 * F1;
+        H2.f = Square(fcn[i]):AFcn;
+        H2.f = fcn[i];
+        if verbose then H2.summarize();
+
+        writeln("\nEvaluating F*F on [0, 1]:");
+        H2.evalNPT(npt);
 
         if i < fcn.domain.dim(1).high then
             writeln("\n======================================================================\n");
