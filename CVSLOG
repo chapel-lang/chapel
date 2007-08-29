@@ -116230,3 +116230,29 @@ Added files:
 Removed files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/29/07 14:34:20 -- deitz
+
+Log message:
+	Reworked normalization of return symbols so that they are initialized
+	to a specified return type if one exists, rather than using the
+	specified return type as a cast.  This make fully-specified array
+	return types work.  Added a test.
+	
+	We still need to handle var functions with specified return types.
+	
+	Fixed a bug in the stride function of a range in which it specified
+	the wrong return type.
+	
+	Disabled setting the return type on coercion wrappers.  Disabled on
+	default wrappers only if it is an iterator.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: ChapelRange.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_explicit_array_return_type.chpl 
+	                           test_explicit_array_return_type.good 
+
