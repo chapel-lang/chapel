@@ -116209,3 +116209,24 @@ Removed files:
 	chapel/test/studies/madness/dinan/mad_chapel/: Fn1d.chpl 
 	                                               MadFn1d.chpl 
 
+---------------------------------------------------------------------------
+
+08/29/07 14:19:15 -- dinan
+
+Log message:
+	Renamed Function1d.chpl to MRA.chpl.  Doing a "use MRA" should now pull in all
+	of the MultiResolution Analysis machinery needed to write a Madness program.
+	This is a case where having transitivity in module uses is helpful.  Numerical
+	results from multiplication are looking good.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: MadAnalytics.chpl 
+	                                               Makefile 
+	                                               test_diff.chpl 
+	                                               test_gaxpy.chpl 
+	                                               test_mul.chpl 
+Added files:
+	chapel/test/studies/madness/dinan/mad_chapel/: MRA.chpl 
+Removed files:
+	chapel/test/studies/madness/dinan/mad_chapel/: Function1d.chpl 
+
