@@ -14,7 +14,8 @@ SOURCES= Fn1d.chpl       \
          TwoScale.chpl
 
 TARGETS= test_diff       \
-         test_gaxpy
+         test_gaxpy      \
+         test_mul
 
 all: $(TARGETS)
 
@@ -25,6 +26,11 @@ test_diff: $(SOURCES) test_diff.chpl
 
 test_gaxpy: $(SOURCES) test_gaxpy.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+
+
+test_mul: $(SOURCES) test_mul.chpl
+	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+
 
 .PHONY: ps
 PSDIR = ps

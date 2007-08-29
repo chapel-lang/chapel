@@ -14,6 +14,7 @@ class Function1d {
     const f: Fn1d       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
+    const autorefine    = true; // automatically refine during multiplication
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
@@ -107,11 +108,21 @@ class Function1d {
     }
 
 
-    /** Return a copy of this Function
+    /** Return a deep copy of this Function
      */
     def copy() {
         return Function1d(k=k, thresh=thresh, f=f, initial_level=initial_level,
-                max_level=max_level, compressed=compressed, s.copy(), d.copy());
+                max_level=max_level, autorefine=autorefine, compressed=compressed,
+                s.copy(), d.copy());
+    }
+
+
+    /** Return a copy of this function's skeleton
+     */
+    def skeletonCopy() {
+        // Omit: f, compressed, s, d
+        return Function1d(k=k, thresh=thresh, initial_level=initial_level,
+                max_level=max_level, autorefine=autorefine);
     }
 
 
@@ -437,6 +448,80 @@ class Function1d {
         return copy().gaxpy(1.0, other, -1.0);
     }
 
+    
+    /** Recursively multiply f1 and f2 put the result into self
+     */ 
+    def multiply(f1, f2, n=0, l=0) {
+        if f1.s.has_coeffs(n, l) && f2.s.has_coeffs(n, l) {
+            if autorefine && n+1 <= max_level {
+                // if autorefine is set we are multiplying two polynomials
+                // of order k-1 the result could be up to order 2(k-1) so
+                // refine one more level to reduce the error and try to
+                // keep it within the threshold
+
+                // refine both one more level
+                f1.recur_down(n, l);
+                f2.recur_down(n, l);
+
+                // scale factor for this level = sqrt((2^d)^(n+1))
+                var scale_factor = sqrt(2.0**(n+1));
+
+                // multiply f1.s[n+1][2*l] and f2.s[n+1][2*l]
+                var f = f1.s[n+1, 2*l] * quad_phiT;
+                var g = f2.s[n+1, 2*l] * quad_phiT;
+                f *= g;  // element-wise multiplication
+                s[n+1, 2*l] = (f * quad_phiw) * scale_factor;
+
+                // multiply f1.s[n+1][2*l+1] and f2.s[n+1][2*l+1]
+                f  =  f1.s[n+1, 2*l+1] * quad_phiT;
+                g  =  f2.s[n+1, 2*l+1] * quad_phiT;
+                f *= g;
+                s[n+1, 2*l+1] = (f * quad_phiw) * scale_factor;
+
+            } else {
+                // if autorefine is not set or we are at the max_level
+                // live with what you get
+                var f = f1.s[n, l] * quad_phiT;
+                var g = f2.s[n, l] * quad_phiT;
+                f *= g;
+
+                // scale factor for this level = sqrt((2^d)^(n+1))
+                s[n, l] = (f * quad_phiw) * sqrt(2.0**(n)); // FIXME: n+1?
+            }
+
+        } else {
+            if f1.s.has_coeffs[n, l] && !f2.s.has_coeffs[n, l] then
+                // refine this box down to next level in f1
+                f1.recur_down(n, l);
+            else if !f1.s.has_coeffs[n, l] && f2.s.has_coeffs[n, l] then
+                // refine this box down to next level in f2
+                f2.recur_down(n, l);
+
+            // calls on sub-trees can go in parallel
+            mul_iter(f1, f2, n+1, 2*l);
+            mul_iter(f1, f2, n+1, 2*l+1);
+        }
+    }
+
+
+    /** Function Multiplication:
+        For multiply, both operands need to be in the scaling function basis
+        so possibly call reconstruct on one or both of them first
+     */
+    def multiply(other) {
+        if compressed then reconstruct();
+        if other.compressed then other.reconstruct();
+
+        // Store the result in a new Function
+        var result = skeletonCopy();
+        result.multiply(this, other);
+
+        sclean();
+        other.sclean();
+
+        return result;
+    }
+
 
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
@@ -498,4 +583,8 @@ def +(F: Function1d, G: Function1d): Function1d {
 
 def -(F: Function1d, G: Function1d): Function1d {
     return F.subtract(G);
+}
+    
+def *(F: Function1d, G: Function1d): Function1d {
+    return F.mul(G);
 }

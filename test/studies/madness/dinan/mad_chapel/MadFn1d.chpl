@@ -29,7 +29,7 @@ class Fn_Test2: Fn1d {
     var g = Fn_Test1();
 
     def this(x: real): real {
-        return g.this(x-0.3) + g(x) + g(x+0.3);
+        return g(x-0.3) + g(x) + g(x+0.3);
     }
 };
 
@@ -39,7 +39,7 @@ class Fn_dTest2: Fn1d {
     var g = Fn_dTest1();
 
     def this(x: real): real {
-        return g.this(x-0.3) + g(x) + g(x+0.3);
+        return g(x-0.3) + g(x) + g(x+0.3);
     }
 };
 
