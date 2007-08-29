@@ -116256,3 +116256,17 @@ Added files:
 	chapel/test/arrays/deitz/: test_explicit_array_return_type.chpl 
 	                           test_explicit_array_return_type.good 
 
+---------------------------------------------------------------------------
+
+08/29/07 15:07:37 -- dinan
+
+Log message:
+	Reformatted the last of the Javadoc and added some more comments.
+
+Modified files:
+	chapel/test/studies/madness/dinan/mad_chapel/: MRA.chpl 
+	                                               Quadrature.chpl 
+	                                               TwoScale.chpl 
+	                                               test_diff.chpl 
+	                                               test_mul.chpl 
+
