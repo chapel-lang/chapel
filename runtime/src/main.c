@@ -8,6 +8,7 @@
 #include "chplthreads.h"
 #include "config.h"
 #include "error.h"
+#include "gdb.h"
 
 
 extern void _chpl_main(void);
@@ -21,6 +22,9 @@ int main(int argc, char* argv[]) {
     //
     _int32 execNumLocales;
     parseArgs(argc, argv);
+    if (_runInGDB()) {
+      runInGDB(argc, argv);
+    }
     execNumLocales = getArgNumLocales();
     //
     // If the user did not specify a number of locales let the
@@ -66,5 +70,3 @@ int main(int argc, char* argv[]) {
   _chpl_exit_all(0);         // have everyone exit
   return 0;                  // should never get here
 }
-
-

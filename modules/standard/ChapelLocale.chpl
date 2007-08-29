@@ -1,5 +1,3 @@
-config const numLocales = __primitive("_chpl_comm_default_num_locales");
-
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleDomain: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocaleDomain: domain(1) = [0..numLocales-1];

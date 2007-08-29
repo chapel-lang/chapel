@@ -5,5 +5,6 @@
 
 void parseArgs(int argc, char* argv[]);
 _int32 getArgNumLocales(void);
+int _runInGDB(void);
 
 #endif

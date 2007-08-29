@@ -11,6 +11,12 @@
 #include "gdb.h"
 
 
+static int gdbFlag = 0;
+
+int _runInGDB(void) {
+  return gdbFlag;
+}
+
 static void printHeaders(char thisType, char* lastType) {
   if (thisType != *lastType) {
     fprintf(stdout, "\n");
@@ -236,8 +242,6 @@ void parseArgs(int argc, char* argv[]) {
   int i;
   int printHelp = 0;
 
-  checkForGDBArg(argc, argv);
-  
   for (i = 1; i < argc; i++) {
     int argLength = 0;
     const char* currentArg = argv[i];
@@ -256,6 +260,12 @@ void parseArgs(int argc, char* argv[]) {
         {
           const char* flag = currentArg + 2;
           int isSingleArg = 1;
+
+          if (strcmp(flag, "gdb") == 0) {
+            gdbFlag = i;
+            break;
+          }
+            
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
             break;
@@ -311,7 +321,7 @@ void parseArgs(int argc, char* argv[]) {
             numPtr = &(currentArg[3]);
           }
           parseNumLocales(numPtr);
-          sprintf(numLocalesBuffer, "ChapelLocale.numLocales=%d", _argNumLocales);
+          sprintf(numLocalesBuffer, "ChapelBase.numLocales=%d", _argNumLocales);
           addToConfigList(numLocalesBuffer, 1);
           break;
         }

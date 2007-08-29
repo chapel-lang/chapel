@@ -1,3 +1,6 @@
+// the number of locales on which to run the program
+config const numLocales = __primitive("_chpl_comm_default_num_locales");
+
 // range enumeration
 enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 

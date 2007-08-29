@@ -2,21 +2,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arg.h"
 #include "chplexit.h"
 #include "chplrt.h"
 #include "error.h"
 #include "gdb.h"
-
-int gdbArgNo;
 
 static int mysystem(const char* command, const char* description, 
                     int ignorestatus) {
   int status = system(command);
 
   if (status == -1) {
-    _printError("system() fork failed", gdbArgNo, "(command-line)");
+    _printError("system() fork failed", 0, "(command-line)");
   } else if (status != 0 && !ignorestatus) {
-    _printError(description, gdbArgNo, "(command-line)");
+    _printError(description, 0, "(command-line)");
   }
 
   return status;
@@ -32,7 +31,7 @@ static FILE* openfile(const char* outfilename, const char* mode) {
     char* errormsg = _glom_strings(4, errorstr, outfilename, ": ", 
                                    strerror(errno));
 
-    _printError(errormsg, gdbArgNo, "(command-line)");
+    _printError(errormsg, 0, "(command-line)");
   }
 
   return outfile;
@@ -44,7 +43,7 @@ static void closefile(FILE* thefile) {
     const char* errorstr = "closing file: ";
     char* errormsg = _glom_strings(2, errorstr, strerror(errno));
 
-    _printError(errormsg, gdbArgNo, "(command-line)");
+    _printError(errormsg, 0, "(command-line)");
   }
 }
 
@@ -57,6 +56,7 @@ static void createGDBFile(int argc, char* argv[]) {
   FILE* gdbfile = openfile(gdbfilename, "w");
   int i;
 
+  int gdbArgNo = _runInGDB();
   fprintf(gdbfile, "set args");
   for (i=1; i<argc; i++) {
     if (i != gdbArgNo) {
@@ -94,12 +94,13 @@ static void createGDBFile(int argc, char* argv[]) {
 void removeGDBFile() {
   if (usingGDBFile) {
     char* command = _glom_strings(2, "rm ", gdbfilename);
+    usingGDBFile = 0;  // to avoid infinite recursion if this fails
     mysystem(command, "removing gdb commands file", 0);
   }
 }
 
 
-static void runInGDB(int argc, char* argv[]) {
+void runInGDB(int argc, char* argv[]) {
   char* command;
   int status;
 
@@ -108,16 +109,4 @@ static void runInGDB(int argc, char* argv[]) {
   status = mysystem(command, "running gdb", 0);
 
   _chpl_exit_all(status);
-}
-
-
-void checkForGDBArg(int argc, char* argv[]) {
-  int i;
-
-  for (i=1; i<argc; i++) {
-    if (strcmp(argv[i], "--gdb") == 0) {
-      gdbArgNo = i;
-      runInGDB(argc, argv);
-    }
-  }
 }
