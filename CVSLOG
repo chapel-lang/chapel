@@ -116270,3 +116270,19 @@ Modified files:
 	                                               test_diff.chpl 
 	                                               test_mul.chpl 
 
+---------------------------------------------------------------------------
+
+08/30/07 09:10:49 -- deitz
+
+Log message:
+	Added a module use future where a class with the same name as the
+	module causes the module not to be found.
+
+Added files:
+	chapel/test/modules/deitz/: test_module_use4.chpl 
+	                            test_module_use4.future 
+	                            test_module_use4.good 
+	                            test_module_use_conflict.chpl 
+	                            test_module_use_conflict.future 
+	                            test_module_use_conflict.good 
+
