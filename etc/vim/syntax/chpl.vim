@@ -98,9 +98,12 @@ syn match	cOctal		display contained "0\o\+\(u\=l\{0,2}\|ll\=u\)\>" contains=cOct
 syn match	cOctalZero	display contained "\<0"
 syn match	cFloat		display contained "\d\+f"
 "floating point number, with dot, optional exponent
-syn match	cFloat		display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
+"syn match	cFloat		display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
+syn match	cFloat		display contained "\d\+\.\d\+\(e[-+]\=\d\+\)\=[fl]\="
 "floating point number, starting with a dot, optional exponent
 syn match	cFloat		display contained "\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
+" Avoid highlighting '..'
+syn match	cNone		display "\.\{2}"
 "floating point number, without dot, with exponent
 syn match	cFloat		display contained "\d\+e[-+]\=\d\+[fl]\=\>"
 if !exists("c_no_c99")
