@@ -979,24 +979,27 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 
   for_formals(formal, fn) {
     ArgSymbol* cloneFormal = toArgSymbol(map.get(formal));
-    if (generic_subs->get(formal) && formal->intent == INTENT_PARAM) {
-      cloneFormal->intent = INTENT_BLANK;
+
+    if (BaseAST* value = generic_subs->get(formal)) {
+      if (formal->intent != INTENT_PARAM && !isType(value)) {
+        INT_FATAL(value, "Unexpected generic substitution");
+      }
+      if (formal->intent == INTENT_PARAM) {
+        cloneFormal->intent = INTENT_BLANK;
+        cloneFormal->instantiatedParam = true;
+        if (cloneFormal->type->isGeneric)
+          cloneFormal->type = paramMap.get(cloneFormal)->type;
+      } else {
+        cloneFormal->instantiatedFrom = formal->type;
+        cloneFormal->type = toType(value);
+      }
       cloneFormal->isGeneric = false;
-      cloneFormal->instantiatedParam = true;
-      if (cloneFormal->type->isGeneric)
-        cloneFormal->type = paramMap.get(cloneFormal)->type;
-      if (cloneFormal->defaultExpr)
-        cloneFormal->defaultExpr->remove();
-      cloneFormal->defaultExpr = new SymExpr(gNil);
-      cloneFormal->defaultExpr->parentSymbol = cloneFormal;
-    } else if (Type* t = toType(generic_subs->get(formal))) {
-      cloneFormal->isGeneric = false;
-      cloneFormal->instantiatedFrom = formal->type;
-      cloneFormal->type = t;
-      if (cloneFormal->defaultExpr)
-        cloneFormal->defaultExpr->remove();
-      cloneFormal->defaultExpr = new SymExpr(gNil);
-      cloneFormal->defaultExpr->parentSymbol = cloneFormal;
+      if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
+        if (cloneFormal->defaultExpr)
+          cloneFormal->defaultExpr->remove();
+        cloneFormal->defaultExpr = new SymExpr(gNil);
+        cloneFormal->defaultExpr->parentSymbol = cloneFormal;
+      }
     }
   }
   return clone;
