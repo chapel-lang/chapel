@@ -1,0 +1,7 @@
+bug: inferred-size default array arguments
+
+We make the mistake of trying to allocate an array temp
+before its size is known, which causes a set fault when
+its domain is queried.  Our proposed approach to fix
+this is to use copy() to initialize array arguments
+rather than init followed by an assignment.
