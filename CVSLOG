@@ -116342,3 +116342,16 @@ Added files:
 	                                          defaultArrViaFn.chpl 
 	                                          defaultArrViaFn.good 
 
+---------------------------------------------------------------------------
+
+08/30/07 11:00:46 -- bradc
+
+Log message:
+	Steve pointed out that I only updated the names of 2 of my 3
+	tests.
+
+Added files:
+	chapel/test/functions/bradc/defaultVals/: defaultArrViaFn.future 
+Removed files:
+	chapel/test/functions/bradc/defaultVals/: defaultArrVal.future 
+
