@@ -116286,3 +116286,45 @@ Added files:
 	                            test_module_use_conflict.future 
 	                            test_module_use_conflict.good 
 
+---------------------------------------------------------------------------
+
+08/30/07 09:12:28 -- bradc
+
+Log message:
+	(partnered with deitz)
+	
+	Checking in a bug that Steve and I ran into when pairing
+	on our array-in-class work, in which a function argument
+	with a default value that's a function call was resulting
+	in the function call being dropped completely (!).  Our
+	hypothesis is that this was only working for generic
+	functions.
+	
+	Also checking in the fix for the bug in which we took the
+	code that was setting the default value in the
+	instantiation of the generic function to nil and made it
+	only set it to nil if it didn't already have a default
+	value, or if it was a type (not doing so for types
+	caused a type mismatch error for classes/functions with
+	a type argument with a default value.  In doing so, we
+	also refactored this code to remove duplcated code,
+	though I'm not completely convinced we improved it all
+	that much.
+	
+	Open questions:
+	
+	- why does the compiler think the function in this test
+	  is generic?
+	
+	- should setting the default value for types to nil be
+	  required?  Should our type checker simply do a better
+	  job of understanding that default types can be
+	  overridden without a constraint on the types?
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/functions/bradc/defaultVals/: .cvsignore 
+	                                          defaultFnValBreaks.chpl 
+	                                          defaultFnValBreaks.good 
+
