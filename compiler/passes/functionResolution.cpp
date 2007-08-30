@@ -1578,54 +1578,63 @@ resolveCall(CallExpr* call) {
     if (!found)
       INT_FATAL(call, "bad set member primitive");
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
-    if (SymExpr* sym = toSymExpr(call->get(1))) {
-      Type* t = call->get(2)->typeInfo();
-      if (sym->var->type == dtUnknown)
-        sym->var->type = t;
-      if (sym->var->type == dtNil)
-        sym->var->type = t;
-      if (t == dtVoid) {
-        USR_FATAL(call->get(2), "illegal use of function that does not return a value");
-      }
-      if (isReference(sym->var->type))
-        sym->var->isExprTemp = false;
-      if (sym->var->type->symbol->hasPragma("ref iterator class"))
-        sym->var->isExprTemp = false;
-      if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (FnSymbol* rhsfn = rhs->isResolved()) {
-          if (rhsfn->hasPragma("valid lvalue"))
-            sym->var->isExprTemp = false;
-          if (t == dtUnknown) {
-            USR_FATAL_CONT(rhsfn, "unable to resolve return type of function '%s'", rhsfn->name);
-            USR_FATAL(rhs, "called recursively at this point");
-          }
+    Expr* rhs = call->get(2);
+    Symbol* lhs = NULL;
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      lhs = se->var;
+    INT_ASSERT(lhs);
+
+    // do not resolve function return type yet
+    if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
+      if (fn->getReturnSymbol() == lhs)
+        if (fn->retType == dtUnknown)
+          return;
+
+    Type* rhsType = rhs->typeInfo();
+
+    if (rhsType == dtVoid)
+      USR_FATAL(rhs, "illegal use of function that does not return a value");
+
+    if (lhs->type == dtUnknown || lhs->type == dtNil)
+      lhs->type = rhsType;
+
+    Type* lhsType = lhs->type;
+
+    if (isReference(lhsType))
+      lhs->isExprTemp = false;
+    if (lhsType->symbol->hasPragma("ref iterator class"))
+      lhs->isExprTemp = false;
+    if (CallExpr* call = toCallExpr(rhs)) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->hasPragma("valid lvalue"))
+          lhs->isExprTemp = false;
+        if (rhsType == dtUnknown) {
+          USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
+          USR_FATAL(rhs, "called recursively at this point");
         }
       }
-      if (t == dtUnknown)
-        INT_FATAL(call, "Unable to resolve type");
+    }
+    if (rhsType == dtUnknown)
+      INT_FATAL(call, "Unable to resolve type");
 
-      // do not resolve function return type yet
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->getReturnSymbol() == sym->var) {
-          if (fn->retType == dtUnknown) {
-            sym->var->type = dtUnknown;
-            return;
-          }
-        }
-      }
-
-      ClassType* ct = toClassType(sym->var->type);
-      if (t == dtNil && sym->var->type != dtNil && (!ct || ct->classTag != CLASS_CLASS))
-        USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-                  type2string(sym->var->type));
-      if (t != dtNil && !(t == sym->var->type || t->refType == sym->var->type || t == sym->var->type->refType) && !isDispatchParent(t, sym->var->type))
-        USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                  type2string(t), type2string(sym->var->type));
-      if (t != sym->var->type && isDispatchParent(t, sym->var->type)) {
-        Expr* rhs = call->get(2);
-        rhs->remove();
-        call->insertAtTail(new CallExpr(PRIMITIVE_CAST, sym->var->type->symbol, rhs));
-      }
+    ClassType* ct = toClassType(lhsType);
+    if (rhsType == dtNil && lhsType != dtNil && (!ct || ct->classTag != CLASS_CLASS))
+      USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
+                type2string(lhsType));
+    Type* lhsBaseType = lhsType;
+    if (isReference(lhsBaseType))
+      lhsBaseType = getValueType(lhsBaseType);
+    Type* rhsBaseType = rhsType;
+    if (isReference(rhsBaseType))
+      rhsBaseType = getValueType(rhsBaseType);
+    if (rhsType != dtNil &&
+        rhsBaseType != lhsBaseType &&
+        !isDispatchParent(rhsBaseType, lhsBaseType))
+      USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
+                type2string(rhsType), type2string(lhsType));
+    if (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType)) {
+      rhs->remove();
+      call->insertAtTail(new CallExpr(PRIMITIVE_CAST, lhsBaseType->symbol, rhs));
     }
   }
 }
