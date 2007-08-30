@@ -116328,3 +116328,17 @@ Added files:
 	                                          defaultFnValBreaks.chpl 
 	                                          defaultFnValBreaks.good 
 
+---------------------------------------------------------------------------
+
+08/30/07 09:13:16 -- bradc
+
+Log message:
+	Adding next array future for Steve and I to partner on --
+	array argument with assumed shape from function call default
+	value.
+
+Added files:
+	chapel/test/functions/bradc/defaultVals/: defaultArrVal.future 
+	                                          defaultArrViaFn.chpl 
+	                                          defaultArrViaFn.good 
+
