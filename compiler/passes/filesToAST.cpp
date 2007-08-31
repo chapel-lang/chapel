@@ -58,7 +58,9 @@ void parse(void) {
   char* inputFilename = NULL;
 
   while ((inputFilename = nthFilename(filenum++))) {
-    ParseFile(inputFilename, MOD_USER);
+    if (isChplSource(inputFilename)) {
+      ParseFile(inputFilename, MOD_USER);
+    }
   }
   finishCountingTokens();
 

@@ -1,7 +1,7 @@
 GENC   = gen_c
 
 CC     = chpl
-CFLAGS = --ldflags=StringConvert.c --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
+CFLAGS = StringConvert.c --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
 #CFLAGS += --ccflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
 

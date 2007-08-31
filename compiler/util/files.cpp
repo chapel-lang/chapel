@@ -214,11 +214,42 @@ void closeInputFile(FILE* infile) {
 static char** inputFilenames = {NULL};
 
 
+static bool checkSuffix(char* filename, const char* suffix) {
+  char* dot;
+  return ((dot = strrchr(filename, '.')) &&
+          strcmp(dot+1, suffix) == 0);
+}
+
+
+static bool isCSource(char* filename) {
+  return checkSuffix(filename, "c");
+}
+
+
+static bool isObjFile(char* filename) {
+  return checkSuffix(filename, "o");
+}
+
+bool isChplSource(char* filename) {
+  return checkSuffix(filename, "chpl");
+}
+
+static bool isRecognizedSource(char* filename) {
+  return (isCSource(filename) ||
+          isObjFile(filename) ||
+          isChplSource(filename));
+}
+
+
 void testInputFiles(int numFilenames, char* filename[]) {
   inputFilenames = (char**)malloc((numFilenames+1)*sizeof(char*));
   int i;
   char achar;
   for (i=0; i<numFilenames; i++) {
+    if (!isRecognizedSource(filename[i])) {
+      USR_FATAL(stringcat("file '", filename[i], 
+                          "' does not have a recognized suffix"));
+    }
     FILE* testfile = openInputFile(filename[i]);
     if (fscanf(testfile, "%c", &achar) != 1) {
       USR_FATAL(stringcat("source file '", filename[i], 
@@ -307,8 +338,59 @@ void makeBinary(void) {
 }
 
 
-void
-codegen_makefile(fileinfo* mainfile) {
+static void genCFiles(FILE* makefile) {
+  int filenum = 0;
+  int first = 1;
+  while (char* inputFilename = nthFilename(filenum++)) {
+    if (isCSource(inputFilename)) {
+      if (first) {
+        fprintf(makefile, "CHPL_CL_C_SRCS = \\\n");
+        first = 0;
+      }
+      fprintf(makefile, "\t%s \\\n", inputFilename);
+    }
+  }
+  fprintf(makefile, "\n");
+}
+
+static void genCFileBuildRules(FILE* makefile) {
+  int filenum = 0;
+  while (char* inputFilename = nthFilename(filenum++)) {
+    if (isCSource(inputFilename)) {
+      const char* objFilename = genIntFilename(stringcat(inputFilename, ".o"));
+      fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
+      fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_FLAGS) $(COMP_GEN_FLAGS) $<\n");
+      fprintf(makefile, "\n");
+    }
+  }
+  fprintf(makefile, "\n");
+}
+
+
+static void genObjFiles(FILE* makefile) {
+  int filenum = 0;
+  int first = 1;
+  while (char* inputFilename = nthFilename(filenum++)) {
+    bool objfile = isObjFile(inputFilename);
+    bool cfile = isCSource(inputFilename);
+    if (objfile || cfile) {
+      if (first) {
+        fprintf(makefile, "CHPL_CL_OBJS = \\\n");
+        first = 0;
+      }
+      if (objfile) {
+        fprintf(makefile, "\t%s \\\n", inputFilename);
+      } else {
+        const char* objFilename = genIntFilename(stringcat(inputFilename, ".o"));
+        fprintf(makefile, "\t%s \\\n", objFilename);
+      }
+    }
+  }
+  fprintf(makefile, "\n");
+}
+
+
+void codegen_makefile(fileinfo* mainfile) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   char* strippedExeFilename = stripdirectories(executableFilename);
@@ -340,12 +422,16 @@ codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
-  fprintf(makefile.fptr, "\t%s \\\n", mainfile->pathname);
+  fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+  genCFiles(makefile.fptr);
+  genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");
   for (int i=0; i<numLibFlags; i++)
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
+  fprintf(makefile.fptr, "\n");
+  genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile);
 }

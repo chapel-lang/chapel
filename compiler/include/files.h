@@ -31,6 +31,7 @@ void closefile(fileinfo* thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
+bool isChplSource(char* filename);
 void testInputFiles(int numFilenames, char* filename[]);
 char* nthFilename(int i);
 void addLibInfo(char* filename);

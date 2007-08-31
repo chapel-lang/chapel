@@ -1,1 +1,1 @@
---ldflags "link1.c"
+link1.c
