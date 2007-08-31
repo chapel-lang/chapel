@@ -297,6 +297,36 @@
 #    helpful so that files generated during testing won't clutter
 #    the results of a cvs -nq update command.
 #
+# An alternate way of setting up a subdirectory for testing is to
+# use a Makefile-driven test.  This is most useful for tests that
+# require several source files (to avoid littering the directory
+# with .notest files), or a very complicated build procedure.  To
+# set up such a test, the following steps should be taken:
+#
+# 1) add a file USEMAKE to the directory
+#
+# 2) add a Makefile to the directory that contains a "test" target:
+#    - the Makefile should refer to the chpl compiler using $(CHPL),
+#      which will be fed to the Makefile by the testing script.
+#    - make the Makefile execute any binaries using -nl 1 (or
+#      something even more intelligent to make it work well with
+#      parallel testing.
+#    - you will probably want to squelch the Makefile's echoing of
+#      commands using the @ prefix
+#    - and to avoid breaking due to error status codes using the -
+#      prefix?
+#
+# 3) add a file make.good to the directory indicating what the output
+#    of "make test" ought to be
+#
+# Note that for such directories, performance testing is still done
+# using the usual mechanism: by providing .perfkeys, .perfcompopts,
+# and .perfexecopts files.  This could be replaced by a "perftest"
+# target if there is a compelling reason to do so.
+#
+# The Makefile mode of testing is fairly new; please send bugs and
+# feature requests to bradc@cray.com
+#
 # Also worth describing here is the start_clean script which walks
 # the directory structure in a similar manner and cleans up --
 # removing the generated executables, core files, and *.tmp files

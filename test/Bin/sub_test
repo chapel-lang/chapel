@@ -64,7 +64,6 @@ endif
 set timedexec = "$testdir/Bin/timedexec"
 if ( ! -f $timedexec || ! -x $timedexec ) then
 	echo \[Cannot execute timedexec script \"$timedexec\"\]
-	exit
 endif
 
 # build a string representing the local directory
@@ -174,6 +173,42 @@ else
     else
         set perfdir = $CHPL_TEST_PERF_DIR
     endif
+endif
+
+if (-r ./USEMAKE && $perftest == 0) then
+    set checkfile = make.good
+    set makelog = make.out.tmp
+    set makeutil = `$testdir/../util/chplmake`
+    set timeout = $globalTimeout
+
+    echo \[Executing: \"$makeutil test CHPL=$compiler\"\]
+    $timedexec $timeout "$makeutil test CHPL=$compiler" >& $makelog
+    set makestatus = $status
+    if ($makestatus != 0) then
+        if ($makestatus = 222) then
+            echo "[Error: Timed out make for $localdir/Makefile]"
+            exit 0
+        else
+            echo "[Error: making test using $localdir/Makefile]"
+        endif
+    endif
+    if ( ! -r $checkfile) then
+        echo \[Error cannot locate make output comparison file $localdir/$checkfile\]
+        echo \[Make output was as follows:\]
+        cat $makelog
+        exit 0
+    endif
+
+    echo \[Executing diff $diffargs $checkfile $makelog\]
+    diff $diffargs $checkfile $makelog
+    set difffailed = $status
+    if ($difffailed == 0) then
+        echo "[Success matching make output for $localdir/Makefile]"
+        rm $makelog
+    else
+        echo "[Error matching make output for $localdir/Makefile]"
+    endif
+    exit 0
 endif
 
 # compile, execute, and compare each source file
