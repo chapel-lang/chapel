@@ -127,7 +127,7 @@ endif
 
 # get all the source files
 if ($?CHPL_ONETEST == 0) then
-    set testsrc = `ls *.{chpl,v}`
+    set testsrc = `ls | grep .chpl$`
 else
     set testsrc = "$CHPL_ONETEST"
 endif
