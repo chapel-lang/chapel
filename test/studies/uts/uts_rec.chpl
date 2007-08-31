@@ -147,7 +147,7 @@ class TreeNode {
 
     // max number of children at this cumulative probability
     // (from inverse geometric cumulative density function)
-    return floor(log(1 - u) / log(1 - p)); 
+    return floor(log(1 - u) / log(1 - p)):int; 
   }
 }
 

@@ -1,22 +1,21 @@
-CC=chpl
-CFLAGS=-O --no-bounds-checks
-#CFLAGS=-g
+CC     = chpl
+CFLAGS = -O --no-bounds-checks
 
-TARGETS=uts-rec uts-rec-seq uts-deq uts-deq-seq
+TARGETS= uts-rec uts-rec-seq uts-deq uts-deq-seq
 
 all: $(TARGETS)
 
-uts-rec: uts_rec.chpl sha1_rng.chpl
-	$(CC) $(CFLAGS) -o $@ brg_sha1.c -sparallel=true $+
+uts-rec: uts_rec.chpl sha1_rng.chpl brg_sha1.c
+	$(CC) $(CFLAGS) -o $@ -sparallel=true $+
 
-uts-rec-seq: uts_rec.chpl sha1_rng.chpl
-	$(CC) $(CFLAGS) -o $@ brg_sha1.c --serial -sparallel=false $+
+uts-rec-seq: uts_rec.chpl sha1_rng.chpl brg_sha1.c
+	$(CC) $(CFLAGS) -o $@ --serial -sparallel=false $+
 
-uts-deq: uts_deq.chpl sha1_rng.chpl dequeue.chpl
-	$(CC) $(CFLAGS) -o $@ brg_sha1.c $+
+uts-deq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c
+	$(CC) $(CFLAGS) -o $@ $+
 
-uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl
-	$(CC) $(CFLAGS) -o $@ brg_sha1.c -sparallel=false --serial $+
+uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c
+	$(CC) $(CFLAGS) -o $@ -sparallel=false --serial $+
 
 clean:
 	rm -f $(TARGETS)
