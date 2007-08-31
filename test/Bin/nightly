@@ -364,10 +364,16 @@ if ($runtests == 1) {
         $shortstatus = "build/test failed";
     }
 
-    if ($debug == 1) {
-        $mailsubject = "Chapel $subjectid Debug ($platform): $shortstatus";
+    $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
+    if ($chplcrossplatform eq "") {
+      $fullplatform = $platform;
     } else {
-        $mailsubject = "Chapel $subjectid Nightly ($platform): $shortstatus";
+      $fullplatform = "$platform/`$chapeldir/util/platform`"
+    }
+    if ($debug == 1) {
+        $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
+    } else {
+        $mailsubject = "Chapel $subjectid Nightly ($fullplatform): $shortstatus";
     }
     
     if ($debug == 1) {
@@ -480,11 +486,18 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
+            $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
+            if ($chplcrossplatform eq "") {
+              $fullplatform = $platform;
+            } else {
+              $fullplatform = "$platform/`$chapeldir/util/platform`"
+            }
+
             if ($debug == 1) {
-                $mailsubject = "Chapel: $subjectid Debug ($platform): Failure notice";
+                $mailsubject = "Chapel: $subjectid Debug ($fullplatform): Failure notice";
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
             } else {
-                $mailsubject = "Chapel: $subjectid Nightly ($platform): Failure notice";
+                $mailsubject = "Chapel: $subjectid Nightly ($fullplatform): Failure notice";
                 $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
             }
 
