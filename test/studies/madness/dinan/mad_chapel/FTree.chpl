@@ -32,7 +32,7 @@ class FTree {
     var indices  : domain(idx_t);   // Indexed by 2-tuples of integers
     var nodes    : [indices] Coeff; // Associative Mapping: (:int, :int) => Coeff
 
-    var zeroes   : [coeffDom] real; // Optimization, return zeroes from a getter to
+    var zeroes   : [coeffDom] real; // Return zeroes from this() when reading
                                     // something that has not yet been set.
 
 
