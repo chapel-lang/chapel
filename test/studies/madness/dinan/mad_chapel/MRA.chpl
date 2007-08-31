@@ -554,7 +554,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", intStr("%2d", n), "   #boxes=",
-                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.5f", sqrt(sum)));
+                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.2e", sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -568,7 +568,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", intStr("%2d", n), "   #boxes=",
-                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.5f", sqrt(sum)));
+                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.2e", sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -579,10 +579,13 @@ class Function {
         and print the error.
      */
     def evalNPT(npt) {
-        for i in 1..npt {
+        for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.5e", Fval),
-                    "  f_analytic()=", realStr("% 0.5e", fval), " err=", realStr("% 0.5e", Fval-fval),
+            //writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.5e", Fval),
+            //        "  f_analytic()=", realStr("% 0.5e", fval), " err=", realStr("% 0.5e", Fval-fval),
+            //        if abs(Fval-fval) > thresh then "  > thresh" else "");
+            writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.8f", Fval),
+                    "  f_analytic()=", realStr("% 0.8f", fval), " err=", realStr("% 0.1e", Fval-fval),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }

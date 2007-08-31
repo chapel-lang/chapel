@@ -62,7 +62,8 @@ def main() {
 
     // addition test which in turn tests gaxpy
    
-    for (tf1, tf2) in (tests, tests) {
+    for tf2 in tests {
+        var tf1 = tests[1];
         writeln("\n\n");
         var f1 = Function(k, thresh, tf1);
         writeln("norm of f1 is ", f1.norm2());
@@ -80,7 +81,8 @@ def main() {
     
     // multiplication test which in turn tests gaxpy
 
-    for (tf1, tf2) in (tests, tests) {
+    for tf2 in tests {
+        var tf1 = tests[1];
         writeln("\n\n");
         var f1 = Function(k, thresh, tf1);
         writeln("norm of f1 is ", f1.norm2());
