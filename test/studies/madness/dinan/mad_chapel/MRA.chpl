@@ -3,6 +3,12 @@
     Multiresolution representation of 1-d functions using a multiwavelet
     basis (similar to discontinuous spectral element with a hierarchal
     decomposition).
+    
+    Mad Chapel Author: James Dinan <dinan@cray.com>
+                 Date: August, 2007
+    
+    This code is an adaptation of 1d Madness, originally written by Robert
+    Harrison <harrisonrj@ornl.gov>, et al.
  */
 
 use Math;
@@ -11,6 +17,7 @@ use FTree;
 use Quadrature;
 use TwoScale;
 use AnalyticFcn;
+use StringConvert;  // FIXME: workaround for formatting reals
 
 config const verbose = false;
 config const debug   = false;
@@ -21,7 +28,7 @@ class Function {
     const f: AFcn       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
-    const autorefine    = true; // automatically refine during multiplication
+    var   autorefine    = true; // automatically refine during multiplication
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
@@ -546,7 +553,8 @@ class Function {
                 }
             }
             if ncoeffs != 0 then
-                writeln("   level ", n, "   #boxes=", ncoeffs, "  norm=", sqrt(sum));
+                writeln("   level ", intStr("%2d", n), "   #boxes=",
+                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.5f", sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -559,7 +567,8 @@ class Function {
                 }
             }
             if ncoeffs != 0 then
-                writeln("   level ", n, "   #boxes=", ncoeffs, "  norm=", sqrt(sum));
+                writeln("   level ", intStr("%2d", n), "   #boxes=",
+                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.5f", sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -572,8 +581,9 @@ class Function {
     def evalNPT(npt) {
         for i in 1..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            writeln(" -- ", i/npt:real, ": f_analytic()=", fval, " F_numeric()=", Fval,
-                " err=", Fval-fval, if abs(Fval-fval) > thresh then "  !! > thresh" else "");
+            writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.5e", Fval),
+                    "  f_analytic()=", realStr("% 0.5e", fval), " err=", realStr("% 0.5e", Fval-fval),
+                    if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
 }

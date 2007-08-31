@@ -1,7 +1,7 @@
 GENC   = gen_c
 
 CC     = chpl
-CFLAGS = --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
+CFLAGS = --ldflags=StringConvert.c --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
 #CFLAGS += --ccflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
 
@@ -10,11 +10,13 @@ SOURCES= AnalyticFcn.chpl  \
          MRA.chpl          \
          Quadrature.chpl   \
          Tensor.chpl       \
-         TwoScale.chpl
+         TwoScale.chpl     \
+         StringConvert.chpl
 
 TARGETS= test_diff       \
          test_gaxpy      \
-         test_mul
+         test_mul        \
+         test_likepy
 
 all: $(TARGETS)
 
@@ -28,6 +30,10 @@ test_gaxpy: $(SOURCES) test_gaxpy.chpl MadAnalytics.chpl
 
 
 test_mul: $(SOURCES) test_mul.chpl MadAnalytics.chpl
+	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+
+
+test_likepy: $(SOURCES) test_likepy.chpl MadAnalytics.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 

@@ -1,0 +1,19 @@
+Overall:
+=======
+
+ * Module privates
+
+ * Private/Non-transitive use statements.  "private use ..."
+
+ * Private members
+
+ * Initialization from a function in the default constructor
+
+ * Custom constructors
+
+
+FTree:
+=====
+ 
+ * Arrays of arrays (in FTree)
+
