@@ -1096,8 +1096,6 @@ resolve_call(CallExpr* call,
   }
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (visibleFn->isExtern && visibleFns.n > 1)
-      USR_FATAL(visibleFn, "external function is overloaded");
 
     if (call->methodTag && !visibleFn->noParens)
       continue;

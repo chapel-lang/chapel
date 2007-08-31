@@ -36,6 +36,8 @@ void testInputFiles(int numFilenames, char* filename[]);
 char* nthFilename(int i);
 void addLibInfo(char* filename);
 
+void genIncludeCommandLineHeaders(FILE* outfile);
+
 const char* createGDBFile(int argc, char* argv[]);
 
 void makeBinary(void);

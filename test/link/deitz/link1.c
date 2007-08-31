@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "link1.h"
 
 void foo(char* s) {
   printf("in c routine foo, printing %s\n", s);

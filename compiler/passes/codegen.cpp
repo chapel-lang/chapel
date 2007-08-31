@@ -168,6 +168,7 @@ static void codegen_header(void) {
       if (!toArgSymbol(sym) &&
           !toUnresolvedSymbol(sym) &&
           !toClassType(sym->parentScope->astParent) &&
+          !sym->isExtern &&
           cnames.get(sym->cname))
         sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
 
@@ -202,6 +203,7 @@ static void codegen_header(void) {
   FILE* outfile = header.fptr;
 
   fprintf(outfile, "#include \"stdchpl.h\"\n");
+  genIncludeCommandLineHeaders(outfile);
   fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
 
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
@@ -272,12 +274,6 @@ static void codegen_header(void) {
     if (typeSymbol->hasPragma("ref"))
       continue;
     typeSymbol->codegenDef(outfile);
-  }
-
-  fprintf(outfile, "/*** Extern Function Prototypes ***/\n\n");
-  forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
-    if (fnSymbol->isExtern)
-      fnSymbol->codegenPrototype(outfile);
   }
 
   fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");

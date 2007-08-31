@@ -225,6 +225,9 @@ static bool isCSource(char* filename) {
   return checkSuffix(filename, "c");
 }
 
+static bool isCHeader(char* filename) {
+  return checkSuffix(filename, "h");
+}
 
 static bool isObjFile(char* filename) {
   return checkSuffix(filename, "o");
@@ -236,6 +239,7 @@ bool isChplSource(char* filename) {
 
 static bool isRecognizedSource(char* filename) {
   return (isCSource(filename) ||
+          isCHeader(filename) ||
           isObjFile(filename) ||
           isChplSource(filename));
 }
@@ -387,6 +391,16 @@ static void genObjFiles(FILE* makefile) {
     }
   }
   fprintf(makefile, "\n");
+}
+
+
+void genIncludeCommandLineHeaders(FILE* outfile) {
+  int filenum = 0;
+  while (char* inputFilename = nthFilename(filenum++)) {
+    if (isCHeader(inputFilename)) {
+      fprintf(outfile, "#include \"%s\"\n", inputFilename);
+    }
+  }
 }
 
 
