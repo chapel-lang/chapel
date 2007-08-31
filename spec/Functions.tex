@@ -75,6 +75,8 @@ Default values are discussed in~\rsec{Default_Values}.
 Functions do not require parentheses if they have no arguments.  Such
 functions are described in~\rsec{Functions_without_Parentheses}.
 
+Return types are optional and are discussed in~\rsec{Return_Types}.
+
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
@@ -243,6 +245,35 @@ argument can be generic and takes its type from the actual argument.
 Domains cannot be passed to a function via the \chpl{inout} intent.
 The formal argument can be assigned to and read from within the
 function.
+
+\subsection{Return Types}
+\label{Return_Types}
+\index{return@\chpl{return}!types}
+
+A function can optionally return a value.  If the function does not
+return a value, then no return type can be specified.  If the function
+does return a value, the return type is optional.
+
+\subsubsection{Explicit Return Types}
+\label{Explicit_Return_Types}
+
+If a return type is specified, the values that the function returns
+via return statements must be assignable to a value of the return
+type.  For variable functions~(\rsec{Variable_Functions}), the return
+type must match the type returned in all of the return statements
+exactly.
+
+\subsubsection{Implicit Return Types}
+\label{Implicit_Return_Types}
+\index{type inference!of return types}
+
+If a return type is not specified, it will be inferred from the return
+statements.  Given the types that are returned by the different
+statements, if exactly one of those types can be a target, via
+implicit conversions, of every other type, then that is the inferred
+return type.  Otherwise, it is an error.  For variable
+functions~(\rsec{Variable_Functions}), every return statement must
+return the same exact type and it becomes the inferred type.
 
 \subsection{Variable Functions}
 \label{Variable_Functions}

@@ -2553,7 +2553,7 @@ resolveFns(FnSymbol* fn) {
         bool best = true;
         for (int j = 0; j < retTypes.n; j++) {
           if (retTypes.v[i] != retTypes.v[j]) {
-            if (!canCoerce(retTypes.v[j], retParams.v[j], retTypes.v[i], fn))
+            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn))
               best = false;
           }
         }
@@ -2573,7 +2573,7 @@ resolveFns(FnSymbol* fn) {
     if (retTypes.n == 0 && fn->retType == dtUnknown)
       fn->retType = ret->type = dtVoid;
     else if (retType == dtUnknown)
-      INT_FATAL(fn, "Unable to resolve return type");
+      USR_FATAL(fn, "unable to resolve return type");
   }
 
   for_exprs_postorder(expr, fn->body) {
