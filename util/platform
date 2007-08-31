@@ -1,7 +1,11 @@
 #!/usr/bin/perl
 
 $preset_platform=$ENV{'CHPL_PLATFORM'};
-if ($preset_platform eq "") {
+$preset_cross_platform=$ENV{'CHPL_CROSS_PLATFORM'};
+
+if ($preset_cross_platform ne "") {
+  $platform = $preset_cross_platform;
+} elsif ($preset_platform eq "") {
     $platform = `uname -s`;
     chomp($platform);
     $platform = lc($platform);
