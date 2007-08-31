@@ -344,7 +344,11 @@ set datestr = `date +"%y%m%d.%H%M%S"`
 # remember what directory to return to (the current working directory)
 set testdir = $cwd
 
-set platform = `../util/platform`;
+if ( ${?CHPL_CROSS_PLATFORM} != "0" ) then
+  set platform = "$CHPL_CROSS_PLATFORM";
+else
+  set platform = `../util/platform`;
+endif
 
 #
 # some sets to get locale, environment reasonable
