@@ -5,7 +5,7 @@ char * c_realStr(char * buf, char * fmt, double x) {
     return buf;
 }
 
-char * c_intStr(char * buf, char * fmt, double x) {
+char * c_intStr(char * buf, char * fmt, int x) {
     sprintf(buf, fmt, x);
     return buf;
 }

@@ -1,7 +1,8 @@
 GENC   = gen_c
 
 CC     = chpl
-CFLAGS = StringConvert.c --instantiate-max 512 -g --savec=$(GENC) --short-names --print-passes
+CFLAGS = --instantiate-max 512 --print-passes
+#CFLAGS += -g --savec=$(GENC) --short-names
 #CFLAGS += --ccflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
 
@@ -11,7 +12,8 @@ SOURCES= AnalyticFcn.chpl  \
          Quadrature.chpl   \
          Tensor.chpl       \
          TwoScale.chpl     \
-         StringConvert.chpl
+         StringConvert.chpl\
+         StringConvert.c
 
 TARGETS= test_diff       \
          test_gaxpy      \
