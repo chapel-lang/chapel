@@ -140,7 +140,7 @@ class Function {
     }
 
 
-    /** s[n][l] = integral(phi[n][l](x) * f(x))
+    /** s[n, l] = integral(phi[n][l](x) * f(x))
         for box (n,l) project f(x) using quadrature rule
         into scaling function basis
      */
@@ -239,9 +239,8 @@ class Function {
         // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
         var dc = sc*hgT;
 
-        var dc_upper: [0..k-1] => dc[k..2*k-1];  // Reindex the upper half of dc
         s[n, l] = dc[0..k-1];
-        d[n, l] = dc_upper;
+        d[n, l] = dc[k..2*k-1];
         
         s.remove(n+1,   2*l);
         s.remove(n+1, 2*l+1);
@@ -269,9 +268,8 @@ class Function {
             // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
             var sc = dc*hg;
             
-            var sc_upper: [0..k-1] => sc[k..2*k-1]; // Reindex the upper half of s
             s[n+1, 2*l  ] = sc[0..k-1];
-            s[n+1, 2*l+1] = sc_upper;
+            s[n+1, 2*l+1] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
             reconstruct(n+1, 2*l);
@@ -293,9 +291,8 @@ class Function {
         sc[0..k-1] = s[n, l];
 
         var new_sc = sc*hg;
-        var new_sc_upper : [0..k-1] => new_sc[k..2*k-1];
         s[n+1, 2*l  ] = new_sc[0..k-1];
-        s[n+1, 2*l+1] = new_sc_upper;
+        s[n+1, 2*l+1] = new_sc[k..2*k-1];
     }
 
     
@@ -397,7 +394,7 @@ class Function {
         }
 
         if compressed then reconstruct();
-        var result = Function(k, thresh);
+        var result = skeletonCopy();
 
         diffHelper(0, 0, result);
 

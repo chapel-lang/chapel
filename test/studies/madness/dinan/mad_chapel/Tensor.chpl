@@ -1,11 +1,3 @@
-// Constant empty vector
-const None: [0..-1] real;
-
-// Check if we have None
-def isNone(x) {
-    return x.numElements == 0;
-}
-
 // Copy matrix B's transpose into matrix A
 def transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do
