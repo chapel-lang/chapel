@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "link1.h"
 
-void foo(char* s) {
+void foo(const char* s) {
   printf("in c routine foo, printing %s\n", s);
 }
 
