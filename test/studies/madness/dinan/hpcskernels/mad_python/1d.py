@@ -415,6 +415,8 @@ class Function:
         Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
         '''
+        print "\n-----------------------------------------------------"
+        print "k=%d thresh=%f compressed=%d" % (self.k, self.thresh, self.compressed)
         print "sum coefficients"
         for n in self.s:
             sum = 0.0
@@ -425,7 +427,7 @@ class Function:
                     sum += self.s[n][l].normf()**2
             if not printcoeff:
                 if len(self.s[n]):
-                    print "   level %3d   #boxes=%3d  norm=%.2e" % \
+                    print "   level %2d   #boxes=%3d  norm=%.2e" % \
                           (n, len(self.s[n]), math.sqrt(sum))
         print "difference coefficients"
         for n in self.s:
@@ -437,8 +439,9 @@ class Function:
                     sum += self.d[n][l].normf()**2
             if not printcoeff:
                 if len(self.d[n]):
-                    print "   level %3d   #boxes=%3d  norm=%.2e" % \
+                    print "   level %2d   #boxes=%3d  norm=%.2e" % \
                           (n, len(self.d[n]), math.sqrt(sum))
+        print "-----------------------------------------------------\n"
 
 
     def recur_down(self,n,l,s):
