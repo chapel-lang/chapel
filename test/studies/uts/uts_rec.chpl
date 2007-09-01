@@ -44,7 +44,7 @@ var threads_spawned: int = 0; // "Locked" by thread_cnt
 /**** UTS TreeNode Class ****/
 class TreeNode {
   var depth:   int;
-  var hash:    string = "__Here_be_dragons__";  // Handle delicately, if this is ever copied, things will go off the rails
+  var hash:    [1..20] uint(8);
 
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
@@ -72,7 +72,7 @@ class TreeNode {
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
       children[i]    = TreeNode(depth+1);
-      rng_spawn(hash, children[i].hash, i-1);
+      rng_spawn(hash[1], children[i].hash[1], i-1);
     }
 
     return nChildren;
@@ -103,7 +103,7 @@ class TreeNode {
       return B_0;
     
     else
-      return if to_prob(rng_rand(hash)) < nonLeafProb then nonLeafBF else 0;
+      return if to_prob(rng_rand(hash[1])) < nonLeafProb then nonLeafBF else 0;
   }
 
 
@@ -143,7 +143,7 @@ class TreeNode {
     var p: real = 1.0 / (1.0 + b_i);
 
     // get uniform random number on [0,1)
-    var u: real = to_prob(rng_rand(hash));
+    var u: real = to_prob(rng_rand(hash[1]));
 
     // max number of children at this cumulative probability
     // (from inverse geometric cumulative density function)
@@ -285,7 +285,7 @@ def main {
   var root: TreeNode;
   
   root = TreeNode(0);
-  rng_init(root.hash, SEED:int);
+  rng_init(root.hash[1], SEED:int);
 
   uts_showSearchParams();
 

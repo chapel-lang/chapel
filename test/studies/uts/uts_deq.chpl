@@ -62,7 +62,7 @@ record LDBalanceState {
 /**** UTS TreeNode Class ****/
 class TreeNode {
   var depth:   int;
-  var hash:    string = "__Here_be_dragons__";  // Handle delicately, if this is ever copied, things will go off the rails
+  var hash:    [1..20] uint(8);
 
   var nChildren: int = 0;
 
@@ -84,7 +84,7 @@ class TreeNode {
     for i in [0..nChildren-1] {
       if debug then writeln("  + (", depth, ", ", i, ")");
       var t = TreeNode(depth+1);
-      rng_spawn(hash, t.hash, i);
+      rng_spawn(hash[1], t.hash[1], i);
       q.pushTop(t);
     }
 
@@ -116,7 +116,7 @@ class TreeNode {
       return B_0;
     
     else
-      return if to_prob(rng_rand(hash)) < nonLeafProb then nonLeafBF else 0;
+      return if to_prob(rng_rand(hash[1])) < nonLeafProb then nonLeafBF else 0;
   }
 
 
@@ -156,7 +156,7 @@ class TreeNode {
     var p: real = 1.0 / (1.0 + b_i);
 
     // get uniform random number on [0,1)
-    var u: real = to_prob(rng_rand(hash));
+    var u: real = to_prob(rng_rand(hash[1]));
 
     // max number of children at this cumulative probability
     // (from inverse geometric cumulative density function)
@@ -265,7 +265,7 @@ def main() {
  
   // Create the root and push it into a queue
   root = TreeNode(0);
-  rng_init(root.hash, SEED:int);
+  rng_init(root.hash[1], SEED:int);
   global_count += 1;
   queue.pushTop(root);
 
