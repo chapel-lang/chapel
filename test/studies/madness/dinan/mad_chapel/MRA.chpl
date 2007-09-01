@@ -550,8 +550,8 @@ class Function {
                 }
             }
             if ncoeffs != 0 then
-                writeln("   level ", intStr("%2d", n), "   #boxes=",
-                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.2e", sqrt(sum)));
+                writeln("   level ", toString("%2d", n), "   #boxes=",
+                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -564,8 +564,8 @@ class Function {
                 }
             }
             if ncoeffs != 0 then
-                writeln("   level ", intStr("%2d", n), "   #boxes=",
-                        intStr("%4d", ncoeffs), "  norm=", realStr("%0.2e", sqrt(sum)));
+                writeln("   level ", toString("%2d", n), "   #boxes=",
+                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -578,11 +578,11 @@ class Function {
     def evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.5e", Fval),
-            //        "  f_analytic()=", realStr("% 0.5e", fval), " err=", realStr("% 0.5e", Fval-fval),
+            //writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.5e", Fval),
+            //        "  f_analytic()=", toString("% 0.5e", fval), " err=", toString("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", realStr("%0.2f", i/npt:real), ":  F_numeric()=", realStr("% 0.8f", Fval),
-                    "  f_analytic()=", realStr("% 0.8f", fval), " err=", realStr("% 0.1e", Fval-fval),
+            writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.8f", Fval),
+                    "  f_analytic()=", toString("% 0.8f", fval), " err=", toString("% 0.1e", Fval-fval),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
