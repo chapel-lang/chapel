@@ -527,6 +527,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
       ASTMap map;
       FnSymbol* newFn = fn->copy(&map);
+      newFn->isExtern = fn->isExtern; // preserve externess of expanded varargs fn
       newFn->visible = false;
       fn->defPoint->insertBefore(new DefExpr(newFn));
       DefExpr* newDef = toDefExpr(map.get(def));
@@ -3237,6 +3238,7 @@ setFieldTypes(FnSymbol* fn) {
 static FnSymbol*
 instantiate(FnSymbol* fn, ASTMap* subs) {
   FnSymbol* ifn = fn->instantiate_generic(subs);
+  ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
   if (!ifn->isGeneric && ifn->where) {
     resolveFormals(ifn);
     resolveBody(ifn->where);
