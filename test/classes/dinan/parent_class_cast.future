@@ -1,3 +1,0 @@
-unimplemented feature: Assigning a subclass to an element in an array of the parent class requires a cast
-
-$CHPL_HOME/modules/standard/ChapelArray.chpl:353: error: Unable to resolve return type [functionResolution.cpp:2566]

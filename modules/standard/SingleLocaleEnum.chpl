@@ -64,5 +64,8 @@ class SingleLocaleEnumArray: BaseArray {
   def numElements {
     return anarray.numElements;
   }
-}
 
+  def tupleInit(b: _tuple) {
+    anarray.tupleInit(b);
+  }
+}

@@ -388,6 +388,11 @@ class SingleLocaleAssociativeArray: BaseArray {
   def numElements {
     return dom.numIndices;
   }
+
+  def tupleInit(b: _tuple) {
+    for param i in 1..b.size do
+      data(i-1) = b(i);
+  }
 }
 
 def SingleLocaleAssociativeArray.writeThis(f: Writer) {
