@@ -13,6 +13,7 @@ static void build_getter(ClassType* ct, Symbol* field);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(ClassType* ct);
+static void build_record_cast_function(ClassType* ct);
 static void build_record_copy_function(ClassType* ct);
 static void build_record_hash_function(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
@@ -66,6 +67,7 @@ void buildDefaultFunctions(void) {
             build_record_inequality_function(ct);
           }
           build_record_assignment_function(ct);
+          build_record_cast_function(ct);
           build_record_init_function(ct);
           build_record_copy_function(ct);
           build_record_hash_function(ct);
@@ -425,6 +427,28 @@ static void build_record_assignment_function(ClassType* ct) {
   normalize(fn);
 }
 
+
+static void build_record_cast_function(ClassType* ct) {
+  FnSymbol* fn = new FnSymbol("_cast");
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  t->isTypeVariable = true;
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
+  fn->insertFormalAtTail(t);
+  fn->insertFormalAtTail(arg);
+  fn->where = new BlockStmt(new CallExpr(PRIMITIVE_ISSUBTYPE, ct->symbol, t));
+  VarSymbol* ret = new VarSymbol("_ret");
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  fn->insertAtTail(new DefExpr(ret));
+  fn->insertAtTail(new DefExpr(tmp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", t)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("=", tmp, arg)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, tmp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, ret));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  normalize(fn);
+}
 
 static void build_union_assignment_function(ClassType* ct) {
   if (function_exists("=", 2, ct->symbol->name))
