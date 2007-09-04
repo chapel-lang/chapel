@@ -127,7 +127,7 @@ class Function {
     def copy() {
         return Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
-                s.copy(), d.copy());
+                s=s.copy(), d=d.copy());
     }
 
 
