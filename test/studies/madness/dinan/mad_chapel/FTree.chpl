@@ -75,9 +75,22 @@ class FTree {
     /** Unordered iterator over all coefficients
      */
     def these() {
-      for i in indices yield nodes[i].data;
+        for n in nodes yield n.data;
     }
 
+
+    /** Unordered iterator over all boxes in a particular level.
+        This is not a particularly fast way to do this, but for many of the
+        Madness levelwise iterators that do all levels from 0..max_level this
+        will be much faster when the data is not all the way down at max_level.
+        A sparse array or an array of associative arrays may be more conducive
+        to this type of iteration vs. the associative domain used here.
+     */ 
+    def lvl_iter(lvl: int) {
+        for i in indices do
+            if i(1) == lvl && indices.member(i) then yield nodes[i].data;
+    }
+        
 
     /** Return a copy of this FTree
      */
@@ -120,4 +133,8 @@ def main() {
     
     for (i, j) in [0..2, 0..2] do
         writeln("(",i,", ",j,") = ", f.peek(i, j));
+
+    for i in 0..2 do
+        for n in f.lvl_iter(i) do
+            writeln(i, ": ", n);
 }

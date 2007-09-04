@@ -543,11 +543,9 @@ class Function {
         writeln("sum coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for (lvl, idx) in s.indices {
-                if (lvl == n && s.has_coeffs(lvl, idx)) {
-                    sum     += normf(s[lvl, idx])**2;
-                    ncoeffs += 1;
-                }
+            for box in s.lvl_iter(n) {
+                sum     += normf(box)**2;
+                ncoeffs += 1;
             }
             if ncoeffs != 0 then
                 writeln("   level ", toString("%2d", n), "   #boxes=",
@@ -557,11 +555,9 @@ class Function {
         writeln("difference coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for (lvl, idx) in d.indices {
-                if (lvl == n && d.has_coeffs(lvl, idx)) {
-                    sum     += normf(d[lvl, idx])**2;
-                    ncoeffs += 1;
-                }
+            for box in d.lvl_iter(n) {
+                sum     += normf(box)**2;
+                ncoeffs += 1;
             }
             if ncoeffs != 0 then
                 writeln("   level ", toString("%2d", n), "   #boxes=",
