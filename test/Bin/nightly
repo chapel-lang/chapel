@@ -364,11 +364,14 @@ if ($runtests == 1) {
         $shortstatus = "build/test failed";
     }
 
+    $fullplatform = "$platform";
     $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
-    if ($chplcrossplatform eq "") {
-      $fullplatform = $platform;
-    } else {
-      $fullplatform = "$platform/`$chapeldir/util/platform`"
+    $compilername = $ENV{'PE_ENV'};
+    if ($chplcrossplatform ne "") {
+      $fullplatform = "$fullplatform/`$chapeldir/util/platform`";
+      if ($compilername ne "") {
+        $fullplatform = "$fullplatform/\L$compilername";
+      }
     }
     if ($debug == 1) {
         $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
@@ -486,11 +489,14 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
+            $fullplatform = "$platform";
             $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
-            if ($chplcrossplatform eq "") {
-              $fullplatform = $platform;
-            } else {
-              $fullplatform = "$platform/`$chapeldir/util/platform`"
+            $compilername = $ENV{'PE_ENV'};
+            if ($chplcrossplatform ne "") {
+              $fullplatform = "$fullplatform/`$chapeldir/util/platform`";
+              if ($compilername ne "") {
+                $fullplatform = "$fullplatform/\L$compilername";
+              }
             }
 
             if ($debug == 1) {
