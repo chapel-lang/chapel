@@ -1,0 +1,7 @@
+feature request: var fns in getter mode can return consts
+
+We currently disallow var functions to return constants; however,
+it seems that when a var function is in getter mode, it ought to
+be able to return a const (or a local variable, or whatever --
+additional white box tests should be written if these aren't all
+handled symmetrically).
