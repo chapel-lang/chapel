@@ -17,7 +17,8 @@ SOURCES= AnalyticFcn.chpl  \
 TARGETS= test_diff       \
          test_gaxpy      \
          test_mul        \
-         test_likepy
+         test_likepy     \
+         test_showboxes
 
 all: $(TARGETS)
 
@@ -35,6 +36,10 @@ test_mul: $(SOURCES) test_mul.chpl MadAnalytics.chpl
 
 
 test_likepy: $(SOURCES) test_likepy.chpl MadAnalytics.chpl
+	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+
+
+test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
 	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
 
 
