@@ -1,0 +1,2 @@
+#Because valgrind's out of memory message differs:
+memory/shannon/outofmemory/mallocOutOfMemory

@@ -50,6 +50,7 @@
 #   -futuresonly
 #   -performance
 #   -comm [none|gasnet]
+#   -suppress <suppression file>
 #   -interpret (DEPRECATED)
 #
 # These options can be used with a double-dash as well 
@@ -85,11 +86,17 @@
 # extension.
 #
 # The -logfile option indicates where the log of the test run should
-# be kept.  By default it's based on the user's name.  If the log
-# file already exists, you will be prompted at the beginning of the
-# run whether you want to delete that file or not.  At the end of
-# the run, a second log file named <logfile>.summary will be
-# generated containing only the Errors that were logged.
+# be kept.  By default it's based on the user's name.  At the end of
+# the run, a second log file named <logfile>.summary will be generated
+# containing only the Errors and future tests that were logged.
+#
+# A -suppress option can be used to specify a file listing tests that
+# should be ignored for a particular run if they fail (and an error
+# will be generated if they pass when they were expected to fail).
+# The format of this suppress file is to list a single test per line
+# with optional comment lines starting with an initial '#' character.
+# After the whole testing system has been run, the tests in the
+# suppression file will be grepped out of the summary log file.
 #
 # The -valgrind option specifies that the compiler and generated
 # executable should be run using valgrind in order to find errors.
@@ -408,6 +415,7 @@ set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = "none"
+set suppressions = ""
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
@@ -499,6 +507,12 @@ while ( $#argv > 0 )
                     set numlocales = "1"
                 endif
                 breaksw
+        case -suppress:
+        case --suppress:
+                shift
+                set suppressions = $argv[1]
+                shift
+                breaksw
 	case -h:
 	case -help:
         case --help
@@ -517,6 +531,7 @@ while ( $#argv > 0 )
                 echo "          -valgrindexe"
                 echo "          -notee"
                 echo "          -comm [none|gasnet]"
+                echo "          -suppress <filename>"
 #                echo "          -interpret (or -i)"
 		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -h, -help"
@@ -763,6 +778,9 @@ set successmarker = "^\[Success matching"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 grep "$errormarker" $logfile |& $tee -a $logfile.summary
+if ($suppressions != "") then
+    $testdir/Bin/filterSuppressions.pl $suppressions $logfile.summary
+endif
 grep "$futuremarker" $logfile |& $tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
