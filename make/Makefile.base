@@ -72,9 +72,9 @@ $(PLATFORM_DIR):
 else
 $(PLATFORM_DIR):
 	@echo linking $(CHPL_MAKE_PLATFORM) subdirectory to store platform-specific files
-	mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM)
-	rm -f $(CHPL_MAKE_PLATFORM)
-	ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
+	@mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM)
+	@rm -f $(CHPL_MAKE_PLATFORM)
+	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
 	@-touch $(PLATFORM_DIR)
 endif
 

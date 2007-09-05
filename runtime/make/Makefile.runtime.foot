@@ -42,7 +42,7 @@ $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/%.o: %.c $(RUNTI
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
-$(RUNTIME_OBJ_DIR):
+$(RUNTIME_OBJ_DIR): $(PLATFORM_DIR)
 	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) subdirectory to store platform-specific files
 	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) > /dev/null 2>&1
 	@-touch $(RUNTIME_OBJ_DIR)
