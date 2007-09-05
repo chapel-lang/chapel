@@ -35,6 +35,7 @@ int fcg = 0;
 bool fBaseline = false;
 bool fNoCopyPropagation = false;
 bool fNoScalarReplaceArrayWrappers = false;
+bool fNoScalarReplacement = false;
 bool fNoSingleLoopIteratorOpt = false;
 bool fNoExpandIteratorsInlineOpt = false;
 bool fNoLiveVariablesIteratorClassOpt = false;
@@ -145,6 +146,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"no-live-variables-iterator-class-opt", ' ', NULL, "Do not use live variable analysis for iterator class construction", "F", &fNoLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
  {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fNoScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
+ {"no-scalar-replacement", ' ', NULL, "Disable scalar replacement", "F", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"null-temps", ' ', NULL, "Initialize nullable compiler temporaries to null", "F", &fNullTemps, "CHPL_NULL_TEMPS", NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},

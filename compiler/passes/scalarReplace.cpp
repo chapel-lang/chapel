@@ -363,8 +363,10 @@ void scalarReplace() {
   if (fBaseline)
     return;
 
-  forv_Vec(FnSymbol, fn, gFns) {
-    scalarReplaceVars(fn);
+  if (!fNoScalarReplacement) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      scalarReplaceVars(fn);
+    }
   }
 
   // note: disabled on inlining because scalar replace does not work
