@@ -2,11 +2,12 @@
 #
 # sclc -- source code line counter (actually it counts more than just lines)
 #
-# Created 06/09/95 by Brad Appleton &lt;bradapp@enteract.com&gt;
-# Patched for Matlab and ZPL 11/01/04 by Bill Mann &lt;wfmann@alum.mit.edu&gt;
-# Patched for FORTRAN 11/03/04 by Bill Mann &lt;wfmann@alum.mit.edu&gt;
+# Created 06/09/95 by Brad Appleton <bradapp@enteract.com>
+# Patched for Matlab and ZPL 11/01/04 by Bill Mann <wfmann@alum.mit.edu>
+# Patched for FORTRAN 11/03/04 by Bill Mann <wfmann@alum.mit.edu>
 # Added approximate token counting  1/20/05  Bill Mann
 # Added my impression of Chapel  1/20/05  Bill Mann
+# Handles Fortran OpenMP directives  9/14/05  Lorin Hochstein <lorin@cs.umd.edu>
 #
 #-------------------------------------------------------------------------
 # COPYING
@@ -37,7 +38,7 @@ package Sclc;
 
 use strict;
 use Config;
-use File::Basename qw(&amp;basename &amp;dirname);
+use File::Basename qw(&basename &dirname);
 
 ## Get basename and dirname of program path
 my $Is_WinDos     = ( (uc $Config{'osname'}) =~ /(?:MSDOS|MSWIN|WIN32)/ );
@@ -81,24 +82,24 @@ sclc -- Source-code line counter
 
 =over 6
 
-=item B&lt;-Help&gt;
+=item B<-Help>
 
 Print this help message and exit.
 
-=item B&lt;-language&gt; [I&lt;EXT&gt;=]I&lt;LANG&gt;
+=item B<-language> [I<EXT>=]I<LANG>
 
-Assume that any file with a suffix of "I&lt;EXT&gt;" is a C&lt;LANG&gt; source file
-(note that you must supply any leading '.'). If the "I&lt;EXT&gt;" begins
+Assume that any file with a suffix of "I<EXT>" is a C<LANG> source file
+(note that you must supply any leading '.'). If the "I<EXT>" begins
 with a slash ('/'), then the name that follows it is considered to
-be the name of an interpreter that is invoked using "#!I&lt;path&gt;/I&lt;EXT&gt;"
+be the name of an interpreter that is invoked using "#!I<path>/I<EXT>"
 as the first line of the script (and if the language can't be determined
 from the extension, then the first line of the file will be used). If
-"I&lt;EXT&gt;=" is omitted then C&lt;LANG&gt; will be the default language for any files
-whose language cannot be determined.  C&lt;LANG&gt; must be one of the following:
+"I<EXT>=" is omitted then C<LANG> will be the default language for any files
+whose language cannot be determined.  C<LANG> must be one of the following:
 
 =over 3
 
-=item S&lt;&gt;
+=item S<>
 
 Ada,
 Assembly,
@@ -120,97 +121,97 @@ make
 
 =back
 
-Language names may I&lt;not&gt; be abbreviated. This option may be specified
+Language names may I<not> be abbreviated. This option may be specified
 multiple times.
 
-=item B&lt;-delim-ignore&gt;
+=item B<-delim-ignore>
 
 Ignore all statement delimiters. This means that lines containing
 nothing but statement delimiters/terminators are *not* considered
 lines of code. For C/C++ this would have the effect of ignoring
 lines containing nothing but ';', '{', and '}'.
 
-=item B&lt;-diff&gt;
+=item B<-diff>
 
-Treat the input as output from B&lt;diff(1)&gt; and report counts for both
-inserted and deleted source. Note that the B&lt;-diff&gt; option is implied
-by any of B&lt;-pred&gt;, B&lt;-fromversion&gt; or B&lt;-toversion&gt;.
+Treat the input as output from B<diff(1)> and report counts for both
+inserted and deleted source. Note that the B<-diff> option is implied
+by any of B<-pred>, B<-fromversion> or B<-toversion>.
 
-=item B&lt;-ignore&gt;
+=item B<-ignore>
 
 Don't bother with files whose language can't be determined.
 
-=item B&lt;-filelist&gt;
+=item B<-filelist>
 
 Assume that the source files to read are listed in the contents of
 the files given on the command line (filelist is read from standard
 input if no files are given). This is useful if you wish to use the
-output of commands Like B&lt;find(1)&gt; as input to this command.
+output of commands Like B<find(1)> as input to this command.
 
-=item B&lt;-name&gt; I&lt;REGEXP&gt;
+=item B<-name> I<REGEXP>
 
 Only look at files whose filename (not including the directory path)
 completely match the given perl-style regular expression. Does not
-apply to directories when B&lt;-recurse&gt; is used. May be specified
+apply to directories when B<-recurse> is used. May be specified
 multiple times (for a description of Perl's regular expression
-syntax, invoke C&lt;man perlre&gt; or C&lt;perldoc perlre&gt;).
+syntax, invoke C<man perlre> or C<perldoc perlre>).
 
-=item B&lt;-except&gt; I&lt;REGEXP&gt;
+=item B<-except> I<REGEXP>
 
 Don't look at files whose filename (not including the directory path)
 completely match the given perl-style regular expression (even if
-it would be matched by a B&lt;-name&gt; expression). Does not apply to
-directories when B&lt;-recurse&gt; is used. May be specified multiple
+it would be matched by a B<-name> expression). Does not apply to
+directories when B<-recurse> is used. May be specified multiple
 times  (for a description of Perl's regular expression
-syntax, invoke C&lt;man perlre&gt; or C&lt;perldoc perlre&gt;).
+syntax, invoke C<man perlre> or C<perldoc perlre>).
 
-=item B&lt;-prefix&gt; I&lt;REGEXP&gt;
+=item B<-prefix> I<REGEXP>
 
 Ignore/strip the leading portion of each line that matches the given
-perl-style regular expression. Do I&lt;not&gt; use a leading '^' unless you
+perl-style regular expression. Do I<not> use a leading '^' unless you
 mean to match the caret character itself (for a description of Perl's
-regular expression syntax, invoke C&lt;man perlre&gt; or C&lt;perldoc perlre&gt;)
+regular expression syntax, invoke C<man perlre> or C<perldoc perlre>)
 
-=item B&lt;-recurse&gt;
+=item B<-recurse>
 
 For every "source" file that is actually a directory, read all
 source files in the directory.
 
-=item B&lt;-fromversion&gt; I&lt;SELECTOR&gt;
+=item B<-fromversion> I<SELECTOR>
 
-When used with B&lt;-diff&gt;, assumes that I&lt;SELECTOR&gt; is a valid ClearCase
-version selector and uses it in conjunction with B&lt;cdiff&gt; as the
-"from" version of each file specified. Only one of C&lt;-fromversion&gt;
-and C&lt;-pred&gt; may be specified!
+When used with B<-diff>, assumes that I<SELECTOR> is a valid ClearCase
+version selector and uses it in conjunction with B<cdiff> as the
+"from" version of each file specified. Only one of C<-fromversion>
+and C<-pred> may be specified!
 
-=item B&lt;-toversion&gt; I&lt;SELECTOR&gt;
+=item B<-toversion> I<SELECTOR>
 
-When used with B&lt;-diff&gt;, assumes that I&lt;SELECTOR&gt; is a valid ClearCase
-version selector and uses it in conjunction with B&lt;cdiff&gt; as the
+When used with B<-diff>, assumes that I<SELECTOR> is a valid ClearCase
+version selector and uses it in conjunction with B<cdiff> as the
 "to" version of each file specified.
 
-=item B&lt;-pred&gt;
+=item B<-pred>
 
-When used with B&lt;-diff&gt;, assumes that each file is an element in a
-ClearCase VOB and uses it in conjunction with B&lt;cdiff&gt; as the "from"
+When used with B<-diff>, assumes that each file is an element in a
+ClearCase VOB and uses it in conjunction with B<cdiff> as the "from"
 version of each file specified (note that the predecessor version
 is chosen relative to the "to" version of the file). Only one of
-B&lt;-pred&gt; and B&lt;-fromversion&gt; may be specified!
+B<-pred> and B<-fromversion> may be specified!
 
-=item B&lt;-separate&gt; I&lt;REGEXP&gt;
+=item B<-separate> I<REGEXP>
 
 Assume that whenever a source line is encountered that completely
 matches the given perl-style regular expression, it indicates the
 end of the current source context. Useful if you are trying to
-count lines from the output of a command like B&lt;diff(1)&gt; and you
+count lines from the output of a command like B<diff(1)> and you
 dont want a comment or quote in one changed section to be treated
 as if it continued into the next block of modifications. May be
 specified multiple times (for a description of Perl's regular expression
-syntax, invoke C&lt;man perlre&gt; or C&lt;perldoc perlre&gt;).
+syntax, invoke C<man perlre> or C<perldoc perlre>).
 
-=item B&lt;-counts&gt; I&lt;SPEC&gt;
+=item B<-counts> I<SPEC>
 
-Specify which counts/columns to display in the output. I&lt;SPEC&gt;
+Specify which counts/columns to display in the output. I<SPEC>
 may contain any of the following (separated by '+'):
 
    "Lines"  : print the total # of lines
@@ -227,12 +228,12 @@ may contain any of the following (separated by '+'):
    "AESL"   : print the total # of assembly-equivalent source lines
 
 The above keywords may be abbreviated to a unique prefix if desired.
-If the B&lt;-counts&gt; option is I&lt;not&gt; specified, then
-C&lt;Lines+Blank+Cmnts+NCSL+TPtoks&gt; is implied.
+If the B<-counts> option is I<not> specified, then
+C<Lines+Blank+Cmnts+NCSL+TPtoks> is implied.
 
-=item B&lt;-sections&gt; I&lt;SPEC&gt;
+=item B<-sections> I<SPEC>
 
-Specify the sections in the output. I&lt;SPEC&gt; may contain any
+Specify the sections in the output. I<SPEC> may contain any
 of the following (separated by '+'):
 
    "Header"     : the column labels and separator bar
@@ -241,22 +242,22 @@ of the following (separated by '+'):
    "Totals"     : the totals for all files.
 
 The above keywords may be abbreviated to a unique prefix
-if desired. If the B&lt;-sections&gt; option is I&lt;NOT&gt; specified,
-then C&lt;Header+Files+LangTotals+Totals&gt; is implied.
+if desired. If the B<-sections> option is I<NOT> specified,
+then C<Header+Files+LangTotals+Totals> is implied.
 
-=item B&lt;-vcstring&gt; I&lt;STRING&gt;
+=item B<-vcstring> I<STRING>
 
-Specify that I&lt;STRING&gt; is the delimiter used by your version control
+Specify that I<STRING> is the delimiter used by your version control
 system and that the file suffix should be determined by only
 considering the portion of the file path that precedes the first
-occurrence of I&lt;STRING&gt;.
+occurrence of I<STRING>.
 
-=item B&lt;-output&gt; I&lt;FILE&gt;
+=item B<-output> I<FILE>
 
 Redirect output to the named file (should have the same effect as
-redirecting STDOUT on the cmdline using "&gt; I&lt;FILE&gt;").
+redirecting STDOUT on the cmdline using "> I<FILE>").
 
-=item I&lt;FILE&gt;
+=item I<FILE>
 
 Name of an input file.
 
@@ -266,35 +267,35 @@ Option names are case insensitive and only a unique prefix is required.
 
 =head1 DESCRIPTION
 
-B&lt;sclc&gt; will count the number of lines, blank-lines, comments,
+B<sclc> will count the number of lines, blank-lines, comments,
 non-comment source lines (NCSL), pseudo-tokens of various types, total
 pseudo-tokens, and optionally, assembly equivalent source lines (AESL)
 in the given input files (which are assumed to be free of syntax
 errors). The output format will look something like the following:
 
-  &lt;header with column titles and separator line&gt;
-  &lt;count1&gt; &lt;count2&gt; ... &lt;filename&gt;  (&lt;language&gt;)
+  <header with column titles and separator line>
+  <count1> <count2> ... <filename>  (<language>)
     ...      ...           ...         ...
-  &lt;total1&gt; &lt;total2&gt; ... ----- &lt;language&gt; -----  (# files)
+  <total1> <total2> ... ----- <language> -----  (# files)
     ...      ...           ...         ...
-  &lt;total1&gt; &lt;total2&gt; ... ***** TOTAL *****  (# files)
+  <total1> <total2> ... ***** TOTAL *****  (# files)
 
-If the B&lt;-diff&gt; option is given than two lines are printed for each set of
-counts: one for deleted lines and one for inserted lines (and the C&lt;DELETED&gt;
-or C&lt;INSERTED&gt; keyword will appear on each output-line). If B&lt;-pred&gt; or
-B&lt;-fromversion&gt; or B&lt;-toversion&gt; is given then B&lt;-diff&gt; is implied and B&lt;cdiff&gt;
-command is invoked with the B&lt;-blank_ignore&gt; option to compare file versions.
+If the B<-diff> option is given than two lines are printed for each set of
+counts: one for deleted lines and one for inserted lines (and the C<DELETED>
+or C<INSERTED> keyword will appear on each output-line). If B<-pred> or
+B<-fromversion> or B<-toversion> is given then B<-diff> is implied and B<cdiff>
+command is invoked with the B<-blank_ignore> option to compare file versions.
 
-The B&lt;-counts&gt; and B&lt;-sections&gt; options may be used to control which counts
+The B<-counts> and B<-sections> options may be used to control which counts
 and/or sections to print. The counts are always printed in an order such that:
 
-     lines --&gt; blank-lines --&gt; comments --&gt; NCSL --&gt; &lt;xPtoks&gt;... --&gt; AESL
+     lines --> blank-lines --> comments --> NCSL --> <xPtoks>... --> AESL
 
-where "X --&gt; Y" means that the count of Xs always precedes the count of Ys.
+where "X --> Y" means that the count of Xs always precedes the count of Ys.
 
 =head1 EXAMPLES
 
-The typical use for B&lt;sclc&gt; would be to just give it the filenames on
+The typical use for B<sclc> would be to just give it the filenames on
 the command line:
 
   $ sclc dir.c dir.h
@@ -305,10 +306,10 @@ the command line:
      256     34     30    182       1555  ----- C -----  (2 files)
 
 There are options to control which columns you do/dont want to see.
-The C&lt;NCSL&gt; column is for "non-comment source lines". The C&lt;TPtoks&gt;
+The C<NCSL> column is for "non-comment source lines". The C<TPtoks>
 column gives the total number of psuedo-tokens of all types.
 
-The optional C&lt;AESL&gt; column is for "assembly equivalent source lines"
+The optional C<AESL> column is for "assembly equivalent source lines"
 (it calculates this using assembly-equivalence factors published by
 Software Productivity Research).  
 
@@ -322,7 +323,7 @@ If all you care about is NCSL, you could simply invoke it as:
     182  ----- C -----  (2 files)
 
 If you dont want the header columns, and want to see the overall totals
-instead of the totals per programming language (B&lt;sclc&gt; can handle C, C++,
+instead of the totals per programming language (B<sclc> can handle C, C++,
 Java, Perl, Assembly, Pascal, and several other languages) then you could
 simply say:
 
@@ -333,10 +334,10 @@ simply say:
     182  ***** TOTAL *****  (2 files)
 
 If you want to know the number of lines of code that have changed
-between versions of files, you can use the B&lt;-pred&gt; option, or a
-combination of the B&lt;-fromversion&gt; and B&lt;-toversion&gt; options. If
+between versions of files, you can use the B<-pred> option, or a
+combination of the B<-fromversion> and B<-toversion> options. If
 you simply want to know the number of new and changed lines of code
-between a set of files and their immediate predecessors, use the B&lt;-pred&gt;
+between a set of files and their immediate predecessors, use the B<-pred>
 option:
 
   $ sclc -pred *.[ch]
@@ -351,7 +352,7 @@ option:
       7      1      0      6   15.0  ----- C INSERTED -----  (2 files)
 
 Again, if you want to limit the output to include only the NCSL counts for
-the individual files and their totals, add the B&lt;-counts&gt; and B&lt;-sections&gt;
+the individual files and their totals, add the B<-counts> and B<-sections>
 options into the fold:
 
   $ sclc -pred -counts ncsl -sections file+totals *.[ch]
@@ -364,21 +365,21 @@ options into the fold:
       6  ***** TOTAL INSERTED *****  (2 files)
 
 If you want to count the difference in source lines between specific
-versions (not just the predecessor) you may use the B&lt;-fromversion&gt;
+versions (not just the predecessor) you may use the B<-fromversion>
 option to specify the base ("from") version to use for all comparisons.
 If the base version is not explicitly specified, it defaults to whatever
-version is selected in the users view. Similarly, the B&lt;-toversion&gt;
+version is selected in the users view. Similarly, the B<-toversion>
 option may be used to specify the target ("to") version to use for all
 comparisons. If the target version is not specified, then (like the base
 version) it defaults to whatever version is selected in the users view.
 
 So if I want to count the changed lines of code between what is in my
-view and what was on the C&lt;REL1.0.0&gt; label, I would do the following:
+view and what was on the C<REL1.0.0> label, I would do the following:
 
   $ sclc -fromver REL1.0.0 *.[ch]
 
 And if I wanted to count the changed lines of code between files on
-my C&lt;/main/rel1/mychanges&gt; branch and the REL1.0.0 baseline label they
+my C</main/rel1/mychanges> branch and the REL1.0.0 baseline label they
 where branched off from, I would use:
 
   $ sclc -fromver REL1.0.0 -tover .../mychanges/LATEST *.[ch]
@@ -394,18 +395,18 @@ everything in the REL1.0.0 baseline, then I could simply do:
   $ sclc -tover REL2.0.0 *.[ch]
 
 Hopefully, this "tutorial" should have provided you with a good set of
-cookbook examples for using B&lt;sclc&gt;. if you ever want to see this manual
-page, you need only invoke B&lt;sclc&gt; using the B&lt;-help&gt; option:
+cookbook examples for using B<sclc>. if you ever want to see this manual
+page, you need only invoke B<sclc> using the B<-help> option:
 
   $ sclc -help
 
 =head1 SEE ALSO
 
-L&lt;cdiff&gt; -- B&lt;sclc&gt; uses B&lt;cdiff&gt; to compare versions of files.
+L<cdiff> -- B<sclc> uses B<cdiff> to compare versions of files.
 
 =head1 AUTHOR
 
-Brad Appleton  E&lt;lt&gt;bradapp@computer.orgE&lt;gt&gt;
+Brad Appleton  E<lt>bradapp@computer.orgE<gt>
 
 =cut
 
@@ -467,14 +468,14 @@ my @Count_Names =
 ##         $Array{'CMMNT_NESTING'} -- true or false, depending on whether
 ##            or not comments are allowed to nest.
 ##
-##         $Array{'&lt;token&gt;QUOTE_STATE'} -- A regular expression that will
+##         $Array{'<token>QUOTE_STATE'} -- A regular expression that will
 ##            match only the tokens I am interested in if I am inside a
-##            quoted context whose beginning was denoted by &lt;token&gt;.
+##            quoted context whose beginning was denoted by <token>.
 ##
-##         $Array{END_&lt;token&gt;} -- The string/character that corresponds to the
-##            end of a quoted context whose beginning was denoted by &lt;token&gt;.
+##         $Array{END_<token>} -- The string/character that corresponds to the
+##            end of a quoted context whose beginning was denoted by <token>.
 ##
-##         $Array{&lt;token&gt;} -- This should be one of the following predefined
+##         $Array{<token>} -- This should be one of the following predefined
 ##            constants:
 ##
 my ($EolCmnt,    ## A comment that continues until end-of-line
@@ -483,7 +484,7 @@ my ($EolCmnt,    ## A comment that continues until end-of-line
     $BeginQuote) ## The beginning of a quoted/literal context
       = (1, 2, 3, 4);
 ##
-##            For each &lt;token&gt; that we will ever match, $Array{&lt;token&gt;}
+##            For each <token> that we will ever match, $Array{<token>}
 ##            will yield the token type (its semantic meaning).
 ##
 
@@ -495,7 +496,7 @@ my %AssemblyEquivalence = ('C++', 6.0);
 
 ## We use these defaults if no value is specified for a particular language.
 ## Be wary of changing these defaults, but feel free to override them.
-## For reference, all ASCII operators: [~`!\@#\$%^&amp;*_\-+=|\\\\:\'"&lt;&gt;.?/]
+## For reference, all ASCII operators: [~`!\@#\$%^&*_\-+=|\\\\:\'"<>.?/]
 my %DEFAULT_DEFNS = ('KEYWORD', '0', # no keywords specified
 		     'SYMBOL', '[a-zA-Z]\w*',
 		     'NUMBER', '(?=\.?\d)[\d_]*(?:\.[\d_]*)?(?:[a-zA-Z][-+]?\d)?\w*',
@@ -556,7 +557,7 @@ my %C_DEFNS = ('AESL', 2.5,
                '*/', $EndCmnt,
 	       'KEYWORD', 'exists $C_KEYWORDS{$1}',
 	       'SYMBOL', '[\$_a-zA-Z][\$\w]*',
-	       'OPERATOR', '-&gt;|(.)\1*=?', # add -&gt;
+	       'OPERATOR', '->|(.)\1*=?', # add ->
               );
 $LANG_RULES{'C'} = [ \@C_EVALS, \%C_DEFNS ];
 
@@ -698,7 +699,7 @@ $LANG_RULES{'TCL'} = [ \@TCL_EVALS, \%TCL_DEFNS ];
 ##    [A second try, by Bill Mann.]
 ##    This works best if the perl source follows some rules:
 ##       Put at least one space between code and comments
-##       Backslash-quote #,',",` when used in regexp,q,qq,qx,qw,&lt;&lt;
+##       Backslash-quote #,',",` when used in regexp,q,qq,qx,qw,<<
 ##
 my @PERL_EVALS = ('s/\\\\./__/g;',       ## remove escaped characters
 		  's/\$[\'"`#]/\$_/g;',  ## avoid special symbol problems
@@ -724,8 +725,8 @@ my %PERL_DEFNS = ('AESL', 15.0,
                   "\002", $BeginCmnt,
                   "\003", $EndCmnt,
 		  'KEYWORD', '$1 =~ /^[a-z]/', # any symbol in lowercase
-		  'SYMBOL', '(?i)[$@%][^\sa-z]|[$@%&amp;]?[a-z_]\w*',
-		  'OPERATOR', '&lt;=&gt;|-&gt;|=&gt;|=~|!~|\?:|(.)\1*=?',
+		  'SYMBOL', '(?i)[$@%][^\sa-z]|[$@%&]?[a-z_]\w*',
+		  'OPERATOR', '<=>|->|=>|=~|!~|\?:|(.)\1*=?',
                  );
 $LANG_RULES{'PERL'} = [ \@PERL_EVALS, \%PERL_DEFNS ];
 
@@ -903,6 +904,7 @@ my %FORTRAN_KEYWORDS;
        wait where while write)} = undef;
 my @FORTRAN_EVALS =
               ('s/^[c\\*]/!/gi', ## denote 'c ...' comments with !
+	       's/!\$OMP/\$OMP/gi', ## Remove ! from OpenMP directive so it looks like code 
                's/^\s*end[^!\n]*/ /gi  if ($OPTS{delim_ignore})'
               );
 my %FORTRAN_DEFNS = ('AESL', 5,	# who knows ...
@@ -1104,7 +1106,7 @@ my %Interpreters = (
 ##   ErrorMsg -- Print an error message (prefixed by "$NAME: ").
 ##
 ## SYNOPSIS:
-##   &amp;ErrorMsg("message text");
+##   &ErrorMsg("message text");
 ##
 ## ARGUMENTS:
 ##   A single string containing the message text.
@@ -1127,7 +1129,7 @@ sub ErrorMsg {
 ##   FatalMsg -- Print an error message and then abort
 ##
 ## SYNOPSIS:
-##   &amp;FatalMsg("message text");
+##   &FatalMsg("message text");
 ##
 ## ARGUMENTS:
 ##   A single string containing the message text.
@@ -1143,19 +1145,19 @@ sub ErrorMsg {
 ##   - Exits the script using exit(2)
 ##----------------------------------------------------------------------
 sub FatalMsg {
-    &amp;ErrorMsg(@_);
+    &ErrorMsg(@_);
     exit(2);
 }
 
 ##----------------------------------------------------------------------
 ## FUNCTION:
 ##   Usage -- Print a Usage message and then exit with the specified
-##            exit-value. If the exit-value is &gt; 1, then usage is terse
+##            exit-value. If the exit-value is > 1, then usage is terse
 ##            (synopsis only) and goes to STDERR. Otherwise, usage is
 ##            verbose and goes to STDOUT.
 ##
 ## SYNOPSIS:
-##   &amp;Usage([$val]);
+##   &Usage([$val]);
 ##
 ## ARGUMENTS:
 ##   $val : (optional) The integer exit value to use (defaults to 2).
@@ -1189,7 +1191,7 @@ sub Usage {
 ##                only if '-debug' was specified on the command-line.
 ##
 ## SYNOPSIS:
-##   &amp;DbgPrintf("%s\n", "debug message text");
+##   &DbgPrintf("%s\n", "debug message text");
 ##
 ## ARGUMENTS:
 ##   The format and variables containing the debug message text (a newline
@@ -1252,15 +1254,15 @@ sub CheckLanguage {
 	my ($ext, $lang) = ('', $_);
 	($ext, $lang) = ($1, $2) if (/^([^=]*)=(.+)$/);
 	if (! $lang) {
-	    &amp;ErrorMsg("invalid -language argument \"$_\"");
+	    &ErrorMsg("invalid -language argument \"$_\"");
 	    ++$ERRORS;
 	    next;
 	}
 	my $expr = $lang;
-	$expr =~ s/\W/\\$&amp;/g;
+	$expr =~ s/\W/\\$&/g;
 	my @matches = grep(/^${expr}$/i, @Languages);
 	if (@matches == 0) {
-	    &amp;ErrorMsg("Unknown programming language: \"$lang\"");
+	    &ErrorMsg("Unknown programming language: \"$lang\"");
 	    ++$ERRORS;
 	}
 	$lang = $matches[$[];
@@ -1294,22 +1296,22 @@ sub CheckSections {
     local($_);
     my @secspecs = split(/\W/, $OPTS{'sections'});
     if (0 == @secspecs) {
-	&amp;ErrorMsg("invalid sections specifier \"$OPTS{'sections'}\"");
+	&ErrorMsg("invalid sections specifier \"$OPTS{'sections'}\"");
 	++$ERRORS;
     }
     else {
 	my @matches = ();
 	foreach (@secspecs) {
-	    @matches = &amp;MatchKwd($_, "header", "files", "langtotals", "totals");
+	    @matches = &MatchKwd($_, "header", "files", "langtotals", "totals");
 	    if (@matches == 1) {
 		++$SECS{$matches[0]};
 	    }
 	    elsif (@matches == 0) {
-		&amp;ErrorMsg("invalid sections specifier \"$_\"");
+		&ErrorMsg("invalid sections specifier \"$_\"");
 		++$ERRORS;
 	    }
 	    else {
-		&amp;ErrorMsg("ambiguous sections specifier \"$_\"");
+		&ErrorMsg("ambiguous sections specifier \"$_\"");
 		++$ERRORS;
 	    }
 	}
@@ -1335,13 +1337,13 @@ sub CheckCounts {
     local($_);
     my @cntspecs = split(/\W/, $OPTS{'counts'});
     if (0 == @cntspecs) {
-	&amp;ErrorMsg("invalid counts specifier \"$OPTS{'counts'}\"");
+	&ErrorMsg("invalid counts specifier \"$OPTS{'counts'}\"");
 	++$ERRORS;
     }
     else {
 	my @matches = ();
 	foreach (@cntspecs) {
-	    @matches = &amp;MatchKwd($_, @Count_Names, 'all');
+	    @matches = &MatchKwd($_, @Count_Names, 'all');
 	    if (@matches == 1) {
 		if ($matches[0] eq 'all') {
 		    for (@Count_Names) {
@@ -1353,11 +1355,11 @@ sub CheckCounts {
 		}
 	    }
 	    elsif (@matches == 0) {
-		&amp;ErrorMsg("invalid counts specifier \"$_\"");
+		&ErrorMsg("invalid counts specifier \"$_\"");
 		++$ERRORS;
 	    }
 	    else {
-		&amp;ErrorMsg("ambiguous counts specifier \"$_\"");
+		&ErrorMsg("ambiguous counts specifier \"$_\"");
 		++$ERRORS;
 	    }
 	}
@@ -1369,7 +1371,7 @@ sub CheckCounts {
 ##   SplitPath -- Split a pathname into dirname and basename components
 ##
 ## SYNOPSIS:
-##   ($dirname, $basename, $vcsuffix) = &amp;SplitPath($pname);
+##   ($dirname, $basename, $vcsuffix) = &SplitPath($pname);
 ##
 ## ARGUMENTS:
 ##   $pname : The pathname of a file
@@ -1390,14 +1392,14 @@ sub SplitPath {
     my($dirname, $basename, $vcsuffix, $i);
     if ($OPTS{'vcstring'}) {
 	$i = index($_, $OPTS{'vcstring'});
-	unless ($i &lt; 0) {
+	unless ($i < 0) {
 	    $vcsuffix = substr($_, $i+1);
 	    $_ = substr($_, 0, $i);
 	}
     }
     ($dirname, $basename) = ('.', $_);
     $i = rindex($_, $Path_Sep);
-    unless ($i &lt; 0) {
+    unless ($i < 0) {
 	$dirname = substr($_, 0, $i);
 	$basename = substr($_, $i+1);
     }
@@ -1409,7 +1411,7 @@ sub SplitPath {
 ##   ExcludeFile -- See if a file should be excluded from processing.
 ##
 ## SYNOPSIS:
-##   if (&amp;ExcludeFile($pname)) { ... }
+##   if (&ExcludeFile($pname)) { ... }
 ##
 ## ARGUMENTS:
 ##   $pname : The pathname of a file that we may wish to process.
@@ -1428,11 +1430,11 @@ sub SplitPath {
 sub ExcludeFile {
     local($_) = @_;
     ## see if we should exclude this file from the list
-    if ((@{ $OPTS{'name'} } &gt; 0) || (@{ $OPTS{'except'} } &gt; 0)) {
-	my($dirname, $basename) = &amp;SplitPath($_);
+    if ((@{ $OPTS{'name'} } > 0) || (@{ $OPTS{'except'} } > 0)) {
+	my($dirname, $basename) = &SplitPath($_);
 	my @matches = grep($basename =~ /^$_$/, @{ $OPTS{'except'} });
-	return 1  if (@matches &gt; 0); ## this is an exception
-	if (@{ $OPTS{'name'} } &gt; 0) {
+	return 1  if (@matches > 0); ## this is an exception
+	if (@{ $OPTS{'name'} } > 0) {
 	    ## only accept if we have a match
 	    @matches = grep($basename =~ /^$_$/, @{ $OPTS{'name'} });
 	    return 1  if (@matches == 0); ## no match
@@ -1462,11 +1464,11 @@ sub RefLanguage {
     local($_) = $lang;
     ## Figure out the language-specific pair of arrays to use
     if ($lang) {
-	$_ = "C" if ($lang eq "C++"); ## C &amp; C++ use the same arrays
-	## Arrays are named &lt;LANG&gt;_DEFNS and &lt;LANG&gt;_EVALS where &lt;LANG&gt; is
+	$_ = "C" if ($lang eq "C++"); ## C & C++ use the same arrays
+	## Arrays are named <LANG>_DEFNS and <LANG>_EVALS where <LANG> is
 	## all uppercase with non-alphanumerics removed
 	s/\W//g;
-	s/[a-z]/\U$&amp;/g;
+	s/[a-z]/\U$&/g;
     }
     $_;
 }
@@ -1530,9 +1532,9 @@ sub GuessLanguage {
 	   $lang = "shell";
        }
 
-    $lang = $DEFAULT_LANG if ($DEFAULT_LANG &amp;&amp; (! $lang));
+    $lang = $DEFAULT_LANG if ($DEFAULT_LANG && (! $lang));
 
-    my $ref = &amp;RefLanguage($lang);
+    my $ref = &RefLanguage($lang);
     ($LANG_NAME, $LANG_REF) = ($lang, $ref);
 }
 
@@ -1554,7 +1556,7 @@ sub SetLanguage {
     my ($filepath) = @_;
     local($_) = $filepath;
     my $lang = "";
-    my ($dirname, $basename) = &amp;SplitPath($_);
+    my ($dirname, $basename) = &SplitPath($_);
     ## First see if we have a '.' suffix
     if ($basename =~ /.+(\.[^.]+)$/) {
 	$lang = $Suffixes{$1} if (defined $Suffixes{$1});
@@ -1569,14 +1571,14 @@ sub SetLanguage {
 	    next unless ($_);
 	    next if (defined $seen{$_});
 	    ++$seen{$_};
-	    s/\W/\\$&amp;/g;	## escape regexp meta-characters
+	    s/\W/\\$&/g;	## escape regexp meta-characters
 	    $lang = $Suffixes{$_} if ($basename =~ m|^.+$_$|);
 	    last if ($lang);
 	}
     }
     if ($lang) {
-	$lang = "C++" if (($lang eq "C") &amp;&amp; ($DEFAULT_LANG eq "C++"));
-	my $ref = &amp;RefLanguage($lang) || "";
+	$lang = "C++" if (($lang eq "C") && ($DEFAULT_LANG eq "C++"));
+	my $ref = &RefLanguage($lang) || "";
 	($LANG_NAME, $LANG_REF) = ($lang, $ref);
     }
     else {
@@ -1586,13 +1588,13 @@ sub SetLanguage {
 	    $_ = '';
 	}
 	elsif (open(FILEPATH, $filepath)) {
-	    while (&lt;FILEPATH&gt;) {
+	    while (<FILEPATH>) {
 		chomp;
 		last unless (/^\s*$/);
 	    }
 	    close(FILEPATH);
 	}
-	&amp;GuessLanguage($_);
+	&GuessLanguage($_);
     }
 }
 
@@ -1657,7 +1659,7 @@ sub SourceCount {
     my %error = ('Error', "Error");
     my $filehandle;
     local($_);
-    my $diffType;		## one of '' or '&lt;' or '&gt;'
+    my $diffType;		## one of '' or '<' or '>'
     my ($inComment, $inQuote) = (0, '');
     my %counts = ();
 
@@ -1667,7 +1669,7 @@ sub SourceCount {
     }
 
     ## Open input
-    if (($filename eq "-") &amp;&amp; !($OPTS{'filelist'} &amp;&amp; (@ARGV == 0))) {
+    if (($filename eq "-") && !($OPTS{'filelist'} && (@ARGV == 0))) {
 	$filehandle = \*STDIN;
     }
     else {
@@ -1685,16 +1687,16 @@ sub SourceCount {
 	}
 	$filehandle = \*INPUT;
 	unless (open(INPUT, $filename)) {
-	    &amp;ErrorMsg("Can't open $filename for reading: $!");
+	    &ErrorMsg("Can't open $filename for reading: $!");
 	    return %error;
 	}
     }
 
-    while (&lt;$filehandle&gt;) {
+    while (<$filehandle>) {
 	chomp;
 	$diffType = '';
 	## See if this is a context separator.
-	if (&amp;IsSeparator($_)) {
+	if (&IsSeparator($_)) {
 	    ## Yes, reset context and get the next line.
 	    ($inComment, $inQuote) = (0, '');
 	    next;
@@ -1704,7 +1706,7 @@ sub SourceCount {
 
 	## If this is diff(1) output, do some special stuff
 	if ($OPTS{'diff'}) {
-	    if (/^([&lt;&gt;])\s+/) {
+	    if (/^([<>])\s+/) {
 		## line was inserted or deleted (strip the prefix)
 		$diffType = $1;
 		$_ = $'; #'
@@ -1725,7 +1727,7 @@ sub SourceCount {
 	} 
 
 	## The following is a KLUGE to distinguish C++ from C
-	if ($LANG_NAME eq "C" &amp;&amp; !($inComment || $inQuote)) {
+	if ($LANG_NAME eq "C" && !($inComment || $inQuote)) {
 	    $LANG_NAME = "C++"
 		if m/(?: ^\s*
 		      (?: \:\:\s*\w |
@@ -1733,7 +1735,7 @@ sub SourceCount {
 			public \s* : |
 			private \s* : |
 			protected \s* : |
-			template \s* &lt; | 
+			template \s* < | 
 			virtual | 
 			throw \s* [\(;] |
 			try \s* [{}] |
@@ -1759,20 +1761,20 @@ sub SourceCount {
 	foreach $expr (@langEvals) {
 	    eval $expr;
 	}
-	## See how many comments, statements &amp; tokens are on this line
+	## See how many comments, statements & tokens are on this line
 	my ($hasSource, $hasComment) = (0, 0);
 	s/^\s*//;
 	while ($_) {
-	    if ($inComment &gt; 0) {
+	    if ($inComment > 0) {
 		++$hasComment;
 		if (m/$langDefns{'CMMNT_STATE'}/) {
 		    $_ = $'; #'
 		    if ($langDefns{'CMMNT_NESTING'}) {
-			--$inComment if ($langDefns{$&amp;} eq $EndCmnt);
-			++$inComment if ($langDefns{$&amp;} eq $BeginCmnt);
+			--$inComment if ($langDefns{$&} eq $EndCmnt);
+			++$inComment if ($langDefns{$&} eq $BeginCmnt);
 		    }
 		    else {
-			$inComment = 0  if ($langDefns{$&amp;} eq $EndCmnt);
+			$inComment = 0  if ($langDefns{$&} eq $EndCmnt);
 		    }
 		}
 		else {
@@ -1783,7 +1785,7 @@ sub SourceCount {
 		++$hasSource;
 		if (m/$langDefns{"${inQuote}QUOTE_STATE"}/) {
 		    $_ = $'; #'
-		    $inQuote = '' if ($&amp; eq $langDefns{"END_${inQuote}"});
+		    $inQuote = '' if ($& eq $langDefns{"END_${inQuote}"});
 		}
 		else {
 		    $_ = '';
@@ -1791,23 +1793,23 @@ sub SourceCount {
 	    }
 	    elsif (m/^(?:$langDefns{'START_STATE'})/) {
 		$_ = $'; #'
-		if ($langDefns{$&amp;} eq $EolCmnt) {
+		if ($langDefns{$&} eq $EolCmnt) {
 		    ++$hasComment;
 		    ++$hasSource if ($` =~ /\S/);
 		    $_ = '';
 		}
-		elsif ($langDefns{$&amp;} eq $BeginCmnt) {
+		elsif ($langDefns{$&} eq $BeginCmnt) {
 		    ++$hasComment;
 		    ++$hasSource if ($` =~ /\S/);
 		    $inComment = 1;
 		}
 		else {
 		    ++$hasSource;
-		    if ($langDefns{$&amp;} eq $BeginQuote) {
-			$inQuote = $&amp;;
+		    if ($langDefns{$&} eq $BeginQuote) {
+			$inQuote = $&;
 			my $quote = $_;
 			$quote =~ s/$inQuote.*// or $quote .= '...';
-			&amp;Token(\%counts, $diffType, 'CPtoks',
+			&Token(\%counts, $diffType, 'CPtoks',
 			       "$inQuote$quote$inQuote");
 		    }
 		}
@@ -1816,18 +1818,18 @@ sub SourceCount {
 		++$hasSource;
 		if (s/^($langDefns{'SYMBOL'})\s*//) {
 		    if (eval $langDefns{'KEYWORD'}) {
-			&amp;Token(\%counts, $diffType, 'KPtoks', $&amp;);
+			&Token(\%counts, $diffType, 'KPtoks', $&);
 		    } else {
-			&amp;Token(\%counts, $diffType, 'SPtoks', $&amp;);
+			&Token(\%counts, $diffType, 'SPtoks', $&);
 		    }
 		} elsif (s/^(?:$langDefns{'NUMBER'})\s*//) {
-		    &amp;Token(\%counts, $diffType, 'CPtoks', $&amp;);
+		    &Token(\%counts, $diffType, 'CPtoks', $&);
 		} elsif (s/^(?:$langDefns{'GROUPER'})\s*//) {
-		    &amp;Token(\%counts, $diffType, 'GPtoks', $&amp;);
+		    &Token(\%counts, $diffType, 'GPtoks', $&);
 		} elsif (s/^(?:$langDefns{'OPERATOR'})\s*//) {
-		    &amp;Token(\%counts, $diffType, 'OPtoks', $&amp;);
+		    &Token(\%counts, $diffType, 'OPtoks', $&);
 		} else {	# ignore anything else
-		    &amp;ErrorMsg("undefined token '$_'\n");
+		    &ErrorMsg("undefined token '$_'\n");
 		    s/^.//;
 		}
 	    }
@@ -1843,8 +1845,8 @@ sub SourceCount {
     my $aeFactor = $AssemblyEquivalence{$LANG_NAME};
     $aeFactor = $langDefns{'AESL'} unless ($aeFactor);
     $counts{'AESL'}  = ($counts{'NCSL'}  * $aeFactor) if ($counts{'NCSL'});
-    $counts{'&lt;AESL'} = ($counts{'&lt;NCSL'} * $aeFactor) if ($counts{'&lt;NCSL'});
-    $counts{'&gt;AESL'} = ($counts{'&gt;NCSL'} * $aeFactor) if ($counts{'&gt;NCSL'});
+    $counts{'<AESL'} = ($counts{'<NCSL'} * $aeFactor) if ($counts{'<NCSL'});
+    $counts{'>AESL'} = ($counts{'>NCSL'} * $aeFactor) if ($counts{'>NCSL'});
 
     %counts;
 }
@@ -1903,7 +1905,7 @@ sub PrintCounts {
 ##   ExpandDirectory -- Expand a directory into all its elements
 ##
 ## SYNOPSIS:
-##   @elements = &amp;ExpandDirectory($dir);
+##   @elements = &ExpandDirectory($dir);
 ##
 ## ARGUMENTS:
 ##   $dir : The pathname of a directory
@@ -1929,13 +1931,13 @@ sub ExpandDirectory {
 	## On Unix, make sure we dont traverse this directory twice
 	## due to symlinks
 	my($absdir);
-	chomp($absdir = `cd $dir &amp;&amp; /bin/pwd`);
+	chomp($absdir = `cd $dir && /bin/pwd`);
 	return @elements if (defined $TRAVERSED{$absdir});
 	++$TRAVERSED{$absdir};
     }
     ## Open the directory for reading
     unless (opendir(DIRECTORY, $dir)) {
-	&amp;error_msg("Can't traverse directory $dir: $!");
+	&error_msg("Can't traverse directory $dir: $!");
 	return @elements;
     }
     $dir = '' if ($dir eq $Path_Sep); ## might be root
@@ -1965,36 +1967,36 @@ sub CountFiles {
     my @files = @_;
     local ($_);
     foreach (@files) {
-	if (-d $_  &amp;&amp; $OPTS{'recurse'}) {
-	    my @entries = &amp;ExpandDirectory($_);
-	    &amp;CountFiles(@entries);
+	if (-d $_  && $OPTS{'recurse'}) {
+	    my @entries = &ExpandDirectory($_);
+	    &CountFiles(@entries);
 	    next;
 	}
 	## See if we should exclude this file from the list
-	next if (&amp;ExcludeFile($_));
-	if (-d $_  &amp;&amp; $OPTS{'recurse'}) {
-	    &amp;ErrorMsg("$_ is a directory.") unless ($OPTS{'ignore'});
+	next if (&ExcludeFile($_));
+	if (-d $_  && $OPTS{'recurse'}) {
+	    &ErrorMsg("$_ is a directory.") unless ($OPTS{'ignore'});
 	    next;
 	}
 	if (-B _) {
-	    &amp;ErrorMsg("$_ is a binary file.") unless ($OPTS{'ignore'});
+	    &ErrorMsg("$_ is a binary file.") unless ($OPTS{'ignore'});
 	    next;
 	}
 	## See if we can determine the programming language
 	($LANG_NAME, $LANG_REF) = ('', '');
-	&amp;SetLanguage($_);
-	&amp;ErrorMsg("Can't determine programming language for $_")
+	&SetLanguage($_);
+	&ErrorMsg("Can't determine programming language for $_")
 	    unless ($LANG_REF || $OPTS{'ignore'});
 	next unless (exists $LANG_RULES{$LANG_REF});
-	my %counts = &amp;SourceCount($_, @{ $LANG_RULES{$LANG_REF} });
+	my %counts = &SourceCount($_, @{ $LANG_RULES{$LANG_REF} });
 	next if ($counts{'Error'} || !$counts{'Lines'});
-	&amp;PrintCounts('s', '', '', \@Count_Names, "", \%counts)
-	    if ((++$NumSources == 1) &amp;&amp; $SECS{'header'});
+	&PrintCounts('s', '', '', \@Count_Names, "", \%counts)
+	    if ((++$NumSources == 1) && $SECS{'header'});
 	++$NumSources{$LANG_NAME};
 	my (@kindList, $kind) = ("");
-	@kindList = ('&lt;', '&gt;') if ($OPTS{'diff'});
+	@kindList = ('<', '>') if ($OPTS{'diff'});
 	for $kind (@kindList) {
-	    &amp;PrintCounts('d', "$_$KIND{$kind}", $LANG_NAME, \@Count_Names,
+	    &PrintCounts('d', "$_$KIND{$kind}", $LANG_NAME, \@Count_Names,
 			 $kind, \%counts);
 	}
 
@@ -2025,7 +2027,7 @@ sub PrintTotals {
     my $str;
     my @languages = (keys %NumSources);
     my (@kindList, $kind) = ("");
-    @kindList = ('&lt;', '&gt;') if ($OPTS{'diff'});
+    @kindList = ('<', '>') if ($OPTS{'diff'});
 
     foreach (@languages) {
 	for $kind (@kindList) {
@@ -2034,7 +2036,7 @@ sub PrintTotals {
 			       "----- $_$KIND{$kind} -----",
 			       $NumSources{$_},
 			       ($NumSources{$_} == 1) ? 'file' : 'files');
-		&amp;PrintCounts('d', $str, '', \@Count_Names, $kind, $totals-&gt;{$_});
+		&PrintCounts('d', $str, '', \@Count_Names, $kind, $totals->{$_});
 	    }
 	}
     }
@@ -2043,8 +2045,8 @@ sub PrintTotals {
 		       "***** TOTAL$KIND{$kind} *****",
 		       $NumSources,
 		       ($NumSources == 1) ? 'file' : 'files');
-	&amp;PrintCounts('d', $str, '', \@Count_Names, $kind, $totals)
-	    if ($SECS{'totals'} &amp;&amp; ((!$SECS{'langtotals'}) || (@languages &gt; 1)));
+	&PrintCounts('d', $str, '', \@Count_Names, $kind, $totals)
+	    if ($SECS{'totals'} && ((!$SECS{'langtotals'}) || (@languages > 1)));
     }
 }
 
@@ -2076,7 +2078,7 @@ sub main {
     $OPTS{'separate'}     = [];
 
     ## Parse options
-    my $rc = &amp;GetOptions( \%OPTS,
+    my $rc = &GetOptions( \%OPTS,
 			  "debug",
 			  "help",
 			  "output=s",
@@ -2097,26 +2099,26 @@ sub main {
 			  "toversion=s",
 			  "vcstring=s"
 			  );
-    &amp;Usage(1) if ($OPTS{'help'});
-    &amp;Usage(2) unless ($rc);
-    &amp;Usage(2) if ((@ARGV == 0) &amp;&amp; (-t STDIN));
+    &Usage(1) if ($OPTS{'help'});
+    &Usage(2) unless ($rc);
+    &Usage(2) if ((@ARGV == 0) && (-t STDIN));
 
     ## Check for syntax errors
-    if ($OPTS{'pred'} &amp;&amp; $OPTS{'fromversion'}) {
-	&amp;ErrorMsg("The '-pred' and '-fromversion' options are incompatible!");
+    if ($OPTS{'pred'} && $OPTS{'fromversion'}) {
+	&ErrorMsg("The '-pred' and '-fromversion' options are incompatible!");
 	++$ERRORS;
     }
-    &amp;CheckLanguage(@{ $OPTS{'language'} }) if (@{ $OPTS{'language'} } &gt; 0);
-    &amp;CheckSections($OPTS{'sections'}) if ($OPTS{'sections'});
-    &amp;CheckCounts($OPTS{'counts'}) if ($OPTS{'counts'});
+    &CheckLanguage(@{ $OPTS{'language'} }) if (@{ $OPTS{'language'} } > 0);
+    &CheckSections($OPTS{'sections'}) if ($OPTS{'sections'});
+    &CheckCounts($OPTS{'counts'}) if ($OPTS{'counts'});
 
-    &amp;Usage(2) if ($ERRORS);
+    &Usage(2) if ($ERRORS);
 
     ## Redirect STDOUT if requested
     if ($OPTS{'output'}) {
 	close STDOUT;
-	open(STDOUT, "&gt;$OPTS{'output'}")
-	    or &amp;FatalMsg("Unable to redirect STDOUT to $OPTS{'output'}: $!");
+	open(STDOUT, ">$OPTS{'output'}")
+	    or &FatalMsg("Unable to redirect STDOUT to $OPTS{'output'}: $!");
     }
 
     if ($OPTS{'pred'} || $OPTS{'fromversion'} || $OPTS{'toversion'}) {
@@ -2126,27 +2128,28 @@ sub main {
     }
     %KIND = (
 	     '' , '',
-	     '&lt;', ' DELETED',
-	     '&gt;', ' INSERTED'
+	     '<', ' DELETED',
+	     '>', ' INSERTED'
 	     );
 
     if (! $OPTS{'filelist'}) {
 	@ARGV = ('-') if (0 == @ARGV);
-	&amp;CountFiles(@ARGV);
+	&CountFiles(@ARGV);
     }
     else {
 	## have to read list of filenames from input
-	while (&lt;&gt;) {
+	while (<>) {
 	    chomp;
-	    &amp;CountFiles($_);
+	    &CountFiles($_);
 	}
     }
-    &amp;PrintTotals(\%Totals) if (($SECS{'totals'} || $SECS{'langtotals'}) &amp;&amp;
-			       ((! $SECS{'files'}) || ($NumSources &gt; 1)));
+    &PrintTotals(\%Totals) if (($SECS{'totals'} || $SECS{'langtotals'}) &&
+			       ((! $SECS{'files'}) || ($NumSources > 1)));
 }
 
 #---------------------------------------------------------------------
 package main;
 
-&amp;Sclc::main(@ARGV);		##  unless ($DO_NOT_EXECUTE)
+&Sclc::main(@ARGV);		##  unless ($DO_NOT_EXECUTE)
+
 
