@@ -6,6 +6,7 @@ $printusage = 1;
 $debug = 1;
 $runtests = 1;
 $examples = 0;
+$suppressions = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -28,6 +29,8 @@ while (@ARGV) {
         $performance = 1;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
+    } elsif ($flag eq "-suppress") {
+        $suppressions = shift @ARGV;
     } else {
         $printusage = 1;
         last;
@@ -274,10 +277,14 @@ if ($performance == 1) {
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
 }
+if (!($suppressions eq "")) {
+    $testflags = "$testflags -suppress $suppressions";
+}
 
 if ($runtests == 1) {
     mysystem("cp $chplhome/test/CHAP09 $testdir/", "copying CHAP09 file", 1, 1);
-    $status = mysystem("cd $testdir && ./paratest.server.pl -nodefile CHAP09 $testflags", "running standard tests", 0, 0);
+    mysystem("cp $chplhome/test/MEMORY $testdir/", "copying CHAP09 file", 1, 1);
+    $status = mysystem("cd $testdir && ./paratest.server.pl -nodefile CHAP09 -dirfile MEMORY $testflags", "running standard tests", 0, 0);
 
 
 
