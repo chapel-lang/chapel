@@ -55,6 +55,7 @@ $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
 $valgrind = 0;
+$suppressions = "";
 
 $localhost = `uname -n`;
 ($localnode, $junk) = split (/\./, $localhost, 2);
@@ -108,29 +109,34 @@ sub collect_logs {
     # Generate the summary info
     systemd ("echo \\[Parallel testing started at $starttime\\] >> $fin_log");
     systemd ("echo \\[Parallel testing ended at $endtime\\] >> $fin_log");
-    systemd ("echo \\[Test Summary - $date\\] >> $fin_log");
-    $successes = `grep -a "^\\[Success matching" $fin_log | wc -l`;
-    $successes =~ s/\s//g;
-    ($successes, $junk) = split (/\s+/, $successes, 2);
-    $failures = `grep -a "^\\[Error" $fin_log | wc -l`;
-    $failures =~ s/\s//g;
-    ($failures, $junk) = split (/\s+/, $failures, 2);
-    $futures = `grep -a "^Future" $fin_log | wc -l`;
-    $futures =~ s/\s//g;
-    ($futures, $junk) = split (/\s+/, $futures, 2);
-    systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log");
-    systemd ("echo \\[END\\] >> $fin_log");
-
-    print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
 
     # Generate summary file
     $summ_log = "$fin_log.summary";
     unlink $summ_log if (-e $summ_log);
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
     systemd ("grep -a '^\\[Error' $fin_log >> $fin_log.summary");
+    if (!($suppressions eq "")) {
+        systemd ("Bin/filterSuppressions.pl $suppressions $fin_log.summary");
+    }
     systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
+
+    # Count stuff
+    $successes = `grep -a "^\\[Success matching" $fin_log.summary | wc -l`;
+    $successes =~ s/\s//g;
+    ($successes, $junk) = split (/\s+/, $successes, 2);
+    $failures = `grep -a "^\\[Error" $fin_log.summary | wc -l`;
+    $failures =~ s/\s//g;
+    ($failures, $junk) = split (/\s+/, $failures, 2);
+    $futures = `grep -a "^Future" $fin_log.summary | wc -l`;
+    $futures =~ s/\s//g;
+    ($futures, $junk) = split (/\s+/, $futures, 2);
     systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log.summary");
     systemd ("echo \\[END\\] >> $fin_log.summary");
+
+    systemd ("cat $fin_log.summary >> $fin_log");
+
+    print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
+
 }
 
 
@@ -391,6 +397,14 @@ sub main {
                 $fin_logfile = $ARGV[0];
             } else {
                 print "missing -logfile arg\n";
+                exit (8);
+            }
+        } elsif (/^-suppress/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $suppressions = $ARGV[0];
+            } else {
+                print "missing -suppress arg\n";
                 exit (8);
             }
         } elsif (/^-nodefile/) {
