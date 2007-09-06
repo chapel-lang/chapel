@@ -1180,7 +1180,10 @@ computeActuals(CallExpr* call,
                Vec<Symbol*>* aparams,
                Vec<const char*>* anames) {
   for_actuals(actual, call) {
-    atypes->add(actual->typeInfo());
+    Type* t = actual->typeInfo();
+    atypes->add(t);
+    if (t == dtUnknown || t->isGeneric)
+      INT_FATAL(call, "actual type is unknown or generic");
     SymExpr* symExpr;
     if (NamedExpr* named = toNamedExpr(actual)) {
       anames->add(named->name);
