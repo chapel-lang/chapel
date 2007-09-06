@@ -86,13 +86,19 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 static void
 codegenCobegin( FILE* outfile, AList* body) {
-  int stmt_cnt;
   int num_stmts = body->length();
+
+  // if the cobegin is empty, exit early to avoid declaring 0-length
+  // arrays which some compilers (PGI) don't like
+  if (num_stmts == 0) {
+    fprintf(outfile, "/* empty cobegin at */\n");
+    return;
+  }
   // For now, assume all statements will be forked.
 
   // gen code for the function pointer array
   fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
-  stmt_cnt = 0;
+  int stmt_cnt = 0;
   for_alist(stmt, *body) {
     if (CallExpr *cexpr=toCallExpr(stmt)) {
       if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {

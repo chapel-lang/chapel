@@ -1,0 +1,3 @@
+cobegin {
+}
+writeln("Test worked");
