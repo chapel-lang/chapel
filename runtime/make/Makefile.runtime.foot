@@ -33,19 +33,21 @@ echoruntimedir:
 # pattern-based rules
 #
 
-RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/.timestamp
+RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 
-%.depend: %.c $(RUNTIME_OBJ_DIR)
-	@$(CMAKEDEPEND) -MT '$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/$*.o' $(RUNTIME_CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
+%.depend: %.c $(RUNTIME_OBJ_DIR_STAMP)
+	@$(CMAKEDEPEND) $(RUNTIME_CFLAGS) $< | sed s/$*\\\.o/\\\$(RUNTIME_OBJ_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
 
-$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)/%.o: %.c $(RUNTIME_OBJ_DIR)
+$(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
-$(RUNTIME_OBJ_DIR): $(PLATFORM_DIR)
+$(RUNTIME_OBJ_DIR_STAMP): $(PLATFORM_DIR)
 	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) subdirectory to store platform-specific files
 	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) > /dev/null 2>&1
-	@-touch $(RUNTIME_OBJ_DIR)
+	@-touch $(RUNTIME_OBJ_DIR_STAMP)
 
 
 FORCE:
