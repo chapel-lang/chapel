@@ -19,7 +19,7 @@ static void cleanup_for_exit(void) {
 }
 
 
-static int _chpl_exit_common(int status, int all) {
+static void _chpl_exit_common(int status, int all) {
   fflush(stdout);
   fflush(stderr);
   if (status != 0) {

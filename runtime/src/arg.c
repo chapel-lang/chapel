@@ -64,7 +64,7 @@ static void printHelpTable(void) {
     {"--memtrace=<filename>", "write memory trace to filename", 'm'},
     {"--memthreshold=<n>", "filter memtrace for sizes >= 'n' bytes", 'm'},
 
-    {NULL, NULL}
+    {NULL, NULL, ' '}
   };
 
   int i = 0;

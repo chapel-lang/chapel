@@ -8,6 +8,7 @@
 
 CC = cc
 CXX = cc
+MAKEDEPEND = c++ -M
 CMAKEDEPEND = cc -M
 
 RANLIB = ranlib
