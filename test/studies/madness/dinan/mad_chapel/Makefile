@@ -1,10 +1,12 @@
 GENC   = gen_c
 
-CC     = chpl
-CFLAGS = --instantiate-max 512 --print-passes
+CHPL    = chpl
+CFLAGS  = --instantiate-max 512 --print-passes
 #CFLAGS += -g --savec=$(GENC) --short-names
-#CFLAGS += --ccflags "-Wall"
+#CFLAGS += --CHPLflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
+
+TESTFLAGS = --instantiate-max 512
 
 SOURCES= AnalyticFcn.chpl  \
          FTree.chpl        \
@@ -24,24 +26,31 @@ all: $(TARGETS)
 
 
 test_diff: $(SOURCES) test_diff.chpl MadAnalytics.chpl
-	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
 
 test_gaxpy: $(SOURCES) test_gaxpy.chpl MadAnalytics.chpl
-	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
 
 test_mul: $(SOURCES) test_mul.chpl MadAnalytics.chpl
-	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
 
 test_likepy: $(SOURCES) test_likepy.chpl MadAnalytics.chpl
-	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
 
 test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
-	$(CC) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
+test:
+	@make CHPL="$(CHPL)" CFLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
+	./test_diff
+	./test_gaxpy
+	./test_mul
+	./test_likepy
+	./test_showboxes
 
 .PHONY: ps
 PSDIR = ps

@@ -44,6 +44,13 @@ class FTree {
 
     /** Access an element in the associative domain.  If the element
         doesn't exist it will be created.
+        
+        We have to be really careful about creating extra boxes when we don't
+        mean to.  The algorithms tend to be really sensitive to the structure
+        of the tree.  Scaling coefficients are used to mark the leaves in the
+        sum tree, so if you accidentally create scaling coeffs somewhere in the
+        middle of the tree you will short circuit a whole subtree!
+        
      */
     def this(lvl: int, idx: int) var {
         if !indices.member((lvl, idx)) {
@@ -53,6 +60,8 @@ class FTree {
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
+              // FIXME: Zeroes should really be a const, but can'ti
+              //        return const from a var fcn.
               return zeroes;
             }
         }
