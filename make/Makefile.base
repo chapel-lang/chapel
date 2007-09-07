@@ -60,9 +60,15 @@ printplatform:
 
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,
-# depending on how CHPLDEVTMP is set
+# depending on how CHPLDEVTMP is set -- well, actually it's
+# a timestamp file so that the varying time stamps of directories
+# don't cause things to rebuild indiscriminately.  PLATFORM_DIR_DIR
+# is actually the directory.  PLATFORM_DIR_SAFESLASH is the directory
+# with slashes escaped appropriately for use in Makefile command rules.
 #
 PLATFORM_DIR = ./$(CHPL_MAKE_PLATFORM)/.timestamp
+PLATFORM_DIR_DIR = ./$(CHPL_MAKE_PLATFORM)
+PLATFORM_DIR_SAFESLASH = $(subst /,\\/, $(PLATFORM_DIR_DIR))
 
 ifndef CHPLDEVTMP
 $(PLATFORM_DIR):
