@@ -24,6 +24,7 @@ OPT_CFLAGS =
 
 CFLAGS = -target=linux
 LFLAGS = -target=linux
+LDFLAGS= -target=linux
 
 COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)

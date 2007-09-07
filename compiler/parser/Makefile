@@ -70,14 +70,14 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 # no-error required here for bison 1.875 (not 1.875d)
 $(CHPL_MAKE_PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
 $(CHPL_MAKE_PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<
 
 # no-error required here for flex 2.5.33
 $(CHPL_MAKE_PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
 $(CHPL_MAKE_PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ $<
