@@ -184,8 +184,7 @@ def MMIterator(D1, D2) {
 // This function computes the pivot row for an LU pivoting operation
 // by using Chapel's maxloc reduction on the absolute values in the
 // matrix, dropping the maximum value on the floor using the
-// underscore operator, and returning returning the row of the
-// resulting index.
+// underscore operator, and returning the row of the resulting index.
 
 def computePivotRow(A:[?D]) {
    const (_, ind) = maxloc reduce (abs(A), D);
