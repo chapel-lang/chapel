@@ -93,7 +93,7 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = sprintf(str, control_string, imm.v_string); break;
+      res = sprintf(str, control_string, imm.v_string);
       break;
   }
   return res;
@@ -163,7 +163,7 @@ sprint_imm(char *str, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = sprintf(str, "\"%s\"", imm.v_string); break;
+      res = sprintf(str, "\"%s\"", imm.v_string);
       break;
   }
   return res;
@@ -251,7 +251,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = fprintf(fp, "\"%s\"", imm.v_string); break;
+      res = fprintf(fp, "\"%s\"", imm.v_string);
       break;
   }
   return res;
@@ -401,14 +401,12 @@ coerce_immediate(Immediate *from, Immediate *to) {
                 imm->v_int32 = res;                                     \
                 break;                                                  \
               }                                                         \
-          case INT_SIZE_64: { \
+            case INT_SIZE_64: \
               {                                                         \
                 COMPUTE_INT_POW(int64, im1.int_value(), im2.int_value()); \
                 imm->v_int64 = res;                                     \
                 break;                                                  \
               }                                                         \
-              break; \
-} \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \

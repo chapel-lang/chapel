@@ -363,7 +363,7 @@ static void genCFileBuildRules(FILE* makefile) {
     if (isCSource(inputFilename)) {
       const char* objFilename = genIntFilename(stringcat(inputFilename, ".o"));
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
-      fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_FLAGS) $(COMP_GEN_FLAGS) $<\n");
+      fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
     }
   }
