@@ -1,0 +1,4 @@
+error message: Forgetting the value when you set a config var (eg -svar rather than -svar=10) results in misleading error message
+
+error: "x" is not a valid configuration variable
+
