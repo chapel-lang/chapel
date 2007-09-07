@@ -33,10 +33,6 @@ echoruntimedir:
 # pattern-based rules
 #
 
-RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
-RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
-RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
-
 %.depend: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@$(CMAKEDEPEND) $(RUNTIME_CFLAGS) $< | sed s/$*\\\.o/\\\$(RUNTIME_OBJ_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
 

@@ -1,8 +1,8 @@
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
 
-depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echoruntimedir
-	@echo Updating dependences...
+depend: $(DEPENDSUBDIRS) echoruntimedir $(RUNTIME_OBJ_DIR_STAMP) $(DEPEND_DEPS)
+	@echo Updating subdir dependences...
 	@rm -f $(CVS_DEPENDS).tmp
 	@echo > $(CVS_DEPENDS).tmp
 	@$(MAKE) filedepend

@@ -20,6 +20,10 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 INCL_CFLAGS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_THREADS) -I$(RUNTIME_ROOT)/include/comm-$(CHPL_COMM) -I$(RUNTIME_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(RUNTIME_ROOT)/include
 RUNTIME_CFLAGS += $(INCL_CFLAGS)
 
+RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
+
 
 #
 # clean and clobber targets
