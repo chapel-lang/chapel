@@ -65,6 +65,7 @@ record range {
                      subrange.stride);
       } else {
         halt("range slice out of bounds: ", subrange);
+        return range(eltType, bounded, stridable);
       }
     } else if (boundedness == boundedLow) {
       return range(eltType, bounded, stridable, subrange.low, _high,
