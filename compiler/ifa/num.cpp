@@ -335,7 +335,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
     res *= base;                                \
   }
 
-#define DO_FOLDPOW(_op) \
+#define DO_FOLDPOW() \
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
@@ -412,15 +412,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
           break; \
         } \
         case NUM_KIND_FLOAT: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            case FLOAT_SIZE_32: \
-              imm->v_float32 = (float32)_op(im1.v_float32, im2.v_float32); break; \
-            case FLOAT_SIZE_64: \
-              imm->v_float64 = (float64)_op(im1.v_float64, im2.v_float64); break; \
-            case FLOAT_SIZE_128: \
-              imm->v_float128 = (float128)_op(im1.v_float128, im2.v_float128); break; \
-            default: INT_FATAL("Unhandled case in switch statement"); \
-          } \
+          INT_FATAL("Cannot fold ** on floating point values"); \
           break; \
       }
 
@@ -767,7 +759,7 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_not: DO_FOLD1I(~); break;
     case P_prim_lnot: DO_FOLD1(!); break;
   case P_prim_pow: {
-    DO_FOLDPOW(pow);
+    DO_FOLDPOW();
     break;
   }
   }
