@@ -3,6 +3,7 @@ cygwin.lnk
 freebsd
 linux
 linux64
+mta
 sunos
 chapel.output
 chapel.tab.c
