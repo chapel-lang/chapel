@@ -32,6 +32,7 @@ config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from G
 
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
+config const testMode             = false;
 
 config const MAX_THREADS:  int = 20;
 config const MIN_THREADS:  int = MAX_THREADS/4;
@@ -294,7 +295,7 @@ def main {
   created = create_tree(root);
   t_create.stop();
 
-  if parallel then writeln("  threads_spawned= ", threads_spawned);
+  if parallel && !testMode then writeln("  threads_spawned= ", threads_spawned);
   threads_spawned = 0;
 
   writeln("Performing tree traversal..");
@@ -302,10 +303,11 @@ def main {
   counted = dfs_count(root);
   t_dfs.stop();
 
-  if parallel then writeln("  threads_spawned= ", threads_spawned);
+  if parallel && !testMode then writeln("  threads_spawned= ", threads_spawned);
  
   writeln();
   writeln("Total nodes: Created = ", created, ", ", "Counted = ", counted);
-  writeln("Time: t_create= ", t_create.elapsed(), " (", created/t_create.elapsed(), " nodes/sec)",
-      ", t_dfs = ", t_dfs.elapsed(), " (", counted/t_dfs.elapsed(), " nodes/sec)");
+  if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
+          " (", created/t_create.elapsed(), " nodes/sec)", ", t_dfs = ", t_dfs.elapsed(),
+          " (", counted/t_dfs.elapsed(), " nodes/sec)");
 }

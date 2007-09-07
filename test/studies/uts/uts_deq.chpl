@@ -33,6 +33,7 @@ config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from G
 
 config const distrib: NodeDistrib = Geometric;
 config const geoDist: GeoDistrib  = GeoFixed;
+config const testMode             = false;
 
 // Parallel search parameters
 config const MAX_THREADS:   int = 4;
@@ -54,7 +55,7 @@ var terminated: single bool;
 
 /**** State of the load balancer ****/
 record LDBalanceState {
-  var throttle_period = threading_throttle;
+  var throttle_period: int = threading_throttle;
   var throttle: int;
 }
 
@@ -280,7 +281,8 @@ def main() {
   t_create.stop();
 
   writeln();
-  writeln("Threads spawned: ", threads_spawned);
+  if !testMode then writeln("Threads spawned: ", threads_spawned);
   writeln("Tree size = ", readXX(global_count), ", depth = ", readXX(global_maxDepth));
-  writeln("Time: t_create= ", t_create.elapsed(), " (", readXX(global_count)/t_create.elapsed(), " nodes/sec)");
+  if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
+          " (", readXX(global_count)/t_create.elapsed(), " nodes/sec)");
 }
