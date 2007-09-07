@@ -407,18 +407,6 @@ static void flatten_primary_methods(FnSymbol* fn) {
 }
 
 
-static void add_this_formal_to_method(FnSymbol* fn) {
-  return;
-  if (fn->hasPragma("ref this")) {
-    DefExpr* thisDef = fn->_this->defPoint;
-    Expr* type = thisDef->exprType;
-    CallExpr* ref = new CallExpr("ref");
-    thisDef->exprType->replace(ref);
-    ref->insertAtTail(type);
-  }
-}
-
-
 static void change_cast_in_where(FnSymbol* fn) {
   if (fn->where) {
     Vec<BaseAST*> asts;
@@ -557,7 +545,6 @@ void cleanup(void) {
         }
       } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
-        add_this_formal_to_method(fn);
         change_cast_in_where(fn);
       }
     }
