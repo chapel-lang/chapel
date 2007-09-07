@@ -121,7 +121,7 @@ sub collect_logs {
     systemd ("grep -a '^Future' $fin_log >> $fin_log.summary");
 
     # Count stuff
-    $successes = `grep -a "^\\[Success matching" $fin_log.summary | wc -l`;
+    $successes = `grep -a "^\\[Success matching" $fin_log | wc -l`;
     $successes =~ s/\s//g;
     ($successes, $junk) = split (/\s+/, $successes, 2);
     $failures = `grep -a "^\\[Error" $fin_log.summary | wc -l`;
