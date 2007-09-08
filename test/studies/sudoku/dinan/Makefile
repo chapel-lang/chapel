@@ -1,18 +1,22 @@
-CC=chpl
-CCFLAGS=-O --no-bounds-checks
+CHPL=chpl
+CHPLFLAGS=-O --no-bounds-checks
 
-TARGETS=sudoku sudoku-smart sudoku-simple
+MAKEFLAGS = --no-print-directory
+TARGETS   = sudoku sudoku-smart sudoku-simple
 
 all: $(TARGETS)
 
 sudoku: sudoku.chpl
-	$(CC) $(CCFLAGS) -o $@ $+
+	$(CHPL) $(CHPLFLAGS) -o $@ $+
 
 sudoku-smart: sudoku-smart.chpl
-	$(CC) $(CCFLAGS) -o $@ $+
+	$(CHPL) $(CHPLFLAGS) -o $@ $+
 
 sudoku-simple: sudoku-simple.chpl
-	$(CC) $(CCFLAGS) -o $@ $+
+	$(CHPL) $(CHPLFLAGS) -o $@ $+
+
+test: all
+	./sudoku-simple easy.dat
 
 clean:
 	rm -f $(TARGETS)
