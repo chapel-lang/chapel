@@ -283,8 +283,7 @@ if (!($suppressions eq "")) {
 
 if ($runtests == 1) {
     mysystem("cp $chplhome/test/CHAP09 $testdir/", "copying CHAP09 file", 1, 1);
-    mysystem("cp $chplhome/test/MEMORY $testdir/", "copying CHAP09 file", 1, 1);
-    $status = mysystem("cd $testdir && ./paratest.server.pl -nodefile CHAP09 -dirfile MEMORY $testflags", "running standard tests", 0, 0);
+    $status = mysystem("cd $testdir && ./paratest.server.pl -nodefile CHAP09 $testflags", "running standard tests", 0, 0);
 
 
 
