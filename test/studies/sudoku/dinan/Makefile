@@ -1,7 +1,6 @@
-CHPL=chpl
-CHPLFLAGS=-O --no-bounds-checks
+CHPL      = chpl
+CHPLFLAGS = -O --no-bounds-checks
 
-MAKEFLAGS = --no-print-directory
 TARGETS   = sudoku sudoku-smart sudoku-simple
 
 all: $(TARGETS)
@@ -15,7 +14,8 @@ sudoku-smart: sudoku-smart.chpl
 sudoku-simple: sudoku-simple.chpl
 	$(CHPL) $(CHPLFLAGS) -o $@ $+
 
-test: all
+test:
+	@make CHPL=$(CHPL) > /dev/null
 	./sudoku-simple easy.dat
 
 clean:

@@ -1,6 +1,3 @@
-chpl -O --no-bounds-checks -o sudoku sudoku.chpl
-chpl -O --no-bounds-checks -o sudoku-smart sudoku-smart.chpl
-chpl -O --no-bounds-checks -o sudoku-simple sudoku-simple.chpl
 ./sudoku-simple easy.dat
 Reading board from: easy.dat
 
