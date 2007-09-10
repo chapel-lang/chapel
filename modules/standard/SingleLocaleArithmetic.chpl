@@ -399,6 +399,6 @@ def SingleLocaleArithmeticArray.writeThis(f: Writer) {
 def _intersect(a: SingleLocaleArithmeticDomain, b: SingleLocaleArithmeticDomain) {
   var c = SingleLocaleArithmeticDomain(rank=a.rank, dim_type=a.dim_type, stridable=a.stridable);
   for param i in 1..a.rank do
-    c.ranges(i) = _intersect(a.dim(i), b.dim(i));
+    c.ranges(i) = a.dim(i)(b.dim(i));
   return c;
 }

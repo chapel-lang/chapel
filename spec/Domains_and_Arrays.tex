@@ -518,10 +518,9 @@ range per dimension.  Square brackets should be used for
 multidimensional domains, while either square brackets or parenthesis
 can be used for 1D domains.  
 
-The result is a subdomain of the domain being sliced as described in
-Section~\rsec{Subdomains}.  The indices described by each range must
-be legal indices for accessing the corresponding dimension of the
-domain.  Partially unbounded or completely unbounded ranges may be
+The result is a subdomain of the domain being sliced, as described
+in~\rsec{Subdomains}, as defined by the intersection of the two
+domains.  Partially unbounded or completely unbounded ranges may be
 used to specify that the slice should extend to the domain's lower
 and/or upper bound.
 

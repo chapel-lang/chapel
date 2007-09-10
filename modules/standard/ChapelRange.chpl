@@ -50,34 +50,85 @@ record range {
   def high: eltType return _high;
   def stride: int return _stride;
 
-  def this(subrange: range(?eltType, ?boundedness, ?stridable)) {
-    if (stride != 1 || _stride != 1) {
-      halt("range slicing not supported for strided ranges yet");
+  //
+  // return the intersection of this and other
+  // the type of the returned range is determined by
+  //   taking the eltType of other
+  //   setting the boundedType appropriately
+  //   setting stridable to true if either this or other is stridable
+  //
+  def this(other: range(?eltType, ?boundedType, ?stridable)) {
+
+    // return true if r has a low bound
+    def hasLow(r) param
+      return r.boundedType == bounded || r.boundedType == boundedLow;
+
+    // return true if r has a high bound
+    def hasHigh(r) param
+      return r.boundedType == bounded || r.boundedType == boundedHigh;
+
+    // determine boundedType of result
+    def computeBoundedType(r1, r2) param {
+      param low = hasLow(r1) || hasLow(r2);
+      param high = hasHigh(r1) || hasHigh(r2);
+      if low && high then
+        return bounded;
+      else if low then
+        return boundedLow;
+      else if high then
+        return boundedHigh;
+      else
+        return boundedNone;
     }
-    if ((boundedType == bounded) && (_high < _low)) then 
-      return range(eltType, bounded, stridable:bool, _low:eltType, _high:eltType, _stride:eltType);
-//    Why can't above return statement return this?  A function
-//    resolution error results if return this is used, complaining
-//    that there are multiple return types.
-    if (boundedness == bounded) {
-      if (subrange.low >= low && subrange.high <= high) {
-        return range(eltType, bounded, stridable, subrange.low, subrange.high,
-                     subrange.stride);
-      } else {
-        halt("range slice out of bounds: ", subrange);
-        return range(eltType, bounded, stridable);
+
+    // Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
+    // given two non-negative integers u and v
+    // returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
+    def extendedEuclid(u: int, v: int) {
+      var U = (1, 0, u);
+      var V = (0, 1, v);
+      while V(3) != 0 {
+        (U, V) = let q = U(3)/V(3) in (V, U - V * q);
       }
-    } else if (boundedness == boundedLow) {
-      return range(eltType, bounded, stridable, subrange.low, _high,
-                   subrange.stride);
-    } else if (boundedness == boundedHigh) {
-      return range(eltType, bounded, stridable, _low, subrange.high, 
-                   subrange.stride);
-    } else if (boundedness == boundedNone) {
-      return range(eltType, bounded, stridable, _low, _high, subrange.stride);
-    } else {
-      compilerError("unexpected boundedness case in range.this()");
+      return (U(3), U(1));
     }
+
+    var result: range(eltType,
+                      computeBoundedType(this, other),
+                      this.stridable | other.stridable);
+
+    var low1 = if hasLow(this) then this._low:eltType else other._low;
+    var high1 = if hasHigh(this) then this._high:eltType else other._high;
+    var stride1 = this.stride;
+
+    var low2 = if hasLow(other) then other._low else this._low:eltType;
+    var high2 = if hasHigh(other) then other._high else this._high:eltType;
+    var stride2 = other.stride;
+
+    var (g, x) = extendedEuclid(stride1, stride2);
+
+    if abs(low1 - low2) % g:eltType != 0 {
+      // empty intersection, return degenerate result
+      result._high = min(low1, low2);
+      result._low = max(high1, high2);
+      result._stride = stride1 * stride2 / g;
+    } else {
+      // non-empty intersection
+      result._low = max(low1, low2);
+      result._high = min(high1, high2);
+      result._stride = stride1 * stride2 / g;
+      var align = low1 + (low2 - low1) * x:eltType * stride1:eltType / g:eltType;
+      var diff = result._low - align;
+      var off = abs(diff) % result._stride:eltType;
+      if off != 0 {
+        if diff < 0 then
+          result._low += off;
+        else
+          result._low += result._stride:eltType - off;
+      }
+    }
+
+    return result;
   }
 
   def these() {
@@ -220,52 +271,6 @@ def range._expand(i : int) {
   if boundedType != bounded then
     compilerError("expand is not supported on unbounded ranges");
   return _low-i.._high+i by _stride;
-}
-
-
-def _intersect(a: range, b: range) {
-  if (a.boundedType != bounded) | (b.boundedType != bounded) then
-    compilerError("insersection not defined on unbounded ranges");
-  var g, x: int;
-  (g, x) = _extended_euclid(a._stride, b._stride);
-  var gg = g:a.eltType;
-  var xx = x:a.eltType;
-  var as = (a._stride):a.eltType;
-  if abs(a._low - b._low) % gg != 0 then
-    return 1..0:a.eltType by 1;
-  var low = max(a._low, b._low);
-  var high = min(a._high, b._high);
-  var stride = a._stride * b._stride / g;
-  var alignment = a._low + (b._low - a._low) * xx * as / gg;
-  if alignment == 0 then
-    alignment = stride:a.eltType;
-  low = low + low % alignment;
-  return low..high by stride;
-}
-
-// Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
-// given two non-negative integers u and v
-// returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
-def _extended_euclid(u: int, v: int) {
-  var u1 = 1;
-  var u2 = 0;
-  var u3 = u;
-  var v1 = 0;
-  var v2 = 1;
-  var v3 = v;
-  while v3 != 0 {
-    var q = u3 / v3;
-    var t1 = u1 - v1 * q;
-    var t2 = u2 - v2 * q;
-    var t3 = u3 - v3 * q;
-    u1 = v1;
-    u2 = v2;
-    u3 = v3;
-    v1 = t1;
-    v2 = t2;
-    v3 = t3;
-  }
-  return (u3, u1);
 }
 
 

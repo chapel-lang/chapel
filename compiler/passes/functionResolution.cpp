@@ -2275,8 +2275,11 @@ postFold(Expr* expr) {
     if (FnSymbol* fn = call->isResolved()) {
       if (fn->isParam || fn->canParam) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
-        if (ret->immediate) {
+        if (ret && ret->immediate) {
           result = new SymExpr(ret);
+          expr->replace(result);
+        } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
+          result = new SymExpr(es);
           expr->replace(result);
         } else if (fn->isParam) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
