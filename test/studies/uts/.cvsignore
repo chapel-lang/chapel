@@ -1,0 +1,7 @@
+*.tmp
+a.out
+output
+uts-deq
+uts-deq-seq
+uts-rec
+uts-rec-seq

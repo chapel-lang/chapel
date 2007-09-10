@@ -1,0 +1,6 @@
+*.tmp
+a.out
+output
+sudoku
+sudoku-simple
+sudoku-smart
