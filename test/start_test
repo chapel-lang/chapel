@@ -407,6 +407,7 @@ limit stacksize 8192k
 set execopts = ""
 set compiler = ""
 set compopts = ""
+set launchcmd = ""
 set startdir = "$testdir"
 set onetest = ""
 set onetestpath = ""
