@@ -1504,12 +1504,14 @@ resolveCall(CallExpr* call) {
     makeNoop(call);
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
-    Symbol* var = toSymbol(sym->var);
+    Type* type = sym->var->type;
+    if (isReference(type))
+      type = getValueType(type);
     int size = 0;
-    for (int i = 0; i < var->type->substitutions.n; i++) {
-      if (var->type->substitutions.v[i].key) {
-        if (!strcmp("size", toSymbol(var->type->substitutions.v[i].key)->name)) {
-          size = toVarSymbol(var->type->substitutions.v[i].value)->immediate->int_value();
+    for (int i = 0; i < type->substitutions.n; i++) {
+      if (type->substitutions.v[i].key) {
+        if (!strcmp("size", toSymbol(type->substitutions.v[i].key)->name)) {
+          size = toVarSymbol(type->substitutions.v[i].value)->immediate->int_value();
           break;
         }
       }

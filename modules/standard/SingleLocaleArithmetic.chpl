@@ -306,8 +306,19 @@ class SingleLocaleArithmeticArray: BaseArray {
     }
   }
 
+  def checkSlice(d) {
+    if rank != d.size then
+      halt("array rank change not supported");
+    for param i in 1..rank {
+      if d(i).boundedType == bounded then
+        if !_in(dom.dim(i), d(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", d(i));
+      if d(i)._stride % dom.dim(i)._stride != 0 then
+        halt("stride of array slice is not multiple of stride in dimension ", i);
+    }
+  }
+
   def slice(d: SingleLocaleArithmeticDomain) {
-    checkSlice(d);
     var alias = SingleLocaleArithmeticArray(eltType, rank, dim_type, d.stridable, reindexed, d, noinit=true);
     alias.data = data;
     alias.size = size;

@@ -116,14 +116,17 @@ record _domain {
       yield i;
   }
 
-  // slicing a domain using a varargs set of ranges of rank elements
-  def this(i: range(?rngDimType,?bnd,?str) ... rank) {
+  def this(d: _domain) {
+    return this((...d._value.ranges));
+  }
+
+  def this(i: range(?eltType,?boundedType,?stridable) ...rank) {
     // assuming stridable dependent on incoming ranges for now;
     // really should check stridablility of current domain as well to be
     // correct.
-    var newRanges: rank*range(_dim_index_type, bounded, stridable=_any_stridable(i));
-    for param d in 1..rank {
-      newRanges(d) = _value.dim(d)(i(d));
+    var newRanges: rank*range(_dim_index_type, bounded, _any_stridable(i));
+    for param j in 1..rank {
+      newRanges(j) = _value.dim(j)(i(j));
     }
     // this should really be something like:
     //           var subdomainClass = dist.buildDomain(...)
@@ -304,14 +307,16 @@ record _array {
 
   pragma "valid lvalue"
   def this(d: _domain) {
-    var x = _value.slice(d._value);
+    _value.checkSlice(d._value);
+    var x = _value.slice(_dom(d)._value);
     return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
   pragma "valid lvalue"
-  def this(i: range(?rangeDimType,?bnd,?stridable) ...rank) {
-    var d = _dom[(...i)];
-    return this(d);
+  def this(rs: range(?_eltType,?boundedType,?stridable) ...rank) {
+    _value.checkSlice(rs);
+    var x = _value.slice(_dom((...rs))._value);
+    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
   }
 
   def this(i: _index_type) var
