@@ -27,7 +27,7 @@ Enabling Chapel Features in Vim:
 -------------------------------
 
 Vim commands are denoted ": command".  Any of these commands can be issued
-automatically by adding them to you ".vimrc" file.
+automatically by adding them to your ".vimrc" file.
 
   - Enable automatic filetype detection:
 
