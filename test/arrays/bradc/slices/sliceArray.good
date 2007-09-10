@@ -28,4 +28,4 @@ A[<slice>] is:
 82 83 84 85 86 87 88 89 90
 92 93 94 95 96 97 98 99 100
 
-sliceArray.chpl:16: error: halt reached - array slice out of bounds in dimension 1: [0..9, 2..11]
+sliceArray.chpl:16: error: halt reached - array slice out of bounds in dimension 1: 0..9
