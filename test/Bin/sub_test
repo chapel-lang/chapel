@@ -153,6 +153,12 @@ else
   set valgrndbin = ""
 endif
 
+if ("$LAUNCHCMD" == "") then
+  set launchcmd = ""
+else
+  set launchcmd = "$LAUNCHCMD "
+endif
+
 if ($CHPL_TEST_INTERP == "on") then
     set execute = "no"
     set futureSuffix = "ifuture"
@@ -390,11 +396,11 @@ foreach chplsrc ($testsrc)
 	        set redirectin = "/dev/null"
 	    endif
 
-	    echo \[Executing program $valgrndbin./$binfile "$execopts" \< $redirectin at `date +"%H:%M:%S"`\]
+	    echo \[Executing program $launchcmd$valgrndbin./$binfile "$execopts" \< $redirectin at `date +"%H:%M:%S"`\]
 	    # Append program output to that of the 
 	    # compiler (in case warning were output
 	    # by compiler)
-	    $timedexec $timeout "$valgrndbin./$binfile $execopts" < $redirectin >>& $execlog
+	    $timedexec $timeout "$launchcmd$valgrndbin./$binfile $execopts" < $redirectin >>& $execlog
             set execstatus = $status
 
             if ( $execstatus == 222) then

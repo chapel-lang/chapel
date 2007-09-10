@@ -112,6 +112,9 @@ if ($logdir eq "" || $statdir eq "") {
     print "Error: CHPL_NIGHTLY_LOGDIR and CHPL_NIGHTLY_STATDIR must be set\n";
     exit 1;
 }
+
+$launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
+
 if ($debug == 1) {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$platform-debug.dat";
@@ -235,7 +238,8 @@ if ($uwusername eq "") {
     $uwusername = $user;
 }
 $cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
-mysystem("cd $tmpdir && cvs -d $cvsroot checkout nightly", "cvs checkout", 1, 1);
+#mysystem("cd $tmpdir && cvs -d $cvsroot checkout nightly", "cvs checkout", 1, 1);
+mysystem("cd $tmpdir && cp -r /ptmp/diten/chapel .", "cp", 1, 1);
 
 
 #
@@ -302,6 +306,9 @@ if ($gasnet == 1) {
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
+}
+if ($launchcmd) {
+    $testflags = "-launchcmd \"$launchcmd\" $testflags";
 }
 
 if ($runtests == 1) {
