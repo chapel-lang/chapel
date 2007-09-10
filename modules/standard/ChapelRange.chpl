@@ -50,6 +50,26 @@ record range {
   def high: eltType return _high;
   def stride: int return _stride;
 
+  def alignLow(alignment: eltType) {
+    var s = abs(_stride):eltType, d = abs(_low-alignment) % s;
+    if d != 0 {
+      if _low - alignment < 0 then
+        _low += d;
+      else
+        _low += s - d;
+    }
+  }
+
+  def alignHigh(alignment: eltType) {
+    var s = abs(_stride):eltType, d = abs(_high-alignment) % s;
+    if d != 0 {
+      if _high - alignment > 0 then
+        _high -= d;
+      else
+        _high -= s - d;
+    }
+  }
+
   //
   // return the intersection of this and other
   // the type of the returned range is determined by
@@ -93,53 +113,38 @@ record range {
       return (U(3), U(1));
     }
 
-    var result: range(eltType,
-                      computeBoundedType(this, other),
-                      this.stridable | other.stridable);
+    var lo1 = if hasLow(this) then this._low:eltType else other._low;
+    var hi1 = if hasHigh(this) then this._high:eltType else other._high;
+    var st1 = abs(this.stride);
+    var al1 = if this.stride < 0 then hi1 else lo1;
 
-    var low1 = if hasLow(this) then this._low:eltType else other._low;
-    var high1 = if hasHigh(this) then this._high:eltType else other._high;
-    var stride1 = abs(this.stride);
+    var lo2 = if hasLow(other) then other._low else this._low:eltType;
+    var hi2 = if hasHigh(other) then other._high else this._high:eltType;
+    var st2 = abs(other.stride);
+    var al2 = if this.stride < 0 then hi2 else lo2;
 
-    var low2 = if hasLow(other) then other._low else this._low:eltType;
-    var high2 = if hasHigh(other) then other._high else this._high:eltType;
-    var stride2 = abs(other.stride);
+    var (g, x) = extendedEuclid(st1, st2);
 
-    var (g, x) = extendedEuclid(stride1, stride2);
+    var result = range(eltType,
+                       computeBoundedType(this, other),
+                       this.stridable | other.stridable,
+                       max(lo1, lo2),
+                       min(hi1, hi2),
+                       st1 * st2 / g);
 
-    if abs(low1 - low2) % g:eltType != 0 {
+    if abs(lo1 - lo2) % g:eltType != 0 {
       // empty intersection, return degenerate result
-      result._high = min(low1, low2);
-      result._low = max(high1, high2);
-      result._stride = stride1 * stride2 / g;
+      result._low <=> result._high;
     } else {
       // non-empty intersection
-      result._low = max(low1, low2);
-      result._high = min(high1, high2);
-      result._stride = stride1 * stride2 / g;
 
-      if other._stride > 0 {
-        var align = low1 + (low2 - low1) * x:eltType * stride1:eltType / g:eltType;
-        var diff = result._low - align;
-        var off = abs(diff) % result._stride:eltType;
-        if off != 0 {
-          if diff < 0 then
-            result._low += off;
-          else
-            result._low += result._stride:eltType - off;
-        }
-      } else {
-        var align = high1 + (high2 - high1) * x:eltType * stride1:eltType / g:eltType;
-        var diff = result._high - align;
-        var off = abs(diff) % result._stride:eltType;
-        if off != 0 {
-          if diff > 0 then
-            result._high -= off;
-          else
-            result._high -= result._stride:eltType - off;
-        }
+      if other.stride < 0 then
         result._stride = -result._stride;
-      }
+
+      var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+
+      result.alignLow(al);
+      result.alignHigh(al);
     }
 
     return result;
