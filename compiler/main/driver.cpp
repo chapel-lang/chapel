@@ -15,6 +15,7 @@
 
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused);
+static void verifySaveCDir(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
@@ -101,7 +102,7 @@ static ArgumentDescription arg_desc[] = {
  {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
- {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
  {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
  {"make", ' ', NULL, "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
 
@@ -272,6 +273,15 @@ static void printStuff(void) {
   }
   if (shouldExit) {
     clean_exit(0);
+  }
+}
+
+
+void verifySaveCDir(ArgumentState* arg, char* unused) {
+  if (saveCDir[0] == '-') {
+    USR_FATAL("--savec takes a directory name as its argument\n"
+              "       (you specified '%s', assumed to be another flag)",
+              saveCDir);
   }
 }
 

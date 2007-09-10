@@ -71,11 +71,10 @@ static void createTmpDir(void) {
     commandExplanation = "ensuring --savec directory exists";
   }
 
-  const char* mkdircommand = "mkdir ";
-  const char* redirect = " > /dev/null 2>&1";
-  const char* command = stringcat(mkdircommand, intDirName, redirect);
+  const char* mkdircommand = "mkdir -p ";
+  const char* command = stringcat(mkdircommand, intDirName);
 
-  mysystem(command, commandExplanation, 1);
+  mysystem(command, commandExplanation);
 }
 
 

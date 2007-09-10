@@ -1,0 +1,4 @@
+Makefile
+*.c
+*.h
+chplmake.out
