@@ -1,0 +1,4 @@
+error message: forgetting to specify a directory after --savec should be an error
+Before now, if an option follows the --savec option, the compiler crashes.
+Instead, this should be detected as an error, with an appropriate message
+telling the user what's missing.
