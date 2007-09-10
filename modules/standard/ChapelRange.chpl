@@ -99,11 +99,11 @@ record range {
 
     var low1 = if hasLow(this) then this._low:eltType else other._low;
     var high1 = if hasHigh(this) then this._high:eltType else other._high;
-    var stride1 = this.stride;
+    var stride1 = abs(this.stride);
 
     var low2 = if hasLow(other) then other._low else this._low:eltType;
     var high2 = if hasHigh(other) then other._high else this._high:eltType;
-    var stride2 = other.stride;
+    var stride2 = abs(other.stride);
 
     var (g, x) = extendedEuclid(stride1, stride2);
 
@@ -117,14 +117,28 @@ record range {
       result._low = max(low1, low2);
       result._high = min(high1, high2);
       result._stride = stride1 * stride2 / g;
-      var align = low1 + (low2 - low1) * x:eltType * stride1:eltType / g:eltType;
-      var diff = result._low - align;
-      var off = abs(diff) % result._stride:eltType;
-      if off != 0 {
-        if diff < 0 then
-          result._low += off;
-        else
-          result._low += result._stride:eltType - off;
+
+      if other._stride > 0 {
+        var align = low1 + (low2 - low1) * x:eltType * stride1:eltType / g:eltType;
+        var diff = result._low - align;
+        var off = abs(diff) % result._stride:eltType;
+        if off != 0 {
+          if diff < 0 then
+            result._low += off;
+          else
+            result._low += result._stride:eltType - off;
+        }
+      } else {
+        var align = high1 + (high2 - high1) * x:eltType * stride1:eltType / g:eltType;
+        var diff = result._high - align;
+        var off = abs(diff) % result._stride:eltType;
+        if off != 0 {
+          if diff > 0 then
+            result._high -= off;
+          else
+            result._high -= result._stride:eltType - off;
+        }
+        result._stride = -result._stride;
       }
     }
 
