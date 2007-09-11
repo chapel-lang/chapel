@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use File::Basename;
+
 $valgrind = 0;
 $interpret = 0;
 $printusage = 1;
@@ -68,19 +70,6 @@ if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
 }
 $today = `date +%w-%a`; chomp($today);
-$platform = `uname -s`;
-chomp($platform);
-$platform = lc($platform);
-if ($platform eq "linux") {
-    $machine = `uname -m`;
-    chomp($machine);
-    if ($machine eq "x86_64") {
-        $platform = "linux64";
-    }
-} elsif ($platform eq "cygwin_nt-5.1") {
-    $platform = "cygwin";
-}
-
 
 #
 # directory locations
@@ -113,6 +102,28 @@ if ($logdir eq "" || $statdir eq "") {
     exit 1;
 }
 
+
+$testbindirname = dirname($0);
+$utildir = "$testbindirname/../../util";
+
+
+
+#
+# platform variables
+#
+$platform = `$utildir/platform`;
+chomp($platform);
+$fullplatform = "$platform";
+$chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
+if ($chplcrossplatform ne "") {
+    $fullplatform = "$chplcrossplatform/$fullplatform";
+    $compilername = $ENV{'PE_ENV'};
+    if ($compilername ne "") {
+        $fullplatform = "$fullplatform/\L$compilername";
+    }
+}
+
+
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
 if ($debug == 1) {
@@ -144,6 +155,8 @@ if ($performance == 1) {
     $subjectid = "GASNet";
 } elsif ($baseline == 1) {
     $subjectid = "Baseline";
+} elsif ($runtests == 0) {
+    $subjectid = "Build-only";
 } else {
     $subjectid = "";
 }
@@ -265,6 +278,8 @@ if ($platform eq "cygwin") {
 }
 
 
+
+
 #
 # build stuff
 #
@@ -274,15 +289,11 @@ if ($gasnet == 1) {
 }
 mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 1, 1);
 mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 1, 1);
-#if ($valgrind == 1) {
-#    mysystem("cd $chapeldir && $make nogc", "making no-GC version", 1, 1);
-#}
 
 
 #
 # run tests
 #
-#`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
 
 $testflags = "-logfile $rawlog";
 if ($interpret == 1) {
@@ -310,7 +321,26 @@ if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
 }
 
-if ($runtests == 1) {
+if ($runtests == 0) {
+    $shortstatus = "Passed";
+    if ($debug == 1) {
+        $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
+        $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+    } else {
+        $mailsubject = "Chapel $subjectid Nightly ($fullplatform): $shortstatus";
+        $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+    }
+    
+    open(MAIL, $mailcommand);
+    
+    print MAIL "=== Summary ==========================================================\n";
+    print MAIL "Built compiler and runtime but did not run tests\n";
+    print MAIL "======================================================================\n";
+    print MAIL "\n";
+    
+    close(MAIL);
+    
+} else {
     $status = mysystem("cd $testdir && ./start_test $testflags", "running standard tests", 0, 0);
 
 
@@ -370,15 +400,6 @@ if ($runtests == 1) {
         $shortstatus = "build/test failed";
     }
 
-    $fullplatform = "$platform";
-    $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
-    $compilername = $ENV{'PE_ENV'};
-    if ($chplcrossplatform ne "") {
-      $fullplatform = "$fullplatform/`$chapeldir/util/platform`";
-      if ($compilername ne "") {
-        $fullplatform = "$fullplatform/\L$compilername";
-      }
-    }
     if ($debug == 1) {
         $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
     } else {
@@ -495,16 +516,6 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            $fullplatform = "$platform";
-            $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
-            $compilername = $ENV{'PE_ENV'};
-            if ($chplcrossplatform ne "") {
-              $fullplatform = "$fullplatform/`$chapeldir/util/platform`";
-              if ($compilername ne "") {
-                $fullplatform = "$fullplatform/\L$compilername";
-              }
-            }
-
             if ($debug == 1) {
                 $mailsubject = "Chapel: $subjectid Debug ($fullplatform): Failure notice";
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
