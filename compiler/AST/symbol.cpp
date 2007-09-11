@@ -416,6 +416,7 @@ ArgSymbol::copyInner(ASTMap* map) {
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->isGeneric = isGeneric;
   ps->cname = cname;
+  ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
   ps->isTypeVariable = isTypeVariable;
   return ps;
