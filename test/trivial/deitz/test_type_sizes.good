@@ -1,0 +1,15 @@
+int(8): 1
+int(16): 2
+int(32): 4
+int(64): 8
+uint(8): 1
+uint(16): 2
+uint(32): 4
+uint(64): 8
+bool: 4
+real(32): 4
+real(64): 8
+imag(32): 4
+imag(64): 8
+complex(64): 8
+complex(128): 16
