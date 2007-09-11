@@ -1,0 +1,8 @@
+a.out
+*.tmp
+output
+test_diff
+test_gaxpy
+test_likepy
+test_mul
+test_showboxes
