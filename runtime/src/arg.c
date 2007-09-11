@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "arg.h"
+#include "chplcast.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"
@@ -219,9 +220,9 @@ static void unexpectedArg(const char* currentArg) {
 static _int32 _argNumLocales = 0;
 
 static void parseNumLocales(const char* numPtr) {
-  char* stopPtr;
-  _argNumLocales = strtol(numPtr, &stopPtr, 10);
-  if (*stopPtr != '\0') {
+  int valid;
+  _argNumLocales = _string_to_int32_precise(numPtr, &valid);
+  if (!valid) {
     char* message = _glom_strings(3, "\"", numPtr, 
                                   "\" is not a valid number of locales"
                                   );

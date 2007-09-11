@@ -7,6 +7,145 @@
 #include "chplrt.h"
 #include "chpltypes.h"
 #include "chplfp.h"
+#include "error.h"
+
+_int8 _string_to_int8_precise(const char* str, int* valid) {
+  char* endPtr;
+  _int8 val = (_int8)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_int16 _string_to_int16_precise(const char* str, int* valid) {
+  char* endPtr;
+  _int16 val = (_int16)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_int32 _string_to_int32_precise(const char* str, int* valid) {
+  char* endPtr;
+  _int32 val = (_int32)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_int64 _string_to_int64_precise(const char* str, int* valid) {
+  _int64 val;
+  int numitems = sscanf(str, "%Ld", &val);
+  *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
+  return val;
+}
+
+_int8 _string_to_int8(const char* str) {
+  int valid;
+  _int8 val;
+  val = _string_to_int8_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to int(8)", 0, 0);
+  }
+  return val;
+}
+
+_int16 _string_to_int16(const char* str) {
+  int valid;
+  _int16 val;
+  val = _string_to_int16_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to int(16)", 0, 0);
+  }
+  return val;
+}
+
+_int32 _string_to_int32(const char* str) {
+  int valid;
+  _int32 val;
+  val = _string_to_int32_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to int(32)", 0, 0);
+  }
+  return val;
+}
+
+_int64 _string_to_int64(const char* str) {
+  int valid;
+  _int64 val;
+  val = _string_to_int64_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to int(64)", 0, 0);
+  }
+  return val;
+}
+
+_uint8 _string_to_uint8_precise(const char* str, int* valid) {
+  char* endPtr;
+  _uint8 val = (_uint8)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_uint16 _string_to_uint16_precise(const char* str, int* valid) {
+  char* endPtr;
+  _uint16 val = (_uint16)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_uint32 _string_to_uint32_precise(const char* str, int* valid) {
+  char* endPtr;
+  _uint32 val = (_uint32)strtol(str, &endPtr, 10);
+  *valid = (*endPtr == '\0');
+  return val;
+}
+
+_uint64 _string_to_uint64_precise(const char* str, int* valid) {
+  _uint64 val;
+  int numitems = sscanf(str, "%Lu", &val);
+  *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
+  return val;
+}
+
+
+_uint8 _string_to_uint8(const char* str) {
+  int valid;
+  _uint8 val;
+  val = _string_to_uint8_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to uint(8)", 0, 0);
+  }
+  return val;
+}
+
+_uint16 _string_to_uint16(const char* str) {
+  int valid;
+  _uint16 val;
+  val = _string_to_uint16_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to uint(16)", 0, 0);
+  }
+  return val;
+}
+
+_uint32 _string_to_uint32(const char* str) {
+  int valid;
+  _uint32 val;
+  val = _string_to_uint32_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to uint(32)", 0, 0);
+  }
+  return val;
+}
+
+_uint64 _string_to_uint64(const char* str) {
+  int valid;
+  _uint64 val;
+  val = _string_to_uint64_precise(str, &valid);
+  if (!valid) {
+    _printError("Extra characters found when converting string to uint(64)", 0, 0);
+  }
+  return val;
+}
+
 
 /*
  *  string to complex

@@ -1,18 +1,28 @@
 #ifndef _chplcast_h_
 #define _chplcast_h_
 
-#include <stdlib.h>         // needed for strtoull
 #include "chpltypes.h"
 
+
+_int8 _string_to_int8_precise(const char* str, int* valid);
+_int16 _string_to_int16_precise(const char* str, int* valid);
+_int32 _string_to_int32_precise(const char* str, int* valid);
+_int64 _string_to_int64_precise(const char* str, int* valid);
+_uint8 _string_to_uint8_precise(const char* str, int* valid);
+_uint16 _string_to_uint16_precise(const char* str, int* valid);
+_uint32 _string_to_uint32_precise(const char* str, int* valid);
+_uint64 _string_to_uint64_precise(const char* str, int* valid);
+
 /* string to every other primitive type */
-#define _string_to_int8(s) ((_int8)strtoull((s), NULL, 10))
-#define _string_to_int16(s) ((_int16)strtoull((s), NULL, 10))
-#define _string_to_int32(s) ((_int32)strtoull((s), NULL, 10))
-#define _string_to_int64(s) ((_int64)strtoull((s), NULL, 10))
-#define _string_to_uint8(s) ((_uint8)strtoull((s), NULL, 10))
-#define _string_to_uint16(s) ((_uint16)strtoull((s), NULL, 10))
-#define _string_to_uint32(s) ((_uint32)strtoull((s), NULL, 10))
-#define _string_to_uint64(s) ((_uint64)strtoull((s), NULL, 10))
+_int8 _string_to_int8(const char* str);
+_int16 _string_to_int16(const char* str);
+_int32 _string_to_int32(const char* str);
+_int64 _string_to_int64(const char* str);
+_uint8 _string_to_uint8(const char* str);
+_uint16 _string_to_uint16(const char* str);
+_uint32 _string_to_uint32(const char* str);
+_uint64 _string_to_uint64(const char* str);
+
 #define _string_to_real32(s) ((_real32)atof(s))
 #define _string_to_real64(s) ((_real64)atof(s))
 #define _string_to_real128(s) ((_real128)atof(s))
@@ -21,6 +31,7 @@
 #define _string_to_imag128(s) ((_imag128)atof(s))
 #define _string_to_bool(s) (string_equal(s, "true"))
 _string _string_get_imag_part(_string s);
+
 
 /* every other primitive type to string */
 _string _int8_to_string(_int8 x);
