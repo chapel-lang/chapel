@@ -1,4 +1,4 @@
-./sudoku-simple easy.dat
+./sudoku-simple -nl 1 easy.dat
 Reading board from: easy.dat
 
 8 7 0 0 6 9 2 0 0

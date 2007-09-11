@@ -21,10 +21,10 @@ uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c brg_sha1.h
 
 test:
 	@$(MAKE) CHPL=$(CHPL) all > /dev/null
-	./uts-rec -stestMode=true $(TESTTREE)
-	./uts-rec-seq -stestMode=true $(TESTTREE)
-	./uts-deq -stestMode=true $(TESTTREE)
-	./uts-deq-seq -stestMode=true $(TESTTREE)
+	./uts-rec -nl 1 -stestMode=true $(TESTTREE)
+	./uts-rec-seq -nl 1 -stestMode=true $(TESTTREE)
+	./uts-deq -nl 1 -stestMode=true $(TESTTREE)
+	./uts-deq-seq -nl 1 -stestMode=true $(TESTTREE)
 
 clean:
 	rm -f $(TARGETS)

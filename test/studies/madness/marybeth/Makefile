@@ -47,11 +47,11 @@ test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
 
 test:
 	@$(MAKE) CHPL="$(CHPL)" CFLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
-	./test_diff
-	./test_gaxpy
-	./test_mul
-	./test_likepy
-	./test_showboxes
+	./test_diff -nl 1
+	./test_gaxpy -nl 1
+	./test_mul -nl 1
+	./test_likepy -nl 1
+	./test_showboxes -nl 1
 
 .PHONY: ps
 PSDIR = ps

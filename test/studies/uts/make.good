@@ -1,4 +1,4 @@
-./uts-rec -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
+./uts-rec -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
 UTS v2.1 - Unbalanced Tree Search (Parallel Chapel)
 Tree type: Geometric
 Tree shape parameters:
@@ -12,7 +12,7 @@ Performing tree creation..
 Performing tree traversal..
 
 Total nodes: Created = 3986, Counted = 3987
-./uts-rec-seq -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
+./uts-rec-seq -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
 UTS v2.1 - Unbalanced Tree Search (Sequential Chapel)
 Tree type: Geometric
 Tree shape parameters:
@@ -24,7 +24,7 @@ Performing tree creation..
 Performing tree traversal..
 
 Total nodes: Created = 3986, Counted = 3987
-./uts-deq -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
+./uts-deq -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
 UTS v2.1 - Unbalanced Tree Search (Parallel Chapel (DeQueue))
 Tree type: Geometric
 Tree shape parameters:
@@ -37,7 +37,7 @@ Parallel execution parameters:
 Performing parallel tree search...
 
 Tree size = 3987, depth = 5
-./uts-deq-seq -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
+./uts-deq-seq -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
 UTS v2.1 - Unbalanced Tree Search (Sequential Chapel (DeQueue))
 Tree type: Geometric
 Tree shape parameters:

@@ -1,4 +1,4 @@
-./test_diff
+./test_diff -nl 1
 Mad Chapel -- Differentiation Test
 
 ** Testing function 1
@@ -138,7 +138,7 @@ Evaluating dF4 on [0, 1]:
  -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 2.7e-14
  -- 0.90:  F_numeric()= 7.00800000  f_analytic()= 0.00000000 err= 7.0e+00  > thresh
  -- 1.00:  F_numeric()=-100.00000000  f_analytic()= 0.00000000 err=-1.0e+02  > thresh
-./test_gaxpy
+./test_gaxpy -nl 1
 Mad Chapel -- Gaxpy Test
 
 ** Testing function 1
@@ -240,7 +240,7 @@ Evaluating F-G on [0, 1]:
  -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 1.82574186 err=-1.8e+00  > thresh
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 1.58113883 err=-1.6e+00  > thresh
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 1.41421356 err=-1.4e+00  > thresh
-./test_mul
+./test_mul -nl 1
 Mad Chapel -- Multiplication Test
 
 ** Testing function 1
@@ -376,7 +376,7 @@ Evaluating F*F on [0, 1]:
  -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
  -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.4e-16
  -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err=-4.4e-16
-./test_likepy
+./test_likepy -nl 1
 
 
 
@@ -959,7 +959,7 @@ difference coefficients:
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.5e-32
  -- 0.95:  F_numeric()=-0.00000000  f_analytic()=-0.00000000 err=-8.1e-33
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.4e-32
-./test_showboxes
+./test_showboxes -nl 1
 Mad Chapel -- Show me the boxes
 
 F.norm2() = 1.0
