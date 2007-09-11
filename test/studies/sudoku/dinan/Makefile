@@ -15,7 +15,7 @@ sudoku-simple: sudoku-simple.chpl
 	$(CHPL) $(CHPLFLAGS) -o $@ $+
 
 test:
-	@make CHPL=$(CHPL) > /dev/null
+	@$(MAKE) CHPL=$(CHPL) > /dev/null
 	./sudoku-simple easy.dat
 
 clean:

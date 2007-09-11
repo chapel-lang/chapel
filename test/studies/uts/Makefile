@@ -20,7 +20,7 @@ uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c brg_sha1.h
 	$(CHPL) $(CHPLFLAGS) -o $@ -sparallel=false --serial $+
 
 test:
-	@make CHPL=$(CHPL) all > /dev/null
+	@$(MAKE) CHPL=$(CHPL) all > /dev/null
 	./uts-rec -stestMode=true $(TESTTREE)
 	./uts-rec-seq -stestMode=true $(TESTTREE)
 	./uts-deq -stestMode=true $(TESTTREE)
