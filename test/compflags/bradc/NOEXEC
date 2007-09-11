@@ -1,0 +1,5 @@
+None of these tests are designed to execute;
+And if any of them are tempted to be then we are in trouble
+until we switch to subversion because there's a directory
+called noexec which the Mac sees as being NOEXEC due to its
+case-insensitivity.
