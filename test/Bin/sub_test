@@ -367,6 +367,10 @@ foreach chplsrc ($testsrc)
 	# Compare output of program execution to expected 
 	#   program output
 	echo \[Success compiling $localdir/$chplsrc\]
+	if ($?CHPL_COMPONLY) then
+	    echo \[Note: Not executing or comparing the output due to -noexec flag\]
+	    continue
+	endif
 
 	set binfile = $execfile
 

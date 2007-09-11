@@ -43,6 +43,7 @@
 #   -launchcmd <launcher command>     ""
 #   -startdir  <test subdir>          .
 #   -norecurse
+#   -componly
 #   -onetest   <single test>          N/A
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
@@ -66,6 +67,11 @@
 # options that should be used on every invocation to the compiler.
 # Additional compiler options can be specified on a directory-by-
 # directory basis.
+#
+# The -componly option specifies that this testing run should only
+# be compiled and not executed; this causes success of a test to
+# be related to the success or failure of the compile step, not to
+# its execution.
 #
 # The -execopts option allows the user to specify a set of execution
 # options that should be used on every invocation of a program.  As
@@ -494,6 +500,11 @@ while ( $#argv > 0 )
                 shift
                 set recurse = 0
                 breaksw
+	case -componly:
+	case --componly:
+		shift
+		setenv CHPL_COMPONLY true
+		breaksw
         case -onetest:
         case --onetest:
                 shift
@@ -539,6 +550,7 @@ while ( $#argv > 0 )
                 echo "          -onetest"
 		echo "          -startdir ."
                 echo "          -norecurse"
+		echo "          -componly"
                 echo "          -performance"
                 echo "          -futures"
                 echo "          -futuresonly"
@@ -792,7 +804,11 @@ echo " " |& $tee -a $logfile
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
 set errormarker = "^\[Error"
-set successmarker = "^\[Success matching"
+if ($?CHPL_COMPONLY) then
+    set successmarker = "^\[Success compiling"
+else
+    set successmarker = "^\[Success matching"
+endif
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 grep "$errormarker" $logfile |& $tee -a $logfile.summary
