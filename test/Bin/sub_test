@@ -194,8 +194,6 @@ if (-r ./USEMAKE && $perftest == 0) then
         if ($makestatus == 222) then
             echo "[Error: Timed out make for $localdir/Makefile]"
             exit 0
-        else
-            echo "[Error: making test using $localdir/Makefile]"
         endif
     endif
     if ( ! -r $checkfile) then
