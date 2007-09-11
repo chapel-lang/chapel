@@ -32,7 +32,7 @@ _int32 _string_to_int32_precise(const char* str, int* valid) {
 
 _int64 _string_to_int64_precise(const char* str, int* valid) {
   _int64 val;
-  int numitems = sscanf(str, "%Ld", &val);
+  int numitems = sscanf(str, "%lld", &val);
   *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
   return val;
 }
@@ -100,7 +100,7 @@ _uint32 _string_to_uint32_precise(const char* str, int* valid) {
 
 _uint64 _string_to_uint64_precise(const char* str, int* valid) {
   _uint64 val;
-  int numitems = sscanf(str, "%Lu", &val);
+  int numitems = sscanf(str, "%llu", &val);
   *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
   return val;
 }
