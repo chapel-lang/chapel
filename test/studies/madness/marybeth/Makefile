@@ -24,6 +24,7 @@ TARGETS= test_diff       \
 
 all: $(TARGETS)
 
+FORCE:
 
 test_diff: $(SOURCES) test_diff.chpl MadAnalytics.chpl
 	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
@@ -45,7 +46,7 @@ test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
 	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
 
 test:
-	@make CHPL="$(CHPL)" CFLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
+	@$(MAKE) CHPL="$(CHPL)" CFLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
 	./test_diff
 	./test_gaxpy
 	./test_mul
