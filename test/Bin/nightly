@@ -8,6 +8,7 @@ $printusage = 1;
 $debug = 1;
 $runtests = 1;
 $examples = 0;
+$componly = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -32,6 +33,8 @@ while (@ARGV) {
         $baseline = 1;
     } elsif ($flag eq "-gasnet") {
         $gasnet = 1;
+    } elsif ($flag eq "-componly") {
+	$componly = 1;
     } else {
         $printusage = 1;
         last;
@@ -45,7 +48,7 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-notest|-cron] {[-valgrind|-interpret]}\n";
+    print "nightly [-debug|-notest|-cron] {[-valgrind] [-componly] [-performance]}\n";
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
@@ -55,6 +58,7 @@ if ($printusage == 1) {
     print "\t-performance : run performance tests\n";
     print "\t-baseline    : run baseline tests\n";
     print "\t-gasnet      : run gasnet regressions\n";
+    print "\t-componly    : only run the compiler, not the generated binary\n";
     exit 1;
 }
 
@@ -323,6 +327,9 @@ if ($baseline == 1) {
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
+}
+if ($componly == 1) {
+    $testflags = "$testflags -componly";
 }
 
 if ($runtests == 0) {
