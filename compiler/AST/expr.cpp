@@ -1095,7 +1095,7 @@ void CallExpr::codegen(FILE* outfile) {
       VarSymbol *vs;
       if (s &&
           (vs = toVarSymbol(s->var))) {
-        fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
+        fprintf( outfile, "%s = ", vs->cname);
         get(2)->codegen(outfile);
       } else {
         INT_FATAL(get(1), "invalid variable passed to SET_HEAPVAR");

@@ -62,7 +62,7 @@ if ($printusage == 1) {
 #
 # get uniquifiers
 #
-$pid = getpgrp();
+$pid = $$;
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
@@ -112,17 +112,21 @@ $utildir = "$testbindirname/../../util";
 # platform variables
 #
 $platform = `$utildir/platform`;
+
 chomp($platform);
 $fullplatform = "$platform";
 $chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
+chomp($chplcrossplatform);
 if ($chplcrossplatform ne "") {
     $fullplatform = "$chplcrossplatform/$fullplatform";
-    $compilername = $ENV{'PE_ENV'};
-    if ($compilername ne "") {
-        $fullplatform = "$fullplatform/\L$compilername";
-    }
 }
-
+if ($platform eq "xt-cnl") {
+  $compilername = $ENV{'PE_ENV'};
+  chomp($compilername);
+  if ($compilername ne "") {
+    $fullplatform = "$fullplatform/\L$compilername";
+  }
+}
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
