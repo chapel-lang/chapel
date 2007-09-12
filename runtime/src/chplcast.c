@@ -9,6 +9,10 @@
 #include "chplfp.h"
 #include "error.h"
 
+static int illegalFirstUnsChar(char c) {
+  return ((c <= '0' || c >= '9') && (c != '+'));
+}
+
 #define _define_string_to_int_precise(base, width, uns)                 \
   _##base##width _string_to_##base##width##_precise(const char* str,    \
                                                     int* invalid,       \
@@ -18,7 +22,7 @@
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
-    if (*invalid == 0 && uns && (*str <= '0' || *str >= '9')) {         \
+    if (*invalid == 0 && uns && illegalFirstUnsChar(*str)) {            \
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
@@ -37,7 +41,7 @@
     if (numitems == 1 || numitems == 2) {                               \
       if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
-        if (uns && (*str <= '0' || *str >= '9')) {                      \
+        if (uns && illegalFirstUnsChar(*str)) {                         \
           *invalid = 1;                                                 \
           *invalidCh = *str;                                            \
         } else {                                                        \
