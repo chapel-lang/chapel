@@ -1,0 +1,5 @@
+bug: scans involving variables named "r" can produce incorrect results.
+
+There is a variable called "r" in the ChapelReduce._scan function that gets
+passed to the next() method instead of the global variable r of type R. An
+identical problem happens with reductions.
