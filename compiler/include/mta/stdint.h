@@ -6,14 +6,5 @@
 typedef int intptr_t;
 typedef unsigned int uintptr_t;
 
-static unsigned long long strtoull(const char* str, char** endptr, int base) {
-  return strtoul(str, endptr, base);
-}
-
-static long long strtoll(const char* str, char** endptr, int base) {
-  return strtol(str, endptr, base);
-}
-
-
 #endif
 

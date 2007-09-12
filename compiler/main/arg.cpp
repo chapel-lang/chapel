@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "arg.h"
 #include "chpl.h"
+#include "stringutil.h"
 
 /*
 static char *SPACES = "                                                                               ";
@@ -134,7 +135,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
         case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
-        case 'L': *(int64 *)desc[i].location = strtoll(env, NULL, 0); break;
+        case 'L': *(int64 *)desc[i].location = str2int64(env); break;
         case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
         case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
       }

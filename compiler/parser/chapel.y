@@ -1279,11 +1279,11 @@ literal:
     {
       unsigned long long int ull;
       if (!strncmp("0b", yytext, 2))
-        ull = strtoull(yytext+2, NULL, 2);
+        ull = binStr2uint64(yytext);
       else if (!strncmp("0x", yytext, 2))
-        ull = strtoull(yytext+2, NULL, 16);
+        ull = hexStr2uint64(yytext);
       else
-        ull = strtoull(yytext, NULL, 10);
+        ull = str2uint64(yytext);
       if (ull <= 2147483647ull)
         $$ = new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
       else if (ull <= 9223372036854775807ull)

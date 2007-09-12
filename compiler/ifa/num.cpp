@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "num.h"
 #include "prim_data.h"
+#include "stringutil.h"
 
 static int 
 sprint_float_val(char* str, float128 val) {
@@ -785,7 +786,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
           break;
         case INT_SIZE_8: 
           if (str[0] != '\'')
-            imm->v_uint8 = strtoul(str, 0, 10);
+            imm->v_uint8 = str2uint8(str);
           else {
             if (str[1] != '\\')
               imm->v_uint8 = str[1];
@@ -794,11 +795,11 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
           }
           break;
         case INT_SIZE_16:
-          imm->v_uint16 = strtoul(str, 0, 10); break;
+          imm->v_uint16 = str2uint16(str); break;
         case INT_SIZE_32:
-          imm->v_uint32 = strtoul(str, 0, 10); break;
+          imm->v_uint32 = str2uint32(str); break;
         case INT_SIZE_64:
-          imm->v_uint64 = strtoull(str, 0, 10); break;
+          imm->v_uint64 = str2uint64(str); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -807,7 +808,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
       switch (imm->num_index) {
         case INT_SIZE_8: 
           if (str[0] != '\'')
-            imm->v_int8 = strtoul(str, 0, 10);
+            imm->v_int8 = str2int8(str);
           else {
             if (str[1] != '\\')
               imm->v_int8 = str[1];
@@ -816,11 +817,11 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
           }
           break;
         case INT_SIZE_16:
-          imm->v_int16 = strtol(str, 0, 10); break;
+          imm->v_int16 = str2int16(str); break;
         case INT_SIZE_32:
-          imm->v_int32 = strtol(str, 0, 10); break;
+          imm->v_int32 = str2int32(str); break;
         case INT_SIZE_64:
-          imm->v_int64 = strtoll(str, 0, 10); break;
+          imm->v_int64 = str2int64(str); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;

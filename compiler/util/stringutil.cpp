@@ -59,3 +59,72 @@ char* intstring(int i) {
     INT_FATAL("intstring() buffer overflow");
   return stringcpy(buf);
 }
+
+
+#define define_str2Int(type, format)                            \
+  type str2##type(const char* str) {                            \
+    if (!str) {                                                 \
+      INT_FATAL("NULL string passed to strTo_" #type "()");     \
+    }                                                           \
+    int len = strlen(str);                                      \
+    if (len < 1) {                                              \
+      INT_FATAL("empty string passed to strTo_" #type "()");    \
+    }                                                           \
+    type val;                                                   \
+    int numitems = sscanf(str, format, &val);                   \
+    if (numitems != 1) {                                        \
+      INT_FATAL("Illegal string passed to strTo_" #type "()");  \
+    }                                                           \
+    return val;                                                 \
+  }
+
+define_str2Int(int8, int8fmt)
+define_str2Int(int16, int16fmt)
+define_str2Int(int32, int32fmt)
+define_str2Int(int64, int64fmt)
+define_str2Int(uint8, uint8fmt)
+define_str2Int(uint16, uint16fmt)
+define_str2Int(uint32, uint32fmt)
+define_str2Int(uint64, uint64fmt)
+
+
+uint64 binStr2uint64(const char* str) {
+  if (!str) {
+    INT_FATAL("NULL string passed to binStrToUint64()");
+  }
+  int len = strlen(str);
+  if (len < 3 || str[0] != '0' || str[1] != 'b') {
+    INT_FATAL("Illegal string passed to binStrToUint64()");
+  }
+  uint64 val = 0;
+  for (int i=2; i<len; i++) {
+    val <<= 1;
+    switch (str[i]) {
+    case '0':
+      break;
+    case '1':
+      val += 1;
+      break;
+    default:
+      INT_FATAL("illegal character in binary string: '%c'", str[i]);
+    }
+  }
+  return val;
+}
+
+
+uint64 hexStr2uint64(const char* str) {
+  if (!str) {
+    INT_FATAL("NULL string passed to binStrToUint64()");
+  }
+  int len = strlen(str);
+  if (len < 3 || str[0] != '0' || str[1] != 'x') {
+    INT_FATAL("Illegal string passed to binStrToUint64()");
+  }
+  uint64 val;
+  int numitems = sscanf(str+2, "%llx", &val);
+  if (numitems != 1) {
+    INT_FATAL("Illegal string passed to hexStrToUint64");
+  }
+  return val;
+}
