@@ -4,14 +4,16 @@
 #include "chpltypes.h"
 
 
-_int8 _string_to_int8_precise(const char* str, int* valid);
-_int16 _string_to_int16_precise(const char* str, int* valid);
-_int32 _string_to_int32_precise(const char* str, int* valid);
-_int64 _string_to_int64_precise(const char* str, int* valid);
-_uint8 _string_to_uint8_precise(const char* str, int* valid);
-_uint16 _string_to_uint16_precise(const char* str, int* valid);
-_uint32 _string_to_uint32_precise(const char* str, int* valid);
-_uint64 _string_to_uint64_precise(const char* str, int* valid);
+/* invalid is a flag indicating valid or not
+   invalidChar is the character that was invalid */
+_int8 _string_to_int8_precise(const char* str, int* invalid, char* invalidChar);
+_int16 _string_to_int16_precise(const char* str, int* invalid, char* invalidChar);
+_int32 _string_to_int32_precise(const char* str, int* invalid, char* invalidChar);
+_int64 _string_to_int64_precise(const char* str, int* invalid, char* invalidChar);
+_uint8 _string_to_uint8_precise(const char* str, int* invalid, char* invalidChar);
+_uint16 _string_to_uint16_precise(const char* str, int* invalid, char* invalidChar);
+_uint32 _string_to_uint32_precise(const char* str, int* invalid, char* invalidChar);
+_uint64 _string_to_uint64_precise(const char* str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
 _int8 _string_to_int8(const char* str);

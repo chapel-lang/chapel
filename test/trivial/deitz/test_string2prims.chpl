@@ -13,10 +13,12 @@ writeln("4":uint(16));
 writeln("4":uint(32));
 writeln("4":uint(64));
 
-writeln("-4":uint(8));
-writeln("-4":uint(16));
-writeln("-4":uint(32));
-writeln("-4":uint(64));
+// BLC: commenting out upon deciding not to support this, and
+// based on discussion with Steve
+//writeln("-4":uint(8));
+//writeln("-4":uint(16));
+//writeln("-4":uint(32));
+//writeln("-4":uint(64));
 
 writeln("3.14":real(32));
 writeln("3.14":real(64));

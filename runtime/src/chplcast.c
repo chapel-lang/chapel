@@ -9,142 +9,88 @@
 #include "chplfp.h"
 #include "error.h"
 
-_int8 _string_to_int8_precise(const char* str, int* valid) {
-  char* endPtr;
-  _int8 val = (_int8)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_int16 _string_to_int16_precise(const char* str, int* valid) {
-  char* endPtr;
-  _int16 val = (_int16)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_int32 _string_to_int32_precise(const char* str, int* valid) {
-  char* endPtr;
-  _int32 val = (_int32)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_int64 _string_to_int64_precise(const char* str, int* valid) {
-  _int64 val;
-  int numitems = sscanf(str, "%lld", &val);
-  *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
-  return val;
-}
-
-_int8 _string_to_int8(const char* str) {
-  int valid;
-  _int8 val;
-  val = _string_to_int8_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to int(8)", 0, 0);
+#define _define_string_to_int_precise(base, width, uns)                 \
+  _##base##width _string_to_##base##width##_precise(const char* str,    \
+                                                    int* invalid,       \
+                                                    char* invalidCh) {  \
+    char* endPtr;                                                       \
+    _##base##width val = (_##base##width)strtol(str, &endPtr, 10);      \
+    *invalid = (*str == '\0' || *endPtr != '\0');                       \
+    *invalidCh = *endPtr;                                               \
+    /* for negatives, strtol works, but we wouldn't want chapel to */   \
+    if (*invalid == 0 && uns && (*str <= '0' || *str >= '9')) {         \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+    }                                                                   \
+    return val;                                                         \
   }
-  return val;
-}
 
-_int16 _string_to_int16(const char* str) {
-  int valid;
-  _int16 val;
-  val = _string_to_int16_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to int(16)", 0, 0);
+#define _define_string_to_bigint_precise(base, width, uns, format)      \
+  _##base##width _string_to_##base##width##_precise(const char* str,    \
+                                                    int* invalid,       \
+                                                    char* invalidCh) {  \
+    _##base##width val;                                                 \
+    int numbytes;                                                       \
+    int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    /* this numitems check is vague since implementations vary about    \
+       whether or not to count %n as a match. */                        \
+    if (numitems == 1 || numitems == 2) {                               \
+      if (numbytes == strlen(str)) {                                    \
+        /* for negatives, sscanf works, but we wouldn't want chapel to */ \
+        if (uns && (*str <= '0' || *str >= '9')) {                      \
+          *invalid = 1;                                                 \
+          *invalidCh = *str;                                            \
+        } else {                                                        \
+          *invalid = 0;                                                 \
+          *invalidCh = '\0';                                            \
+        }                                                               \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = *(str+numbytes);                                   \
+      }                                                                 \
+    } else {                                                            \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+    }                                                                   \
+    return val;                                                         \
   }
-  return val;
-}
 
-_int32 _string_to_int32(const char* str) {
-  int valid;
-  _int32 val;
-  val = _string_to_int32_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to int(32)", 0, 0);
+#define _define_string_to_int(base, width)                              \
+  _##base##width _string_to_##base##width(const char* str) {            \
+    int invalid;                                                        \
+    char invalidStr[2] = "\0\0";                                        \
+    _##base##width val = _string_to_##base##width##_precise(str,        \
+                                                            &invalid,   \
+                                                            invalidStr); \
+    if (invalid) {                                                      \
+      const char* message;                                              \
+      if (invalidStr[0]) {                                              \
+        message = _glom_strings(3, "Illegal character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+      } else {                                                          \
+        message = "Empty string when converting from string to " #base "(" #width ")"; \
+      }                                                                 \
+      _printError(message, 0, 0);                                       \
+    }                                                                   \
+    return val;                                                         \
   }
-  return val;
-}
 
-_int64 _string_to_int64(const char* str) {
-  int valid;
-  _int64 val;
-  val = _string_to_int64_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to int(64)", 0, 0);
-  }
-  return val;
-}
+_define_string_to_int_precise(int, 8, 0)
+_define_string_to_int_precise(int, 16, 0)
+_define_string_to_int_precise(int, 32, 0)
+_define_string_to_bigint_precise(int, 64, 0, "%lld")
+_define_string_to_int_precise(uint, 8, 1)
+_define_string_to_int_precise(uint, 16, 1)
+_define_string_to_int_precise(uint, 32, 1)
+_define_string_to_bigint_precise(uint, 64, 1, "%llu")
 
-_uint8 _string_to_uint8_precise(const char* str, int* valid) {
-  char* endPtr;
-  _uint8 val = (_uint8)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_uint16 _string_to_uint16_precise(const char* str, int* valid) {
-  char* endPtr;
-  _uint16 val = (_uint16)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_uint32 _string_to_uint32_precise(const char* str, int* valid) {
-  char* endPtr;
-  _uint32 val = (_uint32)strtol(str, &endPtr, 10);
-  *valid = (*endPtr == '\0');
-  return val;
-}
-
-_uint64 _string_to_uint64_precise(const char* str, int* valid) {
-  _uint64 val;
-  int numitems = sscanf(str, "%llu", &val);
-  *valid = (numitems == 1);  // BLC: a poor test; could be extra chars at end
-  return val;
-}
-
-
-_uint8 _string_to_uint8(const char* str) {
-  int valid;
-  _uint8 val;
-  val = _string_to_uint8_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to uint(8)", 0, 0);
-  }
-  return val;
-}
-
-_uint16 _string_to_uint16(const char* str) {
-  int valid;
-  _uint16 val;
-  val = _string_to_uint16_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to uint(16)", 0, 0);
-  }
-  return val;
-}
-
-_uint32 _string_to_uint32(const char* str) {
-  int valid;
-  _uint32 val;
-  val = _string_to_uint32_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to uint(32)", 0, 0);
-  }
-  return val;
-}
-
-_uint64 _string_to_uint64(const char* str) {
-  int valid;
-  _uint64 val;
-  val = _string_to_uint64_precise(str, &valid);
-  if (!valid) {
-    _printError("Extra characters found when converting string to uint(64)", 0, 0);
-  }
-  return val;
-}
+_define_string_to_int(int, 8)
+_define_string_to_int(int, 16)
+_define_string_to_int(int, 32)
+_define_string_to_int(int, 64)
+_define_string_to_int(uint, 8)
+_define_string_to_int(uint, 16)
+_define_string_to_int(uint, 32)
+_define_string_to_int(uint, 64)
 
 
 /*

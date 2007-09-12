@@ -220,9 +220,10 @@ static void unexpectedArg(const char* currentArg) {
 static _int32 _argNumLocales = 0;
 
 static void parseNumLocales(const char* numPtr) {
-  int valid;
-  _argNumLocales = _string_to_int32_precise(numPtr, &valid);
-  if (!valid) {
+  int invalid;
+  char invalidChars[2] = "\0\0";
+  _argNumLocales = _string_to_int32_precise(numPtr, &invalid, invalidChars);
+  if (invalid) {
     char* message = _glom_strings(3, "\"", numPtr, 
                                   "\" is not a valid number of locales"
                                   );
