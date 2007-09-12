@@ -1,0 +1,5 @@
+error message: two configuration variables with same name should be an error
+If two modules define the same configuration variable, and both are in scope
+at the point at which this variable is used, the compiler should complain
+instead of silently choosing to use one of them.  In this test case, both seed
+and arraySize are defined in both source files.
