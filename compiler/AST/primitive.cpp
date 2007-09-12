@@ -334,7 +334,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);
-  prim_def(PRIMITIVE_CAST, "cast", returnInfoCast);
+  prim_def(PRIMITIVE_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIMITIVE_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid, true);

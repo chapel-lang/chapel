@@ -1268,6 +1268,12 @@ void CallExpr::codegen(FILE* outfile) {
       } else if (dst == dtString || src == dtString) {
         fprintf(outfile, "%s_to%s(", src->symbol->cname, dst->symbol->cname);
         get(2)->codegen(outfile);
+        if (src == dtString) {
+          fprintf(outfile, ", ");
+          get(3)->codegen(outfile);
+          fprintf(outfile, ", ");
+          get(4)->codegen(outfile);
+        }
         fprintf(outfile, ")");
       } else if (is_complex_type(dst)) {
         int width1 = get_width(dst);

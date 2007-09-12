@@ -1,1 +1,1 @@
-error: Illegal character when converting from string to int(32): 'e'
+badstring2val.chpl:3: error: Illegal character when converting from string to int(32): 'e'

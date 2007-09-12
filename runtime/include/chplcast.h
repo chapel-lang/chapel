@@ -16,22 +16,23 @@ _uint32 _string_to_uint32_precise(const char* str, int* invalid, char* invalidCh
 _uint64 _string_to_uint64_precise(const char* str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
-_int8 _string_to_int8(const char* str);
-_int16 _string_to_int16(const char* str);
-_int32 _string_to_int32(const char* str);
-_int64 _string_to_int64(const char* str);
-_uint8 _string_to_uint8(const char* str);
-_uint16 _string_to_uint16(const char* str);
-_uint32 _string_to_uint32(const char* str);
-_uint64 _string_to_uint64(const char* str);
+_int8 _string_to_int8(const char* str, int lineno, const char* filename);
+_int16 _string_to_int16(const char* str, int lineno, const char* filename);
+_int32 _string_to_int32(const char* str, int lineno, const char* filename);
+_int64 _string_to_int64(const char* str, int lineno, const char* filename);
+_uint8 _string_to_uint8(const char* str, int lineno, const char* filename);
+_uint16 _string_to_uint16(const char* str, int lineno, const char* filename);
+_uint32 _string_to_uint32(const char* str, int lineno, const char* filename);
+_uint64 _string_to_uint64(const char* str, int lineno, const char* filename);
 
-#define _string_to_real32(s) ((_real32)atof(s))
-#define _string_to_real64(s) ((_real64)atof(s))
-#define _string_to_real128(s) ((_real128)atof(s))
-#define _string_to_imag32(s) ((_imag32)atof(s))
-#define _string_to_imag64(s) ((_imag64)atof(s))
-#define _string_to_imag128(s) ((_imag128)atof(s))
-#define _string_to_bool(s) (string_equal(s, "true"))
+
+#define _string_to_real32(s, l, f) ((_real32)atof(s))
+#define _string_to_real64(s, l, f) ((_real64)atof(s))
+#define _string_to_real128(s, l, f) ((_real128)atof(s))
+#define _string_to_imag32(s, l, f) ((_imag32)atof(s))
+#define _string_to_imag64(s, l, f) ((_imag64)atof(s))
+#define _string_to_imag128(s, l, f) ((_imag128)atof(s))
+#define _string_to_bool(s, l, f) (string_equal(s, "true"))
 _string _string_get_imag_part(_string s);
 
 

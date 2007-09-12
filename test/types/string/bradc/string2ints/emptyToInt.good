@@ -1,1 +1,1 @@
-error: Empty string when converting from string to int(32)
+emptyToInt.chpl:2: error: Empty string when converting from string to int(32)

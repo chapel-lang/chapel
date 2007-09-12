@@ -1,1 +1,1 @@
-error: Illegal character when converting from string to uint(64): '-'
+badstring2uint64-2.chpl:3: error: Illegal character when converting from string to uint(64): '-'

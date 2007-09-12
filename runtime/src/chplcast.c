@@ -56,7 +56,8 @@
   }
 
 #define _define_string_to_int(base, width)                              \
-  _##base##width _string_to_##base##width(const char* str) {            \
+  _##base##width _string_to_##base##width(const char* str, int lineno,  \
+                                          const char* filename) {       \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
     _##base##width val = _string_to_##base##width##_precise(str,        \
@@ -69,7 +70,7 @@
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      _printError(message, 0, 0);                                       \
+      _printError(message, lineno, filename);                           \
     }                                                                   \
     return val;                                                         \
   }

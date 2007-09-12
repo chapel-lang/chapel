@@ -1,1 +1,1 @@
-error: Illegal character when converting from string to int(64): 'e'
+badstring2int64.chpl:3: error: Illegal character when converting from string to int(64): 'e'
