@@ -64,11 +64,11 @@ the CVS tree, but not exactly the same:
               hold examples before we moved them into the testing
               system.  
 
-  man/      : for the developer, this directory contains the sources for
-              out man page as well as for the man page itself, built
-              using "make man" from the top-level directory when
-              CHPL_DEVELOPER is set.  For users, this directory only
-              contains the resulting man page.
+  man/ :      for the developer, this directory contains the sources
+              for our man page as well as for the man page itself, built
+              using "make man" from the top-level directory.  For
+              users, this directory only contains the resulting man
+              page structure.
 
   runtime/ : see compiler/ above
 
