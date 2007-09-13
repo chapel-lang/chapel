@@ -1,1 +1,2 @@
-writeln("It worked!");
+if (false) then
+  writeln("Should never write this");
