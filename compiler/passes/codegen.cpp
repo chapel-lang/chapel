@@ -141,6 +141,7 @@ static void codegen_header(void) {
   cnames.put("tanh", 1);
   cnames.put("ascii", 1);
   cnames.put("isnan", 1);
+  cnames.put("random", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
