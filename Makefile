@@ -14,14 +14,11 @@ comprt: compiler runtime
 compiler: FORCE
 	cd compiler && $(MAKE)
 
-ifndef CHPL_DEVELOPER
-man:
-
-else
 man: FORCE
-	cd man && $(MAKE)
+	@test -r man/Makefile && $(MAKE) manhelp || echo ""
 
-endif
+manhelp: FORCE
+	cd man && $(MAKE)
 
 runtime: FORCE
 	cd runtime && $(MAKE)
