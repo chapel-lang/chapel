@@ -1,15 +1,13 @@
 config const seed: uint = 113579,
-             arraySize = 100;
+             arraySize = 101;
 
 def main () {
   use RandomNumber;
-  if seed <= 0 then
-    halt ("seed must be positive!");
   if arraySize % 2 != 0 then
     halt ("arraySize must be even!");
   // Each point consists of two coordinates.
   const numberOfPoints = arraySize/2;
-  var r = Random (seed),
+  var r = Random (),
       rArray: [1..arraySize] real,
       x => rArray[1..numberOfPoints],
       y => rArray[numberOfPoints+1 ..];

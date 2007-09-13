@@ -17,8 +17,8 @@ class Random {
   }
 }
 
-config const seed: uint = 13;
-config const arraySize = 10;
+config const seed: uint = 13,
+             arraySize = 10;
 
 def main {
   var r = Random (seed);
