@@ -8,7 +8,7 @@ module HPCCProblemSize {
           memoryTarget = totalMem / memRatio,
           bytesPerIndex = numArrays * numBytes(elemType);
 
-    var numIndices = (memoryTarget / bytesPerIndex): int;
+    var numIndices = memoryTarget / bytesPerIndex;
 
     var lgProblemSize = log2(numIndices);
     if (returnLog2) {

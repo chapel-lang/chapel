@@ -26,10 +26,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TwiddleDom: domain(1) distributed(Block) = [0..m/4);
+  const TwiddleDom: domain(1, int(64)) distributed(Block) = [0..m/4);
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom: domain(1) distributed(Block) = [0..m);
+  const ProblemDom: domain(1, int(64)) distributed(Block) = [0..m);
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -184,6 +184,6 @@ def printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
-    writeln("Performance (Gflop/s) = ", 5.0 * (m * n) / execTime / 1.0e-9);
+    writeln("Performance (Gflop/s) = ", 1e-9 * (5.0 * m * n) / execTime);
   }
 }
