@@ -1,3 +1,5 @@
+DuplicateConfigVars.chpl:5: warning: imported symbol 'RandomNumber.seed' shadows symbol at outer scope
+DuplicateConfigVars.chpl:5: warning: imported symbol 'RandomNumber.arraySize' shadows symbol at outer scope
 Generated points:
 0.000101742 0.709991 0.822869 0.962452 0.925974 0.846469 0.61158 0.825241 0.830853 0.151008
 Number of points: 5
