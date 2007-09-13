@@ -11,13 +11,13 @@ echo -n "Setting CHPL_HOME "
 setenv CHPL_HOME "$cwd"
 echo "to $CHPL_HOME"
 
-echo -n "Setting CHPL_PLATFORM "
-setenv CHPL_PLATFORM `"$CHPL_HOME/util/platform"`
-echo "to $CHPL_PLATFORM"
+echo -n "Setting CHPL_HOST_PLATFORM "
+setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/platform.pl"`
+echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
-setenv PATH "$PATH":"$CHPL_HOME"/bin/$CHPL_PLATFORM
-echo "to include $CHPL_HOME/bin/$CHPL_PLATFORM"
+setenv PATH "$PATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 echo -n "Updating MANPATH "
 setenv MANPATH "$MANPATH":"$CHPL_HOME"/man

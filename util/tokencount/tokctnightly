@@ -68,7 +68,7 @@ mysystem("cd $tmpdir && cvs -d :pserver:bradc\@gemelli.cs.washington.edu:2403/ge
 
 $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $compdir = "$tmpdir/chapel/compiler";
-$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_PLATFORM'}";
+$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
 
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");

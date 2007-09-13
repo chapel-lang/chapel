@@ -118,7 +118,7 @@ $platform = `$utildir/platform`;
 
 chomp($platform);
 $fullplatform = "$platform";
-$chplcrossplatform = $ENV{'CHPL_CROSS_PLATFORM'};
+$chplcrossplatform = $ENV{'CHPL_TARGET_PLATFORM'};
 chomp($chplcrossplatform);
 if ($chplcrossplatform ne "") {
     $fullplatform = "$chplcrossplatform/$fullplatform";

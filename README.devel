@@ -22,17 +22,17 @@ same place for developers and end users:
   LICENSE          : the end user's licensing agreement for Chapel
   STATUS           : the end user's status description of a release
   Makefile         : the end user's top-level Makefile
-  bin/             : when the compiler is made it's put in this directory
-    $CHPL_PLATFORM   structure for both developers and end users
+  bin/                   : when the compiler is made it's put in this directory
+    $CHPL_HOST_PLATFORM  :  structure for both developers and end users
   lib/
-    $CHPL_PLATFORM
+    $CHPL_TARGET_PLATFORM
       threads-$CHPL_THREADS/
         comm-$CHPL_COMM/     : same as bin, but for the runtime libraries
   make/            : Makefiles used to build compiler, runtime, generated code
     Makefile       : debugging Makefile -- prints some of the settings
     Makefile.base  : base Makefile to be included by all other Makefiles
     Makefile.platform : determines what platform we're making from
-    Makefile.$CHPL_PLATFORM : platform-specific Makefile settings
+    Makefile.<platform> : platform-specific Makefile settings
     Makefile.gnu   : a generic set of GNU tools -- included by many of the above
     Makefile.generic     : generic Makefile used with unknown platforms
     Makefile.generic.gnu : ditto, but for GNU-oriented platforms

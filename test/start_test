@@ -197,8 +197,8 @@
 # the output of "uname -n" with any "." qualifiers after the machine
 # name stripped off, commlayer is the communication layer being tested
 # (e.g., "none" or "gasnet") and "platform" is the value of
-# $CHPL_PLATFORM.  The most specific good file will be used, in the
-# order: machname, commlayer, platform, generic.
+# $CHPL_TARGET_PLATFORM.  The most specific good file will be used, in
+# the order: machname, commlayer, platform, generic.
 #
 # Tests that are not yet expected to work can be marked as such
 # by creating a <testname>.future file.  The presence of the
@@ -394,11 +394,7 @@ set datestr = `date +"%y%m%d.%H%M%S"`
 # remember what directory to return to (the current working directory)
 set testdir = $cwd
 
-if ( ${?CHPL_CROSS_PLATFORM} != "0" ) then
-  set platform = "$CHPL_CROSS_PLATFORM";
-else
-  set platform = `../util/platform`;
-endif
+set platform = `../util/platform.pl --target`
 
 #
 # some sets to get locale, environment reasonable

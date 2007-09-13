@@ -3,6 +3,6 @@
 
 export CHPL_HOME=REPLACE_ME_FIRST/chapel   
 
-export CHPL_PLATFORM=`$CHPL_HOME/util/platform`
+export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/platform.pl`
 
-export PATH=$PATH:$CHPL_HOME/bin/$CHPL_PLATFORM
+export PATH=$PATH:$CHPL_HOME/bin/$CHPL_HOST_PLATFORM

@@ -18,10 +18,12 @@ If everything works as intended, you ought to see:
 
 2) the compiler binary getting linked and stored as:
 
-        $CHPL_HOME/bin/$CHPL_PLATFORM/chpl
+        $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl
 
 3) the runtime support libraries being compiled, archived, and stored
-   in $CHPL_HOME/lib/$CHPL_PLATFORM/
+   in:
+
+   $CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/threads-$CHPL_THREADS/comm-$CHPL_COMM/
 
 Otherwise, if you get an error or failure during the make process,
 please let us know about it at: chapel_bugs@cray.com (as well as
@@ -53,7 +55,8 @@ another UNIX-compatible environment.
 
 Note that a single Chapel installation can simultaneously support
 Chapel for multiple platforms because all platform-specific files and
-executables are stored in subdirectories named $CHPL_PLATFORM.
+executables are stored in subdirectories named by $CHPL_HOST_PLATFORM
+and $CHPL_TARGET_PLATFORM.
 
 
 ----------------
@@ -81,13 +84,13 @@ Platform-specific Settings
 --------------------------
 
 The structure of Chapel's Makefiles is designed to factor any
-architecture-specific settings in $CHPL_HOME/Makefile.$CHPL_PLATFORM.
-If you try making the compiler and runtime for an unsupported
-platform, you will be asked by the Makefile whether the platform
-supports a gnu toolsuite or not.  Based on your answer, a default
-$CHPL_HOME/Makefile.$CHPL_PLATFORM will be created for you.  For
-non-gnu platforms, t is likely that you will need to edit that file by
-hand to get the correct suite of tools and settings.
+architecture-specific settings in $CHPL_HOME/Makefile.<platform>.  If
+you try making the compiler and runtime for an unsupported platform,
+you will be asked by the Makefile whether the platform supports a gnu
+toolsuite or not.  Based on your answer, a default
+$CHPL_HOME/Makefile.<platform> will be created for you.  For non-gnu
+platforms, it is likely that you will need to edit that file by hand
+to get the correct suite of tools and settings.
 
 We have been factoring architectural-specific assumptions out of the
 Makefiles as we run into them, so it is likely that additional changes

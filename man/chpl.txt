@@ -182,12 +182,23 @@ OPTIONS
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
 ENVIRONMENT
-  CHPL_HOME          Specifies the location of the chapel installation directory
-  CHPL_PLATFORM      Specifies the platform on which the Chapel compiler is
-                     running
-  CHPL_CROSS_PLATFORM   Specifies the platform on which the target executable
-                     is to be run for the purposes of cross-compiling. If
-                     this variable is unset, it will default to $CHPL_PLATFORM.
+  CHPL_HOME           Specifies the location of the chapel/ installation directory
+
+  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
+                      running (defaults to our best guess)
+
+  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
+                         is to be run for the purposes of cross-compiling
+                         (defaults to $CHPL_HOST_PLATFORM)
+
+  CHPL_THREADS        Specifies the thread layer to use for tasks (defaults
+                      to 'pthreads')
+
+  CHPL_COMM           Specifies the communication layer to use for
+                      inter-locale data tranfers (defaults to 'none')
+
+  See $CHPL_HOME/doc/README.chplenv for more information about
+  environment variable settings.
 
   In addition, most command-line compiler options have an environment
   variable that can be used to set them by default. Command-line

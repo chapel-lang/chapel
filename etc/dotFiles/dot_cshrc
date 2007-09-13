@@ -3,6 +3,6 @@
 
 setenv CHPL_HOME REPLACE_ME_FIRST/chapel   
 
-setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
+setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
 
-set path = ($CHPL_HOME/bin/$CHPL_PLATFORM $path)
+set path = ($CHPL_HOME/bin/$CHPL_HOST_PLATFORM $path)

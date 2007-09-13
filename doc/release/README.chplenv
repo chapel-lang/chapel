@@ -12,10 +12,10 @@ make in order to use this release effectively:
         setenv CHPL_HOME ~/chapel
 
 
-2) Set the CHPL_PLATFORM environment variable to the string returned
-   by the $CHPL_HOME/util/platform script.  For example:
+2) Set the CHPL_HOST_PLATFORM environment variable to the string
+   returned by the $CHPL_HOME/util/platform.pl script.  For example:
 
-        setenv CHPL_PLATFORM `$CHPL_HOME/util/platform`
+        setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
 
    This script returns a string uniquely representing the platform in
    question, which is used to read platform-specific settings from
@@ -39,13 +39,42 @@ make in order to use this release effectively:
    chapel_info@cray.com
 
 
-3) Set your path to include the directory $CHPL_HOME/bin/$CHPL_PLATFORM
-   which is created when you build the compiler.  For example:
+3) If you are cross-compiling for a platform other than
+   $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
+   variable to describe that platform.  Common cross-compilation
+   target platforms include:
 
-        set path = ($path $CHPL_HOME/bin/$CHPL_PLATFORM)
+        mta    : Cray MTA
+        x1     : Cray X1
+        x2     : Cray X2
+        xmp    : Cray XMP
+        xt-cnl : Cray XT running Compute Node Linux
 
 
-4) Set your man path to include the directory $CHPL_HOME/man.  For
+4) Optionally, set the CHPL_THREADS environment variable to indicate
+   what threading layer you want to use to implement tasks.  Current
+   options are:
+
+        none     : no runtime tasks
+        pthreads : use POSIX threading (the default)
+
+
+5) Optionally, set the CHPL_COMM environment variable to indicate what
+   communication layer you want to use to implement inter-locale
+   communication.  Current options are:
+
+        none   : only supports single-locale execution (the default)
+        gasnet : use the Berkeley GASNet-based runtime
+
+
+6) Set your path to include the directory
+   $CHPL_HOME/bin/$CHPL_HOST_PLATFORM which is created when you build
+   the compiler.  For example:
+
+        set path = ($path $CHPL_HOME/bin/$CHPL_HOST_PLATFORM)
+
+
+7) Set your man path to include the directory $CHPL_HOME/man.  For
    example:
 
         setenv MANPATH "$MANPATH":"$CHPL_HOME"/man

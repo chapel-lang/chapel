@@ -1,4 +1,4 @@
-CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform)
+CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform.pl --target)
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 

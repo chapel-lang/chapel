@@ -41,7 +41,7 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
-       "util/platform",
+       "util/platform.pl",
        "util/chplmake"
 );
 

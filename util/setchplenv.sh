@@ -13,16 +13,16 @@ if [ "$path_tail" != "chapel" ]
       echo "                    ...to $CHPL_HOME"
       echo " "
 
-      echo "Setting CHPL_PLATFORM..."
-      CHPL_PLATFORM=`"$CHPL_HOME"/util/platform`
-      export CHPL_PLATFORM
-      echo "                        ...to $CHPL_PLATFORM"
+      echo "Setting CHPL_HOST_PLATFORM..."
+      CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/platform.pl`
+      export CHPL_HOST_PLATFORM
+      echo "                        ...to $CHPL_HOST_PLATFORM"
       echo " "
 
       echo "Updating PATH to include..."
-      PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_PLATFORM
+      PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
       export PATH
-      echo "                           ...$CHPL_HOME"/bin/$CHPL_PLATFORM
+      echo "                           ...$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
       echo " "
 
       echo "Updating MANPATH to include..."

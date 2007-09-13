@@ -15,11 +15,6 @@ endif
 CHAPEL_ROOT = $(COMPILER_ROOT)/..
 CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 
-# if we are cross compiling, set CHPL_MAKE_PLATFORM manually
-ifdef CHPL_CROSS_PLATFORM
-CHPL_MAKE_PLATFORM = $(CHPL_CROSS_PLATFORM)
-endif
-
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(COMPILER_ROOT)/include

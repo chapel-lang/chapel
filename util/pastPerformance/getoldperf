@@ -43,7 +43,7 @@ $statdir = "$logdir/Stats";
 $tokctdir = "~bradc/chapel/util/tokencount";
 $tokctr = "$tokctdir/tokencount.cron";
 $compdir = "$tmpdir/chapel/compiler";
-$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_PLATFORM'}";
+$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
 $currhome = "$ENV{'CHPL_HOME'}";
 $perfdir = "$ENV{'CHPL_TEST_PERF_DIR'}";
 if ($perfdir eq "") {

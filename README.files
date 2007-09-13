@@ -17,15 +17,15 @@ descriptions for the files and directories that they contain.
   STATUS            : a list of unimplemented features and bugs
   Makefile          : top-level Makefile for building the compiler and runtime
   bin/
-    $CHPL_PLATFORM/ : location of the compiler (chpl) after it has been built
+    $CHPL_HOST_PLATFORM/ : location of the compiler (chpl) once it's been built
   compiler/         : source code for the compiler
   doc/              : additional user documentation and READMEs
   examples/         : example Chapel codes
     hpcc/           : source code for HPC Challenge benchmarks
   lib/
-    $CHPL_PLATFORM/
+    $CHPL_TARGET_PLATFORM/
       threads-$CHPL_THREADS/
-        comm-$CHPL_COMM/     : runtime library location, once built
+        comm-$CHPL_COMM/     : location of runtime libraries, once built
   make/             : Makefile settings for various platforms
   man/              : man pages for the Chapel compiler (chpl)
   modules/          : standard and internal Chapel modules

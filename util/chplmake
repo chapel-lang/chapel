@@ -6,7 +6,7 @@ $utildirname = dirname($0);
 
 $preset_chplmake=$ENV{'CHPL_MAKE'};
 if ($preset_make eq "") {
-    $platform = `$utildirname/platform`;
+    $platform = `$utildirname/platform.pl`;
     chomp($platform);
     if ($platform eq "cygwin" || $platform eq "darwin") {
         $chplmake = "make";
