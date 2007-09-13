@@ -69,12 +69,32 @@ class FTree {
         return nodes[(lvl, idx)].data;
     }
 
+    def this((lvl, idx)) var {
+        if !indices.member((lvl, idx)) {
+            if setter {
+              indices += ((lvl, idx));
+              nodes[(lvl, idx)] = Coeff(coeffDom);
+            } else {
+              // This is a getter so it shouldn't be modifying what
+              // we return, should be safe to return the zero vector.
+              // FIXME: Zeroes should really be a const, but can'ti
+              //        return const from a var fcn.
+              return zeroes;
+            }
+        }
+
+        return nodes[(lvl, idx)].data;
+    }
+
+    def get_children((lvl, idx)) {
+        return ((lvl+1, 2*idx), (lvl+1, 2*idx+1));
+    }
 
     /** Access an element in the FTree.  If it doesn't exist, 
         return None.
      */  
     def peek(lvl: int, idx: int) var {
-        if has_coeffs(lvl, idx) then
+        if has_coeffs((lvl, idx)) then
             return this(lvl, idx);
         else
             return None;
@@ -112,7 +132,7 @@ class FTree {
 
     /** Check if there are coefficients in box (lvl, idx)
      */
-    def has_coeffs(lvl: int, idx: int) {
+    def has_coeffs((lvl, idx)) {
         return indices.member((lvl, idx));
     }
 
@@ -120,7 +140,7 @@ class FTree {
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
-    def remove(lvl: int, idx: int) {
+    def remove((lvl,idx)) {
         if indices.member((lvl, idx)) then indices.remove((lvl, idx));
     }
 }
@@ -130,11 +150,11 @@ def main() {
 
     for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);
 
-    for (i, j) in [1..0, 1..0] do f.remove(i, j);
+    for (i, j) in [1..0, 1..0] do f.remove((i, j));
     
     for (i, j) in [0..1, 0..1] do f[i, j] = (-(i:real), -(j:real));
     
-    for (i, j) in [2..1, 2..1] do f.remove(i, j);
+    for (i, j) in [2..1, 2..1] do f.remove((i, j));
     
     for (i, j) in [1..2, 1..2] do f[i, j] = (-(i:real), -(j:real));
     
