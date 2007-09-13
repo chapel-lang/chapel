@@ -249,18 +249,18 @@ canInstantiate(Type* actualType, Type* formalType) {
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 static bool
-canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn) {
+canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion = NULL) {
   if (actualType->symbol->hasPragma( "sync")) {
     if (actualType->isGeneric) {
       return false;
     } else {
       Type *base_type = (Type*)(actualType->substitutions.v[0].value);
-      return canDispatch(base_type, actualParam, formalType);
+      return canDispatch(base_type, actualParam, formalType, fn, require_scalar_promotion);
     }
   }
 
   if (actualType->symbol->hasPragma("ref"))
-    return canDispatch(getValueType(actualType), actualParam, formalType, fn);
+    return canDispatch(getValueType(actualType), actualParam, formalType, fn, require_scalar_promotion);
 
   if (is_int_type(formalType)) {
     if (toEnumType(actualType))
@@ -343,10 +343,10 @@ canDispatch(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* f
         return true;
   if (actualType->refType == formalType)
     return true;
-  if (canCoerce(actualType, actualParam, formalType, fn))
+  if (canCoerce(actualType, actualParam, formalType, fn, require_scalar_promotion))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, actualParam, formalType, fn)) {
+    if (parent == formalType || canDispatch(parent, actualParam, formalType, fn, require_scalar_promotion)) {
       return true;
     }
   }
@@ -469,9 +469,15 @@ computeGenericSubs(ASTMap &subs,
       if (formal_actuals->v[i]) {
         if (canInstantiate(formal_actuals->v[i], formal->type)) {
           subs.put(formal, formal_actuals->v[i]);
+        } else if (Type* st = formal_actuals->v[i]->scalarPromotionType) {
+          if (canInstantiate(st, formal->type))
+            subs.put(formal, st);
         } else if (Type* vt = getValueType(formal_actuals->v[i])) {
           if (canInstantiate(vt, formal->type))
             subs.put(formal, vt);
+          else if (Type* st = vt->scalarPromotionType)
+            if (canInstantiate(st, formal->type))
+              subs.put(formal, st);
         }
       } else if (formal->defaultExpr) {
 
@@ -873,6 +879,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         if (i != j && candidateFns->v[j]) {
           bool better = false;
           bool as_good = true;
+          bool promotion1 = false;;
+          bool promotion2 = false;
           Vec<ArgSymbol*>* actual_formals2 = candidateActualFormals->v[j];
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
@@ -886,6 +894,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
               bool require_scalar_promotion2;
               canDispatch(actual_types->v[k], actual_params->v[k], arg->type, best, &require_scalar_promotion1);
               canDispatch(actual_types->v[k], actual_params->v[k], arg2->type, best, &require_scalar_promotion2);
+              promotion1 |= require_scalar_promotion1;
+              promotion2 |= require_scalar_promotion2;
               if (require_scalar_promotion1 && !require_scalar_promotion2)
                 better = true;
               else if (!require_scalar_promotion1 && require_scalar_promotion2)
@@ -928,6 +938,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             }
           }
           if (better || as_good) {
+            if (!promotion1 && promotion2)
+              continue;
             best = NULL;
             break;
           }
@@ -2349,6 +2361,10 @@ postFold(Expr* expr) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->typeInfo();
+        if (lt->symbol->hasPragma("ref"))
+          lt = getValueType(lt);
+        if (rt->symbol->hasPragma("ref"))
+          rt = getValueType(rt);
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
             rt != dtAny && !lt->isGeneric) {
           bool is_true = false;

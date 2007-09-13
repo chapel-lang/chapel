@@ -4,5 +4,4 @@ var c = (3.14, 5, 1.1+2.2i, -1);
 
 writeln((a ^ b) + c);
 writeln(a != b && c !=a);
-writeln((a + b + c) * 2);
 

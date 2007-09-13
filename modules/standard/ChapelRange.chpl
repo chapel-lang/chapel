@@ -108,7 +108,7 @@ record range {
       var U = (1, 0, u);
       var V = (0, 1, v);
       while V(3) != 0 {
-        (U, V) = let q = U(3)/V(3) in (V, U - V * q);
+        (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
       }
       return (U(3), U(1));
     }

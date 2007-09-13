@@ -71,41 +71,15 @@ side is fully evaluated before being assigned to the left-hand side.
 The arithmetic ~(\rsec{Arithmetic_Operators}), bitwise
 ~(\rsec{Bitwise_Operators}), shift ~(\rsec{Shift_Operators}), and
 relational ~(\rsec{Relational_Operators}) operators are also defined
-over tuples.  There are versions for scalar op tuple and tuple op tuple.
+over tuples.
 
-\subsubsection{Tuple op Scalar}
-\label{Tuple_Scalar_Operators}
-\index{tuple!scalar}
-With the exception of relational operators, when an operation is applied
-to a scalar value \chpl{s} and a tuple \chpl{t}, the result is a tuple
-\chpl{r} with each element \chpl{r(i)} defined by applying the operation
-to \chpl{s} and \chpl{r(i)}.
-
-\begin{example}
-The result of the multiply:
-\begin{chapel}
-3.0 * (1, 2, 3);
-\end{chapel}
-is the value:
-\begin{chapel}
-(3.0, 6.0, 9.0)
-\end{chapel}
-\end{example}
-
-\subsubsection{Tuple op Tuple}
-\label{Tuple_Tuple_Operations}
-\index{tuple!tuple}
 With the exception of relational operators, operations applied to two
 tuples result in element-by-element application of the operation.
-Relational operators are defined in ~(\rsec{Tuple_Relational_Operators}).
-The tuples must match each other in shape.
 
-\subsubsection{Tuple Relational Operators}
-\label{Tuple_Relational_Operators}
-\index{tuples!relational}
-Relational operators over tuples apply in an "alphabetical" manner.  Each
-component is compared to the corresponding component or to the scalar
-value until the relation is found to be true or false.
+Relational operators over tuples apply in an "alphabetical" manner.
+Each component is compared to the corresponding component or to the
+scalar value until the relation is found to be true or false.
+
 \begin{example}
 In the code:
 \begin{chapel}

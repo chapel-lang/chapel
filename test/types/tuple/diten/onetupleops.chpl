@@ -7,27 +7,6 @@ a(1) = 1;
 b(1) = 3.14;
 
 writeln(a + b);
-writeln(a + d);
-writeln(c + b);
-
 writeln(a - b);
-writeln(a - d);
-writeln(c - b);
-
 writeln(a * b);
-writeln(a * d);
-writeln(c * b);
-
 writeln(a / b);
-writeln(a / d);
-writeln(c / b);
-
-writeln(a % c);
-
-writeln(a & c);
-writeln(a | c);
-writeln(a ^ c);
-
-writeln(a << c);
-writeln(a >> c);
-
