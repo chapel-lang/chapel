@@ -13,7 +13,7 @@ startTime = getCurrentTime(microseconds);
 
 // Find random points on the complex plane in (0..1+i)
 // and count how many are outside the unit circle.
-count = + reduce [1..n] abs(rs.getNext()**2 + rs.getNext()**2):int;
+count = + reduce for 1..n do abs(rs.getNext()**2 + rs.getNext()**2):int;
 
 // The probability a point is inside the unit circle is pi / 4.
 pi = 4 * (n-count):real(64) / n;
