@@ -16,6 +16,7 @@
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused);
 static void verifySaveCDir(ArgumentState* arg_state, char* arg_unused);
+static void verifyIntSizes(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
@@ -77,6 +78,7 @@ static bool printCopyright = false;
 static bool printHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
+static bool testIntSizes = false;
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Traces", NULL, NULL, NULL, NULL},
@@ -150,6 +152,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-scalar-replacement", ' ', NULL, "Disable scalar replacement", "F", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"null-temps", ' ', NULL, "Initialize nullable compiler temporaries to null", "F", &fNullTemps, "CHPL_NULL_TEMPS", NULL},
+ {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}
@@ -277,11 +280,25 @@ static void printStuff(void) {
 }
 
 
-void verifySaveCDir(ArgumentState* arg, char* unused) {
+static void verifySaveCDir(ArgumentState* arg, char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
               saveCDir);
+  }
+}
+
+
+static void verifyIntSizes(ArgumentState* arg, char* unused) {
+  if (sizeof(int8) != 1 ||
+      sizeof(int16) != 2 ||
+      sizeof(int32) != 4 ||
+      sizeof(int64) != 8 ||
+      sizeof(uint8) != 1 ||
+      sizeof(uint16) != 2 ||
+      sizeof(uint32) != 4 ||
+      sizeof(uint64) != 8) {
+    INT_FATAL("compiler integer types not set up properly");
   }
 }
 
