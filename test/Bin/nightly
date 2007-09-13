@@ -24,7 +24,6 @@ while (@ARGV) {
         $interpret = 1;
     } elsif ($flag eq "-notest") {
         $runtests = 0;
-        $debug = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
     } elsif ($flag eq "-performance") {
@@ -48,7 +47,7 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-notest|-cron] {[-valgrind] [-componly] [-performance]}\n";
+    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-performance]}\n";
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
@@ -165,6 +164,8 @@ if ($performance == 1) {
     $subjectid = "Baseline";
 } elsif ($runtests == 0) {
     $subjectid = "Build-only";
+} elsif ($componly == 1) {
+    $subjectid = "Compile-only";
 } else {
     $subjectid = "";
 }
