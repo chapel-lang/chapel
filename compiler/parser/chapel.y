@@ -74,7 +74,6 @@ Is this "while x"(i); or "while x(i)";?
   varType vt;
   consType ct;
   intentTag pt;
-  BlockTag btag;
 
   Expr* pexpr;
   DefExpr* pdefexpr;
@@ -186,7 +185,6 @@ Is this "while x"(i); or "while x(i)";?
 %type <ct> var_const_tag
  
 %type <pt> formal_tag
-%type <btag> for_tag
 
 %type <boolval> fnretref fn_param
 
@@ -237,6 +235,8 @@ Is this "while x"(i); or "while x(i)";?
 %left TELSE
 %left TCOMMA
 %left TREDUCE TSCAN
+%left TFOR
+%left TFORALL
 %left TIF
 %left TBY
 %left TRSBR
@@ -424,14 +424,42 @@ for_stmt:
 | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
     { $$ = build_param_for_stmt($3, $5, $7, $9, $10); }
 */
-| for_tag expr TIN expr parsed_block_stmt
-    { $$ = build_for_block($1, $2, $4, $5); }
-| for_tag expr TIN expr TDO stmt
-    { $$ = build_for_block($1, $2, $4, new BlockStmt($6)); }
-| for_tag expr parsed_block_stmt
-    { $$ = build_for_block($1, new SymExpr("_dummy"), $2, $3); }
-| for_tag expr TDO stmt
-    { $$ = build_for_block($1, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+
+| TFOR expr TIN expr parsed_block_stmt
+    { $$ = build_for_block(BLOCK_FOR, $2, $4, $5); }
+| TFOR expr TIN expr TDO stmt
+    { $$ = build_for_block(BLOCK_FOR, $2, $4, new BlockStmt($6)); }
+| TFOR expr parsed_block_stmt
+    { $$ = build_for_block(BLOCK_FOR, new SymExpr("_dummy"), $2, $3); }
+| TFOR expr TDO stmt
+    { $$ = build_for_block(BLOCK_FOR, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+
+| TFORALL expr TIN expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, $2, $4, $5); }
+| TFORALL expr TIN expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, $2, $4, new BlockStmt($6)); }
+| TFORALL expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, new SymExpr("_dummy"), $2, $3); }
+| TFORALL expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+
+| TORDERED TFORALL expr TIN expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, $3, $5, $6); }
+| TORDERED TFORALL expr TIN expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, $3, $5, new BlockStmt($7)); }
+| TORDERED TFORALL expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, new SymExpr("_dummy"), $3, $4); }
+| TORDERED TFORALL expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, new SymExpr("_dummy"), $3, new BlockStmt($5)); }
+
+| TCOFORALL expr TIN expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, $2, $4, $5); }
+| TCOFORALL expr TIN expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, $2, $4, new BlockStmt($6)); }
+| TCOFORALL expr parsed_block_stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, new SymExpr("_dummy"), $2, $3); }
+| TCOFORALL expr TDO stmt
+    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
 ;
 
 
@@ -1420,8 +1448,6 @@ expr:
       forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
-| TIF expr TTHEN expr TELSE expr
-    { $$ = new CallExpr(new DefExpr(build_if_expr(new CallExpr("_cond_test", $2), $4, $6))); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->length() != 1)
@@ -1438,6 +1464,62 @@ expr:
       forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $7, new CallExpr("_cond_test", $5)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
+| TFOR expr TIN expr TDO expr %prec TRSBR
+    {
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
+| TFOR expr TDO expr %prec TRSBR
+    {
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
+| TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    {
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
+| TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
+    {
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
+| TFORALL expr TIN expr TDO expr %prec TRSBR
+    {
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
+| TFORALL expr TDO expr %prec TRSBR
+    {
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
+| TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    {
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
+| TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
+    {
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
+| TIF expr TTHEN expr TELSE expr
+    { $$ = new CallExpr(new DefExpr(build_if_expr(new CallExpr("_cond_test", $2), $4, $6))); }
 ;
 
 
@@ -1549,34 +1631,6 @@ reduction:
 
 
 /** TAGS *********************************************************************/
-
-
-for_tag:
-  TFOR
-    { $$ = BLOCK_FOR; }
-| TFORALL
-    {
-      if (fSerial)
-        $$ = BLOCK_FOR;
-      else
-        $$ = BLOCK_FORALL;
-    }
-| TORDERED TFORALL
-    {
-      if (fSerial)
-        $$ = BLOCK_FOR;
-      else
-        $$ = BLOCK_ORDERED_FORALL;
-    }
-| TCOFORALL
-    {
-      if (fSerial)
-        $$ = BLOCK_FOR;
-      else
-        $$ = BLOCK_COFORALL;
-    }
-;
-
 
 formal_tag:
   /* nothing */

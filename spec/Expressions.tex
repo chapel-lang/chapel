@@ -18,6 +18,7 @@ expression:
   binary-expression
   let-expression
   if-expression
+  for-expression
   forall-expression
 \end{syntax}
 
@@ -1004,4 +1005,27 @@ cases, the unselected expression is not evaluated.
 The `else' keyword can be omitted only when the conditional expression
 is immediately nested inside a forall expression.  Such an expression
 is used to filter predicates as described
-in~\rsec{Filtering_Predicates}.
+in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall}.
+
+\subsection{For Expressions}
+\label{For_Expressions}
+\index{for@\chpl{for}}
+
+A for expression is given by the following syntax:
+\begin{syntax}
+for-expression:
+  `for' index-expression `in' iterator-expression `do' expression
+  `for' iterator-expression `do' expression
+\end{syntax}
+The for expression evaluates a loop in the context of an expression
+and has the semantics of calling an iterator that yields the evaluated
+expressions on each iteration.
+
+\subsubsection{Filtering Predicates in For Expressions}
+\label{Filtering_Predicates_For}
+\index{for expressions!and conditional expressions}
+
+A conditional expression that is immediately enclosed in a for
+expression does not require an else-part.  Such a conditional
+expression filters the evaluated expressions and only returns an
+expression if the condition holds.

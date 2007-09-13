@@ -119,13 +119,13 @@ The ordered forall loop is currently executed serially.
 \label{Forall_Expressions}
 \index{forall expressions}
 
-With syntax similar to the alternative forall loop statement, a forall
-expression can be used to enable concurrent evaluation of
+A forall expression can be used to enable concurrent evaluation of
 sub-expressions.  The sub-expressions are evaluated once for each
 element in the iterator expression.  The syntax of a forall expression
 is given by
 \begin{syntax}
 forall-expression:
+   `forall' loop-control-part `do' expression
    [loop-control-part] expression
 \end{syntax}
 
@@ -151,8 +151,8 @@ ff();
 Forall expressions are evaluated serially.
 \end{status}
 
-\subsubsection{Filtering Predicates}
-\label{Filtering_Predicates}
+\subsubsection{Filtering Predicates in Forall Expressions}
+\label{Filtering_Predicates_Forall}
 \index{forall expressions!and conditional expressions}
 
 An if expression that is immediately enclosed by a forall expression
