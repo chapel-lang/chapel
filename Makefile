@@ -7,12 +7,21 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 default: all
 
-all: comprt
+all: comprt man
 
 comprt: compiler runtime
 
 compiler: FORCE
 	cd compiler && $(MAKE)
+
+ifndef CHPL_DEVELOPER
+man:
+
+else
+man: FORCE
+	cd man && $(MAKE)
+
+endif
 
 runtime: FORCE
 	cd runtime && $(MAKE)

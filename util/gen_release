@@ -37,6 +37,7 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "README",
        "README.files",
        "STATUS",
+       "man/man1/chpl.1",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
@@ -54,7 +55,6 @@ $cvsignores = "CVS|RCS|.cvsignore";
     "doc",
     "examples",
     "make",
-    "man",
     "modules",
     "runtime"
 );
@@ -77,10 +77,7 @@ system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.p
 system("cd chapel/examples && rmdir hpcc06");
 
 print "Building the man page...\n";
-system("cd chapel/doc/man && make");
-system("cd chapel && mkdir man");
-system("cd chapel/man && mkdir man1");
-system("cp chapel/doc/man/chpl.1 chapel/man/man1/");
+system("cd chapel && make man");
 
 print "Building the quick reference sheet...\n";
 system("cd chapel/doc/internal/quickReference && make");

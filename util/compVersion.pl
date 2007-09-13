@@ -1,6 +1,10 @@
 #!/usr/bin/perl
 
-my $version_file = "../../compiler/main/version_num.h";
+use File::Basename;
+
+$utildirname = dirname($0);
+
+my $version_file = "$utildirname/../compiler/main/version_num.h";
 
 open VERSION, "$version_file" or die "can't open $version_file $!";
 my @versionLines = <VERSION>;
