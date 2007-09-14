@@ -9,6 +9,7 @@ $debug = 1;
 $runtests = 1;
 $examples = 0;
 $componly = 0;
+$suppressions = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -30,6 +31,8 @@ while (@ARGV) {
         $performance = 1;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
+    } elsif ($flag eq "-suppress") {
+        $suppressions = shift @ARGV;
     } elsif ($flag eq "-gasnet") {
         $gasnet = 1;
     } elsif ($flag eq "-componly") {
@@ -325,6 +328,9 @@ if ($gasnet == 1) {
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
+}
+if (!($suppressions eq "")) {
+    $testflags = "$testflags -suppress $suppressions";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
