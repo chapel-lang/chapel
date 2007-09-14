@@ -394,7 +394,7 @@ set datestr = `date +"%y%m%d.%H%M%S"`
 # remember what directory to return to (the current working directory)
 set testdir = $cwd
 
-set platform = `../util/platform.pl --target`
+set platform = `../util/platform.pl`
 
 #
 # some sets to get locale, environment reasonable

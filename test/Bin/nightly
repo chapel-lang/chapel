@@ -114,14 +114,14 @@ $utildir = "$testbindirname/../../util";
 #
 # platform variables
 #
-$platform = `$utildir/platform`;
+$platform = `$utildir/platform.pl`;
 
 chomp($platform);
 $fullplatform = "$platform";
-$chplcrossplatform = $ENV{'CHPL_TARGET_PLATFORM'};
-chomp($chplcrossplatform);
-if ($chplcrossplatform ne "") {
-    $fullplatform = "$chplcrossplatform/$fullplatform";
+$chpltargetplatform = `$utildir/platform.pl --target`;
+chomp($chpltargetplatform);
+if ($chpltargetplatform ne "") {
+    $fullplatform = "$chpltargetplatform/$fullplatform";
 }
 if ($platform eq "xt-cnl") {
   $compilername = $ENV{'PE_ENV'};
