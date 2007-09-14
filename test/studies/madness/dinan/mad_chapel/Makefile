@@ -6,7 +6,7 @@ CFLAGS  = --instantiate-max 512 --print-passes
 #CFLAGS += --CHPLflags "-Wall"
 #CFLAGS += --no-cg-cpp-lines
 
-TESTFLAGS = --instantiate-max 512
+TESTFLAGS = --instantiate-max 512 -struncateAtEps=true
 
 SOURCES= AnalyticFcn.chpl  \
          FTree.chpl        \

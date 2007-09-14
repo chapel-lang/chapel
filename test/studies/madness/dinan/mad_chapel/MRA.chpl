@@ -549,7 +549,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", truncate(sqrt(sum))));
         }
 
         writeln("difference coefficients:");
@@ -561,7 +561,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", truncate(sqrt(sum))));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -573,7 +573,7 @@ class Function {
      */
     def evalNPT(npt) {
         for i in 0..npt {
-            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
             //writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.5e", Fval),
             //        "  f_analytic()=", toString("% 0.5e", fval), " err=", toString("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");

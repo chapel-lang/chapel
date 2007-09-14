@@ -1,3 +1,13 @@
+config param eps            = 1e-16;
+config param truncateAtEps  = false;
+
+// Truncate values to 0 if they are below machine precision
+def truncate(x) {
+    if truncateAtEps then 
+      if x <= eps then return 0.0;
+    return x;
+}
+
 // Copy matrix B's transpose into matrix A
 def transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do
