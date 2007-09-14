@@ -41,7 +41,7 @@ set diffargs = ""
 set compiler = "$argv[1]"
 set testdir = "$argv[2]"
 
-set platform = `$testdir/../util/target-platform.pl`
+set platform = `$testdir/../util/platform.pl --target`
 set machine = `uname -n | awk 'BEGIN {FS = "."}{print $1}'`
 
 if ( ! -f $compiler || ! -x $compiler ) then
