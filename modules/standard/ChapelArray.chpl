@@ -325,6 +325,67 @@ record _array {
   def this(i: _dim_index_type ...rank) var where rank > 1
     return _value(i);
 
+  def validRankChangeArguments(t) param {
+    def validRankChangeArgument(r: range(?eltType,?boundedType,?stridable)) param
+      return true;
+
+    def validRankChangeArgument(i: _dim_index_type) param
+      return true;
+
+    def validRankChangeArgument(x) param
+      return false;
+
+    def help(param dim: int) param {
+      if !validRankChangeArgument(t(dim)) then
+        return false;
+      else if dim < t.size then
+        return help(dim+1);
+      else
+        return true;
+    }
+    return help(1);
+  }
+
+  pragma "valid lvalue"
+  def this(irs ...rank) where validRankChangeArguments(irs) {
+    def isRange(r: range(?e,?b,?s)) param return 1;
+    def isRange(r) param return 0;
+    def _tupleize(x) {
+      var y: 1*x.type;
+      y(1) = x;
+      return y;
+    }
+    def collectRanges(param dim: int) {
+      if isRange(irs(dim))
+        return collectRanges(dim+1, _tupleize(irs(dim)));
+      else
+        return collectRanges(dim+1);
+    }
+    def collectRanges(param dim: int, x: _tuple) {
+      if dim > irs.size {
+        return x;
+      } else if dim < irs.size {
+        if isRange(irs(dim)) then
+          return collectRanges(dim+1, ((...x), irs(dim)));
+        else
+          return collectRanges(dim+1, x);
+      } else {
+        if isRange(irs(dim)) then
+          return ((...x), irs(dim));
+        else
+          return x;
+      }
+    }
+    var rs = collectRanges(1);
+    var x = _value.rankChange(rs.size, _any_stridable(rs), irs, rs);
+    if rs.size == 1 then {
+      return _array(x.type, _dim_index_type, _dim_index_type, eltType, 1, x);
+    } else {
+      type _new_index_type = rs.size*_dim_index_type;
+      return _array(x.type, _new_index_type, _dim_index_type, eltType, rs.size, x);
+    }
+  }
+
   def these() var {
     for i in _value.these() do
       yield i;

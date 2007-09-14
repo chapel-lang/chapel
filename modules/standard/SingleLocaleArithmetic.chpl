@@ -332,6 +332,31 @@ class SingleLocaleArithmeticArray: BaseArray {
     return alias;
   }
 
+  def rankChange(param newRank: int, param newStridable: bool, irs, rs) {
+    def isRange(r: range(?e,?b,?s)) param return 1;
+    def isRange(r) param return 0;
+    var d = SingleLocaleArithmeticDomain(rank=newRank, dim_type=dim_type, stridable=newStridable);
+    d.setIndices(rs);
+    var alias = SingleLocaleArithmeticArray(eltType, newRank, dim_type, newStridable, true, d, noinit=true);
+    alias.data = data;
+    alias.size = size;
+    var i = 1;
+    alias.origin = origin;
+    for param j in 1..irs.size {
+      if isRange(irs(j)) {
+        alias.off(i) = d.dim(i)._low;
+        alias.origin += blk(j) * (d.dim(i)._low - off(j)) / str(j);
+        alias.blk(i) = blk(j);
+        alias.str(i) = str(j);
+        i += 1;
+      } else {
+        alias.origin += blk(j) * (irs(j) - off(j)) / str(j);
+      }
+    }
+    alias.computeFactoredOffs();
+    return alias;
+  }
+
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
       var new = SingleLocaleArithmeticArray(eltType, rank, dim_type, d._value.stridable, reindexed, d._value);
