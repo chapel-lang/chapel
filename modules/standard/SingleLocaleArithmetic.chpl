@@ -216,7 +216,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   var off: rank*dim_type;
   var blk: rank*dim_type;
   var str: rank*int;
-  var adj: rank*dim_type;
+  var origin: dim_type;
   var factoredOffs: dim_type;
   var size : dim_type;
   var data : _ddata(eltType);
@@ -239,7 +239,6 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param dim in 1..rank {
       off(dim) = dom.dim(dim)._low;
       str(dim) = dom.dim(dim)._stride;
-      adj(dim) = 0:dim_type;
     }
     blk(rank) = 1:dim_type;
     for dim in 1..rank-1 by -1 do
@@ -257,20 +256,20 @@ class SingleLocaleArithmeticArray: BaseArray {
     if boundsChecking then
       if !dom.member(ind) then
         halt("array index out of bounds: ", ind);
-    var sum : dim_type;
+    var sum = origin;
     if stridable {
       for param i in 1..rank do
-        sum = sum + (ind(i) - off(i)) * blk(i) / str(i):dim_type - adj(i);
+        sum += (ind(i) - off(i)) * blk(i) / str(i):dim_type;
     } else {
       if reindexed {
         for param i in 1..rank do
-          sum = sum + ind(i) * blk(i) - adj(i);
+          sum += ind(i) * blk(i);
       } else {
         for param i in 1..rank-1 do
-          sum = sum + ind(i) * blk(i) - adj(i);
-        sum = sum + ind(rank) - adj(rank);
+          sum += ind(i) * blk(i);
+        sum += ind(rank);
       }
-      sum = sum - factoredOffs;
+      sum -= factoredOffs;
     }
     return data(sum:int); // !!ahh
   }
@@ -289,8 +288,8 @@ class SingleLocaleArithmeticArray: BaseArray {
       alias.off(i) = d.dim(i)._low;
       alias.blk(i) = (blk(i) * dom.dim(i)._stride / str(i)) : d.dim_type;
       alias.str(i) = d.dim(i)._stride;
-      alias.adj(i) = adj(i) : d.dim_type;
     }
+    alias.origin = origin:d.dim_type;
     alias.computeFactoredOffs();
     return alias;
   }
@@ -324,9 +323,10 @@ class SingleLocaleArithmeticArray: BaseArray {
     alias.size = size;
     alias.blk = blk;
     alias.str = str;
+    alias.origin = origin;
     for param i in 1..rank {
-      alias.adj(i) = adj(i) + blk(i) * (off(i) - d.dim(i)._low) / str(i);
       alias.off(i) = d.dim(i)._low;
+      alias.origin += blk(i) * (d.dim(i)._low - off(i)) / str(i);
     }
     alias.computeFactoredOffs();
     return alias;
@@ -340,7 +340,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       off = new.off;
       blk = new.blk;
       str = new.str;
-      adj = new.adj;
+      origin = new.origin;
       factoredOffs = new.factoredOffs;
       size = new.size;
       data = new.data;
