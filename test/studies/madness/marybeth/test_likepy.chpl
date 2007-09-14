@@ -45,12 +45,12 @@ def main() {
         writeln("coefficients before compressing");
         f.summarize();
 
-        f.compress((0,0));
+        f.compress();
 
         writeln("\ncoefficients after compressing");
         f.summarize();
     
-        f.reconstruct((0,0));
+        f.reconstruct();
         writeln("\ncoefficients after reconstructing");
         f.summarize();
 

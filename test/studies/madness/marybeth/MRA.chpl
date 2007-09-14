@@ -144,7 +144,8 @@ class Function {
         for box (n,l) project f(x) using quadrature rule
         into scaling function basis
      */
-    def project((n, l)) {
+    def project(curNode: 2*int) {
+        const (n, l) = curNode;
         var s     : [quadDom] real;
         var h     = 0.5 ** n;
         var scale = sqrt(h);
@@ -162,9 +163,10 @@ class Function {
 
     /** Refine numerical representation of f(x) to desired tolerance
      */
-    def refine((n, l)) {
+    def refine(curNode: 2*int) {
         // project f(x) at next level
-        var child = s.get_children((n,l));
+        const (n, _ ) = curNode;
+        const child = s.get_children(curNode);
         var sc : [0..2*k-1] real;
         var s0 : [0..k-1] => sc[0..k-1];
         var s1 : [0..k-1] => sc[k..2*k-1];
@@ -196,8 +198,8 @@ class Function {
         function basis only.
      */
     def this(x) {
-        if compressed then reconstruct((0,0));
-        return evaluate(0, 0, x);
+        if compressed then reconstruct();
+        return evaluate( (0,0), x);
     }
 
 
@@ -207,15 +209,18 @@ class Function {
         Descend tree looking for box (n,l) with scaling function
         coefficients containing the point x.
      */
-    def evaluate(in n=0, in l=0, in x): real {
-        if s.has_coeffs((n, l)) {
+    def evaluate(curNode = (0,0), in x): real {
+        const (n,_) = curNode;
+        const child = s.get_children(curNode);
+        if s.has_coeffs(curNode) {
             var p = phi(x, k);
-            return inner(s[n, l], p)*sqrt(2.0**n);
+            return inner(s[curNode], p)*sqrt(2.0**n);
 
         } else {
-            (n, l, x) = (n+1, 2*l, 2*x);
-            if x >= 1 then (l, x) = (l+1, x-1);
-            return evaluate(n, l, x);
+            if (2*x < 1) then
+                return evaluate (child(1), 2*x); 
+            else
+                return evaluate (child(2), 2*x-1);
         }
     }
 
@@ -225,9 +230,10 @@ class Function {
         n is level in tree
         l is box index
      */
-    def compress((n, l)) {
+    def compress(curNode = (0,0)) {
         if compressed then return;
-        var child = s.get_children((n,l));
+        const (n,_) = curNode;
+        const child = s.get_children(curNode);
 
         // sub-trees can be done in parallel
         if !s.has_coeffs(child(1)) then compress(child(1));
@@ -241,8 +247,8 @@ class Function {
         // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
         var dc = sc*hgT;
 
-        s[n, l] = dc[0..k-1];
-        d[n, l] = dc[k..2*k-1];
+        s[curNode] = dc[0..k-1];
+        d[curNode] = dc[k..2*k-1];
         
         s.remove(child(1));
         s.remove(child(2));
@@ -256,23 +262,24 @@ class Function {
         n is level in tree
         l is box index
      */
-    def reconstruct((n, l)) {
+    def reconstruct(curNode = (0,0)) {
         if !compressed then return;
-        var child = s.get_children((n,l));
+        const (n, _) = curNode;
+        const child = s.get_children(curNode);
 
-        if d.has_coeffs((n, l)) {
+        if d.has_coeffs(curNode) {
             var dc: [0..2*k-1] real;
-            dc[0..k-1]   = s[n, l];
-            dc[k..2*k-1] = d[n, l];
-            d.remove((n, l));
-            s.remove((n, l));
+            dc[0..k-1]   = s[curNode];
+            dc[k..2*k-1] = d[curNode];
+            d.remove(curNode);
+            s.remove(curNode);
 
             // apply the two scale relationship to get difference coeff
             // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
             var sc = dc*hg;
             
-            s[n+1, 2*l  ] = sc[0..k-1];
-            s[n+1, 2*l+1] = sc[k..2*k-1];
+            s[child(1)] = sc[0..k-1];
+            s[child(2)] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
             reconstruct(child(1));
@@ -287,12 +294,12 @@ class Function {
         the corresponding coefficients on level n+1 and insert the results into
         the tree of scaling function coefficients.
      */
-    def recur_down(n, l) {
-        var child = s.get_children((n,l));
-        if debug then writeln(" + recur_down(", n, ", ", l, ")");
+    def recur_down(curNode: 2*int) {
+        const child = s.get_children(curNode);
+        if debug then writeln(" + recur_down",curNode);
 
         var sc : [0..2*k-1] real;
-        sc[0..k-1] = s[n, l];
+        sc[0..k-1] = s[curNode];
 
         var new_sc = sc*hg;
         s(child(1)) = new_sc[0..k-1];
@@ -311,9 +318,10 @@ class Function {
 
         Else, return None (corresponding child boxes exist at a finer scale)
      */
-    def get_coeffs(_n, _l) {
-        if debug then writeln(" @ get_coeffs(", _n, ", ", _l, ")");
-        var n = _n, l = _l;
+    def get_coeffs(curNode: 2*int) {
+        if debug then writeln(" @ get_coeffs",curNode);
+        const (nCur, lCur) = curNode;
+        var (n,l) = curNode;
 
         // Walk up the tree to find scaling coeffs
         while n >= 0 {
@@ -328,16 +336,16 @@ class Function {
             l  = l/2;
         }
 
-        // Didn't find coeffs, they must be below (_n, _l)
+        // Didn't find coeffs, they must be below curNode
         if n < 0 then return None;
 
-        // Recur down to (_n, _l)
-        for i in n.._n-1 {
-            l = _l/(2**(_n-i));
-            recur_down(i, l);
+        // Recur down to curNode
+        for i in n..nCur-1 {
+            l = lCur/(2**(nCur-i));
+            recur_down((i, l));
         }
 
-        return s[_n, _l];
+        return s[curNode];
     }
 
 
@@ -346,19 +354,21 @@ class Function {
         locally first box with scaling function coefficients.
         Delete all children below there. 
      */
-    def sclean(n=0, l=0, in cleaning=false) {
+    def sclean(curNode = (0,0), in cleaning=false) {
+        const (n, _) = curNode;
+        const child = s.get_children(curNode);
         if cleaning { //then
-            if debug then writeln(" + sclean deleting (", n, ", ", l, ")");
-            s.remove((n, l));
+            if debug then writeln(" + sclean deleting ", curNode);
+            s.remove(curNode);
         } else
-            cleaning = s.has_coeffs((n, l));
+            cleaning = s.has_coeffs(curNode);
 
         // Sub trees can run in parallel
         if n < max_level {
-            if !cleaning || s.has_coeffs((n+1, 2*l)) then
-                sclean(n+1, 2*l, cleaning);
-            if !cleaning || s.has_coeffs((n+1, 2*l+1)) then
-                sclean(n+1, 2*l+1, cleaning);
+            if !cleaning || s.has_coeffs(child(1)) then
+                sclean(child(1), cleaning);
+            if !cleaning || s.has_coeffs(child(2)) then
+                sclean(child(2), cleaning);
         }
     }
 
@@ -368,49 +378,94 @@ class Function {
         target function we may need to refine boxes down until three
         boxes exist in the same scale.
      */
-    def diff() {
-        def diffHelper(n = 0, l = 0, result) {
-            if debug then writeln(" * diff(", n, ", ", l, ")");
-            if !s.has_coeffs((n, l)) {
-                // Sub trees can run in parallel
-                // Run down tree until we hit scaling function coefficients
-                diffHelper(n+1, 2*l  , result);
-                diffHelper(n+1, 2*l+1, result);
-            } else {
-                // These can also go in parallel since may involve
-                // recurring up & down the tree.
-                if debug then writeln(" * diff: coeffs at (", n, ", ", l, ")");
-                var sm = get_coeffs(n, l-1);
-                var sp = get_coeffs(n, l+1);
-                var s0 = s[n, l];
+//    def diff() {
+//        def diffHelper(curNode = (0,0), result) {
+//            const (n, l ) = curNode;
+//            const child = s.get_children(curNode);
+//           writeln(n);
+//            writeln(child);
+//            if debug then writeln(" * diff", curNode);
+//            if !s.has_coeffs(curNode) {
+//                // Sub trees can run in parallel
+//                // Run down tree until we hit scaling function coefficients
+//                diffHelper(child(1), result);
+//                diffHelper(child(2), result);
+//            } else {
+//                // These can also go in parallel since may involve
+//                // recurring up & down the tree.
+//                if debug then writeln(" * diff: coeffs at ",curNode);
+//                const neighbor = s.get_neighbors(curNode);
+//                writeln(neighbor);
+//                var sm = get_coeffs(neighbor(1));
+//                var sp = get_coeffs(neighbor(2));
+//                var s0 = s[curNode];
+//
+//                // We have s0, check if we found sm and sp at this level
+//                if !isNone(sm) && !isNone(sp) {
+//                    var r = rp*sm + r0*s0 + rm*sp;
+//                    result.s[n,l] = r * 2.0**n;
+//                } else {
+//                    recur_down(curNode);
+//                    // Sub trees can run in parallel
+//                    diffHelper(child(1), result);
+//                    diffHelper(child(2), result);
+//                }
+//            }
+//        }
+//
+//        if compressed then reconstruct();
+//        var result = skeletonCopy();
+//
+//        diffHelper((0, 0), result);
+//
+//       sclean();
+//        return result;
+//    }
+   
+def diff() {
+    def diffHelper(curNode=(0,0), result) {
+        const (n,l) = curNode;
+        if debug then writeln(" * diff(", n, ", ", l, ")");
+        if !s.has_coeffs(curNode) {
+            // Sub trees can run in parallel
+            // Run down tree until we hit scaling function coefficients
+            diffHelper((n+1, 2*l), result);
+            diffHelper((n+1, 2*l+1), result);
+        } else {
+            // These can also go in parallel since may involve
+            // recurring up & down the tree.
+            if debug then writeln(" * diff: coeffs at (", n, ", ", l, ")");
+            var sm = get_coeffs((n, l-1));
+            var sp = get_coeffs((n, l+1));
+            var s0 = s[n, l];
 
-                // We have s0, check if we found sm and sp at this level
-                if !isNone(sm) && !isNone(sp) {
-                    var r = rp*sm + r0*s0 + rm*sp;
-                    result.s[n, l] = r * 2.0**n;
-                } else {
-                    recur_down(n, l);
-                    // Sub trees can run in parallel
-                    diffHelper(n+1, 2*l  , result);
-                    diffHelper(n+1, 2*l+1, result);
-                }
+            // We have s0, check if we found sm and sp at this level
+            if !isNone(sm) && !isNone(sp) {
+                var r = rp*sm + r0*s0 + rm*sp;
+                result.s[n, l] = r * 2.0**n;
+            } else {
+                recur_down((n, l));
+                // Sub trees can run in parallel
+                diffHelper((n+1, 2*l), result);
+                diffHelper((n+1, 2*l+1), result);
             }
         }
-
-        if compressed then reconstruct((0,0));
-        var result = skeletonCopy();
-
-        diffHelper(0, 0, result);
-
-        sclean();
-        return result;
     }
-   
+
+    if compressed then reconstruct();
+    var result = skeletonCopy();
+
+    diffHelper((0, 0), result);
+
+    sclean();
+    return result;
+}
+
 
     /** Return sqrt(integral(f(x)**2))
      */
     def norm2() {
-        if compressed then reconstruct((0,0));
+        if compressed then reconstruct();
         return sqrt(+ reduce [i in s] normf(i)**2);
     }
 
@@ -419,15 +474,15 @@ class Function {
         this = alpha*this + beta*other (other is not changed).
      */
     def gaxpy(alpha, other, beta) {
-        if !compressed then compress((0,0));
-        if !other.compressed then other.compress((0,0));
+        if !compressed then compress();
+        if !other.compressed then other.compress();
 
         s[0, 0] = s[0, 0]*alpha + other.s[0, 0]*beta; // Do scaling coeffs
-	for (n,l) in d.indices {
-            d[n,l] *= alpha;
+	for i in d.indices {
+            d[i] *= alpha;
         }
-	for (n,l) in other.d.indices {
-            d[n,l] += other.d[n,l]*beta;
+	for i in other.d.indices {
+            d[i] += other.d[i]*beta;
         }
 
         // return this so operations can be chained
@@ -453,8 +508,10 @@ class Function {
     
     /** Recursively multiply f1 and f2 put the result into this
      */ 
-    def multiply(f1, f2, n=0, l=0) {
-        if f1.s.has_coeffs((n, l)) && f2.s.has_coeffs((n, l)) {
+    def multiply(f1, f2, curNode = (0,0)) {
+        const (n, _) = curNode;
+        const child = s.get_children(curNode);
+        if f1.s.has_coeffs(curNode) && f2.s.has_coeffs(curNode) {
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
                 // of order k-1 the result could be up to order 2(k-1) so
@@ -462,46 +519,46 @@ class Function {
                 // keep it within the threshold
 
                 // refine both one more level
-                f1.recur_down(n, l);
-                f2.recur_down(n, l);
+                f1.recur_down(curNode);
+                f2.recur_down(curNode);
 
                 // scale factor for this level = sqrt((2^d)^(n+1))
                 var scale_factor = sqrt(2.0**(n+1));
 
                 // multiply f1.s[n+1][2*l] and f2.s[n+1][2*l]
-                var f = f1.s[n+1, 2*l] * quad_phiT;
-                var g = f2.s[n+1, 2*l] * quad_phiT;
+                var f = f1.s[child(1)] * quad_phiT;
+                var g = f2.s[child(1)] * quad_phiT;
                 f *= g; // Note: Element-wise multiplication
-                s[n+1, 2*l] = (f * quad_phiw) * scale_factor;
+                s[child(1)] = (f * quad_phiw) * scale_factor;
 
                 // multiply f1.s[n+1][2*l+1] and f2.s[n+1][2*l+1]
-                f  =  f1.s[n+1, 2*l+1] * quad_phiT;
-                g  =  f2.s[n+1, 2*l+1] * quad_phiT;
+                f  =  f1.s[child(2)] * quad_phiT;
+                g  =  f2.s[child(2)] * quad_phiT;
                 f *= g;
-                s[n+1, 2*l+1] = (f * quad_phiw) * scale_factor;
+                s[child(2)] = (f * quad_phiw) * scale_factor;
 
             } else {
                 // if autorefine is not set or we are at the max_level
                 // live with what you get
-                var f = f1.s[n, l] * quad_phiT;
-                var g = f2.s[n, l] * quad_phiT;
+                var f = f1.s[curNode] * quad_phiT;
+                var g = f2.s[curNode] * quad_phiT;
                 f *= g;
 
                 // scale factor for this level = sqrt((2^d)^(n+1))
-                s[n, l] = (f * quad_phiw) * sqrt(2.0**(n));
+                s[curNode] = (f * quad_phiw) * sqrt(2.0**(n));
             }
 
         } else {
-            if f1.s.has_coeffs((n, l)) && !f2.s.has_coeffs((n, l)) then
+            if f1.s.has_coeffs(curNode) && !f2.s.has_coeffs(curNode) then
                 // refine this box down to next level in f1
-                f1.recur_down(n, l);
-            else if !f1.s.has_coeffs((n, l)) && f2.s.has_coeffs((n, l)) then
+                f1.recur_down(curNode);
+            else if !f1.s.has_coeffs(curNode) && f2.s.has_coeffs(curNode) then
                 // refine this box down to next level in f2
-                f2.recur_down(n, l);
+                f2.recur_down(curNode);
 
             // calls on sub-trees can go in parallel
-            multiply(f1, f2, n+1, 2*l);
-            multiply(f1, f2, n+1, 2*l+1);
+            multiply(f1, f2, child(1));
+            multiply(f1, f2, child(2));
         }
     }
 
@@ -511,8 +568,8 @@ class Function {
         so possibly call reconstruct on one or both of them first
      */
     def multiply(other) {
-        if compressed then reconstruct((0,0));
-        if other.compressed then other.reconstruct((0,0));
+        if compressed then reconstruct();
+        if other.compressed then other.reconstruct();
 
         // Store the result in a new Function
         var result = skeletonCopy();

@@ -90,6 +90,10 @@ class FTree {
         return ((lvl+1, 2*idx), (lvl+1, 2*idx+1));
     }
 
+    def get_neighbors((lvl, idx)) {
+        return ((lvl, idx-1), (lvl, idx+1));
+    }
+
     /** Access an element in the FTree.  If it doesn't exist, 
         return None.
      */  

@@ -23,11 +23,11 @@ def main() {
         }
 
         writeln("Compressing F", i, " ...");
-        F.compress((0,0));
+        F.compress();
         if verbose then F.summarize();
 
         writeln("Reconstructing F", i, " ...");
-        F.reconstruct((0,0));
+        F.reconstruct();
         writeln("F", i, ".norm2() = ", F.norm2());
         if verbose then F.summarize();
 
