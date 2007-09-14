@@ -1,2 +1,45 @@
-Brad needs to update this once the code makes it through
-the compiler.
+ADom is: [0..63]
+bankStart is: 0
+lo is: 0
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 0..6 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 1
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 1..7 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 16
+lo is: 16
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 16..22 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 17
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 17..23 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 32
+lo is: 32
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 32..38 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 33
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 33..39 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 48
+lo is: 48
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 48..54 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 49
+t1 is: 0..3
+t2 is: 0..6 by 2
+t3 is: 49..55 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i

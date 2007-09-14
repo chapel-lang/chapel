@@ -1,6 +1,6 @@
 param radix = 4;
 
-config const n: int(64) = 16;
+config const n: int(64) = 6;
 const m = 2**n;
 
 def main() {
@@ -15,8 +15,11 @@ def dfft(A: [?ADom]) {
   var span = 8;
   var wk1, wk2, wk3: complex(128);
 
+  writeln("ADom is: ", ADom);
   for bankStart in ADom by 2*span {
+    writeln("bankStart is: ", bankStart);
     for lo in bankStart + [0..str) {
+      writeln("lo is: ", lo);
       var t1 = [0..radix);
       writeln("t1 is: ", t1);
       var t2 = [0..radix)*str;
