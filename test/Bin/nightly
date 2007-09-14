@@ -120,7 +120,7 @@ chomp($platform);
 $fullplatform = "$platform";
 $chpltargetplatform = `$utildir/platform.pl --target`;
 chomp($chpltargetplatform);
-if ($chpltargetplatform ne "") {
+if ($chpltargetplatform ne "" && $chpltargetplatform ne $fullplatform) {
     $fullplatform = "$chpltargetplatform/$fullplatform";
 }
 if ($platform eq "xt-cnl") {
