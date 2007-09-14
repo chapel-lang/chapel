@@ -11,6 +11,8 @@ void _printError(const char* message, _int32 lineno, _string filename) {
   fflush(stdout);
   if (lineno)
     fprintf(stderr, "%s:%d: error: %s\n", filename, lineno, message);
+  else if (filename)
+    fprintf(stderr, "%s: error: %s\n", filename, message);
   else
     fprintf(stderr, "error: %s\n", message);
   _chpl_exit_any(1);

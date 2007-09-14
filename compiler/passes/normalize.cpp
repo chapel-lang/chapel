@@ -428,6 +428,12 @@ fix_def_expr(VarSymbol* var) {
   if (var->varClass == VAR_CONFIG && var->consClass != VAR_PARAM) {
     Expr* noop = new CallExpr(PRIMITIVE_NOOP);
     ModuleSymbol* module = var->getModule();
+    CallExpr* strToValExpr =
+      new CallExpr("_cast",
+                   new CallExpr(PRIMITIVE_TYPEOF, constTemp),
+                   new CallExpr(primitives_map.get("_config_get_value"),
+                                new_StringSymbol(var->name),
+                                new_StringSymbol(module->name)));
     stmt->insertAfter(
       new CondStmt(
         new CallExpr("!",
@@ -435,12 +441,12 @@ fix_def_expr(VarSymbol* var) {
                        new_StringSymbol(var->name),
                        new_StringSymbol(module->name))),
         noop,
-        new CallExpr(PRIMITIVE_MOVE, constTemp,
-          new CallExpr("_cast",
-            new CallExpr(PRIMITIVE_TYPEOF, constTemp),
-            new CallExpr(primitives_map.get("_config_get_value"),
-                         new_StringSymbol(var->name),
-                         new_StringSymbol(module->name))))));
+        new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
+    strToValExpr->filename = stringcat("<command line setting of '", var->name,
+                                       "'>");
+    strToValExpr->lineno = 0;
+                     
+
     stmt = noop; // insert regular definition code in then block
   }
   if (var->varClass == VAR_CONFIG && var->consClass == VAR_PARAM) {
