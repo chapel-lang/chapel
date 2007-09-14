@@ -1,6 +1,8 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
+#include <stdint.h>
+
 #define nil 0
 #define _nilType void*
 
