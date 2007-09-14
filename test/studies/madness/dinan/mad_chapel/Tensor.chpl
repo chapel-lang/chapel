@@ -3,9 +3,8 @@ config param truncateAtEps  = false;
 
 // Truncate values to 0 if they are below machine precision
 def truncate(x) {
-    if truncateAtEps then 
-      if x <= eps then return 0.0;
-    return x;
+    if truncateAtEps && x <= eps then return 0.0;
+    else return x;
 }
 
 // Copy matrix B's transpose into matrix A
