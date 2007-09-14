@@ -1,0 +1,3 @@
+#Because inlining is turned off when baseline is run:
+trivial/mjoyner/inlinefunc/inlfunc1_report
+trivial/mjoyner/inlinefunc/inlfunc2_report
