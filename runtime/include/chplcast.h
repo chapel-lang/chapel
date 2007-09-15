@@ -25,15 +25,21 @@ _uint16 _string_to_uint16(const char* str, int lineno, const char* filename);
 _uint32 _string_to_uint32(const char* str, int lineno, const char* filename);
 _uint64 _string_to_uint64(const char* str, int lineno, const char* filename);
 
+_bool _string_to_bool(const char* str, int lineno, const char* filename);
 
-#define _string_to_real32(s, l, f) ((_real32)atof(s))
-#define _string_to_real64(s, l, f) ((_real64)atof(s))
-#define _string_to_real128(s, l, f) ((_real128)atof(s))
-#define _string_to_imag32(s, l, f) ((_imag32)atof(s))
-#define _string_to_imag64(s, l, f) ((_imag64)atof(s))
-#define _string_to_imag128(s, l, f) ((_imag128)atof(s))
-#define _string_to_bool(s, l, f) (string_equal(s, "true"))
-_string _string_get_imag_part(_string s);
+_real32 _string_to_real32_precise(const char* str, int* invalid, char* invalidCh);
+_real64 _string_to_real64_precise(const char* str, int* invalid, char* invalidCh);
+_imag32 _string_to_imag32_precise(const char* str, int* invalid, char* invalidCh);
+_imag64 _string_to_imag64_precise(const char* str, int* invalid, char* invalidCh);
+_complex64 _string_to_complex64_precise(const char* str, int* invalid, char* invalidCh);
+_complex128 _string_to_complex128_precise(const char* str, int* invalid, char* invalidCh);
+
+_real32 _string_to_real32(const char* str, int lineno, const char* filename);
+_real64 _string_to_real64(const char* str, int lineno, const char* filename);
+_imag32 _string_to_imag32(const char* str, int lineno, const char* filename);
+_imag64 _string_to_imag64(const char* str, int lineno, const char* filename);
+_complex64 _string_to_complex64(const char* str, int lineno, const char* filename);
+_complex128 _string_to_complex128(const char* str, int lineno, const char* filename);
 
 
 /* every other primitive type to string */

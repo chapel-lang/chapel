@@ -86,13 +86,6 @@ feature request: promotion is less specific than generic [functions/bradc/resolu
 feature request: promotion is less specific than generic [functions/bradc/resolution/rangeVsPromotion]
 
 
-* Generated executable's command-line parsing is not as robust as we'd like
-runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidBoolean]
-runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidComplex]
-runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidFloat]
-runtime error: string-to-value (configs) [execflags/shannon/configs/configVarInvalidInteger]
-
-
 * Semantic futures
 semantic: direct module access for un-use-d module [trivial/deitz/test_module_access1]
 semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef2]

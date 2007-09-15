@@ -1,0 +1,1 @@
+badStringToImag2.chpl:3: error: Missing terminating 'i' character when converting from string to imag(64); got 'j' instead

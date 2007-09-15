@@ -38,6 +38,8 @@ typedef long double         _real128;
 typedef float               _imag32;
 typedef double              _imag64;
 typedef long double         _imag128;
+typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
+typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
 typedef const char*         _string;
 typedef _int64              _symbol;
 

@@ -823,13 +823,8 @@ pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t) {
   return y;
 }
 
-def _cast(type t, x: string) where _isComplexType(t) {
-  var y: t;
-  y.re = x:y.re.type;
-  var im = __primitive("_string_get_imag_part", x);
-  y.im = im:y.im.type;
-  return y;
-}
+pragma "inline" def _cast(type t, x: string) where _isComplexType(t)
+  return __primitive("cast", t, x);
 
 //
 // casts from complex

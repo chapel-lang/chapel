@@ -23,8 +23,10 @@ writeln("4":uint(64));
 writeln("3.14":real(32));
 writeln("3.14":real(64));
 
-writeln("3.14":imag(32));
-writeln("3.14":imag(64));
+// BLC: don't believe that we should support these conversions;
+// Steve, if you disagree, please discuss with me
+//writeln("3.14":imag(32));
+//writeln("3.14":imag(64));
 
 writeln("3.14i":imag(32));
 writeln("3.14i":imag(64));

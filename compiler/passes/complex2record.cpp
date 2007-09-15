@@ -19,6 +19,7 @@ static ClassType*
 buildComplexRecord(const char* name, Type* real) {
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(name, ct);
+  ts->addPragma("defined in runtime");
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("re", real)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("im", real)));
   theProgram->block->insertAtTail(new DefExpr(ts));

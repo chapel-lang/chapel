@@ -504,12 +504,16 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  type->codegenPrototype(outfile);
+  if (!hasPragma("defined in runtime")) {
+    type->codegenPrototype(outfile);
+  }
 }
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  type->codegenDef(outfile);
+  if (!hasPragma("defined in runtime")) {
+    type->codegenDef(outfile);
+  }
 }
 
 

@@ -1,1 +1,1 @@
-***Error: "maybe" is not a valid value for config var "x" of type bool***
+<command line setting of 'x'>: error: Unexpected value when converting from string to bool: 'maybe'

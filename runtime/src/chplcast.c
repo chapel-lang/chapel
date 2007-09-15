@@ -59,25 +59,6 @@ static int illegalFirstUnsChar(char c) {
     return val;                                                         \
   }
 
-#define _define_string_to_int(base, width)                              \
-  _##base##width _string_to_##base##width(const char* str, int lineno,  \
-                                          const char* filename) {       \
-    int invalid;                                                        \
-    char invalidStr[2] = "\0\0";                                        \
-    _##base##width val = _string_to_##base##width##_precise(str,        \
-                                                            &invalid,   \
-                                                            invalidStr); \
-    if (invalid) {                                                      \
-      const char* message;                                              \
-      if (invalidStr[0]) {                                              \
-        message = _glom_strings(3, "Illegal character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
-      } else {                                                          \
-        message = "Empty string when converting from string to " #base "(" #width ")"; \
-      }                                                                 \
-      _printError(message, lineno, filename);                           \
-    }                                                                   \
-    return val;                                                         \
-  }
 
 _define_string_to_int_precise(int, 8, 0)
 _define_string_to_int_precise(int, 16, 0)
@@ -88,51 +69,188 @@ _define_string_to_int_precise(uint, 16, 1)
 _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%llu")
 
-_define_string_to_int(int, 8)
-_define_string_to_int(int, 16)
-_define_string_to_int(int, 32)
-_define_string_to_int(int, 64)
-_define_string_to_int(uint, 8)
-_define_string_to_int(uint, 16)
-_define_string_to_int(uint, 32)
-_define_string_to_int(uint, 64)
 
-
-/*
- *  string to complex
- */
-_string _string_get_imag_part(_string s) {
-  const char* ps = s;
-  while (*ps == ' ') // eat space
-    ps++;
-  if (*ps == '-' || *ps == '+') // eat sign
-    ps++;
-  if (!isdigit((int)*ps)) // test for digit
-    return "";
-  while (isdigit((int)*ps)) // eat integral part
-    ps++;
-  if (*ps == '.') { // test for decimal
-    ps++;
-    if (!isdigit((int)*ps)) // test for digit
-      return "";
-    while (isdigit((int)*ps)) // eat fractional part
-      ps++;
+_bool _string_to_bool(const char* str, int lineno, const char* filename) {
+  if (string_equal(str, "true")) {
+    return true;
+  } else if (string_equal(str, "false")) {
+    return false;
+  } else {
+    const char* message = 
+      _glom_strings(3, 
+                    "Unexpected value when converting from string to bool: '",
+                    str, "'");
+    _printError(message, lineno, filename);
+    return false;
   }
-  if (*ps == 'e' || *ps == 'E') { // test for exponent
-    ps++;
-    if (*ps == '+' || *ps == '-') // test for exponent sign
-      ps++;
-    if (!isdigit((int)*ps)) // test for digit
-      return "";
-    while (isdigit((int)*ps)) // eat exponent part
-      ps++;
-  }
-  while (*ps == ' ') // eat space
-    ps++;
-  if (*ps == '+' || *ps == '-') // check for imaginary part
-    return ++ps;
-  return "";
 }
+
+
+#define _define_string_to_float_precise(base, width, format)            \
+  _##base##width _string_to_##base##width##_precise(const char* str,    \
+                                                    int* invalid,       \
+                                                    char* invalidCh) {  \
+    _##base##width val;                                                 \
+    int numbytes;                                                       \
+    int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    /* this numitems check is vague since implementations vary about    \
+       whether or not to count %n as a match. */                        \
+    if (numitems == 1 || numitems == 2) {                               \
+      if (numbytes == strlen(str)) {                                    \
+        /* for negatives, sscanf works, but we wouldn't want chapel to */ \
+        *invalid = 0;                                                   \
+        *invalidCh = '\0';                                              \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = *(str+numbytes);                                   \
+      }                                                                 \
+    } else {                                                            \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+    }                                                                   \
+    return val;                                                         \
+  }
+
+_define_string_to_float_precise(real, 32, "%f")
+_define_string_to_float_precise(real, 64, "%lf")
+
+#define _define_string_to_imag_precise(base, width, format)             \
+  _##base##width _string_to_##base##width##_precise(const char* str,    \
+                                                    int* invalid,       \
+                                                    char* invalidCh) {  \
+    _##base##width val;                                                 \
+    int numbytes;                                                       \
+    char i = '\0';                                                      \
+    int numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);      \
+    if (numitems == 1) {                                                \
+      /* missing terminating i */                                       \
+      *invalid = 2;                                                     \
+      *invalidCh = i;                                                   \
+      /* this numitems check is vague since implementations vary about  \
+         whether or not to count %n as a match. */                      \
+    } else if (numitems == 2 || numitems == 3) {                        \
+      if (i != 'i') {                                                   \
+        *invalid = 2;                                                   \
+        *invalidCh = i;                                                 \
+      } else if (numbytes == strlen(str)) {                             \
+        *invalid = 0;                                                   \
+        *invalidCh = '\0';                                              \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = *(str+numbytes);                                   \
+      }                                                                 \
+    } else {                                                            \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+    }                                                                   \
+    return val;                                                         \
+  }
+
+
+_define_string_to_imag_precise(imag, 32, "%f")
+_define_string_to_imag_precise(imag, 64, "%lf")
+
+
+
+#define _define_string_to_complex_precise(base, width, format)          \
+  _##base##width _string_to_##base##width##_precise(const char* str,    \
+                                                    int* invalid,       \
+                                                    char* invalidCh) {  \
+    _##base##width val = {0.0, 0.0};                                    \
+    int numbytes = -1;                                                  \
+    char sign = '\0';                                                   \
+    char i = '\0';                                                      \
+    int numitems = sscanf(str, format"%c%n", &(val.re), &sign, &(val.im), &i, &numbytes); \
+    if (numitems == 1) {                                                \
+      *invalid = 0;                                                     \
+      *invalidCh = '\0';                                                \
+    } else if (numitems == 2) {                                         \
+      if (sign == 'i') {                                                \
+        val.im = val.re;                                                \
+        val.re = 0.0;                                                   \
+        *invalid = 0;                                                   \
+        *invalidCh = '\0';                                              \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = sign;                                              \
+      }                                                                 \
+    } else if (numitems == 3) {                                         \
+      *invalid = 2;                                                     \
+      *invalidCh = i;                                                   \
+      /* this numitems check is vague since implementations vary about  \
+         whether or not to count %n as a match. */                      \
+    } else if (numitems == 4 || numitems == 5) {                        \
+      if (sign != '-' && sign != '+') {                                 \
+        *invalid = 1;                                                   \
+        *invalidCh = sign;                                              \
+      } else if (i != 'i') {                                            \
+        *invalid = 1;                                                   \
+        *invalidCh = i;                                                 \
+      } else if (numbytes == strlen(str)) {                             \
+        if (sign == '-') {                                              \
+          val.im = -val.im;                                             \
+        }                                                               \
+        *invalid = 0;                                                   \
+        *invalidCh = '\0';                                              \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = *(str+numbytes);                                   \
+      }                                                                 \
+    } else {                                                            \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+    }                                                                   \
+    return val;                                                         \
+  }
+
+_define_string_to_complex_precise(complex, 64, "%f %c %f")
+_define_string_to_complex_precise(complex, 128, "%lf %c %lf")
+
+
+
+
+#define _define_string_to_type(base, width)                             \
+  _##base##width _string_to_##base##width(const char* str, int lineno,  \
+                                          const char* filename) {       \
+    int invalid;                                                        \
+    char invalidStr[2] = "\0\0";                                        \
+    _##base##width val = _string_to_##base##width##_precise(str,        \
+                                                            &invalid,   \
+                                                            invalidStr); \
+    if (invalid) {                                                      \
+      const char* message;                                              \
+      if (invalid == 2) {                                               \
+        if (invalidStr[0] == '\0') {                                    \
+          message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
+        } else {                                                        \
+          message = _glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+        }                                                               \
+      } else if (invalidStr[0]) {                                       \
+        message = _glom_strings(3, "Illegal character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+      } else {                                                          \
+        message = "Empty string when converting from string to " #base "(" #width ")"; \
+      }                                                                 \
+      _printError(message, lineno, filename);                           \
+    }                                                                   \
+    return val;                                                         \
+  }
+
+_define_string_to_type(int, 8)
+_define_string_to_type(int, 16)
+_define_string_to_type(int, 32)
+_define_string_to_type(int, 64)
+_define_string_to_type(uint, 8)
+_define_string_to_type(uint, 16)
+_define_string_to_type(uint, 32)
+_define_string_to_type(uint, 64)
+
+_define_string_to_type(real, 32)
+_define_string_to_type(real, 64)
+_define_string_to_type(imag, 32)
+_define_string_to_type(imag, 64)
+_define_string_to_type(complex, 64)
+_define_string_to_type(complex, 128)
+
 
 /*
  *  int and uint to string
