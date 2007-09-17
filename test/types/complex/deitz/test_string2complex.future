@@ -1,0 +1,3 @@
+bug: string2complex -1--1i
+
+This shouldn't work because this is not a valid complex literal, I don't think.
