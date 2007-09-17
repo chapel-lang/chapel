@@ -126,7 +126,7 @@ chomp($chpltargetplatform);
 if ($chpltargetplatform ne "" && $chpltargetplatform ne $fullplatform) {
     $fullplatform = "$chpltargetplatform/$fullplatform";
 }
-if ($platform eq "xt-cnl") {
+if ($chpltargetplatform eq "xt-cnl") {
   $compilername = $ENV{'PE_ENV'};
   chomp($compilername);
   if ($compilername ne "") {
