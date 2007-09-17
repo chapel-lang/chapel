@@ -152,59 +152,58 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 
-#define _define_string_to_complex_precise(base, width, format)          \
+#define _define_string_to_complex_precise(base, width, format, halfwidth) \
   _##base##width _string_to_##base##width##_precise(const char* str,    \
                                                     int* invalid,       \
                                                     char* invalidCh) {  \
     _##base##width val = {0.0, 0.0};                                    \
-    int numbytes = -1;                                                  \
-    char sign = '\0';                                                   \
-    char i = '\0';                                                      \
-    int numitems = sscanf(str, format"%c%n", &(val.re), &sign, &(val.im), &i, &numbytes); \
-    if (numitems == 1) {                                                \
-      *invalid = 0;                                                     \
-      *invalidCh = '\0';                                                \
-    } else if (numitems == 2) {                                         \
-      if (sign == 'i') {                                                \
-        val.im = val.re;                                                \
-        val.re = 0.0;                                                   \
+    /* check for pure imaginary case first */                           \
+    val.im = _string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
+    if (*invalid) {                                                     \
+      int numbytes = -1;                                                \
+      char sign = '\0';                                                 \
+      char i = '\0';                                                    \
+      int numitems;                                                     \
+      val.im = 0.0; /* reset */                                         \
+      numitems = sscanf(str, format" %c "format"%c%n", &(val.re), &sign, &(val.im), &i, &numbytes); \
+      if (numitems == 1) {                                              \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
-      } else {                                                          \
+      } else if (numitems == 2) {                                       \
         *invalid = 1;                                                   \
         *invalidCh = sign;                                              \
-      }                                                                 \
-    } else if (numitems == 3) {                                         \
-      *invalid = 2;                                                     \
-      *invalidCh = i;                                                   \
-      /* this numitems check is vague since implementations vary about  \
-         whether or not to count %n as a match. */                      \
-    } else if (numitems == 4 || numitems == 5) {                        \
-      if (sign != '-' && sign != '+') {                                 \
-        *invalid = 1;                                                   \
-        *invalidCh = sign;                                              \
-      } else if (i != 'i') {                                            \
-        *invalid = 1;                                                   \
+      } else if (numitems == 3) {                                       \
+        *invalid = 2;                                                   \
         *invalidCh = i;                                                 \
-      } else if (numbytes == strlen(str)) {                             \
-        if (sign == '-') {                                              \
-          val.im = -val.im;                                             \
+        /* this numitems check is vague since implementations vary about \
+           whether or not to count %n as a match. */                    \
+      } else if (numitems == 4 || numitems == 5) {                      \
+        if (sign != '-' && sign != '+') {                               \
+          *invalid = 1;                                                 \
+          *invalidCh = sign;                                            \
+        } else if (i != 'i') {                                          \
+          *invalid = 1;                                                 \
+          *invalidCh = i;                                               \
+        } else if (numbytes == strlen(str)) {                           \
+          if (sign == '-') {                                            \
+            val.im = -val.im;                                           \
+          }                                                             \
+          *invalid = 0;                                                 \
+          *invalidCh = '\0';                                            \
+        } else {                                                        \
+          *invalid = 1;                                                 \
+          *invalidCh = *(str+numbytes);                                 \
         }                                                               \
-        *invalid = 0;                                                   \
-        *invalidCh = '\0';                                              \
       } else {                                                          \
         *invalid = 1;                                                   \
-        *invalidCh = *(str+numbytes);                                   \
+        *invalidCh = *str;                                              \
       }                                                                 \
-    } else {                                                            \
-      *invalid = 1;                                                     \
-      *invalidCh = *str;                                                \
     }                                                                   \
     return val;                                                         \
   }
 
-_define_string_to_complex_precise(complex, 64, "%f %c %f")
-_define_string_to_complex_precise(complex, 128, "%lf %c %lf")
+_define_string_to_complex_precise(complex, 64, "%f", 32)
+_define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 
