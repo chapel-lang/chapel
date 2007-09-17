@@ -422,10 +422,11 @@ class Function {
 //        return result;
 //    }
    
-def diff() {
-    def diffHelper(curNode=(0,0), result) {
+  def diff() {
+    def diffHelper(curNode = (0,0), result) {
         const (n,l) = curNode;
-        if debug then writeln(" * diff(", n, ", ", l, ")");
+        const child = s.get_children(curNode);
+        if debug then writeln(" * diff",curNode);
         if !s.has_coeffs(curNode) {
             // Sub trees can run in parallel
             // Run down tree until we hit scaling function coefficients
@@ -434,17 +435,18 @@ def diff() {
         } else {
             // These can also go in parallel since may involve
             // recurring up & down the tree.
-            if debug then writeln(" * diff: coeffs at (", n, ", ", l, ")");
-            var sm = get_coeffs((n, l-1));
-            var sp = get_coeffs((n, l+1));
-            var s0 = s[n, l];
+            const neighbor = s.get_neighbors(curNode);
+            if debug then writeln(" * diff: coeffs at ",curNode);
+            var sm = get_coeffs(neighbor(1));
+            var sp = get_coeffs(neighbor(2));
+            var s0 = s[curNode];
 
             // We have s0, check if we found sm and sp at this level
             if !isNone(sm) && !isNone(sp) {
                 var r = rp*sm + r0*s0 + rm*sp;
-                result.s[n, l] = r * 2.0**n;
+                result.s[curNode] = r * 2.0**n;
             } else {
-                recur_down((n, l));
+                recur_down(curNode);
                 // Sub trees can run in parallel
                 diffHelper((n+1, 2*l), result);
                 diffHelper((n+1, 2*l+1), result);
@@ -459,7 +461,7 @@ def diff() {
 
     sclean();
     return result;
-}
+  }
 
 
     /** Return sqrt(integral(f(x)**2))
