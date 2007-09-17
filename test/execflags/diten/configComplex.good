@@ -1,0 +1,3 @@
+x 3.14 - 2.1i should be 3.14 - 2.1i
+y 0.0 + 3.1i should be 0.0 + 3.1i
+z 1.1 + 3.1i should be 1.1 + 3.1i
