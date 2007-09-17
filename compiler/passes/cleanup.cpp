@@ -280,26 +280,30 @@ static void build_constructor(ClassType* ct) {
   }
 
   ASTMap field2formal;
-  for_fields(tmp, ct) {
-    if (!toVarSymbol(tmp))
+  for_fields(field, ct) {
+    bool initViaCopy = false;
+    if (!toVarSymbol(field))
       continue;
-    const char* name = tmp->name;
-    Type* type = tmp->type;
-    Expr* exprType = tmp->defPoint->exprType;
+    const char* name = field->name;
+    Type* type = field->type;
+    Expr* exprType = field->defPoint->exprType;
     if (exprType)
       exprType->remove();
-    Expr* init = tmp->defPoint->init;
+    Expr* init = field->defPoint->init;
     if (init) {
       init->remove();
-      if (!tmp->isTypeVariable && !exprType)
+      if (!field->isTypeVariable && !exprType) {
         exprType = init->copy();
-    } else if (!tmp->isTypeVariable)
+        initViaCopy = true;
+      }
+    } else if (!field->isTypeVariable)
       init = new SymExpr(gNil);
-    VarSymbol *vtmp = toVarSymbol(tmp);
+    VarSymbol *vtmp = toVarSymbol(field);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
+    arg->initUsingCopy = initViaCopy;
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
-    field2formal.put(tmp, arg);
-    arg->isTypeVariable = tmp->isTypeVariable;
+    field2formal.put(field, arg);
+    arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(defExpr);
