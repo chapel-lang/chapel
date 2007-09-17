@@ -34,12 +34,15 @@
 #define _SHA1_H
 
 #include <stdlib.h>
-#include <sys/types.h>
-
-//#include "brg_types.h"
+#include "brg_types.h"
 
 #define SHA1_BLOCK_SIZE  64
 #define SHA1_DIGEST_SIZE 20
+
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
 
 /** BEGIN: UTS RNG Harness **/
 
@@ -47,13 +50,11 @@
 #define HIGH_BITS   0x80000000
 
 #define sha1_context sha1_ctx_s
-
-typedef u_int8_t  RNG_state;
-typedef u_int8_t  uint8;
-typedef u_int32_t uint32;
-typedef char *    caddr_t;
-typedef void      VOID_RETURN;
-typedef u_int32_t uint_32t;
+//#define RNG_state uint8
+typedef u_int8_t RNG_state;
+typedef u_int8_t uint8;
+typedef u_int32_t  uint32;
+//typedef char *   caddr_t;
 
 /**********************************/
 /* random number generator state  */
@@ -97,5 +98,9 @@ VOID_RETURN sha1_begin(sha1_ctx ctx[1]);
 VOID_RETURN sha1_hash(const unsigned char data[], unsigned long len, sha1_ctx ctx[1]);
 VOID_RETURN sha1_end(unsigned char hval[], sha1_ctx ctx[1]);
 VOID_RETURN sha1(unsigned char hval[], const unsigned char data[], unsigned long len);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 CHPL     = chpl
-CHPLFLAGS= -O --no-bounds-checks
+CHPLFLAGS= -O --no-bounds-checks --ccflags -DBRG_STD_TYPES
 
 TESTTREE = -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
 
