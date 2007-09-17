@@ -395,7 +395,8 @@ ArgSymbol::ArgSymbol(intentTag iIntent, const char* iName,
   variableExpr(iVariableExpr),
   isGeneric(false),
   instantiatedFrom(NULL),
-  instantiatedParam(false)
+  instantiatedParam(false),
+  initUsingCopy(false)
 {
   if (intent == INTENT_PARAM)
     isGeneric = true;
@@ -418,6 +419,7 @@ ArgSymbol::copyInner(ASTMap* map) {
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
+  ps->initUsingCopy = initUsingCopy;
   ps->isTypeVariable = isTypeVariable;
   return ps;
 }
@@ -765,7 +767,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       if (SymExpr* symExpr = toSymExpr(temp_init))
         if (symExpr->var == gNil)
           temp_init = NULL;
-      if (formal->defPoint->exprType)
+      if (formal->initUsingCopy)
+        temp_type = NULL;
+      else if (formal->defPoint->exprType)
         temp_type = formal->defPoint->exprType->copy();
       else if (formal->type != dtUnknown && !formal->type->isGeneric)
         temp_type = new SymExpr(formal->type->symbol);

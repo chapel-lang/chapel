@@ -123,6 +123,7 @@ class ArgSymbol : public Symbol {
   bool isGeneric;
   Type* instantiatedFrom;
   bool instantiatedParam;
+  bool initUsingCopy;
 
   ArgSymbol(intentTag iIntent, const char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
