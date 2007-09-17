@@ -1,0 +1,34 @@
+Mad Chapel -- Differentiation Test
+
+** Testing function 1
+F1.norm2() = 1.0
+Compressing F1 ...
+Reconstructing F1 ...
+F1.norm2() = 1.0
+Evaluating F1 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 9.3e-17
+ -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-2.3e-16
+ -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.5e-15
+ -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
+ -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-2.0e-07
+ -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
+ -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
+ -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.6e-15
+ -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-2.1e-16
+ -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-5.4e-17
+
+Differentiating F1 ...
+
+Evaluating dF1 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 3.3e-14
+ -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-2.2e-14
+ -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.1e-13
+ -- 0.30:  F_numeric()= 0.00000064  f_analytic()= 0.00000174 err=-1.1e-06
+ -- 0.40:  F_numeric()= 2.84605633  f_analytic()= 2.84603425 err= 2.2e-05  > thresh
+ -- 0.50:  F_numeric()= 0.00046752  f_analytic()=-0.00000000 err= 4.7e-04  > thresh
+ -- 0.60:  F_numeric()=-2.84605633  f_analytic()=-2.84603425 err=-2.2e-05  > thresh
+ -- 0.70:  F_numeric()=-0.00000064  f_analytic()=-0.00000174 err= 1.1e-06
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()=-0.00000000 err= 1.1e-13
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()=-0.00000000 err= 2.4e-14
+ -- 1.00:  F_numeric()=-0.00000000  f_analytic()=-0.00000000 err=-3.2e-14
