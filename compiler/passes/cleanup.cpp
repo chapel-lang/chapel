@@ -333,27 +333,22 @@ static void build_constructor(ClassType* ct) {
   if (ct->classTag == CLASS_UNION)
     fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
   // assign formals to fields by name
-  for_fields(field, ct) {
-    for_formals(formal, fn) {
-      if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
-        CallExpr* call = toCallExpr(formal->defPoint->exprType);
-        if (call && call->isNamed("_build_array_type")) {
-          VarSymbol* tmp = new VarSymbol("_tmp");
-          fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
-          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                        new_StringSymbol(field->name), tmp));
-          fn->insertAtTail(new CondStmt(
-            new CallExpr("!=", dtNil->symbol, formal),
-            new CallExpr("=",
-              new CallExpr(".",
-                           fn->_this,
-                           new_StringSymbol(field->name)),
-                         formal)));
-        } else {
-          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                           new_StringSymbol(field->name), formal);
-          fn->insertAtTail(assign_expr);
-        }
+  for_formals(formal, fn) {
+    if (!formal->variableExpr) {
+      CallExpr* call = toCallExpr(formal->defPoint->exprType);
+      if (call && call->isNamed("_build_array_type")) {
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(formal->name), tmp));
+        fn->insertAtTail(new CondStmt(
+                           new CallExpr("!=", dtNil->symbol, formal),
+                           new CallExpr("=",
+                             new CallExpr(".", fn->_this,
+                               new_StringSymbol(formal->name)), formal)));
+      } else {
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(formal->name), formal));
       }
     }
   }
