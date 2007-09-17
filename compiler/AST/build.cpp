@@ -715,8 +715,8 @@ build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variab
     argSymbol->intent = INTENT_BLANK;
     argSymbol->isGeneric = false;
     argSymbol->isTypeVariable = true;
-  }
-  if (!type)
+    argSymbol->type = dtAny;
+  } else if (!type && !init)
     argSymbol->type = dtAny;
   return new DefExpr(argSymbol, NULL, type);
 }
