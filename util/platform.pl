@@ -7,7 +7,7 @@ if ($flag eq "" || $flag eq "--host") {
 } elsif ($flag eq "--target") {
     $preset_platform=$ENV{'CHPL_TARGET_PLATFORM'};
     if ($preset_platform eq "") {
-        $preset_platfrom=$ENV{'CHPL_HOST_PLATFORM'};
+        $preset_platform=$ENV{'CHPL_HOST_PLATFORM'};
     }
 }
 
