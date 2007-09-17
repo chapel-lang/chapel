@@ -117,6 +117,9 @@ unimplemented feature: array reads [types/file/fileIO]
 * Configuration variables of tuple types
 unimplemented feature: configs of tuples (string-to-value) [execflags/bradc/tupleConfig]
 
+* Configuration variable of complex type, bad value on command line
+error message: [execflags/diten/configComplex]
+
 
 * Array arguments cannot have both their domain and element types queried
 unimplemented feature: query formal array domain and element type [functions/bradc/querydomelem]

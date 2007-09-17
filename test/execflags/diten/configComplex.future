@@ -1,1 +1,1 @@
-bug: config complex set on command line as "ai + b" is set to "a"
+error msg: The setting of z on the command line should result in a format error
