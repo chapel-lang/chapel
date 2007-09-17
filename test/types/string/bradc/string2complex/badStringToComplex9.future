@@ -1,0 +1,3 @@
+bug: bad (imaginary) string to complex -- space between number and i
+
+This should result in an error but currently works.
