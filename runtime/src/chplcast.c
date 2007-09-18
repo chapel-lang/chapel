@@ -13,12 +13,18 @@ static int illegalFirstUnsChar(char c) {
   return ((c <= '0' || c >= '9') && (c != '+'));
 }
 
+/* Need to use this helper macro for PGI where doing otherwise causes
+   spaces to disappear between the type name and the subsequent
+   tokens */
+
+#define _type(base, width) _##base##width
+
 #define _define_string_to_int_precise(base, width, uns)                 \
-  _##base##width _string_to_##base##width##_precise(const char* str,    \
-                                                    int* invalid,       \
-                                                    char* invalidCh) {  \
+  _type(base,width) _string_to_##base##width##_precise(const char* str, \
+                                                       int* invalid,    \
+                                                       char* invalidCh) { \
     char* endPtr;                                                       \
-    _##base##width val = (_##base##width)strtol(str, &endPtr, 10);      \
+    _type(base, width) val = (_##base##width)strtol(str, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
@@ -30,10 +36,10 @@ static int illegalFirstUnsChar(char c) {
   }
 
 #define _define_string_to_bigint_precise(base, width, uns, format)      \
-  _##base##width _string_to_##base##width##_precise(const char* str,    \
-                                                    int* invalid,       \
-                                                    char* invalidCh) {  \
-    _##base##width val;                                                 \
+  _type(base, width)  _string_to_##base##width##_precise(const char* str, \
+                                                         int* invalid,  \
+                                                         char* invalidCh) { \
+    _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
     /* this numitems check is vague since implementations vary about    \
@@ -87,10 +93,10 @@ _bool _string_to_bool(const char* str, int lineno, const char* filename) {
 
 
 #define _define_string_to_float_precise(base, width, format)            \
-  _##base##width _string_to_##base##width##_precise(const char* str,    \
-                                                    int* invalid,       \
-                                                    char* invalidCh) {  \
-    _##base##width val;                                                 \
+  _type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                        int* invalid,   \
+                                                        char* invalidCh) { \
+    _type(base, width) val;                                             \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
     /* this numitems check is vague since implementations vary about    \
@@ -115,10 +121,10 @@ _define_string_to_float_precise(real, 32, "%f")
 _define_string_to_float_precise(real, 64, "%lf")
 
 #define _define_string_to_imag_precise(base, width, format)             \
-  _##base##width _string_to_##base##width##_precise(const char* str,    \
-                                                    int* invalid,       \
-                                                    char* invalidCh) {  \
-    _##base##width val;                                                 \
+  _type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                        int* invalid,   \
+                                                        char* invalidCh) { \
+    _type(base, width) val;                                             \
     int numbytes;                                                       \
     char i = '\0';                                                      \
     int numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);      \
@@ -153,10 +159,10 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 #define _define_string_to_complex_precise(base, width, format, halfwidth) \
-  _##base##width _string_to_##base##width##_precise(const char* str,    \
-                                                    int* invalid,       \
-                                                    char* invalidCh) {  \
-    _##base##width val = {0.0, 0.0};                                    \
+  _type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                        int* invalid,   \
+                                                        char* invalidCh) { \
+    _type(base, width) val = {0.0, 0.0};                                \
     /* check for pure imaginary case first */                           \
     val.im = _string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
@@ -209,13 +215,13 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_type(base, width)                             \
-  _##base##width _string_to_##base##width(const char* str, int lineno,  \
-                                          const char* filename) {       \
+  _type(base, width) _string_to_##base##width(const char* str, int lineno, \
+                                              const char* filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _##base##width val = _string_to_##base##width##_precise(str,        \
-                                                            &invalid,   \
-                                                            invalidStr); \
+    _type(base, width) val = _string_to_##base##width##_precise(str,    \
+                                                                &invalid, \
+                                                                invalidStr); \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \
