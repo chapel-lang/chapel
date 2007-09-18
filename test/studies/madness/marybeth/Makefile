@@ -1,10 +1,10 @@
 GENC   = gen_c
 
 CHPL    = chpl
-CFLAGS  = --instantiate-max 512 --print-passes
-#CFLAGS += -g --savec=$(GENC) --short-names
-#CFLAGS += --CHPLflags "-Wall"
-#CFLAGS += --no-cg-cpp-lines
+CHPL_FLAGS  = --instantiate-max 512 --print-passes
+#CHPL_FLAGS += -g --savec=$(GENC) --short-names
+#CHPL_FLAGS += --ccflags "-Wall"
+#CHPL_FLAGS += --no-cg-cpp-lines
 
 TESTFLAGS = --instantiate-max 512
 
@@ -27,26 +27,26 @@ all: $(TARGETS)
 FORCE:
 
 test_diff: $(SOURCES) test_diff.chpl MadAnalytics.chpl
-	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
 
 
 test_gaxpy: $(SOURCES) test_gaxpy.chpl MadAnalytics.chpl
-	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
 
 
 test_mul: $(SOURCES) test_mul.chpl MadAnalytics.chpl
-	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
 
 
 test_likepy: $(SOURCES) test_likepy.chpl MadAnalytics.chpl
-	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
 
 
 test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
-	$(CHPL) $(CFLAGS) --main-module $@ -o $@ $+
+	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
 
 test:
-	@$(MAKE) CHPL="$(CHPL)" CFLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
+	@$(MAKE) CHPL="$(CHPL)" CHPL_FLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
 	./test_diff -nl 1
 	./test_gaxpy -nl 1
 	./test_mul -nl 1
