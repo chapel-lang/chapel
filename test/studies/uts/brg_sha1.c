@@ -67,7 +67,7 @@ void rng_init(RNG_state *newstate, int seed)
 void rng_spawn(RNG_state *mystate, RNG_state *newstate, int spawnnumber)
 {
 	struct sha1_context ctx;
-	uint8  bytes[4];
+	uint_8t  bytes[4];
 	
 	bytes[0] = 0xFF & (spawnnumber >> 24);
 	bytes[1] = 0xFF & (spawnnumber >> 16);
@@ -82,7 +82,7 @@ void rng_spawn(RNG_state *mystate, RNG_state *newstate, int spawnnumber)
 
 int rng_rand(RNG_state *mystate){
         int r;
-	uint32 b =  (mystate[16] << 24) | (mystate[17] << 16)
+	uint_32t b =  (mystate[16] << 24) | (mystate[17] << 16)
 		| (mystate[18] << 8) | (mystate[19] << 0);
 	b = b & POS_MASK;
 	
@@ -94,7 +94,7 @@ int rng_rand(RNG_state *mystate){
 int rng_nextrand(RNG_state *mystate){
 	struct sha1_context ctx;
 	int r;
-	uint32 b;
+	uint_32t b;
 
 	sha1_begin(&ctx);
 	sha1_hash(mystate, 20, &ctx);

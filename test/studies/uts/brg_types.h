@@ -52,6 +52,7 @@ extern "C" {
 
 /* Try this if you you get an error from one of the typedefs below */
 #ifdef BRG_C99_TYPES
+#include <inttypes.h>
 #include <stdint.h>
 #  define BRG_UI8
      typedef uint8_t uint_8t;

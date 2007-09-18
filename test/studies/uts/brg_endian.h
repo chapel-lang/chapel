@@ -43,7 +43,7 @@
       defined( __CYGWIN32__ ) || defined( __DJGPP__ ) || defined( __osf__ )
 #  include <machine/endian.h>
 #elif defined( __linux__ ) || defined( __GNUC__ ) || defined( __GNU_LIBRARY__ )
-#  if !defined( __MINGW32__ )
+#  if !defined( __MINGW32__ ) && (!defined(__GNUC__) || (__GNUC__ >= 3 && __GNUC_MINOR__ > 0))
 #    include <endian.h>
 #    if !defined( __BEOS__ )
 #      include <byteswap.h>
