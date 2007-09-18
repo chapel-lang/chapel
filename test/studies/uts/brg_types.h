@@ -42,15 +42,13 @@
 #ifndef BRG_TYPES_H
 #define BRG_TYPES_H
 
-#include <sys/types.h>
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 #include <limits.h>
 
-/* Try this if you you get an error from one of the typedefs below */
+/* Try one of these if things don't work automatically */
 #ifdef BRG_C99_TYPES
 #include <inttypes.h>
 #include <stdint.h>
@@ -64,7 +62,21 @@ extern "C" {
 #  define BRG_UI64
 #    define li_64(h) 0x##h##u
      typedef uint64_t uint_64t;
-#endif /* BRG_C99_TYPES */
+
+#elif defined( BRG_STD_TYPES )
+#include <sys/types.h>
+#  define BRG_UI8
+     typedef u_int8_t uint_8t;
+#  define BRG_UI16
+     typedef u_int16_t uint_16t;
+#  define BRG_UI32
+#    define li_32(h) 0x##h##u
+     typedef u_int32_t uint_32t;
+#  define BRG_UI64
+#    define li_64(h) 0x##h##u
+     typedef u_int64_t uint_64t;
+
+#endif
 
 #ifndef BRG_UI8
 #  define BRG_UI8

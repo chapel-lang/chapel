@@ -115,8 +115,8 @@ char * rng_showstate(RNG_state *state, char *s){
 
 /* describe random number generator type into string */
 int rng_showtype(char *strBuf, int ind) {
-  ind += sprintf(strBuf+ind, "SHA-1 (state size = %zuB)",
-                 sizeof(struct state_t));
+  ind += sprintf(strBuf+ind, "SHA-1 (state size = %uB)",
+                 (unsigned) sizeof(struct state_t));
   return ind;
 }
 
