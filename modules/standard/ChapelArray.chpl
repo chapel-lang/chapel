@@ -428,7 +428,6 @@ def =(a: _array, b: a.eltType) {
 }
 
 def _copy(a: _array) {
-  if a._value == nil then return a;
   var b : [a._dom] a.eltType;
   b = a;
   return b;
