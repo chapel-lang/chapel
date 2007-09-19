@@ -1,6 +1,5 @@
 class CMODist {
-  param stridable: bool = false;
-  def buildDomain(param rank: int, type dimensional_index_type) {
+  def buildDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
     return CMODomain(rank=rank, dim_type=dimensional_index_type, stridable=stridable);
   }
 }

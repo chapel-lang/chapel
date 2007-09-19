@@ -1,8 +1,9 @@
 use List;
 
 def _build_domain_type(dist, param rank : int,
-                       type dimensional_index_type = int) {
-  var x = dist.buildDomain(rank, dimensional_index_type);
+                       type dimensional_index_type = int,
+                       param stridable = false) {
+  var x = dist.buildDomain(rank, dimensional_index_type, stridable);
   if rank > 1 {
     type index_type = rank*dimensional_index_type;
     return _domain(x.type, index_type, dimensional_index_type, rank, x);
@@ -70,9 +71,7 @@ def _any_stridable(ranges, param d: int = 1) param {
 
 def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   type t = ranges(1).eltType;
-  param domain_stridable = _any_stridable(ranges);
-  var d: domain(rank, t)
-           distributed (SingleLocaleDistribution(stridable=domain_stridable));
+  var d: domain(rank, t, _any_stridable(ranges)) distributed (SingleLocaleDistribution());
   d.setIndices(ranges);
   return d;
 }
