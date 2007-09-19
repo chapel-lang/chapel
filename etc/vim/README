@@ -1,18 +1,22 @@
-This syntax highlighting file is designed for use with Vim versions 5.08 or
+*README*                Chapel Mode for Vim
+
+
+Chapel support for Vim has been designed for use with Vim versions 5.08 or
 newer.
 
-Files:
-=====
 
- ftdetect/chpl.vim -- Allows vim to auto-detect a syntax highlighting
-                      scheme for chapel files.
+File Descriptions:
+==================
 
- syntax/chpl.vim   -- Syntax highlighting scheme for chapel
- indent/chpl.vim   -- Indenting scheme for chapel
+ *ftdetect/chpl.vim* -- Allows vim to auto-detect the syntax highlighting
+                        scheme for chapel files.
+ *syntax/chpl.vim*   -- Syntax highlighting scheme for chapel
+ *indent/chpl.vim*   -- Indenting scheme for chapel
+ *sample-vimrc*      -- Sample .vimrc configuration file
  
 
 Installation Instructions:
-=========================
+==========================
 
   - Create a directory in the root of your home directory called ".vim"
 
@@ -22,27 +26,31 @@ Installation Instructions:
 
     $ cp -r * $HOME/.vim
 
-  - (optional) Create a vimrc configuration file containing the settings given
-    below.
+  - Modify your .vimrc configuration file to enable automatic filetype
+    detection, syntax highlighting, and indenting (this step is optional but
+    recommended).
 
     $ vim $HOME/.vimrc
 
+    OR: Use the sample .vimrc file provided (be careful you don't overwrite
+    any existing .vimrc file!):
+
+    $ cp -i sample-vimrc .vimrc
+
 
 Enabling Chapel Support in Vim:
-==============================
+===============================
 
-Vim commands are denoted ": command".  You can give these commands manually
-whenever you open a file or they can also be given automatically every time vim
-is started by putting them in your ".vimrc" file.
+If you have chosen to use the *sample-vimrc* file you can safely ignore this
+section.  Vim commands are denoted ": command".  You can give these commands
+manually whenever you start a vim session (with the ":") or they can also be
+given automatically every time vim is started by putting them in your .vimrc
+file (without the ":").
 
   - Enable automatic filetype detection:
 
     : filetype on
   
-    Alternatively, you can manually select the chapel file type:
-
-    : set filetype=chpl
-
   - Enable syntax highlighting scheme:
   
     : syntax on
@@ -51,25 +59,6 @@ is started by putting them in your ".vimrc" file.
 
     : filetype indent on
 
-    
-Suggested .vimrc commands (copy-paste these into your .vimrc):
-=============================================================
 
-set nocompatible    " allow for non-vi compatible features
-syntax on           " enable syntax highlighting
-filetype indent on  " turn on filetype detection and indenting
-set autoindent      " turn on auto indenting
-
-" If you prefer spaces to tabs, uncomment the following:
-"  (To get a real tab with these settings, do CTRL-V TAB)
-" set expandtab       " replace indents with spaces
-" set shiftwidth=2    " set how many spaces per indent
-" set smarttab        " use spaces as indents at the beginning of lines
-
-" Other useful commands, uncomment as desired:
-" set background=dark " switch to color scheme for terminals with a dark background
-" set ignorecase      " ignore case when searching (turn off by ": set noignorecase")
-" set incsearch       " enable incremental search
-" set ruler           " show cursor line at the bottom of the terminal
-" set showmatch       " show bracket matches
-" set showmode        " display current mode in the status line
+==========================================================================
+vim:tw=78:ts=8:ft=help:
