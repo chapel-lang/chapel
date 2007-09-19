@@ -2,7 +2,7 @@ This syntax highlighting file is designed for use with Vim versions 5.08 or
 newer.
 
 Files:
------
+=====
 
  ftdetect/chpl.vim -- Allows vim to auto-detect a syntax highlighting
                       scheme for chapel files.
@@ -12,7 +12,7 @@ Files:
  
 
 Installation Instructions:
--------------------------
+=========================
 
   - Create a directory in the root of your home directory called ".vim"
 
@@ -22,16 +22,22 @@ Installation Instructions:
 
     $ cp -r * $HOME/.vim
 
+  - (optional) Create a vimrc configuration file containing the settings given
+    below.
 
-Enabling Chapel Features in Vim:
--------------------------------
+    $ vim $HOME/.vimrc
 
-Vim commands are denoted ": command".  Any of these commands can be issued
-automatically by adding them to your ".vimrc" file.
+
+Enabling Chapel Support in Vim:
+==============================
+
+Vim commands are denoted ": command".  You can give these commands manually
+whenever you open a file or they can also be given automatically every time vim
+is started by putting them in your ".vimrc" file.
 
   - Enable automatic filetype detection:
 
-    : ftdetect on
+    : filetype on
   
     Alternatively, you can manually select the chapel file type:
 
@@ -43,11 +49,11 @@ automatically by adding them to your ".vimrc" file.
 
   - Enable indenting scheme:
 
-    : ftdetect indent on
+    : filetype indent on
 
     
-Suggested .vimrc commands (can be copy-pasted into ~/.vimrc):
-------------------------------------------------------------
+Suggested .vimrc commands (copy-paste these into your .vimrc):
+=============================================================
 
 set nocompatible    " allow for non-vi compatible features
 syntax on           " enable syntax highlighting
@@ -56,9 +62,9 @@ set autoindent      " turn on auto indenting
 
 " If you prefer spaces to tabs, uncomment the following:
 "  (To get a real tab with these settings, do CTRL-V TAB)
-" set expandtab     " replace indents with spaces
-" set shiftwidth=2  " set how many spaces per indent
-" set smarttab      " use spaces as indents at the beginning of lines
+" set expandtab       " replace indents with spaces
+" set shiftwidth=2    " set how many spaces per indent
+" set smarttab        " use spaces as indents at the beginning of lines
 
 " Other useful commands, uncomment as desired:
 " set background=dark " switch to color scheme for terminals with a dark background
