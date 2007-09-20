@@ -116,26 +116,18 @@ record _domain {
   }
 
   def this(d: _domain) {
-    return this((...d._value.ranges));
+    var x = _value.slice(d._value);
+    return _domain(x.type, _index_type, _dim_index_type, rank, x);
   }
 
-  def this(i: range(?eltType,?boundedType,?stridable) ...rank) {
-    // assuming stridable dependent on incoming ranges for now;
-    // really should check stridablility of current domain as well to be
-    // correct.
-    var newRanges: rank*range(_dim_index_type, bounded, _any_stridable(i));
+  def this(ranges: range(?eltType,?boundedType,?stridable) ...rank) {
+    var newRanges: rank*range(_dim_index_type, bounded, _any_stridable(ranges));
     for param j in 1..rank {
-      newRanges(j) = _value.dim(j)(i(j));
+      newRanges(j) = _value.dim(j)(ranges(j));
     }
-    // this should really be something like:
-    //           var subdomainClass = dist.buildDomain(...)
-    // but it seems that domains don't store a pointer to their
-    // distribution currently, so we build a SingleLocaleArithmetic
-    // for now.  Ugh!
-    return [(...newRanges)];
-    // And then we would do:
-    //    return _domain(_domain_type, _index_type, _dim_index_type, rank, 
-    //                   subdomainClass);
+    var x = _value.dist.buildDomain(rank, _dim_index_type, _any_stridable(ranges));
+    x.setIndices(newRanges);
+    return this(_domain(x.type, _index_type, _dim_index_type, rank, x));
   }
 
   def dim(d : int)

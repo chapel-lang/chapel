@@ -151,6 +151,9 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return x;
   }
 
+  def slice(d: SingleLocaleArithmeticDomain)
+    return d;
+
   def interior(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, dim_type=int,
                                          stridable=stridable, dist=dist);
