@@ -386,7 +386,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       var new = SingleLocaleArithmeticArray(eltType, rank, dim_type,
                                             d._value.stridable, reindexed,
                                             d._value);
-      for i in _intersect(d._value, dom) do
+      for i in d((...dom.ranges)) do
         new(i) = this(i);
       off = new.off;
       blk = new.blk;
@@ -456,13 +456,4 @@ def SingleLocaleArithmeticArray.writeThis(f: Writer) {
       break;
     }
   }
-}
-
-def _intersect(a: SingleLocaleArithmeticDomain,
-               b: SingleLocaleArithmeticDomain) {
-  var c = SingleLocaleArithmeticDomain(rank=a.rank, dim_type=a.dim_type,
-                                       stridable=a.stridable);
-  for param i in 1..a.rank do
-    c.ranges(i) = a.dim(i)(b.dim(i));
-  return c;
 }
