@@ -215,6 +215,21 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   // public routines
 
+  def clear() {
+    // BLC: implemented this for simplicity, not performance
+    while (numIndices != 0) do
+      removeOne();
+
+    def removeOne() {
+      // Since it's not safe to iterate over a hash table while you're
+      // removing stuff from it, we only do one iteration at a time
+      for i in these() {
+        remove(i);
+        return;
+      }
+    }
+  }
+
   def add(ind : ind_type) {
     var hash = _map(ind, deletedOK = true);
     var ind_pos = table(hash);

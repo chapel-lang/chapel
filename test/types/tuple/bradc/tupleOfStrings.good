@@ -1,0 +1,1 @@
+tupleOfStrings.chpl:3: error: tuples do not support iteration
