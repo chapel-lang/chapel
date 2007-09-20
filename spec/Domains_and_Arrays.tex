@@ -800,10 +800,10 @@ to variables.
 
 \subsubsection{Changing the Indices in Associative Domains}
 
-Like with sparse domains, indices can be added or removed to
-associative domains.  Associative domains support a method \chpl{add}
-that takes an index and adds this index to the associative domain.  All
-arrays declared over this associative domain can now access elements
+As with sparse domains, indices can be added or removed to associative
+domains.  Associative domains support a method \chpl{add} that takes
+an index and adds this index to the associative domain.  All arrays
+declared over this associative domain can now access elements
 corresponding to this index.
 
 Associative domains support a method \chpl{remove} that takes an index
@@ -828,6 +828,17 @@ is equivalent to
 \begin{chapel}
 D.remove(i);
 \end{chapel}
+
+Like sparse domains, associative domains can be emptied by using a
+method \chpl{clear} that clears out its index set.
+
+\begin{example}
+The following call will cause the associative domain \chpl{HashD} to
+describe an empty set of indices as it was when initially declared.
+\begin{chapel}
+HashD.clear();
+\end{chapel}
+\end{example}
 
 \subsubsection{Testing Membership in Associative Domains}
 
