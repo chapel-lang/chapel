@@ -155,32 +155,21 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
 
 
 static void parseSingleArg(char* currentArg) {
-  char* equalsSign = strchr(currentArg, '=');     
+  char* equalsSign = strchr(currentArg, '=');
+  char* value = equalsSign + 1;
+  const char* moduleName;
+  char* varName;
 
   if (equalsSign) {
-    char* value;
     *equalsSign = '\0';
-    value = equalsSign + 1;
-
-    if (value) {
-      const char* moduleName;
-      char* varName;
-      parseModVarName(currentArg, &moduleName, &varName);
-
-      if (*value == '\0') {
-        char* message = _glom_strings(3, "Configuration variable \"", 
-                                      varName, "\" is missing its "
-                                      "initialization value");
-        _printError(message, 0, 0);
-      }
-      initSetValue(varName, value, moduleName);
-    } else {
-      char* message = _glom_strings(3, "\"", value, "\" is not a valid value");
-      _printError(message, 0, 0);
-    }
+  }
+  parseModVarName(currentArg, &moduleName, &varName);
+  if (equalsSign && *value) {
+    initSetValue(varName, value, moduleName);
   } else {
-    char* message = _glom_strings(3, "\"", currentArg, "\" is not a valid "
-                                  "configuration variable");
+    char* message = _glom_strings(3, "Configuration variable \"", 
+                                  varName, 
+                                  "\" is missing its initialization value");
     _printError(message, 0, 0);
   }
 }

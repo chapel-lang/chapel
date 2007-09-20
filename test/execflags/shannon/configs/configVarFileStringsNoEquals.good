@@ -1,1 +1,1 @@
-error: "astring" is not a valid configuration variable
+error: Configuration variable "astring" is missing its initialization value
