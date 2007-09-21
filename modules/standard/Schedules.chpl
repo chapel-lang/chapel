@@ -2,7 +2,7 @@ def BlockSchedule(D, numBlocks) {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;
-  const nbAsIndexType = numBlocks:D.dim_type;
+  const nbAsIndexType = numBlocks:D.idxType;
   forall i in 0..nbAsIndexType-1 {
     const blo = lo + (i*numelems) / nbAsIndexType;
     const bhi = lo + (((i+1)*numelems) / nbAsIndexType) - 1;

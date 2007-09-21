@@ -1,21 +1,21 @@
 class CSR {
   param stridable: bool = false;
 
-  def buildDomain(param rank: int, type dim_type) {
+  def buildDomain(param rank: int, type idxType) {
     halt("The CSR distribution does not support dense domains");
   }
 
-  def buildEnumDomain(type ind_type) {
+  def buildEnumDomain(type idxType) {
     halt("The CSR distribution does not support enumerated domains");
   }
 
-  def buildDomain(type ind_type) {
+  def buildDomain(type idxType) {
     halt("The CSR distribution does not support associative domains");
   }
 
-  def buildSparseDomain(param rank:int, type dim_type, 
+  def buildSparseDomain(param rank:int, type idxType, 
                         parentDom: BaseArithmeticDomain) {
-    return CSRDomain(rank=rank, dim_type=dim_type, 
+    return CSRDomain(rank=rank, idxType=idxType, 
                                     parentDom=parentDom);
   }
 }
@@ -24,10 +24,10 @@ use Search;
 
 class CSRDomain: BaseSparseArithmeticDomain {
   param rank : int;
-  type dim_type;
+  type idxType;
   var parentDom: BaseArithmeticDomain;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
-  //  type ind_type = rank*dim_type;
+  //  type idxType = rank*idxType;
 
   var rowRange = parentDom.bbox(1);
   var colRange = parentDom.bbox(2);
@@ -36,8 +36,8 @@ class CSRDomain: BaseSparseArithmeticDomain {
   var nnzDomSize = nnz;
   var nnzDom = [1..nnzDomSize];
 
-  var rowStart: [rowDom] dim_type;      // would like index(nnzDom)
-  var colIdx: [nnzDom] dim_type;        // would like index(parentDom.bbox(1))
+  var rowStart: [rowDom] idxType;      // would like index(nnzDom)
+  var colIdx: [nnzDom] idxType;        // would like index(parentDom.bbox(1))
 
   def initialize() {
     if (rank != 2) then
@@ -52,10 +52,10 @@ class CSRDomain: BaseSparseArithmeticDomain {
   def setIndices(x);
 
   def buildArray(type eltType)
-    return CSRArray(eltType, rank, dim_type, dom=this);
+    return CSRArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain()
-    return CSRDomain(rank=rank, dim_type=dim_type, 
+    return CSRDomain(rank=rank, idxType=idxType, 
                                     parentDom = BaseArithmeticDomain());
 
   def these() {
@@ -80,18 +80,18 @@ class CSRDomain: BaseSparseArithmeticDomain {
     return rowStart(row+1)-1;
   }
 
-  def find(ind: rank*dim_type) {
+  def find(ind: rank*idxType) {
     const (row, col) = ind;
 
     return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
-  def member(ind: rank*dim_type) {
+  def member(ind: rank*idxType) {
     const (found, loc) = find(ind);
     return found;
   }
 
-  def add(ind: rank*dim_type) {
+  def add(ind: rank*idxType) {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
@@ -152,16 +152,16 @@ class CSRDomain: BaseSparseArithmeticDomain {
 class CSRArray: BaseArray {
   type eltType;
   param rank : int;
-  type dim_type;
+  type idxType;
 
-  var dom : CSRDomain(rank=rank, dim_type=dim_type);
+  var dom : CSRDomain(rank=rank, idxType=idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  //  def this(ind: dim_type ... 1) var where rank == 1
+  //  def this(ind: idxType ... 1) var where rank == 1
   //    return this(ind);
 
-  def this(ind: rank*dim_type) var {
+  def this(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member(ind)) then

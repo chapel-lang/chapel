@@ -1,43 +1,19 @@
-use List;
+def _build_domain_type(dist, param rank : int, type idxType = int,
+                       param stridable = false)
+  return _domain(rank, dist.buildDomain(rank, idxType, stridable));
 
-def _build_domain_type(dist, param rank : int,
-                       type dimensional_index_type = int,
-                       param stridable = false) {
-  var x = dist.buildDomain(rank, dimensional_index_type, stridable);
-  if rank > 1 {
-    type index_type = rank*dimensional_index_type;
-    return _domain(index_type, dimensional_index_type, rank, x);
-  } else {
-    return _domain(dimensional_index_type, dimensional_index_type, rank, x);
-  }
-}
+def _build_domain_type(dist, type ind) where !__primitive("isEnumType", ind)
+  return _domain(1, dist.buildDomain(ind));
 
-def _build_domain_type(dist, type ind) where !__primitive("isEnumType", ind) {
-  var x = dist.buildDomain(ind);
-  return _domain(ind, ind, 1, x);
-}
-
-def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind) {
-  var x = dist.buildEnumDomain(ind);
-  return _domain(ind, ind, 1, x);
-}
+def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind)
+  return _domain(1, dist.buildEnumDomain(ind));
 
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
 
 def _build_sparse_subdomain_type(dist, parentDom) {
-  var x = dist.buildSparseDomain(parentDom.rank, parentDom._dim_index_type, parentDom._value);
-  if (parentDom.rank > 1) {
-    // BLC: would like to just inline this definition of indType rather
-    // than name it, but currently we can't use the homogenous tuple
-    // syntax in an expression context.  Would like to invent a
-    // non-ambiguous homogenous tuple syntax to disambiguate these cases
-    // and allow it to be used anywhere. 
-    type indType = parentDom.rank*parentDom._dim_index_type;
-    return _domain(indType, parentDom._dim_index_type, parentDom.rank, x);
-  } else {
-    return _domain(parentDom._dim_index_type, parentDom._dim_index_type, parentDom.rank, x);
-  }
+  var x = dist.buildSparseDomain(parentDom.rank, parentDom._value.idxType, parentDom._value);
+  return _domain(parentDom.rank, x);
 }
 
 record _ArrayTypeInfo {
@@ -71,7 +47,7 @@ def _any_stridable(ranges, param d: int = 1) param {
 
 def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   type t = ranges(1).eltType;
-  var d: domain(rank, t, _any_stridable(ranges)) distributed (SingleLocaleDistribution());
+  var d: domain(rank, t, _any_stridable(ranges));
   d.setIndices(ranges);
   return d;
 }
@@ -79,28 +55,27 @@ def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
 def _build_open_interval_upper(x: _domain)
   return x.buildOpenIntervalUpper();
 
-def _build_index_type(param i: int) where i > 1 {
-  var x : i*int;
+def _build_index_type(param rank: int, type idxType) where rank == 1 {
+  var x: idxType;
   return x;
 }
 
-def _build_index_type(param i: int) where i == 1 {
-  var x : int;
+def _build_index_type(param rank: int, type idxType) where rank > 1 {
+  var x: rank*idxType;
   return x;
 }
 
-def _build_index_type(dom) {
-  var x: dom._index_type;
-  return x;
-}
+def _build_index_type(param rank: int)
+  return _build_index_type(rank, int);
+
+def _build_index_type(d: _domain)
+  return _build_index_type(d.rank, d._value.idxType);
 
 pragma "domain"
 record _domain {
-  type _index_type;
-  type _dim_index_type;
   param rank : int;
   var _value;
-  var _promotionType : _index_type;
+  var _promotionType: index(rank, _value.idxType);
 
   def initialize() {
     if _value == nil {
@@ -114,19 +89,18 @@ record _domain {
       yield i;
   }
 
-  def this(d: _domain) {
-    var x = _value.slice(d._value);
-    return _domain(_index_type, _dim_index_type, rank, x);
-  }
+  def this(d: _domain)
+    return _domain(rank, _value.slice(d._value));
 
   def this(ranges: range(?eltType,?boundedType,?stridable) ...rank) {
-    var newRanges: rank*range(_dim_index_type, bounded, _any_stridable(ranges));
+    param stridable = _any_stridable(ranges);
+    var newRanges: rank*range(_value.idxType, bounded, stridable);
     for param j in 1..rank {
       newRanges(j) = _value.dim(j)(ranges(j));
     }
-    var x = _value.dist.buildDomain(rank, _dim_index_type, _any_stridable(ranges));
+    var x = _value.dist.buildDomain(rank, _value.idxType, stridable);
     x.setIndices(newRanges);
-    return this(_domain(_index_type, _dim_index_type, rank, x));
+    return this(_domain(rank, x));
   }
 
   def dim(d : int)
@@ -139,7 +113,7 @@ record _domain {
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
     _value._arrs.append(x);
-    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(_value.idxType, eltType, rank, x);
   }
 
   // buildEmptyDomain is meant to return an uninitialized domain for
@@ -149,16 +123,16 @@ record _domain {
   // not refer to any fields that aren't types and params.
   def buildEmptyDomain() {
     var x = _value.buildEmptyDomain();
-    return _domain(_index_type, _dim_index_type, rank, x);
+    return _domain(rank, x);
   }
 
   def buildSubdomain() {
     var x = _value.buildSubdomain();
-    return _domain(_index_type, _dim_index_type, rank, x);
+    return _domain(rank, x);
   }
 
   def buildOpenIntervalUpper()
-    return _domain(_index_type, _dim_index_type, rank, _value.buildOpenIntervalUpper());
+    return _domain(rank, _value.buildOpenIntervalUpper());
 
   def clear() {
     _value.clear();
@@ -184,17 +158,17 @@ record _domain {
     return expand(i);
 
   def expand(i: rank*int)
-    return _domain(_index_type, _dim_index_type, rank, _value.expand(i));
+    return _domain(rank, _value.expand(i));
 
   def expand(i: int) where rank > 1
-    return _domain(_index_type, _dim_index_type, rank, _value.expand(i));
+    return _domain(rank, _value.expand(i));
 
   def exterior(i: int ...rank)
     return exterior(i);
 
   def exterior(i: rank*int) {
     var x = _value.exterior(i);
-    return _domain(_index_type, _dim_index_type, rank, x);
+    return _domain(rank, x);
   }
 
   def interior(i: int ...rank)
@@ -202,7 +176,7 @@ record _domain {
 
   def interior(i: rank*int) {
     var x = _value.interior(i);
-    return _domain(_index_type, _dim_index_type, rank, x);
+    return _domain(rank, x);
   }
 
   def translate(i: int ...rank)
@@ -210,7 +184,7 @@ record _domain {
 
   def translate(i: rank*int) {
     var x = _value.translate(i);
-    return _domain(_index_type, _dim_index_type, rank, x);
+    return _domain(rank, x);
   }
 
   def subBlocks {
@@ -270,45 +244,43 @@ def _domain.writeThis(f: Writer) {
 
 def by(a: _domain, b) {
   var x = a._value.strideBy(b);
-  return _domain(a._index_type, a._dim_index_type, a.rank, x);
+  return _domain(a.rank, x);
 }
 
 // this is a wrapper class for all arrays
 pragma "array"
 record _array {
-  type _array_type;
-  type _index_type;
   type _dim_index_type;
   type eltType;
   param rank : int;
-  var _value : _array_type;
+  var _value;
   var _promotionType : eltType;
 
   pragma "valid lvalue"
-  def _dom {
-    var x : _domain(_index_type, _dim_index_type, rank, _value.dom);
-    //    x._value = _value.dom;
-    return x;
-  }
+  def _dom
+    return _domain(rank, _value.dom);
 
   pragma "valid lvalue"
   def this(d: _domain) {
     _value.checkSlice(d._value);
     var x = _value.slice(_dom(d)._value);
-    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(_dim_index_type, eltType, rank, x);
   }
 
   pragma "valid lvalue"
   def this(rs: range(?_eltType,?boundedType,?stridable) ...rank) {
     _value.checkSlice(rs);
     var x = _value.slice(_dom((...rs))._value);
-    return _array(x.type, _index_type, _dim_index_type, eltType, rank, x);
+    return _array(_dim_index_type, eltType, rank, x);
   }
 
-  def this(i: _index_type) var
+  def this(i: rank*_dim_index_type) var where rank > 1
     return _value(i);
 
   def this(i: _dim_index_type ...rank) var where rank > 1
+    return _value(i);
+
+  def this(i: _dim_index_type) var where rank == 1
     return _value(i);
 
   def validRankChangeArguments(t) param {
@@ -364,12 +336,7 @@ record _array {
     }
     var rs = collectRanges(1);
     var x = _value.rankChange(rs.size, _any_stridable(rs), irs, rs);
-    if rs.size == 1 then {
-      return _array(x.type, _dim_index_type, _dim_index_type, eltType, 1, x);
-    } else {
-      type _new_index_type = rs.size*_dim_index_type;
-      return _array(x.type, _new_index_type, _dim_index_type, eltType, rs.size, x);
-    }
+    return _array(_dim_index_type, eltType, rs.size, x);
   }
 
   def these() var {
@@ -381,14 +348,14 @@ record _array {
 
   def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return _array(x.type, x.dim_type, x.dim_type, eltType, rank, x);
+    return _array(x.idxType, eltType, rank, x);
   }
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    type xDimIndexType = x.dim_type;       // BLC: hacks to get around
+    type xDimIndexType = x.idxType;       // BLC: hacks to get around
     type xIndexType = rank*xDimIndexType;  // inflexibility of tuple syntax
-    return _array(x.type, xIndexType, x.dim_type, eltType, rank, x);
+    return _array(x.idxType, eltType, rank, x);
   }
 
   def IRV var {

@@ -3,10 +3,9 @@ use List;
 
 class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   param rank : int;
-  type dim_type;
+  type idxType;
   var parentDom: BaseArithmeticDomain;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
-  //  type ind_type = rank*dim_type;
 
   var nnzDomSize = nnz;
   var nnzDom = [1..nnzDomSize];
@@ -23,10 +22,10 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   def setIndices(x);
 
   def buildArray(type eltType)
-    return SingleLocaleSparseArray(eltType, rank, dim_type, dom=this);
+    return SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, dim_type=dim_type, 
+    return SingleLocaleSparseDomain(rank=rank, idxType=idxType, 
                                     parentDom = BaseArithmeticDomain());
 
   def these() {
@@ -86,11 +85,11 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     }
   }
 
-  def add(ind: dim_type) where rank == 1 {
+  def add(ind: idxType) where rank == 1 {
     add_help(ind);
   }
 
-  def add(ind: rank*dim_type) {
+  def add(ind: rank*idxType) {
     add_help(ind);
   }
 
@@ -111,13 +110,13 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
 class SingleLocaleSparseArray: BaseArray {
   type eltType;
   param rank : int;
-  type dim_type;
+  type idxType;
 
-  var dom : SingleLocaleSparseDomain(rank=rank, dim_type=dim_type);
+  var dom : SingleLocaleSparseDomain(rank=rank, idxType=idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def this(ind: dim_type) var where rank == 1 {
+  def this(ind: idxType) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member(ind)) then
@@ -133,7 +132,7 @@ class SingleLocaleSparseArray: BaseArray {
       return irv;
   }
 
-  def this(ind: rank*dim_type) var {
+  def this(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member(ind)) then

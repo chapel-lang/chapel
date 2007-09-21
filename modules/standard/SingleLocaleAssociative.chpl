@@ -49,12 +49,12 @@ record _ind_data_t {
 
 
 class SingleLocaleAssociativeDomain: BaseDomain {
-  type ind_type;
+  type idxType;
   var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
   var table: _ddata(int);
-  var inds: _ddata(_ind_data_t(ind_type));
+  var inds: _ddata(_ind_data_t(idxType));
   var free_inds: _stack(int);
 
   def getIndices()
@@ -65,14 +65,14 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return SingleLocaleAssociativeDomain(ind_type=ind_type);
+    return SingleLocaleAssociativeDomain(idxType=idxType);
 
   // compiler-internal routines
 
   def initialize() {
     table  = _ddata(int, _ps(size));
     table.init( _EMPTY);
-    inds =  _ddata(_ind_data_t(ind_type), _ps(size)/2);
+    inds =  _ddata(_ind_data_t(idxType), _ps(size)/2);
     inds.init();
     free_inds = _stack(int);
   }
@@ -98,7 +98,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       var new_table = _ddata(int, new_len);
       new_table.init(_EMPTY);
 
-      var new_inds = _ddata(_ind_data_t(ind_type), new_len/2);
+      var new_inds = _ddata(_ind_data_t(idxType), new_len/2);
       new_inds.init();
       var old_map: _ddata(int);
       old_map = _ddata( int, num_inds);
@@ -133,7 +133,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
       var new_table = _ddata( int, new_len);
       new_table.init( _EMPTY);
-      var new_inds = _ddata( _ind_data_t(ind_type), new_len/2);
+      var new_inds = _ddata( _ind_data_t(idxType), new_len/2);
       new_inds.init();
       var old_map: _ddata(int);
       old_map = _ddata( int, inds.size);
@@ -162,9 +162,9 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     }
   }
 
-  def _map(ind: ind_type, 
+  def _map(ind: idxType, 
            itable: _ddata(int) = table, 
-           iinds: _ddata(_ind_data_t(ind_type)) = inds,
+           iinds: _ddata(_ind_data_t(idxType)) = inds,
            deletedOK: bool = false): int {
     param debug = false;
     if debug then writeln("itable.size = ", itable.size);
@@ -195,7 +195,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     return _NOPLACE;
   }
 
-  def _get_index(ind : ind_type) {
+  def _get_index(ind : idxType) {
     var i = _map(ind);
     if (table(i) < 0) then
       halt("array index out of bounds: ", ind);
@@ -208,7 +208,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = SingleLocaleAssociativeArray(eltType, ind_type, dom=this); 
+    var ia = SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
     _arrs2.append(ia);
     return ia;
   }
@@ -230,7 +230,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     }
   }
 
-  def add(ind : ind_type) {
+  def add(ind : idxType) {
     var hash = _map(ind, deletedOK = true);
     var ind_pos = table(hash);
     if (ind_pos==_EMPTY || ind_pos==_DELETED) {
@@ -251,7 +251,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     } // else, already in domain
   }
 
-  def remove( ind: ind_type) {
+  def remove( ind: idxType) {
     var ind_pos = _map(ind);
     if (ind_pos >= 0) {
       var table_i = table(ind_pos);
@@ -275,7 +275,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
 
-  def member( ind: ind_type) {
+  def member( ind: idxType) {
     const mapind = _map(ind);
     if (mapind >= 0) {
       var ind_pos = table(mapind);
@@ -291,7 +291,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
 
 def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
-  var indices: list(a.ind_type);
+  var indices: list(a.idxType);
   var inds_count = 0;
   var inds_pos = 0;
   var total_inds = a.num_inds;
@@ -346,8 +346,8 @@ def SingleLocaleAssociativeDomain.writeThis(f: Writer) {
 
 class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
-  type ind_type;
-  var dom : SingleLocaleAssociativeDomain(ind_type=ind_type);
+  type idxType;
+  var dom : SingleLocaleAssociativeDomain(idxType=idxType);
   var data : _ddata(eltType);
 
   def initialize() {
@@ -369,7 +369,7 @@ class SingleLocaleAssociativeArray: BaseArray {
     data = new_data;
   }
 
-  def this(ind : ind_type) var : eltType
+  def this(ind : idxType) var : eltType
     return data(dom._get_index(ind));
 
   def these() var {
