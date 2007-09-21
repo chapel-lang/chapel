@@ -245,10 +245,39 @@ pragma "inline" def **(a: uint(32), b: uint(32)) return __primitive("**", a, b);
 pragma "inline" def **(a: uint(64), b: uint(64)) return __primitive("**", a, b);
 pragma "inline" def **(a: real(?w), b: real(w)) return __primitive("**", a, b);
 
-pragma "inline" def **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
-pragma "inline" def **(param a: int(64), param b: int(64)) param return __primitive("**", a, b);
-pragma "inline" def **(param a: uint(32), param b: uint(32)) param return __primitive("**", a, b);
-pragma "inline" def **(param a: uint(64), param b: uint(64)) param return __primitive("**", a, b);
+def **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
+def **(param a: int(64), param b: int(64)) param return __primitive("**", a, b);
+def **(param a: uint(32), param b: uint(32)) param return __primitive("**", a, b);
+def **(param a: uint(64), param b: uint(64)) param return __primitive("**", a, b);
+
+pragma "inline" def _expHelp(a, param b: integral) {
+  if b == 0 then
+    return 1:a.type;
+  else if b == 1 then
+    return a;
+  else if b == 2 then
+    return a*a;
+  else if b == 3 then
+    return a*a*a;
+  else if b == 4 then
+    return let t=a*a in t*t;
+  else if b == 5 then
+    return let t=a*a in t*t*a;
+  else if b == 6 then
+    return let t=a*a in t*t*t;
+  else if b == 8 then
+    return let t=a*a, u=t*t in u*u;
+  else
+    compilerError("unexpected case in exponentiation optimization");
+}
+
+def _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+
+pragma "inline" def **(a: int(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" def **(a: int(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" def **(a: uint(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" def **(a: uint(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" def **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
 
 //
 // logical operations on primitive types
