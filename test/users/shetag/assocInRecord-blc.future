@@ -1,0 +1,4 @@
+bug: associative domains/arrays in records
+
+My version of Aniruddha's bug which actually tries to
+use the domains and arrays in the record.

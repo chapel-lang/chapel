@@ -1,0 +1,12 @@
+bug: associative domains/arrays in records
+
+Submitted by Aniruddha, these don't work.  Currently
+result in:
+
+assocInRecord.chpl:1: error: unresolved call ':[SingleLocaleAssociativeDomain(string)] int.reindex(:SingleLocaleAssociativeDomain(string))' [functionResolution.cpp:1439]
+$CHPL_HOME/modules/standard/ChapelArray.chpl:383: note:   instantiated from reindex [functionResolution.cpp:1448]
+assocInRecord.chpl:1: note:   instantiated from _construct_C [functionResolution.cpp:1448]
+assocInRecord.chpl:1: note:   instantiated from _copy [functionResolution.cpp:1448]
+$CHPL_HOME/modules/standard/ChapelArray.chpl:382: note: candidates are: :_array.reindex(d: _domain) [functionResolution.cpp:1455]
+$CHPL_HOME/modules/standard/ChapelArray.chpl:387: note:                 :_array.reindex(d: _domain) [functionResolution.cpp:1455]
+$CHPL_HOME/modules/standard/SingleLocaleArithmetic.chpl:296: note:                 :SingleLocaleArithmeticArray.reindex(d: SingleLocaleArithmeticDomain) [functionResolution.cpp:1455]
