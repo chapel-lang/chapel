@@ -1,8 +1,0 @@
-bug: unexpected case in BaseAST::getModule()
-
-This code results in an unexpected case in
-BaseAST::getModule().  It very well could
-me that this program uses features that are
-not yet implemented, but even if that's the
-case, it shouldn't result in an internal
-error.

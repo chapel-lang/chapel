@@ -302,6 +302,17 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
 
   Type* fieldType = toDefExpr(ct->fields.only())->sym->type;
 
+  //
+  // update substitution map back pointers
+  //  important for ddata for which this substitution is looked at later
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    form_Map(ASTMapElem, e, ts->type->substitutions) {
+      if (e->value == ct)
+        e->value = fieldType;
+    }
+  }
+
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol) {
