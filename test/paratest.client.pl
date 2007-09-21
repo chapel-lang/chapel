@@ -14,7 +14,7 @@
 #  compopts - optional Chapel compiler options
 # 
 
-$debug = 0;
+$debug = 0; # set $verbose=1 in server
 $logdir = "Logs";
 $synchdir = "Logs/.synch";
 $testcmd = "nice start_test";
@@ -59,7 +59,7 @@ sub main {
     }
     print "\n* $node up @ $workingdir *\n";
 
-    $platform = `../util/platform`; chomp $platform;
+    $platform = `../util/platform.pl`; chomp $platform;
     $compiler = "../bin/$platform/chpl";
     unless (-e $compiler) {
         print "Error: cannot find chpl as '$compiler'\n";

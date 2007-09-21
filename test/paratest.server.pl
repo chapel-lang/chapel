@@ -290,8 +290,6 @@ sub find_subdirs {
     local ($targetdir, $level) = @_;
     local ($filen, @cdir, @founddirs, $i);
 
-    $debug = 0;
-
     print "looking in '$targetdir'\n" if $debug;
     opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
     @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
@@ -317,8 +315,6 @@ sub find_subdirs {
 sub find_files {
     local ($targetdir, $level, $no_futures, $recursive) = @_;
     local ($filen, @cdir, @foundfiles);
-
-    $debug = 0;
 
     print "looking in '$targetdir'\n" if $debug;
     opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
@@ -362,7 +358,7 @@ sub main {
     local ($id, $synchfile);
     
     $user = `whoami`; chomp $user;
-    $platform = `../util/platform`; chomp $platform;
+    $platform = `../util/platform.pl`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file
