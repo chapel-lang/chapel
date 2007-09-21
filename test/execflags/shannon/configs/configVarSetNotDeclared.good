@@ -1,1 +1,1 @@
-error: There is no config var "z" in the program
+error: Unrecognized configuration variable 'z'

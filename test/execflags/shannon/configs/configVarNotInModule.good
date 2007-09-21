@@ -1,1 +1,1 @@
-error: There is no "z" config var in module1
+error: Module 'module1' has no configuration variable named 'z'

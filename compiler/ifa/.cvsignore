@@ -3,5 +3,6 @@ cygwin.lnk
 linux
 linux64
 mta
+sunos
 prim_data.cpp
 prim_data.h

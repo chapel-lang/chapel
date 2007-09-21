@@ -1,1 +1,1 @@
-error: Configuration variable "invalidFlag" is missing its initialization value
+error: Unrecognized flag: '--invalidFlag'

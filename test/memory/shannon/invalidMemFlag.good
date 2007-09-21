@@ -1,1 +1,1 @@
-error: "memberMe" is not a valid configuration variable
+error: Unrecognized flag: '--memberMe'

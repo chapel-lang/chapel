@@ -6,7 +6,9 @@
 #define _config_has_value(v,m) (lookupSetValue(v,m) != NULL)
 #define _config_get_value(v, m) (lookupSetValue(v,m))
 
-void addToConfigList(const char* currentArg, int isSingleArg);
+typedef enum { fdash, sdash, ddash } configSource;
+
+void addToConfigList(const char* currentArg, configSource argSource);
 int askedToParseArgs(void);
 void parseConfigArgs(void);
 void printHelpMessage(void);

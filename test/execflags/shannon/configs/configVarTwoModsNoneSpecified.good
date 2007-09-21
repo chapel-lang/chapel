@@ -1,1 +1,3 @@
-error: Config var "x" is defined in more than one module.  Use "-h" for a list of config vars and "-s<module>.x" to indicate which to use.
+error: Configuration variable 'x' is defined in more than one module.
+       Use '--help' for a list of configuration variables
+       and '-s<module>.x' to resolve the ambiguity.

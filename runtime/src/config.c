@@ -27,25 +27,32 @@ static configVarType* configVarTable[HASHSIZE];
 static configVarType* firstInTable = NULL;
 static configVarType* lastInTable = NULL;
 
+static configVarType _ambiguousConfigVar;
+static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
+
+static configVarType* lookupConfigVar(const char* varName, 
+                                      const char* moduleName);
+
 
 typedef struct _argType {
-  int isSingleArg;
+  configSource argSource;
   char* input;
 
   struct _argType* next;
 } argType;
 
 
+
 /* config var list */
 static argType* firstArg = NULL;
 static argType* lastArg = NULL;
 
-void addToConfigList(const char* currentArg, int isSingleArg) {
+void addToConfigList(const char* currentArg, configSource argSource) {
   char* description = _glom_strings(2, "argument list entry for ", currentArg);
   argType* arg = (argType*) _chpl_calloc(1, sizeof(argType), description, 0, 0);
   _chpl_free(description, 0, 0);
 
-  arg->isSingleArg = isSingleArg;
+  arg->argSource = argSource;
   arg->input = string_copy(currentArg);
   
   if (firstArg == NULL) {
@@ -154,22 +161,54 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
 }
 
 
-static void parseSingleArg(char* currentArg) {
+static void parseSingleArg(char* currentArg, configSource argSource) {
   char* equalsSign = strchr(currentArg, '=');
   char* value = equalsSign + 1;
   const char* moduleName;
   char* varName;
+  configVarType* configVar;
 
   if (equalsSign) {
     *equalsSign = '\0';
   }
   parseModVarName(currentArg, &moduleName, &varName);
+  configVar = lookupConfigVar(varName, moduleName);
+  if (configVar == NULL || configVar == ambiguousConfigVar) {
+    const char* message;
+    if (!equalsSign && argSource == ddash) {
+      message = _glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
+    } else if (configVar == NULL) {
+      if (strcmp(moduleName, "") != 0) {
+        message = _glom_strings(5, "Module '", moduleName, 
+                                "' has no configuration variable named '", 
+                                varName, "'");
+      } else {
+        if (varName[0]) {
+          message = _glom_strings(3, "Unrecognized configuration variable '",
+                                  varName, "'");
+        } else {
+          if (argSource == ddash) {
+            message = _glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
+          } else {
+            message = "No configuration variable name specified";
+          }
+        }
+      }
+    } else {
+      message = _glom_strings(5, "Configuration variable '", varName, 
+                              "' is defined in more than one module.\n"
+                              "       Use '--help' for a list of configuration variables\n"
+                              "       and '-s<module>.", varName, "' to resolve the ambiguity.");
+    }
+    _printError(message, 0, 0);
+  }
+
   if (equalsSign && *value) {
     initSetValue(varName, value, moduleName);
   } else {
-    char* message = _glom_strings(3, "Configuration variable \"", 
-                                  varName, 
-                                  "\" is missing its initialization value");
+    char* message;
+    message = _glom_strings(3, "Configuration variable '", varName, 
+                            "' is missing its initialization value");
     _printError(message, 0, 0);
   }
 }
@@ -185,11 +224,10 @@ static void parseFileArgs(char* currentArg) {
   while (!feof(argFile)) {
     int numScans = 0;
     char setConfigBuffer[_default_string_length];
-    numScans = fscanf(argFile, _default_format_read_string, 
-                      setConfigBuffer);
+    numScans = fscanf(argFile, _default_format_read_string, setConfigBuffer);
     if (numScans == 1) {
       if (!aParsedString(argFile, setConfigBuffer)) {
-        parseSingleArg(setConfigBuffer);
+        parseSingleArg(setConfigBuffer, fdash);
       } 
     }
   }
@@ -200,8 +238,8 @@ static void parseFileArgs(char* currentArg) {
 void parseConfigArgs(void) {
   argType* thisArg = firstArg;
   while (thisArg != NULL) {
-    if (thisArg->isSingleArg) {
-      parseSingleArg(thisArg->input);
+    if (thisArg->argSource != fdash) {
+      parseSingleArg(thisArg->input, thisArg->argSource);
     } else {
       parseFileArgs(thisArg->input);
     }
@@ -290,9 +328,6 @@ void printConfigVarTable(void) {
 }
 
 
-static configVarType _ambiguousConfigVar;
-static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
-
 static configVarType* lookupConfigVar(const char* varName, 
                                       const char* moduleName) {
   configVarType* configVar = NULL;
@@ -333,22 +368,8 @@ void initSetValue(char* varName, char* value, const char* moduleName) {
     _printError(message, 0, 0);
   }
   configVar = lookupConfigVar(varName, moduleName);
-  if (configVar == NULL) {
-    if (strcmp(moduleName, "") != 0) {
-      char* message = _glom_strings(4, "There is no \"", varName, "\" config "
-                                    "var in ", moduleName);
-      _printError(message, 0, 0);
-    } else {
-      char* message = _glom_strings(3, "There is no config var \"", varName, 
-                                    "\" in the program");
-      _printError(message, 0, 0);
-    }
-  } else if (configVar == ambiguousConfigVar) {
-    char* message = _glom_strings(5, "Config var \"", varName, "\" is defined "
-                                  "in more than one module.  Use \"-h\" for "
-                                  "a list of config vars and \"-s<module>.", 
-                                  varName, "\" to indicate which to use.");
-    _printError(message, 0, 0);
+  if (configVar == NULL || configVar == ambiguousConfigVar) {
+    _printInternalError("unknown config var case not handled appropriately");
   }
   configVar->setValue = string_copy(value);
 }

@@ -261,7 +261,6 @@ void parseArgs(int argc, char* argv[]) {
       case '-':
         {
           const char* flag = currentArg + 2;
-          int isSingleArg = 1;
 
           if (strcmp(flag, "gdb") == 0) {
             gdbFlag = i;
@@ -289,14 +288,13 @@ void parseArgs(int argc, char* argv[]) {
                                           "\" is not a valid argument");
             _printError(message, 0, 0);
           }
-          addToConfigList(currentArg + 2, isSingleArg);
+          addToConfigList(currentArg + 2, ddash);
           break;
         }
 
       case 'f':
         {
-          int isSingleArg = 0;
-          addToConfigList(currentArg + 2, isSingleArg);
+          addToConfigList(currentArg + 2, fdash);
           break;
         }
 
@@ -324,7 +322,7 @@ void parseArgs(int argc, char* argv[]) {
           }
           parseNumLocales(numPtr);
           sprintf(numLocalesBuffer, "ChapelBase.numLocales=%d", _argNumLocales);
-          addToConfigList(numLocalesBuffer, 1);
+          addToConfigList(numLocalesBuffer, sdash);
           break;
         }
         unexpectedArg(currentArg);
@@ -332,7 +330,6 @@ void parseArgs(int argc, char* argv[]) {
 
       case 's':
         {
-          int isSingleArg = 1;
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, 
                                           "\" is not a valid argument");
@@ -343,7 +340,7 @@ void parseArgs(int argc, char* argv[]) {
               parseNumLocales(&(currentArg[13]));
             }
           }
-          addToConfigList(currentArg + 2, isSingleArg);
+          addToConfigList(currentArg + 2, sdash);
           break;
         }
 
