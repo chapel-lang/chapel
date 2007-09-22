@@ -80,3 +80,8 @@ _bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
   }
   return true;
 }
+
+void _readToEndOfLine(FILE* fp) {
+  char result[_default_string_length];
+  fgets(result, _default_string_length-1 , fp);
+}

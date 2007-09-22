@@ -433,6 +433,7 @@ initPrimitive() {
   prim_def("_fscan_int32", returnInfoInt32, true, true);
   prim_def("_fscan_uint32", returnInfoUInt32, true, true);
   prim_def("_fscan_real64", returnInfoReal64, true, true);
+  prim_def("_readToEndOfLine", returnInfoVoid, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_copy", returnInfoString, true);
   prim_def("string_index", returnInfoString, true);

@@ -32,4 +32,6 @@ _real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename);
 _bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
                      _int32 lineno, _string filename);
 
+void _readToEndOfLine(FILE* fp);
+
 #endif

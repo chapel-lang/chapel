@@ -57,7 +57,7 @@ class file: Writer {
     }
     return openStatus;
   }
-
+  
   def close() {
     if (this == stdin || this == stdout || this == stderr) {
       halt("***Error: You may not close \"", filename, "\"***");
@@ -110,6 +110,15 @@ def _fmodeError(f: file, isRead: bool) {
 def _fprintfError() {
   halt("***Error: Write failed: ", _get_errno(), "***");
 }
+
+def file.readln() {
+  __primitive("_readToEndOfLine",_fp);
+}
+
+def file.readln(inout list ...?n) {
+  read((...list));
+  __primitive("_readToEndOfLine",_fp);
+} 
 
 def file.read(inout first, inout rest ...?n) {
   read(first);
