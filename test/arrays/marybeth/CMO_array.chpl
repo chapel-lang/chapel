@@ -116,6 +116,21 @@ class CMODomain: BaseDomain {
   def buildSubdomain() 
     return CMODomain(rank=rank, idxType=idxType, stridable=stridable);
 
+  def rankChange(param rank: int, param stridable: bool, args) {
+    def isRange(r: range(?e,?b,?s)) param return 1;
+    def isRange(r) param return 0;
+
+    var d = CMODomain(rank=rank, idxType=idxType, stridable=stridable);
+    var i = 1;
+    for param j in 1..args.size {
+      if isRange(args(j)) {
+        d.ranges(i) = dim(j)(args(j));
+        i += 1;
+      }
+    }
+    return d;
+  }
+
   def translate(off: rank*int) {
     var x = CMODomain(rank=rank, idxType=int, stridable = stridable);
     for i in 1..rank do
@@ -312,11 +327,10 @@ class CMOArray:BaseArray {
     return alias;
   }
 
-  def rankChange(param newRank: int, param newStridable: bool, irs, rs) {
+  def rankChange(param newRank: int, param newStridable: bool, irs) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
-    var d = CMODomain(rank=newRank, idxType=idxType, stridable=newStridable);
-    d.setIndices(rs);
+    var d = dom.rankChange(newRank, newStridable, irs);
     var alias = CMOArray(eltType, newRank, idxType, newStridable, true, d, noinit=true);
     alias.D1 = [0:idxType..size:idxType);
     alias.data = data;

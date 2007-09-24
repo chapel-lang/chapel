@@ -71,6 +71,60 @@ def _build_index_type(param rank: int)
 def _build_index_type(d: _domain)
   return _build_index_type(d.rank, d._value.idxType);
 
+//
+// given a tuple args, returns true if the tuple contains only
+// integers and ranges; that is, it is a valid argument list for rank
+// change
+//
+def _validRankChangeArgs(args) param {
+  def _validRankChangeArg(r: range(?e,?b,?s)) param return true;
+  def _validRankChangeArg(i: integral) param return true;
+  def _validRankChangeArg(x) param return false;
+
+  def help(param dim: int) param {
+    if !_validRankChangeArg(args(dim)) then
+      return false;
+    else if dim < args.size then
+      return help(dim+1);
+    else
+      return true;
+  }
+
+  return help(1);
+}
+
+def _getRankChangeRanges(args) {
+  def isRange(r: range(?e,?b,?s)) param return 1;
+  def isRange(r) param return 0;
+  def _tupleize(x) {
+    var y: 1*x.type;
+    y(1) = x;
+    return y;
+  }
+  def collectRanges(param dim: int) {
+    if isRange(args(dim))
+      return collectRanges(dim+1, _tupleize(args(dim)));
+    else
+      return collectRanges(dim+1);
+  }
+  def collectRanges(param dim: int, x: _tuple) {
+    if dim > args.size {
+      return x;
+    } else if dim < args.size {
+      if isRange(args(dim)) then
+        return collectRanges(dim+1, ((...x), args(dim)));
+      else
+        return collectRanges(dim+1, x);
+    } else {
+      if isRange(args(dim)) then
+        return ((...x), args(dim));
+      else
+        return x;
+    }
+  }
+  return collectRanges(1);
+}
+
 pragma "domain"
 record _domain {
   param rank : int;
@@ -89,18 +143,13 @@ record _domain {
       yield i;
   }
 
-  def this(d: _domain)
-    return _domain(rank, _value.slice(d._value));
+  def this(ranges: range(?eltType,?boundedType,?stridable) ...rank)
+    return _domain(rank, _value.slice(_any_stridable(ranges), ranges));
 
-  def this(ranges: range(?eltType,?boundedType,?stridable) ...rank) {
-    param stridable = _any_stridable(ranges);
-    var newRanges: rank*range(_value.idxType, bounded, stridable);
-    for param j in 1..rank {
-      newRanges(j) = _value.dim(j)(ranges(j));
-    }
-    var x = _value.dist.buildDomain(rank, _value.idxType, stridable);
-    x.setIndices(newRanges);
-    return this(_domain(rank, x));
+  def this(args ...rank) where _validRankChangeArgs(args) {
+    var ranges = _getRankChangeRanges(args);
+    param rank = ranges.size, stridable = _any_stridable(ranges);
+    return _domain(rank, _value.rankChange(rank, stridable, args));
   }
 
   def dim(d : int)
@@ -250,7 +299,7 @@ def by(a: _domain, b) {
 // this is a wrapper class for all arrays
 pragma "array"
 record _array {
-  type _dim_index_type;
+  type idxType;
   type eltType;
   param rank : int;
   var _value;
@@ -260,83 +309,41 @@ record _array {
   def _dom
     return _domain(rank, _value.dom);
 
+  def this(i: rank*idxType) var where rank > 1
+    return _value(i);
+
+  def this(i: idxType ...rank) var where rank > 1
+    return _value(i);
+
+  def this(i: idxType) var where rank == 1
+    return _value(i);
+
   pragma "valid lvalue"
   def this(d: _domain) {
     _value.checkSlice(d._value);
-    var x = _value.slice(_dom(d)._value);
-    return _array(_dim_index_type, eltType, rank, x);
+    return _array(idxType, eltType, rank, _value.slice(_dom((...d.getIndices()))._value));
+    //
+    // requires dense domain implementation that returns a tuple of
+    // ranges via the getIndices() method; domain indexing is
+    // difficult in the domain case because it has to be implemented
+    // on a domain-by-domain basis; this is not terribly difficult in
+    // the dense case because we can represent a domain by a tuple of
+    // ranges, but in the sparse case, is there a general
+    // representation?
+    //
   }
 
   pragma "valid lvalue"
-  def this(rs: range(?_eltType,?boundedType,?stridable) ...rank) {
-    _value.checkSlice(rs);
-    var x = _value.slice(_dom((...rs))._value);
-    return _array(_dim_index_type, eltType, rank, x);
-  }
-
-  def this(i: rank*_dim_index_type) var where rank > 1
-    return _value(i);
-
-  def this(i: _dim_index_type ...rank) var where rank > 1
-    return _value(i);
-
-  def this(i: _dim_index_type) var where rank == 1
-    return _value(i);
-
-  def validRankChangeArguments(t) param {
-    def validRankChangeArgument(r: range(?eltType,?boundedType,?stridable)) param
-      return true;
-
-    def validRankChangeArgument(i: _dim_index_type) param
-      return true;
-
-    def validRankChangeArgument(x) param
-      return false;
-
-    def help(param dim: int) param {
-      if !validRankChangeArgument(t(dim)) then
-        return false;
-      else if dim < t.size then
-        return help(dim+1);
-      else
-        return true;
-    }
-    return help(1);
+  def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) {
+    _value.checkSlice(ranges);
+    return _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid lvalue"
-  def this(irs ...rank) where validRankChangeArguments(irs) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
-    def _tupleize(x) {
-      var y: 1*x.type;
-      y(1) = x;
-      return y;
-    }
-    def collectRanges(param dim: int) {
-      if isRange(irs(dim))
-        return collectRanges(dim+1, _tupleize(irs(dim)));
-      else
-        return collectRanges(dim+1);
-    }
-    def collectRanges(param dim: int, x: _tuple) {
-      if dim > irs.size {
-        return x;
-      } else if dim < irs.size {
-        if isRange(irs(dim)) then
-          return collectRanges(dim+1, ((...x), irs(dim)));
-        else
-          return collectRanges(dim+1, x);
-      } else {
-        if isRange(irs(dim)) then
-          return ((...x), irs(dim));
-        else
-          return x;
-      }
-    }
-    var rs = collectRanges(1);
-    var x = _value.rankChange(rs.size, _any_stridable(rs), irs, rs);
-    return _array(_dim_index_type, eltType, rs.size, x);
+  def this(args ...rank) where _validRankChangeArgs(args) {
+    var ranges = _getRankChangeRanges(args);
+    param rank = ranges.size, stridable = _any_stridable(ranges);
+    return _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));
   }
 
   def these() var {

@@ -143,6 +143,30 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
 
   }
 
+  def slice(param stridable: bool, ranges) {
+    var d = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                         stridable=stridable, dist=dist);
+    for param i in 1..rank do
+      d.ranges(i) = dim(i)(ranges(i));
+    return d;
+  }
+
+  def rankChange(param rank: int, param stridable: bool, args) {
+    def isRange(r: range(?e,?b,?s)) param return 1;
+    def isRange(r) param return 0;
+
+    var d = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                         stridable=stridable, dist=dist);
+    var i = 1;
+    for param j in 1..args.size {
+      if isRange(args(j)) {
+        d.ranges(i) = dim(j)(args(j));
+        i += 1;
+      }
+    }
+    return d;
+  }
+
   def translate(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
                                          stridable=stridable, dist=dist);
@@ -150,9 +174,6 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
       x.ranges(i) = dim(i)._translate(off(i));
     return x;
   }
-
-  def slice(d: SingleLocaleArithmeticDomain)
-    return d;
 
   def interior(off: rank*int) {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
@@ -354,27 +375,27 @@ class SingleLocaleArithmeticArray: BaseArray {
     return alias;
   }
 
-  def rankChange(param newRank: int, param newStridable: bool, irs, rs) {
+  def rankChange(param newRank: int, param newStridable: bool, args) {
+    var d = dom.rankChange(newRank, newStridable, args);
+
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
-    var d = SingleLocaleArithmeticDomain(rank=newRank, idxType=idxType,
-                                         stridable=newStridable, dist=dom.dist);
-    d.setIndices(rs);
+
     var alias = SingleLocaleArithmeticArray(eltType, newRank, idxType,
                                             newStridable, true, d, noinit=true);
     alias.data = data;
     alias.size = size;
     var i = 1;
     alias.origin = origin;
-    for param j in 1..irs.size {
-      if isRange(irs(j)) {
+    for param j in 1..args.size {
+      if isRange(args(j)) {
         alias.off(i) = d.dim(i)._low;
         alias.origin += blk(j) * (d.dim(i)._low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
       } else {
-        alias.origin += blk(j) * (irs(j) - off(j)) / str(j);
+        alias.origin += blk(j) * (args(j) - off(j)) / str(j);
       }
     }
     alias.computeFactoredOffs();
