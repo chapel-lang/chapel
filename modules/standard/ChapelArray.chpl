@@ -11,10 +11,11 @@ def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind)
 def _build_subdomain_type(dom)
   return dom.buildSubdomain();
 
-def _build_sparse_subdomain_type(dist, parentDom) {
-  var x = dist.buildSparseDomain(parentDom.rank, parentDom._value.idxType, parentDom._value);
-  return _domain(parentDom.rank, x);
-}
+def _build_sparse_subdomain_type(dist, parentDom)
+  return _domain(parentDom.rank,
+                 dist.buildSparseDomain(parentDom.rank,
+                                        parentDom._value.idxType,
+                                        parentDom._value));
 
 record _ArrayTypeInfo {
   type eltType;
@@ -30,8 +31,14 @@ def _build_array_type(dom, type eltType)
 def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
 
-def _build_domain(x) // where x:_domain // see test/arrays/bradc/paulslice.chpl
-  return x;                             // is * on ranges?
+def _build_domain(x: _domain)
+  return x;
+
+def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
+  var d: domain(rank, eltType(1), _any_stridable(ranges));
+  d.setIndices(ranges);
+  return d;
+}
 
 //
 // computes && reduction over stridable of ranges
@@ -43,13 +50,6 @@ def _any_stridable(ranges, param d: int = 1) param {
     return _any_stridable(ranges, d+1);
   else
     return false;
-}
-
-def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
-  type t = ranges(1).eltType;
-  var d: domain(rank, t, _any_stridable(ranges));
-  d.setIndices(ranges);
-  return d;
 }
 
 def _build_open_interval_upper(x: _domain)
