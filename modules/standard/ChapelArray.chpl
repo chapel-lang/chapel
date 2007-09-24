@@ -318,29 +318,30 @@ record _array {
   def this(i: idxType) var where rank == 1
     return _value(i);
 
+  //
+  // requires dense domain implementation that returns a tuple of
+  // ranges via the getIndices() method; domain indexing is difficult
+  // in the domain case because it has to be implemented on a
+  // domain-by-domain basis; this is not terribly difficult in the
+  // dense case because we can represent a domain by a tuple of
+  // ranges, but in the sparse case, is there a general
+  // representation?
+  //
   pragma "valid lvalue"
-  def this(d: _domain) {
-    _value.checkSlice(d._value);
-    return _array(idxType, eltType, rank, _value.slice(_dom((...d.getIndices()))._value));
-    //
-    // requires dense domain implementation that returns a tuple of
-    // ranges via the getIndices() method; domain indexing is
-    // difficult in the domain case because it has to be implemented
-    // on a domain-by-domain basis; this is not terribly difficult in
-    // the dense case because we can represent a domain by a tuple of
-    // ranges, but in the sparse case, is there a general
-    // representation?
-    //
-  }
+  def this(d: _domain) where d.rank == rank
+    return this((...d.getIndices()));
 
   pragma "valid lvalue"
   def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) {
-    _value.checkSlice(ranges);
+    if boundsChecking then
+      _value.checkSlice(ranges);
     return _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid lvalue"
   def this(args ...rank) where _validRankChangeArgs(args) {
+    if boundsChecking then
+      _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = _any_stridable(ranges);
     return _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));

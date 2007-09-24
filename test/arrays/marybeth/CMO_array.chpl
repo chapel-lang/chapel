@@ -288,26 +288,11 @@ class CMOArray:BaseArray {
     return alias;
   }
 
-  def checkSlice(d: CMODomain) {
-    if rank != d.rank then
-      halt("array rank change not supported");
-    for param i in 1..rank {
-      if !_in(dom.dim(i), d.dim(i)) then
-        halt("array slice out of bounds in dimension ", i, ": ", d);
-      if d.dim(i)._stride % dom.dim(i)._stride != 0 then
-        halt("stride of array slice is not multiple of stride in dimension ", i);
-    }
-  }
-
   def checkSlice(d) {
-    if rank != d.size then
-      halt("array rank change not supported");
     for param i in 1..rank {
       if d(i).boundedType == bounded then
         if !_in(dom.dim(i), d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
-      if d(i)._stride % dom.dim(i)._stride != 0 then
-        halt("stride of array slice is not multiple of stride in dimension ", i);
     }
   }
 
@@ -325,6 +310,17 @@ class CMOArray:BaseArray {
     }
     alias.computeFactoredOffs();
     return alias;
+  }
+
+  def checkRankChange(args) {
+    def isRange(r: range(?e,?b,?s)) param return 1;
+    def isRange(r) param return 0;
+
+    for param i in 1..args.size do
+      if isRange(args(i)) then
+        if args(i).boundedType == bounded then
+          if !_in(dom.dim(i), args(i)) then
+            halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
   def rankChange(param newRank: int, param newStridable: bool, irs) {
