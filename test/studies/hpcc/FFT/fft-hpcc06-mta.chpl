@@ -146,7 +146,7 @@ def printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
-    writeln("Performance (Gflop/s) = ", 5.0 * (m * n) / execTime / 1.0e-9);
+    writeln("Performance (Gflop/s) = ", (5.0 * m * n) / execTime * 1.0e-9);
   }
 }
 

@@ -15,7 +15,7 @@ const m = 2**n,                // probSize
       indexMask = m-1;
 
 config const sequentialVerify = (numLocales < log2(m)),
-             errorTolerance = 1.0e-2;
+             errorTolerance = 1e-2;
 
 config const printParams = true,
              printArrays = false,
@@ -78,6 +78,6 @@ def printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
-    writeln("Performance (GUPS) = ", N_U / execTime * 1.0e-9);
+    writeln("Performance (GUPS) = ", (N_U / execTime) * 1e-9);
   }
 }

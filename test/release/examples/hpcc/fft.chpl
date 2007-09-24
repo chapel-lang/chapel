@@ -123,14 +123,13 @@ def dfft(A: [?ADom], W) {
   if (str*radix == numElements) then
     forall lo in [0..str) do
       butterfly(1.0, 1.0, 1.0, A[[0..radix)*str + lo]);
-  else {
+  else
     forall lo in [0..str) {
       const a = A(lo),
             b = A(lo+str);
       A(lo)     = a + b;
       A(lo+str) = a - b;
     }
-  }
 }
 
 
@@ -184,6 +183,6 @@ def printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
-    writeln("Performance (Gflop/s) = ", 1e-9 * (5.0 * m * n) / execTime);
+    writeln("Performance (Gflop/s) = ", 5 * (m * n / execTime) * 1e-9);
   }
 }

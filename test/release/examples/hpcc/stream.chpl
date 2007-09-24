@@ -82,7 +82,7 @@ def printResults(successful, execTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GBPerSec = numVectors * numBytes(elemType) * (m/minTime) * 1.0e-9;
+    const GBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
     writeln("Performance (GB/s) = ", GBPerSec);
   }
 }
