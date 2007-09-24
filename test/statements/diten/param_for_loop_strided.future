@@ -1,0 +1,4 @@
+feature request: strided range literal in "for param" loop
+
+The second loop in this test could be useful in some cases, but is currently
+a syntax error due to the stride.
