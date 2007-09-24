@@ -171,7 +171,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
                                          stridable=stridable, dist=dist);
     for i in 1..rank do
-      x.ranges(i) = dim(i)._translate(off(i));
+      x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
@@ -183,7 +183,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
-      x.ranges(i) = dim(i)._interior(off(i));
+      x.ranges(i) = dim(i).interior(off(i));
     }
     return x;
   }
@@ -192,7 +192,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
                                          stridable=stridable, dist=dist);
     for i in 1..rank do
-      x.ranges(i) = dim(i)._exterior(off(i));
+      x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
@@ -200,7 +200,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
                                          stridable=stridable, dist=dist);
     for i in 1..rank do {
-      x.ranges(i) = ranges(i)._expand(off(i));
+      x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
@@ -212,7 +212,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
                                          stridable=stridable, dist=dist);
     for i in 1..rank do
-      x.ranges(i) = ranges(i)._expand(off);
+      x.ranges(i) = ranges(i).expand(off);
     return x;
   }
 
@@ -289,9 +289,11 @@ class SingleLocaleArithmeticArray: BaseArray {
     data.init();
   }
 
+  pragma "inline"
   def this(ind: idxType ...1) var where rank == 1
     return this(ind);
 
+  pragma "inline"
   def this(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.member(ind) then

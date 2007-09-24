@@ -267,6 +267,11 @@ def =(a: _domain, b: _tuple) {
   return a;
 }
 
+def =(d: _domain, r: range(?e,?b,?s)) {
+  d = _build_domain(r);
+  return d;
+}
+
 def =(a: _domain, b) {  // b is iteratable
   a.clear();
   for ind in b {
@@ -309,12 +314,15 @@ record _array {
   def _dom
     return _domain(rank, _value.dom);
 
+  pragma "inline"
   def this(i: rank*idxType) var where rank > 1
     return _value(i);
 
+  pragma "inline"
   def this(i: idxType ...rank) var where rank > 1
     return _value(i);
 
+  pragma "inline"
   def this(i: idxType) var where rank == 1
     return _value(i);
 

@@ -1,5 +1,5 @@
 //
-// syntactic bridge code for bounded ranges
+// syntax function for bounded ranges
 //
 def _build_range(param bt: BoundedRangeType, low: int, high: int)
   return range(int, bt, false, low, high);
@@ -15,7 +15,7 @@ def _build_range(param bt: BoundedRangeType, low, high) {
 
 
 //
-// syntactic bridge code for unbounded ranges
+// syntax function for unbounded ranges
 //
 def _build_range(param bt: BoundedRangeType, bound: int)
   return range(int, bt, false, bound, bound);
@@ -33,6 +33,13 @@ def _build_range(param bt: BoundedRangeType, bound) {
 
 
 //
+// syntax function for [range)
+//
+def _build_open_interval_upper(r: range)
+  return range(r.eltType, r.boundedType, r.stridable, r._low, r._high-1);
+
+
+//
 // range type implementation
 //
 //   paramterized by how it is bounded and by an integral element type
@@ -46,9 +53,9 @@ record range {
   var _stride : int = 1;                         // integer stride of range
   var _promotionType : eltType;                  // enables promotion
 
-  def low: eltType return _low;
-  def high: eltType return _high;
-  def stride: int return _stride;
+  def low return _low;
+  def high return _high;
+  def stride return _stride;
 
   def alignLow(alignment: eltType) {
     var s = abs(_stride):eltType, d = abs(_low-alignment) % s;
@@ -256,82 +263,57 @@ pragma "inline" def string.substring(s: range) {
     return __primitive("string_select", this, s._low, s._high);
 }
 
-def range._translate(i : int) {
-  if boundedType != bounded then
-    compilerError("translate is not supported on unbounded ranges");
-  return _low+i.._high+i by _stride;
-}
+def range.translate(i: eltType)
+  return this + i;
 
-def range._interior(i : int) {
+def range.interior(i: eltType) {
   if boundedType != bounded then
     compilerError("interior is not supported on unbounded ranges");
-  var x = _low.._high by _stride;
-  if (i < 0) {
-    x = _low.._low-1-i by _stride;
-  } else if (i > 0) {
-    x = _high+1-i.._high by _stride;
-  }
-  return x;
+  if i == 0 then
+    return this;
+  else if i < 0 then
+    return range(eltType, boundedType, stridable, low, low-1-i, stride);
+  else
+    return range(eltType, boundedType, stridable, high+1-i, high, stride);
 }
 
-def range._exterior(i : int) {
+def range.exterior(i: eltType) {
   if boundedType != bounded then
     compilerError("exterior is not supported on unbounded ranges");
-  var x = _low.._high by _stride;
-  if (i < 0) {
-    x = _low+i.._low-1 by _stride;
-  } else if (i > 0) {
-    x = _high+1.._high+i by _stride;
-  }
-  return x;
+  if i == 0 then
+    return this;
+  else if i < 0 then
+    return range(eltType, boundedType, stridable, low+i, low-1, stride);
+  else
+    return range(eltType, boundedType, stridable, high+1, high+i, stride);
 }
 
-def range._expand(i : int) {
-  if boundedType != bounded then
-    compilerError("expand is not supported on unbounded ranges");
-  return _low-i.._high+i by _stride;
-}
+def range.expand(i: eltType)
+  return range(eltType, boundedType, stridable, low-i, high+i, stride);
 
+//
+// range op scalar and scalar op range arithmetic
+//
+def +(r: range, s: integral)
+  return range((r.low+s).type, r.boundedType, r.stridable, r.low+s, r.high+s, r.stride);
 
-def _build_open_interval_upper(r: range) {
-  return range(r.eltType, r.boundedType, r.stridable, r._low, r._high-1);
-}
+def -(r: range, s: integral)
+  return range((r.low-s).type, r.boundedType, r.stridable, r.low-s, r.high-s, r.stride);
 
-def =(a: _domain, b: range) {
-  const bdom = _build_domain(b);
-  a = bdom;
-  return a;
-}
+def *(r: range, s: integral)
+  return range((r.low*s).type, r.boundedType, true, r.low*s, r.high*s, r.stride*s);
 
+def /(r: range, s: integral)
+  return range((r.low/s).type, r.boundedType, true, r.low/s, r.high/s, r.stride/s);
 
-def +(r: range, s: integral) {
-  return range((r._low+s).type, r.boundedType, r.stridable, r._low+s, r._high+s, r._stride);
-}
+def +(s:integral, r: range)
+  return range((s+r.low).type, r.boundedType, r.stridable, s+r.low, s+r.high, r.stride);
 
-def -(r: range, s: integral) {
-  return range((r._low-s).type, r.boundedType, r.stridable, r._low-s, r._high-s, r._stride);
-}
+def -(s:integral, r: range)
+  return range((s-r.low).type, r.boundedType, r.stridable, s-r.low, s-r.high, r.stride);
 
-def *(r: range, s: integral) {
-  return range((r._low*s).type, r.boundedType, stridable=true, r._low*s, r._high*s, r._stride*s);
-}
+def *(s:integral, r: range)
+  return range((s*r.low).type, r.boundedType, true, s*r.low, s*r.high, s*r.stride);
 
-def /(r: range, s: integral) {
-  return range((r._low/s).type, r.boundedType, stridable=true, r._low/s, r._high/s, r._stride/s);
-}
-
-def +(s:integral, r: range) {
-  return range((s+r._low).type, r.boundedType, r.stridable, s+r._low, s+r._high, r._stride);
-}
-
-def -(s:integral, r: range) {
-  return range((s-r._low).type, r.boundedType, r.stridable, s-r._low, s-r._high, r._stride);
-}
-
-def *(s:integral, r: range) {
-  return range((s*r._low).type, r.boundedType, stridable=true, s*r._low, s*r._high, s*r._stride);
-}
-
-def /(s:integral, r: range) {
-  return range((s/r._low).type, r.boundedType, stridable=true, s/r._low, s/r._high, s/r._stride);
-}
+def /(s:integral, r: range)
+  return range((s/r.low).type, r.boundedType, true, s/r.low, s/r.high, s/r.stride);
