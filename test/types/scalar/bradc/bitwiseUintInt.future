@@ -1,0 +1,5 @@
+feature request: bitwise ops on int/uint yield uint of same size
+
+This is a feature request that bitwise operators on int/uint
+pairs be supported without promoting to the next integer size
+and yield an unsigned integer of the same size.
