@@ -186,6 +186,16 @@ The by operator takes a range and an integer to yield a new range that
 is strided by the integer.  Striding a strided range results in a
 stride whose value is the product of the two strides.
 
+\begin{rationale}
+{\it Why isn't the high bound specified first if the stride is
+negative?}  The reason for this choice is that the \chpl{by} operator
+is binary, not ternary.  Given a range \chpl{R} initialized
+to \chpl{1..3}, we want \chpl{R by -1} to contain the ordered sequence
+$3,2,1$.  But then \chpl{R by -1} would be different than \chpl{3..1
+by -1} even though it should be identical by substituting the value in
+R into the expression.
+\end{rationale}
+
 \subsubsection{Arithmetic Operators}
 \label{Range_Arithmetic}
 \index{ranges!arithmetic operators}
