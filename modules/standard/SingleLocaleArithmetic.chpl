@@ -71,14 +71,14 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def member(ind: idxType) where rank == 1 {
-    if !_in(ranges(1), ind) then
+    if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
   def member(ind: rank*idxType) {
     for param i in 1..rank do
-      if !_in(ranges(i), ind(i)) then
+      if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
@@ -340,7 +340,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   def checkSlice(ranges) {
     for param i in 1..rank do
       if ranges(i).boundedType == bounded then
-        if !_in(dom.dim(i), ranges(i)) then
+        if !dom.dim(i).member(ranges(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
@@ -368,7 +368,7 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param i in 1..args.size do
       if isRange(args(i)) then
         if args(i).boundedType == bounded then
-          if !_in(dom.dim(i), args(i)) then
+          if !dom.dim(i).member(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 

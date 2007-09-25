@@ -256,7 +256,7 @@ bounds from the range being sliced.
 
 \begin{example}
 In the following example, \chpl{r} represents the integers from 1 to
-10 inclusive.  Ranges \chpl{r2} and \chpl{r2} are defined using range
+10 inclusive.  Ranges \chpl{r2} and \chpl{r3} are defined using range
 slices and represent the indices from 3 to 10 and the odd integers
 between 1 and 10 respectively.
 \begin{chapel}
@@ -297,3 +297,19 @@ above for 0-based programming.
 \end{rationale}
 
 
+\subsection{Predefined Functions and Methods on Ranges}
+\index{ranges!predefined functions}
+
+\begin{protohead}
+def $range$.member(i: this.eltType): bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not \chpl{i} is in the range.
+\end{protobody}
+
+\begin{protohead}
+def $range$.member(other: range): bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not every element in other is also in this.
+\end{protobody}

@@ -418,6 +418,7 @@ pragma "inline" def _i2r(a: imag(?w)) return a:real(w);
 pragma "inline" def ascii(a: string) return __primitive("ascii", a);
 pragma "inline" def length(a: string) return __primitive("string_length", a);
 pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
+
 pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 
 //

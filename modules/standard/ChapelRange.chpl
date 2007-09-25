@@ -1,4 +1,28 @@
 //
+// range type
+//
+//   parameterized by an integral element type, by whether low and/or
+//   high bounds exist, and by whether the stride is one or not
+//
+record range {
+  type eltType = int;                            // element type
+  param boundedType: BoundedRangeType = bounded; // bounded or not
+  param stridable: bool = false;                 // range can be strided
+  var _low: eltType = 1;                         // lower bound
+  var _high: eltType = 0;                        // upper bound
+  var _stride: int = 1;                          // integer stride of range
+  var _promotionType : eltType;                  // enables promotion
+
+  def low return _low;       // public getter for low bound
+  def high return _high;     // public getter for high bound
+  def stride return _stride; // public getter for stride
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// SYNTAX FUNCTIONS
+
+//
 // syntax function for bounded ranges
 //
 def _build_range(param bt: BoundedRangeType, low: int, high: int)
@@ -40,166 +64,80 @@ def _build_open_interval_upper(r: range)
 
 
 //
-// range type implementation
+// syntax function for by-expressions
 //
-//   paramterized by how it is bounded and by an integral element type
-//
-record range {
-  type eltType = int;                            // element type
-  param boundedType: BoundedRangeType = bounded; // bounded or not
-  param stridable: bool = false;                 // range can be strided
-  var _low : eltType = 1;                        // lower bound
-  var _high : eltType = 0;                       // upper bound
-  var _stride : int = 1;                         // integer stride of range
-  var _promotionType : eltType;                  // enables promotion
-
-  def low return _low;
-  def high return _high;
-  def stride return _stride;
-
-  def alignLow(alignment: eltType) {
-    var s = abs(_stride):eltType, d = abs(_low-alignment) % s;
-    if d != 0 {
-      if _low - alignment < 0 then
-        _low += d;
-      else
-        _low += s - d;
-    }
-  }
-
-  def alignHigh(alignment: eltType) {
-    var s = abs(_stride):eltType, d = abs(_high-alignment) % s;
-    if d != 0 {
-      if _high - alignment > 0 then
-        _high -= d;
-      else
-        _high -= s - d;
-    }
-  }
-
-  //
-  // return the intersection of this and other
-  // the type of the returned range is determined by
-  //   taking the eltType of other
-  //   setting the boundedType appropriately
-  //   setting stridable to true if either this or other is stridable
-  //
-  def this(other: range(?eltType, ?boundedType, ?stridable)) {
-
-    // return true if r has a low bound
-    def hasLow(r) param
-      return r.boundedType == bounded || r.boundedType == boundedLow;
-
-    // return true if r has a high bound
-    def hasHigh(r) param
-      return r.boundedType == bounded || r.boundedType == boundedHigh;
-
-    // determine boundedType of result
-    def computeBoundedType(r1, r2) param {
-      param low = hasLow(r1) || hasLow(r2);
-      param high = hasHigh(r1) || hasHigh(r2);
-      if low && high then
-        return bounded;
-      else if low then
-        return boundedLow;
-      else if high then
-        return boundedHigh;
-      else
-        return boundedNone;
-    }
-
-    // Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
-    // given two non-negative integers u and v
-    // returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
-    def extendedEuclid(u: int, v: int) {
-      var U = (1, 0, u);
-      var V = (0, 1, v);
-      while V(3) != 0 {
-        (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
-      }
-      return (U(3), U(1));
-    }
-
-    var lo1 = if hasLow(this) then this._low:eltType else other._low;
-    var hi1 = if hasHigh(this) then this._high:eltType else other._high;
-    var st1 = abs(this.stride);
-    var al1 = if this.stride < 0 then hi1 else lo1;
-
-    var lo2 = if hasLow(other) then other._low else this._low:eltType;
-    var hi2 = if hasHigh(other) then other._high else this._high:eltType;
-    var st2 = abs(other.stride);
-    var al2 = if this.stride < 0 then hi2 else lo2;
-
-    var (g, x) = extendedEuclid(st1, st2);
-
-    var result = range(eltType,
-                       computeBoundedType(this, other),
-                       this.stridable | other.stridable,
-                       max(lo1, lo2),
-                       min(hi1, hi2),
-                       st1 * st2 / g);
-
-    if abs(lo1 - lo2) % g:eltType != 0 {
-      // empty intersection, return degenerate result
-      result._low <=> result._high;
-    } else {
-      // non-empty intersection
-
-      if other.stride < 0 then
-        result._stride = -result._stride;
-
-      var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
-
-      result.alignLow(al);
-      result.alignHigh(al);
-    }
-
+def by(r : range, i : int) {
+  if i == 0 then
+    halt("range cannot be strided by zero");
+  if r.boundedType == boundedLow then
+    if i < 0 then
+      halt("negative stride cannot be applied to range without low bound");
+  if r.boundedType == boundedHigh then
+    if i > 0 then
+      halt("positive stride cannot be applied to range without high bound");
+  if r.boundedType == boundedNone then
+    halt("unbounded range cannot be strided");
+  var result = range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
+  if r._low > r._high then
     return result;
-  }
+  if result.stride < 0 then
+    result._alignLow(result.high);
+  else
+    result._alignHigh(result.low);
+  return result;
+}
 
-  def these() {
-    if boundedType != bounded {
-      if stridable {
-        var i = if _stride > 0 then _low else _high;
-        while true {
-          yield i;
-          i = i + _stride:eltType;
-        }
-      } else {
-        var i = _low;
-        while true {
-          yield i;
-          i = i + 1;
-        }
-      }
-    } else {
-      if stridable {
-        var i = if _stride > 0 then _low else _high;
-        while _low <= i && i <= _high {
-          yield i;
-          i = i + _stride:eltType;
-        }
-      } else {
-        var i: eltType;
-        for __primitive("c for loop", i, _low, _high, 1) {
-          yield i;
-        }
-      }
-    }
-  }
 
-  def length {
-    if boundedType != bounded then
-      compilerError("unable to determine length of unbounded range");
-    return
-      (if _stride > 0
-        then (_high - _low + _stride:eltType) / _stride:eltType
-        else (_low - _high + _stride:eltType) / _stride:eltType);
+////////////////////////////////////////////////////////////////////////////////
+// INTERNAL FUNCTIONS
+
+//
+// return true if this range has a low bound
+//
+def range._hasLow() param
+  return boundedType == bounded || boundedType == boundedLow;
+
+
+//
+// return true if this range has a high bound
+//
+def range._hasHigh() param
+  return boundedType == bounded || boundedType == boundedHigh;
+
+
+//
+// align low bound of this range to an alignment; snap up
+//
+def range._alignLow(alignment: eltType) {
+  var s = abs(_stride):eltType, d = abs(_low-alignment) % s;
+  if d != 0 {
+    if _low - alignment < 0 then
+      _low += d;
+    else
+      _low += s - d;
   }
 }
 
-def =(r1: range(stridable=?stridable), r2) {
-  if !stridable then
+
+//
+// align high bound of this range to an alignment; snap down
+//
+def range._alignHigh(alignment: eltType) {
+  var s = abs(_stride):eltType, d = abs(_high-alignment) % s;
+  if d != 0 {
+    if _high - alignment > 0 then
+      _high -= d;
+    else
+      _high -= s - d;
+  }
+}
+
+
+//
+// range assignment
+//
+def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
+  if !s1 && s2 then
     if r2.stride != 1 then
       halt("non-stridable range assigned non-unit stride");
   r1._low = r2._low;
@@ -208,64 +146,191 @@ def =(r1: range(stridable=?stridable), r2) {
   return r1;
 }
 
-def by(s : range, i : int) {
-  if i == 0 then
-    halt("illegal stride of 0");
-  var as = range(s.eltType, s.boundedType, true, s._low, s._high, s._stride * i);
-  if s._low > s._high then return as;
 
-  if as._stride < 0 then
-    as._low = as._low + (as._high - as._low) % (-as._stride):as.eltType;
+////////////////////////////////////////////////////////////////////////////////
+// EXTERNAL FUNCTIONS
+
+//
+// return the intersection of this and other
+//
+def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
+
+  //
+  // determine boundedType of result
+  //
+  def computeBoundedType(r1, r2) param {
+    param low = r1._hasLow() || r2._hasLow();
+    param high = r1._hasHigh() || r2._hasHigh();
+    if low && high then
+      return bounded;
+    else if low then
+      return boundedLow;
+    else if high then
+      return boundedHigh;
+    else
+      return boundedNone;
+  }
+
+  //
+  // returns (gcd(u, v), x) where x is set such that u*x + v*y =
+  // gcd(u, v) assuming u and v are non-negative
+  //
+  // source: Knuth Volume 2 --- Section 4.5.2
+  //
+  def extendedEuclid(u: int, v: int) {
+    var U = (1, 0, u);
+    var V = (0, 1, v);
+    while V(3) != 0 {
+      (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+    }
+    return (U(3), U(1));
+  }
+
+  var lo1 = if _hasLow() then this._low:eltType else other._low;
+  var hi1 = if _hasHigh() then this._high:eltType else other._high;
+  var st1 = abs(this.stride);
+  var al1 = if this.stride < 0 then hi1 else lo1;
+
+  var lo2 = if other._hasLow() then other._low else this._low:eltType;
+  var hi2 = if other._hasHigh() then other._high else this._high:eltType;
+  var st2 = abs(other.stride);
+  var al2 = if this.stride < 0 then hi2 else lo2;
+
+  var (g, x) = extendedEuclid(st1, st2);
+
+  var result = range(eltType,
+                     computeBoundedType(this, other),
+                     this.stridable | other.stridable,
+                     max(lo1, lo2),
+                     min(hi1, hi2),
+                     st1 * st2 / g);
+
+  if abs(lo1 - lo2) % g:eltType != 0 {
+    // empty intersection, return degenerate result
+    result._low <=> result._high;
+  } else {
+    // non-empty intersection
+
+    if other.stride < 0 then
+      result._stride = -result._stride;
+
+    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+
+    result._alignLow(al);
+    result._alignHigh(al);
+  }
+
+  return result;
+}
+
+
+//
+// default iterator optimized for unit stride
+//
+def range.these() {
+  if boundedType != bounded {
+    if stridable {
+      var i = if _stride > 0 then _low else _high;
+      while true {
+        yield i;
+        i = i + _stride:eltType;
+      }
+    } else {
+      var i = _low;
+      while true {
+        yield i;
+        i = i + 1;
+      }
+    }
+  } else {
+    if stridable {
+      var i = if _stride > 0 then _low else _high;
+      while _low <= i && i <= _high {
+        yield i;
+        i = i + _stride:eltType;
+      }
+    } else {
+      var i: eltType;
+      for __primitive("c for loop", i, _low, _high, 1) {
+        yield i;
+      }
+    }
+  }
+}
+
+
+//
+// returns the number of elements in this range
+//
+def range.length {
+  if boundedType != bounded then
+    compilerError("unbounded range has infinite length");
+  if stride > 0 then
+    return (high - low) / stride:eltType + 1;
   else
-    as._high = as._high - (as._high - as._low) % (as._stride):as.eltType;
-  if as.boundedType == boundedLow then
-    if as._stride < 0 then
-      halt("error: unbounded range has negative stride and lower bound");
-  if as.boundedType == boundedHigh then
-    if as._stride > 0 then
-      halt("error: unbounded range has positive stride and upper bound");
-  return as;
+    return (low - high) / stride:eltType + 1;
 }
 
-def _in(s : range, i : s.eltType) {
-  if s.boundedType != bounded then
-    compilerError("_in undefined on unbounded ranges");
-  return i >= s._low && i <= s._high &&
-    (i - s._low) % abs(s._stride):s.eltType == 0;
+
+//
+// returns true if i is in this range
+//
+def range.member(i: eltType) {
+  if stridable {
+    if boundedType == bounded {
+      return i >= low && i <= high && (i - low) % abs(stride):eltType == 0;
+    } else if boundedType == boundedLow {
+      return i >= low && (i - low) % abs(stride):eltType == 0;
+    } else if boundedType == boundedHigh {
+      return i <= high && (high - i) % abs(stride):eltType == 0;
+    } else {
+      return true;
+    }
+  } else {
+    if boundedType == bounded {
+      return i >= low && i <= high;
+    } else if boundedType == boundedLow {
+      return i >= low;
+    } else if boundedType == boundedHigh {
+      return i <= high;
+    } else {
+      return true;
+    }
+  }
 }
 
-// really slow --- REWRITE
-def _in(s1: range, s2: range) {
-  if (s1.boundedType != bounded) | (s2.boundedType != bounded) then
-    compilerError("_in undefined on unbounded ranges");
-  for i in s2 do
-    if !_in(s1, i) then
-      return false;
-  return true;
-}
 
+//
+// returns true if every i in other is in this range
+//
+def range.member(other: range(?e,?b,?s))
+  return this(other) == other;
+
+
+//
+// write implementation for ranges
+//
 def range.writeThis(f: Writer) {
-  if (boundedType == bounded) | (boundedType == boundedLow) then
+  if _hasLow() then
     f.write(_low);
   f.write("..");
-  if (boundedType == bounded) | (boundedType == boundedHigh) then
+  if _hasHigh() then
     f.write(_high);
   if _stride != 1 then
     f.write(" by ", _stride);
 }
 
-pragma "inline" def string.substring(s: range) {
-  if s.boundedType != bounded then
-    compilerError("substring indexing undefined on unbounded ranges");
-  if s._stride != 1 then
-    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
-  else
-    return __primitive("string_select", this, s._low, s._high);
-}
 
+//
+// translate the indices in this range by i
+//
 def range.translate(i: eltType)
   return this + i;
 
+
+//
+// return an interior portion of this range
+//
 def range.interior(i: eltType) {
   if boundedType != bounded then
     compilerError("interior is not supported on unbounded ranges");
@@ -277,6 +342,10 @@ def range.interior(i: eltType) {
     return range(eltType, boundedType, stridable, high+1-i, high, stride);
 }
 
+
+//
+// return an exterior portion of this range
+//
 def range.exterior(i: eltType) {
   if boundedType != bounded then
     compilerError("exterior is not supported on unbounded ranges");
@@ -288,32 +357,50 @@ def range.exterior(i: eltType) {
     return range(eltType, boundedType, stridable, high+1, high+i, stride);
 }
 
+
+//
+// returns an expanded range, or a contracted range if i < 0
+//
 def range.expand(i: eltType)
   return range(eltType, boundedType, stridable, low-i, high+i, stride);
+
 
 //
 // range op scalar and scalar op range arithmetic
 //
-def +(r: range, s: integral)
-  return range((r.low+s).type, r.boundedType, r.stridable, r.low+s, r.high+s, r.stride);
+def +(r: range(?e,?b,?s), i: integral)
+  return range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
 
-def -(r: range, s: integral)
-  return range((r.low-s).type, r.boundedType, r.stridable, r.low-s, r.high-s, r.stride);
+def -(r: range(?e,?b,?s), i: integral)
+  return range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
-def *(r: range, s: integral)
-  return range((r.low*s).type, r.boundedType, true, r.low*s, r.high*s, r.stride*s);
+def *(r: range(?e,?b,?s), i: integral)
+  return range((r.low*i).type, b, true, r.low*i, r.high*i, r.stride*i);
 
-def /(r: range, s: integral)
-  return range((r.low/s).type, r.boundedType, true, r.low/s, r.high/s, r.stride/s);
+def /(r: range(?e,?b,?s), i: integral)
+  return range((r.low/i).type, b, true, r.low/i, r.high/i, r.stride/i);
 
-def +(s:integral, r: range)
-  return range((s+r.low).type, r.boundedType, r.stridable, s+r.low, s+r.high, r.stride);
+def +(i:integral, r: range(?e,?b,?s))
+  return range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
 
-def -(s:integral, r: range)
-  return range((s-r.low).type, r.boundedType, r.stridable, s-r.low, s-r.high, r.stride);
+def -(i:integral, r: range(?e,?b,?s))
+  return range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
 
-def *(s:integral, r: range)
-  return range((s*r.low).type, r.boundedType, true, s*r.low, s*r.high, s*r.stride);
+def *(i:integral, r: range(?e,?b,?s))
+  return range((i*r.low).type, b, true, i*r.low, i*r.high, i*r.stride);
 
-def /(s:integral, r: range)
-  return range((s/r.low).type, r.boundedType, true, s/r.low, s/r.high, s/r.stride);
+def /(i:integral, r: range(?e,?b,?s))
+  return range((i/r.low).type, b, true, i/r.low, i/r.high, i/r.stride);
+
+
+//
+// return a substring of a string with a range of indices
+//
+pragma "inline" def string.substring(s: range) {
+  if s.boundedType != bounded then
+    compilerError("substring indexing undefined on unbounded ranges");
+  if s._stride != 1 then
+    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
+  else
+    return __primitive("string_select", this, s._low, s._high);
+}

@@ -59,14 +59,14 @@ class CMODomain: BaseDomain {
     return ranges(dim);
 
   def member(ind: idxType) where rank == 1 {
-    if !_in(ranges(1), ind) then
+    if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
   def member(ind: rank*idxType) {
     for param i in 1..rank do
-      if !_in(ranges(i), ind(i)) then
+      if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
@@ -291,7 +291,7 @@ class CMOArray:BaseArray {
   def checkSlice(d) {
     for param i in 1..rank {
       if d(i).boundedType == bounded then
-        if !_in(dom.dim(i), d(i)) then
+        if !dom.dim(i).member(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
   }
@@ -319,7 +319,7 @@ class CMOArray:BaseArray {
     for param i in 1..args.size do
       if isRange(args(i)) then
         if args(i).boundedType == bounded then
-          if !_in(dom.dim(i), args(i)) then
+          if !dom.dim(i).member(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
