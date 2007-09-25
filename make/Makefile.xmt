@@ -1,0 +1,30 @@
+#
+# Settings for the Cray MTA
+#
+
+#
+# tools
+#
+
+CC = cc
+CXX = c++
+MAKEDEPEND = c++ -M
+CMAKEDEPEND = cc -M
+
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = 
+
+CFLAGS = 
+
+COMP_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
+GEN_CFLAGS = $(CFLAGS) -WS 189
+
+COMP_CFLAGS_NONCHPL = -w
