@@ -4,5 +4,6 @@ linux
 linux64
 mta
 sunos
+xmt
 prim_data.cpp
 prim_data.h

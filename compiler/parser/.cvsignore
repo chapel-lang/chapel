@@ -5,6 +5,7 @@ linux
 linux64
 mta
 sunos
+xmt
 chapel.output
 chapel.tab.c
 chapel.tab.h
