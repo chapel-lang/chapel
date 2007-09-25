@@ -69,12 +69,6 @@ def _build_open_interval_upper(r: range)
 def by(r : range, i : int) {
   if i == 0 then
     halt("range cannot be strided by zero");
-  if r.boundedType == boundedLow then
-    if i < 0 then
-      halt("negative stride cannot be applied to range without low bound");
-  if r.boundedType == boundedHigh then
-    if i > 0 then
-      halt("positive stride cannot be applied to range without high bound");
   if r.boundedType == boundedNone then
     halt("unbounded range cannot be strided");
   var result = range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
@@ -230,12 +224,20 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
 def range.these() {
   if boundedType != bounded {
     if stridable {
+      if boundedType == boundedLow then
+        if stride < 0 then
+          halt("iteration over range with negative stride but no high bound");
+      if boundedType == boundedHigh then
+        if stride > 0 then
+          halt("iteration over range with positive stride but no low bound");
       var i = if _stride > 0 then _low else _high;
       while true {
         yield i;
         i = i + _stride:eltType;
       }
     } else {
+      if boundedType == boundedHigh then
+        halt("iteration over range with positive stride but no low bound");
       var i = _low;
       while true {
         yield i;
@@ -374,8 +376,11 @@ def +(r: range(?e,?b,?s), i: integral)
 def -(r: range(?e,?b,?s), i: integral)
   return range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
-def *(r: range(?e,?b,?s), i: integral)
+def *(r: range(?e,?b,?s), i: integral) {
+  if i == 0 then
+    halt("multiplication of range by zero");
   return range((r.low*i).type, b, true, r.low*i, r.high*i, r.stride*i);
+}
 
 def /(r: range(?e,?b,?s), i: integral)
   return range((r.low/i).type, b, true, r.low/i, r.high/i, r.stride/i);
@@ -386,8 +391,11 @@ def +(i:integral, r: range(?e,?b,?s))
 def -(i:integral, r: range(?e,?b,?s))
   return range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
 
-def *(i:integral, r: range(?e,?b,?s))
+def *(i:integral, r: range(?e,?b,?s)) {
+  if i == 0 then
+    halt("multiplication of range by zero");
   return range((i*r.low).type, b, true, i*r.low, i*r.high, i*r.stride);
+}
 
 def /(i:integral, r: range(?e,?b,?s))
   return range((i/r.low).type, b, true, i/r.low, i/r.high, i/r.stride);

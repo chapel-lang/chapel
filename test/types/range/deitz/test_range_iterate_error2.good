@@ -1,0 +1,1 @@
+test_range_iterate_error2.chpl:1: error: halt reached - multiplication of range by zero
