@@ -1049,12 +1049,12 @@ and \chpl{stderr} which map to standard output, standard input and
 standard error, respectively.
 
 Chapel provides built-in functions \chpl{write} and \chpl{writeln}
-to write to \chpl{stdout}, and the built-in function \chpl{read}
-that reads from \chpl{stdin}.
+to write to \chpl{stdout}, and the built-in functions \chpl{read}
+and \chpl{readln} that read from \chpl{stdin}.
 
 \paragraph{Default I/O Methods for Chapel Types}
-Default \chpl{read}, \chpl{write}, and \chpl{writeln} methods are 
-provided for all Chapel types.  
+Default \chpl{read}, \chpl{readln}, \chpl{write}, and \chpl{writeln} 
+methods are provided for all Chapel types.  
 
 \begin{example}
 The following code shows the definition of an arithmetic domain \chpl{D}
@@ -1097,7 +1097,8 @@ Writing a variable of array type:
 \end{commandline}
 \end{example}
 
-In addition, \chpl{read}, \chpl{write} and \chpl{writeln} methods
+In addition, \chpl{read}, \chpl{readln}, \chpl{write} and 
+\chpl{writeln} methods
 are provided for user-defined types.  Users may override the default
 write method by providing a \chpl{writeThis} method
 for that type.

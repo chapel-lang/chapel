@@ -2,8 +2,8 @@
 \label{Input_and_Output}
 
 Chapel provides a built-in \chpl{file} type to handle input and output
-to files using functions and methods called \chpl{read}, \chpl{write},
-and \chpl{writeln}.
+to files using functions and methods called \chpl{read}, \chpl{readln}, 
+\chpl{write}, and \chpl{writeln}.
 
 \subsection{The {\em file} type}
 \index{file type}
@@ -58,8 +58,8 @@ reading and writing.
 \end{itemize}
 
 Additionally, the file type supports the
-methods \chpl{read}, \chpl{write}, and \chpl{writeln} for input and
-output as discussed in~\rsec{filewrite} and~\rsec{fileread}.
+methods \chpl{read}, \chpl{readln}, \chpl{write}, and \chpl{writeln} for 
+input and output as discussed in~\rsec{filewrite} and~\rsec{fileread}.
 
 \subsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
 \index{file type!standard files}
@@ -68,10 +68,12 @@ The files \chpl{stdout}, \chpl{stdin}, and \chpl{stderr} are
 predefined and map to standard output, standard input, and standard
 error as implemented in a platform dependent fashion.
 
-\subsection{The {\em write}, {\em writeln}, and {\em read} functions}
+\subsection{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
+functions}
 \index{writeln@\chpl{writeln}}
 \index{write@\chpl{write}}
 \index{read@\chpl{read}}
+\index{readln@\chpl{readln}}
 \index{read}
 \index{write}
 
@@ -81,7 +83,12 @@ to \chpl{stdout}.  The built-in function \chpl{writeln} has the same
 semantics as \chpl{write} but outputs an {\em end-of-line} character
 after writing out the arguments.  The built-in function \chpl{read}
 can take an arbitrary number of arguments and reads each of the
-arguments in turn from \chpl{stdin}.
+arguments in turn from \chpl{stdin}.  The built-in function \chpl{readln}
+also takes an arbitrary number of arguments, reading each argument from
+\chpl{stdin}.  These arguments may be entered on a single line or on multiple
+lines.  After all arguments of the \chpl{readln} call are read, an 
+end-of-line character is expected to be read, ignoring any additional 
+input between the last argument read and the end-of-line character.
 
 These functions are wrappers for the methods on files described next.
 
@@ -155,18 +162,21 @@ the first letter.  The output to the above is thus \chpl{4321}.
 \end{example}
 
 
-\subsection{The {\em read} method on files}
+\subsection{The {\em read} and {\em readln} methods on files}
 \label{fileread}
 \index{read!on files}
 
-The \chpl{file} type supports a method \chpl{read} that takes an
-arbitrary number of arguments.  Each argument is read in turn by
-calling a method also bound to the \chpl{file} type that takes a
-single argument of that type.
+The \chpl{file} type supports \chpl{read} and \chpl{readln} methods.
+The \chpl{read} method takes an arbitrary number of arguments, reading
+in each argument from file.  The \chpl{readln} method also
+takes an arbitrary number of arguments, reading in each argument
+from a single line or multiple lines in the file and 
+advancing the file pointer to the next line after the last argument 
+is read.
 
-The \chpl{file} type also supports an overloaded method \chpl{read}
-that has a single generic type argument.  It reads a single value of
-the specified type from the file and returns it.
+The \chpl{file} type also supports overloaded methods \chpl{read}
+and \chpl{readln} that have a single generic type argument.  These methods
+read a single value of the specified type from the file and returns it.
 
 \begin{example}
 The following line of code reads a value of type \chpl{int} from
