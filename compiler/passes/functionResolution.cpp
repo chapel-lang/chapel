@@ -2032,15 +2032,39 @@ preFold(Expr* expr) {
                     !is_imag_type(dst) && !is_imag_type(src) &&
                     !is_complex_type(dst) && !is_complex_type(src) &&
                     dst != dtString && src != dtString) {
-                  VarSymbol* typevar = 
-                    toVarSymbol(dst->defaultValue);
-                  if (!typevar || !typevar->immediate)
-                    INT_FATAL("unexpected case in cast_fold");
+                  VarSymbol* typevar = toVarSymbol(dst->defaultValue);
+                  EnumType* typeenum = toEnumType(dst);
+                  if (typevar) {
+                    if (!typevar->immediate)
+                      INT_FATAL("unexpected case in cast_fold");
 
-                  Immediate coerce = *typevar->immediate;
-                  coerce_immediate(var->immediate, &coerce);
-                  result = new SymExpr(new_ImmediateSymbol(&coerce));
-                  call->replace(result);
+                    Immediate coerce = *typevar->immediate;
+                    coerce_immediate(var->immediate, &coerce);
+                    result = new SymExpr(new_ImmediateSymbol(&coerce));
+                    call->replace(result);
+                  } else if (typeenum) {
+                    long value, count = 0;
+                    bool replaced = false;
+                    if (!get_int(call->get(2), &value)) {
+                      INT_FATAL("unexpected case in cast_fold");
+                    }
+                    for_enums(constant, typeenum) {
+                      if (!get_int(constant->init, &count)) {
+                        count++;
+                      }
+                      if (count == value) {
+                        result = new SymExpr(constant->sym);
+                        call->replace(result);
+                        replaced = true;
+                        break;
+                      }
+                    }
+                    if (!replaced) {
+                      USR_FATAL(call->get(2), "enum cast out of bounds");
+                    }
+                  } else {
+                    INT_FATAL("unexpected case in cast_fold");
+                  }
                 }
               }
             }
