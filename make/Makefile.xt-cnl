@@ -19,6 +19,8 @@ RANLIB = ranlib
 # flags
 #
 
+-include $(CHAPEL_ROOT)/make/Makefile.xt-cnl.$(PE_ENV)
+
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = 
 
@@ -28,5 +30,5 @@ LDFLAGS= -target=linux
 
 COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
-GEN_CFLAGS = $(CFLAGS)
+GEN_CFLAGS = $(CFLAGS) $(XT_GEN_CFLAGS)
 GEN_LFLAGS = $(LFLAGS)
