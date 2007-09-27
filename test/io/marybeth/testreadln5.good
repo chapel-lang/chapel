@@ -1,0 +1,1 @@
+testreadln5.chpl:5: error: halt reached - ***Error: You must open ".//test.dat" before trying to read from it***

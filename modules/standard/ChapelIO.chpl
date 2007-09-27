@@ -112,6 +112,8 @@ def _fprintfError() {
 }
 
 def file.readln() {
+  if !isOpen then
+    _fopenError(this, isRead=true);
   __primitive("_readToEndOfLine",_fp);
 }
 
