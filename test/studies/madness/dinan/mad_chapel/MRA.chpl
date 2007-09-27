@@ -92,9 +92,9 @@ class Function {
 
         for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
-            quad_phi [i..i, ..] = p;            // FIXME: quad_phi [i, ..] = p;
-            quad_phiw[i..i, ..] = quad_w[i] * p;//        quad_phiw[i, ..] = ...;
-            quad_phiT[.., i..i] = p;
+            quad_phi [i, ..] = p;
+            quad_phiw[i, ..] = quad_w[i] * p;
+            quad_phiT[.., i] = p;
         }
     }
 

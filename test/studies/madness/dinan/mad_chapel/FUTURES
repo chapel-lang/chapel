@@ -67,8 +67,6 @@ MRA:
    subsume the .copy() constructor.
  * The constructor issue is also preventing some things from being const that
    really should be.
- * In init_quadrature(), quad_phi[i, ..] = p, is not yet supported, have to say
-   [i..i, ..].
    
 
 Overal Design Futures:
