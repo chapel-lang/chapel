@@ -225,6 +225,30 @@ unary \verb@+ - ~@ & right & sign and bitwise negation \\
 \end{tabular}
 \end{center}
 
+\begin{rationale}
+In determining the relative precedence of exponentiation, unary plus
+and minus, and casts, we encountered a circularity in intuition.  The
+following three examples show our intuition about how these
+expressions should be parenthesized:
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{-2**4} & wants & \chpl{-(2**4)} \\
+\chpl{-2:uint} & wants & \chpl{(-2):uint} \\
+\chpl{2:uint**4:uint} & wants & \chpl{(2:uint)**(4:uint)} \\
+\end{tabular}
+\end{center}
+Following this, we would make exponentiation take precedence over
+unary plus and minus, unary plus and minus take precedence over casts,
+and casts take precedence over exponentiation.  Assuming that a
+precedence wheel is more complicated than a precedence table, we
+dropped a want to give
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{2:uint**4:uint} & needs & \chpl{((2:uint)**4):uint} \\
+\end{tabular}
+\end{center}
+\end{rationale}
+
 \subsection{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
