@@ -1,0 +1,19 @@
+feature request:  be able to initialize fields in a class or record
+  with an initialize method so that once a field is initialized, it also 
+  initializes subsequent fields that may use that field.
+
+This test contains the following class:
+
+class Params {
+  var numProbSizes: int;
+  var N: [1..numProbSizes] int;
+
+  def initialize() {
+    numProbSizes = 3;
+    for n in N do n = 10;
+  }
+}
+
+With the current implementation of the compiler, N's domain
+remains empty after initialize, rather than reflect the initialized
+value of numProbSizes.
