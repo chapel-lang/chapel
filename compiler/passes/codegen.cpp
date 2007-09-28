@@ -346,7 +346,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct)) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -371,7 +371,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct)) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);
