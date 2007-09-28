@@ -35,39 +35,43 @@ checkUseBeforeDefs() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint->parentSymbol) {
       ModuleSymbol* mod = fn->getModule();
-      Vec<const char*> reported;
+      Vec<const char*> undeclared;
+      Vec<Symbol*> undefined;
       Vec<BaseAST*> asts;
       Vec<Symbol*> defined;
       collect_asts_postorder(&asts, fn);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
-          if (SymExpr* base = toSymExpr(call->baseExpr))
-            if (toModuleSymbol(base->var))
-              USR_FATAL_CONT(call, "illegal use of module '%s'", base->var->name);
           if (call->isPrimitive(PRIMITIVE_MOVE))
             defined.set_add(toSymExpr(call->get(1))->var);
         } else if (SymExpr* sym = toSymExpr(ast)) {
-          if (CallExpr* call = toCallExpr(sym->parentExpr))
+          if (CallExpr* call = toCallExpr(sym->parentExpr)) {
             if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
               continue;
-          if (toVarSymbol(sym->var))
-            if (sym->var->defPoint &&
-                (sym->var->defPoint->parentSymbol == fn ||
-                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn)))
-              if (!defined.set_in(sym->var))
-                if (sym->var != fn->_this)
-                  USR_FATAL(sym, "'%s' used before defined", sym->var->name);
-          CallExpr* parent = toCallExpr(sym->parentExpr);
-          if (!(parent && parent->baseExpr == sym))
-            if (toUnresolvedSymbol(sym->var)) {
-              if (!reported.set_in(sym->var->name)) {
+            if (toModuleSymbol(sym->var))
+              USR_FATAL_CONT(call, "illegal use of module '%s'", sym->var->name);
+            if (call->baseExpr != sym && toUnresolvedSymbol(sym->var)) {
+              if (!undeclared.set_in(sym->var->name)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
                                  sym->var->name);
-                  reported.set_add(sym->var->name);
+                  undeclared.set_add(sym->var->name);
                 }
               }
             }
+          }
+          if (toVarSymbol(sym->var)) {
+            if (sym->var->defPoint &&
+                (sym->var->defPoint->parentSymbol == fn ||
+                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
+              if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
+                if (sym->var != fn->_this) {
+                  USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
+                  undefined.set_add(sym->var);
+                }
+              }
+            }
+          }
         }
       }
     }

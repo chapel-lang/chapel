@@ -64,7 +64,7 @@ find_outer_loop(Expr* stmt) {
 
 
 static void
-resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
+resolveGotoLabel(GotoStmt* gotoStmt) {
   if (!gotoStmt->label) {
     BlockStmt* loop = find_outer_loop(gotoStmt);
     if (!loop)
@@ -79,6 +79,8 @@ resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
     const char* name = gotoStmt->label->name;
     if (gotoStmt->goto_type == goto_break)
       name = stringcat("_post", name);
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, gotoStmt->parentSymbol);
     forv_Vec(BaseAST, ast, asts) {
       if (LabelSymbol* ls = toLabelSymbol(ast)) {
         if (!strcmp(ls->name, name))
@@ -90,26 +92,24 @@ resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
 
 
 void scopeResolve(void) {
-  forv_Vec(TypeSymbol, type, gTypes)
-    scopeResolve(type);
-  forv_Vec(FnSymbol, fn, gFns)
-    scopeResolve(fn);
-  forv_Vec(TypeSymbol, type, gTypes) {
-    if (toUserType(type->type)) {
-      type->defPoint->remove();
+  //
+  // resolve type of this for methods
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->_this && fn->_this->type == dtUnknown) {
+      if (SymExpr* sym = toSymExpr(fn->_this->defPoint->exprType)) {
+        if (sym->var->type == dtUnknown) {
+          TypeSymbol* ts = toTypeSymbol(sym->lookup(sym->var->name));
+          sym->var = ts;
+          sym->remove();
+        }
+        fn->_this->type = sym->var->type;
+        fn->_this->type->methods.add(fn);
+      }
     }
   }
 
-}
-
-
-void scopeResolve(Symbol* base) {
-  if (!toTypeSymbol(base) && !toFnSymbol(base))
-    INT_FATAL(base, "scopeResolve called on Symbol other than Type or Fn");
-
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, gAsts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
 
@@ -134,29 +134,6 @@ void scopeResolve(Symbol* base) {
         const char* name = symExpr->var->name;
         if (!strcmp(name, "."))
           continue;
-
-        Symbol* parent = symExpr->parentSymbol;
-        // resolve method's type if in a method
-        while (!toModuleSymbol(parent)) {
-          if (FnSymbol* method = toFnSymbol(parent)) {
-            if (method->_this) {
-              if (method->_this->type == dtUnknown) {
-                if (SymExpr* sym = toSymExpr(method->_this->defPoint->exprType)) {
-                  if (sym->var->type == dtUnknown) {
-                    TypeSymbol* ts =
-                      toTypeSymbol(symExpr->lookup(sym->var->name));
-                    sym->var = ts;
-                    sym->remove();
-                  }
-                  method->_this->type = sym->var->type;
-                  method->_this->type->methods.add(method);
-                }
-              }
-              break;
-            }
-          }
-          parent = parent->defPoint->parentSymbol;
-        }
 
         if (!toUnresolvedSymbol(symExpr->var))
           continue;
@@ -194,7 +171,6 @@ void scopeResolve(Symbol* base) {
             if (UserType* ut = toUserType(type->type)) {
               Expr* e = ut->typeExpr->copy();
               symExpr->replace(e);
-              collect_asts_postorder(&asts, e); // scope resolve type alias
               continue;
             }
         }
@@ -264,7 +240,6 @@ void scopeResolve(Symbol* base) {
                       }
                     }
                     symExpr->replace(dot);
-                    asts.add(dot);
                   }
                 }
                 break;
@@ -275,7 +250,12 @@ void scopeResolve(Symbol* base) {
         }
       }
     } else if (GotoStmt* gs = toGotoStmt(ast)) {
-      resolveGotoLabel(gs, asts);
+      resolveGotoLabel(gs);
+    }
+  }
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (toUserType(type->type)) {
+      type->defPoint->remove();
     }
   }
 }

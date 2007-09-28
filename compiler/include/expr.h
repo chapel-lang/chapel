@@ -86,9 +86,9 @@ class SymExpr : public Expr {
 
 class CallExpr : public Expr {
  public:
-  Expr* baseExpr;
-  AList argList;
-  PrimitiveOp* primitive;
+  Expr* baseExpr;         // function expression
+  AList argList;          // function actuals
+  PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
   bool partialTag;
   bool methodTag;
   bool square; // true if call made with square brackets
