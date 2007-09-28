@@ -3,17 +3,17 @@ record R {
   var x, y, z: int;
 }
 
-var r1: R( 0, 0, 0);
+var r1 = R(0, 0, 0);
 writeln( r1);
-var r2: R(1, 0, 0);
+var r2 = R(1, 0, 0);
 writeln( r2);
-var r3: R(0, 1, 0);
+var r3 = R(0, 1, 0);
 writeln( r3);
-var r4: R(0, 0, 1);
+var r4 = R(0, 0, 1);
 writeln( r4);
-var r5: R(1, 1, 1);
+var r5 = R(1, 1, 1);
 writeln( r5);
-var r6: R(1, 0, 1);
+var r6 = R(1, 0, 1);
 writeln( r6);
 
 
