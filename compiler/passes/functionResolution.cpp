@@ -2948,7 +2948,7 @@ resolve() {
             new CondStmt(
               new CallExpr(PRIMITIVE_GETCID,
                            call->get(2)->copy(),
-                           new_IntSymbol(type->id)),
+                           type->symbol),
               new CallExpr(PRIMITIVE_MOVE, _ret, subcall),
               new CallExpr(PRIMITIVE_MOVE, _ret, tmp)));
           if_fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, _ret));

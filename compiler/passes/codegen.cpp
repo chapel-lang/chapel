@@ -213,8 +213,25 @@ static void codegen_header(void) {
       typeSymbol->codegenPrototype(outfile);
   }
 
+  fprintf(outfile, "\n/*** Class ID ***/\n\n");
+
+  fprintf(outfile, "typedef enum {\n");
+  bool comma = false;
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      if (!isReference(ct) && ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "%s_e_%s", (comma) ? ",\n  " : "  ", ts->cname);
+        comma = true;
+      }
+    }
+  }
+  if (!comma)
+    fprintf(outfile, "  _e_placeholder");
+  fprintf(outfile, "\n} _class_id;\n");
+
   // codegen enumerated types
   fprintf(outfile, "\n/*** Enumerated Types ***/\n\n");
+
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (toEnumType(typeSymbol->type))
       typeSymbol->codegenDef(outfile);
@@ -324,13 +341,13 @@ codegen_cid2offsets(FILE* outfile) {
     }
   }
 
-  fprintf(outfile, "size_t* cid2offsets(_int64 cid) {\n");
+  fprintf(outfile, "size_t* cid2offsets(_class_id cid) {\n");
   fprintf(outfile, "size_t* offsets = NULL;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
-        fprintf(outfile, "case %d:\n", ct->id);
+        fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets;\n");
@@ -349,13 +366,13 @@ codegen_cid2offsets(FILE* outfile) {
 
 static void
 codegen_cid2size(FILE* outfile) {
-  fprintf(outfile, "size_t cid2size(_int64 cid) {\n");
+  fprintf(outfile, "size_t cid2size(_class_id cid) {\n");
   fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
-        fprintf(outfile, "case %d:\n", ct->id);
+        fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);
         fprintf(outfile, ");\n");
