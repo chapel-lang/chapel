@@ -1,0 +1,10 @@
+bug: array slicing with unbounded dimensions should be bounds-checked
+
+My sense is that unbounded dimensions that are completely
+out-of-bounds for an array should probably result in an
+out-of-bounds message.  If the implementation suggests
+otherwise, though, I'm not strongly opposed to the current
+implementation which results in an empty array.  I think
+the main downside to this interpretation is that if a
+user accidentally slices out-of-bounds, it's hard for
+them to detect that fact.
