@@ -339,31 +339,34 @@ static void build_enum_cast_function(EnumType* et) {
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-
-  // Generate a select statement with when clauses for each of the
-  // enumeration constants, and an otherwise clause that calls halt.
-  long count = 0;
-  BlockStmt* whenstmts = build_chpl_stmt();
-  for_enums(constant, et) {
-    if (!get_int(constant->init, &count)) {
-      count++;
+  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  if (fNoBoundsChecks) {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_CAST, et->symbol, arg2)));
+  } else {
+    // Generate a select statement with when clauses for each of the
+    // enumeration constants, and an otherwise clause that calls halt.
+    long count = 0;
+    BlockStmt* whenstmts = build_chpl_stmt();
+    for_enums(constant, et) {
+      if (!get_int(constant->init, &count)) {
+        count++;
+      }
+      CondStmt* when =
+        new CondStmt(new CallExpr(PRIMITIVE_WHEN,
+                                  new SymExpr(new_IntSymbol(count))),
+                     new CallExpr(PRIMITIVE_RETURN,
+                                  new CallExpr(PRIMITIVE_CAST,
+                                               et->symbol, arg2)));
+      whenstmts->insertAtTail(when);
     }
-    CondStmt* when =
-      new CondStmt(new CallExpr(PRIMITIVE_WHEN,
-                                new SymExpr(new_IntSymbol(count))),
-                   new CallExpr(PRIMITIVE_RETURN,
-                                new CallExpr(PRIMITIVE_CAST,
-                                             et->symbol, arg2)));
-    whenstmts->insertAtTail(when);
+    const char * errorString = "enumerated type out of bounds";
+    CondStmt* otherwise =
+      new CondStmt(new CallExpr(PRIMITIVE_WHEN),
+                   new BlockStmt(new CallExpr("halt",
+                                 new_StringSymbol(errorString))));
+    whenstmts->insertAtTail(otherwise);
+    fn->insertAtTail(build_select(new SymExpr(arg2), whenstmts));
   }
-  const char * errorString = "enumerated type out of bounds";
-  CondStmt* otherwise =
-    new CondStmt(new CallExpr(PRIMITIVE_WHEN),
-                 new BlockStmt(new CallExpr("halt",
-                               new_StringSymbol(errorString))));
-  whenstmts->insertAtTail(otherwise);
-  fn->insertAtTail(build_select(new SymExpr(arg2), whenstmts));
-
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
