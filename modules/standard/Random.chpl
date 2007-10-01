@@ -83,14 +83,14 @@ class RandomStream {
   }
 
 
-  def fillRandom(x:[?D] real) {
-    for i in D {
+  def fillRandom(x: [] real) {
+    for i in x.domain {
       x(i) = getNext();
     }
   }
 
-  def fillRandom(x:[?D] complex) {
-    for i in D {
+  def fillRandom(x: [] complex) {
+    for i in x.domain {
       x(i).re = getNext();
       x(i).im = getNext();
     }

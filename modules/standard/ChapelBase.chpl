@@ -929,3 +929,25 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
 
 pragma "c for loop increment" def _cfor_inc(inout i, s) {
 }
+
+pragma "inline" def _set_field(x, y) {
+  x = y;
+  return x;
+}
+
+pragma "inline" pragma "sync" def _set_field(x: _syncvar, y: _syncvar) {
+  return y;
+}
+
+pragma "inline" pragma "sync" def _set_field(x: _syncvar, y) {
+  x.writeXE(y);
+  return x;
+}
+
+pragma "inline" pragma "sync" def _set_field(x: _singlevar, y: _singlevar) {
+  return y;
+}
+pragma "inline" pragma "sync" def _set_field(x: _singlevar, y) {
+  x = y;
+  return x;
+}

@@ -25,8 +25,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     return SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, idxType=idxType, 
-                                    parentDom = BaseArithmeticDomain());
+    return SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
 
   def these() {
     for i in 1..nnz {
@@ -62,10 +61,8 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     var oldNNZDomSize = nnzDomSize;
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-
       nnzDom = [1..nnzDomSize];
     }
-
     // shift indices up
     for i in [insertPt..nnz) by -1 {
       indices(i+1) = indices(i);

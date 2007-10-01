@@ -55,8 +55,7 @@ class CSRDomain: BaseSparseArithmeticDomain {
     return CSRArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain()
-    return CSRDomain(rank=rank, idxType=idxType, 
-                                    parentDom = BaseArithmeticDomain());
+    return CSRDomain(rank=rank, idxType=idxType, parentDom=parentDom);
 
   def these() {
     var cursorRow = rowRange.low;

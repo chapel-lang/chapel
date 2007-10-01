@@ -115,7 +115,7 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      fixup_array_formals(fn);
+      if (fn->fnClass != FN_CONSTRUCTOR) fixup_array_formals(fn);
       clone_parameterized_primitive_methods(fn);
       fixup_query_formals(fn);
       change_method_into_constructor(fn);
@@ -128,7 +128,7 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      fixup_array_formals(fn);
+      if (fn->fnClass != FN_CONSTRUCTOR) fixup_array_formals(fn);
       fixup_query_formals(fn);
 
       // functions (not methods) without parentheses are resolved

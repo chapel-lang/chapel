@@ -254,6 +254,9 @@ static void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
+  currentLineno = ct->lineno;
+  currentFilename = ct->filename;
+
   if (ct->symbol->hasPragma("sync"))
     ct->defaultValue = NULL;
   char* name;
@@ -279,53 +282,8 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("inline");
   }
 
-  ASTMap field2formal;
-  for_fields(field, ct) {
-    bool initViaCopy = false;
-    if (!toVarSymbol(field))
-      continue;
-    const char* name = field->name;
-    Type* type = field->type;
-    Expr* exprType = field->defPoint->exprType;
-    if (exprType)
-      exprType->remove();
-    Expr* init = field->defPoint->init;
-    if (init) {
-      init->remove();
-      if (!field->isTypeVariable && !exprType) {
-        exprType = init->copy();
-        initViaCopy = true;
-      }
-    } else if (!field->isTypeVariable)
-      init = new SymExpr(gNil);
-    VarSymbol *vtmp = toVarSymbol(field);
-    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
-    arg->initUsingCopy = initViaCopy;
-    DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
-    field2formal.put(field, arg);
-    arg->isTypeVariable = field->isTypeVariable;
-    if (!exprType && arg->type == dtUnknown)
-      arg->type = dtAny;
-    fn->insertFormalAtTail(defExpr);
-  }
-
-  reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
-
-  // Make the line numbers for the formals point to the fields they
-  // map to, not the first line of the class definition.
-  for_fields(field, ct) {
-    if (Symbol* formal = toSymbol(field2formal.get(field))) {
-      formal->lineno = field->lineno;
-      formal->defPoint->lineno = field->defPoint->lineno;
-      formal->filename = field->filename;
-      formal->defPoint->filename = field->defPoint->filename;
-    }
-  }
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
-
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtTail(new DefExpr(fn->_this));
-
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
                        new CallExpr(PRIMITIVE_CHPL_ALLOC,
@@ -334,28 +292,80 @@ static void build_constructor(ClassType* ct) {
                                                ct->symbol->name)))));
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
+
   if (ct->classTag == CLASS_UNION)
     fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
-  // assign formals to fields by name
-  for_formals(formal, fn) {
-    if (!formal->variableExpr) {
-      CallExpr* call = toCallExpr(formal->defPoint->exprType);
-      if (call && call->isNamed("_build_array_type")) {
+
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  Vec<const char*> fieldNamesSet;
+  for_fields(tmp, ct) {
+    VarSymbol* field = toVarSymbol(tmp);
+
+    if (!field)
+      continue;
+
+    currentLineno = field->lineno;
+    currentFilename = field->filename;
+
+    bool isParam = field->consClass == VAR_PARAM;
+    bool isType = field->isTypeVariable;
+
+    ArgSymbol* arg = new ArgSymbol((isParam) ? INTENT_PARAM : INTENT_BLANK,
+                                   field->name, field->type);
+    fieldNamesSet.set_add(field->name);
+    Expr* exprType = field->defPoint->exprType->remove();
+    Expr* init = field->defPoint->init->remove();
+
+    bool hasType = exprType;
+    if (init) {
+      if (!field->isTypeVariable && !exprType) {
+        exprType = init->copy();
+        arg->initUsingCopy = true;
+      }
+    } else if (exprType && !field->isTypeVariable && field->consClass != VAR_PARAM) {
+      init = new CallExpr("_init", exprType->copy());
+      arg->initUsingCopy = true;
+    }
+    arg->defaultExpr = init;
+    arg->isTypeVariable = field->isTypeVariable;
+    if (!exprType && arg->type == dtUnknown)
+      arg->type = dtAny;
+    DefExpr* def = new DefExpr(arg, NULL, exprType);
+    fn->insertFormalAtTail(def);
+
+    if (!ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
+      if (hasType) {
         VarSymbol* tmp = new VarSymbol("_tmp");
-        fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
+        fn->insertAtTail(new DefExpr(tmp));
+        Expr* init = new CallExpr("_init", exprType->copy());
+        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, init));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_set_field", tmp, arg)));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(formal->name), tmp));
-        fn->insertAtTail(new CondStmt(
-                           new CallExpr("!=", dtNil->symbol, formal),
-                           new CallExpr("=",
-                             new CallExpr(".", fn->_this,
-                               new_StringSymbol(formal->name)), formal)));
+                                      new_StringSymbol(arg->name), tmp));
       } else {
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(formal->name), formal));
+                                      new_StringSymbol(arg->name),
+                                      new CallExpr("_copy", arg)));
       }
+    } else {
+      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                    new_StringSymbol(arg->name),
+                                    arg));
     }
   }
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn->body);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
+      if (isUnresolvedSymbol(se->var))
+        if (fieldNamesSet.set_in(se->var->name))
+          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->var->name)));
+  }
+
+  currentLineno = ct->lineno;
+  currentFilename = ct->filename;
 
   Symbol* myThis = fn->_this;
   ClassType *outerType =

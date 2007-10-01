@@ -1,5 +1,0 @@
-bug: unresolved call for 0-argument class constructor
-
-Not sure why, but this test results in a compiler error
-claiming that a 0-argument constructor for the class
-is not available in the _copy() function in ChapelBase.chpl.

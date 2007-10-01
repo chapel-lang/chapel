@@ -1,5 +1,0 @@
-bug: zero-argument class constructor with initialized array member seg faults
-
-Haven't figured out why this would be, though it seems to be related
-to a NULL value (perhaps the default value for the array member
-argument in the default constructor?)

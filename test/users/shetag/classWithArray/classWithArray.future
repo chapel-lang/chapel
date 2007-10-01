@@ -1,5 +1,0 @@
-bug: class with array member, assign after no initializer
-
-This is an interesting bug -- seemingly, when a class with an array
-member is not initialized, it cannot be assigned later.  Steve and I
-posit that this may be related to the arrays-of-arrays issue.

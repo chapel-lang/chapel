@@ -533,10 +533,12 @@ static void build_record_init_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  for_fields(tmp, ct) {
-    VarSymbol* var = toVarSymbol(tmp);
-    if (var->consClass == VAR_PARAM || var->isTypeVariable)
-      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+  for_formals(formal, ct->defaultConstructor) {
+    if (formal->isTypeVariable || formal->intent == INTENT_PARAM) {
+      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(".", arg, new_StringSymbol(formal->name))));
+    } else if (!formal->defaultExpr) {
+      call->insertAtTail(new NamedExpr(formal->name, new CallExpr("_init", new CallExpr(".", arg, new_StringSymbol(formal->name)))));
+    }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   DefExpr* def = new DefExpr(fn);

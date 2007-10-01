@@ -755,6 +755,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
       call->insertAtTail(wrapper_formal);
+      if (Symbol* value = paramMap.get(formal))
+        paramMap.put(wrapper_formal, value);
+    } else if (Symbol* sym = paramMap.get(formal)) {
+      // handle instantiated param formals
+      call->insertAtTail(sym);
     } else {
       char* temp_name = stringcat("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
@@ -767,16 +772,19 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       if (SymExpr* symExpr = toSymExpr(temp_init))
         if (symExpr->var == gNil)
           temp_init = NULL;
-      if (formal->initUsingCopy)
-        temp_type = NULL;
-      else if (formal->defPoint->exprType)
-        temp_type = formal->defPoint->exprType->copy();
-      else if (formal->type != dtUnknown && !formal->type->isGeneric)
-        temp_type = new SymExpr(formal->type->symbol);
-      if (formal->type->symbol->hasPragma("sync") ||
-          formal->type->symbol->hasPragma("ref"))
-        temp_type = new CallExpr("_init", formal->type->symbol);
-      wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+      if (formal->initUsingCopy) {
+        wrapper->insertAtTail(new DefExpr(temp));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
+      } else {
+        if (formal->defPoint->exprType)
+          temp_type = formal->defPoint->exprType->copy();
+        else if (formal->type != dtUnknown && !formal->type->isGeneric)
+          temp_type = new SymExpr(formal->type->symbol);
+        else if (formal->type->symbol->hasPragma("sync") ||
+                 formal->type->symbol->hasPragma("ref"))
+          temp_type = new CallExpr("_init", formal->type->symbol);
+        wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+      }
       call->insertAtTail(temp);
     }
   }
@@ -939,16 +947,6 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   form_Map(ASTMapElem, e, *generic_subs)
     copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
 
-//   if (root->id == 53713) {
-//     printf("add %d: ", root->id);
-//     form_Map(ASTMapElem, e, clone->substitutions) {
-//       if (Type* t = toType(e->value))
-//         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
-//       else
-//         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
-//     }
-//     printf("\n");
-//   }
   addMapCache(&icache, root, clone, &clone->substitutions);
   fn->defPoint->insertBefore(new DefExpr(clone));
 
@@ -1006,7 +1004,10 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
       if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
         if (cloneFormal->defaultExpr)
           cloneFormal->defaultExpr->remove();
-        cloneFormal->defaultExpr = new SymExpr(gNil);
+        if (Symbol* sym = paramMap.get(cloneFormal))
+          cloneFormal->defaultExpr = new SymExpr(sym);
+        else
+          cloneFormal->defaultExpr = new SymExpr(gNil);
         cloneFormal->defaultExpr->parentSymbol = cloneFormal;
       }
     }

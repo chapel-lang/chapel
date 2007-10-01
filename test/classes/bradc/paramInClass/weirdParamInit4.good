@@ -1,2 +1,1 @@
-c is: {x = 2}
-d is: {c = {x = 2}, y = 2}
+error using generic type C message should go here

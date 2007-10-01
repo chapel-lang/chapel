@@ -1,5 +1,0 @@
-bug: initialized arrays in classes
-
-It seems that if an array member is declared
-using an initializer, the constructor cannot
-be resolved.

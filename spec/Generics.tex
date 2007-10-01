@@ -200,8 +200,6 @@ The class contains a field that is a parameter.
 \item
 The class contains a field that has no type and no initialization
 expression.
-\item
-The class contains a field where the type of the field is generic.
 \end{itemize}
 
 \subsubsection{Type Aliases in Generic Types}
@@ -310,15 +308,6 @@ list.next = Node(2);
 defines a two-element list with nodes containing the values \chpl{1}
 and \chpl{2}.
 \end{example}
-
-\subsubsection{Fields of Generic Types}
-\label{Fields_of_Generic_Types}
-\index{fields!generic types}
-
-If a field in a class or record is specified to have a generic type,
-then the class or record is generic over the type of this field and
-the type of the field is constrained to be an instantiation of the
-field's specified generic type.
 
 \subsubsection{Generic Methods}
 \label{Generic_Methods}

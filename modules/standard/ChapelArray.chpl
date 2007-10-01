@@ -17,16 +17,17 @@ def _build_sparse_subdomain_type(dist, parentDom)
                                         parentDom._value.idxType,
                                         parentDom._value));
 
-record _ArrayTypeInfo {
-  type eltType;
-  var dom: _domain;
-}
+// record _ArrayTypeInfo {
+//   type eltType;
+//   var dom: _domain;
+// }
 
-def _init(a: _ArrayTypeInfo)
-  return a.dom.buildArray(a.eltType);
+// def _init(a: _ArrayTypeInfo)
+//   return a.dom.buildArray(a.eltType);
 
 def _build_array_type(dom, type eltType)
-  return _ArrayTypeInfo(eltType, dom);
+  return dom.buildArray(eltType);
+// was:  return _ArrayTypeInfo(eltType, dom);
 
 def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
@@ -501,8 +502,8 @@ def _iteratorClass.writeThis(f: Writer) {
 //
 // Swap operators for arrays and domains
 //
-pragma "inline" def _chpl_swap(x: [?D1], y:[?D2]) {
-  for (i,j) in (D1, D2) do
+pragma "inline" def _chpl_swap(x: [], y: []) {
+  for (i,j) in (x.domain, y.domain) do
     x(i) <=> y(j);
 }
 

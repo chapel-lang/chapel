@@ -12,6 +12,7 @@
 static char* _init;
 static char* _pass;
 static char* _copy;
+static char* _set_field;
 static char* _this;
 static char* _assign;
 
@@ -155,10 +156,8 @@ resolveFormals(FnSymbol* fn) {
     done.set_add(fn);
 
     for_formals(formal, fn) {
-      if (formal->defPoint->exprType) {
+      if (formal->type == dtUnknown)
         formal->type = resolve_type_expr(formal->defPoint->exprType);
-        formal->defPoint->exprType->remove();
-      }
 
       //
       // change type of this on record methods to reference type
@@ -1672,6 +1671,7 @@ static void
 insertFormalTemps(FnSymbol* fn) {
   if (fn->name == _pass || fn->name == _init ||
       fn->name == _assign || fn->name == _copy ||
+      fn->name == _set_field ||
       fn->hasPragma("ref"))
     return;
   ASTMap formals2vars;
@@ -1987,7 +1987,7 @@ preFold(Expr* expr) {
         TypeSymbol* ts = toTypeSymbol(sym->var);
         if (!ts && sym->var->isTypeVariable)
           ts = sym->var->type->symbol;
-        if (ts) {
+        if (ts && !ts->hasPragma("array")) {
           if (ts->hasPragma("ref"))
             ts = getValueType(ts->type)->symbol;
           if (ts->type->defaultValue == gNil)
@@ -2878,6 +2878,7 @@ resolve() {
   _init = astr("_init");
   _pass = astr("_pass");
   _copy = astr("_copy");
+  _set_field = astr("_set_field");
   _this = astr("this");
   _assign = astr("=");
 
@@ -2929,7 +2930,7 @@ resolve() {
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
-      if (call->parentSymbol)
+      if (call->parentSymbol && call->getStmtExpr())
         calls.add(call);
   }
   forv_Vec(CallExpr, call, calls) {
@@ -3089,14 +3090,11 @@ pruneResolvedTree() {
         if (sym && toTypeSymbol(sym->var))
           call->remove();
       } else if (call->isNamed("_init")) {
-        // Special handling of array constructors via array pragma
+        // Special handling of class init to avoid infinite recursion
         if (ClassType* ct = toClassType(call->typeInfo())) {
-          if (!ct->symbol->hasPragma("array")) {
-            if (ct->defaultValue) {
-              removeActual(call->get(1));
-              call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
-            } else if (!ct->symbol->hasPragma("array"))
-              call->replace(call->get(1)->remove());
+          if (ct->defaultValue) {
+            removeActual(call->get(1));
+            call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
           }
         }
       } else if (FnSymbol* fn = call->isResolved()) {
