@@ -1,3 +1,35 @@
+- Records/classes with array members of recursive types do not work
+bug: A record containing an array of records causes internal error [arrays/dinan/array_of_records]
+bug: Compiler produces a generic error when compiling non-generic recursive classes [classes/dinan/array_of_recursive_classes]
+
+- Arrays sliced with unbounded ranges are not bounds-checked
+bug: array slicing with unbounded dimensions should be bounds-checked [arrays/bradc/slices/sliceUnboundedOOB]
+
+- nested var iterators can cause problems
+bug: nested var iterator [functions/deitz/nested/test_nested_var_iterator]
+bug: captured ref [functions/deitz/nested/test_nested_var_iterator2]
+
+- symbol resolution for external modules is sometimes incorrect
+bug: class hides module [modules/deitz/test_module_use4]
+bug: module use defines symbol conflict [modules/deitz/test_module_use_conflict]
+bug: mutual module uses [modules/deitz/test_module_mutual_use]
+bug: using conflicting symbols [modules/deitz/test_use_error]
+feature request: compiler should warn about shadowing variables via use statement [modules/figueroa/DuplicateConfigVars/DuplicateConfigVars]
+
+- Rank-change slicing a domain down to 0 dimensions causes problems
+bug: degenerate domain slicing [domains/bradc/slices/sliceAllDegenerate]
+
+- Where clauses in dynamic dispatch situations may not work properly
+bug: dynamic dispatch with where clauses [classes/deitz/dispatch/test_generic_where]
+
+- Reductions/scans involving identifiers named 'r' can produce incorrect results
+bug: reductions involving variables named "r" can produce incorrect results. [reductions/diten/reduction_name_collision]
+bug: scans involving variables named "r" can produce incorrect results. [reductions/diten/scan_name_collision]
+
+- General expressions can (incorrectly) be used as type expressions
+bug: side effect in type expression [types/type_variables/deitz/test_call_with_type_side_effects]
+
+
 * Class fields of array type specified using a type alias don't work
 bug: array fields via type aliases [arrays/jplevyak/simple-4]
 
@@ -12,21 +44,19 @@ bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domai
 * Class fields initialized with conditional expressions fail to compile
 bug: conditional expression in class member initialization [classes/marybeth/test-init]
 
-* Parameters in branches of conditional expressions are not implicitly coerced
-bug: implicit parameter coercions in conditional expression [studies/hpcc/RA/bradc/ra-condexpr]
-
 * Class fields of array types that are initialized can cause compile error
 bug: initialized arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
-
-* Two modules sharing the same name break compilation (whether legal or illegal)
-bug: module naming collision [modules/diten/nested_module_collision]
-error message: module naming collision [modules/bradc/multipleModulesSameName]
-
 
 * Promoting var functions can result in a compilation error
 bug: promoted var function [arrays/deitz/promotion/test_scalar_promote10]
 
-* Var functions should be able to return array slices but cannot
+- No error message generated when constructors/initializers call methods
+error message: constructor calling method [users/shetag/classWithArray/initArrWithFn]
+
+- Varargs functions cannot query both element type and number of elements
+bug: when querying the type of the tuple in a variable length [types/tuple/marybeth/norm_vararg]
+
+- Var functions currently cannot return array slices
 bug: var fn returns slice [test/functions/deitz/test_var_function_return_slice]
 
 * Const arrays can currently be assigned -- should result in a compiler error
@@ -48,7 +78,7 @@ error message: iterator sugaring [domains/marybeth/test_compare_range]
 error message: internal/impossible candidate functions [sparse/bradc/denseIRV]
 
 
-* Actual arguments passed using inout intents are not checked for legality
+* Actual arguments passed by inout intent are not always checked for legality
 error message: inout [functions/jplevyak/intent-8-error]
 error message: inout [trivial/deitz/test_coerce_inout]
 
@@ -134,9 +164,6 @@ unimplemented feature: task pool to avoid exhausting thread resources [parallel/
 
 * Compiler and runtime errors don't always report useful line numbers
 runtime error: line number in out-of-memory [memory/shannon/memmaxExceedsLineno2]
-
-* Slicing strided ranges is not yet supported
-unimplemented feature: slicing strided ranges [types/range/bradc/strideRangeSlice2]
 
 * Zipper iteration over var iterators is not yet supported
 unimplemented feature: zipper reference iterators [test/functions/deitz/iterators/test_var_iterator2]

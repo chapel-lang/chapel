@@ -18,7 +18,7 @@ Unimplemented Features:
 - Many error messages continue to be incorrect/confusing/unhelpful
   Workaround: Please ask us for help interpreting any that you struggle with
 - Compiler and runtime errors don't always report useful line numbers
-- Generated executable's command-line parsing is not as robust as one would like
+  Workaround: Please ask us for help finding the correct error location
 
 
 --------------------------------
@@ -30,8 +30,7 @@ Unimplemented Features:
 
 Bugs:
 - Const arrays can currently be assigned -- should result in a compiler error
-- Parameters in branches of conditional expressions are not implicitly coerced
-  e.g., var x:uint;  if (t) then x else 1;  // 1 should be coerced to uint
+- General expressions can (incorrectly) be used as type expressions
 
 
 -------
@@ -43,7 +42,7 @@ Unimplemented Features:
 - Using modules in files not named on the compiler's command-line is unsupported
 
 Bugs:
-- Two modules sharing the same name break compilation (whether legal or illegal)
+- symbol resolution for external modules is sometimes incorrect
 
 
 ---------
@@ -53,14 +52,13 @@ Functions
 Unimplemented Features:
 - Functions as variables and/or arguments to functions
 - Array arguments cannot have both their domain and element types queried
-- Coercions of tuple argument components to match formals
 
 Bugs:
+- Actual arguments passed by inout intent are not always checked for legality
 - Analysis to find return statements along all paths in a function is incomplete
-- Return statements in type select statements are not recognized correctly
-- Illegal actual arguments to inout intents are not always caught
-- Promoting var functions can result in a compilation error
-- Var functions should be able to return array slices but cannot
+- Promoting var functions can result in an incorrect compilation error
+- Var functions currently cannot return array slices
+- Varargs functions cannot query both element type and number of elements
 
 
 ----------------------------
@@ -72,19 +70,19 @@ Unimplemented Features:
   - chained constructors for derived classes are not implemented
   - constructors for generic classes cause problems
   - constructing nested classes does not work consistently
+  Workaround: try using the default constructor and initialize() function
 - Multiple inheritance is not implemented
 - Shadowing base class fields is not implemented
 - Garbage collection is implemented only at a prototype level
+- Assignment between classes and records is unimplemented
 - Anonymous record literals are not supported
 - Type select on unions is not implemented
-- Assignment between classes and records is unimplemented
 
 Bugs:
-- Class fields of array type specified using a type alias don't work
-- Class fields of array types that are initialized can cause compile error
-  Workaround: initialize field in initialize() method
 - Class fields initialized with conditional expressions fail to compile
 - Subclassing uninstantiated generic classes should be prohibited but is not
+- Where clauses in dynamic dispatch situations may not work properly
+- No error message generated when constructors/initializers call methods
 
 
 -----------------------------
@@ -92,8 +90,10 @@ Tuples, Ranges, and Iterators
 -----------------------------
 
 Unimplemented Features:
-- Slicing strided ranges is not yet supported
 - Zipper iteration over var iterators is not yet supported
+
+Bugs:
+- nested var iterators can cause problems
 
 
 ------------------
@@ -101,13 +101,12 @@ Arrays and Domains
 ------------------
 
 Unimplemented Features:
-- The transpose, spread, and reshape functions
-- Short-circuiting functions and conditional expressions cannot be promoted
 - Arrays of arrays are not implemented
 - Opaque domains and arrays are not implemented
-- Index type bounds checking is not implemented
-- Checking that subdomain are index subsets is not implemented
-- Slicing strided domains and arrays is not implemented
+- The transpose, spread, and reshape functions are not implemented
+- Short-circuiting functions and conditional expressions cannot be promoted
+- index(D) bounds checking is not implemented
+- Subdomain subset checking is not implemented
 - Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
 - Sparse domains don't support remove/-= methods
 
@@ -117,21 +116,18 @@ Bugs:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
-- Associative domains of explicit heterogeneous tuple types don't work
-    e.g., var td: domain((int, int));
-  Workaround: name the tuple type
-    e.g., type td_t = (int, int);  var td: domain(td_t);
+- Arrays sliced with unbounded ranges are not bounds-checked
+- Records/classes with array members of recursive types do not work
+- Whole-array assignment does not work for arrays of sync variables
+  Workaround: use an explicit loop and indexing
 - Mixing dimensional index types in a domain specification yields poor errors
     e.g., var m: uint, n: int;  ... [1..m, 1..n]
-- Declaring an array using "var A: [i in D] real;" causes seg fault
+- Rank-change slicing a domain down to 0 dimensions causes problems
 
 
 --------
 Generics
 --------
-
-Bugs:
-- Type members in generic class defined by instantiated types
 
 
 -------------------------------
@@ -139,12 +135,21 @@ Parallelism and Synchronization
 -------------------------------
 
 Unimplemented Features:
-- Atomic statements
-- Whole-array assignment does not work for arrays of sync variables
-- User-defined reductions and scans
-- Many concepts that should be parallel are executed sequentially:
-  - forall loops, promoted calls, reductions, and scans
-- If there are insufficient threads to spawn a task, the program halts
+- Atomic statements are not implemented
+- Data parallel concepts that should run concurrently are implemented serially
+    e.g., forall loops, promoted calls, reductions, scans
+- Tasks are not queued, so a program halts if there aren't sufficient threads
+
+
+--------------------
+Reductions and Scans
+--------------------
+
+Unimplemented Features:
+- User-defined reductions and scans are not implemented
+
+Bugs:
+- Reductions/scans involving identifiers named 'r' can produce incorrect results
 
 
 --------------------------
@@ -152,7 +157,7 @@ Locality and Distributions
 --------------------------
 
 Unimplemented Features:
-- Executing using multiple locales
+- Executing general code using multiple locales
 - Distributions
 
 
@@ -161,7 +166,8 @@ Input and Output
 ----------------
 
 Unimplemented Features:
-- a mechanism for controlling the precision/width of scalar values
+- a mechanism for controlling the output precision/width of scalar values
+  Workaround: extern sprintf()
 
 Bugs:
 - read()s of whole arrays are not working
