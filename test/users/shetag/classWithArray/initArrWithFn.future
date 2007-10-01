@@ -1,3 +1,6 @@
-bug: array in class
+error message: constructor calling method
 
-Yet another case of arrays in classes not working well.
+This test tries to call a method within a constructor, which
+isn't currently supported, and for this case perhaps never
+will be since the method refers to a member (n).
+
