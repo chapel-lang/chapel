@@ -12,7 +12,7 @@ for i in D {
   const Aval = A(i);
   myC.a(Aval) = i;
   for j in A[1..i] {
-    writeln("A(", j, ") = ", A(j));
+    writeln("A(", j, ") = ", myC.a(j));
   }
   writeln();
 }
