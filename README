@@ -3,10 +3,10 @@ Chapel Compiler Release: top-level README
 =========================================
 
 This is a preliminary release of the Chapel compiler, intended for
-release to a small audience for evaluation and feedback purposes.  
-See the LICENSE file for information about legal usage, and please
-also keep in mind any informal discussions you've had with the
-Chapel team about the intended use of this release.
+release to a small audience for evaluation and feedback purposes.  See
+the LICENSE file for information about legal usage, and please also
+keep in mind any user agreement that you have agreed to regarding the
+intended use of this release.
 
 
 -----------

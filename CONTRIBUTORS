@@ -2,13 +2,15 @@
 Chapel Contributors
 ===================
 
-The following people have contributed to the design of the Chapel
-language and the implementation of this release:
+The following people have contributed to the implementation of this
+release and the design of the Chapel language:
 
      David Callahan
      Brad Chamberlain
      Steve Deitz
      Roxana Diaconescu
+     James Dinan
+     Samuel Figueroa
      Shannon Hoffswell
      Mary Beth Hribar
      David Iten
