@@ -4,6 +4,8 @@
 //   parameterized by an integral element type, by whether low and/or
 //   high bounds exist, and by whether the stride is one or not
 //
+enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+
 record range {
   type eltType = int;                            // element type
   param boundedType: BoundedRangeType = bounded; // bounded or not
@@ -13,9 +15,9 @@ record range {
   var _stride: int = 1;                          // integer stride of range
   var _promotionType : eltType;                  // enables promotion
 
-  def low return _low;       // public getter for low bound
-  def high return _high;     // public getter for high bound
-  def stride return _stride; // public getter for stride
+  pragma "inline" def low return _low;       // public getter for low bound
+  pragma "inline" def high return _high;     // public getter for high bound
+  pragma "inline" def stride return _stride; // public getter for stride
 }
 
 
@@ -25,17 +27,14 @@ record range {
 //
 // syntax function for bounded ranges
 //
-def _build_range(param bt: BoundedRangeType, low: int, high: int)
-  return range(int, bt, false, low, high);
-def _build_range(param bt: BoundedRangeType, low: uint, high: uint)
-  return range(uint, bt, false, low, high);
-def _build_range(param bt: BoundedRangeType, low: int(64), high: int(64))
-  return range(int(64), bt, false, low, high);
-def _build_range(param bt: BoundedRangeType, low: uint(64), high: uint(64))
-  return range(uint(64), bt, false, low, high);
-def _build_range(param bt: BoundedRangeType, low, high) {
-  compilerError("range bounds are not integral");
-}
+def _build_range(low: int, high: int)
+  return range(int, bounded, false, low, high);
+def _build_range(low: uint, high: uint)
+  return range(uint, bounded, false, low, high);
+def _build_range(low: int(64), high: int(64))
+  return range(int(64), bounded, false, low, high);
+def _build_range(low: uint(64), high: uint(64))
+  return range(uint(64), bounded, false, low, high);
 
 
 //
@@ -51,16 +50,13 @@ def _build_range(param bt: BoundedRangeType, bound: uint(64))
   return range(uint(64), bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType)
   return range(int, bt, false);
-def _build_range(param bt: BoundedRangeType, bound) {
-  compilerError("range bound is not integral");
-}
 
 
 //
 // syntax function for [range)
 //
 def _build_open_interval_upper(r: range)
-  return range(r.eltType, r.boundedType, r.stridable, r._low, r._high-1);
+  return range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1);
 
 
 //
@@ -72,7 +68,7 @@ def by(r : range, i : int) {
   if r.boundedType == boundedNone then
     halt("unbounded range cannot be strided");
   var result = range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
-  if r._low > r._high then
+  if r.low > r.high then
     return result;
   if result.stride < 0 then
     result._alignLow(result.high);
@@ -103,9 +99,9 @@ def range._hasHigh() param
 // align low bound of this range to an alignment; snap up
 //
 def range._alignLow(alignment: eltType) {
-  var s = abs(_stride):eltType, d = abs(_low-alignment) % s;
+  var s = abs(stride):eltType, d = abs(low-alignment) % s;
   if d != 0 {
-    if _low - alignment < 0 then
+    if low - alignment < 0 then
       _low += d;
     else
       _low += s - d;
@@ -117,9 +113,9 @@ def range._alignLow(alignment: eltType) {
 // align high bound of this range to an alignment; snap down
 //
 def range._alignHigh(alignment: eltType) {
-  var s = abs(_stride):eltType, d = abs(_high-alignment) % s;
+  var s = abs(stride):eltType, d = abs(high-alignment) % s;
   if d != 0 {
-    if _high - alignment > 0 then
+    if high - alignment > 0 then
       _high -= d;
     else
       _high -= s - d;
@@ -134,9 +130,9 @@ def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
   if !s1 && s2 then
     if r2.stride != 1 then
       halt("non-stridable range assigned non-unit stride");
-  r1._low = r2._low;
-  r1._high = r2._high;
-  r1._stride = r2._stride;
+  r1._low = r2.low;
+  r1._high = r2.high;
+  r1._stride = r2.stride;
   return r1;
 }
 
@@ -180,13 +176,13 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
     return (U(3), U(1));
   }
 
-  var lo1 = if _hasLow() then this._low:eltType else other._low;
-  var hi1 = if _hasHigh() then this._high:eltType else other._high;
+  var lo1 = if _hasLow() then this.low:eltType else other.low;
+  var hi1 = if _hasHigh() then this.high:eltType else other.high;
   var st1 = abs(this.stride);
   var al1 = if this.stride < 0 then hi1 else lo1;
 
-  var lo2 = if other._hasLow() then other._low else this._low:eltType;
-  var hi2 = if other._hasHigh() then other._high else this._high:eltType;
+  var lo2 = if other._hasLow() then other.low else this.low:eltType;
+  var hi2 = if other._hasHigh() then other.high else this.high:eltType;
   var st2 = abs(other.stride);
   var al2 = if this.stride < 0 then hi2 else lo2;
 
@@ -206,7 +202,7 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
     // non-empty intersection
 
     if other.stride < 0 then
-      result._stride = -result._stride;
+      result._stride = -result.stride;
 
     var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
 
@@ -230,15 +226,15 @@ def range.these() {
       if boundedType == boundedHigh then
         if stride > 0 then
           halt("iteration over range with positive stride but no low bound");
-      var i = if _stride > 0 then _low else _high;
+      var i = if stride > 0 then low else high;
       while true {
         yield i;
-        i = i + _stride:eltType;
+        i = i + stride:eltType;
       }
     } else {
       if boundedType == boundedHigh then
         halt("iteration over range with positive stride but no low bound");
-      var i = _low;
+      var i = low;
       while true {
         yield i;
         i = i + 1;
@@ -246,14 +242,14 @@ def range.these() {
     }
   } else {
     if stridable {
-      var i = if _stride > 0 then _low else _high;
-      while _low <= i && i <= _high {
+      var i = if stride > 0 then low else high;
+      while low <= i && i <= high {
         yield i;
-        i = i + _stride:eltType;
+        i = i + stride:eltType;
       }
     } else {
       var i: eltType;
-      for __primitive("c for loop", i, _low, _high, 1) {
+      for __primitive("c for loop", i, low, high, 1) {
         yield i;
       }
     }
@@ -314,12 +310,12 @@ def range.member(other: range(?e,?b,?s))
 //
 def range.writeThis(f: Writer) {
   if _hasLow() then
-    f.write(_low);
+    f.write(low);
   f.write("..");
   if _hasHigh() then
-    f.write(_high);
-  if _stride != 1 then
-    f.write(" by ", _stride);
+    f.write(high);
+  if stride != 1 then
+    f.write(" by ", stride);
 }
 
 
@@ -407,8 +403,8 @@ def /(i:integral, r: range(?e,?b,?s))
 pragma "inline" def string.substring(s: range) {
   if s.boundedType != bounded then
     compilerError("substring indexing undefined on unbounded ranges");
-  if s._stride != 1 then
-    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
+  if s.stride != 1 then
+    return __primitive("string_strided_select", this, s.low, s.high, s.stride);
   else
-    return __primitive("string_select", this, s._low, s._high);
+    return __primitive("string_select", this, s.low, s.high);
 }

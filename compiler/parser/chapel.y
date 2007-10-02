@@ -1537,7 +1537,7 @@ top_level_expr:
 | expr TCOLON type
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
-    { $$ = new CallExpr("_build_range", new UnresolvedSymbol("bounded"), $1, $3); }
+    { $$ = new CallExpr("_build_range", $1, $3); }
 | expr TDOTDOT
     { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedLow"), $1); }
 | TDOTDOT expr

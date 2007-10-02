@@ -1,9 +1,6 @@
 // the number of locales on which to run the program
 config const numLocales = __primitive("_chpl_comm_default_num_locales");
 
-// range enumeration
-enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
-
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
