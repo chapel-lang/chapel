@@ -1,0 +1,7 @@
+bug: redefining built-in types causes seg fault
+
+Here I try to use a temp type variable name in order to define int to
+be real and vice-versa.  It currently results in a seg fault.  I think
+this ought to work, but even if it doesn't, the seg fault should be
+resolved.
+

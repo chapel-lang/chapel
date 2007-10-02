@@ -1,0 +1,7 @@
+bug: redefining type names causes problems
+
+This test makes it seem as though either type aliases are not
+evaluated in the order that they were defined, or that there
+are some assumptions in the compiler (based on names rather
+than types?) between imaginary, real, and complex.
+
