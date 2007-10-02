@@ -58,20 +58,81 @@ The following are legal identifiers:
 \index{reserved words}
 
 The following keywords are reserved:
+
+\begin{tabular}{lllll}
 \begin{chapel}
-atomic      begin       bool        break       by
-class       cobegin     coforall    complex     config
-const       continue    def         distributed do
-domain      else        enum        false       for
-forall      goto        if          imag        in
-int         inout       let         locale      module
-nil         of          on          ordered     otherwise
-out         param       pragma      range       real
-record      reduce      return      scan        select
-serial      single      sync        then        true
-type        uint        union       use         var
-when        where       while       yield
-\end{chapel}
+atomic
+begin
+break
+by
+class
+cobegin
+coforall
+compilerError
+config
+const
+continue
+\end{chapel} & \begin{chapel}
+def
+distributed
+do
+domain
+else
+enum
+for
+forall
+goto
+if
+in
+\end{chapel} & \begin{chapel}
+index
+inout
+label
+let
+module
+nil
+of
+on          
+ordered
+otherwise
+out
+\end{chapel} & \begin{chapel}
+param
+pragma
+record      
+reduce      
+return      
+scan        
+select
+serial      
+single      
+sparse
+subdomain
+\end{chapel} & \begin{chapel}
+sync        
+then        
+type        
+union       
+use         
+var
+when        
+where       
+while       
+yield
+\end{chapel} \\
+\begin{invisible}
+compilerError
+\end{invisible} & \begin{invisible}
+compilerError
+\end{invisible} & \begin{invisible}
+compilerError
+\end{invisible} & \begin{invisible}
+compilerError
+\end{invisible} & \begin{invisible}
+compilerError
+\end{invisible}
+\end{tabular}
+
 
 \subsubsection{Literals}
 \label{Literals}

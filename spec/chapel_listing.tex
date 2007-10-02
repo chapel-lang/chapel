@@ -3,13 +3,13 @@
     morekeywords={
       atomic,
       begin, bool, break, by,
-      class, cobegin, coforall, complex, config, const, continue,
+      class, cobegin, coforall, compilerError, complex, config, const, continue,
       def, distributed, do, domain,
       else, enum,
       false, for, forall,
       goto,
       if, imag, in, index, int, inout,
-      let, locale,
+      label, let, locale,
       module,
       nil,
       of, on, opaque, ordered, otherwise, out,
@@ -51,6 +51,7 @@
 \newcommand{\fnname}[1]{\chpl{#1}}
 
 \lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=2pc,stepnumber=0}}{}
+\lstnewenvironment{invisible}{\lstset{language=chapel,xleftmargin=2pc,stepnumber=0,keywordstyle=\bfseries\color{white}}}{}
 \lstnewenvironment{chapel0}{\lstset{language=chapel,stepnumber=0}}{}
 
 \lstnewenvironment{numberedchapel}{\lstset{language=chapel,xleftmargin=15pt,stepnumber=1}}{}
