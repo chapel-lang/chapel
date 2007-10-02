@@ -10,7 +10,7 @@
 #include "error.h"
 
 static int illegalFirstUnsChar(char c) {
-  return ((c <= '0' || c >= '9') && (c != '+'));
+  return ((c < '0' || c > '9') && (c != '+'));
 }
 
 /* Need to use this helper macro for PGI where doing otherwise causes
