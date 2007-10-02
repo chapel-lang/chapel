@@ -34,7 +34,7 @@ module RARandomStream {
 
 
   def getNextRandom(inout x) {
-    param POLY:randType = 0x7;
+    param POLY = 0x7;
     param hiRandBit = 0x1:randType << (randWidth-1);
 
     x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
