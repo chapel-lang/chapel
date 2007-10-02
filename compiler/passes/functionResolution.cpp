@@ -1256,49 +1256,6 @@ checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
 }
 
 
-static void
-checkBinaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
-  if (call->primitive || call->numActuals() != 2)
-    return;
-  if (call->isNamed("+") ||
-      call->isNamed("-") ||
-      call->isNamed("*") ||
-      call->isNamed("/") ||
-      call->isNamed("**") ||
-      call->isNamed("%") ||
-      call->isNamed("&") ||
-      call->isNamed("|") ||
-      call->isNamed("^") ||
-      call->isNamed("==") ||
-      call->isNamed("!=") ||
-      call->isNamed(">") ||
-      call->isNamed("<") ||
-      call->isNamed(">=") ||
-      call->isNamed("<=")) {
-    if ((is_int_type(atypes->v[0]) && atypes->v[1] == dtUInt[INT_SIZE_64]) ||
-        (is_int_type(atypes->v[1]) && atypes->v[0] == dtUInt[INT_SIZE_64])) {
-      VarSymbol* var;
-      if (atypes->v[1] == dtUInt[INT_SIZE_64]) {
-        var = toVarSymbol(aparams->v[0]);
-      } else {
-        var = toVarSymbol(aparams->v[1]);
-      }
-      if (var && var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
-        int64 iconst = var->immediate->int_value();
-        if (iconst >= 0)
-          return;
-      }
-      SymExpr* base = toSymExpr(call->baseExpr);
-      if (!base)
-        INT_FATAL(call, "bad call baseExpr");
-      USR_FATAL(call, "illegal use of '%s' on operands of type %s and %s",
-                base->var->name, type2string(atypes->v[0]),
-                type2string(atypes->v[1]));
-    }
-  }
-}
-
-
 static CallExpr*
 userCall(CallExpr* call) {
   if (call->getModule()->modtype == MOD_STANDARD) {
@@ -1382,7 +1339,6 @@ resolveCall(CallExpr* call) {
     computeActuals(call, &atypes, &aparams, &anames);
 
     checkUnaryOp(call, &atypes, &aparams);
-    checkBinaryOp(call, &atypes, &aparams);
 
     SymExpr* base = toSymExpr(call->baseExpr);
     const char* name = base->var->name;
