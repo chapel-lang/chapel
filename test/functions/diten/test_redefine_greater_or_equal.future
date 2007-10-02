@@ -1,0 +1,5 @@
+bug: where clause causes infinite recursion in the compiler
+
+The >= in the where clause on this function should resolve to
+>=(param int(64), param int(64)) param. Instead, the compiler seg faults.
+
