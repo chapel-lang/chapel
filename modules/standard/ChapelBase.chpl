@@ -307,18 +307,30 @@ pragma "inline" def &(a: int(32), b: int(32)) return __primitive("&", a, b);
 pragma "inline" def &(a: int(64), b: int(64)) return __primitive("&", a, b);
 pragma "inline" def &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
 pragma "inline" def &(a: uint(64), b: uint(64)) return __primitive("&", a, b);
+pragma "inline" def &(a: uint(32), b: int(32)) return __primitive("&", a, b:uint(32));
+pragma "inline" def &(a: int(32), b: uint(32)) return __primitive("&", a:uint(32), b);
+pragma "inline" def &(a: uint(64), b: int(64)) return __primitive("&", a, b:uint(64));
+pragma "inline" def &(a: int(64), b: uint(64)) return __primitive("&", a:uint(64), b);
 
 pragma "inline" def |(a: bool, b: bool) return __primitive("|", a, b);
 pragma "inline" def |(a: int(32), b: int(32)) return __primitive("|", a, b);
 pragma "inline" def |(a: int(64), b: int(64)) return __primitive("|", a, b);
 pragma "inline" def |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
 pragma "inline" def |(a: uint(64), b: uint(64)) return __primitive("|", a, b);
+pragma "inline" def |(a: uint(32), b: int(32)) return __primitive("|", a, b:uint(32));
+pragma "inline" def |(a: int(32), b: uint(32)) return __primitive("|", a:uint(32), b);
+pragma "inline" def |(a: uint(64), b: int(64)) return __primitive("|", a, b:uint(64));
+pragma "inline" def |(a: int(64), b: uint(64)) return __primitive("|", a:uint(64), b);
 
 pragma "inline" def ^(a: bool, b: bool) return __primitive("^", a, b);
 pragma "inline" def ^(a: int(32), b: int(32)) return __primitive("^", a, b);
 pragma "inline" def ^(a: int(64), b: int(64)) return __primitive("^", a, b);
 pragma "inline" def ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
 pragma "inline" def ^(a: uint(64), b: uint(64)) return __primitive("^", a, b);
+pragma "inline" def ^(a: uint(32), b: int(32)) return __primitive("^", a, b:uint(32));
+pragma "inline" def ^(a: int(32), b: uint(32)) return __primitive("^", a:uint(32), b);
+pragma "inline" def ^(a: uint(64), b: int(64)) return __primitive("^", a, b:uint(64));
+pragma "inline" def ^(a: int(64), b: uint(64)) return __primitive("^", a:uint(64), b);
 
 pragma "inline" def ~(param a: bool) param return __primitive("u~", a);
 pragma "inline" def ~(param a: int(32)) param return __primitive("u~", a);
@@ -331,18 +343,30 @@ pragma "inline" def &(param a: int(32), param b: int(32)) param return __primiti
 pragma "inline" def &(param a: int(64), param b: int(64)) param return __primitive("&", a, b);
 pragma "inline" def &(param a: uint(32), param b: uint(32)) param return __primitive("&", a, b);
 pragma "inline" def &(param a: uint(64), param b: uint(64)) param return __primitive("&", a, b);
+pragma "inline" def &(param a: uint(32), param b: int(32)) param return __primitive("&", a, b:uint(32));
+pragma "inline" def &(param a: int(32), param b: uint(32)) param return __primitive("&", a:uint(32), b);
+pragma "inline" def &(param a: uint(64), param b: int(64)) param return __primitive("&", a, b:uint(64));
+pragma "inline" def &(param a: int(64), param b: uint(64)) param return __primitive("&", a:uint(64), b);
 
 pragma "inline" def |(param a: bool, param b: bool) param return __primitive("|", a, b);
 pragma "inline" def |(param a: int(32), param b: int(32)) param return __primitive("|", a, b);
 pragma "inline" def |(param a: int(64), param b: int(64)) param return __primitive("|", a, b);
 pragma "inline" def |(param a: uint(32), param b: uint(32)) param return __primitive("|", a, b);
 pragma "inline" def |(param a: uint(64), param b: uint(64)) param return __primitive("|", a, b);
+pragma "inline" def |(param a: uint(32), param b: int(32)) param return __primitive("|", a, b:uint(32));
+pragma "inline" def |(param a: int(32), param b: uint(32)) param return __primitive("|", a:uint(32), b);
+pragma "inline" def |(param a: uint(64), param b: int(64)) param return __primitive("|", a, b:uint(64));
+pragma "inline" def |(param a: int(64), param b: uint(64)) param return __primitive("|", a:uint(64), b);
 
 pragma "inline" def ^(param a: bool, param b: bool) param return __primitive("^", a, b);
 pragma "inline" def ^(param a: int(32), param b: int(32)) param return __primitive("^", a, b);
 pragma "inline" def ^(param a: int(64), param b: int(64)) param return __primitive("^", a, b);
 pragma "inline" def ^(param a: uint(32), param b: uint(32)) param return __primitive("^", a, b);
 pragma "inline" def ^(param a: uint(64), param b: uint(64)) param return __primitive("^", a, b);
+pragma "inline" def ^(param a: uint(32), param b: int(32)) param return __primitive("^", a, b:uint(32));
+pragma "inline" def ^(param a: int(32), param b: uint(32)) param return __primitive("^", a:uint(32), b);
+pragma "inline" def ^(param a: uint(64), param b: int(64)) param return __primitive("^", a, b:uint(64));
+pragma "inline" def ^(param a: int(64), param b: uint(64)) param return __primitive("^", a:uint(64), b);
 
 //
 // left and right shift on primitive types
