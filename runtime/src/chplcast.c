@@ -270,7 +270,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
           message = _glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
         }                                                               \
       } else if (invalidStr[0]) {                                       \
-        message = _glom_strings(3, "Illegal character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+        message = _glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
