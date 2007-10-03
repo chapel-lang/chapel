@@ -9,6 +9,23 @@
 #include "chplfp.h"
 #include "error.h"
 
+static int scanningNCounts(void) {
+  static int answer = -1;
+  if (answer == -1) {
+    int result;
+    int position;
+    int numitems = sscanf("10", "%d%n", &result, &position);
+    if (numitems == 1) {
+      answer = 0;
+    } else if (numitems == 2) {
+      answer = 1;
+    } else {
+      _printInternalError("Misassumption in scanningNCounts()");
+    }
+  }
+  return answer;
+}
+
 static int illegalFirstUnsChar(char c) {
   return ((c < '0' || c > '9') && (c != '+'));
 }
@@ -42,9 +59,10 @@ static int illegalFirstUnsChar(char c) {
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
-    /* this numitems check is vague since implementations vary about    \
-       whether or not to count %n as a match. */                        \
-    if (numitems == 1 || numitems == 2) {                               \
+    if (scanningNCounts() && numitems == 2) {                           \
+      numitems = 1;                                                     \
+    }                                                                   \
+    if (numitems == 1) {                                                \
       if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         if (uns && illegalFirstUnsChar(*str)) {                         \
@@ -99,9 +117,10 @@ _bool _string_to_bool(const char* str, int lineno, const char* filename) {
     _type(base, width) val;                                             \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
-    /* this numitems check is vague since implementations vary about    \
-       whether or not to count %n as a match. */                        \
-    if (numitems == 1 || numitems == 2) {                               \
+    if (scanningNCounts() && numitems == 2) {                           \
+      numitems = 1;                                                     \
+    }                                                                   \
+    if (numitems == 1) {                                                \
       if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         *invalid = 0;                                                   \
@@ -128,13 +147,14 @@ _define_string_to_float_precise(real, 64, "%lf")
     int numbytes;                                                       \
     char i = '\0';                                                      \
     int numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);      \
+    if (scanningNCounts() && numitems == 3) {                           \
+      numitems = 2;                                                     \
+    }                                                                   \
     if (numitems == 1) {                                                \
       /* missing terminating i */                                       \
       *invalid = 2;                                                     \
       *invalidCh = i;                                                   \
-      /* this numitems check is vague since implementations vary about  \
-         whether or not to count %n as a match. */                      \
-    } else if (numitems == 2 || numitems == 3) {                        \
+    } else if (numitems == 2) {                                         \
       if (i != 'i') {                                                   \
         *invalid = 2;                                                   \
         *invalidCh = i;                                                 \
@@ -170,20 +190,39 @@ _define_string_to_imag_precise(imag, 64, "%lf")
       char sign = '\0';                                                 \
       char i = '\0';                                                    \
       int numitems;                                                     \
+      int posAfterReal, posBeforeSign, posBeforeImag;                   \
       val.im = 0.0; /* reset */                                         \
-      numitems = sscanf(str, format" %c "format"%c%n", &(val.re), &sign, &(val.im), &i, &numbytes); \
+      numitems = sscanf(str, format"%n %n%c %n"format"%c%n",            \
+                        &(val.re), &posAfterReal, &posBeforeSign,       \
+                        &sign, &posBeforeImag, &(val.im), &i,           \
+                        &numbytes);                                     \
+      if (scanningNCounts()) {                                          \
+        if (numitems == 3) {                                            \
+          numitems = 1;                                                 \
+        } else if (numitems == 5) {                                     \
+          numitems = 2;                                                 \
+        } else if (numitems == 6) {                                     \
+          numitems = 3;                                                 \
+        } else if (numitems == 8) {                                     \
+          numitems = 4;                                                 \
+        } else if (numitems != 0) {                                     \
+          _printInternalError("Unexpected case in define_string_to_complex_precise"); \
+        }                                                               \
+      }                                                                 \
       if (numitems == 1) {                                              \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
       } else if (numitems == 2) {                                       \
         *invalid = 1;                                                   \
-        *invalidCh = sign;                                              \
+        if (sign == 'i' && posAfterReal == posBeforeSign) {             \
+          *invalidCh = *(str+posBeforeImag);                            \
+        } else {                                                        \
+          *invalidCh = sign;                                            \
+        }                                                               \
       } else if (numitems == 3) {                                       \
         *invalid = 2;                                                   \
         *invalidCh = i;                                                 \
-        /* this numitems check is vague since implementations vary about \
-           whether or not to count %n as a match. */                    \
-      } else if (numitems == 4 || numitems == 5) {                      \
+      } else if (numitems == 4) {                                       \
         if (sign != '-' && sign != '+') {                               \
           *invalid = 1;                                                 \
           *invalidCh = sign;                                            \

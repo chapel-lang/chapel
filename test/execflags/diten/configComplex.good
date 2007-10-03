@@ -1,1 +1,1 @@
-<command line setting of 'z'>: error: Illegal complex(128) number format.
+<command line setting of 'z'>: error: Illegal character when converting from string to complex(128): '+'
