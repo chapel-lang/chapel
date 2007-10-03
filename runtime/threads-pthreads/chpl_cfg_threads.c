@@ -192,17 +192,13 @@ int _chpl_cobegin (int                      nthreads,
 }
 
 
-// Will fork the real begin statement function. Only purpose of this
-// helper thread is to wait on that thread and coordinate the exiting
+// Will call the real begin statement function. Only purpose of this
+// helper thread is to wait on that function and coordinate the exiting
 // of the main Chapel thread.
 static void
 _chpl_begin_helper (_chpl_createarg_t *nt) {
-  _chpl_thread_t thread;
-  void          *fn_retv;
 
-  if (pthread_create(&thread, NULL, nt->fun, nt->arg))
-    _printInternalError("too many threads");
-  pthread_join(thread, (void*) &fn_retv);
+  (*nt->fun)(nt->arg);
 
   // decrement begin thread count and see if we can signal Chapel exit
   _chpl_mutex_lock(&_chpl_begin_cnt_lock);
@@ -218,13 +214,7 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 
 
 // Similar to _chpl_cobegin above, be we do not wait on the forked
-// thread.  Also we only expect one thread to fork with a
-// begin block.
-//
-// Because we will need to indirectly join with the forked thread,
-// we will actually create two threads.  The first will be the
-// intended Chapel-level begin.  The second will join with the first
-// and then call the Chapel thread exit coordination code.  
+// thread.  Also we only expect one thread to fork with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
   int                 error;
