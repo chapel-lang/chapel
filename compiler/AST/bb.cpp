@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
@@ -212,8 +213,8 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& OUT,
                          bool intersect) {
   int nbbq = fn->basicBlocks->n; // size of bb queue
-  int bbq[nbbq];                 // bb queue
-  bool bbs[nbbq];                // bb set (bbs[i]: is ith bb in bbq?)
+  int* bbq = (int*)malloc(nbbq*sizeof(int));    // bb queue
+  bool* bbs = (bool*)malloc(nbbq*sizeof(bool)); // bb set (bbs[i]: is ith bb in bbq?)
   int iq = -1, nq = nbbq-1;      // index to first and last bb in bbq
   for (int i = 0; i < fn->basicBlocks->n; i++) {
     bbq[i] = i;
@@ -261,6 +262,8 @@ void forwardFlowAnalysis(FnSymbol* fn,
       }
     }
   }
+  free(bbq);
+  free(bbs);
 }
 
 
