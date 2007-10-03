@@ -116,6 +116,7 @@ pragma "inline" def +(a: complex(?w)) return a;
 
 pragma "inline" def -(a: int(32)) return __primitive("u-", a);
 pragma "inline" def -(a: int(64)) return __primitive("u-", a);
+pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type); }
 pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
 pragma "inline" def -(a: imag(?w)) return __primitive("u-", a):imag(w);
 pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
@@ -127,6 +128,7 @@ pragma "inline" def +(param a: uint(64)) param return a;
 
 pragma "inline" def -(param a: int(32)) param return __primitive("u-", a);
 pragma "inline" def -(param a: int(64)) param return __primitive("u-", a);
+pragma "inline" def -(param a: uint(64)) param if (a:int(64) < 0) then  compilerError("illegal use of '-' on operand of type ", a.type); else return -(a:int(64));
 
 //
 // binary + and - on primitive types

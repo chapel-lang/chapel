@@ -1243,19 +1243,6 @@ resolve_type_expr(Expr* expr) {
 }
 
 
-static void
-checkUnaryOp(CallExpr* call, Vec<Type*>* atypes, Vec<Symbol*>* aparams) {
-  if (call->primitive || call->numActuals() != 1)
-    return;
-  if (call->isNamed("-")) {
-    if (atypes->v[0] == dtUInt[INT_SIZE_64]) {
-      USR_FATAL(call, "illegal use of '-' on operand of type %s",
-                type2string(atypes->v[0]));
-    }
-  }
-}
-
-
 static CallExpr*
 userCall(CallExpr* call) {
   if (call->getModule()->modtype == MOD_STANDARD) {
@@ -1337,8 +1324,6 @@ resolveCall(CallExpr* call) {
     Vec<Symbol*> aparams;
     Vec<const char*> anames;
     computeActuals(call, &atypes, &aparams, &anames);
-
-    checkUnaryOp(call, &atypes, &aparams);
 
     SymExpr* base = toSymExpr(call->baseExpr);
     const char* name = base->var->name;
