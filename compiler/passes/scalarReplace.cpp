@@ -318,7 +318,7 @@ void scalarReplaceSingleFieldRecord(ClassType* ct) {
       if (call->parentSymbol) {
         if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
           CallExpr* parent = toCallExpr(call->parentExpr);
-          if (parent->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
+          if (parent && parent->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
             if (call->typeInfo() == ct)
               call->get(1)->replace(new SymExpr(fieldType->symbol));
           } else if (call->typeInfo() == ct)
