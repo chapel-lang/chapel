@@ -138,23 +138,23 @@ $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
 if ($debug == 1) {
     if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$platform-debug.dat";
+        $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
     } elsif ($gasnet == 1) {
-        $statfile = "$statdir/nightly-gasnet.$platform-debug.dat";
+        $statfile = "$statdir/nightly-gasnet.$fullplatform-debug.dat";
     } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$platform-debug.dat";
+        $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
     } else {
-        $statfile = "$statdir/nightly.$platform-debug.dat";
+        $statfile = "$statdir/nightly.$fullplatform-debug.dat";
     }
 } else {
     if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$platform-cron.dat";
+        $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
     } elsif ($gasnet == 1) {
-        $statfile = "$statdir/nightly-gasnet.$platform-cron.dat";
+        $statfile = "$statdir/nightly-gasnet.$fullplatform-cron.dat";
     } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$platform-cron.dat";
+        $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
     } else {
-        $statfile = "$statdir/nightly.$platform-cron.dat";
+        $statfile = "$statdir/nightly.$fullplatform-cron.dat";
     }
 }
 
@@ -213,13 +213,13 @@ if ($valgrind == 1) {
 # test log filenames
 #
 if ($debug == 1) {
-  $rawlog = "$logdir/debug-$platform-$threechars.log";
+  $rawlog = "$logdir/debug-$fullplatform-$threechars.log";
 } else {
-  $rawlog = "$logdir/day$today-$platform-$threechars.log";
+  $rawlog = "$logdir/day$today-$fullplatform-$threechars.log";
 }
 $rawsummary = "$rawlog.summary";
 $sortedsummary = "$rawlog.sorted";
-$prevsummary = "$cronlogdir/last-$platform-$threechars.log.sorted";
+$prevsummary = "$cronlogdir/last-$fullplatform-$threechars.log.sorted";
 
 
 #
