@@ -30,6 +30,7 @@ static int explainLine;
 static ModuleSymbol* explainModule;
 
 static Vec<FnSymbol*> resolvedFns;
+static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
@@ -172,6 +173,8 @@ resolveFormals(FnSymbol* fn) {
     }
     if (fn->retExprType)
       resolveSpecifiedReturnType(fn);
+
+    resolvedFormals.set_add(fn);
   }
 }
 
@@ -2487,7 +2490,8 @@ resolveBody(Expr* body) {
       if (ClassType* ct = toClassType(sym->var->type)) {
         if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
           resolveFormals(ct->defaultConstructor);
-          resolveFns(ct->defaultConstructor);
+          if (resolvedFormals.set_in(ct->defaultConstructor))
+            resolveFns(ct->defaultConstructor);
         }
       }
     }
@@ -2601,7 +2605,8 @@ resolveFns(FnSymbol* fn) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
       if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultConstructor) {
         resolveFormals(parent->defaultConstructor);
-        resolveFns(parent->defaultConstructor);
+        if (resolvedFormals.set_in(parent->defaultConstructor))
+          resolveFns(parent->defaultConstructor);
       }
     }
     if (ClassType* ct = toClassType(fn->retType)) {
@@ -2609,7 +2614,8 @@ resolveFns(FnSymbol* fn) {
         if (ClassType* fct = toClassType(field->type)) {
           if (fct->defaultConstructor) {
             resolveFormals(fct->defaultConstructor);
-            resolveFns(fct->defaultConstructor);
+            if (resolvedFormals.set_in(fct->defaultConstructor))
+              resolveFns(fct->defaultConstructor);
           }
         }
       }
