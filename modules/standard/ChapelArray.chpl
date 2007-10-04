@@ -391,7 +391,17 @@ def =(a: _array, b: _tuple) {
   return a;
 }
 
-def =(a: _array, b: a.eltType) {
+def _desync(type t) where t: _syncvar || t: _singlevar {
+  var x: t;
+  return x.value;
+}
+
+def _desync(type t) where !(t: _syncvar|| t: _singlevar) {
+  var x: t;
+  return x;
+}
+
+def =(a: _array, b: _desync(a.eltType)) {
   for i in a._dom do
     a(i) = b;
   return a;
