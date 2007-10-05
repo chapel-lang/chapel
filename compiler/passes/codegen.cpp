@@ -143,6 +143,7 @@ static void codegen_header(void) {
   cnames.put("isnan", 1);
   cnames.put("random", 1);
   cnames.put("truncate", 1);
+  cnames.put("int", 1);
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
