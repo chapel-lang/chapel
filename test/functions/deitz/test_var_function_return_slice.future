@@ -1,3 +1,0 @@
-bug: var fn returns slice
-
-This results in an error message but should not.

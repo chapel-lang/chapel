@@ -1565,8 +1565,10 @@ resolveCall(CallExpr* call) {
       lhs->isExprTemp = false;
     if (CallExpr* call = toCallExpr(rhs)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (fn->hasPragma("valid lvalue"))
+        if (fn->hasPragma("valid lvalue")) {
           lhs->isExprTemp = false;
+          lhs->canVarReturn = true;
+        }
         if (rhsType == dtUnknown) {
           USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
           USR_FATAL(rhs, "called recursively at this point");
@@ -2111,10 +2113,12 @@ preFold(Expr* expr) {
           if (lhs->var == move->getFunction()->getReturnSymbol()) {
             SymExpr* ret = toSymExpr(call->get(1));
             INT_ASSERT(ret);
-            if (ret->var->defPoint->getFunction() == move->getFunction())
-              USR_FATAL(ret, "illegal return expression in var function");
-            if (ret->var->isConst() || ret->var->isParam())
-              USR_FATAL(ret, "var function returns constant value");
+            if (!ret->var->canVarReturn) {
+              if (ret->var->defPoint->getFunction() == move->getFunction())
+                USR_FATAL(ret, "illegal return expression in var function");
+              if (ret->var->isConst() || ret->var->isParam())
+                USR_FATAL(ret, "var function returns constant value");
+            }
           }
         }
       }
