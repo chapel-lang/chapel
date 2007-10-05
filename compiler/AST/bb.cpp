@@ -213,17 +213,17 @@ void forwardFlowAnalysis(FnSymbol* fn,
                          Vec<Vec<bool>*>& OUT,
                          bool intersect) {
   int nbbq = fn->basicBlocks->n; // size of bb queue
-  int* bbq = (int*)malloc(nbbq*sizeof(int));    // bb queue
-  bool* bbs = (bool*)malloc(nbbq*sizeof(bool)); // bb set (bbs[i]: is ith bb in bbq?)
+  Vec<int> bbq;
+  Vec<bool> bbs;
   int iq = -1, nq = nbbq-1;      // index to first and last bb in bbq
   for (int i = 0; i < fn->basicBlocks->n; i++) {
-    bbq[i] = i;
-    bbs[i] = true;
+    bbq.add(i);
+    bbs.add(true);
   }
   while (iq != nq) {
     iq = (iq + 1) % nbbq;
-    int i = bbq[iq];
-    bbs[i] = false;
+    int i = bbq.v[iq];
+    bbs.v[i] = false;
 #ifdef DEBUG_FLOW
     if (iq == 0) {
       printf("IN\n"); debug_flow_print_set(IN);
@@ -254,16 +254,14 @@ void forwardFlowAnalysis(FnSymbol* fn,
     }
     if (change) {
       forv_Vec(BasicBlock, bbout, bb->outs) {
-        if (!bbs[bbout->id]) {
+        if (!bbs.v[bbout->id]) {
           nq = (nq + 1) % nbbq;
-          bbs[bbout->id] = true;
-          bbq[nq] = bbout->id;
+          bbs.v[bbout->id] = true;
+          bbq.v[nq] = bbout->id;
         }
       }
     }
   }
-  free(bbq);
-  free(bbs);
 }
 
 
