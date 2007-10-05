@@ -3234,18 +3234,35 @@ setFieldTypes(FnSymbol* fn) {
 
 static FnSymbol*
 instantiate(FnSymbol* fn, ASTMap* subs) {
+  static Vec<FnSymbol*> whereStack;
   FnSymbol* ifn = fn->instantiate_generic(subs);
   ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
   if (!ifn->isGeneric && ifn->where) {
+    forv_Vec(FnSymbol, where, whereStack) {
+      if (where == ifn) {
+        USR_FATAL_CONT(ifn->where, "illegal where clause due to infinite instantiation");
+        FnSymbol* printOn = NULL;
+        forv_Vec(FnSymbol, tmp, whereStack) {
+          if (printOn)
+            USR_PRINT(printOn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, tmp->name);
+          if (printOn || tmp == where)
+            printOn = tmp;
+        }
+        USR_PRINT(ifn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, ifn->name);
+        USR_STOP();
+      }
+    }
+    whereStack.add(ifn);
     resolveFormals(ifn);
     resolveBody(ifn->where);
+    whereStack.pop();
     SymExpr* symExpr = toSymExpr(ifn->where->body.last());
     if (!symExpr)
-      USR_FATAL(ifn->where, "Illegal where clause");
+      USR_FATAL(ifn->where, "illegal where clause");
     if (!strcmp(symExpr->var->name, "false"))
       return NULL;
     if (strcmp(symExpr->var->name, "true"))
-      USR_FATAL(ifn->where, "Illegal where clause");
+      USR_FATAL(ifn->where, "illegal where clause");
   }
   return ifn;
 }

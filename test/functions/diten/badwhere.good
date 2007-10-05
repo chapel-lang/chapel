@@ -1,2 +1,2 @@
 badwhere.chpl:4: In function 'foo':
-badwhere.chpl:4: error: Illegal where clause
+badwhere.chpl:4: error: illegal where clause
