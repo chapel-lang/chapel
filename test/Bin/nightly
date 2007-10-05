@@ -124,13 +124,13 @@ $fullplatform = "$platform";
 $chpltargetplatform = `$utildir/platform.pl --target`;
 chomp($chpltargetplatform);
 if ($chpltargetplatform ne "" && $chpltargetplatform ne $fullplatform) {
-    $fullplatform = "$chpltargetplatform/$fullplatform";
+    $fullplatform = "$chpltargetplatform-$fullplatform";
 }
 if ($chpltargetplatform eq "xt-cnl") {
   $compilername = $ENV{'PE_ENV'};
   chomp($compilername);
   if ($compilername ne "") {
-    $fullplatform = "$fullplatform/\L$compilername";
+    $fullplatform = "$fullplatform-\L$compilername";
   }
 }
 
