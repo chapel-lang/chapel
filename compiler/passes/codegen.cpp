@@ -84,6 +84,7 @@ static void codegen_header(void) {
   Vec<TypeSymbol*> typeSymbols;
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;
+  ChainHashMap<const char*, StringHashFns, int> globalNames;
 
   // reserved C words that require renaming to compile
   cnames.put("abs", 1);
@@ -144,6 +145,26 @@ static void codegen_header(void) {
   cnames.put("random", 1);
   cnames.put("truncate", 1);
   cnames.put("int", 1);
+  cnames.put("time", 1);
+
+  //
+  // put global variables into varSymbols vector
+  // mangle names of global variables as necessary
+  // build set of global variable names
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
+          varSymbols.add(var);
+          if (!var->isExtern && cnames.get(var->cname))
+            var->cname = stringcat("_", var->cname, "_", intstring(var->id));
+          cnames.put(var->cname, 1);
+          globalNames.put(var->cname, 1);
+        }
+      }
+    }
+  }
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
@@ -172,7 +193,14 @@ static void codegen_header(void) {
           !toUnresolvedSymbol(sym) &&
           !toClassType(sym->parentScope->astParent) &&
           !sym->isExtern &&
+          !(toVarSymbol(sym) && sym->defPoint && toModuleSymbol(sym->defPoint->parentSymbol)) &&
           cnames.get(sym->cname))
+        sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
+
+      //
+      // mangle formal argument names if they clash with global variables
+      //
+      if (toArgSymbol(sym) && globalNames.get(sym->cname))
         sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
 
       cnames.put(sym->cname, 1);
@@ -190,9 +218,6 @@ static void codegen_header(void) {
         }
 
         fnSymbols.add(fnSymbol);
-      } else if (VarSymbol* varSymbol = toVarSymbol(sym)) {
-        if (toModuleSymbol(varSymbol->defPoint->parentSymbol))
-          varSymbols.add(varSymbol);
       }
     }
   }
