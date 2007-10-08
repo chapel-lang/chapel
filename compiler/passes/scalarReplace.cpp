@@ -7,6 +7,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "optimizations.h"
+#include "passes.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -14,7 +15,7 @@
 #include "symscope.h"
 
 static bool
-unifyClassInstances(ClassType* ct, Symbol* sym) {
+unifyClassInstances(Symbol* sym) {
   bool change = false;
   if (sym->defs.n == 1) {
     if (CallExpr* call = toCallExpr(sym->defs.v[0]->parentExpr)) {
@@ -274,7 +275,7 @@ scalarReplaceVars(FnSymbol* fn) {
     forv_Vec(DefExpr, def, defs) {
       ClassType* ct = toClassType(def->sym->type);
       if (ct->symbol->hasPragma("iterator class")) {
-        change |= unifyClassInstances(ct, def->sym);
+        change |= unifyClassInstances(def->sym);
       }
     }
 
@@ -296,7 +297,7 @@ scalarReplaceVars(FnSymbol* fn) {
 //
 // eliminates a record type with a single field
 //
-void scalarReplaceSingleFieldRecord(ClassType* ct) {
+static void scalarReplaceSingleFieldRecord(ClassType* ct) {
   ct->symbol->defPoint->remove();
   ct->refType->symbol->defPoint->remove();
 

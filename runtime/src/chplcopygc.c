@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-#include "chplrt.h"
+#include "chplcgfns.h"
 #include "chplcopygc.h"
+#include "chplrt.h"
 #include "error.h"
 #include "chplmem.h"
-
-extern size_t cid2size(_int64 cid);
-extern size_t* cid2offsets(_int64 cid);
 
 _memory_space *_from_space, *_to_space;
 
@@ -38,7 +36,7 @@ void _chpl_gc_copy_collect(void) {
       } else {
         if (STACK_PTR(rootlist[i]) >= (void*)_from_space->head &&
             STACK_PTR(rootlist[i]) < (void*)_from_space->tail) {
-          size_t size = cid2size(*(_int64*)STACK_PTR(rootlist[i]));
+          size_t size = cid2size(*(_class_id*)STACK_PTR(rootlist[i]));
           memmove(_to_space->current, STACK_PTR(rootlist[i]), size);
           HEAP_AS_PTR(rootlist[i]) = (void*)_to_space->current;
           STACK_PTR(rootlist[i]) = (void*)_to_space->current;
@@ -55,7 +53,7 @@ void _chpl_gc_copy_collect(void) {
   scanptr = _to_space->head;
   while (scanptr != _to_space->current) {
     int i = 1;
-    size_t *offsets = cid2offsets(*(_int64*)scanptr);
+    size_t *offsets = cid2offsets(*(_class_id*)scanptr);
     while (offsets[i] != 0) {
       void* current = (void*)(scanptr + offsets[i]);
       if (STACK_PTR(current)) {
@@ -65,7 +63,7 @@ void _chpl_gc_copy_collect(void) {
         } else {
           if (STACK_PTR(current) >= (void*)_from_space->head &&
               STACK_PTR(current) < (void*)_from_space->tail) {
-            size_t size = cid2size(*(_int64*)STACK_PTR(current));
+            size_t size = cid2size(*(_class_id*)STACK_PTR(current));
             memmove(_to_space->current, STACK_PTR(current), size);
             HEAP_AS_PTR(current) = (void*)_to_space->current;
             STACK_PTR(current) = (void*)_to_space->current;

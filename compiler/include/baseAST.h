@@ -7,6 +7,8 @@ typedef Map<BaseAST*,BaseAST*> ASTMap;
 typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 
 extern void update_symbols(BaseAST* ast, ASTMap* map);
+void cleanAst(void);
+void destroyAst(void);
 
 char* canonicalize_string(const char *s);
 char* astr(const char* s1, const char* s2 = NULL,

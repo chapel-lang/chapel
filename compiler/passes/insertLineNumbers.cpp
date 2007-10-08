@@ -1,5 +1,6 @@
 #include "astutil.h"
 #include "expr.h"
+#include "passes.h"
 #include "symbol.h"
 
 //

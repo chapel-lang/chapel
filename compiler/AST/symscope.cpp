@@ -215,7 +215,7 @@ void SymScope::print(bool number, int indent) {
 }
 
 
-void SymScope::codegen(FILE* outfile, char* separator) {
+void SymScope::codegen(FILE* outfile) {
   Vec<Symbol*> symbols;
   table.get_values(symbols);
   forv_Vec(Symbol, sym, symbols) {

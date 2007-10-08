@@ -18,7 +18,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   buildLocalsVectorMap(fn, locals, localMap);
 
   buildDefUseSets(fn, locals, useSet, defSet);
-  buildDefsVectorMap(fn, locals, defs, defMap);
+  buildDefsVectorMap(locals, defs, defMap);
 
   Vec<Vec<bool>*> KILL;
   Vec<Vec<bool>*> GEN;

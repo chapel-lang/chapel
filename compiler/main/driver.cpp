@@ -205,7 +205,7 @@ compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) 
 }
 
 
-void runCompilerInGDB(int argc, char* argv[]) {
+static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createGDBFile(argc, argv);
   char* command = stringcat("gdb -q ", argv[0]," -x ", gdbCommandFilename);
   int status = mysystem(command, "running gdb", 0);

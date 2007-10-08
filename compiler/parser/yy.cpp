@@ -11,7 +11,3 @@ void yyerror(const char *str) {
   fprintf(stderr, "\n");
   exit(1);
 }
-
-int yywrap() {
-  return 1;
-}

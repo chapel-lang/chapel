@@ -12,7 +12,7 @@
 #include "stringutil.h"
 #include "misc.h"
 
-void cleanup_for_exit(void) {
+static void cleanup_for_exit(void) {
   deleteTmpDir();
   stopCatchingSignals();
 }

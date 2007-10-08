@@ -1,14 +1,14 @@
 #include "alist.h"
-#include "type.h"
-#include "symbol.h"
-#include "expr.h"
-#include "stmt.h"
 #include "astutil.h"
+#include "expr.h"
+#include "passes.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "type.h"
 
-void addToRootSet(FnSymbol* fn, Expr* expr, bool nullify);
-void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullify);
 
-void addToRootSet(FnSymbol* fn, Expr* expr, bool nullify) {
+
+static void addToRootSet(FnSymbol* fn, Expr* expr, bool nullify) {
   if (nullify)
     fn->insertAtHead(new CallExpr(PRIMITIVE_GC_ADD_NULL_ROOT, expr));
   else
@@ -26,7 +26,8 @@ void addToRootSet(FnSymbol* fn, Expr* expr, bool nullify) {
     * if base is non-null and def is null, base is a BlockStmt which is
       a sub-block of fn.
 */
-void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullify) {
+static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, 
+                                    bool nullify) {
   if (!base) {
     /* This is the first level of recursion.  Scan the formals. */
     for_formals(formal, fn) {
@@ -89,7 +90,7 @@ void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def, bool nullif
 }
 
 
-void buildRootSetForModule(ModuleSymbol* module) {
+static void buildRootSetForModule(ModuleSymbol* module) {
   for_alist(expr, module->block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (toVarSymbol(def->sym)) {

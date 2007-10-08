@@ -308,7 +308,7 @@ template <class C, int o> inline void
 CountQueue<C, o>::append(CountQueue<C, o> &q) {
   Queue<C, o>::append(q);
   size += q.size;
-};
+}
 
 template <class C, int o> inline void
 CountQueue<C, o>::append_clear(CountQueue<C, o> &q) {

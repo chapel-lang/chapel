@@ -2,11 +2,12 @@
 #include "build.h"
 #include "expr.h"
 #include "iterator.h"
+#include "passes.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
-#include "runtime.h"
 #include "../ifa/prim_data.h"
 
 static char* _init;
@@ -91,34 +92,6 @@ static void makeRefType(Type* type) {
   type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
   call->remove();
-}
-
-
-static bool
-hasGenericArgs(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (formal->type->isGeneric)
-      return true;
-    if (formal->defPoint->exprType &&
-        formal->defPoint->exprType->typeInfo()->isGeneric)
-      return true;
-    if (formal->intent == INTENT_PARAM)
-      return true;
-  }
-  return false;
-}
-
-bool
-tag_generic(FnSymbol* fn) {
-  if (fn->isGeneric)
-    return false;
-  if (hasGenericArgs(fn)) {
-    fn->isGeneric = 1; 
-    if (fn->retType != dtUnknown && fn->fnClass == FN_CONSTRUCTOR)
-      fn->retType->isGeneric = true;
-    return true;
-  }
-  return false;
 }
 
 
@@ -442,7 +415,6 @@ computeActualFormalMap(FnSymbol* fn,
 static void
 computeGenericSubs(ASTMap &subs,
                    FnSymbol* fn,
-                   int num_formals,
                    Vec<Type*>* formal_actuals,
                    Vec<Symbol*>* formal_params) {
   int i = 0;
@@ -614,8 +586,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              FnSymbol* fn,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
-             Vec<const char*>* actual_names,
-             bool inst = false) {
+             Vec<const char*>* actual_names) {
   fn = expandVarArgs(fn, actual_types->n);
 
   if (!fn)
@@ -639,11 +610,11 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
   if (fn->isGeneric) {
     ASTMap subs;
-    computeGenericSubs(subs, fn, num_formals, &formal_actuals, &formal_params);
+    computeGenericSubs(subs, fn, &formal_actuals, &formal_params);
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names);
     }
     delete actual_formals;
     return;
@@ -705,7 +676,7 @@ build_default_wrapper(FnSymbol* fn,
       if (!used)
         defaults.add(formal);
     }
-    wrapper = fn->default_wrapper(&defaults);
+    wrapper = fn->default_wrapper(&defaults, &paramMap);
 
     // update actual_formals for use in build_order_wrapper
     int j = 1;
@@ -956,7 +927,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
-const char* type2string(Type* type) {
+static const char* type2string(Type* type) {
   if (type->symbol->hasPragma("ref"))
     return getValueType(type)->symbol->name;
   else
@@ -964,11 +935,11 @@ const char* type2string(Type* type) {
 }
 
 
-const char* call2string(CallExpr* call,
-                        const char* name,
-                        Vec<Type*>& atypes,
-                        Vec<Symbol*>& aparams,
-                        Vec<const char*>& anames) {
+static const char* call2string(CallExpr* call,
+                               const char* name,
+                               Vec<Type*>& atypes,
+                               Vec<Symbol*>& aparams,
+                               Vec<const char*>& anames) {
   bool method = false;
   bool _this = false;
   const char *str = "";
@@ -1021,7 +992,7 @@ const char* call2string(CallExpr* call,
 }
 
 
-const char* fn2string(FnSymbol* fn) {
+static const char* fn2string(FnSymbol* fn) {
   char* str;
   int start = 0;
   if (fn->instantiatedFrom)
@@ -2679,7 +2650,7 @@ collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
 
 
 static void
-add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
+add_to_ddf(FnSymbol* pfn, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (cfn && possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
@@ -2751,7 +2722,7 @@ static void
 add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
   if (ct->defaultConstructor->instantiatedTo ||
       resolvedFns.set_in(ct->defaultConstructor))
-    add_to_ddf(fn, pt, ct);
+    add_to_ddf(fn, ct);
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = toClassType(t);
     if (!ct->instantiatedFrom)
@@ -2787,7 +2758,6 @@ build_ddf() {
   }
 }
 
-void normalize_nested_logical_function_expressions(DefExpr* def);
 
 void
 resolve() {
@@ -2837,7 +2807,7 @@ resolve() {
   while (changed) {
     changed = false;
     forv_Vec(FnSymbol, fn, gFns) {
-      changed = tag_generic(fn) || changed;
+      changed = fn->tag_generic() || changed;
     }
   }
 
@@ -3235,7 +3205,7 @@ setFieldTypes(FnSymbol* fn) {
 static FnSymbol*
 instantiate(FnSymbol* fn, ASTMap* subs) {
   static Vec<FnSymbol*> whereStack;
-  FnSymbol* ifn = fn->instantiate_generic(subs);
+  FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap);
   ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
   if (!ifn->isGeneric && ifn->where) {
     forv_Vec(FnSymbol, where, whereStack) {

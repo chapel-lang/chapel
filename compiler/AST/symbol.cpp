@@ -12,10 +12,6 @@
 #include "astutil.h"
 #include "passes.h"
 
-// for instantiate to see function resolution stuff
-extern bool tag_generic(FnSymbol* fn);
-extern Map<Symbol*,Symbol*> paramMap;
-
 FnSymbol *chpl_main = NULL;
 
 Symbol *gNil = NULL;
@@ -362,7 +358,7 @@ void VarSymbol::codegen(FILE* outfile) {
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
     uint64 uconst = immediate->uint_value();
-    fprintf(outfile, "UINT64(%lld)", uconst);
+    fprintf(outfile, "UINT64(%llu)", uconst);
   } else {
     fprintf(outfile, "%s", cname);
   }
@@ -740,7 +736,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
 }
 
 
-FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
+FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
+                                    Map<Symbol*,Symbol*>* paramMap) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(this);
@@ -757,9 +754,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
       call->insertAtTail(wrapper_formal);
-      if (Symbol* value = paramMap.get(formal))
-        paramMap.put(wrapper_formal, value);
-    } else if (Symbol* sym = paramMap.get(formal)) {
+      if (Symbol* value = paramMap->get(formal))
+        paramMap->put(wrapper_formal, value);
+    } else if (Symbol* sym = paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(sym);
     } else {
@@ -931,7 +928,8 @@ copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST
 }
 
 static FnSymbol*
-instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
+instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
+                     Map<Symbol*,Symbol*>* paramMap) {
   ASTMap map;
 
   FnSymbol* clone = fn->copy(&map);
@@ -960,7 +958,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
         Symbol* val = toSymbol(generic_subs->v[i].value);
         if (!key || !val)
           INT_FATAL("error building parameter map in instantiation");
-        paramMap.put(key, val);
+        paramMap->put(key, val);
       }
     }
   }
@@ -969,12 +967,12 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   // again; this may happen because the type is omitted and the
   // argument is later instantiated based on the type of the parameter
   for_formals(arg, fn) {
-    if (paramMap.get(arg)) {
+    if (paramMap->get(arg)) {
       Symbol* key = toSymbol(map.get(arg));
-      Symbol* val = paramMap.get(arg);
+      Symbol* val = paramMap->get(arg);
       if (!key || !val)
         INT_FATAL("error building parameter map in instantiation");
-      paramMap.put(key, val);
+      paramMap->put(key, val);
     }
   }
 
@@ -997,7 +995,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
         cloneFormal->intent = INTENT_BLANK;
         cloneFormal->instantiatedParam = true;
         if (cloneFormal->type->isGeneric)
-          cloneFormal->type = paramMap.get(cloneFormal)->type;
+          cloneFormal->type = paramMap->get(cloneFormal)->type;
       } else {
         cloneFormal->instantiatedFrom = formal->type;
         cloneFormal->type = toType(value);
@@ -1006,7 +1004,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
       if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
         if (cloneFormal->defaultExpr)
           cloneFormal->defaultExpr->remove();
-        if (Symbol* sym = paramMap.get(cloneFormal))
+        if (Symbol* sym = paramMap->get(cloneFormal))
           cloneFormal->defaultExpr = new SymExpr(sym);
         else
           cloneFormal->defaultExpr = new SymExpr(gNil);
@@ -1034,7 +1032,7 @@ instantiate_tuple(FnSymbol* fn) {
   fn->removePragma("tuple");
 }
 
-FnSymbol*
+static FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
   VarSymbol* var = toVarSymbol(fn->substitutions.get(fn->instantiatedFrom->getFormal(3)));
   if (!var || var->immediate->const_kind != NUM_KIND_INT)
@@ -1050,7 +1048,7 @@ instantiate_tuple_get(FnSymbol* fn) {
   return fn;
 }
 
-FnSymbol*
+static FnSymbol*
 instantiate_tuple_copy(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple copy function has more than one argument");
@@ -1066,7 +1064,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
 }
 
 
-FnSymbol*
+static FnSymbol*
 instantiate_tuple_init(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple init function has more than one argument");
@@ -1082,7 +1080,7 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 
-FnSymbol*
+static FnSymbol*
 instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
@@ -1157,7 +1155,8 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
 
 
 FnSymbol*
-FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
+FnSymbol::instantiate_generic(ASTMap* generic_substitutions, 
+                              Map<Symbol*,Symbol*>* paramMap) {
   Vec<BaseAST*> keys;
   generic_substitutions->get_keys( keys);
   forv_Vec(BaseAST, key, keys) {
@@ -1301,14 +1300,15 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     clone->type->substitutions.map_union(*generic_substitutions);
 
-    newfn = instantiate_function(this, generic_substitutions, clone->type);
+    newfn = instantiate_function(this, generic_substitutions, clone->type,
+                                 paramMap);
     clone->type->defaultConstructor = newfn;
     newfn->retType = clone->type;
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
 
   } else {
-    newfn = instantiate_function(this, generic_substitutions, NULL);
+    newfn = instantiate_function(this, generic_substitutions, NULL, paramMap);
 
     if (hasPragma("tuple get"))
       newfn = instantiate_tuple_get(newfn);
@@ -1329,7 +1329,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     newfn->getFormal(2)->type->methods.add(newfn);
 
   //normalize(newfn);
-  tag_generic(newfn);
+  newfn->tag_generic();
 
   return newfn;
 }
@@ -1537,6 +1537,35 @@ ArgSymbol*
 FnSymbol::getFormal(int i) {
   return toArgSymbol(toDefExpr(formals.get(i))->sym);
 }
+
+
+static bool
+hasGenericArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->type->isGeneric)
+      return true;
+    if (formal->defPoint->exprType &&
+        formal->defPoint->exprType->typeInfo()->isGeneric)
+      return true;
+    if (formal->intent == INTENT_PARAM)
+      return true;
+  }
+  return false;
+}
+
+
+bool FnSymbol::tag_generic() {
+  if (isGeneric)
+    return false;
+  if (hasGenericArgs(this)) {
+    isGeneric = 1; 
+    if (retType != dtUnknown && fnClass == FN_CONSTRUCTOR)
+      retType->isGeneric = true;
+    return true;
+  }
+  return false;
+}
+
 
 
 EnumSymbol::EnumSymbol(const char* init_name) :

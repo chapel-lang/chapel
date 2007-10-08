@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
+#include "passes.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"

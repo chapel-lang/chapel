@@ -25,8 +25,7 @@ void buildLocalsVectorMap(FnSymbol* fn,
                           Vec<Symbol*>& locals,
                           Map<Symbol*,int>& localMap);
 
-void buildDefsVectorMap(FnSymbol* fn,
-                        Vec<Symbol*>& locals,
+void buildDefsVectorMap(Vec<Symbol*>& locals,
                         Vec<SymExpr*>& defs,
                         Map<SymExpr*,int>& defMap);
 

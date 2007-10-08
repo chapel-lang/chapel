@@ -14,7 +14,6 @@ BlockStmt* yyblock = NULL;
 const char* yyfilename;
 int chplLineno;
 int yystartlineno;
-extern YYLTYPE yylloc;
 
 static char* filenameToModulename(char* filename) {
   char* modulename = stringcpy(filename);

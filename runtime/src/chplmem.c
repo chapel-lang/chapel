@@ -48,7 +48,6 @@ static unsigned hash(void* memAlloc) {
 
 static int memstat = 0;
 static int memstatSet = 0;
-static int memthreshold = 0;
 static int memtrace = 0;
 static int memtraceSet = 0;
 static int memtrack = 0;
@@ -95,7 +94,6 @@ void setMemthreshold(_int64 value) {
   if (!memlog) {
     _printError("--memthreshold useless when used without --memtrace", 0, 0);
   }
-  memthreshold = 1;
   memthresholdValue = value;
 }
 

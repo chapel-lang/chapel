@@ -2,6 +2,7 @@
 #include "driver.h"
 #include "files.h"
 #include "parser.h"
+#include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "countTokens.h"

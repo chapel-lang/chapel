@@ -109,13 +109,13 @@ sprint_imm(char *str, Immediate &imm) {
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = sprintf(str, "%u", imm.v_bool); break;
+          res = sprintf(str, "%u", (unsigned)imm.v_bool); break;
         case INT_SIZE_8: 
-          res = sprintf(str, "%u", imm.v_uint8); break;
+          res = sprintf(str, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
-          res = sprintf(str, "%u", imm.v_uint16); break;
+          res = sprintf(str, "%u", (unsigned)imm.v_uint16); break;
         case INT_SIZE_32:
-          res = sprintf(str, "%u", imm.v_uint32); break;
+          res = sprintf(str, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
           res = sprintf(str, "%llu", imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
@@ -179,13 +179,13 @@ fprint_imm(FILE *fp, Immediate &imm) {
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = fprintf(fp, "%u", imm.v_bool); break;
+          res = fprintf(fp, "%u", (unsigned)imm.v_bool); break;
         case INT_SIZE_8: 
-          res = fprintf(fp, "%u", imm.v_uint8); break;
+          res = fprintf(fp, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
-          res = fprintf(fp, "%u", imm.v_uint16); break;
+          res = fprintf(fp, "%u", (unsigned)imm.v_uint16); break;
         case INT_SIZE_32:
-          res = fprintf(fp, "%u", imm.v_uint32); break;
+          res = fprintf(fp, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
           res = fprintf(fp, "%llu", imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");

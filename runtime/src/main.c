@@ -1,5 +1,6 @@
 #include "arg.h"
 #include "chplcast.h"
+#include "chplcgfns.h"
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chplio.h"
@@ -10,8 +11,6 @@
 #include "error.h"
 #include "gdb.h"
 
-
-extern void _chpl_main(void);
 
 int main(int argc, char* argv[]) {
   // Was this version of main invoked by the user, or by the comm layer?

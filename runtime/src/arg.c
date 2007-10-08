@@ -3,6 +3,7 @@
 #include <string.h>
 #include "arg.h"
 #include "chplcast.h"
+#include "chplcgfns.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"

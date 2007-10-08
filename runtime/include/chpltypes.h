@@ -24,7 +24,7 @@ typedef enum __bool {
   true = 1
 } _bool;
 
-typedef char                _int8;
+typedef signed char         _int8;
 typedef short int           _int16;
 typedef int                 _int32;
 typedef long long int       _int64;

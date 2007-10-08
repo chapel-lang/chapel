@@ -141,8 +141,7 @@ void buildLocalsVectorMap(FnSymbol* fn,
   }
 }
 
-void buildDefsVectorMap(FnSymbol* fn,
-                        Vec<Symbol*>& locals,
+void buildDefsVectorMap(Vec<Symbol*>& locals,
                         Vec<SymExpr*>& defs,
                         Map<SymExpr*,int>& defMap) {
   int i = 0;

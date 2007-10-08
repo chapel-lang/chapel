@@ -1,35 +1,7 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-//
-// prototypes of functions that are called as passes (alphabetical)
-//
-void buildDefaultFunctions();
-void checkNormalized();
-void checkParsed();
-void checkResolved();
-void cleanup();
-void codegen();
-void complex2record();
-void copyCollection();
-void copyPropagation();
-void cullOverReferences();
-void deadCodeElimination();
-void flattenClasses();
-void flattenFunctions();
-void inlineFunctions();
-void insertWideReferences();
-void insertLineNumbers();
-void lowerIterators();
-void makeBinary();
-void normalize();
-void parallel();
-void parse();
-void prune();
-void refPropagation();
-void resolve();
-void scalarReplace();
-void scopeResolve();
+#include "passes.h"
 
 //
 // passlist: contains passes in the order that they are called

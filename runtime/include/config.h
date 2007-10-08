@@ -19,8 +19,5 @@ char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName);
 
-// Defined in the compiler-generated code:
-extern void CreateConfigVarTable(void);
-
 #endif
 

@@ -2,6 +2,7 @@
 #include "bb.h"
 #include "expr.h"
 #include "optimizations.h"
+#include "passes.h"
 #include "stmt.h"
 #include "view.h"
 
@@ -17,7 +18,7 @@ static bool isDeadVariable(Symbol* var) {
   }
 }
 
-void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
+static void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
   if (var->astType == SYMBOL_VAR &&
       var->defPoint &&
       var->defPoint->parentSymbol == fn &&

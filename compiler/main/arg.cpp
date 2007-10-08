@@ -66,7 +66,7 @@ missing_arg(char* currentFlag) {
 }
 
 
-void 
+static void 
 process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   char * arg = NULL;
   ArgumentDescription *desc = arg_state->desc;

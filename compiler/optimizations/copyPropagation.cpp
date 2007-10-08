@@ -2,19 +2,20 @@
 #include "bb.h"
 #include "expr.h"
 #include "optimizations.h"
+#include "passes.h"
 #include "stmt.h"
 #include "view.h"
 
 //#define DEBUG_CP
 
-bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
+static bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
   return
     var != fn->getReturnSymbol() &&
     var->type->refType &&
     !var->isConcurrent;
 }
 
-bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& useSet) {
+static bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& useSet) {
   if (defSet.set_in(se))
     return true;
   if (useSet.set_in(se)) {
@@ -76,15 +77,17 @@ removeAvailable(AvailableMap& available,
 }
 
 
-static void
-freeAvailable(AvailableMap& available,
-              ReverseAvailableMap& reverseAvailable) {
-  Vec<Symbol*> values;
-  reverseAvailable.get_keys(values);
-  forv_Vec(Symbol, value, values) {
-    delete reverseAvailable.get(value);
-  }
-}
+// This isn't used, but I am too scared to delete it. -BLC
+//
+// static void
+// freeAvailable(AvailableMap& available,
+//               ReverseAvailableMap& reverseAvailable) {
+//   Vec<Symbol*> values;
+//   reverseAvailable.get_keys(values);
+//   forv_Vec(Symbol, value, values) {
+//     delete reverseAvailable.get(value);
+//   }
+// }
 
 
 static void

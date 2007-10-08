@@ -1,0 +1,59 @@
+#
+# settings for Intel compiler on Linux
+#
+
+#
+# Tools
+#
+CXX = icpc
+CC = icc
+MAKEDEPEND = $(CXX) -MM -MG
+CMAKEDEPEND = $(CC) -MM -MG
+
+RANLIB = ranlib
+
+
+#
+# General Flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+PROFILE_CFLAGS = -pg
+PROFILE_LFLAGS = -pg
+
+
+
+
+
+
+
+#
+# Flags for compiler, runtime, and generated code
+#
+
+COMP_CFLAGS = $(CFLAGS)
+COMP_CFLAGS_NONCHPL = -wr1419,193,111,1418
+RUNTIME_CFLAGS = $(CFLAGS)
+GEN_CFLAGS = -std=c99
+
+#
+# Flags for turning on warnings for C++/C code
+# 304  : requires inherited classes to specify access control (e.g. public)
+# 593  : variable was set but never used
+# 810  : numeric conversion may lose significant bits (e.g., long double->float)
+# 869  : warns about arguments that are never used
+# 981  : operands are evaluated in unspecified order (mysterious vec.h problems)
+# 1572 : floating point equality and inequality comparisons are unreliable
+# 1599 : one variable shadows another
+WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
+WARN_CFLAGS = $(WARN_CXXFLAGS)
+
+
+#
+# developer settings
+#
+ifdef CHPL_DEVELOPER
+COMP_CFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS)
+endif

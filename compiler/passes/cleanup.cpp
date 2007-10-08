@@ -8,6 +8,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "passes.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -67,7 +68,7 @@ flatten_scopeless_block(BlockStmt* block) {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
+static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   ModuleSymbol* mod = NULL;
 
   if (!useCall) {
@@ -309,7 +310,6 @@ static void build_constructor(ClassType* ct) {
     currentFilename = field->filename;
 
     bool isParam = field->consClass == VAR_PARAM;
-    bool isType = field->isTypeVariable;
 
     ArgSymbol* arg = new ArgSymbol((isParam) ? INTENT_PARAM : INTENT_BLANK,
                                    field->name, field->type);
@@ -437,7 +437,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 // it has been run and the module's symbols are initialized.  This is NOT
 // the same as using the outer module.
 //
-void initializeOuterModules(ModuleSymbol* mod) {
+static void initializeOuterModules(ModuleSymbol* mod) {
   for_alist(stmt, mod->block->body) {
     if (BlockStmt* b = toBlockStmt(stmt))
       stmt = b->body.first();

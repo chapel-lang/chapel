@@ -13,8 +13,6 @@
 #define countCommentLine()
 #endif
 
-extern YYLTYPE yylloc;
-
 static int stringBuffLen = 0;
 static int stringLen = 0;
 static char* stringBuffer = NULL;

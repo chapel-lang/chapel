@@ -9,11 +9,6 @@
 #include "stringutil.h"
 #include "view.h"
 
-void verify();
-void cleanAst();
-void destroyAst();
-void printStatistics(const char* pass);
-
 bool printPasses = false;
 
 struct PassInfo {
@@ -82,7 +77,7 @@ static void runPass(const char *passName, void (*pass)(void)) {
 }
 
 
-void dump_index_header(FILE* f) {
+static void dump_index_header(FILE* f) {
   fprintf(f, "<HTML>\n");
   fprintf(f, "<HEAD>\n");
   fprintf(f, "<TITLE> Compilation Dump </TITLE>\n");
@@ -97,7 +92,7 @@ void dump_index_header(FILE* f) {
 }
 
 
-void dump_index_footer(FILE* f) {
+static void dump_index_footer(FILE* f) {
   fprintf(f, "</HTML>\n");
 }
 

@@ -6,6 +6,7 @@
 #include "expr.h"
 #include "files.h"
 #include "mysystem.h"
+#include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -230,16 +231,7 @@ static void codegen_header(void) {
   openCFile(&header, "_chpl_header", "h");
   FILE* outfile = header.fptr;
 
-  fprintf(outfile, "#include \"stdchpl.h\"\n");
-  genIncludeCommandLineHeaders(outfile);
-  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
-
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (!typeSymbol->hasPragma("ref"))
-      typeSymbol->codegenPrototype(outfile);
-  }
-
-  fprintf(outfile, "\n/*** Class ID ***/\n\n");
+  fprintf(outfile, "\n/*** Class ID -- referred to in runtime ***/\n\n");
 
   fprintf(outfile, "typedef enum {\n");
   bool comma = false;
@@ -253,7 +245,17 @@ static void codegen_header(void) {
   }
   if (!comma)
     fprintf(outfile, "  _e_placeholder");
-  fprintf(outfile, "\n} _class_id;\n");
+  fprintf(outfile, "\n} _class_id;\n\n");
+
+  fprintf(outfile, "#define _CHPL_GEN_CODE\n");
+  fprintf(outfile, "#include \"stdchpl.h\"\n");
+  genIncludeCommandLineHeaders(outfile);
+  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
+
+  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+    if (!typeSymbol->hasPragma("ref"))
+      typeSymbol->codegenPrototype(outfile);
+  }
 
   // codegen enumerated types
   fprintf(outfile, "\n/*** Enumerated Types ***/\n\n");

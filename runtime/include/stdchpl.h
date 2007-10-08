@@ -13,6 +13,7 @@
 #include "arg.h"
 #include "config.h"
 #include "chplcast.h"
+#include "chplcgfns.h"
 #include "chplcomm.h"
 #include "chplcopygc.h"
 #include "chplexit.h"
