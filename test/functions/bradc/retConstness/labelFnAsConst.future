@@ -1,0 +1,11 @@
+feature request: const functions
+
+We support param, var, and type functions.  I'd argue
+our default functions are const functions and that
+this keyword should be allowed to be specified to
+indicate that the thing being returned by the
+function cannot be modified (according to normal
+const rules).  Even if this isn't our default
+interpretation of an unlabeled function, it ought
+to be allowed to be specified.
+

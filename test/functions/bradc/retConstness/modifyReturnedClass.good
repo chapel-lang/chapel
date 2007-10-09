@@ -1,0 +1,7 @@
+foo().x = 1
+bar().x = 2
+trying to write into foo().x and bar().x...
+succeeded
+c1 is: {x = 3}
+foo().x = 3
+bar().x = 2
