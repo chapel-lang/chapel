@@ -55,7 +55,7 @@ char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool fNullTemps = false;
-bool copyCollect = false;
+bool fCopyCollect = false;
 int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
@@ -142,7 +142,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
- {"copy-collect", ' ', NULL, "Turn on copying garbage-collection", "F", &copyCollect, NULL, NULL},
+ {"copy-collect", ' ', NULL, "Turn on copying garbage-collection", "F", &fCopyCollect, NULL, NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},

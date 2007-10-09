@@ -700,7 +700,11 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   value->codegen(outfile);
-  fprintf(outfile, "->_cid == %s%s", "_e_", type->symbol->cname);
+  if (fCopyCollect) {
+    fprintf(outfile, "->__class_id._cid == %s%s", "_e_", type->symbol->cname);
+  } else {
+    fprintf(outfile, "->_cid == %s%s", "_e_", type->symbol->cname);
+  }
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
     codegenDynamicCastCheck(outfile, child, value);
@@ -1010,7 +1014,11 @@ void CallExpr::codegen(FILE* outfile) {
       }
     case PRIMITIVE_SETCID:
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+      if (fCopyCollect) {
+      fprintf(outfile, "->__class_id._cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+      } else {
+        fprintf(outfile, "->_cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+      }
       break;
     case PRIMITIVE_GETCID:
       if (get(1)->typeInfo() == dtNil) {
@@ -1019,7 +1027,11 @@ void CallExpr::codegen(FILE* outfile) {
       }
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
+      if (fCopyCollect) {
+        fprintf(outfile, "->__class_id._cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
+      } else {
+        fprintf(outfile, "->_cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
+      }
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_UNION_SETID:
@@ -1231,7 +1243,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* _chpl_alloc(size_t size, char* description);
-      if (!copyCollect) {
+      if (!fCopyCollect) {
         fprintf( outfile, "_chpl_alloc(sizeof(");
       } else {
         fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");

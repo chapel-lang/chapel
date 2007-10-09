@@ -16,7 +16,7 @@ void _addRoot(void* root) {
 }
 
 void _addNullRoot(void* root) {
-  *(void**)root = NULL;
+  STACK_PTR(root) = NULL;
   rootlist[totalRoots++] = root;
 }
 

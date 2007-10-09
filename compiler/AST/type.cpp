@@ -387,7 +387,14 @@ void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   if (classTag == CLASS_CLASS) {
-    fprintf(outfile, "_class_id _cid;\n");
+    if (fCopyCollect) {
+      fprintf(outfile, "union {\n");
+      fprintf(outfile, "_class_id _cid;\n");
+      fprintf(outfile, "void* _padding_for_copy_collection_use;\n");
+      fprintf(outfile, "} __class_id;\n");
+    } else {
+      fprintf(outfile, "_class_id _cid;\n");
+    }
     printedSomething = true;
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "_int64 _uid;\n");

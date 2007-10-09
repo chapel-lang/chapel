@@ -106,11 +106,11 @@ static void buildRootSetForModule(ModuleSymbol* module) {
 
 
 void copyCollection(void) {
-  if (!copyCollect)
+  if (!fCopyCollect)
     return;
 
   chpl_main->insertAtHead(new CallExpr(PRIMITIVE_GC_CC_INIT,
-                                       new_IntSymbol(2097152)));
+                                       new_IntSymbol(2097152))); //2 MB
 
   forv_Vec(FnSymbol, fn, gFns) {
     buildRootSetForFunction(fn, NULL, NULL, true);
