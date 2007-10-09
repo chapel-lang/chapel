@@ -18,6 +18,8 @@ record Coeff {
 
 // The empty vector, returned when there are no Coeffs.
 var None: [0..-1] real;
+const rootNode = (0,0);
+const emptyNode = (-1,-1);
 
 // Check if we have None.
 def isNone(x) {
@@ -70,20 +72,25 @@ class FTree {
     }
 
     def this((lvl, idx)) var {
-        if !indices.member((lvl, idx)) {
-            if setter {
-              indices += ((lvl, idx));
-              nodes[(lvl, idx)] = Coeff(coeffDom);
-            } else {
-              // This is a getter so it shouldn't be modifying what
-              // we return, should be safe to return the zero vector.
-              // FIXME: Zeroes should really be a const, but can'ti
-              //        return const from a var fcn.
-              return zeroes;
-            }
-        }
+        return this(lvl,idx);
+    }
 
-        return nodes[(lvl, idx)].data;
+    def path_upwards((lvl0, idx0), (lvl1, idx1)) {
+        var l = idx0;
+        for n in lvl1..lvl0 by -1 {
+           yield ((n,l));
+           l /= 2;
+        }
+    } 
+
+    def path_downwards((lvl0, idx0), (lvl1, idx1)) {
+        for n in (lvl0..lvl1-1) {
+          yield (n, idx1/(2**(lvl1-n)));
+        }
+    }
+
+    def on_boundary((lvl, idx)) {
+        return ((idx < 0 || idx >= 2**lvl));
     }
 
     def get_children((lvl, idx)) {
