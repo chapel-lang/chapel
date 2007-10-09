@@ -309,10 +309,9 @@ static void build_constructor(ClassType* ct) {
     currentLineno = field->lineno;
     currentFilename = field->filename;
 
-    bool isParam = field->consClass == VAR_PARAM;
-
-    ArgSymbol* arg = new ArgSymbol((isParam) ? INTENT_PARAM : INTENT_BLANK,
-                                   field->name, field->type);
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+    if (field->consClass == VAR_PARAM)
+      arg->intent = INTENT_PARAM;
     fieldNamesSet.set_add(field->name);
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();

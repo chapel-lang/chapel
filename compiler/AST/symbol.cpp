@@ -524,10 +524,9 @@ FnSymbol::FnSymbol(const char* initName) :
   retExprType(NULL),
   body(new BlockStmt()),
   fnClass(FN_FUNCTION),
+  retClass(RET_VALUE),
   noParens(false),
-  retRef(false),
   defSetGet(false),
-  isParam(false),
   iteratorInfo(NULL),
   argScope(NULL),
   isGeneric(false),
@@ -598,8 +597,8 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
   copy->fnClass = fnClass;
+  copy->retClass = retClass;
   copy->noParens = noParens;
-  copy->retRef = retRef;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
   copy->isGeneric = isGeneric;
@@ -608,7 +607,6 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->visible = visible;
   copy->global = global;
   copy->isCompilerTemp = isCompilerTemp;
-  copy->isParam = isParam;
   copy->canParam = canParam;
   return copy;
 }
@@ -659,12 +657,11 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
-  if (fn->fnClass != FN_ITERATOR) { // getValue is ref, not iterator
-    wrapper->retRef = fn->retRef;
+  if (fn->fnClass != FN_ITERATOR) { // getValue is var, not iterator
+    wrapper->retClass = fn->retClass;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
-  wrapper->isParam = fn->isParam;
   wrapper->isMethod = fn->isMethod;
   return wrapper;
 }
@@ -891,7 +888,6 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
     wrapper->fnClass = FN_ITERATOR;
-    //    wrapper->retRef = false;
     wrapper->removePragma("inline");
   }
   defPoint->insertBefore(new DefExpr(wrapper));

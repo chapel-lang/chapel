@@ -584,7 +584,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtAny)));
       }
-      fn->isParam = true;
+      fn->retClass = RET_PARAM;
       fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
         new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
@@ -602,7 +602,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtUnknown), NULL, expr->copy()));
       }
-      fn->isParam = true;
+      fn->retClass = RET_PARAM;
       fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
         new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),

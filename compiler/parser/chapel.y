@@ -67,9 +67,10 @@ Is this "while x"(i); or "while x(i)";?
 %start program
 
 %union  {
-  bool boolval;
   const char* pch;
   Vec<const char*>* vpch;
+
+  retClassEnum retClass;
 
   varType vt;
   consType ct;
@@ -186,7 +187,7 @@ Is this "while x"(i); or "while x(i)";?
  
 %type <pt> formal_tag
 
-%type <boolval> fnretref fn_param
+%type <retClass> ret_class
 
 %type <pch> identifier fn_identifier opt_identifier
 %type <pch> pragma
@@ -754,17 +755,28 @@ fn_decl_stmt_inner:
 ;
 
 
+ret_class:
+/* none */
+    { $$ = RET_VALUE; }
+| TVAR
+    { $$ = RET_VAR; }
+| TPARAM
+    { $$ = RET_PARAM; }
+| TTYPE
+    { $$ = RET_TYPE; }
+;
+
+
 fn_decl_stmt:
-  TDEF fn_decl_stmt_inner fn_param fnretref opt_type where parsed_block_stmt
+  TDEF fn_decl_stmt_inner ret_class opt_type where parsed_block_stmt
     {
-      $2->isParam = $3;
-      $2->retRef = $4;
-      if ($4)
+      $2->retClass = $3;
+      if ($3 == RET_VAR)
         $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      $2->retExprType = $5;
-      if ($6)
-        $2->where = new BlockStmt($6);
-      $2->insertAtTail($7);
+      $2->retExprType = $4;
+      if ($5)
+        $2->where = new BlockStmt($5);
+      $2->insertAtTail($6);
       $$ = build_chpl_stmt(new DefExpr($2));
     }
 ;
@@ -805,23 +817,6 @@ formal:
       $$->sym->addPragmas($2);
       delete $2;
     }
-;
-
-
-fn_param:
-  /* nothing */
-    { $$ = false; }
-| TPARAM
-    { $$ = true; }
-;
-
-
-
-fnretref:
-  /* nothing */
-    { $$ = false; }
-| TVAR
-    { $$ = true; }
 ;
 
 

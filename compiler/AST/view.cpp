@@ -391,8 +391,12 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
     html_print_symbol( html_file, pass, formal, true);
   }
   fprintf(html_file, " ) ");
-  if (fn->retRef)
-    fprintf(html_file, "<b>ref</b> ");
+  if (fn->retClass == RET_VAR)
+    fprintf(html_file, "<b>var</b> ");
+  else if (fn->retClass == RET_PARAM)
+    fprintf(html_file, "<b>param</b> ");
+  else if (fn->retClass == RET_TYPE)
+    fprintf(html_file, "<b>type</b> ");
   if (fn->retType && fn->retType->symbol) {
     fprintf(html_file, " : ");
     html_print_symbol( html_file, pass, fn->retType->symbol, false);

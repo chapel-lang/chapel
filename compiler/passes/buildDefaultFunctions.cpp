@@ -162,9 +162,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
   if (field->isParam())
-    fn->isParam = true;
+    fn->retClass = RET_PARAM;
   else {
-    fn->retRef = true;
+    fn->retClass = RET_VAR;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
   if (ct->classTag == CLASS_UNION)

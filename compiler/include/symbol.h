@@ -34,6 +34,13 @@ enum consType {
   VAR_PARAM
 };
 
+enum retClassEnum {
+  RET_VALUE,
+  RET_VAR,
+  RET_PARAM,
+  RET_TYPE
+};
+
 class Symbol : public BaseAST {
  public:
   const char* name;
@@ -160,10 +167,9 @@ class FnSymbol : public Symbol {
   Expr* retExprType;
   BlockStmt* body;
   fnType fnClass;
+  retClassEnum retClass;
   bool noParens;
-  bool retRef;
   bool defSetGet;
-  bool isParam;
   IteratorInfo* iteratorInfo;
   SymScope* argScope;
   bool isGeneric;

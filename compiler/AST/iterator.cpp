@@ -61,7 +61,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
   TypeSymbol* cts = new TypeSymbol(className, ii->classType);
   cts->addPragma("iterator class");
-  if (fn->retRef)
+  if (fn->retClass == RET_VAR)
     cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
@@ -80,7 +80,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
   ii->getValue = buildEmptyIteratorMethod("getValue", ii->classType);
-  if (fn->retRef && fn->retType->refType)
+  if (fn->retClass == RET_VAR && fn->retType->refType)
     ii->getValue->retType = fn->retType->refType;
   else
     ii->getValue->retType = fn->retType;
@@ -131,7 +131,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
   ii->classType->defaultConstructor = fn;
   ii->classType->scalarPromotionType = fn->retType;
   fn->retType = ii->classType;
-  fn->retRef = false;
+  fn->retClass = RET_VALUE;
 }
 
 

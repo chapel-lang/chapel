@@ -99,7 +99,7 @@ static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
   if (fn->retType != dtUnknown) {
-    if (fn->retRef) {
+    if (fn->retClass == RET_VAR) {
       makeRefType(fn->retType);
       fn->retType = fn->retType->refType;
     }
@@ -1198,7 +1198,7 @@ resolve_type_expr(Expr* expr) {
         FnSymbol* fn = call->isResolved();
         if (fn && call->parentSymbol) {
           resolveFormals(fn);
-          if (fn->isParam || fn->retType == dtUnknown)
+          if (fn->retClass == RET_PARAM || fn->retType == dtUnknown)
             resolveFns(fn);
         }
         callStack.pop();
@@ -2229,7 +2229,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->isParam || fn->canParam) {
+      if (fn->retClass == RET_PARAM || fn->canParam) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->immediate) {
           result = new SymExpr(ret);
@@ -2237,7 +2237,7 @@ postFold(Expr* expr) {
         } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
           result = new SymExpr(es);
           expr->replace(result);
-        } else if (fn->isParam) {
+        } else if (fn->retClass == RET_PARAM) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
@@ -2939,7 +2939,7 @@ pruneResolvedTree() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!resolvedFns.set_in(fn) || fn->isParam)
+      if (!resolvedFns.set_in(fn) || fn->retClass == RET_PARAM)
         fn->defPoint->remove();
     }
   }
