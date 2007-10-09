@@ -112,4 +112,49 @@ void cullOverReferences() {
       }
     }
   }
+
+  //
+  // Replace returned references to array or domain wrappers by array
+  // or domain wrappers.  This handles the case where an array or
+  // domain is returned in a var function and a new array or domain
+  // wrapper is created.
+  //
+  Vec<FnSymbol*> derefSet; // reference functions that are changed to
+                           // value functions
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint && fn->defPoint->parentSymbol && !fn->hasPragma("ref")) {
+      if (Type* vt = getValueType(fn->retType)) {
+        if (vt->symbol->hasPragma("array") || vt->symbol->hasPragma("domain")) {
+          fn->retType = vt;
+          fn->retRef = false;
+          Symbol* tmp = new VarSymbol("_tmp", vt);
+          tmp->isCompilerTemp = true;
+          CallExpr* ret = toCallExpr(fn->body->body.last());
+          if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
+            INT_FATAL(fn, "function is not normal");
+          ret->insertBefore(new DefExpr(tmp));
+          ret->insertBefore(
+            new CallExpr(PRIMITIVE_MOVE, tmp,
+              new CallExpr(PRIMITIVE_GET_REF, ret->get(1)->remove())));
+          ret->insertAtTail(tmp);
+          derefSet.set_add(fn);
+        }
+      }
+    }
+  }
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (derefSet.set_in(fn)) {
+          Symbol* tmp = new VarSymbol("_tmp", fn->retType);
+          tmp->isCompilerTemp = true;
+          Expr* stmt = call->getStmtExpr();
+          stmt->insertBefore(new DefExpr(tmp));
+          call->replace(new CallExpr(PRIMITIVE_SET_REF, tmp));
+          stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
+        }
+      }
+    }
+  }
 }

@@ -311,8 +311,8 @@ record _array {
   var _value;
   var _promotionType : eltType;
 
-  pragma "valid lvalue"
-  def _dom
+  pragma "valid var"
+  def _dom var
     return _domain(rank, _value.dom);
 
   pragma "inline"
@@ -336,19 +336,19 @@ record _array {
   // ranges, but in the sparse case, is there a general
   // representation?
   //
-  pragma "valid lvalue"
-  def this(d: _domain) where d.rank == rank
+  pragma "valid var"
+  def this(d: _domain) var where d.rank == rank
     return this((...d.getIndices()));
 
-  pragma "valid lvalue"
-  def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) {
+  pragma "valid var"
+  def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
     return _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
   }
 
-  pragma "valid lvalue"
-  def this(args ...rank) where _validRankChangeArgs(args) {
+  pragma "valid var"
+  def this(args ...rank) var where _validRankChangeArgs(args) {
     if boundsChecking then
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
