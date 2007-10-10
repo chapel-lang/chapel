@@ -1,0 +1,5 @@
+unimplemented feature: explicit typing of for/forall index variable
+
+We should allow the type of a for/forall index variable to be
+specified if the user wants it to be.  This used to be in the spec,
+not sure whether it is anymore or not.
