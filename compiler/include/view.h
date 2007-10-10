@@ -2,7 +2,6 @@
 #define _VIEW_H_
 
 #include "baseAST.h"
-#include "chplenum.h"
 
 extern BaseAST* ast(int id);
 extern void print_view(BaseAST* ast);

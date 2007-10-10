@@ -2,7 +2,6 @@
 #define _ASTUTIL_H_
 
 #include "baseAST.h"
-#include "chplenum.h"
 #include "alist.h"
 
 class Type;

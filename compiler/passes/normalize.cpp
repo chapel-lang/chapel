@@ -267,12 +267,12 @@ static void normalize_returns(FnSymbol* fn) {
       if (!retval)
         INT_FATAL(ret, "unexpected case");
       if (ret->isPrimitive(PRIMITIVE_RETURN)) {
-        ret->insertAfter(new GotoStmt(goto_normal, label));
+        ret->insertAfter(new GotoStmt(GOTO_NORMAL, label));
         label_is_used = true;
       }
       ret->replace(new CallExpr(PRIMITIVE_YIELD, retval));
     } else if (ret->next != label->defPoint) {
-      ret->replace(new GotoStmt(goto_normal, label));
+      ret->replace(new GotoStmt(GOTO_NORMAL, label));
       label_is_used = true;
     } else {
       ret->remove();

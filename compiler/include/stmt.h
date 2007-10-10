@@ -8,12 +8,8 @@
 #include "expr.h"
 
 
-extern bool printCppLineno;
-
-void codegenStmt(FILE* outfile, Expr* stmt);
-
 enum BlockTag {
-  BLOCK_NORMAL = 0,
+  BLOCK_NORMAL,
   BLOCK_ATOMIC,
   BLOCK_BEGIN,
   BLOCK_COBEGIN,
@@ -74,25 +70,28 @@ class CondStmt : public Expr {
 };
 
 
-enum gotoType {
-  goto_normal = 0,
-  goto_break,
-  goto_continue
+enum GotoTag {
+  GOTO_NORMAL,
+  GOTO_BREAK,
+  GOTO_CONTINUE
 };
 
 
 class GotoStmt : public Expr {
  public:
   Symbol* label;
-  gotoType goto_type;
+  GotoTag gotoTag;
 
-  GotoStmt(gotoType init_goto_type);
-  GotoStmt(gotoType init_goto_type, const char* init_label);
-  GotoStmt(gotoType init_goto_type, Symbol* init_label);
+  GotoStmt(GotoTag init_gotoTag);
+  GotoStmt(GotoTag init_gotoTag, const char* init_label);
+  GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   virtual void verify();
   COPY_DEF(GotoStmt);
   void codegen(FILE* outfile);
 };
+
+
+void codegenStmt(FILE* outfile, Expr* stmt);
 
 
 #endif

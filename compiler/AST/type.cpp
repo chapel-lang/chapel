@@ -95,44 +95,6 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-bool Type::requiresCParamTmp(intentTag intent) {
-  if (intent == INTENT_BLANK) {
-    intent = INTENT_CONST;
-  }
-  switch (intent) {
-  case INTENT_BLANK:
-    INT_FATAL(this, "should never have reached INTENT_BLANK case");
-  case INTENT_CONST:
-    // if something's passed by const it won't be modified and
-    // won't need a temp?
-    return false;
-  case INTENT_IN:
-    // if these are implemented using C's pass-by-value, then C
-    // effectively puts in the temp for us
-    if (implementedUsingCVals()) {
-      return false;
-    } else {
-      return true;
-    }
-  case INTENT_INOUT:
-    // here a temp is probably always needed in order to avoid
-    // affecting the original value
-  case INTENT_OUT:
-    // and here it's needed to set up the default value of the type
-    return true;
-  case INTENT_REF:
-    // here, a temp should never be needed
-    return false;
-  case INTENT_PARAM:
-  case INTENT_TYPE:
-    return false;  // Should never be encountered EVENTUALLY
-  default:
-    INT_FATAL(this, "case not handled in requiresCParamTmp");
-    return false;
-  }
-}
-
-
 bool Type::implementedUsingCVals(void) {
   if (this == dtBool ||
       this == dtInt[INT_SIZE_8]  ||

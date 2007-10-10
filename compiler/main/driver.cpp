@@ -54,6 +54,7 @@ char fExplainCall[256] = "";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
+bool printCppLineno = false;
 bool fNullTemps = false;
 bool fCopyCollect = false;
 int fNoStdIncs = 0;

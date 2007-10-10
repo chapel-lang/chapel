@@ -380,19 +380,19 @@ label_stmt:
 
 goto_stmt:
   TGOTO identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(goto_normal, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(GOTO_NORMAL, $2)); }
 ;
 
 
 break_stmt:
   TBREAK opt_identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(goto_break, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(GOTO_BREAK, $2)); }
 ;
 
 
 continue_stmt:
   TCONTINUE opt_identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(goto_continue, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(GOTO_CONTINUE, $2)); }
 ;
 
 

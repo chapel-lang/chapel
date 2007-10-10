@@ -41,6 +41,18 @@ enum retClassEnum {
   RET_TYPE
 };
 
+enum intentTag {
+  INTENT_BLANK = 0,
+  INTENT_IN,
+  INTENT_INOUT,
+  INTENT_OUT,
+  INTENT_CONST,
+  INTENT_REF,
+  INTENT_PARAM,
+  INTENT_TYPE,
+  NUM_INTENT_TYPES
+};
+
 class Symbol : public BaseAST {
  public:
   const char* name;

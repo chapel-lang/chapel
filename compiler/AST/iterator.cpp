@@ -212,7 +212,7 @@ buildGetNextCursor(FnSymbol* fn,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
         call->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new_IntSymbol(i)));
-        call->insertBefore(new GotoStmt(goto_normal, end));
+        call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
         Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
         labels.add(label);
@@ -230,7 +230,7 @@ buildGetNextCursor(FnSymbol* fn,
   i = 2;
   t1 = newTemp(ii->getNextCursor, dtBool);
   forv_Vec(Symbol, label, labels) {
-    ii->getNextCursor->insertAtHead(new CondStmt(new SymExpr(t1), new GotoStmt(goto_normal, label)));
+    ii->getNextCursor->insertAtHead(new CondStmt(new SymExpr(t1), new GotoStmt(GOTO_NORMAL, label)));
     ii->getNextCursor->insertAtHead(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_EQUAL, cursor, new_IntSymbol(i++))));
   }
 

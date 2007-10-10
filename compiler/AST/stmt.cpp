@@ -8,9 +8,6 @@
 #include "symscope.h"
 
 
-bool printCppLineno = false;
-
-
 void codegenStmt(FILE* outfile, Expr* stmt) {
   if (stmt->lineno > 0) {
     if (printCppLineno) {
@@ -394,26 +391,26 @@ void CondStmt::codegen(FILE* outfile) {
 }
 
 
-GotoStmt::GotoStmt(gotoType init_goto_type) :
+GotoStmt::GotoStmt(GotoTag init_gotoTag) :
   Expr(STMT_GOTO),
   label(NULL),
-  goto_type(init_goto_type)
+  gotoTag(init_gotoTag)
 {
 }
 
 
-GotoStmt::GotoStmt(gotoType init_goto_type, const char* init_label) :
+GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Expr(STMT_GOTO),
   label(init_label ? new UnresolvedSymbol(init_label) : NULL),
-  goto_type(init_goto_type)
+  gotoTag(init_gotoTag)
 {
 }
 
 
-GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
+GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
   Expr(STMT_GOTO),
   label(init_label),
-  goto_type(init_goto_type)
+  gotoTag(init_gotoTag)
 {
 }
 
@@ -428,7 +425,7 @@ void GotoStmt::verify() {
 
 GotoStmt*
 GotoStmt::copyInner(ASTMap* map) {
-  return new GotoStmt(goto_type, label);
+  return new GotoStmt(gotoTag, label);
 }
 
 

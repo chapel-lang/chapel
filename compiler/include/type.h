@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include "baseAST.h"
-#include "chplenum.h"
 #include "../ifa/num.h"
 
 /*
@@ -62,7 +61,6 @@ class Type : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
 
-  virtual bool requiresCParamTmp(intentTag intent);
   virtual bool implementedUsingCVals(void);
 
   virtual Symbol* getField(const char* name);

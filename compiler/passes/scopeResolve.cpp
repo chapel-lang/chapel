@@ -69,15 +69,15 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
     BlockStmt* loop = find_outer_loop(gotoStmt);
     if (!loop)
       USR_FATAL(gotoStmt, "break or continue is not in a loop");
-    if (gotoStmt->goto_type == goto_break)
+    if (gotoStmt->gotoTag == GOTO_BREAK)
       gotoStmt->label = loop->post_loop;
-    else if (gotoStmt->goto_type == goto_continue)
+    else if (gotoStmt->gotoTag == GOTO_CONTINUE)
       gotoStmt->label = loop->pre_loop;
     else
       INT_FATAL(gotoStmt, "Unexpected goto type");
   } else if (toUnresolvedSymbol(gotoStmt->label)) {
     const char* name = gotoStmt->label->name;
-    if (gotoStmt->goto_type == goto_break)
+    if (gotoStmt->gotoTag == GOTO_BREAK)
       name = stringcat("_post", name);
     Vec<BaseAST*> asts;
     collect_asts(&asts, gotoStmt->parentSymbol);

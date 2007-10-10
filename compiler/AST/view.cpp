@@ -423,10 +423,10 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       }
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       fprintf(html_file, "<DL>\n");
-      switch (s->goto_type) {
-      case goto_normal: fprintf(html_file, "<B>goto</B> "); break;
-      case goto_break: fprintf(html_file, "<B>break</B> "); break;
-      case goto_continue: fprintf(html_file, "<B>continue</B> "); break;
+      switch (s->gotoTag) {
+      case GOTO_NORMAL: fprintf(html_file, "<B>goto</B> "); break;
+      case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
+      case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
       }
       if (s->label)
         html_print_symbol( html_file, pass, s->label, true);
