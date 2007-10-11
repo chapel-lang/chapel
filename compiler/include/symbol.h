@@ -16,41 +16,39 @@ class Immediate;
 class BasicBlock;
 class IteratorInfo;
 
-enum fnType {
+enum FnTag {
   FN_FUNCTION,
   FN_CONSTRUCTOR,
   FN_ITERATOR
 };
 
-enum varType {
-  VAR_NORMAL,
-  VAR_CONFIG,
-  VAR_STATE
-};
-
-enum consType {
+enum ConstTag {
   VAR_VAR,
   VAR_CONST,
   VAR_PARAM
 };
 
-enum retClassEnum {
+enum RetTag {
   RET_VALUE,
   RET_VAR,
   RET_PARAM,
   RET_TYPE
 };
 
-enum intentTag {
-  INTENT_BLANK = 0,
+enum IntentTag {
+  INTENT_BLANK,
   INTENT_IN,
   INTENT_INOUT,
   INTENT_OUT,
   INTENT_CONST,
   INTENT_REF,
   INTENT_PARAM,
-  INTENT_TYPE,
-  NUM_INTENT_TYPES
+  INTENT_TYPE
+};
+
+enum ModTag {
+  MOD_STANDARD,
+  MOD_USER
 };
 
 class Symbol : public BaseAST {
@@ -73,7 +71,7 @@ class Symbol : public BaseAST {
   Vec<SymExpr*> uses;
   Vec<const char*> pragmas;
 
-  Symbol(astType_t astType, const char* init_name, Type* init_type = dtUnknown);
+  Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
   virtual void verify(); 
   void setParentScope(SymScope* init_parentScope);
@@ -110,16 +108,16 @@ class UnresolvedSymbol : public Symbol {
 
 class VarSymbol : public Symbol {
  public:
-  varType      varClass;
-  consType     consClass;
+  bool isConfig;
+  ConstTag     constTag;
   Immediate   *immediate;
   VarSymbol   *refc;         // number of outstanding references to
   VarSymbol   *refcMutex;    // guard refc
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown,
-            varType  init_varClass = VAR_NORMAL, 
-            consType init_consClass = VAR_VAR);
+            bool init_isConfig = false,
+            ConstTag init_constTag = VAR_VAR);
   ~VarSymbol();
   virtual void verify(); 
   COPY_DEF(VarSymbol);
@@ -136,7 +134,7 @@ class VarSymbol : public Symbol {
 
 class ArgSymbol : public Symbol {
  public:
-  intentTag intent;
+  IntentTag intent;
   Expr* defaultExpr;
   Expr* variableExpr;
   bool isGeneric;
@@ -144,7 +142,7 @@ class ArgSymbol : public Symbol {
   bool instantiatedParam;
   bool initUsingCopy;
 
-  ArgSymbol(intentTag iIntent, const char* iName, Type* iType,
+  ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
   virtual void verify(); 
   COPY_DEF(ArgSymbol);
@@ -178,8 +176,8 @@ class FnSymbol : public Symbol {
   BlockStmt* where;
   Expr* retExprType;
   BlockStmt* body;
-  fnType fnClass;
-  retClassEnum retClass;
+  FnTag fnTag;
+  RetTag retTag;
   bool noParens;
   bool defSetGet;
   IteratorInfo* iteratorInfo;
@@ -257,19 +255,13 @@ class EnumSymbol : public Symbol {
 };
 
 
-enum modType {
-  MOD_STANDARD,
-  MOD_USER
-};
-
-
 class ModuleSymbol : public Symbol {
  public:
-  modType modtype;
+  ModTag modTag;
   BlockStmt* block;
   FnSymbol* initFn;
 
-  ModuleSymbol(const char* iName, modType iModtype, BlockStmt* iBlock);
+  ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);

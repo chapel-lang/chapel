@@ -73,10 +73,10 @@ check_parsed_vars(VarSymbol* var) {
          toModuleSymbol(var->defPoint->parentSymbol)) &&
         !toFnSymbol(var->defPoint->parentScope->astParent))
       USR_FATAL(var, "Top-level params must be initialized.");
-  if (var->varClass == VAR_CONFIG &&
+  if (var->isConfig &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
-    switch (var->consClass) {
+    switch (var->constTag) {
       case VAR_VAR:   varType = "variables"; break;
       case VAR_CONST: varType = "constants"; break;
       case VAR_PARAM: varType = "parameters"; break;
@@ -141,7 +141,7 @@ checkParsed(void) {
 void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->fnClass == FN_ITERATOR) {
+    if (fn->fnTag == FN_ITERATOR) {
       for_formals(formal, fn) {
         if (formal->intent == INTENT_IN ||
             formal->intent == INTENT_INOUT ||
@@ -193,7 +193,7 @@ checkResolved(void) {
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
-          if (!sym || (toVarSymbol(sym->var)->consClass != VAR_PARAM &&
+          if (!sym || (toVarSymbol(sym->var)->constTag != VAR_PARAM &&
                        !toVarSymbol(sym->var)->immediate))
             USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }

@@ -40,9 +40,9 @@ void cullOverReferences() {
   // make value functions from reference functions
   //
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->retClass == RET_VAR) {
+    if (fn->retTag == RET_VAR) {
       FnSymbol* copy = fn->copy();
-      copy->retClass = RET_VALUE;
+      copy->retTag = RET_VALUE;
       fn->defPoint->insertBefore(new DefExpr(copy));
       VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
       INT_ASSERT(ret->type);
@@ -76,7 +76,7 @@ void cullOverReferences() {
         VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
         tmp->isCompilerTemp = true;
         se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, fn->retClass == RET_VAR ? gTrue : gFalse));
+        se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, fn->retTag == RET_VAR ? gTrue : gFalse));
         se->var = tmp;
       }
     }
@@ -129,7 +129,7 @@ void cullOverReferences() {
             vt->symbol->hasPragma("domain") ||
             vt->symbol->hasPragma("iterator class")) {
           fn->retType = vt;
-          fn->retClass = RET_VALUE;
+          fn->retTag = RET_VALUE;
           Symbol* tmp = new VarSymbol("_tmp", vt);
           tmp->isCompilerTemp = true;
           CallExpr* ret = toCallExpr(fn->body->body.last());

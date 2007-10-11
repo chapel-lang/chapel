@@ -32,9 +32,9 @@ extern Vec<FnSymbol*> gFns;
 extern Vec<TypeSymbol*> gTypes;
 
 /**
- **  Note: update astType_t and astTypeName together always.
+ **  Note: update AstTag and astTagName together always.
  **/
-enum astType_t {
+enum AstTag {
   EXPR,
   EXPR_SYM,
   EXPR_DEF,
@@ -60,12 +60,10 @@ enum astType_t {
   TYPE_USER,
   TYPE_CLASS,
 
-  BASE,
-
-  AST_TYPE_END 
+  BASE
 };
 
-extern const char* astTypeName[];
+extern const char* astTagName[];
 
 #define COPY_DEF(type)                                                  \
   virtual type* copy(ASTMap* map = NULL, bool internal = false) {       \
@@ -93,7 +91,7 @@ typedef struct _ASTContext {
 
 class BaseAST {
  public:
-  astType_t astType;    // BaseAST subclass
+  AstTag astTag;    // BaseAST subclass
   int id;               // Unique ID
 
   SymScope* parentScope;
@@ -101,7 +99,7 @@ class BaseAST {
   const char* filename;       // filename of location
   int lineno;           // line number of location
 
-  BaseAST(astType_t type = BASE);
+  BaseAST(AstTag type = BASE);
   virtual ~BaseAST() { }
   COPY_DEF(BaseAST);
 
@@ -151,35 +149,35 @@ void registerModule(ModuleSymbol* mod);
 // class test macros: determine the dynamic type of a BaseAST*
 //
 #define isExpr(ast)                                                     \
-  ((ast) && (ast)->astType >= EXPR && (ast)->astType <= STMT_GOTO)
+  ((ast) && (ast)->astTag >= EXPR && (ast)->astTag <= STMT_GOTO)
 
-#define isSymExpr(ast)   ((ast) && (ast)->astType == EXPR_SYM)
-#define isDefExpr(ast)   ((ast) && (ast)->astType == EXPR_DEF)
-#define isCallExpr(ast)  ((ast) && (ast)->astType == EXPR_CALL)
-#define isNamedExpr(ast) ((ast) && (ast)->astType == EXPR_NAMED)
-#define isBlockStmt(ast) ((ast) && (ast)->astType == STMT_BLOCK)
-#define isCondStmt(ast)  ((ast) && (ast)->astType == STMT_COND)
-#define isGotoStmt(ast)  ((ast) && (ast)->astType == STMT_GOTO)
+#define isSymExpr(ast)   ((ast) && (ast)->astTag == EXPR_SYM)
+#define isDefExpr(ast)   ((ast) && (ast)->astTag == EXPR_DEF)
+#define isCallExpr(ast)  ((ast) && (ast)->astTag == EXPR_CALL)
+#define isNamedExpr(ast) ((ast) && (ast)->astTag == EXPR_NAMED)
+#define isBlockStmt(ast) ((ast) && (ast)->astTag == STMT_BLOCK)
+#define isCondStmt(ast)  ((ast) && (ast)->astTag == STMT_COND)
+#define isGotoStmt(ast)  ((ast) && (ast)->astTag == STMT_GOTO)
 
 #define isSymbol(ast)                                                   \
-  ((ast) && (ast)->astType >= SYMBOL && (ast)->astType <= SYMBOL_LABEL)
+  ((ast) && (ast)->astTag >= SYMBOL && (ast)->astTag <= SYMBOL_LABEL)
 
-#define isUnresolvedSymbol(ast) ((ast) && (ast)->astType == SYMBOL_UNRESOLVED)
-#define isModuleSymbol(ast)     ((ast) && (ast)->astType == SYMBOL_MODULE)
-#define isVarSymbol(ast)        ((ast) && (ast)->astType == SYMBOL_VAR)
-#define isArgSymbol(ast)        ((ast) && (ast)->astType == SYMBOL_ARG)
-#define isTypeSymbol(ast)       ((ast) && (ast)->astType == SYMBOL_TYPE)
-#define isFnSymbol(ast)         ((ast) && (ast)->astType == SYMBOL_FN)
-#define isEnumSymbol(ast)       ((ast) && (ast)->astType == SYMBOL_ENUM)
-#define isLabelSymbol(ast)      ((ast) && (ast)->astType == SYMBOL_LABEL)
+#define isUnresolvedSymbol(ast) ((ast) && (ast)->astTag == SYMBOL_UNRESOLVED)
+#define isModuleSymbol(ast)     ((ast) && (ast)->astTag == SYMBOL_MODULE)
+#define isVarSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_VAR)
+#define isArgSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_ARG)
+#define isTypeSymbol(ast)       ((ast) && (ast)->astTag == SYMBOL_TYPE)
+#define isFnSymbol(ast)         ((ast) && (ast)->astTag == SYMBOL_FN)
+#define isEnumSymbol(ast)       ((ast) && (ast)->astTag == SYMBOL_ENUM)
+#define isLabelSymbol(ast)      ((ast) && (ast)->astTag == SYMBOL_LABEL)
 
 #define isType(ast)                                                     \
-  ((ast) && (ast)->astType >= TYPE && (ast)->astType <= TYPE_CLASS)
+  ((ast) && (ast)->astTag >= TYPE && (ast)->astTag <= TYPE_CLASS)
 
-#define isPrimitiveType(ast) ((ast) && (ast)->astType == TYPE_PRIMITIVE)
-#define isEnumType(ast)      ((ast) && (ast)->astType == TYPE_ENUM)
-#define isUserType(ast)      ((ast) && (ast)->astType == TYPE_USER)
-#define isClassType(ast)     ((ast) && (ast)->astType == TYPE_CLASS)
+#define isPrimitiveType(ast) ((ast) && (ast)->astTag == TYPE_PRIMITIVE)
+#define isEnumType(ast)      ((ast) && (ast)->astTag == TYPE_ENUM)
+#define isUserType(ast)      ((ast) && (ast)->astTag == TYPE_USER)
+#define isClassType(ast)     ((ast) && (ast)->astTag == TYPE_CLASS)
 
 //
 // safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*

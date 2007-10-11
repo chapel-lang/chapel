@@ -115,7 +115,7 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      if (fn->fnClass != FN_CONSTRUCTOR) fixup_array_formals(fn);
+      if (fn->fnTag != FN_CONSTRUCTOR) fixup_array_formals(fn);
       clone_parameterized_primitive_methods(fn);
       fixup_query_formals(fn);
       change_method_into_constructor(fn);
@@ -128,7 +128,7 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      if (fn->fnClass != FN_CONSTRUCTOR) fixup_array_formals(fn);
+      if (fn->fnTag != FN_CONSTRUCTOR) fixup_array_formals(fn);
       fixup_query_formals(fn);
 
       // functions (not methods) without parentheses are resolved
@@ -224,7 +224,7 @@ static void normalize_returns(FnSymbol* fn) {
     }
   }
   if (rets.n == 0) {
-    if (fn->fnClass == FN_ITERATOR)
+    if (fn->fnTag == FN_ITERATOR)
       USR_FATAL(fn, "iterator does not yield or return a value");
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
@@ -244,9 +244,9 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
-    if (fn->retClass == RET_PARAM)
-      retval->consClass = VAR_PARAM;
-    if (fn->retExprType && fn->retClass != RET_VAR)
+    if (fn->retTag == RET_PARAM)
+      retval->constTag = VAR_PARAM;
+    if (fn->retExprType && fn->retTag != RET_VAR)
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("_init", fn->retExprType->copy())));
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
@@ -256,14 +256,14 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
-      if (fn->retClass == RET_VAR)
+      if (fn->retTag == RET_VAR)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
       else if (fn->retExprType)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
       else
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
     }
-    if (fn->fnClass == FN_ITERATOR) {
+    if (fn->fnTag == FN_ITERATOR) {
       if (!retval)
         INT_FATAL(ret, "unexpected case");
       if (ret->isPrimitive(PRIMITIVE_RETURN)) {
@@ -360,7 +360,7 @@ static void insert_call_temps(CallExpr* call) {
       return;
 
   Expr* stmt = call->getStmtExpr();
-  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_VAR);
+  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, false, VAR_VAR);
   tmp->isCompilerTemp = true;
   tmp->isExprTemp = true;
   tmp->canParam = true;
@@ -419,7 +419,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->consClass == VAR_CONST) {
+  if (var->constTag == VAR_CONST) {
     constTemp = new VarSymbol("_constTmp");
     constTemp->isCompilerTemp = true;
     stmt->insertBefore(new DefExpr(constTemp));
@@ -429,7 +429,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert code to initialize config variable from the command line
   //
-  if (var->varClass == VAR_CONFIG && var->consClass != VAR_PARAM) {
+  if (var->isConfig && var->constTag != VAR_PARAM) {
     Expr* noop = new CallExpr(PRIMITIVE_NOOP);
     ModuleSymbol* module = var->getModule();
     CallExpr* strToValExpr =
@@ -453,7 +453,7 @@ fix_def_expr(VarSymbol* var) {
 
     stmt = noop; // insert regular definition code in then block
   }
-  if (var->varClass == VAR_CONFIG && var->consClass == VAR_PARAM) {
+  if (var->isConfig && var->constTag == VAR_PARAM) {
     if (const char* value = configParamMap.get(canonicalize_string(var->name))) {
       usedConfigParams.add(canonicalize_string(var->name));
       if (SymExpr* symExpr = toSymExpr(init)) {
@@ -489,7 +489,7 @@ fix_def_expr(VarSymbol* var) {
     //
     // use cast for parameters to avoid multiple parameter assignments
     //
-    if (init && var->consClass == VAR_PARAM) {
+    if (init && var->constTag == VAR_PARAM) {
       stmt->insertAfter(
         new CallExpr(PRIMITIVE_MOVE, var,
           new CallExpr("_cast", type->remove(), init->remove())));

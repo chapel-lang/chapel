@@ -268,7 +268,7 @@ static void build_constructor(ClassType* ct) {
   }
   FnSymbol* fn = new FnSymbol(name);
   ct->defaultConstructor = fn;
-  fn->fnClass = FN_CONSTRUCTOR;
+  fn->fnTag = FN_CONSTRUCTOR;
   if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
     fn->cname = astr("_construct_", ct->symbol->cname);
   } else {
@@ -310,7 +310,7 @@ static void build_constructor(ClassType* ct) {
     currentFilename = field->filename;
 
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-    if (field->consClass == VAR_PARAM)
+    if (field->constTag == VAR_PARAM)
       arg->intent = INTENT_PARAM;
     fieldNamesSet.set_add(field->name);
     Expr* exprType = field->defPoint->exprType->remove();
@@ -322,7 +322,7 @@ static void build_constructor(ClassType* ct) {
         exprType = init->copy();
         arg->initUsingCopy = true;
       }
-    } else if (exprType && !field->isTypeVariable && field->consClass != VAR_PARAM) {
+    } else if (exprType && !field->isTypeVariable && field->constTag != VAR_PARAM) {
       init = new CallExpr("_init", exprType->copy());
       arg->initUsingCopy = true;
     }
@@ -470,7 +470,7 @@ void cleanup(void) {
       if (call->isPrimitive(PRIMITIVE_USE))
         process_import_expr(call);
       if (call->isPrimitive(PRIMITIVE_YIELD))
-        call->getFunction()->fnClass = FN_ITERATOR;
+        call->getFunction()->fnTag = FN_ITERATOR;
     }
   }
 
@@ -491,7 +491,7 @@ void cleanup(void) {
               BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
             
               FnSymbol *forall_init = new FnSymbol("_forallinit");
-              forall_init->fnClass = FN_ITERATOR;
+              forall_init->fnTag = FN_ITERATOR;
               forall_init->insertAtTail(forblk);
               def->insertBefore(new DefExpr(forall_init));
               def->init->replace(new CallExpr(forall_init));

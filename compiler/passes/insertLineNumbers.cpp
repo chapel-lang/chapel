@@ -32,7 +32,7 @@ static void
 insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
   ModuleSymbol* mod = fn->getModule();
-  if ((mod->modtype == MOD_USER && !fn->isCompilerTemp) ||
+  if ((mod->modTag == MOD_USER && !fn->isCompilerTemp) ||
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call

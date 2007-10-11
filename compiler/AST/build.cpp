@@ -131,7 +131,7 @@ void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* build_module(const char* name, modType type, BlockStmt* block) {
+ModuleSymbol* build_module(const char* name, ModTag type, BlockStmt* block) {
   ModuleSymbol* mod = new ModuleSymbol(name, type, block);
   createInitFn(mod);
   return mod;
@@ -324,7 +324,7 @@ checkIndices(BaseAST* indices) {
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
-  } else if (indices->astType != EXPR_SYM)
+  } else if (indices->astTag != EXPR_SYM)
     USR_FATAL(indices, "invalid index expression");
 }
 
@@ -584,7 +584,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtAny)));
       }
-      fn->retClass = RET_PARAM;
+      fn->retTag = RET_PARAM;
       fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
         new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
@@ -602,7 +602,7 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
                           stringcat("_t", intstring(lid++)),
                           dtUnknown), NULL, expr->copy()));
       }
-      fn->retClass = RET_PARAM;
+      fn->retTag = RET_PARAM;
       fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
         new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
@@ -678,12 +678,12 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 void
-setVarSymbolAttributes(BlockStmt* stmts, varType vartag, consType constag) {
+setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, ConstTag constag) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        var->consClass = constag;
-        var->varClass = vartag;
+        var->constTag = constag;
+        var->isConfig = isConfig;
         continue;
       }
     }
@@ -708,7 +708,7 @@ build_class(const char* name, Type* type, BlockStmt* decls) {
 
 
 DefExpr*
-build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
+build_arg(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
   if (argSymbol->intent == INTENT_TYPE) {
     type = NULL;

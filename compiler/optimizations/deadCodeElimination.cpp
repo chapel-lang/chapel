@@ -19,7 +19,7 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 static void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
-  if (var->astType == SYMBOL_VAR &&
+  if (var->astTag == SYMBOL_VAR &&
       var->defPoint &&
       var->defPoint->parentSymbol == fn &&
       isDeadVariable(var)) {
@@ -143,7 +143,7 @@ void deadCodeElimination(FnSymbol* fn) {
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (expr->astType == EXPR_SYM || expr->astType == EXPR_CALL)
+      if (expr->astTag == EXPR_SYM || expr->astTag == EXPR_CALL)
         if (!liveCode.set_in(expr))
           expr->remove();
     }

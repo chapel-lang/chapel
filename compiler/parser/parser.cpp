@@ -44,7 +44,7 @@ containsOnlyModules(BlockStmt* block) {
   return true;
 }
 
-ModuleSymbol* ParseFile(char* filename, modType moduletype) {
+ModuleSymbol* ParseFile(char* filename, ModTag moduletype) {
   ModuleSymbol* newModule = NULL;
   yyfilename = filename;
   yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 0;

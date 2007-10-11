@@ -61,7 +61,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
   TypeSymbol* cts = new TypeSymbol(className, ii->classType);
   cts->addPragma("iterator class");
-  if (fn->retClass == RET_VAR)
+  if (fn->retTag == RET_VAR)
     cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
@@ -80,7 +80,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
   ii->getValue = buildEmptyIteratorMethod("getValue", ii->classType);
-  if (fn->retClass == RET_VAR && fn->retType->refType)
+  if (fn->retTag == RET_VAR && fn->retType->refType)
     ii->getValue->retType = fn->retType->refType;
   else
     ii->getValue->retType = fn->retType;
@@ -131,7 +131,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
   ii->classType->defaultConstructor = fn;
   ii->classType->scalarPromotionType = fn->retType;
   fn->retType = ii->classType;
-  fn->retClass = RET_VALUE;
+  fn->retTag = RET_VALUE;
 }
 
 
@@ -407,7 +407,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         }
       }
-    } else if (ast->astType == STMT_GOTO) {
+    } else if (ast->astTag == STMT_GOTO) {
       return NULL;
     }
   }
@@ -830,7 +830,7 @@ void lowerIterator(FnSymbol* fn) {
   int i = 0;
   forv_Vec(Symbol, local, locals) {
     Type* type = local->type;
-    if (isReference(local->type) && local != fn->getReturnSymbol()) // && (local->astType != SYMBOL_ARG || local == fn->_this))
+    if (isReference(local->type) && local != fn->getReturnSymbol()) // && (local->astTag != SYMBOL_ARG || local == fn->_this))
       type = getValueType(local->type);
     Symbol* field =
       new VarSymbol(astr("_", istr(i++), "_", local->name), type);

@@ -3,7 +3,7 @@
 
 #include "symbol.h"
 
-ModuleSymbol* ParseFile(char* filename, modType moduletype);
+ModuleSymbol* ParseFile(char* filename, ModTag moduletype);
 AList* parse_string(char* string);
 
 #endif

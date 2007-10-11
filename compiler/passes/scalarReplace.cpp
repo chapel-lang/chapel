@@ -251,7 +251,7 @@ scalarReplaceVars(FnSymbol* fn) {
     Vec<DefExpr*> defs;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast)) {
-        if (def->sym->astType == SYMBOL_VAR &&
+        if (def->sym->astTag == SYMBOL_VAR &&
             toFnSymbol(def->parentSymbol)) {
           TypeSymbol* ts = def->sym->type->symbol;
           if (ts->hasPragma("iterator class") || ts->hasPragma("tuple"))

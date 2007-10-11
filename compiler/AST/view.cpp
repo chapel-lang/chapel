@@ -148,7 +148,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       printf("***");
     if (number)
       printf("%d ", ast->id);
-    printf("%s", astTypeName[expr->astType]);
+    printf("%s", astTagName[expr->astTag]);
 
     if (GotoStmt *gs= toGotoStmt(ast)) {
       if (gs->label) {
@@ -391,11 +391,11 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
     html_print_symbol( html_file, pass, formal, true);
   }
   fprintf(html_file, " ) ");
-  if (fn->retClass == RET_VAR)
+  if (fn->retTag == RET_VAR)
     fprintf(html_file, "<b>var</b> ");
-  else if (fn->retClass == RET_PARAM)
+  else if (fn->retTag == RET_PARAM)
     fprintf(html_file, "<b>param</b> ");
-  else if (fn->retClass == RET_TYPE)
+  else if (fn->retTag == RET_TYPE)
     fprintf(html_file, "<b>type</b> ");
   if (fn->retType && fn->retType->symbol) {
     fprintf(html_file, " : ");
@@ -523,7 +523,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         if (e->partialTag)
           fprintf(html_file, "(partial) ");
       } else {
-        fprintf(html_file, "(%s", astTypeName[expr->astType]);
+        fprintf(html_file, "(%s", astTagName[expr->astTag]);
       }
     }
   }

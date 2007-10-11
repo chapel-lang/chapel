@@ -97,7 +97,7 @@ void printStatistics(const char* pass) {
   decl_counters(UserType, TYPE_USER);
   decl_counters(ClassType, TYPE_CLASS);
   forv_Vec(BaseAST, ast, gAsts) {
-    switch (ast->astType) {
+    switch (ast->astTag) {
       case_counters(CondStmt, STMT_COND);
       case_counters(BlockStmt, STMT_BLOCK);
       case_counters(GotoStmt, STMT_GOTO);
@@ -194,7 +194,7 @@ void printStatistics(const char* pass) {
 
 static bool
 isLive(Symbol* sym) {
-  if (sym->astType == SYMBOL_UNRESOLVED)
+  if (sym->astTag == SYMBOL_UNRESOLVED)
     return true;
   if (sym == theProgram)
     return true;
@@ -230,7 +230,7 @@ void cleanAst() {
       if (isLive(sym)) {
         gAsts.v[iasts++] = ast;
       } else {
-        if (sym->astType == SYMBOL_TYPE)
+        if (sym->astTag == SYMBOL_TYPE)
           delete sym->type;
         delete sym;
       }
@@ -272,8 +272,8 @@ static void checkid(int id) {
 }
 
 
-BaseAST::BaseAST(astType_t type) :
-  astType(type),
+BaseAST::BaseAST(AstTag type) :
+  astTag(type),
   id(uid++),
   parentScope(NULL),
   filename(yyfilename), 
@@ -435,7 +435,7 @@ int compar_baseast(const void *ai, const void *aj) {
   return 0;
 }
 
-const char* astTypeName[AST_TYPE_END+1] = {
+const char* astTagName[BASE+1] = {
   "Expr",
   "SymExpr",
   "DefExpr",
@@ -461,9 +461,7 @@ const char* astTypeName[AST_TYPE_END+1] = {
   "UserType",
   "ClassType",
 
-  "BASE",
-
-  "AST_TYPE_END"
+  "BaseAST"
 };
 
 int currentLineno = 0;
@@ -474,7 +472,7 @@ const char* currentFilename = NULL;
 
 void
 get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
-  switch (a->astType) {
+  switch (a->astTag) {
   case EXPR:
     break;
   case EXPR_SYM:
@@ -546,9 +544,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case BASE:
     INT_FATAL(a, "Unexpected case in get_ast_children (BASE)");
     break;
-  case AST_TYPE_END:
-    INT_FATAL(a, "Unexpected case in get_ast_children (AST_TYPE_END)");
-    break;
   }
 }
 
@@ -558,7 +553,7 @@ Vec<ModuleSymbol*> allModules;  // Contains all modules
 Vec<ModuleSymbol*> userModules; // Contains user modules
 
 void registerModule(ModuleSymbol* mod) {
-  switch (mod->modtype) {
+  switch (mod->modTag) {
   case MOD_USER:
     userModules.add(mod);
   case MOD_STANDARD:

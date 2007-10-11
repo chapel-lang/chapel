@@ -174,7 +174,7 @@ void SymScope::print(bool number, int indent) {
   if (astParent) {
     if (number)
       printf("%d", astParent->id);
-    printf(" %s", astTypeName[astParent->astType]);
+    printf(" %s", astTagName[astParent->astTag]);
   }
   if (Symbol* sym = toSymbol(astParent))
     printf(" %s", sym->name);

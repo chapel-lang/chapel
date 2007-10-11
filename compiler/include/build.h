@@ -15,7 +15,7 @@ BlockStmt* build_chpl_stmt(AList* stmts);
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
 void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint);
 DefExpr* buildLabelStmt(const char* name);
-ModuleSymbol* build_module(const char* name, modType type, BlockStmt* block);
+ModuleSymbol* build_module(const char* name, ModTag type, BlockStmt* block);
 CallExpr* build_primitive_call(AList* exprs);
 
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2 = NULL);
@@ -41,12 +41,12 @@ FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);
 
 void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,
-                            varType vartag,
-                            consType constag);
+                            bool isConfig,
+                            ConstTag constag);
 
 DefExpr* build_class(const char* name, Type* type, BlockStmt* decls);
 DefExpr*
-build_arg(intentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
+build_arg(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);

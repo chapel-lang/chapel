@@ -425,7 +425,7 @@ codegen_config(FILE* outfile) {
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
       VarSymbol* var = toVarSymbol(def->sym);
-      if (var && var->varClass == VAR_CONFIG) {
+      if (var && var->isConfig) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         fprintf(outfile, var->type->symbol->name);
         fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);

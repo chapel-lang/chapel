@@ -8,8 +8,8 @@
 #include "symscope.h"
 
 
-Expr::Expr(astType_t astType) :
-  BaseAST(astType),
+Expr::Expr(AstTag astTag) :
+  BaseAST(astTag),
   prev(NULL),
   next(NULL),
   list(NULL),
@@ -26,7 +26,7 @@ Expr* Expr::getStmtExpr() {
       return this;
     return NULL;
   }
-  if (parentExpr->astType == STMT_BLOCK)
+  if (parentExpr->astTag == STMT_BLOCK)
     return this;
   else if (IS_STMT(parentExpr))
     return parentExpr;
@@ -219,12 +219,12 @@ SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 void
 SymExpr::verify() {
   Expr::verify();
-  if (astType != EXPR_SYM)
-    INT_FATAL(this, "Bad SymExpr::astType");
+  if (astTag != EXPR_SYM)
+    INT_FATAL(this, "Bad SymExpr::astTag");
   if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
   if (var->defPoint && !var->defPoint->parentSymbol)
-    if (var->astType != SYMBOL_MODULE)
+    if (var->astTag != SYMBOL_MODULE)
       INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
 
@@ -292,8 +292,8 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
 void DefExpr::verify() {
   Expr::verify();
-  if (astType != EXPR_DEF) {
-    INT_FATAL(this, "Bad DefExpr::astType");
+  if (astTag != EXPR_DEF) {
+    INT_FATAL(this, "Bad DefExpr::astTag");
   }
   if (!sym) {
     INT_FATAL(this, "DefExpr has no sym");
@@ -510,8 +510,8 @@ CallExpr::~CallExpr() { }
 
 void CallExpr::verify() {
   Expr::verify();
-  if (astType != EXPR_CALL) {
-    INT_FATAL(this, "Bad CallExpr::astType");
+  if (astTag != EXPR_CALL) {
+    INT_FATAL(this, "Bad CallExpr::astTag");
   }
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
@@ -1572,8 +1572,8 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 
 void NamedExpr::verify() {
   Expr::verify();
-  if (astType != EXPR_NAMED) {
-    INT_FATAL(this, "Bad NamedExpr::astType");
+  if (astTag != EXPR_NAMED) {
+    INT_FATAL(this, "Bad NamedExpr::astTag");
   }
 }
 
@@ -1665,7 +1665,7 @@ get_constant(Expr *e) {
   if (((_t*)expr)->_m.head) return getFirstExpr(((_t*)expr)->_m.head)
 
 Expr* getFirstExpr(Expr* expr) {
-  switch (expr->astType) {
+  switch (expr->astTag) {
   default:
     INT_FATAL(expr, "unexpected expr in getFirstExpr");
     return NULL;

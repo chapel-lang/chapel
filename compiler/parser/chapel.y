@@ -70,11 +70,11 @@ Is this "while x"(i); or "while x(i)";?
   const char* pch;
   Vec<const char*>* vpch;
 
-  retClassEnum retClass;
+  RetTag retTag;
 
-  varType vt;
-  consType ct;
-  intentTag pt;
+  bool b;
+  ConstTag ct;
+  IntentTag pt;
 
   Expr* pexpr;
   DefExpr* pdefexpr;
@@ -133,7 +133,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TSINGLE
 %token TSERIAL
 %token TSPARSE
-%token TSTATIC
 %token TSUBDOMAIN
 %token TSYNC
 %token TTHEN
@@ -182,12 +181,12 @@ Is this "while x"(i); or "while x(i)";?
 
 %token TSEMI
 
-%type <vt> var_state_tag
+%type <b> is_config
 %type <ct> var_const_tag
  
 %type <pt> formal_tag
 
-%type <retClass> ret_class
+%type <retTag> ret_class
 
 %type <pch> identifier fn_identifier opt_identifier
 %type <pch> pragma
@@ -770,7 +769,7 @@ ret_class:
 fn_decl_stmt:
   TDEF fn_decl_stmt_inner ret_class opt_type where parsed_block_stmt
     {
-      $2->retClass = $3;
+      $2->retTag = $3;
       if ($3 == RET_VAR)
         $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
       $2->retExprType = $4;
@@ -800,7 +799,7 @@ var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
 | TDOTDOTDOT TQUESTION identifier
-    { $$ = new DefExpr(new VarSymbol($3, dtUnknown, VAR_NORMAL, VAR_PARAM)); }
+    { $$ = new DefExpr(new VarSymbol($3, dtUnknown, false, VAR_PARAM)); }
 ;
 
 
@@ -997,7 +996,7 @@ typevar_decl_stmt:
 
 
 var_decl_stmt:
-  var_state_tag var_const_tag var_decl_stmt_inner_ls TSEMI
+  is_config var_const_tag var_decl_stmt_inner_ls TSEMI
     {
       setVarSymbolAttributes($3, $1, $2);
       backPropagateInitsTypes($3);
@@ -1430,7 +1429,7 @@ expr:
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
-      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1463,7 +1462,7 @@ expr:
     {
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
-      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1490,7 +1489,7 @@ expr:
     {
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
-      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1645,13 +1644,11 @@ formal_tag:
 ;
 
 
-var_state_tag:
+is_config:
   /* nothing */
-    { $$ = VAR_NORMAL; }
+    { $$ = false; }
 | TCONFIG
-    { $$ = VAR_CONFIG; }
-| TSTATIC
-    { $$ = VAR_STATE; }
+    { $$ = true; }
 ;
 
 

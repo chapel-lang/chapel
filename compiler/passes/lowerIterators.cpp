@@ -65,7 +65,7 @@ void lowerIterators() {
   }
   if (!fBaseline) {
     forv_Vec(FnSymbol, fn, gFns) {
-      if (fn->fnClass == FN_ITERATOR) {
+      if (fn->fnTag == FN_ITERATOR) {
         collapseBlocks(fn->body);
         removeUnnecessaryGotos(fn);
         localCopyPropagation(fn);
@@ -75,7 +75,7 @@ void lowerIterators() {
     }
   }
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->fnClass == FN_ITERATOR) {
+    if (fn->fnTag == FN_ITERATOR) {
       lowerIterator(fn);
     }
   }

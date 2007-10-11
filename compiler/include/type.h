@@ -46,7 +46,7 @@ class Type : public BaseAST {
   ASTMap substitutions;
   ClassType* refType;  // pointer to references for non-reference types
 
-  Type(astType_t astType, Symbol* init_defaultVal);
+  Type(AstTag astTag, Symbol* init_defaultVal);
   virtual ~Type();
   virtual void verify(); 
   virtual bool inTree();

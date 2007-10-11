@@ -121,8 +121,8 @@ add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
 /*** Default Wrapper Cache ^^^ ***/
 
 
-Symbol::Symbol(astType_t astType, const char* init_name, Type* init_type) :
-  BaseAST(astType),
+Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
+  BaseAST(astTag),
   name(canonicalize_string(init_name)),
   cname(name),
   type(init_type),
@@ -259,8 +259,8 @@ UnresolvedSymbol::UnresolvedSymbol(const char* init_name) :
 
 void UnresolvedSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_UNRESOLVED) {
-    INT_FATAL(this, "Bad UnresolvedSymbol::astType");
+  if (astTag != SYMBOL_UNRESOLVED) {
+    INT_FATAL(this, "Bad UnresolvedSymbol::astTag");
   }
 }
 
@@ -279,11 +279,11 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type,
-                     varType  init_varClass, 
-                     consType init_consClass) :
+                     bool init_isConfig,
+                     ConstTag init_constTag) :
   Symbol(SYMBOL_VAR, init_name, init_type),
-  varClass(init_varClass),
-  consClass(init_consClass),
+  isConfig(init_isConfig),
+  constTag(init_constTag),
   immediate(NULL),
   refc(NULL),
   refcMutex(NULL)
@@ -298,15 +298,15 @@ VarSymbol::~VarSymbol() {
 
 void VarSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_VAR) {
-    INT_FATAL(this, "Bad VarSymbol::astType");
+  if (astTag != SYMBOL_VAR) {
+    INT_FATAL(this, "Bad VarSymbol::astTag");
   }
 }
 
 
 VarSymbol*
 VarSymbol::copyInner(ASTMap* map) {
-  VarSymbol* newVarSymbol = new VarSymbol(name, type, varClass, consClass);
+  VarSymbol* newVarSymbol = new VarSymbol(name, type, isConfig, constTag);
   newVarSymbol->cname = cname;
   newVarSymbol->isUserAlias = isUserAlias;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
@@ -327,12 +327,12 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool VarSymbol::isConst(void) {
-  return (consClass == VAR_CONST);
+  return (constTag == VAR_CONST);
 }
 
 
 bool VarSymbol::isParam(void){
-  return (consClass == VAR_PARAM) || immediate;
+  return (constTag == VAR_PARAM) || immediate;
 }
 
 
@@ -368,7 +368,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
     return;
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
-  if (0 && (consClass == VAR_CONST)) {
+  if (0 && (constTag == VAR_CONST)) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
@@ -387,7 +387,7 @@ bool VarSymbol::isImmediate() {
 }
 
 
-ArgSymbol::ArgSymbol(intentTag iIntent, const char* iName, 
+ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iDefaultExpr,
                      Expr* iVariableExpr) :
   Symbol(SYMBOL_ARG, iName, iType),
@@ -406,8 +406,8 @@ ArgSymbol::ArgSymbol(intentTag iIntent, const char* iName,
 
 void ArgSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_ARG) {
-    INT_FATAL(this, "Bad ArgSymbol::astType");
+  if (astTag != SYMBOL_ARG) {
+    INT_FATAL(this, "Bad ArgSymbol::astTag");
   }
 }
 
@@ -483,8 +483,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
 
 void TypeSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_TYPE) {
-    INT_FATAL(this, "Bad TypeSymbol::astType");
+  if (astTag != SYMBOL_TYPE) {
+    INT_FATAL(this, "Bad TypeSymbol::astTag");
   }
   if (type->symbol != this)
     INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
@@ -528,8 +528,8 @@ FnSymbol::FnSymbol(const char* initName) :
   where(NULL),
   retExprType(NULL),
   body(new BlockStmt()),
-  fnClass(FN_FUNCTION),
-  retClass(RET_VALUE),
+  fnTag(FN_FUNCTION),
+  retTag(RET_VALUE),
   noParens(false),
   defSetGet(false),
   iteratorInfo(NULL),
@@ -573,8 +573,8 @@ FnSymbol::~FnSymbol() {
 
 void FnSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_FN) {
-    INT_FATAL(this, "Bad FnSymbol::astType");
+  if (astTag != SYMBOL_FN) {
+    INT_FATAL(this, "Bad FnSymbol::astTag");
   }
   if (normalized && !hasPragma("auto ii")) {
     CallExpr* last = toCallExpr(body->body.last());
@@ -601,8 +601,8 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
-  copy->fnClass = fnClass;
-  copy->retClass = retClass;
+  copy->fnTag = fnTag;
+  copy->retTag = retTag;
   copy->noParens = noParens;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
@@ -662,8 +662,8 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
-  if (fn->fnClass != FN_ITERATOR) { // getValue is var, not iterator
-    wrapper->retClass = fn->retClass;
+  if (fn->fnTag != FN_ITERATOR) { // getValue is var, not iterator
+    wrapper->retTag = fn->retTag;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
@@ -741,7 +741,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(this);
-  if (fnClass != FN_ITERATOR)
+  if (fnTag != FN_ITERATOR)
     wrapper->retType = retType;
   wrapper->cname = stringcat("_default_wrap_", cname);
   CallExpr* call = new CallExpr(this);
@@ -792,14 +792,14 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     call = make_method_call_partial(call);
   if (returns_void(this)) {
     wrapper->insertAtTail(call);
-  } else if (fnClass != FN_ITERATOR) {
+  } else if (fnTag != FN_ITERATOR) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   } else {
     VarSymbol* index = new VarSymbol("_i");
     index->isCompilerTemp = true;
     wrapper->insertAtTail(new DefExpr(index));
     wrapper->insertAtTail(build_for_expr(new SymExpr(index), call, new SymExpr(index)));
-    wrapper->fnClass = FN_ITERATOR;
+    wrapper->fnTag = FN_ITERATOR;
   }
   defPoint->insertAfter(new DefExpr(wrapper));
 
@@ -892,7 +892,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                          new BlockStmt(actualCall))));
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterator, actualCall));
-    wrapper->fnClass = FN_ITERATOR;
+    wrapper->fnTag = FN_ITERATOR;
     wrapper->removePragma("inline");
   }
   defPoint->insertBefore(new DefExpr(wrapper));
@@ -1210,7 +1210,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       //  because folding is done via instantiation
       //  caution: be careful developing in the base module
       baseModule != getModule()) {
-    if (fnClass == FN_CONSTRUCTOR) {
+    if (fnTag == FN_CONSTRUCTOR) {
       USR_FATAL_CONT(retType, "Type '%s' has been instantiated too many times",
                      retType->symbol->name);
     } else {
@@ -1222,7 +1222,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     USR_STOP();
   }
 
-  if (fnClass == FN_CONSTRUCTOR) {
+  if (fnTag == FN_CONSTRUCTOR) {
     if (!toClassType(retType))
       INT_FATAL("bad instantiation of non-class type");
 
@@ -1399,7 +1399,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
     int i = 1;
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
-        if (se->var->astType == SYMBOL_VAR) {
+        if (se->var->astTag == SYMBOL_VAR) {
           if (se->var->defPoint && se->var->defPoint->parentSymbol == this) {
             if (!defSet.set_in(se->var)) {
               se->var->cname = astr("T", intstring(i++));
@@ -1547,7 +1547,7 @@ bool FnSymbol::tag_generic() {
     return false;
   if (hasGenericArgs(this)) {
     isGeneric = 1; 
-    if (retType != dtUnknown && fnClass == FN_CONSTRUCTOR)
+    if (retType != dtUnknown && fnTag == FN_CONSTRUCTOR)
       retType->isGeneric = true;
     return true;
   }
@@ -1563,8 +1563,8 @@ EnumSymbol::EnumSymbol(const char* init_name) :
 
 void EnumSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_ENUM) {
-    INT_FATAL(this, "Bad EnumSymbol::astType");
+  if (astTag != SYMBOL_ENUM) {
+    INT_FATAL(this, "Bad EnumSymbol::astTag");
   }
 }
 
@@ -1579,9 +1579,9 @@ bool EnumSymbol::isParam(void) { return true; }
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
-ModuleSymbol::ModuleSymbol(const char* iName, modType iModtype, BlockStmt* iBlock) :
+ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
   Symbol(SYMBOL_MODULE, iName),
-  modtype(iModtype),
+  modTag(iModTag),
   block(iBlock),
   initFn(NULL)
 {
@@ -1596,8 +1596,8 @@ ModuleSymbol::~ModuleSymbol() { }
 
 void ModuleSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_MODULE) {
-    INT_FATAL(this, "Bad ModuleSymbol::astType");
+  if (astTag != SYMBOL_MODULE) {
+    INT_FATAL(this, "Bad ModuleSymbol::astTag");
   }
 }
 
@@ -1632,8 +1632,8 @@ LabelSymbol::LabelSymbol(const char* init_name) :
 
 void LabelSymbol::verify() {
   Symbol::verify();
-  if (astType != SYMBOL_LABEL) {
-    INT_FATAL(this, "Bad LabelSymbol::astType");
+  if (astTag != SYMBOL_LABEL) {
+    INT_FATAL(this, "Bad LabelSymbol::astTag");
   }
 }
 
@@ -1840,9 +1840,9 @@ compareSymbol(const void* v1, const void* v2) {
   ModuleSymbol* m1 = s1->getModule();
   ModuleSymbol* m2 = s2->getModule();
   if (m1 != m2) {
-    if (m1->modtype < m2->modtype)
+    if (m1->modTag < m2->modTag)
       return -1;
-    if (m1->modtype > m2->modtype)
+    if (m1->modTag > m2->modTag)
       return 1;
     return strcmp(m1->cname, m2->cname);
   }

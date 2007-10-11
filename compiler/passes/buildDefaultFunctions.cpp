@@ -162,9 +162,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
   if (field->isParam())
-    fn->retClass = RET_PARAM;
+    fn->retTag = RET_PARAM;
   else {
-    fn->retClass = RET_VAR;
+    fn->retTag = RET_VAR;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
   if (ct->classTag == CLASS_UNION)
@@ -225,7 +225,7 @@ static void build_chpl_main(void) {
     for_alist(expr, theProgram->block->body) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-          if (mod->modtype == MOD_USER) {
+          if (mod->modTag == MOD_USER) {
             rootUserModuleCount++;
             rootUserModule = mod;
           }

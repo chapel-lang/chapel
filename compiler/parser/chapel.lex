@@ -80,7 +80,6 @@ select          processToken(TSELECT);
 serial          processToken(TSERIAL);
 single          processToken(TSINGLE);
 sparse          processToken(TSPARSE);
-static          processToken(TSTATIC);
 subdomain       processToken(TSUBDOMAIN);
 sync            processToken(TSYNC);
 then            processToken(TTHEN);

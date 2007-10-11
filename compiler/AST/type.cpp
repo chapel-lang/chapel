@@ -11,8 +11,8 @@
 #include "type.h"
 
 
-Type::Type(astType_t astType, Symbol* init_defaultVal) :
-  BaseAST(astType),
+Type::Type(AstTag astTag, Symbol* init_defaultVal) :
+  BaseAST(astTag),
   scalarPromotionType(NULL),
   symbol(NULL),
   defaultValue(init_defaultVal),
@@ -129,8 +129,8 @@ PrimitiveType::PrimitiveType(Symbol *init) :
 
 void PrimitiveType::verify() {
   Type::verify();
-  if (astType != TYPE_PRIMITIVE) {
-    INT_FATAL(this, "Bad PrimitiveType::astType");
+  if (astTag != TYPE_PRIMITIVE) {
+    INT_FATAL(this, "Bad PrimitiveType::astTag");
   }
 }
 
@@ -149,8 +149,8 @@ EnumType::~EnumType() {
 
 void EnumType::verify() {
   Type::verify();
-  if (astType != TYPE_ENUM) {
-    INT_FATAL(this, "Bad EnumType::astType");
+  if (astTag != TYPE_ENUM) {
+    INT_FATAL(this, "Bad EnumType::astTag");
   }
   if (constants.parent != this)
     INT_FATAL(this, "Bad AList::parent in EnumType");
@@ -222,8 +222,8 @@ UserType::UserType(Expr* init_typeExpr) :
 
 void UserType::verify() {
   Type::verify();
-  if (astType != TYPE_USER) {
-    INT_FATAL(this, "Bad UserType::astType");
+  if (astTag != TYPE_USER) {
+    INT_FATAL(this, "Bad UserType::astTag");
   }
 }
 
@@ -274,8 +274,8 @@ ClassType::~ClassType() {
 
 void ClassType::verify() {
   Type::verify();
-  if (astType != TYPE_CLASS) {
-    INT_FATAL(this, "Bad ClassType::astType");
+  if (astTag != TYPE_CLASS) {
+    INT_FATAL(this, "Bad ClassType::astTag");
   }
   if (classTag != CLASS_CLASS &&
       classTag != CLASS_RECORD &&
@@ -453,7 +453,7 @@ createPrimitiveType(const char *name, const char *cname) {
                                    0.0, 0.0, COMPLEX_SIZE_ ## width)
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
-  gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
+  gSym = new VarSymbol (name, primType, false, VAR_CONST);         \
   rootScope->define(gSym);                                              \
   primType->defaultValue = gSym
 
@@ -496,7 +496,7 @@ void initPrimitiveTypes(void) {
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
 
-  gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
+  gTrue = new VarSymbol("true", dtBool, false, VAR_CONST);
   // SJD: Should intrinsics have DefExprs?
   rootScope->define(gTrue);
   gTrue->immediate = new Immediate;
@@ -505,7 +505,7 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
+  gBoundsChecking = new VarSymbol("boundsChecking", dtBool, false, VAR_CONST);
   rootScope->define(gBoundsChecking);
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;

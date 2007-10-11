@@ -72,7 +72,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                   // create reference counter
                   VarSymbol *refc = new VarSymbol(astr("_", var->name, "_refc"),
                                                   dtInt[INT_SIZE_32]->refType,
-                                                  VAR_NORMAL,
+                                                  false,
                                                   VAR_VAR);
                   def->insertBefore(new DefExpr(refc));
                   var->refc = refc;
@@ -80,7 +80,7 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                   // create reference counter mutex
                   VarSymbol *m = new VarSymbol(astr("_", var->name, "_refcmutex"),
                                                dtMutex_p,
-                                               VAR_NORMAL,
+                                               false,
                                                VAR_VAR);
                   def->insertBefore(new DefExpr(m));
                   var->refcMutex = m;

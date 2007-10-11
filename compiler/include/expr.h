@@ -11,12 +11,12 @@ class Stmt;
 class FnSymbol;
 
 #define IS_EXPR(e)                                          \
-  ((e)->astType == EXPR_CALL || (e)->astType == EXPR_SYM || \
-   (e)->astType == EXPR_DEF || (e)->astType == EXPR_NAMED)
+  ((e)->astTag == EXPR_CALL || (e)->astTag == EXPR_SYM || \
+   (e)->astTag == EXPR_DEF || (e)->astTag == EXPR_NAMED)
 
 #define IS_STMT(e)                                              \
-  ((e)->astType == STMT_BLOCK ||                                \
-   (e)->astType == STMT_COND || (e)->astType == STMT_GOTO)
+  ((e)->astTag == STMT_BLOCK ||                                \
+   (e)->astTag == STMT_COND || (e)->astTag == STMT_GOTO)
 
 class Expr : public BaseAST {
  public:
@@ -26,7 +26,7 @@ class Expr : public BaseAST {
   Expr* parentExpr;
   Symbol* parentSymbol;
 
-  Expr(astType_t astType = EXPR);
+  Expr(AstTag astTag = EXPR);
   virtual ~Expr() { }
   COPY_DEF(Expr);
   virtual void callReplaceChild(Expr* new_ast);

@@ -19,7 +19,7 @@ void collect_functions(Vec<FnSymbol*>* fns) {
 
 void collect_stmts(Vec<Expr*>* exprs, Expr* expr) {
   exprs->add(expr);
-  if (expr->astType == STMT_BLOCK || expr->astType == STMT_COND) {
+  if (expr->astTag == STMT_BLOCK || expr->astTag == STMT_COND) {
     Vec<BaseAST*> next_asts;
     get_ast_children(expr, next_asts);
     forv_Vec(BaseAST, next_ast, next_asts) {
@@ -112,7 +112,7 @@ void compute_sym_uses(BaseAST* base) {
     collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = toDefExpr(ast)) {
-      if (a->sym->astType == SYMBOL_VAR || a->sym->astType == SYMBOL_ARG) {
+      if (a->sym->astTag == SYMBOL_VAR || a->sym->astTag == SYMBOL_ARG) {
         def_set.set_add(a);
         a->sym->uses.clear();
         a->sym->defs.clear();

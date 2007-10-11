@@ -54,8 +54,8 @@ BlockStmt::~BlockStmt() {
 
 void BlockStmt::verify() {
   Expr::verify();
-  if (astType != STMT_BLOCK) {
-    INT_FATAL(this, "Bad BlockStmt::astType");
+  if (astTag != STMT_BLOCK) {
+    INT_FATAL(this, "Bad BlockStmt::astTag");
   }
   if (body.parent != this)
     INT_FATAL(this, "Bad AList::parent in BlockStmt");
@@ -331,8 +331,8 @@ CondStmt::fold_cond_stmt() {
 
 void CondStmt::verify() {
   Expr::verify();
-  if (astType != STMT_COND) {
-    INT_FATAL(this, "Bad CondStmt::astType");
+  if (astTag != STMT_COND) {
+    INT_FATAL(this, "Bad CondStmt::astTag");
   }
 
   if (!condExpr) {
@@ -417,8 +417,8 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
 
 void GotoStmt::verify() {
   Expr::verify();
-  if (astType != STMT_GOTO) {
-    INT_FATAL(this, "Bad GotoStmt::astType");
+  if (astTag != STMT_GOTO) {
+    INT_FATAL(this, "Bad GotoStmt::astTag");
   }
 }
 

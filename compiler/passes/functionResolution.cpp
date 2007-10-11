@@ -99,12 +99,12 @@ static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
   if (fn->retType != dtUnknown) {
-    if (fn->retClass == RET_VAR) {
+    if (fn->retTag == RET_VAR) {
       makeRefType(fn->retType);
       fn->retType = fn->retType->refType;
     }
     fn->retExprType->remove();
-    if (fn->fnClass == FN_ITERATOR) {
+    if (fn->fnTag == FN_ITERATOR) {
       prototypeIteratorClass(fn);
       makeRefType(fn->retType);
       resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
@@ -1198,7 +1198,7 @@ resolve_type_expr(Expr* expr) {
         FnSymbol* fn = call->isResolved();
         if (fn && call->parentSymbol) {
           resolveFormals(fn);
-          if (fn->retClass == RET_PARAM || fn->retType == dtUnknown)
+          if (fn->retTag == RET_PARAM || fn->retType == dtUnknown)
             resolveFns(fn);
         }
         callStack.pop();
@@ -1219,9 +1219,9 @@ resolve_type_expr(Expr* expr) {
 
 static CallExpr*
 userCall(CallExpr* call) {
-  if (call->getModule()->modtype == MOD_STANDARD) {
+  if (call->getModule()->modTag == MOD_STANDARD) {
     for (int i = callStack.n-1; i >= 0; i--) {
-      if (callStack.v[i]->getModule()->modtype != MOD_STANDARD)
+      if (callStack.v[i]->getModule()->modTag != MOD_STANDARD)
         return callStack.v[i];
     }
   }
@@ -1597,7 +1597,7 @@ insertFormalTemps(FnSymbol* fn) {
            formal->intent == INTENT_CONST) &&
           !formal->type->symbol->hasPragma("domain") &&
           !formal->type->symbol->hasPragma("array"))
-        tmp->consClass = VAR_CONST;
+        tmp->constTag = VAR_CONST;
       tmp->isCompilerTemp = true;
       formals2vars.put(formal, tmp);
     }
@@ -2229,7 +2229,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->retClass == RET_PARAM || fn->canParam) {
+      if (fn->retTag == RET_PARAM || fn->canParam) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->immediate) {
           result = new SymExpr(ret);
@@ -2237,7 +2237,7 @@ postFold(Expr* expr) {
         } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
           result = new SymExpr(es);
           expr->replace(result);
-        } else if (fn->retClass == RET_PARAM) {
+        } else if (fn->retTag == RET_PARAM) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
@@ -2429,7 +2429,7 @@ resolveBody(Expr* body) {
         CallExpr* from = NULL;
         for (int i = callStack.n-1; i >= 0; i--) {
           from = callStack.v[i];
-          if (from->lineno > 0 && from->getModule()->modtype != MOD_STANDARD)
+          if (from->lineno > 0 && from->getModule()->modTag != MOD_STANDARD)
             break;
         }
         const char* str = "";
@@ -2486,7 +2486,7 @@ resolveFns(FnSymbol* fn) {
 
   resolveBody(fn->body);
 
-  if (fn->fnClass == FN_CONSTRUCTOR)
+  if (fn->fnTag == FN_CONSTRUCTOR)
     setFieldTypes(fn);
 
   Symbol* ret = fn->getReturnSymbol();
@@ -2562,7 +2562,7 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  if (fn->fnClass == FN_ITERATOR && !fn->iteratorInfo) {
+  if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
     prototypeIteratorClass(fn);
     makeRefType(fn->retType);
     resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
@@ -2575,7 +2575,7 @@ resolveFns(FnSymbol* fn) {
     resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
   }
 
-  if (fn->fnClass == FN_CONSTRUCTOR) {
+  if (fn->fnTag == FN_CONSTRUCTOR) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
       if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultConstructor) {
         resolveFormals(parent->defaultConstructor);
@@ -2939,7 +2939,7 @@ pruneResolvedTree() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!resolvedFns.set_in(fn) || fn->retClass == RET_PARAM)
+      if (!resolvedFns.set_in(fn) || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
     }
   }

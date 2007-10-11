@@ -109,7 +109,7 @@ printDevelErrorHeader(BaseAST* ast) {
               err_fn->filename && err_fn->lineno) {
             fprintf(stderr, "%s:%d: In %s '%s':\n",
                     err_fn->filename, err_fn->lineno, 
-                    (err_fn->fnClass == FN_ITERATOR ? "iterator" : "function"), 
+                    (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"), 
                     err_fn->name);
           }
         }
