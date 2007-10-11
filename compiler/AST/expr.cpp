@@ -1505,22 +1505,6 @@ void CallExpr::codegen(FILE* outfile) {
     }
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
-
-    // initialize iterator class due to reference counting
-    if (fNullTemps) {
-      if (isPrimitive(PRIMITIVE_MOVE)) {
-        if (CallExpr* rhs = toCallExpr(get(2))) {
-          if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
-            if (parentSymbol->hasPragma("first member sets")) {
-              SymExpr* se = toSymExpr(get(1));
-              ClassType* ct = toClassType(get(1)->typeInfo());
-              codegenNullAssignments(outfile, se->var->cname, ct, 1);
-            }
-          }
-        }
-      }
-    }
-
     return;
   }
 

@@ -55,7 +55,6 @@ char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool printCppLineno = false;
-bool fNullTemps = false;
 bool fCopyCollect = false;
 int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
@@ -152,7 +151,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-scalar-replace-array-wrappers", ' ', NULL, "Generate explicit array wrappers", "F", &fNoScalarReplaceArrayWrappers, "CHPL_DISABLE_SCALAR_REPLACE_ARRAY_WRAPPERS", NULL},
  {"no-scalar-replacement", ' ', NULL, "Disable scalar replacement", "F", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
- {"null-temps", ' ', NULL, "Initialize nullable compiler temporaries to null", "F", &fNullTemps, "CHPL_NULL_TEMPS", NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

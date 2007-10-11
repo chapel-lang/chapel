@@ -373,7 +373,12 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  fprintf(outfile, "%s;\n", cname);
+  fprintf(outfile, "%s", cname);
+  if (ClassType* ct = toClassType(type))
+    if (ct->classTag == CLASS_CLASS)
+      if (isFnSymbol(defPoint->parentSymbol))
+        fprintf(outfile, " = NULL");
+  fprintf(outfile, ";\n");
 }
 
 
@@ -1412,17 +1417,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
         if (def->sym->parentScope->astParent->getModule()->block !=
             def->sym->parentScope->astParent)
           def->sym->codegenDef(outfile);
-  }
-  if (fNullTemps) {
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast)) {
-        if (!toTypeSymbol(def->sym)) {
-          if (ClassType* ct = toClassType(def->sym->type)) {
-            codegenNullAssignments(outfile, def->sym->cname, ct);
-          }
-        }
-      }
-    }
   }
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
