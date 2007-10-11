@@ -125,7 +125,9 @@ void cullOverReferences() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol && !fn->hasPragma("ref")) {
       if (Type* vt = getValueType(fn->retType)) {
-        if (vt->symbol->hasPragma("array") || vt->symbol->hasPragma("domain")) {
+        if (vt->symbol->hasPragma("array") ||
+            vt->symbol->hasPragma("domain") ||
+            vt->symbol->hasPragma("iterator class")) {
           fn->retType = vt;
           fn->retClass = RET_VALUE;
           Symbol* tmp = new VarSymbol("_tmp", vt);
