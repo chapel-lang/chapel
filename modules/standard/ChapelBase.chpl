@@ -400,7 +400,7 @@ pragma "inline" def _init(x: real(?w)) return 0.0:real(w);
 pragma "inline" def _init(x: imag(?w)) return 0.0:imag(w);
 pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
 pragma "inline" def _init(x: string) return "";
-pragma "inline" def _init(x) return nil:x;
+pragma "inline" def _init(x) return nil:x.type;
 
 //
 // _copy on primitive types and classes

@@ -20,6 +20,6 @@ var im = s:imag;
 
 writeln("im is: ", im);
 
-writeln("x.numBits = ", numBits(x));
-writeln("f.numBits = ", numBits(f));
-writeln("im.numBits = ", numBits(im));
+writeln("x.numBits = ", numBits(x.type));
+writeln("f.numBits = ", numBits(f.type));
+writeln("im.numBits = ", numBits(im.type));

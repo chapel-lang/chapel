@@ -21,7 +21,7 @@ def Matrix.transpose() {
 def +(M1: Matrix, M2: Matrix) {
   if M1.m != M2.m || M1.n != M2.n then
     halt("illegal matrix + operation");
-  var M3 = Matrix(M1(1,1)+M2(1,1), M1.m, M1.n);
+  var M3 = Matrix((M1(1,1)+M2(1,1)).type, M1.m, M1.n);
   M3.A = M1.A + M2.A;
   return M3;
 }
@@ -29,7 +29,7 @@ def +(M1: Matrix, M2: Matrix) {
 def *(M1: Matrix, M2: Matrix) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
-  var M3 = Matrix(M1(1,1)*M2(1,1), M1.m, M2.n);
+  var M3 = Matrix((M1(1,1)*M2(1,1)).type, M1.m, M2.n);
   [(i,j) in M3.D] M3(i,j) = + reduce [k in M1.D.dim(2)] (M1(i,k) + M2(k,j));
   return M3;
 }

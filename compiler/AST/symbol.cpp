@@ -136,7 +136,8 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   canParam(false),
   canType(false),
   isConcurrent(false),
-  isExtern(false)
+  isExtern(false),
+  isConstructor(false)
 {}
 
 
@@ -316,6 +317,7 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
   newVarSymbol->isExtern = isExtern;
+  newVarSymbol->isConstructor = isConstructor;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -667,6 +669,8 @@ build_empty_wrapper(FnSymbol* fn) {
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
+  if (fn->fnTag == FN_CONSTRUCTOR || fn->hasPragma("constructor type"))
+    wrapper->addPragma("constructor type");
   wrapper->isMethod = fn->isMethod;
   return wrapper;
 }
@@ -709,6 +713,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
         // && !formal->isTypeVariable) {  -- see note in resolution pruning
         VarSymbol* tmp = new VarSymbol("_tmp");
         tmp->isCompilerTemp = true;
+        tmp->canType = true;
+        tmp->canParam = true;
         wrapper->insertAtTail(new DefExpr(tmp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
         call->insertAtTail(tmp);
@@ -763,6 +769,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       char* temp_name = stringcat("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
       temp->isCompilerTemp = true;
+      if (formal->isTypeVariable)
+        temp->isTypeVariable = true;
       copy_map.put(formal, temp);
       Expr* temp_init = NULL;
       Expr* temp_type = NULL;

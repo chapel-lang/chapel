@@ -1,6 +1,3 @@
-foo(int) called
-  2
-foo(type t) called
-  0.0
-foo(type t) called
-  0
+test_overload_type_intent.chpl:13: error: unresolved call 'foo(3.0)'
+test_overload_type_intent.chpl:1: note: candidates are: foo(type t)
+test_overload_type_intent.chpl:7: note:                 foo(x: int)

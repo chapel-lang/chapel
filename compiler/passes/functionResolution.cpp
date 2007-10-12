@@ -646,10 +646,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
       delete actual_formals;
       return;
    }
-//     if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && formal->isTypeVariable) {
-//       delete actual_formals;
-//       return;
-//     }
+    if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && !formal_params.v[j]->isConstructor && formal->isTypeVariable) {
+      delete actual_formals;
+      return;
+    }
     if (!formal_actuals.v[j] && !formal->defaultExpr) {
       delete actual_formals;
       return;
@@ -880,7 +880,11 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                 } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
                   as_good = false;
                 } else {
-                  if (arg->instantiatedFrom==dtAny &&
+                  if (!arg->isTypeVariable && arg2->isTypeVariable)
+                    as_good = false;
+                  else if (arg->isTypeVariable && !arg2->isTypeVariable)
+                    better = true;
+                  else if (arg->instantiatedFrom==dtAny &&
                       arg2->instantiatedFrom!=dtAny) {
                     better = true;
                   } else if (arg->instantiatedFrom!=dtAny &&
@@ -1199,7 +1203,8 @@ resolve_type_expr(Expr* expr) {
         FnSymbol* fn = call->isResolved();
         if (fn && call->parentSymbol) {
           resolveFormals(fn);
-          if (fn->retTag == RET_PARAM || fn->retType == dtUnknown)
+          if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE ||
+              fn->retType == dtUnknown)
             resolveFns(fn);
         }
         callStack.pop();
@@ -2273,10 +2278,27 @@ postFold(Expr* expr) {
           if (!set && lhs->var->isParam())
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
         }
-        if (!set && lhs->var->canType) {
-          if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (rhs->var->isTypeVariable)
-              lhs->var->isTypeVariable = true;
+        if (!set) {
+          if (lhs->var->canType) {
+            if (SymExpr* rhs = toSymExpr(call->get(2))) {
+              if (rhs->var->isTypeVariable)
+                lhs->var->isTypeVariable = true;
+            }
+            if (CallExpr* rhs = toCallExpr(call->get(2))) {
+              if (FnSymbol* fn = rhs->isResolved()) {
+                if (fn->retTag == RET_TYPE)
+                  lhs->var->isTypeVariable = true;
+              }
+              if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
+                if (isTypeExpr(rhs->get(1)))
+                  lhs->var->isTypeVariable = true;
+              }
+            }
+          }
+          if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            if (FnSymbol* fn = rhs->isResolved())
+              if (fn->fnTag == FN_CONSTRUCTOR || fn->hasPragma("constructor type"))
+                lhs->var->isConstructor = true;
           }
         }
       }

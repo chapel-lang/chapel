@@ -449,7 +449,8 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* cast =
     new BlockStmt(
       new CallExpr("=", ltmp,
-        new CallExpr("_cast", ltmp,
+        new CallExpr("_cast",
+          new CallExpr(PRIMITIVE_TYPEOF, ltmp),
           new CallExpr(op,
             new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp))));
 
@@ -460,7 +461,8 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   CondStmt* inner =
     new CondStmt(
       new CallExpr("_isPrimitiveType",
-        new CallExpr(PRIMITIVE_GET_REF, ltmp)),
+        new CallExpr(PRIMITIVE_TYPEOF,
+          new CallExpr(PRIMITIVE_GET_REF, ltmp))),
       cast,
       new CallExpr("=", ltmp,
         new CallExpr(op,
@@ -640,6 +642,7 @@ FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, data));
   VarSymbol* eltType = new VarSymbol("_tmp");
   eltType->isCompilerTemp = true;
+  eltType->isTypeVariable = true;
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail(
     new BlockStmt(

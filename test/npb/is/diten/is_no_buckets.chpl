@@ -7,7 +7,7 @@ config const probClass = S;
 config const seed = 314159265;
 config const printTime = false;
 
-const Class: domain(probClass);
+const Class: domain(classVals);
 
 const probSizes: [Class] int = ( 2**16, 2**20, 2**23, 2**25, 2**27 ),
       Bmaxs:     [Class] int = ( 2**11, 2**16, 2**19, 2**21, 2**23 ),

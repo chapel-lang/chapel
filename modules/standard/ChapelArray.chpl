@@ -1,11 +1,11 @@
 def _build_domain_type(dist, param rank : int, type idxType = int,
-                       param stridable = false)
+                       param stridable = false) type
   return _domain(rank, dist.buildDomain(rank, idxType, stridable));
 
-def _build_domain_type(dist, type ind) where !__primitive("isEnumType", ind)
+def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind)
   return _domain(1, dist.buildDomain(ind));
 
-def _build_domain_type(dist, type ind) where __primitive("isEnumType", ind)
+def _build_domain_type(dist, type ind) type where __primitive("isEnumType", ind)
   return _domain(1, dist.buildEnumDomain(ind));
 
 def _build_subdomain_type(dom)
@@ -56,20 +56,20 @@ def _any_stridable(ranges, param d: int = 1) param {
 def _build_open_interval_upper(x: _domain)
   return x.buildOpenIntervalUpper();
 
-def _build_index_type(param rank: int, type idxType) where rank == 1 {
+def _build_index_type(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
   return x;
 }
 
-def _build_index_type(param rank: int, type idxType) where rank > 1 {
+def _build_index_type(param rank: int, type idxType) type where rank > 1 {
   var x: rank*idxType;
   return x;
 }
 
-def _build_index_type(param rank: int)
+def _build_index_type(param rank: int) type
   return _build_index_type(rank, int);
 
-def _build_index_type(d: _domain)
+def _build_index_type(d: _domain) type
   return _build_index_type(d.rank, d._value.idxType);
 
 //

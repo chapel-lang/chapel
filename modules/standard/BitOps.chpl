@@ -77,13 +77,13 @@ def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 }
 
 
-def bitRotLeft(x, shift) {
-  var backshift = numBits(x) - shift;
+pragma "inline" def bitRotLeft(x, shift) {
+  var backshift = numBits(x.type) - shift;
   return (x << shift:int) | (x >> backshift:int);
 }
 
 
-def bitRotRight(x: uint(64), shift) {
-  var backshift = numBits(x) - shift;
+pragma "inline" def bitRotRight(x: uint(64), shift) {
+  var backshift = numBits(x.type) - shift;
   return (x >> shift:int) | (x << backshift:int);
 }

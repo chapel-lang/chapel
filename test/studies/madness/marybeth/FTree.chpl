@@ -31,7 +31,7 @@ class FTree {
     var coeffDom = [0..order-1];
     var idx_t    : 2*int;           // FIXME: Can't write domain(2*int)
 
-    var indices  : domain(idx_t);   // Indexed by 2-tuples of integers
+    var indices  : domain(idx_t.type);   // Indexed by 2-tuples of integers
     var nodes    : [indices] Coeff; // Associative Mapping: (:int, :int) => Coeff
 
     var zeroes   : [coeffDom] real; // Return zeroes from this() when reading
