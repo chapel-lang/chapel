@@ -1,0 +1,8 @@
+semantic: arrays in tuples
+
+It's no longer clear to me what the semantics of arrays in
+tuples should be, both at construction time and when passing
+them to a function.  I think Steve's got a good intuition
+based on recent 590o email discussions, but wanted to capture
+this test and question while I had code showing it off.
+
