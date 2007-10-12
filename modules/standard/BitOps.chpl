@@ -81,16 +81,31 @@ def bitMatWrite(x: uint(64)) {
 // as the combinator, but I'm not sure where that would
 // go to be perfectly truthful
 def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
-  var result: uint(64) = 0;
-  for i in bitMatDimDom {
-    for j in bitMatDimDom {
-      var temp = 0;
-      for k in bitMatDimDom {
-        temp |= ((bitInd(i,k) & x) != 0) && ((bitInd(k,j) & y) != 0);
-      }
-      if (temp) {
-        result |= bitInd(i,j);
-      }
+  def transpose(x: uint(64)) {
+   // Return the transpose of x, treating it as an 8x8 bit-matrix.
+   return  x & 0x8040201008040201        |
+          (x & 0x0080402010080402) <<  7 |
+          (x & 0x0000804020100804) << 14 |
+          (x & 0x0000008040201008) << 21 |
+          (x & 0x0000000080402010) << 28 |
+          (x & 0x0000000000804020) << 35 |
+          (x & 0x0000000000008040) << 42 |
+          (x & 0x0000000000000080) << 49 |
+          (x >>  7) & 0x0080402010080402 |
+          (x >> 14) & 0x0000804020100804 |
+          (x >> 21) & 0x0000008040201008 |
+          (x >> 28) & 0x0000000080402010 |
+          (x >> 35) & 0x0000000000804020 |
+          (x >> 42) & 0x0000000000008040 |
+          (x >> 49) & 0x0000000000000080;
+  }
+  var yTranspose = transpose(y);
+  var result:uint(64) = 0;
+  for i in 0..7:uint(64) {
+    var left = (x & (0xFF:uint(64) << (i*8))) >> (i*8);
+    for param j in 0..7:uint(64) {
+      if (0 != left & ((yTranspose & (0xFF:uint(64) << (j*8))) >> (j*8))) then
+        result |= 1:uint(64) << (i*8 + j):uint(64);
     }
   }
   return result;
