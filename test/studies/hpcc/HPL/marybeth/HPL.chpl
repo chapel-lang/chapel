@@ -14,17 +14,21 @@ def main() {
        var A: [ADom] real;
        var x: [xDom] real;
        var b: [xDom] real;
+       var errNorm: real;
+
        init(A,b);
-       rightBlockLU(A, nb, piv);   
-       x = 1;
-       LUSolve(A, x, b, piv);
-       writeln("x = ", x);
-       testSolution(A, x, b, paramList.Thresh);
+       var LU = A;
+       rightBlockLU(LU, nb, piv);   
+       LUSolve(LU, x, b, piv);
+       testSolution(A, x, b, errNorm);
+       writeln("Solving system of size n = ", n);
+       writeln("Blocksize = ", nb);
+       writeln("Computed residual error = ", errNorm);
     }
   }
 }
 
-def testSolution(A: [?ADom], x: [?xDom], b: [xDom], thresh) {
+def testSolution(A: [?ADom], x: [?xDom], b: [xDom], out errNorm) {
  
   var bHat: [xDom] real;
 
@@ -33,11 +37,5 @@ def testSolution(A: [?ADom], x: [?xDom], b: [xDom], thresh) {
        bHat(i1) += A(i1,j1)*x(j2);
     }
   }
-
-  writeln('A*x = ', bHat);
-  writeln('b = ', b);
-  var errNorm = max reduce (abs(bHat - b));
-
-  writeln("Computed residual error = ", errNorm);
-
+  errNorm = max reduce (abs(bHat - b));
 }
