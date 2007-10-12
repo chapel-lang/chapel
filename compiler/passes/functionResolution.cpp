@@ -631,9 +631,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     if (!strcmp(fn->name, "=")) {
       if (j == 0) {
         if (formal_actuals.v[j] != formal->type &&
-            getValueType(formal_actuals.v[j]) != formal->type)
-          //          delete actual_formals;
+            getValueType(formal_actuals.v[j]) != formal->type) {
+          delete actual_formals;
           return;
+        }
       }
     }
     if (formal_actuals.v[j] &&
