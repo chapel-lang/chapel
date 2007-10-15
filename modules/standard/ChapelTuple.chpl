@@ -28,6 +28,17 @@ pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
   }
 }
 
+def *(param p: int, type t) type {
+  def _fill(param p: uint, x: _tuple) {
+    if x.size == p then
+      return x;
+    else
+      return _fill(p, ((...x), x(1)));
+  }
+  var x: (t);
+  return _fill(p, x);
+}
+
 pragma "tuple" record _tuple {
   param size : int;
 
