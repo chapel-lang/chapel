@@ -10,6 +10,8 @@ enum equiltype {NoEquilibration=0, Equilibration};
 record HPLparams {
   var inFileName = "HPL.dat";
  
+  const epsil = 2.0e-16;
+
   var outFileName: string,
         deviceOut: int;
 

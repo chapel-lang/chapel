@@ -20,28 +20,42 @@ def main() {
        var A: [ADom] real;
        var x: [xDom] real;
        var b: [bDom] real;
-       var errNorm: real;
+       var resid: 3*real;
 
        init(A,b);
-       var LU = A;
-       rightBlockLU(LU, nb, piv);   
-       LUSolve(LU, x, b, piv);
-       testSolution(A, x, b, errNorm);
+       rightBlockLU(A, nb, piv);   
+       LUSolve(A, x, b, piv);
+       init(A,b);
+       testSolution(A, x, b, TEST.epsil, resid);
        writeln("Solving system of size n = ", n);
        writeln("Blocksize = ", nb);
-       writeln("Computed residual error = ", errNorm);
+       writeln("Computed residual errors = ", resid);
     }
   }
 }
 
-def testSolution(A: [?ADom], x: [?xDom], b: [xDom], out errNorm) {
+def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real, out resid: 3*real) {
  
   var bHat: [xDom] real;
+  var n = ADom.dim(1).length;
 
   for (i1, i2) in (ADom.dim(1), xDom) {
     for (j1, j2) in (ADom.dim(2), xDom) {
        bHat(i1) += A(i1,j1)*x(j2);
     }
   }
-  errNorm = max reduce (abs(bHat - b));
+
+// Look at distributions when implementing these norms.
+// Should these norm computations be put into functions?
+  var errNorm = max reduce (abs(bHat - b));
+  var ANorm1 = max reduce [j in ADom.dim(2)] 
+               (+ reduce abs(A[ADom.dim(1), j]));
+  var ANormInf = max reduce [i in ADom.dim(1)] 
+                 (+ reduce abs(A[i, ADom.dim(2)]));
+  var xNorm1 = + reduce abs(x);
+  var xNormInf = max reduce abs(x);
+
+  resid(1) = errNorm/(eps*ANorm1*n);
+  resid(2) = errNorm/(eps*ANorm1*xNorm1);
+  resid(3) = errNorm/(eps*ANormInf*xNormInf*n);
 }
