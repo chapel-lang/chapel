@@ -1,10 +1,13 @@
 use Init;
 use FactorSolve;
+use Time;
 
 config var inputfile = "HPL.dat";
 
 def main() {
-  var TEST = HPLparams(inFileName="HPL.dat");
+  var TEST = HPLparams(inFileName=inputfile);
+  var outfile = file(TEST.outFileName, path='./', mode='w');
+  outfile.open();
 
 //for p in TEST.P {
 //  for q in TEST.Q {
@@ -21,20 +24,44 @@ def main() {
        var x: [xDom] real;
        var b: [bDom] real;
        var resid: 3*real;
+       var norms: 5*real;
+
+       var testTimer = Timer();
+       var timeData: 2*real; 
 
        init(A,b);
+       testTimer.clear();
+       testTimer.start();
        rightBlockLU(A, nb, piv);   
+       timeData(1) = testTimer.elapsed();
        LUSolve(A, x, b, piv);
+       timeData(2) = testTimer.elapsed();
+       testTimer.stop();
+       testResults(outfile, n, nb);
+       timingResults(outfile, n, timeData);
        init(A,b);
-       testSolution(A, x, b, TEST.epsil, resid);
-       writeln("Solving system of size n = ", n);
-       writeln("Blocksize = ", nb);
-       writeln("Computed residual errors = ", resid);
+       testSolution(A, x, b, TEST.epsil, resid, norms);
+       errorResults(outfile, TEST, resid, norms);
     }
   }
 }
 
-def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real, out resid: 3*real) {
+def testResults(ofile, n, nb) {
+   ofile.writeln("====================================================================");
+   ofile.writeln("N = ", n, ", NB = ", nb);
+}
+
+def timingResults(ofile, n, timeData) {
+   var GFlops = ((n:real/1.0e+9) * (n:real/timeData(2)))*
+                ((2.0/3.0) * n:real + (3.0/2.0));
+   ofile.writeln("GFlops             = ", GFlops);
+   ofile.writeln("Total elapsed time = ", timeData(2));
+   ofile.writeln("  Factor time      = ", timeData(1));
+   ofile.writeln("  Solve time       = ", (timeData(2) - timeData(1)));
+}
+
+def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real, 
+     out resid: 3*real, out norms: 5*real) {
  
   var bHat: [xDom] real;
   var n = ADom.dim(1).length;
@@ -58,4 +85,29 @@ def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real, out resid: 3*r
   resid(1) = errNorm/(eps*ANorm1*n);
   resid(2) = errNorm/(eps*ANorm1*xNorm1);
   resid(3) = errNorm/(eps*ANormInf*xNormInf*n);
+
+  norms = (errNorm, ANormInf, ANorm1, xNormInf, xNorm1);
+}
+
+def errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
+ 
+  var thresh = TEST.Thresh;
+  if (max((...resid)) < thresh) 
+    then TEST.kpass += 1; 
+    else TEST.kfail += 1;
+
+  ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)             = ", resid(1),
+     ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
+  ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)       = ", resid(2),
+     ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
+  ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
+     ".....", if (resid(3) < thresh) then "PASSED" else "FAILED");
+
+  if (max((...resid)) >= thresh) {
+    ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
+    ofile.writeln("||A||_oo                                      = ", norms(2));
+    ofile.writeln("||A||_1                                       = ", norms(3));
+    ofile.writeln("||x||_oo                                      = ", norms(4));
+    ofile.writeln("||x||_1                                       = ", norms(5));
+  }
 }
