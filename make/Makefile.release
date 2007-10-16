@@ -26,7 +26,7 @@ addcopyrights: $(PREPEND) FORCE
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
 	@echo >> $(RELCOPYRIGHT)
 	@echo >> $(RELCOPYRIGHT)
-	@find $(RELCHPLDIR) -name "Make*" -maxdepth 1 -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELCHPLDIR) -maxdepth 1 -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
