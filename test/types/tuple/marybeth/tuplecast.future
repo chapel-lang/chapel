@@ -1,0 +1,6 @@
+feature request:  scalar-to-homogeneous-tuple cast
+
+It would be helpful to have a way to cast a scalar value
+to a homogeneous tuple since there is no scalar promotion
+for tuples.  
+
