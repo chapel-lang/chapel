@@ -13,13 +13,19 @@ unsetenv CHPL_UW_CVS_USERNAME
 unsetenv CVSROOT
 unsetenv CHPLDEVTMP
 
+set mymake = $argv[1]
+
 #
 # execute actions specified in README
 #
-gmake
+if ( $#argv == 0 ) then
+    echo "usage: $argv[0] <make utility>"
+    exit(1);
+endif
+$mymake
 set tmpstatus = $status
 if ($tmpstatus != 0) then
-    echo "ERROR: gmake failed"
+    echo "ERROR: make failed"
     exit($tmpstatus)
 endif
 source util/setchplenv.csh
@@ -46,7 +52,7 @@ endif
 # run make in examples directory
 #
 cd examples
-make
+$mymake
 cd ..
 
 
