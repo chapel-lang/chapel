@@ -373,8 +373,15 @@ class SingleLocaleAssociativeArray: BaseArray {
     return data(dom._get_index(ind));
 
   def these() var {
-    for i in 0..dom.num_inds-1 do
-      yield data(i);
+    var i = 0;
+    var numFound = 0;
+    while numFound < dom.num_inds {
+      if (dom.inds(i).valid) {
+        numFound += 1;
+        yield data(i);
+      }
+      i += 1;
+    }
   }
 
   // WAW: hack due to domain-array interface. The array is not reallocated

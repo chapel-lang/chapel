@@ -110,7 +110,7 @@ Evaluating dF3 on [0, 1]:
 F4.norm2() = 1.0
 Compressing F4 ...
 Reconstructing F4 ...
-F4.norm2() = 0.935414
+F4.norm2() = 1.0
 Evaluating F4 on [0, 1]:
  -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 1.1e-15
  -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
