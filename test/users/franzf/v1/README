@@ -1,10 +1,9 @@
 
 This is the next version of the SPIRAL-generated FFT code for C99 and
 Chapel.  A quick inspection makes it look like the Chapel code has not
-changed since v0.  The C99 version has.
-
-As of yet, I have not yet had a chance to inspect these codes to see
-whether the loop nest structures now seem more similar.
+changed since v0.  The C99 version has.  There still seem to be
+differences between the two in terms of number of global arrays
+inserted and temp variables around loop structures.
 
 Here is reported performance from Franz:
 
@@ -55,6 +54,20 @@ fft_2048: 48838 ns = 2.306 Gflop/s
 --------------------------------------
 
 Here is what I got on solitary on my first runs:
+
+Spiral 5.0 Chapel FFT example
+
+fft_2: 0.02032us = 492.126 Mflop/s
+fft_4: 0.0312us = 1282.05 Mflop/s
+fft_8: 0.08478us = 1415.43 Mflop/s
+fft_16: 0.20608us = 1552.8 Mflop/s
+fft_32: 0.47252us = 1693.05 Mflop/s
+fft_64: 1.27694us = 1503.59 Mflop/s
+fft_128: 3.29994us = 1357.6 Mflop/s
+fft_256: 7.43832us = 1376.65 Mflop/s
+fft_512: 18.5509us = 1241.99 Mflop/s
+fft_1024: 39.4768us = 1296.97 Mflop/s
+fft_2048: 88.5819us = 1271.59 Mflop/s
 
 Spiral 5.0 Chapel FFT example -- C99 version, GNU C Compiler
 fft_2: 10 ns = 1.000 Gflop/s
