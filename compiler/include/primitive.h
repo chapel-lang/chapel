@@ -132,6 +132,8 @@ enum PrimitiveTag {
 
   PRIMITIVE_INT_ERROR,
 
+  PRIMITIVE_BUILD_ARRAY,
+
   NUM_KNOWN_PRIMS
 };
 

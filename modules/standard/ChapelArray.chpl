@@ -25,7 +25,7 @@ def _build_sparse_subdomain_type(dist, parentDom)
 // def _init(a: _ArrayTypeInfo)
 //   return a.dom.buildArray(a.eltType);
 
-def _build_array_type(dom, type eltType)
+def _build_array_type(dom, type eltType) type
   return dom.buildArray(eltType);
 // was:  return _ArrayTypeInfo(eltType, dom);
 
@@ -40,6 +40,8 @@ def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   d.setIndices(ranges);
   return d;
 }
+
+def _wrapDomain(d) return _domain(d.rank, d);
 
 //
 // computes && reduction over stridable of ranges
@@ -419,6 +421,10 @@ pragma "inline" def _pass(a: _array) {
 
 def _init(a: _array) {
   return a._dom.buildArray(a.eltType);
+}
+
+def _init(type t) where t: _array {
+  return __primitive("build_array", t);
 }
 
 def _array.writeThis(f: Writer) {

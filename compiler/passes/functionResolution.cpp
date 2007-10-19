@@ -34,6 +34,9 @@ static Vec<FnSymbol*> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
+static Map<CallExpr*,FnSymbol*> buildArrayMap;
+static Map<Type*,FnSymbol*> wrapDomainMap;
+
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
                                            // virtual children
 
@@ -2418,6 +2421,31 @@ postFold(Expr* expr) {
       insertValueTemp(call->parentExpr, call->get(2));
       insertValueTemp(call->parentExpr, call->get(3));
       insertValueTemp(call->parentExpr, call->get(4));
+    } else if (call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
+      BlockStmt* block = new BlockStmt();
+      SymExpr* se = toSymExpr(call->get(1));
+      VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("eltType")->type);
+      block->insertAtTail(new DefExpr(elt));
+      elt->isTypeVariable = true;
+      Type* domainValueType = se->var->type->getField("_value")->type->getField("dom")->type;
+      VarSymbol* dom = new VarSymbol("_tmp", domainValueType);
+      block->insertAtTail(new DefExpr(dom));
+      CallExpr* wrap = new CallExpr("_wrapDomain", dom);
+      block->insertAtTail(wrap);
+      call->getStmtExpr()->insertBefore(block);
+      resolveCall(wrap);
+      if (!wrap->isResolved())
+        INT_FATAL(call, "unable to build arrays");
+      resolveFns(wrap->isResolved());
+      dom->type = wrap->isResolved()->retType;
+      CallExpr* build = new CallExpr("buildArray", gMethodToken, dom, elt);
+      block->insertAtTail(build);
+      resolveCall(build);
+      if (!build->isResolved())
+        INT_FATAL(call, "unable to build arrays");
+      block->remove();
+      wrapDomainMap.put(domainValueType, wrap->isResolved());
+      buildArrayMap.put(call, build->isResolved());
     }
   } else if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* val = paramMap.get(sym->var)) {
@@ -2953,6 +2981,21 @@ removeActual(Expr* actual) {
 }
 
 
+static Type*
+buildArrayTypeInfo(Type* type) {
+  static Map<Type*,Type*> cache;
+  if (cache.get(type))
+    return cache.get(type);
+  ClassType* ct = new ClassType(CLASS_RECORD);
+  TypeSymbol* ts = new TypeSymbol(astr("_ArrayTypeInfo"), ct);
+  ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", type->getField("eltType")->type)));
+  ct->fields.insertAtTail(new DefExpr(new VarSymbol("dom", type->getField("_value")->type->getField("dom")->type)));
+  theProgram->block->insertAtTail(new DefExpr(ts));
+  cache.put(type, ct);
+  return ct;
+}
+
+
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
@@ -3045,7 +3088,8 @@ pruneResolvedTree() {
         for (int i = fn->numFormals(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
-              formal->isTypeVariable)
+              (formal->isTypeVariable &&
+               !formal->type->symbol->hasPragma("array")))
             call->get(i)->remove();
         }
       }
@@ -3073,7 +3117,8 @@ pruneResolvedTree() {
         // Remove method token formals
         if (formal->type == dtMethodToken)
           formal->defPoint->remove();
-        if (formal->isTypeVariable) {
+        if (formal->isTypeVariable &&
+            !formal->type->symbol->hasPragma("array")) {
           formal->defPoint->remove();
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
           tmp->isCompilerTemp = true;
@@ -3091,7 +3136,58 @@ pruneResolvedTree() {
           forv_Vec(SymExpr, se, formal->defs)
             se->var = tmp;
         }
+        if (formal->isTypeVariable &&
+            formal->type->symbol->hasPragma("array"))
+          formal->type = buildArrayTypeInfo(formal->type);
       }
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("elt")->type);
+        elt->isTypeVariable = true;
+        call->getStmtExpr()->insertBefore(new DefExpr(elt));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, se->var->type->getField("elt"))));
+        VarSymbol* dom = new VarSymbol("_tmp", se->var->type->getField("dom")->type);
+        call->getStmtExpr()->insertBefore(new DefExpr(dom));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, se->var->type->getField("dom"))));
+        FnSymbol* wrapper = wrapDomainMap.get(dom->type);
+        VarSymbol* tmp = new VarSymbol("_tmp", wrapper->retType);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(wrapper, dom)));
+        if (elt->type->symbol->hasPragma("array"))
+          call->replace(new CallExpr(buildArrayMap.get(call), tmp, elt));
+        else
+          call->replace(new CallExpr(buildArrayMap.get(call), tmp));
+      }
+    } else if (DefExpr* def = toDefExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (!strcmp(fn->name, "_build_array_type")) {
+          fn->retType = buildArrayTypeInfo(fn->retType);
+          BlockStmt* block = new BlockStmt();
+          /*          FnSymbol* wrapper = wrapDomainMap.get(fn->getFormal(1)->type);
+          VarSymbol* tmp = new VarSymbol("_tmp", wrapper->retType);
+          block->insertAtTail(new DefExpr(tmp));
+          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(wrapper, fn->getFormal(1))));
+          */
+          VarSymbol* tmp = new VarSymbol("_tmp", fn->getFormal(1)->type->getField("_value")->type);
+          block->insertAtTail(new DefExpr(tmp));
+          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, fn->getFormal(1), fn->getFormal(1)->type->getField("_value"))));
+          VarSymbol* var = new VarSymbol("_tmp", fn->retType);
+          block->insertAtTail(new DefExpr(var));
+          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, var->type->getField("dom"), tmp));
+          block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
+          fn->body->replace(block);
+        }
+      } else if (isVarSymbol(def->sym) &&
+                 def->sym->isTypeVariable &&
+                 def->sym->type->symbol->hasPragma("array"))
+        def->sym->type = buildArrayTypeInfo(def->sym->type);
     }
   }
 
@@ -3100,7 +3196,8 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
-          if (field->isTypeVariable || field->isParam() ||
+          if (field->isTypeVariable ||
+              field->isParam() ||
               !strcmp(field->name, "_promotionType"))
             field->defPoint->remove();
         }

@@ -49,6 +49,7 @@ record _ind_data_t {
 
 
 class SingleLocaleAssociativeDomain: BaseDomain {
+  param rank: int;
   type idxType;
   var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
@@ -65,7 +66,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return SingleLocaleAssociativeDomain(idxType=idxType);
+    return SingleLocaleAssociativeDomain(rank=rank,idxType=idxType);
 
   // compiler-internal routines
 
@@ -347,7 +348,7 @@ def SingleLocaleAssociativeDomain.writeThis(f: Writer) {
 class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type idxType;
-  var dom : SingleLocaleAssociativeDomain(idxType=idxType);
+  var dom : SingleLocaleAssociativeDomain(rank=1,idxType=idxType);
   var data : _ddata(eltType);
 
   def initialize() {

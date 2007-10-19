@@ -7,10 +7,10 @@ class SingleLocaleDistribution {
                                         stridable=stridable, dist=this);
 
   def buildEnumDomain(type idxType)
-    return SingleLocaleEnumDomain(idxType=idxType);
+    return SingleLocaleEnumDomain(rank=1, idxType=idxType);
 
   def buildDomain(type idxType)
-    return SingleLocaleAssociativeDomain(idxType=idxType);
+    return SingleLocaleAssociativeDomain(rank=1, idxType=idxType);
 
   def buildSparseDomain(param rank:int, type idxType,
                         parentDom: BaseArithmeticDomain)
