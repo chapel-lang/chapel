@@ -3,6 +3,7 @@ use FactorSolve;
 use Time;
 
 config var inputfile = "HPL.dat";
+config var writeTimingInfo = false;
 
 def main() {
   var TEST = HPLparams(inFileName=inputfile);
@@ -38,7 +39,7 @@ def main() {
        timeData(2) = testTimer.elapsed();
        testTimer.stop();
        testResults(outfile, n, nb);
-       timingResults(outfile, n, timeData);
+       if writeTimingInfo then timingResults(outfile, n, timeData);
        init(A,b);
        testSolution(A, x, b, TEST.epsil, resid, norms);
        errorResults(outfile, TEST, resid, norms);
