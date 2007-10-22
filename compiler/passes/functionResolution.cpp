@@ -3149,10 +3149,15 @@ pruneResolvedTree() {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
         SymExpr* se = toSymExpr(call->get(1));
-        VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("elt")->type);
+        Symbol* eltField = se->var->type->getField("elt");
+        VarSymbol* elt = new VarSymbol("_tmp", eltField->type);
         elt->isTypeVariable = true;
         call->getStmtExpr()->insertBefore(new DefExpr(elt));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, se->var->type->getField("elt"))));
+        // BLC: if the field is an array, process it; otherwise, remove it
+        if (elt->type->symbol->hasPragma("array"))
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, eltField)));
+        else
+          eltField->defPoint->remove();
         VarSymbol* dom = new VarSymbol("_tmp", se->var->type->getField("dom")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(dom));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, se->var->type->getField("dom"))));
