@@ -4,6 +4,7 @@ use Time;
 
 config var inputfile = "HPL.dat";
 config var writeTimingInfo = false;
+config var writeAccuracyInfo = false;
 
 def main() {
   var TEST = HPLparams(inFileName=inputfile);
@@ -97,18 +98,27 @@ def errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
     then TEST.kpass += 1; 
     else TEST.kfail += 1;
 
-  ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)             = ", resid(1),
+  if writeAccuracyInfo {
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)             = ", resid(1),
      ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
-  ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)       = ", resid(2),
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)       = ", resid(2),
      ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
-  ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
      ".....", if (resid(3) < thresh) then "PASSED" else "FAILED");
 
-  if (max((...resid)) >= thresh) {
-    ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
-    ofile.writeln("||A||_oo                                      = ", norms(2));
-    ofile.writeln("||A||_1                                       = ", norms(3));
-    ofile.writeln("||x||_oo                                      = ", norms(4));
-    ofile.writeln("||x||_1                                       = ", norms(5));
+    if (max((...resid)) >= thresh) {
+      ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
+      ofile.writeln("||A||_oo                                      = ", norms(2));
+      ofile.writeln("||A||_1                                       = ", norms(3));
+      ofile.writeln("||x||_oo                                      = ", norms(4));
+      ofile.writeln("||x||_1                                       = ", norms(5));
+    }
+  } else {
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ",
+     ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)        ",
+     ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ", 
+     ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
   }
 }
