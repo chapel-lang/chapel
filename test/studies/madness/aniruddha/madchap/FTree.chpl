@@ -26,8 +26,8 @@ def isNone(x) {
 }
 
 record LocTree {
-    var coeffDom   : domain(1);
-    var idx_t      : 2*int;              // FIXME: Can't write domain(2*int)
+    const coeffDom : domain(1);
+    var idx_t      : 2*int;
     var locIndices : domain(idx_t.type); // Indexed by 2-tuples of integers
     var locNodes   : [locIndices] Coeff; // Associative Mapping: (:int, :int)
                                          // => Coeff
@@ -110,11 +110,17 @@ record LocTree {
         for idx in locIndices do
             if idx(1) == lvl then yield idx;
     }
+
+    // AGS - new function to compile MB's gaxpy
+    def idx_iter() {
+        for idx in locIndices do
+            yield idx;
+    }
 }
 
 class FTree {
-    var order    : int;
-    var coeffDom = [0..order-1];
+    const order    : int;
+    const coeffDom = [0..order-1];
     
     const locDom = [0..numLocs);
     var nodes    : [locDom] LocTree;
@@ -179,6 +185,13 @@ class FTree {
     def idx_iter(lvl: int) {
         for n in nodes do
             for idx in n.idx_iter(lvl) do
+                yield idx;
+    }
+
+    // AGS - new function to compile MB's gaxpy
+    def idx_iter() {
+        for n in nodes do
+            for idx in n.idx_iter() do
                 yield idx;
     }
 }
@@ -267,4 +280,8 @@ def main() {
             for idx in f.idx_iter(lvl) do
                 writeln(idx);
     }
+    
+    writeln("\n\nall tree indices = ");
+    for (n, l) in f.idx_iter() do
+        writeln(n,l);
 }
