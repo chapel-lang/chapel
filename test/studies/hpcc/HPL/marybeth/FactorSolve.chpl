@@ -23,6 +23,9 @@
 
 def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
+  // Need to modify routine to factor rectangular system:  [A | b].
+  // Also, don't pivot rows of L or return pivot vector.
+
   // Test that the domain of A is square with the same index set for
   // each dimension.
   if (D.dim(1) != D.dim(2)) then
@@ -69,12 +72,19 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     // We loop over the rows of A11, but we eliminate the
     // the full rectangular A1 block.
 
+    // This is the panel factorization.  Need to add alternative
+    // factorization options.  Also, need to add pipelining of
+    // panel factorization.  Instead of CurrentBlockInds, have
+    // CurrentPanelInds and NextPanelInds for a lookahead of one
+    // (or is that two? need to check).
     for k in CurrentBlockInds {  
 
       // Find pivot for kth column:
       //   identify largest magnitude element in kth column 
       //   (pivot), from the diagonal element downward 
       //   through all rows of A1
+
+      // Was not able to replace k..k with k here.  Why?
       const pivotRow = computePivotRow(A1[k.., k..k]),
             pivot = A1[pivotRow, k];
       
@@ -86,7 +96,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
         // swap values in rows k and pivotRow of the full
         // matrix A
-        A[k..k, ..] <=> A[pivotRow..pivotRow, ..];
+        A[k, ..] <=> A[pivotRow, ..];
       }
 
       // If pivot is zero, halt.  Matrix is singular and 
@@ -95,7 +105,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
       // Compute the k-th elimination step: 
       //   store multipliers...
-      A1[k+1.., k..k] /= pivot;
+      A1[k+1.., k] /= pivot;
 
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
@@ -107,6 +117,12 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     // ... and now update A2. 
     // First update A12.
 
+    // Add loop to update NextPanel first so that lookahead factorization
+    // could occur.  Maybe use sync vars to do this?
+
+    // Communication of A1 to other processors occurs before this
+    // step.  There are options for communication that need to be reflected
+    // here or in distribution.
     forall j in TrailingBlockInds do
       for k in CurrentBlockInds do
         forall i in CurrentBlockInds(k+1..) do
