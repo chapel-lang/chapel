@@ -40,8 +40,8 @@ class Function {
 
     // Two-Scale relationship matrices
     const hgDom = [0..2*k-1, 0..2*k-1];
-    var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
-    var   hgT   : [hgDom] real; //        hgT => transpose(hg);
+    const hg    : [hgDom] real = hg_getCoeffs(k); // FIXME: hg  =  hg_getCoeffs(k);
+    var   hgT   : [hgDom] real;                   //        hgT => transpose(hg);
 
     // Quadrature coefficients
     const quadDom   = [0..k-1];
@@ -407,6 +407,8 @@ class Function {
      */
     def norm2() {
         if compressed then reconstruct();
+        writeln(s.idx_iter());
+        writeln([i in s.idx_iter()] i);
         //return sqrt(+ reduce [i in s] normf(i)**2);
         return 1.0;
     }
@@ -425,7 +427,7 @@ class Function {
                 else if !d.has_coeffs(n, l) && other.d.has_coeffs(n, l) then
                     d[n, l] = other.d[n, l] * beta;
 
-                else /* d.has_coeffs(n, l) && !other.d.has_coeffs(n, l) */
+                else // d.has_coeffs(n, l) && !other.d.has_coeffs(n, l)
                     d[n, l] *= alpha;
 
                 // calls on sub-trees can go in parallel
@@ -433,17 +435,26 @@ class Function {
                 gaxpy_iter(n+1, 2*l+1);
             }
         }
+    }
 
+
+    /*
+    def gaxpy(alpha, other, beta) {
         if !compressed then compress();
         if !other.compressed then other.compress();
 
         s[0, 0] = s[0, 0]*alpha + other.s[0, 0]*beta; // Do scaling coeffs
-        gaxpy_iter();                                 // Do multi-wavelet coeffs
+        for (n, l) in d.idx_iter() {
+            d[n, l] *= alpha;
+        }
+        for (n, l) in other.d.idx_iter() {
+            d[n, l] += other.d[n, l]*beta;
+        }
 
         // return this so operations can be chained
         return this;
     }
-
+    */
 
     /** Add this function to another and return the result in a new
         function.  This and other are unchanged.
