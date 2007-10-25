@@ -41,7 +41,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
   // index ranges -- those that are unfactored, divided into those
   // currently being factored and those that remain.
 
-  for (UnfactoredInds, CurrentBlockInds, TrailingBlockInds) 
+  for (UnfactoredInds, CurrentPanelInds, TrailingInds) 
         in generateBlockLURanges(D, blk) {
 
     // Create array aliases for various submatrices of current block
@@ -60,12 +60,12 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     //            |A22| is updated after the LU factorization
     //                  of A1
   
-    var A1  => A[UnfactoredInds, CurrentBlockInds],
-        A2  => A[UnfactoredInds, TrailingBlockInds],
-        A11 => A[CurrentBlockInds, CurrentBlockInds],
-        A21 => A[TrailingBlockInds, CurrentBlockInds],
-        A12 => A[CurrentBlockInds, TrailingBlockInds],
-        A22 => A[TrailingBlockInds, TrailingBlockInds];
+    var A1  => A[UnfactoredInds, CurrentPanelInds],
+        A2  => A[UnfactoredInds, TrailingInds],
+        A11 => A[CurrentPanelInds, CurrentPanelInds],
+        A21 => A[TrailingInds, CurrentPanelInds],
+        A12 => A[CurrentPanelInds, TrailingInds],
+        A22 => A[TrailingInds, TrailingInds];
 
     // First compute the LU factorization of A1...
     //
@@ -74,10 +74,10 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
     // This is the panel factorization.  Need to add alternative
     // factorization options.  Also, need to add pipelining of
-    // panel factorization.  Instead of CurrentBlockInds, have
+    // panel factorization.  Instead of CurrentPanelInds, have
     // CurrentPanelInds and NextPanelInds for a lookahead of one
     // (or is that two? need to check).
-    for k in CurrentBlockInds {  
+    for k in CurrentPanelInds {  
 
       // Find pivot for kth column:
       //   identify largest magnitude element in kth column 
@@ -96,6 +96,8 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
         // swap values in rows k and pivotRow of the full
         // matrix A
+        //** swap only in panel and save remainder of swaps for
+        // for update later?
         A[k, ..] <=> A[pivotRow, ..];
       }
 
@@ -110,7 +112,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
 
-      forall (i,j) in [UnfactoredInds(k+1..), CurrentBlockInds(k+1..)] do
+      forall (i,j) in [UnfactoredInds(k+1..), CurrentPanelInds(k+1..)] do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
@@ -123,40 +125,52 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     // Communication of A1 to other processors occurs before this
     // step.  There are options for communication that need to be reflected
     // here or in distribution.
-    forall j in TrailingBlockInds do
-      for k in CurrentBlockInds do
-        forall i in CurrentBlockInds(k+1..) do
-          A12(i,j) -= A1(i,k) * A12(k,j);
+    // A1 (nb x nb) is broadcast across processors in process row.
+    forall columnblk in blkIter(TrailingInds,blk) {
+      var Ublk => A12[CurrentPanelInds,columnblk];
+      forall j in columnblk do
+        for k in CurrentPanelInds do
+          forall i in CurrentPanelInds(k+1..) do
+            Ublk(i,j) -= A1(i,k) * Ublk(k,j);
+    }
 
     // And then update A22 -= A21*A12.
     //
-    // MMIterator is used to generate the indices for this
-    // matrix-matrix multiplication step.  MMIterator can
-    // be optimized (e.g., for the loop nesting order and loop 
-    // unrolling) separately from this blockLU routine.
-
-    for (i,j,k1,k2) in MMIterator(A21.domain, A12.domain) do
-      A22(i,j) -= A21(i,k1) * A12(k2,j);
-  }
+    // All process columns and rows are involved in this step.
+    // Blocks of L (nb x nb blocks of A21) are broadcast across 
+    //   processors in process row.
+    // Blocks of U (nb x nb blocks of A21) are broadcast across 
+    //   processors in process column.
+    // Computation occurs on processor that contains Ablk (nb x nb).
+    for (rowblk, columnblk) in blkIter2D(TrailingInds,blk) {
+      var Lblk => A21[rowblk,CurrentPanelInds];
+      var Ublk => A12[CurrentPanelInds,columnblk];
+      var Ablk => A22[rowblk,columnblk];
+      for (i,j) in [rowblk, columnblk] do
+        for k in CurrentPanelInds do
+          Ablk(i,j) -= Lblk(i,k) * Ublk(k,j);
+      }
+    }
+  
 }
 
 // The generateBlockLURanges iterator returns a 3-tuple of 
 // the ranges to be used in each iteration of block LU:
-//   (UnfactoredInds, CurrentBlockInds, TrailingBlockInds).
+//   (UnfactoredInds, CurrentPanelInds, TrailingInds).
 // By defining these ranges, the blockLU code is cleaner. It
 // eliminates the need to test for the last iteration where a full-sized
 // block may not be possible and only the factorization step (and not
 // the update step) is required. 
 //
 // The range UnfactoredInds is equivalent to the range 
-// CurrentBlockInds concatenated with the range TrailingBlockInds. 
+// CurrentPanelInds concatenated with the range TrailingInds. 
 //
-// The range CurrentBlockInds has the length of blksize, except
+// The range CurrentPanelInds has the length of blksize, except
 // for the end case when the last block may not be of full size.
 // This iterator takes care of this end case so that testing for
 //  it is not necessary in the blockLU code itself. 
 //
-// The range TrailingBlockInds will be an empty range for the
+// The range TrailingInds will be an empty range for the
 // the last block iteration.  When it is empty, the loops in
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
@@ -170,6 +184,26 @@ def generateBlockLURanges(D:domain(2), blksize) {
   }
 }
 
+def blkIter(indRange, blksize) {
+  const end = indRange.high;
+ 
+  for i in indRange by blksize {
+    const hi = min(i+blksize-1, end);
+    yield i..hi;
+  }
+}
+
+def blkIter2D(indRange, blksize) {
+  const end = indRange.high;
+ 
+  for i in indRange by blksize {
+    const rowhi = min(i+blksize-1, end);
+    for j in indRange by blksize {
+      const colhi = min(j+blksize-1, end);
+      yield (i..rowhi, j..colhi);
+    }
+  }
+}
 
 // The MMIterator generates indices for a matrix multiplication loop.
 // This iterator can be tuned for loop nesting order or loop unrolling,
