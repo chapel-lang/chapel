@@ -43,10 +43,10 @@
 #endif
 
 static int gpc_call_handler(int to, int from, void *hdr, int hlen,
-			    void *data,  int dlen,
-			    void *rhdr,  int rhlen, int *rhsize,
-			    void *rdata, int rdlen, int *rdsize,
-			    int rtype);
+                            void *data,  int dlen,
+                            void *rhdr,  int rhlen, int *rhsize,
+                            void *rdata, int rdlen, int *rdsize,
+                            int rtype);
 static int ghndl = -1;
 
 //
@@ -332,7 +332,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   _chpl_msg(2, "f: %p, arg: %p, arg_size: %d\n", f, arg, arg_size);
 
   ret = ARMCI_Gpc_exec(ghndl, locale, &header, sizeof(f), arg, arg_size,
-		       rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
+                       rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
   if (ret != 0) {
     _printInternalError("ARMCI_Gpc_exec() failed");
     _chpl_free(rheader, __LINE__, __FILE__);
@@ -358,10 +358,10 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
 }
 
 int gpc_call_handler(int to, int from, void *hdr, int hlen,
-		     void *data,  int dlen,
-		     void *rhdr,  int rhlen, int *rhsize,
-		     void *rdata, int rdlen, int *rdsize,
-		     int rtype)
+                     void *data,  int dlen,
+                     void *rhdr,  int rhlen, int *rhsize,
+                     void *rdata, int rdlen, int *rdsize,
+                     int rtype)
 {
   func_p f;
 
@@ -369,7 +369,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   _chpl_msg(2, "Received callback on locale: %d %p\n", _localeID, f);
 
   _chpl_msg(2, "hlen: %d, data: %p, dlen: %d, rhdr: %p, rhlen: %d, rdata: %p, rdlen: %d\n",
-	    hlen, data, dlen, rhdr, rhlen, rdata, rdlen);
+            hlen, data, dlen, rhdr, rhlen, rdata, rdlen);
 
   f(data);
 
