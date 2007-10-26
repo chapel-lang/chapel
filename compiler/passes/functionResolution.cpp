@@ -2992,6 +2992,7 @@ buildArrayTypeInfo(Type* type) {
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("dom", type->getField("_value")->type->getField("dom")->type)));
   theProgram->block->insertAtTail(new DefExpr(ts));
   cache.put(type, ct);
+  ct->symbol->pragmas.add("_ArrayTypeInfo");
   return ct;
 }
 

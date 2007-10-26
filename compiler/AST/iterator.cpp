@@ -830,7 +830,8 @@ void lowerIterator(FnSymbol* fn) {
   int i = 0;
   forv_Vec(Symbol, local, locals) {
     Type* type = local->type;
-    if (isReference(local->type) && local != fn->getReturnSymbol()) // && (local->astTag != SYMBOL_ARG || local == fn->_this))
+    ClassType* ct = toClassType(type);
+    if (isReference(local->type) && local != fn->getReturnSymbol() && !(ct && ct->symbol->hasPragma("_ArrayTypeInfo"))) // && (local->astTag != SYMBOL_ARG || local == fn->_this))
       type = getValueType(local->type);
     Symbol* field =
       new VarSymbol(astr("_", istr(i++), "_", local->name), type);
