@@ -1,0 +1,4 @@
+bug: substring results in out-of-memory error
+
+This should presumably be an empty string, but we currently
+get an out-of-memory error.
