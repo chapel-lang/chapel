@@ -129,6 +129,11 @@ class FTree {
         for i in indices do
             if i(1) == lvl && indices.member(i) then yield nodes[i].data;
     }
+
+    def index_iter() {
+       for i in indices do
+          yield i;
+    }
         
 
     /** Return a copy of this FTree

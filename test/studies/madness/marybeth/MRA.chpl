@@ -34,8 +34,8 @@ class Function {
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   s = FTree(order=k);
-    var   d = FTree(order=k);
+    var   sumC = FTree(order=k);
+    var   diffC = FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
     //        can't be presently since they must be assigned in initialize()
@@ -129,14 +129,14 @@ class Function {
     def copy() {
         return Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
-                s=s.copy(), d=d.copy());
+                sumC=sumC.copy(), diffC=diffC.copy());
     }
 
 
     /** Return a copy of this function's skeleton
      */
     def skeletonCopy() {
-        // Omit: f, compressed, s, d
+        // Omit: f, compressed, sumC, diffC
         return Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
@@ -150,7 +150,7 @@ class Function {
         const (n, l) = curNode;
         var h     = 0.5 ** n;
         var scale = sqrt(h);
-        var s     : [quadDom] real;
+        var s  : [quadDom] real;
 
         for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
@@ -171,7 +171,7 @@ class Function {
         var s0 : [0..k-1] => sc[0..k-1];
         var s1 : [0..k-1] => sc[k..2*k-1];
 
-        const child = s.get_children(curNode);
+        const child = sumC.get_children(curNode);
         s0 = project(child(1));
         s1 = project(child(2));
 
@@ -184,8 +184,8 @@ class Function {
         var nf = normf(dc[k..2*k-1]);
         const (n, _ ) = curNode;
         if((nf < thresh) || (n >= (max_level-1))) {
-            s[child(1)] = s0;
-            s[child(2)] = s1;
+            sumC[child(1)] = s0;
+            sumC[child(2)] = s1;
         }
         else {
             // these recursive calls on sub-trees can go in parallel
@@ -212,13 +212,13 @@ class Function {
         coefficients containing the point x.
      */
     def evaluate(curNode = rootNode, in x): real {
-        if s.has_coeffs(curNode) {
+        if sumC.has_coeffs(curNode) {
             const (n,_) = curNode;
             var p = phi(x, k);
-            return inner(s[curNode], p)*sqrt(2.0**n);
+            return inner(sumC[curNode], p)*sqrt(2.0**n);
 
         } else {
-            const child = s.get_children(curNode);
+            const child = sumC.get_children(curNode);
             if (2*x < 1) then
                 return evaluate (child(1), 2*x); 
             else
@@ -227,8 +227,9 @@ class Function {
     }
 
 
-    /** change from scaling function basis to multi-wavelet basis (s -> d)
-        tree is filled out with s[0][0] and d
+    /** change from scaling function basis to 
+        multi-wavelet basis (sumC -> diffC)
+        tree is filled out with sumC[0][0] and diffC
         n is level in tree
         l is box index
      */
@@ -236,23 +237,23 @@ class Function {
         if compressed then return;
 
         // sub-trees can be done in parallel
-        const child = s.get_children(curNode);
-        if !s.has_coeffs(child(1)) then compress(child(1));
-        if !s.has_coeffs(child(2)) then compress(child(2));
+        const child = sumC.get_children(curNode);
+        if !sumC.has_coeffs(child(1)) then compress(child(1));
+        if !sumC.has_coeffs(child(2)) then compress(child(2));
 
         var sc: [0..2*k-1] real;
-        sc[0..k-1]   = s(child(1));
-        sc[k..2*k-1] = s(child(2));
+        sc[0..k-1]   = sumC(child(1));
+        sc[k..2*k-1] = sumC(child(2));
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
         var dc = sc*hgT;
 
-        s[curNode] = dc[0..k-1];
-        d[curNode] = dc[k..2*k-1];
+        sumC[curNode] = dc[0..k-1];
+        diffC[curNode] = dc[k..2*k-1];
         
-        s.remove(child(1));
-        s.remove(child(2));
+        sumC.remove(child(1));
+        sumC.remove(child(2));
 
         const (n,_) = curNode;
         if n==0 then compressed = true;
@@ -267,20 +268,20 @@ class Function {
     def reconstruct(curNode = rootNode) {
         if !compressed then return;
 
-        if d.has_coeffs(curNode) {
+        if diffC.has_coeffs(curNode) {
             var dc: [0..2*k-1] real;
-            dc[0..k-1]   = s[curNode];
-            dc[k..2*k-1] = d[curNode];
-            d.remove(curNode);
-            s.remove(curNode);
+            dc[0..k-1]   = sumC[curNode];
+            dc[k..2*k-1] = diffC[curNode];
+            diffC.remove(curNode);
+            sumC.remove(curNode);
 
             // apply the two scale relationship to get difference coeff
             // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
             var sc = dc*hg;
             
-            const child = s.get_children(curNode);
-            s[child(1)] = sc[0..k-1];
-            s[child(2)] = sc[k..2*k-1];
+            const child = sumC.get_children(curNode);
+            sumC[child(1)] = sc[0..k-1];
+            sumC[child(2)] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
             reconstruct(child(1));
@@ -300,12 +301,12 @@ class Function {
         if debug then writeln(" + recur_down",curNode);
 
         var sc : [0..2*k-1] real;
-        sc[0..k-1] = s[curNode];
+        sc[0..k-1] = sumC[curNode];
 
         var new_sc = sc*hg;
-        const child = s.get_children(curNode);
-        s(child(1)) = new_sc[0..k-1];
-        s(child(2)) = new_sc[k..2*k-1];
+        const child = sumC.get_children(curNode);
+        sumC(child(1)) = new_sc[0..k-1];
+        sumC(child(2)) = new_sc[k..2*k-1];
     }
 
     
@@ -325,14 +326,14 @@ class Function {
 
         // Check to see if curNode is on the boundary.  If so,
         // return zeros for the coefficients.
-        if s.on_boundary(curNode) {
+        if sumC.on_boundary(curNode) {
            var coeffs : [0..k-1] real;
            return coeffs;
         }
         // Walk up the tree to find scaling coeffs
         var foundNode = emptyNode;
-        for Node in s.path_upwards(curNode,rootNode) {
-          if s.has_coeffs(Node) {
+        for Node in sumC.path_upwards(curNode,rootNode) {
+          if sumC.has_coeffs(Node) {
              foundNode = Node;
              break;
           }
@@ -341,10 +342,10 @@ class Function {
         // Didn't find coeffs, they must be below curNode
         if (foundNode == emptyNode) then return None;
   
-        for Node in s.path_downwards(foundNode,curNode) {
+        for Node in sumC.path_downwards(foundNode,curNode) {
             recur_down(Node);
         }
-        return s[curNode];
+        return sumC[curNode];
     }
 
 
@@ -356,17 +357,17 @@ class Function {
     def sclean(curNode = rootNode, in cleaning=false) {
         if cleaning { //then
             if debug then writeln(" + sclean deleting ", curNode);
-            s.remove(curNode);
+            sumC.remove(curNode);
         } else
-            cleaning = s.has_coeffs(curNode);
+            cleaning = sumC.has_coeffs(curNode);
 
         // Sub trees can run in parallel
         const (n, _) = curNode;
         if n < max_level {
-            const child = s.get_children(curNode);
-            if !cleaning || s.has_coeffs(child(1)) then
+            const child = sumC.get_children(curNode);
+            if !cleaning || sumC.has_coeffs(child(1)) then
                 sclean(child(1), cleaning);
-            if !cleaning || s.has_coeffs(child(2)) then
+            if !cleaning || sumC.has_coeffs(child(2)) then
                 sclean(child(2), cleaning);
         }
     }
@@ -382,25 +383,25 @@ class Function {
     def diffHelper(curNode = rootNode, result) {
         const (n,l) = curNode;
         if debug then writeln(" * diff",curNode);
-        if !s.has_coeffs(curNode) {
+        if !sumC.has_coeffs(curNode) {
             // Sub trees can run in parallel
             // Run down tree until we hit scaling function coefficients
-            const child = s.get_children(curNode);
+            const child = sumC.get_children(curNode);
             diffHelper((n+1, 2*l), result);
             diffHelper((n+1, 2*l+1), result);
         } else {
             // These can also go in parallel since may involve
             // recurring up & down the tree.
-            const neighbor = s.get_neighbors(curNode);
+            const neighbor = sumC.get_neighbors(curNode);
             if debug then writeln(" * diff: coeffs at ",curNode);
             var sm = get_coeffs(neighbor(1));
             var sp = get_coeffs(neighbor(2));
-            var s0 = s[curNode];
+            var s0 = sumC[curNode];
 
             // We have s0, check if we found sm and sp at this level
             if !isNone(sm) && !isNone(sp) {
                 var r = rp*sm + r0*s0 + rm*sp;
-                result.s[curNode] = r * 2.0**n;
+                result.sumC[curNode] = r * 2.0**n;
             } else {
                 recur_down(curNode);
                 // Sub trees can run in parallel
@@ -424,7 +425,7 @@ class Function {
      */
     def norm2() {
         if compressed then reconstruct();
-        return sqrt(+ reduce [i in s] normf(i)**2);
+        return sqrt(+ reduce [i in sumC] normf(i)**2);
     }
 
 
@@ -435,12 +436,12 @@ class Function {
         if !compressed then compress();
         if !other.compressed then other.compress();
 
-        s[rootNode] = s[rootNode]*alpha + other.s[rootNode]*beta; // Do scaling coeffs
-	for i in d.indices {
-            d[i] *= alpha;
+        sumC[rootNode] = sumC[rootNode]*alpha + other.sumC[rootNode]*beta; // Do scaling coeffs
+	for i in diffC.index_iter() {
+            diffC[i] *= alpha;
         }
-	for i in other.d.indices {
-            d[i] += other.d[i]*beta;
+	for i in other.diffC.index_iter() {
+            diffC[i] += other.diffC[i]*beta;
         }
 
         // return this so operations can be chained
@@ -467,8 +468,8 @@ class Function {
     /** Recursively multiply f1 and f2 put the result into this
      */ 
     def multiply(f1, f2, curNode = rootNode) {
-        const child = s.get_children(curNode);
-        if f1.s.has_coeffs(curNode) && f2.s.has_coeffs(curNode) {
+        const child = sumC.get_children(curNode);
+        if f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) {
             const (n, _) = curNode;
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
@@ -484,33 +485,33 @@ class Function {
                 var scale_factor = sqrt(2.0**(n+1));
 
                 // multiply f1.s[n+1][2*l] and f2.s[n+1][2*l]
-                var f = f1.s[child(1)] * quad_phiT;
-                var g = f2.s[child(1)] * quad_phiT;
+                var f = f1.sumC[child(1)] * quad_phiT;
+                var g = f2.sumC[child(1)] * quad_phiT;
                 f *= g; // Note: Element-wise multiplication
-                s[child(1)] = (f * quad_phiw) * scale_factor;
+                sumC[child(1)] = (f * quad_phiw) * scale_factor;
 
                 // multiply f1.s[n+1][2*l+1] and f2.s[n+1][2*l+1]
-                f  =  f1.s[child(2)] * quad_phiT;
-                g  =  f2.s[child(2)] * quad_phiT;
+                f  =  f1.sumC[child(2)] * quad_phiT;
+                g  =  f2.sumC[child(2)] * quad_phiT;
                 f *= g;
-                s[child(2)] = (f * quad_phiw) * scale_factor;
+                sumC[child(2)] = (f * quad_phiw) * scale_factor;
 
             } else {
                 // if autorefine is not set or we are at the max_level
                 // live with what you get
-                var f = f1.s[curNode] * quad_phiT;
-                var g = f2.s[curNode] * quad_phiT;
+                var f = f1.sumC[curNode] * quad_phiT;
+                var g = f2.sumC[curNode] * quad_phiT;
                 f *= g;
 
                 // scale factor for this level = sqrt((2^d)^(n+1))
-                s[curNode] = (f * quad_phiw) * sqrt(2.0**(n));
+                sumC[curNode] = (f * quad_phiw) * sqrt(2.0**(n));
             }
 
         } else {
-            if f1.s.has_coeffs(curNode) && !f2.s.has_coeffs(curNode) then
+            if f1.sumC.has_coeffs(curNode) && !f2.sumC.has_coeffs(curNode) then
                 // refine this box down to next level in f1
                 f1.recur_down(curNode);
-            else if !f1.s.has_coeffs(curNode) && f2.s.has_coeffs(curNode) then
+            else if !f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) then
                 // refine this box down to next level in f2
                 f2.recur_down(curNode);
 
@@ -549,7 +550,7 @@ class Function {
         writeln("sum coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for box in s.lvl_iter(n) {
+            for box in sumC.lvl_iter(n) {
                 sum     += normf(box)**2;
                 ncoeffs += 1;
             }
@@ -561,7 +562,7 @@ class Function {
         writeln("difference coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for box in d.lvl_iter(n) {
+            for box in diffC.lvl_iter(n) {
                 sum     += normf(box)**2;
                 ncoeffs += 1;
             }
