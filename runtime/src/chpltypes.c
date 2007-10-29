@@ -48,16 +48,28 @@ string_concat(_string x, _string y) {
   return _glom_strings(2, x, y);
 }
 
-
 _string
 string_strided_select(_string x, int low, int high, int stride) {
-  char* result =
-    _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp", 0, 0);
-  _string src = x + low - 1;
-  char* dst = result;
-  while (src - x <= high - 1) {
-    *dst++ = *src;
-    src += stride;
+  _int64 length = string_length(x);
+  char* result = NULL;
+  char* dst = NULL;
+  _string src = stride > 0 ? x + low - 1 : x + high - 1;
+  int size = high - low >= 0 ? high - low : 0;
+  if (low < 1 || low > length || high > length) {
+    _printError("String access out-of-bounds", 0, 0);
+  }
+  result = _chpl_malloc(size + 2, sizeof(char), "_chpl_string_strided_select temp", 0, 0);
+  dst = result;
+  if (stride > 0) {
+    while (src - x <= high - 1) {
+      *dst++ = *src;
+      src += stride;
+    }
+  } else {
+    while (src - x >= low - 1) {
+      *dst++ = *src;
+      src += stride;
+    }
   }
   *dst = '\0';
   return _glom_strings(1, result);

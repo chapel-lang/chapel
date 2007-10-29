@@ -1,1 +1,1 @@
-substringBadRange.chpl:3: error: Accessing string out-of-bounds
+error: String access out-of-bounds

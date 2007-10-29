@@ -1,4 +1,0 @@
-semantic: out of bounds substrings?
-
-Should out of bounds substrings be flagged as out-of-bounds errors
-or just be quietly ignored?
