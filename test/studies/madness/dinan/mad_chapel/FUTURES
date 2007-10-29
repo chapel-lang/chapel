@@ -1,31 +1,38 @@
+     FUTURES:  1D MADNESS Known Bugs, Workarounds, and Design Issues
+     ---------------------------------------------------------------
+
 This file is intended to enumerate some of the workarounds that have been used
-in the 1d Madness code.  I have also tried to mark these workarounds in the
-code with "FIXME" comments.
+in the 1d Madness code.  I have also marked these workarounds in the code with
+"FIXME" comments.
+
+Lines beginning with + and - mean:
+ + Issue unresolved, workaround still present
+ - Issue resolved, workaround has been removed
 
 
 Overall:
 =======
 
- * Module/Class privates
- * Private/Non-transitive use statements.  "private use ..."
- * Initialization from a function in the default constructor
- * Custom constructors
+ + Module/Class privates
+ + Private/Non-transitive use statements.  "private use ..."
+ + Initialization from a function in the default constructor
+ + Custom constructors
 
 
 FTree:
 =====
  
- * Arrays of arrays (in FTree)
- * Domains of type domain(2*int) require naming the index type separately.
- * Can't return const from a var function getter.
+ + Arrays of arrays (in FTree)
+ - Domains of type domain(2*int) require naming the index type separately.
+ + Can't return const from a var function getter.
 
 AnalyticFcn:
 ===========
 
- * The AFcn class gets around not having function pointers.  It's useful though
+ + The AFcn class gets around not having function pointers.  It's useful though
    for creating new functions that are composed of old functions which will be
    hard without anonymous functions and static data in functions.
- * this() is meant to be abstract so there are 2 workarounds to ensure that any
+ + this() is meant to be abstract so there are 2 workarounds to ensure that any
    AFcn() implements this function.  The first is the halt() if you call the
    this() in the base class and the second is the return statement you have to
    give to help out the compiler.
@@ -33,14 +40,14 @@ AnalyticFcn:
 StringConvert:
 =============
 
- * Chapel doesn't support formatted output yet, so this wraps an extern call to
+ + Chapel doesn't support formatted output yet, so this wraps an extern call to
    sprintf.  Once chapel supports formatted printing of reals, etc, this should
    go.
 
 Quadrature:
 ==========
 
- * In here we really want a const matrix that contains all of these
+ + In here we really want a const matrix that contains all of these
    coefficients and then when we return them we would use a rank changing slice
    operation to pull out a piece and return it as a const.  This would eliminate
    the need for the select blocks.
@@ -48,24 +55,24 @@ Quadrature:
 TwoScale:
 ========
 
- * Really want module privates here.
- * Would like to be able to make some of the fields in the class const.  This can't
+ + Really want module privates here.
+ + Would like to be able to make some of the fields in the class const.  This can't
    be done presently because of constructor gotchas.
- * Coefficients are read from a file rather than being defined in a static const
+ + Coefficients are read from a file rather than being defined in a static const
    matrix.  This is technically a workaround from how it's done in the other 1d
    implementations, but in reality it's probably an improvement.
- * hg_getCoeffs() does an explicit copy to work around rank change slicing.
+ + hg_getCoeffs() does an explicit copy to work around rank change slicing.
 
 MRA:
 ===
 
- * Constructors proved to be the biggest workaround in the Function class.
+ + Constructors proved to be the biggest workaround in the Function class.
    Construction is done through the default constructor plus initialize() plus
    some other functions that initialize() calls.  Being able to initialize
    members with the result of a function call would help clean this up, being
    able to define constructors would be best.  This would hopefully also
    subsume the .copy() constructor.
- * The constructor issue is also preventing some things from being const that
+ + The constructor issue is also preventing some things from being const that
    really should be.
    
 
