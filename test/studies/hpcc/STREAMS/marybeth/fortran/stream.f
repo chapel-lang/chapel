@@ -42,7 +42,7 @@
        else
          write(6,*) "  SUCCESS"
        endif
-       call printResults(nTrials, Timing)
+       call printResults(n, nTrials, Timing)
 
        end
        
@@ -67,9 +67,9 @@
 
        end
 
-       subroutine printResults(nTrials, Timing)
+       subroutine printResults(n, nTrials, Timing)
 
-       integer		nTrials
+       integer		n, nTrials
        real		Timing(nTrials)
        real		totalTime, avgTime, minTime
     
@@ -85,7 +85,13 @@
        write(6,*) "  tot = ", totalTime
        write(6,*) "  avg = ", avgTime
        write(6,*) "  min = ", minTime
+       write(6,*) " "
 
+       if (avgTime .gt. 0.0) then
+         write(6,*) "GB/s = ", 3.0*8.0*(dble(n)/avgTime)
+       else
+         write(6,*) "Average time = 0 seconds. Cannot compute GB/s"
+       endif
        end
        
        
