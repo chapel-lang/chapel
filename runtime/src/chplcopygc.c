@@ -20,14 +20,15 @@ void _addNullRoot(void* root) {
   rootlist[totalRoots++] = root;
 }
 
-void _deleteRoot(void) {
-  totalRoots -= 1;
+void _deleteRoot(int count) {
+  totalRoots -= count;
 }
 
 void _chpl_gc_copy_collect(void) {
   int i;
   _memory_space* tmp;
   char* scanptr;
+  //fprintf(stderr, "Collection\n");
   for (i=0; i < totalRoots; i++) {
     if (STACK_PTR(rootlist[i])) {
       if (HEAP_AS_PTR(rootlist[i]) >= (void*)_to_space->head &&
@@ -52,33 +53,64 @@ void _chpl_gc_copy_collect(void) {
   /* Now that any root objects are moved, move sub-objects. */
   scanptr = _to_space->head;
   while (scanptr != _to_space->current) {
-    int i = 1;
     size_t *offsets = cid2offsets(*(_class_id*)scanptr);
-    while (offsets[i] != 0) {
-      void* current = (void*)(scanptr + offsets[i]);
-      if (STACK_PTR(current)) {
-        if (HEAP_AS_PTR(current) >= (void*)_to_space->head &&
-            HEAP_AS_PTR(current) < (void*)_to_space->tail) {
-          STACK_PTR(current) = HEAP_AS_PTR(current);
-        } else {
-          if (STACK_PTR(current) >= (void*)_from_space->head &&
-              STACK_PTR(current) < (void*)_from_space->tail) {
-            size_t size = cid2size(*(_class_id*)STACK_PTR(current));
-            memmove(_to_space->current, STACK_PTR(current), size);
-            HEAP_AS_PTR(current) = (void*)_to_space->current;
-            STACK_PTR(current) = (void*)_to_space->current;
-            _to_space->current += size;
+    if (offsets[1] == -1) {
+      // data class (array)
+      int i;
+      // Bad, could be uint(64) index size
+      int array_size = *(int*)(((char*)scanptr) + offsets[2]);
+      void** data = *(void***)(((char*)scanptr) + offsets[3]);
+      for (i=0; i < array_size; i++) {
+        if (data[i]) {
+          if (*(void**)data[i] >= (void*)_to_space->head &&
+              *(void**)data[i] < (void*)_to_space->tail) {
+            /* Update the pointer to point into the new heap */
+            data[i] = *(void**)data[i];
           } else {
-            /* BAD - Something pointing at a non-forwarded object that isn't
-               isn't in the from-space or NULL */
+            if (data[i] >= (void*)_from_space->head &&
+                data[i] < (void*)_from_space->tail) {
+              size_t size = cid2size(*(_class_id*)data[i]);
+              memmove(_to_space->current, data[i], size);
+              /* Put an update pointer on the heap */
+              *(void**)data[i] = (void*)_to_space->current;
+              /* Update the pointer in the array */
+              data[i] = (void*)_to_space->current;
+              _to_space->current += size;
+            } else {
+              /* Bad */
+            }
           }
         }
       }
-      i++;
+    } else {
+      int i = 1;
+      while (offsets[i] != 0) {
+        void* current = (void*)(scanptr + offsets[i]);
+        if (STACK_PTR(current)) {
+          if (HEAP_AS_PTR(current) >= (void*)_to_space->head &&
+              HEAP_AS_PTR(current) < (void*)_to_space->tail) {
+            STACK_PTR(current) = HEAP_AS_PTR(current);
+          } else {
+            if (STACK_PTR(current) >= (void*)_from_space->head &&
+                STACK_PTR(current) < (void*)_from_space->tail) {
+              size_t size = cid2size(**(_class_id**)current);
+              memmove(_to_space->current, STACK_PTR(current), size);
+              HEAP_AS_PTR(current) = (void*)_to_space->current;
+              STACK_PTR(current) = (void*)_to_space->current;
+              _to_space->current += size;
+            } else {
+              /* BAD - Something pointing at a non-forwarded object that isn't
+                 isn't in the from-space or NULL */
+            }
+          }
+        }
+        i++;
+      }
     }
     scanptr += offsets[0];
   }
 
+  // Swap the _from_space and the _to_space
   _from_space->current = _from_space->head;
   tmp = _from_space;
   _from_space = _to_space;
@@ -131,3 +163,9 @@ void _chpl_gc_init(size_t heapsize) {
   _to_space->current = heap2;
 }
 
+void _chpl_gc_cleanup(void) {
+  _chpl_free(_to_space->head, __LINE__, __FILE__);
+  _chpl_free(_from_space->head, __LINE__, __FILE__);
+  _chpl_free(_to_space, __LINE__, __FILE__);
+  _chpl_free(_from_space, __LINE__, __FILE__);
+}

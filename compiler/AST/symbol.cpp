@@ -376,10 +376,14 @@ void VarSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
-  if (ClassType* ct = toClassType(type))
-    if (ct->classTag == CLASS_CLASS)
+  if (ClassType* ct = toClassType(type)) 
+    if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = NULL");
+    } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
+      if (isFnSymbol(defPoint->parentSymbol))
+        fprintf(outfile, " = {0}");
+    }
   fprintf(outfile, ";\n");
 }
 

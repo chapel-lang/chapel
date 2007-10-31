@@ -353,6 +353,19 @@ codegen_cid2offsets(FILE* outfile) {
         fprintf(outfile, "_offsets[] = { sizeof(_");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "), ");
+        if (typeSym->hasPragma("data class")) {
+          if (ClassType* elementType = toClassType(ct->substitutions.v[0].value)) {
+            if (elementType->classTag == CLASS_CLASS) {
+              fprintf(outfile, "(size_t)-1,"); // Special token for arrays of classes
+              fprintf(outfile, "(size_t)&((_");
+              ct->symbol->codegen(outfile);
+              fprintf(outfile, "*)NULL)->size,");
+              fprintf(outfile, "(size_t)&((_");
+              ct->symbol->codegen(outfile);
+              fprintf(outfile, "*)NULL)->_data,");
+            }
+          }
+        }
         for_fields(field, ct) {
           if (ClassType* innerct = toClassType(field->type)) {
             if (innerct->classTag == CLASS_CLASS) {

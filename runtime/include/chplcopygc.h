@@ -2,7 +2,7 @@
 #define _chplcopygc_H_
 
 #include <stddef.h>
-
+#include "chpltypes.h"
 #define MAXROOTS 1024
 
 #define HEAP_AS_PTR(root) \
@@ -20,6 +20,9 @@ typedef struct {
 /* Initialize two heaps of size heapsize bytes */
 void _chpl_gc_init(size_t heapsize);
 
+/* Free the memory used by the collector including the heaps */
+void _chpl_gc_cleanup(void);
+
 /* Add/remove "roots".  Every varaible on the stack that can
    point at heap should be added when it is in scope, deleted
    when it leaves scope. Unless GC is currently running, these
@@ -27,7 +30,7 @@ void _chpl_gc_init(size_t heapsize);
    to pointers to heap */
 void _addRoot(void* root);
 void _addNullRoot(void* root);
-void _deleteRoot(void);
+void _deleteRoot(int count);
 
 /* Allocate space in the from-space.  If not enough space exists,
    run a garbage collection cycle. */
