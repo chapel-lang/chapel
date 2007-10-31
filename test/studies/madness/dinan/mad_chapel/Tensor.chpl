@@ -7,6 +7,16 @@ def truncate(x) {
     else return x;
 }
 
+// Return matrix A's transpose
+def transpose(A: [] real) where A.rank == 2 {
+    var B : [A.domain] real;
+
+    forall (i, j) in A.domain do
+        B[i, j] = A[j, i];
+
+    return B;
+}
+
 // Copy matrix B's transpose into matrix A
 def transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do

@@ -40,13 +40,13 @@ class Function {
 
     // Two-Scale relationship matrices
     const hgDom = [0..2*k-1, 0..2*k-1];
-    var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
-    var   hgT   : [hgDom] real; //        hgT => transpose(hg);
+    const hg    : [hgDom] real = hg_getCoeffs(k);
+    const hgT   : [hgDom] real = transpose(hg);
 
     // Quadrature coefficients
     const quadDom   = [0..k-1];
-    var   quad_x    : [quadDom] real; // points
-    var   quad_w    : [quadDom] real; // weights
+    const quad_x    : [quadDom] real = gl_getPoints(k);
+    const quad_w    : [quadDom] real = gl_getWeights(k);
 
     const quad_phiDom = [0..k-1, 0..k-1];
     var   quad_phi    : [quad_phiDom] real; // phi[point,i]
@@ -61,10 +61,6 @@ class Function {
 
     def initialize() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
-
-        if debug then writeln("  initializing two-scale relation coefficients");
-        hg  = hg_getCoeffs(k);
-        transposeCopy(hgT, hg);
 
         if debug then writeln("  initializing quadrature coefficients");
         init_quadrature(k);
@@ -87,9 +83,6 @@ class Function {
     /** Initialize the quadrature coefficient matricies.
      */
     def init_quadrature(order: int) {
-        quad_x   = gl_getPoints(k);
-        quad_w   = gl_getWeights(k);
-
         for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
