@@ -1,0 +1,7 @@
+bug: overriding the default constructor with a user-defined constructor that assigns a const field results in a bug
+
+chpl user_def_default_constructor_const.chpl
+user_def_default_constructor_const.chpl:9: error: ambiguous call 'C()' [functionResolution.cpp:1362]
+user_def_default_constructor_const.chpl:1: note: candidates are: C(x: int) [functionResolution.cpp:1378]
+error: Indexing list out of bounds [alist.cpp:66]
+
