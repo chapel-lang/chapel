@@ -365,6 +365,30 @@ void VarSymbol::codegen(FILE* outfile) {
 }
 
 
+static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
+  bool first = true;
+  fprintf(outfile, "{");
+  for_fields(field, ct) {
+    if (!first) {
+      fprintf(outfile, ", ");
+    }
+    if (ClassType* ct = toClassType(field->type)) {
+      if (ct->classTag == CLASS_RECORD) {
+        zeroInitializeRecord(outfile, ct);
+      } else if (ct->classTag == CLASS_UNION) {
+        fprintf(outfile, "{0, 0}");
+      } else {
+        fprintf(outfile, "NULL");
+      }
+    } else {
+      fprintf(outfile, "0");
+    }
+    first = false;
+  }
+  fprintf(outfile, "}");
+}
+
+
 void VarSymbol::codegenDef(FILE* outfile) {
   if (type == dtVoid)
     return;
@@ -381,8 +405,11 @@ void VarSymbol::codegenDef(FILE* outfile) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = NULL");
     } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
-      if (isFnSymbol(defPoint->parentSymbol))
-        fprintf(outfile, " = {0}");
+      /* If garbage collection is on, zero-initialize records */
+      if (isFnSymbol(defPoint->parentSymbol)) {
+        fprintf(outfile, " = ");
+        zeroInitializeRecord(outfile, ct);
+      }
     }
   fprintf(outfile, ";\n");
 }
