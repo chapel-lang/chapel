@@ -1,10 +1,10 @@
 #ifndef _MTA_STDINT_H_
 #define _MTA_STDINT_H_
 
-/* These defines many of the INT<N>_MIN/MAX macros we need */
+/* This defines many of the INT<N>_MIN/MAX macros we need */
 #include <machine/limits.h>
 
-/* Here area  few that it doesn't, defined in other constants that
+/* Here are a few that it doesn't, defined in other constants that
    the MTA defines (noting that INT on MTA is 64-bits */
 #define INT64_MIN INT_MIN
 #define INT64_MAX INT_MAX
