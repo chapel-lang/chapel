@@ -1,0 +1,4 @@
+bug: record initialize function called multiple times for single record
+
+The BBB.initialize() function is called twice even though there is only one
+value of BBB type.
