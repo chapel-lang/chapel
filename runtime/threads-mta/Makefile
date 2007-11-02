@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = threads-none
+RUNTIME_SUBDIR = threads-mta
 
 #
 # standard header
