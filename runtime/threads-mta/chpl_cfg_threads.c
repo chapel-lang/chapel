@@ -247,7 +247,7 @@ void exitChplThreads() {
   while (!ready);
 #ifdef MTA_DEBUG
   fprintf(stderr, "About to return from exitChplThreads(); _chpl_can_exit=%d\n",
-	  _chpl_can_exit);
+          _chpl_can_exit);
 #endif
 }
 
@@ -387,7 +387,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
         _chpl_can_exit = 1; // mark this variable as being full
 #ifdef MTA_DEBUG
       fprintf(stderr, "About to exit future no. %d; begin_cnt = %d\n",
-	      init_begin_cnt, begin_cnt);
+              init_begin_cnt, begin_cnt);
 #endif
     }
   }
