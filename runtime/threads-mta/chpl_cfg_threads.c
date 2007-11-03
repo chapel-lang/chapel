@@ -5,6 +5,7 @@
 #include "chplmem.h"
 #include "error.h"
 #include <stdint.h>
+#include <stdlib.h>
 
 #if 1 //def MTA_DEBUG
 #include <stdio.h>
@@ -222,7 +223,7 @@ void _chpl_serial_delete(_bool *p) {
 
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
-  purge(&_chpl_can_exit);                  // set to zero and mark as empty
+  _chpl_can_exit = 0;                      // set to zero and mark as full
 
 #if 0
   _chpl_mutex_init(&_memtrack_lock);
@@ -312,14 +313,15 @@ int _chpl_cobegin (int                      nthreads,
                    _chpl_threadarg_t       *args, 
                    _chpl_cobegin_wkspace_t *twrk) {
   int               t, retv = 0;
-  _int64            finished[nthreads];
+  _int64            *finished;
 
   if (_chpl_get_serial()) {
 #if 0   // _chpl_get_serial is not yet implemented correctly!
     for (t=0; t<nthreads; t++)
       (*fps[t])(args[t]);
-  } else {
 #endif
+  } else if (finished = (_int64 *)_chpl_malloc(nthreads, sizeof(_int64),
+                                               "finished", 0, 0)) {
     // create threads
     for (t=0; t<nthreads; t++, fps++, args++) {
       future void thread$;
@@ -336,6 +338,10 @@ int _chpl_cobegin (int                      nthreads,
     for (t=0; t<nthreads; t++)
       retv += finished[t];  // block until the corresponding thread finishes
     retv = nthreads - retv; // return zero if all threads finished
+    _chpl_free(finished, 0, 0);
+  } else {
+    retv = 1;
+    halt("Out of memory in _chpl_cobegin!\n");
   }
 
   return retv;

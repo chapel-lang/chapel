@@ -1,5 +1,5 @@
-THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-none/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-mta/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
 
-ALL_SRCS += threads-none/*.c
+ALL_SRCS += threads-mta/*.c
 
-include $(RUNTIME_ROOT)/threads-none/Makefile.share
+include $(RUNTIME_ROOT)/threads-mta/Makefile.share
