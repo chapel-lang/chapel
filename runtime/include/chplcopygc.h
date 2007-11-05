@@ -17,6 +17,9 @@ typedef struct {
   char* tail;
 } _memory_space;
 
+extern int totalRoots;
+extern void *rootlist[MAXROOTS];
+
 /* Initialize two heaps of size heapsize bytes */
 void _chpl_gc_init(size_t heapsize);
 
@@ -28,9 +31,9 @@ void _chpl_gc_cleanup(void);
    when it leaves scope. Unless GC is currently running, these
    should all be pointers to NULL variables or pointers
    to pointers to heap */
-void _addRoot(void* root);
-void _addNullRoot(void* root);
-void _deleteRoot(int count);
+#define _addRoot(root) rootlist[totalRoots++] = (root)
+#define _addNullRoot(root) *(void**)(root) = NULL; rootlist[totalRoots++] = root
+#define _deleteRoot(count) totalRoots -= (count)
 
 /* Allocate space in the from-space.  If not enough space exists,
    run a garbage collection cycle. */

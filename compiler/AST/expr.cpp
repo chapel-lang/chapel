@@ -1013,10 +1013,13 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
     case PRIMITIVE_SETCID:
-      get(1)->codegen(outfile);
       if (fCopyCollect) {
-      fprintf(outfile, "->__class_id._cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+        get(1)->codegen(outfile);
+        fprintf(outfile, "->__class_id._padding_for_copy_collection_use = NULL;\n");
+        get(1)->codegen(outfile);
+        fprintf(outfile, "->__class_id._cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
       } else {
+        get(1)->codegen(outfile);
         fprintf(outfile, "->_cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
       }
       break;
@@ -1391,6 +1394,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_deleteRoot(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_GC_CLEANUP:
+      fprintf(outfile, "_chpl_gc_cleanup()");
       break;
     case PRIMITIVE_GC_INIT:
       get(1)->codegen(outfile);

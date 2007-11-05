@@ -11,19 +11,6 @@ _memory_space *_from_space, *_to_space;
 int totalRoots = 0;
 void *rootlist[MAXROOTS];
 
-void _addRoot(void* root) {
-  rootlist[totalRoots++] = root;
-}
-
-void _addNullRoot(void* root) {
-  STACK_PTR(root) = NULL;
-  rootlist[totalRoots++] = root;
-}
-
-void _deleteRoot(int count) {
-  totalRoots -= count;
-}
-
 void _chpl_gc_copy_collect(void) {
   int i;
   _memory_space* tmp;
