@@ -41,7 +41,7 @@ void _chpl_gc_copy_collect(void) {
   scanptr = _to_space->head;
   while (scanptr != _to_space->current) {
     size_t *offsets = cid2offsets(*(_class_id*)scanptr);
-    if (offsets[1] == -1) {
+    if (offsets[1] == (size_t)-1) {
       // data class (array)
       int i;
       // Bad, could be uint(64) index size
