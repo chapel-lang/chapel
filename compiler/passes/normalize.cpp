@@ -351,7 +351,9 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag)
     return;
 
-  if (call->primitive && !(call->isPrimitive(PRIMITIVE_GET_REF)))
+  if (call->primitive &&
+      !(call->isPrimitive(PRIMITIVE_GET_REF) ||
+        call->isPrimitive(PRIMITIVE_TYPEOF)))
     return;
 
   if (CallExpr* parentCall = toCallExpr(call->parentExpr))

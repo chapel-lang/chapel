@@ -45,11 +45,8 @@ class _stack {
   def length {
     return top;
   }
+
+  def writeThis(f: Writer) {
+    for i in 0..top-1 do f.write(" ", data[i]);
+  }
 }
-
-
-def writeln( s:_stack) {
-  for i in 0..(s.top)-1 do write( " ", s.data[i]);
-  writeln();
-}
-

@@ -1039,6 +1039,8 @@ static const char* fn2string(FnSymbol* fn) {
       str = stringcat(str, arg->name);
     } else
       str = stringcat(str, arg->name, ": ", type2string(arg->type));
+    if (arg->variableExpr)
+      str = stringcat(str, " ...");
   }
   if (!fn->noParens)
     str = stringcat(str, ")");
@@ -1906,7 +1908,16 @@ preFold(Expr* expr) {
         }
       }
     }
-    if (call->isNamed("_init")) {
+    SymExpr* base = toSymExpr(call->baseExpr);
+    if (base && isVarSymbol(base->var) && base->var->isTypeVariable) {
+      long index;
+      if (!get_int(call->get(1), &index))
+        USR_FATAL(call, "illegal type index expression");
+      char field[8];
+      sprintf(field, "x%ld", index);
+      result = new SymExpr(base->var->type->getField(field)->type->symbol);
+      call->replace(result);
+    } else if (call->isNamed("_init")) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         TypeSymbol* ts = toTypeSymbol(sym->var);
         if (!ts && sym->var->isTypeVariable)
@@ -2302,6 +2313,11 @@ postFold(Expr* expr) {
             if (FnSymbol* fn = rhs->isResolved())
               if (fn->fnTag == FN_CONSTRUCTOR || fn->hasPragma("constructor type"))
                 lhs->var->isConstructor = true;
+          }
+          if (CallExpr* rhs = toCallExpr(call->get(2))) {
+            if (rhs->isPrimitive(PRIMITIVE_TYPEOF)) {
+              lhs->var->isTypeVariable = true;
+            }
           }
         }
       }
@@ -3047,7 +3063,9 @@ pruneResolvedTree() {
         call->remove();
       } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
         // Replace PRIMITIVE_TYPEOF with argument
-        call->replace(call->get(1)->remove());
+        if (!call->get(1)->typeInfo()->symbol->hasPragma("array")) {
+          call->replace(call->get(1)->remove());
+        }
       } else if (call->isPrimitive(PRIMITIVE_CAST)) {
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
           call->replace(call->get(2)->remove());
@@ -3170,17 +3188,27 @@ pruneResolvedTree() {
           call->replace(new CallExpr(buildArrayMap.get(call), tmp, elt));
         else
           call->replace(new CallExpr(buildArrayMap.get(call), tmp));
+      } else if (call->parentSymbol && call->isPrimitive(PRIMITIVE_TYPEOF)) {
+        // handle ".type" on an array by building a runtime array type
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move);
+        SymExpr* lhs = toSymExpr(move->get(1));
+        SymExpr* rhs = toSymExpr(call->get(1));
+        INT_ASSERT(lhs);
+        INT_ASSERT(rhs);
+        VarSymbol* _value = new VarSymbol("_tmp", rhs->var->type->getField("_value")->type);
+        call->getStmtExpr()->insertBefore(new DefExpr(_value));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, _value, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhs->var, rhs->var->type->getField("_value"))));
+        VarSymbol* dom = new VarSymbol("_tmp", _value->type->getField("dom")->type);
+        call->getStmtExpr()->insertBefore(new DefExpr(dom));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
+        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, lhs->var->type->getField("dom"), dom));
       }
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (!strcmp(fn->name, "_build_array_type")) {
           fn->retType = buildArrayTypeInfo(fn->retType);
           BlockStmt* block = new BlockStmt();
-          /*          FnSymbol* wrapper = wrapDomainMap.get(fn->getFormal(1)->type);
-          VarSymbol* tmp = new VarSymbol("_tmp", wrapper->retType);
-          block->insertAtTail(new DefExpr(tmp));
-          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(wrapper, fn->getFormal(1))));
-          */
           VarSymbol* tmp = new VarSymbol("_tmp", fn->getFormal(1)->type->getField("_value")->type);
           block->insertAtTail(new DefExpr(tmp));
           block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, fn->getFormal(1), fn->getFormal(1)->type->getField("_value"))));
