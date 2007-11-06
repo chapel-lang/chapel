@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if 1 //def MTA_DEBUG
+#if 1
 #include <stdio.h>
 #endif
 
@@ -22,7 +22,7 @@ typedef struct {
 // begin's which are not joined.  We need to wait on them before the
 // main thread can call exit for the process.
 static _int64          _chpl_begin_cnt;      // number of unjoined threads 
-static _int64          _chpl_can_exit;       // can main thread exit?
+static sync _int64     _chpl_can_exit;       // can main thread exit?
 #if 0
 static pthread_key_t   _chpl_serial;         // per-thread serial state
 #endif
@@ -223,7 +223,10 @@ void _chpl_serial_delete(_bool *p) {
 
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
-  _chpl_can_exit = 0;                      // set to zero and mark as full
+#ifdef MTA_DEBUG
+  fprintf(stderr, "Inside initChplThreads(), ");
+#endif
+  _chpl_can_exit = 1;                      // mark full - no threads created yet
 
 #if 0
   _chpl_mutex_init(&_memtrack_lock);
