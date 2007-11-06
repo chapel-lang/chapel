@@ -1,5 +1,5 @@
-#ifndef _SUN_STDINT_H_
-#define _SUN_STDINT_H_
+#ifndef _MTA_STDINT_H_
+#define _MTA_STDINT_H_
 
 #include <stdlib.h>
 
