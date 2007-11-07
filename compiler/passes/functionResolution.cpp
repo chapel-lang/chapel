@@ -3004,7 +3004,10 @@ buildArrayTypeInfo(Type* type) {
     return cache.get(type);
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_ArrayTypeInfo"), ct);
-  ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", type->getField("eltType")->type)));
+  Type* elt = type->getField("eltType")->type;
+  if (elt->symbol->hasPragma("array"))
+    elt = buildArrayTypeInfo(elt);
+  ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", elt)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("dom", type->getField("_value")->type->getField("dom")->type)));
   theProgram->block->insertAtTail(new DefExpr(ts));
   cache.put(type, ct);
@@ -3066,6 +3069,10 @@ pruneResolvedTree() {
         if (!call->get(1)->typeInfo()->symbol->hasPragma("array")) {
           call->replace(call->get(1)->remove());
         }
+      } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT)) {
+        // Capture array types for allocation before runtime array
+        // types are inserted
+        //        call->get(2)->replace(new SymExpr(call->get(2)->typeInfo()->symbol));
       } else if (call->isPrimitive(PRIMITIVE_CAST)) {
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
           call->replace(call->get(2)->remove());
@@ -3173,7 +3180,7 @@ pruneResolvedTree() {
         elt->isTypeVariable = true;
         call->getStmtExpr()->insertBefore(new DefExpr(elt));
         // BLC: if the field is an array, process it; otherwise, remove it
-        if (elt->type->symbol->hasPragma("array"))
+        if (elt->type->symbol->hasPragma("_ArrayTypeInfo"))
           call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, eltField)));
         else
           eltField->defPoint->remove();
@@ -3184,7 +3191,7 @@ pruneResolvedTree() {
         VarSymbol* tmp = new VarSymbol("_tmp", wrapper->retType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(wrapper, dom)));
-        if (elt->type->symbol->hasPragma("array"))
+        if (elt->type->symbol->hasPragma("_ArrayTypeInfo"))
           call->replace(new CallExpr(buildArrayMap.get(call), tmp, elt));
         else
           call->replace(new CallExpr(buildArrayMap.get(call), tmp));
@@ -3215,6 +3222,8 @@ pruneResolvedTree() {
           VarSymbol* var = new VarSymbol("_tmp", fn->retType);
           block->insertAtTail(new DefExpr(var));
           block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, var->type->getField("dom"), tmp));
+          if (fn->formals.length() > 1)
+            block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, var->type->getField("elt"), fn->getFormal(2)));
           block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
           fn->body->replace(block);
         }

@@ -765,7 +765,7 @@ void CallExpr::codegen(FILE* outfile) {
       help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
-      help_codegen_fn(outfile, "array_init", get(1), get(2)->typeInfo(), get(3), get(4), get(5));
+      help_codegen_fn(outfile, "array_init", get(1), get(1)->typeInfo()->substitutions.v[0].value, get(3), get(4), get(5));
       break;
     case PRIMITIVE_ARRAY_FREE:
       help_codegen_fn(outfile, "array_free", get(1), get(2), get(3));
