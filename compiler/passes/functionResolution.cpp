@@ -1885,22 +1885,11 @@ preFold(Expr* expr) {
           forv_Vec(BaseAST, key, keys) {
             if (Symbol* var = toSymbol(key)) {
               if (call->isNamed(var->name)) {
-                if (Symbol* value = toSymbol(type->substitutions.get(key))) {
-                  result = new SymExpr(value);
-                  call->replace(result);
-                } else if (Type* value = toType(type->substitutions.get(key))) {
+                if (Type* value = toType(type->substitutions.get(key))) {
                   if (var->isTypeVariable) {
                     result = new SymExpr(value->symbol);
                     call->replace(result);
                   }
-                }
-              }
-            } else if (Type* var = toType(key)) {
-              INT_FATAL("type key encountered");
-              if (call->isNamed(var->symbol->name)) {
-                if (Type* value = toType(type->substitutions.get(key))) {
-                  result = new SymExpr(value->symbol);
-                  call->replace(result);
                 }
               }
             }
