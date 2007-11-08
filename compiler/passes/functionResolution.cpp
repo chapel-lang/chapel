@@ -3050,7 +3050,8 @@ pruneResolvedTree() {
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
           call->replace(call->get(2)->remove());
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-                 call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+                 call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                 call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
         // Remove member accesses of types
         // Replace string literals with field symbols in member primitives
         Type* baseType = call->get(1)->typeInfo();
@@ -3059,12 +3060,11 @@ pruneResolvedTree() {
           baseType = getValueType(baseType);
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
-        if (sym->isTypeVariable && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-          if (!sym->type->symbol->hasPragma("array"))
-            call->getStmtExpr()->remove();
-        } else if (sym->isTypeVariable || sym->isParam() ||
-                   !strcmp(sym->name, "_promotionType"))
-          call->remove();
+        if ((sym->isTypeVariable &&
+             !sym->type->symbol->hasPragma("array")) ||
+            sym->isParam() ||
+            !strcmp(sym->name, "_promotionType"))
+          call->getStmtExpr()->remove();
         else
           call->get(2)->replace(new SymExpr(sym));
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
@@ -3134,8 +3134,18 @@ pruneResolvedTree() {
             se->var = tmp;
         }
         if (formal->isTypeVariable &&
-            formal->type->symbol->hasPragma("array"))
+            formal->type->symbol->hasPragma("array")) {
           formal->type = buildArrayTypeInfo(formal->type);
+          formal->isTypeVariable = false;
+        }
+      }
+    }
+    if (fn->retTag == RET_TYPE) {
+      VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
+      if (ret->type->symbol->hasPragma("array")) {
+        ret->type = buildArrayTypeInfo(ret->type);
+        fn->retType = ret->type;
+        fn->retTag = RET_VALUE;
       }
     }
   }
@@ -3185,7 +3195,6 @@ pruneResolvedTree() {
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (!strcmp(fn->name, "_build_array_type")) {
-          fn->retType = buildArrayTypeInfo(fn->retType);
           BlockStmt* block = new BlockStmt();
           VarSymbol* tmp = new VarSymbol("_tmp", fn->getFormal(1)->type->getField("_value")->type);
           block->insertAtTail(new DefExpr(tmp));
@@ -3200,8 +3209,10 @@ pruneResolvedTree() {
         }
       } else if (isVarSymbol(def->sym) &&
                  def->sym->isTypeVariable &&
-                 def->sym->type->symbol->hasPragma("array"))
+                 def->sym->type->symbol->hasPragma("array")) {
         def->sym->type = buildArrayTypeInfo(def->sym->type);
+        def->sym->isTypeVariable = false;
+      }
     }
   }
 
