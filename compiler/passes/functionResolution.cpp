@@ -1874,29 +1874,6 @@ preFold(Expr* expr) {
       }
     }
 
-    if (call->numActuals() == 2) {
-      if (SymExpr* symExpr = toSymExpr(call->get(1))) {
-        if (symExpr->var == gMethodToken) {
-          Type* type = call->get(2)->typeInfo();
-          if (type->symbol->hasPragma("ref"))
-            type = getValueType(type);
-          Vec<BaseAST*> keys;
-          type->substitutions.get_keys(keys);
-          forv_Vec(BaseAST, key, keys) {
-            if (Symbol* var = toSymbol(key)) {
-              if (call->isNamed(var->name)) {
-                if (Type* value = toType(type->substitutions.get(key))) {
-                  if (var->isTypeVariable) {
-                    result = new SymExpr(value->symbol);
-                    call->replace(result);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
     SymExpr* base = toSymExpr(call->baseExpr);
     if (base && isVarSymbol(base->var) && base->var->isTypeVariable) {
       long index;
@@ -2248,6 +2225,13 @@ postFold(Expr* expr) {
           expr->replace(result);
         } else if (fn->retTag == RET_PARAM) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
+        }
+      }
+      if (fn->retTag == RET_TYPE) {
+        VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
+        if (!ret->type->symbol->hasPragma("array")) {
+          result = new SymExpr(ret->type->symbol);
+          expr->replace(result);
         }
       }
       if (!strcmp("=", fn->name) && !call->getFunction()->isWrapper) {
@@ -3076,10 +3060,8 @@ pruneResolvedTree() {
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
         if (sym->isTypeVariable && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-          if (sym->type->defaultValue)
-            call->replace(new SymExpr(sym->type->defaultValue));
-          else
-            call->replace(new CallExpr(sym->type->defaultConstructor));
+          if (!sym->type->symbol->hasPragma("array"))
+            call->getStmtExpr()->remove();
         } else if (sym->isTypeVariable || sym->isParam() ||
                    !strcmp(sym->name, "_promotionType"))
           call->remove();

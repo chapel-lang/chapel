@@ -163,6 +163,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertFormalAtTail(_this);
   if (field->isParam())
     fn->retTag = RET_PARAM;
+  else if (field->isTypeVariable)
+    fn->retTag = RET_TYPE;
   else {
     fn->retTag = RET_VAR;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
