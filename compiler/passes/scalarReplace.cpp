@@ -297,11 +297,12 @@ scalarReplaceVars(FnSymbol* fn) {
 //
 // eliminates a record type with a single field
 //
-static void scalarReplaceSingleFieldRecord(ClassType* ct) {
+static void scalarReplaceArrayDomainWrapper(ClassType* ct) {
   ct->symbol->defPoint->remove();
   ct->refType->symbol->defPoint->remove();
 
-  Type* fieldType = toDefExpr(ct->fields.only())->sym->type;
+  Symbol* field = ct->getField("_value");
+  ClassType* fct = toClassType(field->type);
 
   //
   // update substitution map back pointers
@@ -310,7 +311,7 @@ static void scalarReplaceSingleFieldRecord(ClassType* ct) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     form_Map(ASTMapElem, e, ts->type->substitutions) {
       if (e->value == ct)
-        e->value = fieldType;
+        e->value = fct;
     }
   }
 
@@ -321,19 +322,29 @@ static void scalarReplaceSingleFieldRecord(ClassType* ct) {
           CallExpr* parent = toCallExpr(call->parentExpr);
           if (parent && parent->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
             if (call->typeInfo() == ct)
-              call->get(1)->replace(new SymExpr(fieldType->symbol));
+              call->get(1)->replace(new SymExpr(fct->symbol));
           } else if (call->typeInfo() == ct)
             call->getStmtExpr()->remove();
           else if (call->typeInfo() == ct->refType)
             call->getStmtExpr()->remove();
         } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-          if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType)
+          if (call->get(2)->typeInfo() == fct &&
+              (call->get(1)->typeInfo() == ct ||
+               call->get(1)->typeInfo() == ct->refType))
             call->replace(call->get(1)->remove());
         } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-          if (call->get(1)->typeInfo() == ct->refType)
-            call->replace(new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove()));
-          else if (call->get(1)->typeInfo() == ct)
-            call->replace(call->get(1)->remove());
+          if (call->get(2)->typeInfo() == fct) {
+            if (call->get(1)->typeInfo() == ct->refType)
+              call->replace(new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove()));
+            else if (call->get(1)->typeInfo() == ct)
+              call->replace(call->get(1)->remove());
+          } else if (call->get(1)->typeInfo() == ct->refType ||
+                     call->get(1)->typeInfo() == ct) {
+            SymExpr* se = toSymExpr(call->get(2));
+            INT_ASSERT(se);
+            Symbol* newField = fct->getField(se->var->name);
+            call->get(2)->replace(new SymExpr(newField));
+          }
         } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType) {
             Expr* rhs = call->get(3)->remove();
@@ -349,21 +360,21 @@ static void scalarReplaceSingleFieldRecord(ClassType* ct) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
         if (def->sym->type == ct) {
-          def->sym->type = fieldType;
+          def->sym->type = fct;
         } else if (def->sym->type == ct->refType) {
-          if (fieldType->refType)
-            def->sym->type = fieldType->refType;
+          if (fct->refType)
+            def->sym->type = fct->refType;
           else
-            def->sym->type = fieldType;
+            def->sym->type = fct;
         }
         if (FnSymbol* fn = toFnSymbol(def->sym)) {
           if (fn->retType == ct) {
-            fn->retType = fieldType;
+            fn->retType = fct;
           } else if (fn->retType == ct->refType) {
-            if (fieldType->refType)
-              fn->retType = fieldType->refType;
+            if (fct->refType)
+              fn->retType = fct->refType;
             else
-              fn->retType = fieldType;
+              fn->retType = fct;
           }
         }
       }
@@ -384,7 +395,7 @@ void scalarReplace() {
   if (!fNoScalarReplaceArrayWrappers) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("domain") || ts->hasPragma("array")) {
-        scalarReplaceSingleFieldRecord(toClassType(ts->type));
+        scalarReplaceArrayDomainWrapper(toClassType(ts->type));
       }
     }
   }
