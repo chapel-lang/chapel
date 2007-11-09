@@ -1392,6 +1392,20 @@ resolveCall(CallExpr* call) {
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
+
+    for_formals_actuals(formal, actual, call) {
+      if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->var->isExprTemp || se->var->isConst() || se->var->isParam()) {
+            if (formal->intent == INTENT_OUT)
+              USR_FATAL(se, "non-lvalue actual passed to out argument");
+            else
+              USR_FATAL(se, "non-lvalue actual passed to inout argument");
+          }
+        }
+      }
+    }
+
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_AND_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
     Symbol* var = toSymbol(sym->var);
