@@ -208,6 +208,17 @@ static void codegen_header(void) {
     
       if (TypeSymbol* typeSymbol = toTypeSymbol(sym)) {
         typeSymbols.add(typeSymbol);
+
+        // mangle field names if necessary
+        if (ClassType* ct = toClassType(typeSymbol->type)) {
+          ChainHashMap<const char*, StringHashFns, int> field_names;
+          for_fields(field, ct) {
+            if (field_names.get(field->cname))
+              field->cname = stringcat("_", field->cname, "_", intstring(field->id));
+            field_names.put(field->cname, 1);
+          }
+        }
+
       } else if (FnSymbol* fnSymbol = toFnSymbol(sym)) {
 
         // mangle arguments if necessary

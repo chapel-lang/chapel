@@ -1,4 +1,0 @@
-bug: Cannot shadow a field from a subclass
-
-Trying to shadow a field in a derived class causes a C compile time error about
-multiple fields with the same name in a struct.
