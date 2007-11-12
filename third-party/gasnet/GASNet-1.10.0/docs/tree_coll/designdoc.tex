@@ -1,0 +1,477 @@
+\documentclass[times,10pt]{article}
+%\documentclass{sig-alternate}
+\input{globaldefs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Begin the document.                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Title                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% alternative title
+
+\title{Collective Communication and Synchronization Design Document}
+\author{Rajesh Nishtala, Dan Bonachea, Paul Hargrove\\
+    \emph{rajeshn@cs.berkeley.edu, bonachea@cs.berkeley.edu, PHHargrove@lbl.gov} \\\\
+    Computer Science Division, University of California at Berkeley \\ 
+    Future Technologies Group, Lawrence Berkeley National Lab\\ \\
+    Preliminary Work: For Internal Distribution Only}
+\maketitle
+
+% Keywords (for submission)
+% Networking: Interconnects
+% Networking: Message Passing
+% Systems Software: Compilers
+% Systems Software: Run-time systems
+\newcommand{\REM}[1]{}
+%\newcommand{\listalgorithmname}{List of Algorithms}
+% Only temporarily put a table of contents in here
+
+%\tableofcontents
+%\newpage
+%\listofalgorithms
+%\newpage
+\section{Introduction}
+
+The main goal of this document is to outline the basic data structures and algorithms that will be used to manage the collective communication algorithms within GASNet. It will primarily focus on the trees and the synchronization aspect of the collectives and less so on their incorporation into languages like UPC and Titanium. We will also have a preliminary discussion on the data structures and the extra information needed to enable team-based collectives (i.e. collective calls that are performed by a subset of the GASNet nodes). In the initial revision of this document we will assume that each gasnet node only has one gasnet thread however the collectives described here will assume that this restriction will not last past this revision of the document. 
+
+\section{Communication Topology}
+\subsection{Trees}
+The current implementation of the collectives within GASNet utilizes a flat tree in which one node acts as the leader for a communication call and all the other nodes communicate with this node. However, as the number of nodes scales higher, this communication approach has serious scalability issues as seen in much prior work both within the group and within the larger parallel computing computing community in MPI. To address this issue the communication we will utilize tree based communication model.
+
+\subsubsection{N-ary Trees}
+The first type of tree that we discuss is an N-ary tree. In this tree structure each node has at most N children. Figure~\ref{fig:narytrees} shows a diagram of the various N-ary trees that are possible with 8 nodes.
+
+\subsubsection{Binomial Trees}
+Another variation on N-ary trees is the binomial tree.  I'll fill this section in later. The formal definition is as follows:
+An ordered tree of order $k \geq 0$, that is $B_k$, has a root with $k$ children where the $i^{th}$ child is binomial tree of order $k-i$.
+
+\subsubsection{Data Structures}
+In order to enable the tree based data structures we need to maintain the tree topology information at each node. 
+Table~\ref{tab:treeinfo} shows the data we keep on each node regarding the tree geometry. Notice that if the tree geometry changes then a different geometry object will hold the data. Thus if we are in situation where we have multiple outstanding collectives, each with a different source then there will be one tree geometry object for each distinct geometry that is inflight. However if two different collectives utilize the same geometry then there is no need to allocate multiple geometries.
+
+\begin{table}[htdp]
+\caption{Data Structures for Trees}
+\begin{center}
+\begin{tabular}{|c|l|l|} \hline
+Information & Description & Use (where not self-explanatory) \\ \hline\hline
+tree type & Type of Tree represented using this topology & \\ \hline
+fanout & N for the N-ary tree (not valid if we are using Binomial Trees & \\\hline
+root & root of the current tree & \\\hline
+reference count & a reference count to how many objects are using this data structure & \\\hline
+ parent & parent in the current tree & \\ \hline
+ child count & number of children that i have & \\ \hline
+ child list & a list of all the children & \\ \hline
+sibling id & index in my parents child list & Useful when we need to go up the tree\\ \hline
+ num siblings & a count of the number of nodes who have the same parent as me & " \\ \hline
+sibling offset &  if the entire subtree of the parent were listed out in DFS order& \\
+&this variable contains this node's position in that DFS order& " \\ \hline
+children subtree sizes & size of the subtrees for each of my children & Useful when we need to go up the tree\\
+&& and when we need to send variable \\
+&& amount to each child (i.e. scatter) \\ \hline
+subtree sizes & an array of the descendant count under each of our children & " \\ \hline
+my subtree size & a count of the total number of descendants & " \\ \hline
+parent subtree size & a count of the total number of descendants of my parent& " \\ \hline
+dfs order & the DFS ordering of all the nodes in the tree & \\ 
+& (only allocated at the root) & \\\hline
+seq dfs order & a variable indicating whether the dfs order of the tree & \\
+& is in the same natural order of the nodes & \\ \hline
+
+\end{tabular}
+\end{center}
+\label{tab:treeinfo}
+\end{table}%
+
+The construction of the tree geometry can not be in the critical path of the code and needs to be performed during setup time or other non critical regions of the code. The allocation of the data structures is straightforward however in order to realize the subtree sizes we will have to run some Depth First Search algorithms across the nodes outlined in the next section.
+
+
+\subsubsection{Dissemination}
+Bruck's algorithms for all exchanges and barriers will also be enabled. Bruck's algorithm allows arbitrary dissemination radices so that we can inject more messages into the network at each dissemination phase (it is a gap/latency tradeoff). Full details of the brucks implementation, pseudo code and data structures will be available in the next revision of this document. 
+
+
+\subsubsection{Caching}
+We have outlined earlier that tree construction is an expensive process and thus cannot be in the critical path for any piece of code. However it also wasteful to build all possible trees for all possible applications. Therefore our initial implementation will be based on a caching mechanism which will use a lazy tree creation process. On the first request for a particular geometry (tree type, fanout, and root tuple) the implementation will create that geometry. However all subsequent calls to that tree geometry will use that allocated geometry.  A separate but similar caching structure will be used to keep track of the various Bruck's orders for arbitrary radices. 
+
+\noindent \textbf{Implementation Requirements}
+
+Since we expect the number of trees (and dissemination orders) that any given application will use to be small we will encode this caching structure as a linked list however make it easy to replace it with a hash table once the time is right. Note that in the future this entire code of picking the correct tree will be replaced by the auto-tuning module so it needs to be able to be amenable to that mechanism. 
+
+\noindent \textbf{Current Implementation}
+
+The geometry cache currently operates on and stores ``local views" of various tree geometries. A local view comprises of the parent, a list of children, and a list of siblings. The geometry cache is a completely local structure, i.e. none of the nodes share any aspects of the tree creation or storage. When a request for a particular $<$tree geometry, root node$>$ combination is made the cache first checks to see if that call has been made before. If it has it looks up the appropriate local view and returns it. If the view has not yet been created it will go through the process of creating this new geometry and local view and storing the item in the cache and of course return it. 
+
+We have a two-level data structure that holds the various local views. The first level stores the tree geometry, (i.e. whether the geometry is a binomial, binary, flat tree, etc etc). These geometries are linked together through a linked list. For each particular geometry type, we store create an array of pointers, the length is set to the total GASNet image count, to different local views. The lookup and retrieval algorithm is given in Algorithm~\ref{geomcachefetch}.
+
+\begin{algorithm}[h]
+\begin{algorithmic}[1]
+\STATE Input: A $<$\texttt{tree\_geometry\_in, root\_in}$>$ request pair
+\STATE Output: A local view of the tree
+\STATE $c \leftarrow$ the head of the geometry cache
+\WHILE{$c \neq \emptyset$}
+\IF{$tree\_geometry\_in = c.tree\_geometry$} 
+ \STATE /* Tree Geometry Found Check Root*/
+ \IF{$c.local\_views[root\_in]$ = $\emptyset$}
+ \STATE /* Tree Geometry Found but local view not yet created */
+ \STATE $lv \leftarrow$ \texttt{CreateLocalView(tree\_geometry\_in, root\_in)}
+ \STATE $c.local\_views[root\_in] \leftarrow lv$
+ \ENDIF
+ \STATE return $c.local\_views[root\_in]$
+ \ENDIF
+ \STATE $c \leftarrow c.next$
+\ENDWHILE
+\STATE /* Tree Geometry Not Found*/
+\STATE $tg \leftarrow$ \texttt{InitializeEmptyTreeGeometryListNode()}
+\STATE Attach $tg$ to the end of the current cache list
+\STATE $lv \leftarrow$ \texttt{CreateLocalView(tree\_geometry\_in, root\_in)}
+ \STATE $tg.local\_views[root\_in] \leftarrow lv$
+  \STATE return $tg.local\_views[root\_in]$
+  \end{algorithmic}
+\caption{Tree Geometry Cache Lookup }
+\label{geomcachefetch}
+\end{algorithm}
+
+
+\subsubsection{Tree Construction Algorithms}
+
+\section{Synchronization Data Structures and Algorithms}
+One of the key advantages of one-sided communication and the GASNet based collectives is their ability to deal with nonblocking collectives and in general a looser synchronization model. However one of the important implications of such a mechanism is the ability to have multiple outstanding collectives at any given point in time. In addition to the looser synchronization the addition of tree-based communication further increases the complexities since a node is responsible for forwarding data to all its descendants and different nodes obviously have different size subtrees.
+
+The data movement collectives (except Broadcast and All-Gather) rely on each processor getting private messages from other processors. However in order to allow the other threads to forward data (i.e. any non-flat tree structure) requires that extra buffer space be allocated which will hold the data that is destined for remote processors. Operations such as \texttt{broadcast} and \texttt{all-gather}\footnote{In some of our algorithms we use scratch space so that we can use asynchronous communication} will not require this extra space since every processor will get an identical message and therefore the user provided buffers will already provide enough storage to service any tree structure. Collectives with personalized communication in their worst case can have $O(T)$ (where $T$ is the number of threads involved in the communication) buffer slots on \textit{each} thread leading to a global allocation of $O(T^2)$ extra buffer space. However in the case of a low degree trees( and in general low out degrees) some nodes only need to send to a very small subset of the nodes. Thus our goal is to reduce the memory requirement per collective will have roughly the same asymptotic bound on the scratch space but have a much lower \textit{expected} memory usage. 
+
+In order to simplify this complexity we make a few key assumptions. The first is that we only need to worry about outstanding collectives and live buffer space between barrier phases. At barriers in the user code we can take the time to complete all data movement of collectives that have been explicitly synched thus slightly simplifying the problem. Another, possibly weaker, assumption we make is on the structure of the trees. We assume that within barrier phases the peers that any given node does not change. If it does our algorithms will require more time in the critical path to manage the scratch space.  
+
+\subsection{Distributed Scratch Space Mangement}
+\textbf{The following sections describes design decisions that have been made for an initial implementation of the collectives and they will eventually be improved before a full release of the collectives.}
+
+Each node will first allocate a circular buffer that will be used for scratch space during the collective calls. At each barrier call we know that we can reset this circular buffer since the completion of the data movement will be enforced. The initial implementation will assume that only one type of tree geometry (i.e. a root id / tree type tuple) will occur between barrier calls. If the user decides to relax this assumption a barrier will be inserted to enforce this guarantee (see Logging Section about how this will get relaxed later). 
+
+Since each node assumes a fixed tree geometry between barrier calls the parent node can constantly update where the next available buffer slot in the children is \footnote{Note that I use the parent/child terminology loosly to discuss peers in communication. All the mechanisms here work just as well for non tree topologies. However for simplicity of explanation I will stick to using a parent/child relationship where parent is defined to be the origin of a message and child is defined to be the destination of a message} This also allows the parent to know when it is about to overun data it has sent to the children that has not yet been acknowledged. Thus when a parent sees that is about to overrun child's buffer space it has to wait for the child to signal the amount of scratch space that has been consumed. Similarly a child keeps track of the last time it has sent an ok-to-send ack to its parent and what the buffer spot is. Once a child realizes that it is approaching a limit about where the parent \textit{thinks} the last consumed piece of data is, it needs to send a message acknowledging the safe reuse of data slots and signaling the last piece of data that it is safe to overwrite. Thus If the data is getting consumed quickly this should not be a big issue. (think about how this propagates backwards). 
+
+
+\noindent \textbf{Implementation Requirements}
+
+Upon team creation each team will  need to provide a local buffer that will be used for the scratch space for that team. Having scratch space for different teams interfere adds unneeded complexity to the implementation. However for the primordial GASNET\_TEAM\_ALL we will carve up a segment of the \texttt{auxseg} and use that for the initial scratch space. Each team will need to allocate its own set of buffers. 
+
+\noindent \textbf{Interface}
+
+The current interface to the distributed scratch space management is based on each collective operation registering itself with the scratch space. When an operation registers itself it provides the $<$\texttt{tree geometry, root}$>$ tuple along with the size of the collective. The registration function returns the position of your local scratch space and that of the peers you want to communicate with. These positions and queries will mostly be done locally since we can calculate this information based on the tree geometry in use.
+
+\noindent \textbf{Current Implementation}
+The act of registration allows a thread to see if it is going to overrun its local buffer it then needs to check to see which part of the buffer can be reused and send that information to the initiator. The act of asking for where to write on a target's scratch space will cause one to block waiting for the target to send us information.
+ 
+Currently we do not implement a full circular buffer.  If a child realizes it is reaching the end of the scratch space, it will wait for all the outstanding collective operations to clear and then reset its scratch space and send a message to its parent. Analogously, if a parent thinks it can't put to its child's buffer space it will wait for the child to send a ``clear" message. In future, we need to be able to clear individual operations and not wait for \textit{all} the operations before indicating that \textit{any} of the scratch space is reusable. 
+
+The current implementation registration of operations is given in Algorithm~\ref{registerscratchop}.
+% while the algorithm for getting the peer's position is given in Algorithm~\ref{getscratchpeerpos}.
+
+\begin{algorithm}[h]
+\begin{algorithmic}[1]
+\STATE Wait for all outstanding scratch operations to finish
+\FOR{$i= 0$; $i < total\_nodes$; $i++$} 
+\STATE set scratch position for node $i$ to $0$
+\ENDFOR
+\end{algorithmic}
+\caption{PerformScratchReset}
+\label{registerscratchop}
+\end{algorithm}
+
+
+
+\begin{algorithm}[h]
+\begin{algorithmic}[1]
+\STATE Input: A $<$\texttt{tree\_geometry\_in, root\_in}$>$ request pair along with a vector of sizes $s$ 
+\STATE $s$ is a vector of length $numpeers+self$ /*scalable*/
+\STATE Output: The location on local scratch space where to expect data for this operation
+\STATE /* $barrier\_rest$ is ONLY set by BARRIER when tree geometry changes ... or ... When the CLIENT calls a barrier ... no internal barriers can trigger this flag otherwise we will get race conditions since collectives may issue barriers within the waits.*/
+\IF{$barrier\_reset$}
+\STATE set the meta data indicating the tree geometry and root that are valid for the current barrier phase of the scratch space 
+\ELSIF{the tree geometry has changed between the last op and this one}
+\STATE Wait for all previous collective operations registered on this scratch space to finish
+\STATE \texttt{InternalBARRIER}
+\STATE $barrier\_rest \leftarrow true$ 
+\STATE set the meta data indicating the tree geometry and root that are valid for the current barrier phase of the scratch space 
+\ELSE
+\STATE /* tree geometry is unchanged .. nothing to do*/
+\ENDIF
+\IF{$barrier\_reset$}
+\STATE \texttt{PerformResetForSelfAndPeers(tree\_geometry\_in)}
+\STATE $barrier\_reset \leftarrow false$
+\STATE $retval \leftarrow 0$
+\STATE $my\_scratch\_head\_pos \leftarrow s[myimage]$
+%\ENDIF
+%\IF{$my\_scratch\_head\_pos \geq my\_scratch\_tail\_pos$} 
+%\IF{$my\_scratch\_head\_pos + s >$ total local scratch size}
+\ELSIF{my space overflows \textbf{or} any peer overflows}
+\STATE Wait for all previous collective operations registered on this scratch space to finish
+\IF{my space overflows} 
+\STATE Send ResetComplete to peers
+\ENDIF
+\IF{any peer overflows}
+\STATE Wait for ResetComplete from those peers
+\ENDIF
+\STATE \texttt{PerformResetForWhoeverOverflowed(list of peers who overflowed)}
+\STATE $my\_scratch\_head\_pos \leftarrow s[myimage]$
+\STATE  $retval \leftarrow 0$
+\ELSE
+\STATE $retval \leftarrow my\_scratch\_head\_pos$
+\STATE $my\_scratch\_head\_pos \leftarrow my\_scratch\_head\_pos + s[myimage]$
+\ENDIF
+\STATE allocate a operation and attach it to the list of active operations
+\STATE return $retval$
+
+\end{algorithmic}
+\caption{Register New Collective Operation (Conservative) }
+\label{registerscratchop}
+\end{algorithm}%\begin{algorithm}[h]
+%\begin{algorithmic}[1]
+%\STATE Input: A $<$\texttt{tree\_geometry\_in, root\_in}$>$ request pair along with a size $s$ and a node $n$
+%\STATE Output: The location on node $n$'s scratch space 
+%\STATE $d \leftarrow$ current local estimate of $n$'s scratch position head
+%\IF{$d+s >$ total\_scratch\_size at node $n$}
+%\STATE Wait for $n$ to send a reset signal
+%\STATE set our local estimate of $n$'s scratch position head to $s$. 
+%\STATE return 0
+%\ELSE
+%\STATE $retval \leftarrow d$
+%\STATE increment the current local estimate of $n$'s scratch position head by $s$
+%\STATE return $retval$
+%\ENDIF
+%\end{algorithmic}
+%\caption{GetPeerScratchPosition}
+%\label{getscratchpeerpos}
+%\end{algorithm}
+
+\noindent \textbf{Notes and Todo}
+\begin{enumerate}
+\item Change all internal barriers to save and restore barrier state
+\item Document Loudly that when an internal barrier within the collective does not set the $barrier\_reset$ flag.
+\item Assert Lock on Tree Geometry Creation
+\item Take a look at what needs to be done on Init
+\item How to change so all CPUs call local bcast or local scatter
+\item Per thread hooks and initiator 
+\item ... don't focus on performance for large procs yet ... 
+\end{enumerate}
+
+
+
+\subsubsection{Logging}
+\textbf{This section describes a possible future implementation that will relax some of the requirement for a fixed geometry between barrier calls.}
+
+Each node will eventually keep a log of the collectives run between barrier phases. On each collective call a log entry will be created that contains the collective operation, the size of the collective, the root of the collective (if there is one), and the geometry that was used to disseminate the information. Thus there will be a list of log entries. When a new geometry is used the log will be replayed to find out the status of children/parents scratch space. Thus when the collective call changes midstream the critical path will incur a penalty of log playback (it will  be important to see how the performance of this compares to a full barrier). The full ideas behind this approach will be flushed out in later revisions of this document.
+
+
+\newpage
+\subsection{Synchronization Mechanisms}
+One of the big advantages the synchronization flags are that they allow a looser synchronization (and thus more functionality and novel semantics) than what MPI allows. However these synchronization flags increase the complexity of the collectives interface and implementation. The UPC (and therefore the GASNet) specification for collectives encourages three different input synchronization flags and three different output synchronization flags. 
+
+They are listed here from the original collective document for the sake of completeness:
+
+\begin{itemize}
+\item IN\_NOSYNC: All data movement may begin on any GASNet node as soon as
+any node has entered the collective initiation function.  This is
+sufficient synchronization when, for instance, no input data has been
+modified in the current barrier phase.
+
+\item IN\_MYSYNC: Each block of data movement may begin as soon as both its
+source and destination nodes have entered the collective initiation
+function.  This is sufficient synchronization when, for instance, all
+modification to the input data in the current barrier phase (if any) was
+done locally.
+
+\item IN\_ALLSYNC: Data movement may begin only when all nodes have entered
+the collective initiation function.  This is potentially the most costly
+synchronization, and is necessary when remote modification of input
+data (via a put) is possible in the current barrier phase.
+\end{itemize}
+
+Here are the three output sync modes, with the corresponding GASNet
+semantics:
+
+\begin{itemize}
+\item OUT\_NOSYNC: The sync of a collective handle can succeed at any time
+so long as the last thread to sync does not do so until all data
+movement has completed.  This is sufficient synchronization when no
+output data will be consumed in the current barrier phase.
+
+\item OUT\_MYSYNC: The sync of a collective handle can succeed as soon as
+all data movement has completed to and from local data areas
+specified in the call (note that movement to or from buffers
+internal to the implementation and local to the node might still be
+taking place, for instance in tree-based broadcasts).  This is
+sufficient when, for instance, output data will be consumed only
+locally (if at all) in the current barrier phase.
+
+\item OUT\_ALLSYNC: The sync of a collective handle can succeed as soon as
+all data movement has completed to and from all data areas specified
+in the call.  This is weaker than a full barrier, since the equivalent
+of a zero-byte broadcast is sufficient.  This synchronization mode is
+potentially the most costly, and is necessary when output data may be
+consumed remotely (via a get) in the current barrier phase.
+\end{itemize}
+
+Thus there are a total of 3 input synchronization options combined with 3 output synchronization options which lead a total of 9 synchronization modes. For this revision of the document i will only discuss how we plan to deal with the cases where the input and output synchronizations are the same (i.e. IN\_NOSYNC/OUT\_NOSYNC) and how they will fit in to the trees and the scratch space implementation. 
+
+\begin{itemize}
+\item IN\_NOSYNC / OUT\_NOSYNC: This is the loosest of all the synchronization modes. If we analyze a tree-based broadcast in this context, it means that the parents are allowed to overwrite the child's destination buffer without worrying about overwriting pre-existing data. This semantic allows one to directly do RDMA puts (AMLongs) into the final destinations without consideration for any scratch space for the broadcast. It forces the user to be more careful with the buffers that are handed to GASNet. We will also let a node exit as soon as it finishes initiating all its puts down the tree. This can imply that nodes at higher levels in the tree will end the collective well before the nodes further down the tree. The semantics are still correct for OUT\_NOSYNC since the last node to exit (i.e. one of the leaves of the tree) will have to wait for data to arrive before it can exit. \footnote{This implementation can also be quickly morphed into an OUT\_MYSYNC collective by having each node wait until the put down the tree is done before it returns. Also note that an IN\_MYSYNC/OUT\_NOSYNC can easily be implemented since the root can issue communication and it can traverse down the tree without worry about overwriting child's buffer spaces. Since the only node that needs to worry about data movement before entering the collective is the root node in this sync mode such a scheme might be a simple extension to these collectives.}
+
+However for collectives that require personalized communication we still have to send to an intermediary buffer since the user has not allocated enough space for all the intermediary space. An optimization that could be tried later is to directly RDMA put the piece of the data finally destined to the node we are sending to directly when we know that the children no longer have to forward data. However the optimization will not be nearly as useful as the broadcast case since an extra copy will still be required because of the extra data that needs to be sent to the intermediary nodes. 
+
+\item IN\_MYSYNC / OUT\_MYSYNC: This synchronization mode resembles that of MPI. One of the new implications for this mode for broadcast is that we can no longer blindly write into the destination buffer. We have to first send the data into a special "holding zone" (i.e. one of the scratch buffers) and then let the child node take the data out of this holding zone before copying it into its final location. In addition a node can only exit the collective once it knows the puts to \textit{all} its children are complete implying that it is safe to reuse any of the destination buffers. A way to avoid the local memory copy and leverage the RDMA support is to have the child nodes signal the parents when it is ok for the parent to send. This will incur more communication but save on a large local memory copy. Eventually the right solution will probably be to use the special holding areas for smaller message sizes and the permission to send based algorithm for the larger ones. The crossover point will probably vary from machine to machine. Note that a get based mechanism can also be used but the child nodes still need acklowdegment from the parents that it is ok to get (thus the problem is simply reversed). \footnote{If an IN\_NOSYNC/OUT\_MYSYNC collective is needed then nodes can blindly issue the gets. }
+
+For scatter and collectives that require personalized communication, the scratch buffers still need to be used and the optimization described above can no longer be used since the parent is not allowed to clobber the child's data until there is acknowledgment that the child has entered the collective call. Again a g
+
+\item IN\_ALLSYNC / OUT\_ALLSYNC: This is the strongest synchronization mode available. Again note that scratch space is still required for the same reasons as above however notice that the scratch space can be overwritten after every buffer call since all the collectives only exit after all the data movement. Therefore at the end of the collective no piece of the scratch space is still live. This can further reduce the strain on the memory space since we do not need to perform any barriers that the user does not specify. We can also use the ALLSYNC collectives to reset the scratch space.
+
+For certain algorithms such as all-gather-all, we can actually piggy back the messages for the outbarrier with the actual data transfers however we will hold off on this until later revisions of this document. This could in theory save half a barrier on every IN\_ALLSYNC and half a barrier on every OUT\_ALLSYNC. 
+
+\end{itemize}
+
+\section{Data Movement Primitives}
+GASNet offers many different flavors of point-to-point communication such as: blocking puts/gets, nonblocking puts/gets, blocking Active Messages, and nonblocking Active Messages. The primary aim of this section is to document which message transfer scheme is appropriate to get the best performance for a given set of synchronization flags. 
+\subsection {Put-Based Implementations}
+A lot of the tree-based implementations of the collectives rely on active messages to allow the internal nodes to forward the data to the other nodes.  However, relying on asynchronous active messages to perform the transfer do not allow the initiator to know when the data movement has been completed since no explicit handle is returned. Thus there has to be some sort of external mechanism to free the scratch space.
+
+Rather than building an entire synchronization infrastructure just to handle this case, let us analyze when it is safe to use the nonblocking Active Messages (our discussion will focus on AMLongAsync). Previous sections described the distributed scratch space management in detail. These algorithms provide to key features that we can use here:
+\begin{itemize}
+\item The scratch space is invisible to the client code and hence GASNet has complete control of when it can be freed. 
+\item The algorithms and data structures are designed so that different nodes can agree upon which part of the scratch space can be reused.
+\end{itemize}
+
+The main programming difficulty with using nonblocking communication is knowing when it is safe to reuse the source buffers for the data transfer. With nonblocking puts/gets this is done through waiting on an explicit handle. In order to circumvent this problem with nonblocking active messages we notice that the scratch space is under the control of a different synchronization mechanism that provides a distributed agreement on when it can be reused. Thus, if our puts originate from the scratch space managed by GASNet, then we can safely use nonblocking active messages without worrying about the liveness of the source data. 
+
+However this requires the data to be in the scratch space, which will necessitate an extra copy. In many cases, such as sending to a leaf, transfers from the scratch space are sub-optimal. In the following sections we will outline a decision tree and conditions that yield when it is safe to use the different data transfers.
+
+For simplicity of our initial explanation we will only consider the cases in which the input and output synchronization modes are the same. 
+
+\begin{itemize}
+\item IN,OUT\_NOSYNC: There are three cases with the NOSYNC case.
+\begin{itemize}
+\item If the destination of Transfer is an internal node in the tree we will use the decision tree outlined below. 
+\item If the destination is a leaf we will use a nonblocking put followed by an explict synchronization
+\item The leaves do Nothing
+\end{itemize}
+\item IN,OUT\_MYSYNC: We use the decision tree.
+\item IN,OUT\_ALLSYNC: Same as NOSYNC except have a barrier at the end
+\end{itemize}
+
+
+The decision tree in Algorithm~\ref{msg-transfer-decision} outlines when a particular style of transfer can be used. The first thing to notice with this decision is that we elect to use puts when we send to a leaf in the case of NOSYNC. The semantics require that at least one node remain active in the collective until all data movement has finished. Thus by waiting for the puts to finish, we guarantee that the parents of the leaves will wait until all the data transfers have finished.  The next important detail is to notice that when the source is not in the scratch space and MYSYNC is required we will use a blocking active message to ensure that the source can be reused since there is no other mechanism to know when the data has been fully consumed. 
+
+
+\begin{algorithm}[h]
+\begin{algorithmic}[1]
+\IF { source of the transfer is in the scratch space }
+\STATE use an AMLongAsync (for the reasons outlined above)
+\ELSE
+\IF { using MYSYNC}
+\STATE use AMLong
+\ELSE
+\IF{ sending to a leaf }
+\STATE Use a nonblocking put followed by an explicit synchronization
+\ELSE
+\STATE Use AMLongAsync
+\ENDIF
+\ENDIF
+\ENDIF
+\end{algorithmic}
+\caption{Decision Tree For Message Transfer}
+\label{msg-transfer-decision}
+\end{algorithm}
+
+
+\subsection {Get-Based Implementations}
+Still needs to be worked out.
+
+\subsection {Barriers}
+When a tree based collective is used we notice that roughly $\frac{fanout-1}{fanout}$ of the nodes are leaf nodes. We also notice that we can use the messaging semantics to reduce the number of nodes upon which we need to perform a barrier. We can use the following algorithm for this:
+
+\begin{enumerate}
+\item Sync Puts to Leaves (acts as Notify for the leaves)
+\item Perform a Barrier over all the Internal Nodes
+\item Wake leaves through an AMShort
+\end{enumerate}
+
+This sequence dramatically reduces the nodes of the OUT\_ALLSYNC barrier and should be added as a useful optimization. 
+
+\section{Collective Implementation}
+This section outlines how each of the different collectives handle both the synchronization as well as the
+ data movement and their requirements on scratch space.
+
+\subsection{Broadcast} 
+
+A broadcast collective  takes data that is local  to one image's memory space and then broadcasts it 
+such that every image has a private copy of that data. 
+
+\subsubsection{Broadcast Communication}
+Since one image has the source data, the optimized implementations of broadcast use a tree to 
+disseminate the information. The choice of tree geometry will vary based on platform, message size, and 
+processor count. The natural algorithm will be a push based implementation that will perform puts down the tree. Thus once an intermediary node receives the data it will forward it on to its children. However, this communication pattern is only permitted when the destination of the broadcast is in the GASNet segment. The source need not be in the GASNet segment since the root will push the data out. 
+
+However if the source is in the GASNet segment but the destination is not, then the children will need to perform \texttt{gets}. The \texttt{get} must be performed into some auxiliary scratch space so that children further down the tree can perform a get. Thus this will require a second copy of the data.
+
+If both the source and destination are in the segment, then either approach will be correct and the algorithm should be chosen based on the performance of \texttt{puts} versus \texttt{gets}. However, if neither the source nor the destination are in the segment a rendez-vous approach where the addresses of the source and destination are exchanged is needed. Unfortunately this approach will have performance penalties and therefore should be avoided as much possible. 
+
+A final optimization is to leverage eager buffer space with AMMediums. This is equivalent to the underlying communication infrastructure providing the appropriate amount of scratch space and thus regardless of whether the source or destination are in the segment the eager algorithm will give good performance. However it is only intended for small datasizes. For larger datasizes explicit scratch space management with AMLongs will provide better performance by leveraging the RDMA capabilities where available. 
+
+
+\subsubsection{Broadcast Scratch Space Requirements}
+Since the message that each processor receives is not personalized, a correct tree-based implementation can be built without any scratch space, however the use of scratch space in broadcast will allow performance optimizations.
+
+The first set of optimizations, as described above, will allow \texttt{get} based implementations to work when the destination is not in the GASNet segment. However, it will also allow better performance with the MY/MY synchronization flags. Without the auxiliary space, a full barrier needs to be performed in order to ensure that the parent does not overwrite the children's data before the children enter the collective. However if the data is transferred into a temporary holding area (i.e. the auxiliary space) then the data can be sent without worry of overwriting live data in the child. Thus currently for a MY/MY tree-based collective, we make use of the extra scratch space. However note that if a pull based implementation is used then the collective will be implicitly be MY/MY without any additional changes since data can only be pulled once the parent has it and a child can only pull the data once it has entered the collective. The pull based implementation will require that the parent send a signal to the children implying that it is safe to perform a get. 
+
+\subsubsection{Optimizing ALL\_SYNC}
+ The semantics provided by IN\_ALL\_SYNC specify that effectively a barrier must be performed before any data movement is started. However performing a full barrier followed by a collective will involve a pass up the tree for the barrier notify, a pass down the tree indicating that all the children have arrived, and another pass of the tree down the tree with the data. However, notice that the second pass down the tree indicating that all the threads have arrived is redundant. Once we go up the tree, the root knows that all the children have arrived and thus it can then simply initiate the broadcast. Thus once a node gets the broadcast data, it also implicitly knows that the barrier on the way in was completed. Thus folding the second phase of the barrier into the collective's data movement can save a round of communication and thereby increase performance. For pull based implementations, the root can only allow the data to be pulled by its children once the first phase of the barrier has completed. 
+ 
+ 
+\subsection{Scatter}
+The scatter collective is similar to broadcast in that one image has the data for all the other images, however the data that is sent to the other images from the root is personalized. 
+
+\subsubsection{Scratch Space and Trees}
+Thus if we want a non-flat  tree approach, intermediate nodes in the tree will be responsible for forwarding data. However, the buffers that the user provides need not be large enough to support this and therefore a correct implementation must rely on scratch space to forward data down the tree. Thus while the choice of \texttt{put}, \texttt{get}, and \texttt{rendez-vous} algorithms are the same as the broadcast case, almost all of the algorithms will require some auxiliary space to get the tree data right.  Even when eager approaches are used, the data needs to be forward through this eager buffer space thus, towards the top of the tree, the eager buffer space must be large enough to accommodate the data for a large number of the images which imposes a smaller maximum size on the data to be scattered. 
+
+\subsubsection{DFS Reorder}
+In order to allow a good communication pattern we must assume that the data destined for a subtree is contiguous, otherwise we will need to initiate multiple transfers to and from the same node. However for the data to be contiguous the DFS order of the tree has to be the same as the natural order of the nodes. If they are not then we must reorder the data so that it is contiguous. In the current implementation we have a flag in the tree geometry which indicates whether or not this condition holds. If it does not we must reorder the data before we begin communication. One could imagine, not doing this optimization and performing multiple transfers to and from the same node, however this will involve more messages. The correct solution will be to optimize the trees such that most trees have the correct order and make this reordering the uncommon case. 
+
+\subsubsection{Optimizing ALL\_SYNC}
+With the push based implementations we can fold the IN\_ALL\_SYNC barrier with the collective as we did with broadcast for the same reasons.
+
+\subsection{Gather}
+Gather performs the inverse operation of scatter. 
+
+\subsubsection{Scratch Space and Trees}
+Analogous to the scatter collective, gather will also need scratch space to work correctly with non-flat tree configurations since the intermediate nodes are not required (and probably will not) allocate enough space in the user buffer for the collective. To avoid extra messages, the gather is currently implemented as one pass up the tree, in which each node puts its data to the appropriate part in its parent's scratch space. This approach will be safe regardless of wether or not the source and destination are in the segment since the source and the target of a communication will be the scratch space, and thus reside within the GASNet segment by design. Communication need not be done directly into the users buffer and can be performed as an optimization. 
+
+\subsubsection{DFS Reorder}
+By design the data will arrive at the root node in the DFS order of the tree. If this ordering does not match the natural order of the nodes, the data needs to be re-ordered at the root before the collective can be considered finished. This will impose a serial bottleneck to reorder the data. The best way to get around this is to design the trees so that this is not a concern. 
+
+\subsubsection{Optimizing ALL\_SYNC}
+Since the data initially travels up the tree we can fold the OUT\_ALL\_SYNC with the collective by sending a message down the tree after all the data has arrived. Thus we use the collective as the first phase of the OUT\_ALL\_SYNC barrier. 
+
+\subsection{All-Gather}
+The All-gather is semantically similar to the gather except that the data is then broadcast out to everyone. The current implementation performs a gather and followed by a broadcast however future versions will leverage a dissemination style approach. The design considerations that applied for both the gather and the broadcast will also apply here. 
+
+\subsubsection{Optimizing the ALL\_SYNC}
+A tree based gather is amenable to folding the barrier for an OUT\_ALL\_SYNC while a tree based broadcast is amenable to folding the barrier for an IN\_ALL\_SYNC. However since we currently compose an all-gather as a gather followed by a broadcast folding the barrier in either direction is not a possibility. The collective itself can not also be used as an implicit barrier, since the reception of data does not guarantee that all nodes have received the data. Thus a full barrier needs to be performed if the ALL\_SYNC is required. 
+
+\subsection{Exchange}
+In an exchange each image performs a scatter (gather) of the data to (from) all the other images. We currently implement a radix-2 dissemination style exchange that uses Bruck's algorithm. 
+
+
+\subsubsection{Scratch Space}
+A non-flat tree implementation (whether it is a dissemination approach or a set tree based gathers) will necessitate the use of scratch space since intermediate nodes will be responsible for forwarding data for other nodes. Depending on whether dissemination or trees are used the scratch space requirements will be different.
+
+\subsubsection{Optimizing the ALL\_SYNC} 
+Still needs to be worked out.
+
+
+ %\input{synchflags}
+%\input{scratchspace}
+%\input{strategy}
+%\input{bcast}
+%\input{reduce}
+%\input{scatter}
+%\input{gather}
+%\input{alltoall}
+%\input{allgather}
+
+\end{document}

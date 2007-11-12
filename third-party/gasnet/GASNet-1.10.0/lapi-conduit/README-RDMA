@@ -1,0 +1,104 @@
+Overview
+========
+
+RDMA support for LAPI conduit is currently implemented with #ifdef
+regions providing the required functionality.  It is automatically
+detected at configure time.
+
+Setup (mostly in gasnet_core.c:gasnetc_attach())
+================================================
+
+In this routine we take the regular segment (SEGMENT_FAST only)
+and split it up into a number of 16MB regions, each with its
+own PVO (LAPI_Util with LAPI_XLATE_ADDRESS).  These PVOs are
+then exchanged (loop of LAPI_Address_init64() calls).  In addition
+lapi_remote_ctxt_t objects are obtained (LAPI_Util with
+LAPI_RDMA_ACQUIRE).  At this point a node has enough to identify
+and manipulate data in the shared segment on any other node.
+
+
+GET and PUT Operations
+==============
+
+Shared segment to shared segment
+--------------------------------
+
+The only issue here is decomposing the transfer so that each RDMA
+operation does not cross PVO boundaries.  The strategy taken here
+is to loop over source regions, splitting the transfer into one
+or two, depending on whether the source region crosses a PVO boundary
+at the target.
+
+
+Out of shared segment to shared segment
+---------------------------------------
+
+Bounce buffers are used for transfers shorter than 
+gasnete_pin_threshold.  For longer transfers, one of two schemes
+is used depending on whether firehose is enabled:
+1) The regions are lined up, i.e. the source PVO boundaries are matched
+to target PVO boundaries.  The source regions are then pinned using 
+this decomposition and the LAPI_Xfer() calls are made.
+2) Local firehose is used to pin the source region.
+
+For segment everything, both local and remote firehose is used.
+
+Completion
+----------
+
+Here the origin counter is sufficient.  Upon completion all the source
+out of segment registrations are freed (if firehose isn't used).
+
+Managing GASNet Handles
+=======================
+
+Only the origin counter and list of locally pinned regions are needed.
+In the non-firehose case, the send completion handler unpins what needed
+to be pinned.
+
+
+Managing Network Buffers
+========================
+
+For short transfers we use pre-pinned network buffers.  They are of
+size gasnete_pin_threshold and we have gasnete_num_nb of them.
+They are managed with two lists, protected by a Pthread mutex (we can
+do better synchronization in the future, if needed).  They are:
+gasnete_free_nb_list, the free list, and gasnete_active_nb_list, 
+the list of active operations.  Initiators get an entry from the
+free list, if possible, and use the buffer for the transfer.  The
+entry then gets put on the active list.  Upon completion of a
+transfer, the entry is placed back on the free list.  If the
+free list is empty, the initiator attempts to steal an unsynced
+entry from the active list (pointers to origin counters are
+also provided for the check).  
+
+Tuning parameters
+=================
+
+GASNET_LAPI_RCTXTS_PER_NODE - a (small) integer specifying how many
+remote contexts to open up to each peer.  Default value: 1
+
+GASNET_LAPI_USE_RDMA - use RDMA with this conduit.  If RDMA is detected
+at configure time, it is enabled by default.  Note that -rdma_count
+must be passed to poe or rcxtblocks passed to LL.  If the conduit cannot
+use RDMA at startup it will degrade to the older conduit code and
+print a warning.
+
+GASNET_LAPI_PIN_THRESHOLD - the message size (in bytes) where we crossover
+from using network buffers to pinning.  Limited to be <= 16384.
+
+GASNET_LAPI_USE_FIREHOSE - Use the firehose dynamic memory registration
+scheme for segment fast (defaults to yes).  This is automatically
+enabled for segment everything.
+ 
+Known Bugs
+==========
+
+A known bug in the new lapi-conduit RDMA support will cause crashes
+at startup for jobs where the GASNet FAST or LARGE segment size differs across
+nodes (eg. this arises in UPC where the number of pthreads per node differs
+across nodes).  The suggested workaround is either to select a uniform segment
+size, or to set GASNET_LAPI_USE_RDMA=0 in the environment to disable the RDMA
+support.
+

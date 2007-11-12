@@ -9,15 +9,15 @@ default: all
 all: gasnet
 
 clean: FORCE
-	cd gasnet && make clean
+	cd gasnet && $(MAKE) clean
+
+clobber: FORCE
+	cd gasnet && $(MAKE) clobber
 
 armci: FORCE
-	cd armci && make
+	cd armci && $(MAKE)
 
 gasnet: FORCE
-	-cd gasnet && echo "n" | ./Bootstrap
-	cd gasnet && ./configure --prefix=$(THIRD_PARTY_ABS_DIR)/gasnet/install/$(CHPL_MAKE_PLATFORM) --enable-segment-everything --enable-debug
-	cd gasnet && $(MAKE) all
-	cd gasnet && $(MAKE) install
+	cd gasnet && $(MAKE)
 
 FORCE:
