@@ -1,0 +1,6 @@
+Makefile
+config.cache
+config.log
+config.status
+gasnet_config.h
+stamp-h1
