@@ -925,7 +925,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
   fn->_this = new VarSymbol("this", ct);
-  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->symbol)));
+  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->defaultConstructor)));
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
   ASTMap map;
@@ -937,4 +937,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->name = canonicalize_string(stringcat("_construct_", fn->name));
   ct->symbol->defPoint->insertBefore(fn->defPoint);
   fn->retType = ct;
+  if (ct->defaultConstructor->visible) {
+    Expr* before = ct->defaultConstructor->defPoint->prev;
+    ct->defaultConstructor->defPoint->remove();
+    ct->defaultConstructor->visible = false;
+    before->insertAfter(ct->defaultConstructor->defPoint);
+  }
 }

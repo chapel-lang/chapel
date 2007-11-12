@@ -1005,7 +1005,9 @@ static const char* fn2string(FnSymbol* fn) {
   int start = 0;
   if (fn->instantiatedFrom)
     fn = fn->instantiatedFrom;
-  if (fn->isMethod) {
+  if (!strncmp("_construct_", fn->name, 11)) {
+    str = stringcat(fn->name+11);
+  } else if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
       str = stringcat(":", type2string(fn->getFormal(2)->type));
       start = 1;
@@ -1013,9 +1015,7 @@ static const char* fn2string(FnSymbol* fn) {
       str = stringcat(":", type2string(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
-  } else if (!strncmp("_construct_", fn->name, 11))
-    str = stringcat(fn->name+11);
-  else
+  } else
     str = stringcat(fn->name);
   if (!fn->noParens)
     str = stringcat(str, "(");
