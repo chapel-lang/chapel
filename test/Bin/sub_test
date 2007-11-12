@@ -181,7 +181,15 @@ else
     endif
 endif
 
-if (-r ./USEMAKE && $perftest == 0) then
+if (-r ./USEMAKE) then
+    if ($perftest != 0) then
+	echo "[Skipping non-performance test: $localdir/Makefile]"
+	exit 0
+    endif
+    if ($testfutures == 2) then
+	echo "[Skipping non-future test: $localdir/Makefile]"
+	exit 0
+    endif
     set checkfile = make.good
     set makelog = make.out.tmp
     set makeutil = `$testdir/../util/chplmake`
