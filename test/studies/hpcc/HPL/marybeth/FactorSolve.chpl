@@ -21,27 +21,28 @@
 //   piv: a vector used to store and output the permutations performed
 //        by pivoting operations
 
-def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
+def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
   // Need to modify routine to factor rectangular system:  [A | b].
   // Also, don't pivot rows of L or return pivot vector.
 
   // Test that the domain of A is square with the same index set for
   // each dimension.
-  if (D.dim(1) != D.dim(2)) then
-    halt("blockLU requires square matrix with same dimensions");
+//  if (D.dim(1) != D.dim(2)) then
+//    halt("blockLU requires square matrix with same dimensions");
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
   if (blk <= 0) || (blk > D.dim(1).length) then
     halt(blk," is an invalid block size passed to blockLU");
 
+  var piv: [D.dim(1)] int;
   [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute three sets of
   // index ranges -- those that are unfactored, divided into those
   // currently being factored and those that remain.
 
-  for (UnfactoredInds, CurrentPanelInds, TrailingInds) 
+  for (UnfactoredInds, CurrentPanelInds, TrailingRows, TrailingCols) 
         in generateBlockLURanges(D, blk) {
 
     // Create array aliases for various submatrices of current block
@@ -61,11 +62,11 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     //                  of A1
   
     var A1  => A[UnfactoredInds, CurrentPanelInds],
-        A2  => A[UnfactoredInds, TrailingInds],
+        A2  => A[UnfactoredInds, TrailingCols],
         A11 => A[CurrentPanelInds, CurrentPanelInds],
-        A21 => A[TrailingInds, CurrentPanelInds],
-        A12 => A[CurrentPanelInds, TrailingInds],
-        A22 => A[TrailingInds, TrailingInds];
+        A21 => A[TrailingRows, CurrentPanelInds],
+        A12 => A[CurrentPanelInds, TrailingCols],
+        A22 => A[TrailingRows, TrailingCols];
 
     // First compute the LU factorization of A1...
     //
@@ -126,7 +127,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     // step.  There are options for communication that need to be reflected
     // here or in distribution.
     // A1 (nb x nb) is broadcast across processors in process row.
-    forall columnblk in blkIter(TrailingInds,blk) {
+    forall columnblk in blkIter(TrailingCols,blk) {
       var Ublk => A12[CurrentPanelInds,columnblk];
       forall j in columnblk do
         for k in CurrentPanelInds do
@@ -142,7 +143,7 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     // Blocks of U (nb x nb blocks of A21) are broadcast across 
     //   processors in process column.
     // Computation occurs on processor that contains Ablk (nb x nb).
-    for (rowblk, columnblk) in blkIter2D(TrailingInds,blk) {
+    for (rowblk, columnblk) in blkIter2D(TrailingRows,TrailingCols,blk) {
       var Lblk => A21[rowblk,CurrentPanelInds];
       var Ublk => A12[CurrentPanelInds,columnblk];
       var Ablk => A22[rowblk,columnblk];
@@ -177,10 +178,11 @@ def rightBlockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
 def generateBlockLURanges(D:domain(2), blksize) {
   const end = D.dim(1).high;
+  const endcol = D.dim(2).high;
 
   for i in D.dim(1) by blksize {
     const hi = min(i + blksize-1, end);
-    yield (i..end, i..hi, hi+1..end); 
+    yield (i..end, i..hi, hi+1..end, hi+1..endcol); 
   }
 }
 
@@ -193,13 +195,14 @@ def blkIter(indRange, blksize) {
   }
 }
 
-def blkIter2D(indRange, blksize) {
-  const end = indRange.high;
+def blkIter2D(rowRange, colRange, blksize) {
+  const rowEnd = rowRange.high;
+  const colEnd = colRange.high;
  
-  for i in indRange by blksize {
-    const rowhi = min(i+blksize-1, end);
-    for j in indRange by blksize {
-      const colhi = min(j+blksize-1, end);
+  for i in rowRange by blksize {
+    const rowhi = min(i+blksize-1, rowEnd);
+    for j in colRange by blksize {
+      const colhi = min(j+blksize-1, colEnd);
       yield (i..rowhi, j..colhi);
     }
   }
@@ -229,18 +232,13 @@ def computePivotRow(A:[?D]) {
    return ind(1);
 }
 
-def LUSolve (A: [?ADom], x: [?xDom], b: [?bDom], piv) {
+def LUSolve (A: [?ADom], x: [?xDom]) {
 
-   var n = piv.numElements;
+   var n = ADom.dim(1).length;
    var AD1 = ADom.dim(1);
+   var b => A(.., n+1);
 
-   x = b(piv);
-   for j in 1..n-1 {
-     for (i1, i2) in (xDom(j+1..n), AD1(j+1..n)) {
-        x(i1) -= x(j)*A(i2,j);
-     }
-   }
-
+   x = b;
    for j in (2..n) by -1 {
      x(j) /= A(j,j);
      for (i1, i2) in (xDom(1..j-1), AD1(1..j-1)) {

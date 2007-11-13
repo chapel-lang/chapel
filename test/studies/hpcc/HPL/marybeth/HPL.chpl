@@ -5,6 +5,7 @@ use Time;
 config var inputfile = "HPL.dat";
 config var writeTimingInfo = false;
 config var writeAccuracyInfo = false;
+config var writeMoreInfo = false;
 
 def main() {
   var TEST = HPLparams(inFileName=inputfile);
@@ -13,36 +14,53 @@ def main() {
 
 //for p in TEST.P {
 //  for q in TEST.Q {
+//    A = [Asquare | b].  All of A is factored, so that only
+//    a backsolve is needed to solve for x.  (The forward solve
+//    step is implicitly done in the factor step.)
+
 //    Use p, q and pmap to define distribution for A.
 //    The right hand side, b, is replicated in each process column.
 //    The solution x, is replicated in each process row.
   for n in TEST.N {
     for nb in TEST.NB {
-       var ADom = [1..n, 1..n];
+       var ADom = [1..n, 1..n+1];
        var xDom = [1..n];
-       var bDom = [1..n];
-       var piv: [1..n] int;
        var A: [ADom] real;
        var x: [xDom] real;
-       var b: [bDom] real;
        var resid: 3*real;
        var norms: 5*real;
 
        var testTimer = Timer();
        var timeData: 2*real; 
 
-       init(A,b);
+//     A is initialized to be a (n x n+1) matrix, since
+//     the right hand side is stored with the matrix.
+       init(A);
+
+//     Clear and start the timers.
        testTimer.clear();
        testTimer.start();
-       rightBlockLU(A, nb, piv);   
+
+//     Factor A = [Asquare | b].
+       rightBlockLU(A, nb);   
        timeData(1) = testTimer.elapsed();
-       LUSolve(A, x, b, piv);
+
+//     Solve for x.
+       LUSolve(A, x);
        timeData(2) = testTimer.elapsed();
        testTimer.stop();
+
+//     Write info about current test.
        testResults(outfile, n, nb);
+
+//     Write timing info, if specified.
        if writeTimingInfo then timingResults(outfile, n, timeData);
-       init(A,b);
-       testSolution(A, x, b, TEST.epsil, resid, norms);
+
+//     Reinitialize A and perform accuracy tests.
+       init(A);
+       testSolution(A, x, TEST.epsil, resid, norms);
+
+//     Write error information.
        errorResults(outfile, TEST, resid, norms);
     }
   }
@@ -62,14 +80,15 @@ def timingResults(ofile, n, timeData) {
    ofile.writeln("  Solve time       = ", (timeData(2) - timeData(1)));
 }
 
-def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real, 
+def testSolution(A: [?ADom], x: [?xDom], in eps: real, 
      out resid: 3*real, out norms: 5*real) {
  
-  var bHat: [xDom] real;
   var n = ADom.dim(1).length;
+  var b => A(..,n+1);
+  var bHat: [xDom] real;
 
   for (i1, i2) in (ADom.dim(1), xDom) {
-    for (j1, j2) in (ADom.dim(2), xDom) {
+    for (j1, j2) in (ADom.dim(1), xDom) {
        bHat(i1) += A(i1,j1)*x(j2);
     }
   }
@@ -77,10 +96,10 @@ def testSolution(A: [?ADom], x: [?xDom], b: [xDom], in eps: real,
 // Look at distributions when implementing these norms.
 // Should these norm computations be put into functions?
   var errNorm = max reduce (abs(bHat - b));
-  var ANorm1 = max reduce [j in ADom.dim(2)] 
+  var ANorm1 = max reduce [j in ADom.dim(1)] 
                (+ reduce abs(A[ADom.dim(1), j]));
   var ANormInf = max reduce [i in ADom.dim(1)] 
-                 (+ reduce abs(A[i, ADom.dim(2)]));
+                 (+ reduce abs(A[i, ADom.dim(1)]));
   var xNorm1 = + reduce abs(x);
   var xNormInf = max reduce abs(x);
 
@@ -106,7 +125,7 @@ def errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
     ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
      ".....", if (resid(3) < thresh) then "PASSED" else "FAILED");
 
-    if (max((...resid)) >= thresh) {
+    if ((max((...resid)) >= thresh) || writeMoreInfo ) {
       ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
       ofile.writeln("||A||_oo                                      = ", norms(2));
       ofile.writeln("||A||_1                                       = ", norms(3));

@@ -176,8 +176,16 @@ record HPLparams {
   }
 }
 
-def init(A:[?D], b) {
+def init(A:[?D]) {
+//  Rather than initialize A = [Asquare | b] with one call to 
+//  fillRandom, Asquare is initialized first, followed by b.
+//  This is to match the previous version of benchmark where
+//  A and b were stored separately. 
+  var n = D.dim(1).length;
+  var Asquare => A(..,1..n);
+  var b => A(..,n+1);
   var rstream = RandomStream(seed=1234567890);
-  rstream.fillRandom(A);
+
+  rstream.fillRandom(Asquare);
   rstream.fillRandom(b);
 }
