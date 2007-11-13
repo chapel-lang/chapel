@@ -8,7 +8,7 @@ def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind
 def _build_domain_type(dist, type ind) type where __primitive("isEnumType", ind)
   return _domain(1, dist.buildEnumDomain(ind));
 
-def _build_subdomain_type(dom)
+def _build_subdomain_type(dom) type
   return dom.buildSubdomain();
 
 def _build_sparse_subdomain_type(dist, parentDom)
