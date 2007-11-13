@@ -1,12 +1,12 @@
        program Stream
 
-       integer 		n, nMax
-       parameter	(n = 5503189, nMax = 60000000)
-       double precision A(nMax), B(nMax), C(nMax)
+       integer 		n
+c      parameter	(n = 174458581)
+       integer 		nTrials
+c      parameter	(nTrials = 10)
 
-       integer 		nTrials, ntMax
-       parameter	(nTrials = 100, ntMax = 1000)
-       double precision Timing(ntMax)
+       double precision, dimension(:), allocatable:: A, B, C
+       double precision, dimension(:), allocatable:: Timing
 
        double precision alpha
        parameter 	(alpha = 3.0)
@@ -16,6 +16,13 @@
        external 	getTime
 
        logical 		failure
+
+       call getInputData(n, nTrials, alpha)
+
+       allocate (A(n))
+       allocate (B(n))
+       allocate (C(n))
+       allocate (Timing(nTrials))
 
        do 5 i = 1, n
           A(i) = 1.0
@@ -32,18 +39,28 @@
 
        call validateResults(n, A, B, C, alpha, failure)
        
-       write(6,*) "N       = ", n
-       write(6,*) "NTrials = ", nTrials
-       write(6,*) "Validation:"
+       write(*,*) "N       = ", n
+       write(*,*) "NTrials = ", nTrials
+       write(*,*) "Validation:"
        if (failure) then
-         write(6,*) "  FAILURE"
+         write(*,*) "  FAILURE"
        else
-         write(6,*) "  SUCCESS"
+         write(*,*) "  SUCCESS"
        endif
        call printResults(n, nTrials, Timing)
 
        end
+
+       subroutine getInputData(n, nTrials)
+       integer 		n, nTrials
+
+       write(*, *) "Enter size of benchmark"
+       read(*,*) n
+       write(*,*) "Enter number of trials"
+       read(*,*) nTrials
        
+       return
+       end
        subroutine validateResults(n, A, B, C, alpha, failure)
 
        integer 		n
@@ -80,16 +97,16 @@
    10  continue
        avgTime = totalTime/real(nTrials)
 
-       write(6,*) "Execution time:"
-       write(6,*) "  tot = ", totalTime
-       write(6,*) "  avg = ", avgTime
-       write(6,*) "  min = ", minTime
-       write(6,*) " "
+       write(*,*) "Execution time:"
+       write(*,*) "  tot = ", totalTime
+       write(*,*) "  avg = ", avgTime
+       write(*,*) "  min = ", minTime
+       write(*,*) " "
 
        if (avgTime .ne. 0.0e1) then
-         write(6,*) "GB/s = ", 3.0*8.0*(dble(n)/avgTime)*1.0e-9
+         write(*,*) "GB/s = ", 3.0*8.0*(dble(n)/avgTime)*1.0e-9
        else
-         write(6,*) "Average time = 0 seconds. Cannot compute GB/s"
+         write(*,*) "Average time = 0 seconds. Cannot compute GB/s"
        endif
        return
        end
