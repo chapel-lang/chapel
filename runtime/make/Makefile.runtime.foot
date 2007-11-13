@@ -41,8 +41,8 @@ $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
 $(RUNTIME_OBJ_DIR_STAMP): $(PLATFORM_DIR)
-	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) subdirectory to store platform-specific files
-	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM) > /dev/null 2>&1
+	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) subdirectory to store platform-specific files
+	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) > /dev/null 2>&1
 	@-touch $(RUNTIME_OBJ_DIR_STAMP)
 
 

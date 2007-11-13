@@ -1,3 +1,5 @@
 # put XT cross-compilation pgi-specific settings here
 
 XT_GEN_CFLAGS = -Kieee
+
+include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt

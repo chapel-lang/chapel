@@ -2,3 +2,4 @@
 
 XT_GEN_CFLAGS = -OPT:Olimit=0
 
+include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt

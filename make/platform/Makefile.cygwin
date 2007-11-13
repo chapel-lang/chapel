@@ -3,8 +3,6 @@
 
 EXE_SUFFIX=.exe
 
--include $(CHAPEL_ROOT)/make/Makefile.gnu
-
 #
 # seemingly necessary to get things like strtoull()
 #

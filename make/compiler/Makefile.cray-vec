@@ -1,5 +1,5 @@
 #
-# Settings for the Cray X1
+# Settings for the Cray vector machines
 #
 
 #
@@ -22,7 +22,7 @@ RANLIB = ranlib
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = 
 
-CFLAGS = -hcpu=cray-x1 -hgnu
+CFLAGS = -hcpu=cray-$(CHPL_MAKE_PLATFORM) -hgnu
 
 COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS) -DNO_BYTES_PER_LOCALE -DNO_CORES_PER_LOCALE

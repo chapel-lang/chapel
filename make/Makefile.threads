@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_THREADS stuff
+#
+#
+#
+CHPL_MAKE_THREADS = $(shell $(CHAPEL_ROOT)/util/threads.pl)

@@ -1,14 +1,13 @@
-CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform.pl --target)
-
+CHPL_MAKE_HOST_TARGET = --target
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 LD = $(CC)
 
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_THREADS)
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_COMM)
+include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 
-CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include/threads-$(CHPL_THREADS) -I$(CHAPEL_ROOT)/runtime/include/comm-$(CHPL_COMM) -I$(CHAPEL_ROOT)/runtime/include
-CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include/threads-$(CHPL_MAKE_THREADS) -I$(CHAPEL_ROOT)/runtime/include/comm-$(CHPL_MAKE_COMM) -I$(CHAPEL_ROOT)/runtime/include
+CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 
 all: $(CHPL_CL_OBJS) FORCE
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o -I$(CHAPEL_RT_INC_DIR)/$(CHPL_MAKE_PLATFORM) -I$(CHAPEL_RT_INC_DIR) -I. $(CHPLSRC)

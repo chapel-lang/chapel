@@ -19,7 +19,7 @@ RANLIB = ranlib
 # flags
 #
 
--include $(CHAPEL_ROOT)/make/Makefile.xt-cnl.$(PE_ENV)
+-include $(CHAPEL_ROOT)/make/compiler/Makefile.cc-cray-xt.$(PE_ENV)
 
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = 

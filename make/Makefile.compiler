@@ -1,0 +1,9 @@
+#
+# CHPL_MAKE_COMPILER stuff
+#
+#
+# CHPL_MAKE_COMPILER is simply the one-word description we'll use for
+# all platforms that we run on.  The long name is being used to avoid
+# COMPILER which is sometimes set by shell environments.
+#
+CHPL_MAKE_COMPILER = $(shell $(CHAPEL_ROOT)/util/compiler.pl $(CHPL_MAKE_HOST_TARGET))

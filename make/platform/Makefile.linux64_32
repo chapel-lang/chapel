@@ -4,5 +4,3 @@
 
 CFLAGS += -m32
 LDFLAGS += -m32
-
--include $(CHAPEL_ROOT)/make/Makefile.gnu

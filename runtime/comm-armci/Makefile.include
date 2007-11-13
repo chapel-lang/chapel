@@ -1,4 +1,4 @@
-COMM_OBJDIR = $(RUNTIME_ROOT)/comm-armci/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+COMM_OBJDIR = $(RUNTIME_ROOT)/comm-armci/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 
 ALL_SRCS += comm-armci/*.c
 

@@ -6,4 +6,4 @@
 # all platforms that we run on.  The long name is being used to avoid
 # PLATFORM which is sometimes set by shell environments.
 #
-CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform.pl)
+CHPL_MAKE_PLATFORM = $(shell $(CHAPEL_ROOT)/util/platform.pl $(CHPL_MAKE_HOST_TARGET))

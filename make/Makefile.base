@@ -5,6 +5,9 @@
 
 MAKEFLAGS = --no-print-directory
 
+ifndef CHPL_MAKE_HOST_TARGET
+CHPL_MAKE_HOST_TARGET = --host
+endif
 
 #
 # determine what platform we're running on
@@ -13,19 +16,18 @@ ifndef CHPL_MAKE_PLATFORM
 include $(CHAPEL_ROOT)/make/Makefile.platform
 endif
 
-#
-# use pthreads if CHPL_THREADS is not specified
-#
-ifndef CHPL_THREADS
-CHPL_THREADS = pthreads
+ifndef CHPL_MAKE_COMPILER
+include $(CHAPEL_ROOT)/make/Makefile.compiler
 endif
 
-#
-# use none if CHPL_COMM is not specified
-#
-ifndef CHPL_COMM
-CHPL_COMM = none
+ifndef CHPL_MAKE_THREADS
+include $(CHAPEL_ROOT)/make/Makefile.threads
 endif
+
+ifndef CHPL_MAKE_COMM
+include $(CHAPEL_ROOT)/make/Makefile.comm
+endif
+
 
 #
 # default CFLAGS, based on other settings
@@ -56,7 +58,11 @@ endif
 default: all
 
 printplatform:
-	@echo "CHPL_MAKE_PLATFORM   = $(CHPL_MAKE_PLATFORM)"
+	@echo "CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)"
+	@echo "CHPL_MAKE_PLATFORM    = $(CHPL_MAKE_PLATFORM)"
+	@echo "CHPL_MAKE_COMPILER    = $(CHPL_MAKE_COMPILER)"
+	@echo "CHPL_MAKE_THREADS     = $(CHPL_MAKE_THREADS)"
+	@echo "CHPL_MAKE_COMM        = $(CHPL_MAKE_COMM)"
 
 #
 # PLATFORM_DIR creates either a directory or a symbolic link,
@@ -100,20 +106,9 @@ ECHO = echo
 #
 EXE_SUFFIX = 
 
-$(CHAPEL_ROOT)/make/Makefile.%:
-	@echo "WARNING: The Chapel group hasn't compiled for platform $(CHPL_MAKE_PLATFORM) before."
-	@echo -n "Does this platform use the gnu toolsuite? (y/n) "
-	@read GNUTOOLS && if [ "$$GNUTOOLS" == "y" ]; then cp $(CHAPEL_ROOT)/make/Makefile.generic.gnu $@; else cp $(CHAPEL_ROOT)/make/Makefile.generic $@; fi;
-	@echo "*************************************************************************"
-	@echo "Creating $(CHAPEL_ROOT)/make/Makefile.$(CHPL_MAKE_PLATFORM)..."
-	@echo "-------------------------------------------------------------------------"
-	@echo "NOTE: You may need to customize this file in order to build successfully."
-	@echo "      Please send any questions and/or edits to chapel_info@cray.com"
-	@echo "      so that we can support your platform better in future releases."
-	@echo "*************************************************************************"
 
 #
 # include platform-specific settings
 #
--include $(CHAPEL_ROOT)/make/Makefile.$(CHPL_MAKE_PLATFORM)
-
+-include $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+-include $(CHAPEL_ROOT)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)

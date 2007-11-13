@@ -6,7 +6,7 @@ RUNTIME_SUBDIR = comm-none
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-COMM_OBJDIR = $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_THREADS)/comm-$(CHPL_COMM)
+COMM_OBJDIR = $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 include Makefile.share
 
 TARGETS = $(COMM_OBJS)
