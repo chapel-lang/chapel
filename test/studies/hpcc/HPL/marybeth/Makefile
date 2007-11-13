@@ -20,5 +20,16 @@ test:
 	./hpl_test -nl 1
 	cat $(OUTPUTFILE)
 
+.PHONY: ps
+PSDIR = ps
+ps:
+	@mkdir $(PSDIR)
+	@for file in *.chpl; do out=$$(echo $$file|cut -d. -f1);    \
+	    vim -e -c "set printoptions=paper:letter"               \
+	    -c ":hardcopy > $(PSDIR)/$$out.ps" -c ":q" $$file;      \
+	done
+	@echo Postscript output is in $(PSDIR)
+	@echo To 2-up any of the .ps files, do: "psnup -2 -pletter in.ps out.ps"
+
 clean: 
 	rm -f $(TARGETS)

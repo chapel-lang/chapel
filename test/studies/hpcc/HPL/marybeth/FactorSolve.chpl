@@ -12,24 +12,15 @@
 
 
 // rightBlockLU: Computes block-LU with pivoting.  The arguments are as follows:
-//   A: the input array to be factored.  It must be 2D, square, and
-//        its dimensions must be defined using identical ranges
+//   A: the input array to be factored.  It must be 2D and of size 
+//      n by n+1.  A = [Asquare | b] on entry and [L U y] on exit.
 //
 //   blk: the blocking factor, which must be positive and less than or
 //        equal to A's size.
-//
-//   piv: a vector used to store and output the permutations performed
-//        by pivoting operations
+//**** Need to modify routine to delay row swaps until after panel 
+//     factorization
 
 def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
-
-  // Need to modify routine to factor rectangular system:  [A | b].
-  // Also, don't pivot rows of L or return pivot vector.
-
-  // Test that the domain of A is square with the same index set for
-  // each dimension.
-//  if (D.dim(1) != D.dim(2)) then
-//    halt("blockLU requires square matrix with same dimensions");
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
   if (blk <= 0) || (blk > D.dim(1).length) then
@@ -38,9 +29,11 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
   var piv: [D.dim(1)] int;
   [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector
 
-  // Main loop of block LU uses an iterator to compute three sets of
+  // Main loop of block LU uses an iterator to compute four sets of
   // index ranges -- those that are unfactored, divided into those
-  // currently being factored and those that remain.
+  // currently being factored and those that remain.  The row and
+  // column indices of the remaining submatrix are specified separately
+  // to accomodate the rectangular input matrix A.
 
   for (UnfactoredInds, CurrentPanelInds, TrailingRows, TrailingCols) 
         in generateBlockLURanges(D, blk) {
@@ -98,7 +91,7 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
         // swap values in rows k and pivotRow of the full
         // matrix A
         //** swap only in panel and save remainder of swaps for
-        // for update later?
+        // for update later
         A[k, ..] <=> A[pivotRow, ..];
       }
 
@@ -123,16 +116,21 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     // Add loop to update NextPanel first so that lookahead factorization
     // could occur.  Maybe use sync vars to do this?
 
+    // Delay of row swaps needs to be incorporated into the next two
+    // loop nests.  Rows of A need to be swapped with rows of U.  
+
     // Communication of A1 to other processors occurs before this
     // step.  There are options for communication that need to be reflected
     // here or in distribution.
     // A1 (nb x nb) is broadcast across processors in process row.
+    var U => A11; // Want each processor in process row to have local copy of A1.
     forall columnblk in blkIter(TrailingCols,blk) {
       var Ublk => A12[CurrentPanelInds,columnblk];
+      //On processor that owns Ublk, do the following update:
       forall j in columnblk do
         for k in CurrentPanelInds do
           forall i in CurrentPanelInds(k+1..) do
-            Ublk(i,j) -= A1(i,k) * Ublk(k,j);
+            Ublk(i,j) -= U(i,k) * Ublk(k,j);
     }
 
     // And then update A22 -= A21*A12.
@@ -147,6 +145,7 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
       var Lblk => A21[rowblk,CurrentPanelInds];
       var Ublk => A12[CurrentPanelInds,columnblk];
       var Ablk => A22[rowblk,columnblk];
+      // On processor that owns Ablk, do the following computation:
       for (i,j) in [rowblk, columnblk] do
         for k in CurrentPanelInds do
           Ablk(i,j) -= Lblk(i,k) * Ublk(k,j);
@@ -155,23 +154,23 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
   
 }
 
-// The generateBlockLURanges iterator returns a 3-tuple of 
+// The generateBlockLURanges iterator returns a 4-tuple of 
 // the ranges to be used in each iteration of block LU:
-//   (UnfactoredInds, CurrentPanelInds, TrailingInds).
+//   (UnfactoredInds, CurrentPanelInds, TrailingRows, TrailingCols).
 // By defining these ranges, the blockLU code is cleaner. It
 // eliminates the need to test for the last iteration where a full-sized
 // block may not be possible and only the factorization step (and not
 // the update step) is required. 
 //
 // The range UnfactoredInds is equivalent to the range 
-// CurrentPanelInds concatenated with the range TrailingInds. 
+// CurrentPanelInds concatenated with the range TrailingRows. 
 //
 // The range CurrentPanelInds has the length of blksize, except
 // for the end case when the last block may not be of full size.
 // This iterator takes care of this end case so that testing for
 //  it is not necessary in the blockLU code itself. 
 //
-// The range TrailingInds will be an empty range for the
+// The range TrailingRows will be an empty range for the
 // the last block iteration.  When it is empty, the loops in
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
@@ -208,20 +207,6 @@ def blkIter2D(rowRange, colRange, blksize) {
   }
 }
 
-// The MMIterator generates indices for a matrix multiplication loop.
-// This iterator can be tuned for loop nesting order or loop unrolling,
-// isolating these optimizations from the blockLU code (or any other
-// code in a complete linear algebra library that uses matrix-matrix
-// multiplication).
-
-def MMIterator(D1, D2) {
-  for j in D2.dim(2) do
-    for (k1, k2) in (D1.dim(2), D2.dim(1)) do
-      for i in D1.dim(1) do
-        yield (i,j,k1,k2);
-}
-
-
 // This function computes the pivot row for an LU pivoting operation
 // by using Chapel's maxloc reduction on the absolute values in the
 // matrix, dropping the maximum value on the floor using the
@@ -232,6 +217,7 @@ def computePivotRow(A:[?D]) {
    return ind(1);
 }
 
+//  The LU solve routine takes A = [L U y] and solves for x.
 def LUSolve (A: [?ADom], x: [?xDom]) {
 
    var n = ADom.dim(1).length;

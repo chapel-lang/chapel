@@ -5,7 +5,6 @@ use Time;
 config var inputfile = "HPL.dat";
 config var writeTimingInfo = false;
 config var writeAccuracyInfo = false;
-config var writeMoreInfo = false;
 
 def main() {
   var TEST = HPLparams(inFileName=inputfile);
@@ -125,13 +124,11 @@ def errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
     ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
      ".....", if (resid(3) < thresh) then "PASSED" else "FAILED");
 
-    if ((max((...resid)) >= thresh) || writeMoreInfo ) {
-      ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
-      ofile.writeln("||A||_oo                                      = ", norms(2));
-      ofile.writeln("||A||_1                                       = ", norms(3));
-      ofile.writeln("||x||_oo                                      = ", norms(4));
-      ofile.writeln("||x||_1                                       = ", norms(5));
-    }
+    ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
+    ofile.writeln("||A||_oo                                      = ", norms(2));
+    ofile.writeln("||A||_1                                       = ", norms(3));
+    ofile.writeln("||x||_oo                                      = ", norms(4));
+    ofile.writeln("||x||_1                                       = ", norms(5));
   } else {
     ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ",
      ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
