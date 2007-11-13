@@ -65,29 +65,31 @@ printplatform:
 	@echo "CHPL_MAKE_COMM        = $(CHPL_MAKE_COMM)"
 
 #
-# PLATFORM_DIR creates either a directory or a symbolic link,
-# depending on how CHPLDEVTMP is set -- well, actually it's
-# a timestamp file so that the varying time stamps of directories
-# don't cause things to rebuild indiscriminately.  PLATFORM_DIR_DIR
-# is actually the directory.  PLATFORM_DIR_SAFESLASH is the directory
-# with slashes escaped appropriately for use in Makefile command rules.
+# OBJ_SUBDIR_MADE creates either a directory or a symbolic link,
+# depending on how CHPLDEVTMP is set -- well, actually it creates a
+# timestamp file (OBJ_SUBDIR_TIMESTAMP) so that the varying time
+# stamps of directories don't cause things to rebuild indiscriminately.
+# OBJ_SUBDIR is the actual directory.  OBJ_SUBDIR_SAFESLASH
+# is the directory with slashes escaped appropriately for use in
+# Makefile command rules.
 #
-PLATFORM_DIR = ./$(CHPL_MAKE_PLATFORM)/.timestamp
-PLATFORM_DIR_DIR = ./$(CHPL_MAKE_PLATFORM)
-PLATFORM_DIR_SAFESLASH = $(subst /,\\/, $(PLATFORM_DIR_DIR))
+OBJ_SUBDIR = $(CHPL_MAKE_PLATFORM)/$(CHPL_MAKE_COMPILER)
+OBJ_SUBDIR_TIMESTAMP = $(OBJ_SUBDIR)/.timestamp
+OBJ_SUBDIR_MADE = $(OBJ_SUBDIR_TIMESTAMP)
+OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
 
 ifndef CHPLDEVTMP
-$(PLATFORM_DIR):
-	@echo making $(CHPL_MAKE_PLATFORM) subdirectory to store platform-specific files
-	@-mkdir $(CHPL_MAKE_PLATFORM) > /dev/null 2>&1
-	@-touch $(PLATFORM_DIR)
+$(OBJ_SUBDIR_TIMESTAMP):
+	@echo making $(OBJ_SUBDIR) subdirectory to store platform-specific files
+	@mkdir -p $(OBJ_SUBDIR)
+	@-touch $(OBJ_SUBDIR_TIMESTAMP)
 else
-$(PLATFORM_DIR):
-	@echo linking $(CHPL_MAKE_PLATFORM) subdirectory to store platform-specific files
-	@mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM)
-	@rm -f $(CHPL_MAKE_PLATFORM)
-	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
-	@-touch $(PLATFORM_DIR)
+$(OBJ_SUBDIR_TIMESTAMP):
+	@echo linking $(OBJ_SUBDIR) subdirectory to store platform-specific files
+	@mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(OBJ_SUBDIR)
+	@rm -f $(OBJ_SUBDIR)
+	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(OBJ_SUBDIR) .
+	@-touch $(OBJ_SUBDIR_TIMESTAMP)
 endif
 
 

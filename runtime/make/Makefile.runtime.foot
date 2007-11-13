@@ -40,9 +40,9 @@ $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c $(RUNTIME_CFLAGS) -o $@ $<
 
-$(RUNTIME_OBJ_DIR_STAMP): $(PLATFORM_DIR)
-	@echo making $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) subdirectory to store platform-specific files
-	@-mkdir -p $(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) > /dev/null 2>&1
+$(RUNTIME_OBJ_DIR_STAMP): $(OBJ_SUBDIR_MADE)
+	@echo making $(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) subdirectory to store platform-specific files
+	@-mkdir -p $(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM) > /dev/null 2>&1
 	@-touch $(RUNTIME_OBJ_DIR_STAMP)
 
 

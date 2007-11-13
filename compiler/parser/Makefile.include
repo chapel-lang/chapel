@@ -1,4 +1,4 @@
-PARSER_OBJDIR = $(COMPILER_ROOT)/parser/$(CHPL_MAKE_PLATFORM)
+PARSER_OBJDIR = $(COMPILER_ROOT)/parser/$(OBJ_SUBDIR)
 
 ALL_SRCS += parser/*.h parser/*.c parser/*.cpp
 

@@ -6,7 +6,7 @@ COMPILER_SUBDIR = optimizations
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-OPTIMIZATIONS_OBJDIR = $(CHPL_MAKE_PLATFORM)
+OPTIMIZATIONS_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 TARGETS = $(OPTIMIZATIONS_OBJS)

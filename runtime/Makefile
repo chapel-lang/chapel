@@ -35,7 +35,7 @@ RUNTIME_OBJS = \
 	$(THREADS_OBJS) \
 	$(COMM_OBJS) \
 
-RUNTIME_DIR = ../lib/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+RUNTIME_DIR = ../lib/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
 RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/timestamp
 
@@ -59,7 +59,7 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(RANLIB) $@
 	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o ../TAGS $(RUNTIME_SRCS) include/*.h include/threads-$(CHPL_MAKE_THREADS)/*.h include/comm-$(CHPL_MAKE_COMM)/*.h) || echo "etags not available"
 
-$(RUNTIME_DIR)/main.o: src/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/main.o
+$(RUNTIME_DIR)/main.o: src/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/main.o
 	cp $< $@
 
 $(RUNTIME_DIR_TIMESTAMP):

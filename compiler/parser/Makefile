@@ -6,7 +6,7 @@ COMPILER_SUBDIR = parser
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-PARSER_OBJDIR = $(CHPL_MAKE_PLATFORM)
+PARSER_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 TARGETS = $(PARSER_OBJS)
@@ -50,11 +50,11 @@ modulefinder.tab.h modulefinder.tab.c: modulefinder.y
 	@if [ `grep "conflicts:" modulefinder.output | wc -l` -ne 0 ]; then echo "PROBLEM: modulefinder.y contains conflicts"; exit 1; fi;
 
 MODULEFINDER_OBJS = \
-	$(CHPL_MAKE_PLATFORM)/modulefinder.o \
-	$(CHPL_MAKE_PLATFORM)/modulefinder.tab.o \
-	$(CHPL_MAKE_PLATFORM)/modulefinder.lex.yy.o \
-	$(CHPL_MAKE_PLATFORM)/processTokens.moduleFinder.o \
-	$(CHPL_MAKE_PLATFORM)/yy.o
+	$(OBJ_SUBDIR)/modulefinder.o \
+	$(OBJ_SUBDIR)/modulefinder.tab.o \
+	$(OBJ_SUBDIR)/modulefinder.lex.yy.o \
+	$(OBJ_SUBDIR)/processTokens.moduleFinder.o \
+o	$(OBJ_SUBDIR)/yy.o
 
 modulefinder: modulefinder.tab.h $(MODULEFINDER_OBJS)
 	g++ -o $@ $(MODULEFINDER_OBJS) $(LIBS)
@@ -69,21 +69,21 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 
 # no-error required here for bison 1.875 (not 1.875d)
-$(CHPL_MAKE_PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+$(OBJ_SUBDIR)/chapel.tab.o: chapel.tab.c $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
-$(CHPL_MAKE_PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+$(OBJ_SUBDIR)/modulefinder.tab.o: modulefinder.tab.c $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<
 
 # no-error required here for flex 2.5.33
-$(CHPL_MAKE_PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
+$(OBJ_SUBDIR)/lex.yy.o: lex.yy.c $(OBJ_SUBDIR_MADE) chapel.tab.h $(LEXYACC_INCLUDES)
 	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
-$(CHPL_MAKE_PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
+$(OBJ_SUBDIR)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(OBJ_SUBDIR_MADE) modulefinder.tab.h
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ $<
 
-$(CHPL_MAKE_PLATFORM)/processTokens.moduleFinder.o: $(CHPL_MAKE_PLATFORM)/processTokens.o
+$(OBJ_SUBDIR)/processTokens.moduleFinder.o: $(OBJ_SUBDIR)/processTokens.o
 	$(CXX) -c -DMODULE_FINDER $(COMP_CFLAGS) -o $@ processTokens.cpp
 
-$(CHPL_MAKE_PLATFORM)/yy.o: yy.cpp $(PLATFORM_DIR)
+$(OBJ_SUBDIR)/yy.o: yy.cpp $(OBJ_SUBDIR_MADE)
 	$(CXX) -c $(COMP_CFLAGS) -o $@ $<

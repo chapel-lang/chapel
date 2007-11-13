@@ -49,10 +49,10 @@ COMP_CFLAGS := $(COMP_CFLAGS)
 # clean and clobber targets
 #
 CLEAN_TARGS = \
-	./$(CHPL_MAKE_PLATFORM)/*.o \
-	./$(CHPL_MAKE_PLATFORM)/*.gcda \
-	./$(CHPL_MAKE_PLATFORM)/*.gcno \
-	./$(CHPL_MAKE_PLATFORM)/*.gcov \
+	./$(OBJ_SUBDIR)/*.o \
+	./$(OBJ_SUBDIR)/*.gcda \
+	./$(OBJ_SUBDIR)/*.gcno \
+	./$(OBJ_SUBDIR)/*.gcov \
 	core \
 	*.core \
 	*.gmon \
@@ -62,7 +62,7 @@ CLEAN_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(CHPL_MAKE_PLATFORM) \
+	./$(OBJ_SUBDIR) \
 	*~
 
 
@@ -70,7 +70,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-CVS_DEPENDS = ./$(CHPL_MAKE_PLATFORM)/Makefile.cvs.depend
+CVS_DEPENDS = ./$(OBJ_SUBDIR)/Makefile.cvs.depend
 
 
 

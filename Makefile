@@ -34,8 +34,9 @@ clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	rm -rf bin/$(CHPL_MAKE_PLATFORM)
-	rm -rf lib/$(CHPL_MAKE_PLATFORM)
 	-rmdir bin > /dev/null 2>&1
+	rm -rf lib/$(CHPL_MAKE_PLATFORM)/$(CHPL_MAKE_COMPILER)
+	-rmdir lib/$(CHPL_MAKE_PLATFORM) > /dev/null 2>&1
 	-rmdir lib > /dev/null 2>&1
 
 depend: FORCE

@@ -21,7 +21,7 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 INCL_CFLAGS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(RUNTIME_ROOT)/include/comm-$(CHPL_MAKE_COMM) -I$(RUNTIME_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(RUNTIME_ROOT)/include
 RUNTIME_CFLAGS += $(INCL_CFLAGS)
 
-RUNTIME_OBJ_DIR = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+RUNTIME_OBJ_DIR = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
 RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 
@@ -30,7 +30,7 @@ RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 # clean and clobber targets
 #
 CLEAN_TARGS = \
-	./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/*.o \
+	./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/*.o \
 	core \
 	*.core \
 	*.gmon \
@@ -40,7 +40,7 @@ CLEAN_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(CHPL_MAKE_PLATFORM) \
+	./$(OBJ_SUBDIR) \
 	*~
 
 
@@ -48,7 +48,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-CVS_DEPENDS = ./$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/Makefile.cvs.depend
+CVS_DEPENDS = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/Makefile.cvs.depend
 
 
 

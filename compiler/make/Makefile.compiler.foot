@@ -33,10 +33,10 @@ echocompilerdir:
 # pattern-based rules
 #
 
-%.depend: %.cpp $(PLATFORM_DIR)
-	@$(MAKEDEPEND) $(COMP_CFLAGS) $< | sed s/$*\\\.o/\\\$(PLATFORM_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
+%.depend: %.cpp $(OBJ_SUBDIR_MADE)
+	@$(MAKEDEPEND) $(COMP_CFLAGS) $< | sed s/$*\\\.o/\\\$(OBJ_SUBDIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
 
-$(CHPL_MAKE_PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
+$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
 FORCE:

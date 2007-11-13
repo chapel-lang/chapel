@@ -1,4 +1,4 @@
-THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-pthreads/$(CHPL_MAKE_PLATFORM)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-pthreads/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 
 ALL_SRCS += threads-pthreads/*.c
 

@@ -1,7 +1,7 @@
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.commonrules
 
-depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
+depend: $(DEPENDSUBDIRS) $(OBJ_SUBDIR_MADE) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...
 	@rm -f $(CVS_DEPENDS).tmp
 	@echo > $(CVS_DEPENDS).tmp

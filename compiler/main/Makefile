@@ -6,7 +6,7 @@ COMPILER_SUBDIR = main
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-MAIN_OBJDIR = $(CHPL_MAKE_PLATFORM)
+MAIN_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 TARGETS = COPYRIGHT \

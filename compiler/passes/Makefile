@@ -6,7 +6,7 @@ COMPILER_SUBDIR = passes
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-PASSES_OBJDIR = $(CHPL_MAKE_PLATFORM)
+PASSES_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 TARGETS = $(PASSES_OBJS)

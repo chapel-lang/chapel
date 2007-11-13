@@ -1,4 +1,4 @@
-MAIN_OBJDIR = $(COMPILER_ROOT)/main/$(CHPL_MAKE_PLATFORM)
+MAIN_OBJDIR = $(COMPILER_ROOT)/main/$(OBJ_SUBDIR)
 
 ALL_SRCS += main/*.h main/*.cpp
 

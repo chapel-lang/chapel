@@ -7,7 +7,7 @@ COMPILER_SUBDIR = ifa
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 
-IFA_OBJDIR = $(CHPL_MAKE_PLATFORM)
+IFA_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 

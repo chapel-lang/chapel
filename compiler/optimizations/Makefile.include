@@ -1,4 +1,4 @@
-OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(CHPL_MAKE_PLATFORM)
+OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(OBJ_SUBDIR)
 
 ALL_SRCS += optimizations/*.cpp
 

@@ -7,7 +7,7 @@ COMP_CFLAGS += -I$(COMPILER_ROOT)/ifa
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-UTIL_OBJDIR = $(CHPL_MAKE_PLATFORM)
+UTIL_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
 TARGETS = $(UTIL_OBJS)
