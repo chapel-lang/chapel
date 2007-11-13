@@ -10,13 +10,6 @@
 #include "symscope.h"
 #include "../ifa/prim_data.h"
 
-static char* _init;
-static char* _pass;
-static char* _copy;
-static char* _set_field;
-static char* _this;
-static char* _assign;
-
 Map<Symbol*,Symbol*> paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -45,19 +38,11 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 // e.g.  foo(arg1=12, "hi");
 //  types = int, string
 //  names = arg1, NULL
-enum resolve_call_error_type {
-  CALL_NO_ERROR,
-  CALL_PARTIAL,
-  CALL_AMBIGUOUS,
-  CALL_UNKNOWN
-};
-static resolve_call_error_type resolve_call_error;
-static Vec<FnSymbol*> resolve_call_error_candidates;
 static FnSymbol* resolve_call(CallExpr* call,
                               const char *name,
-                              Vec<Type*>* actual_types,
-                              Vec<Symbol*>* actual_params,
-                              Vec<const char*>* actual_names);
+                              Vec<Type*>* actualTypes,
+                              Vec<Symbol*>* actualParams,
+                              Vec<const char*>* actualNames);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
@@ -82,16 +67,16 @@ static void makeRefType(Type* type) {
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
     return;
 
-  Vec<Type*> atypes;
-  Vec<Symbol*> aparams;
-  Vec<const char*> anames;
-  atypes.add(type);
-  aparams.add(NULL);
-  anames.add(NULL);
+  Vec<Type*> actualTypes;
+  Vec<Symbol*> actualParams;
+  Vec<const char*> actualNames;
+  actualTypes.add(type);
+  actualParams.add(NULL);
+  actualNames.add(NULL);
   CallExpr* call = new CallExpr("_construct__ref", type->symbol);
   chpl_main->insertAtHead(call); // add call to AST temporarily
   FnSymbol* fn = resolve_call(call, "_construct__ref",
-                              &atypes, &aparams, &anames);
+                              &actualTypes, &actualParams, &actualNames);
   type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
   call->remove();
@@ -364,9 +349,9 @@ computeActualFormalMap(FnSymbol* fn,
                        Vec<ArgSymbol*>* actual_formals,
                        int num_actuals,
                        int num_formals,
-                       Vec<Type*>* actual_types,
-                       Vec<Symbol*>* actual_params,
-                       Vec<const char*>* actual_names) {
+                       Vec<Type*>* actualTypes,
+                       Vec<Symbol*>* actualParams,
+                       Vec<const char*>* actualNames) {
   for (int i = 0; i < num_formals; i++) {
     formal_actuals->add(NULL);
     formal_params->add(NULL);
@@ -374,16 +359,16 @@ computeActualFormalMap(FnSymbol* fn,
   for (int i = 0; i < num_actuals; i++)
     actual_formals->add(NULL);
   for (int i = 0; i < num_actuals; i++) {
-    if (actual_names->v[i]) {
+    if (actualNames->v[i]) {
       bool match = false;
       int j = -1;
       for_formals(formal, fn) {
         j++;
-        if (!strcmp(actual_names->v[i], formal->name)) {
+        if (!strcmp(actualNames->v[i], formal->name)) {
           match = true;
           actual_formals->v[i] = formal;
-          formal_actuals->v[j] = actual_types->v[i];
-          formal_params->v[j] = actual_params->v[i];
+          formal_actuals->v[j] = actualTypes->v[i];
+          formal_params->v[j] = actualParams->v[i];
           break;
         }
       }
@@ -392,7 +377,7 @@ computeActualFormalMap(FnSymbol* fn,
     }
   }
   for (int i = 0; i < num_actuals; i++) {
-    if (!actual_names->v[i]) {
+    if (!actualNames->v[i]) {
       bool match = false;
       int j = -1;
       for_formals(formal, fn) {
@@ -402,8 +387,8 @@ computeActualFormalMap(FnSymbol* fn,
         if (!formal_actuals->v[j]) {
           match = true;
           actual_formals->v[i] = formal;
-          formal_actuals->v[j] = actual_types->v[i];
-          formal_params->v[j] = actual_params->v[i];
+          formal_actuals->v[j] = actualTypes->v[i];
+          formal_params->v[j] = actualParams->v[i];
           break;
         }
       }
@@ -476,10 +461,10 @@ computeGenericSubs(ASTMap &subs,
 }
 
 
-static Map<FnSymbol*,Vec<FnSymbol*>*> varArgsCache;
-
 static FnSymbol*
 expandVarArgs(FnSymbol* fn, int numActuals) {
+  static Map<FnSymbol*,Vec<FnSymbol*>*> cache;
+
   bool genericArg = false;
   for_formals(arg, fn) {
     if (!genericArg && arg->variableExpr &&
@@ -497,7 +482,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     if (DefExpr* def = toDefExpr(arg->variableExpr)) {
 
       // check for cached stamped out function
-      if (Vec<FnSymbol*>* cfns = varArgsCache.get(fn)) {
+      if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
         forv_Vec(FnSymbol, cfn, *cfns) {
           if (cfn->numFormals() == numActuals)
             return cfn;
@@ -521,11 +506,11 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       update_symbols(newFn, &update);
 
       // add new function to cache
-      Vec<FnSymbol*>* cfns = varArgsCache.get(fn);
+      Vec<FnSymbol*>* cfns = cache.get(fn);
       if (!cfns)
         cfns = new Vec<FnSymbol*>();
       cfns->add(newFn);
-      varArgsCache.put(fn, cfns);
+      cache.put(fn, cfns);
 
       return expandVarArgs(newFn, numActuals);
     } else if (SymExpr* sym = toSymExpr(arg->variableExpr)) {
@@ -587,25 +572,25 @@ static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
              FnSymbol* fn,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<const char*>* actual_names) {
-  fn = expandVarArgs(fn, actual_types->n);
+             Vec<Type*>* actualTypes,
+             Vec<Symbol*>* actualParams,
+             Vec<const char*>* actualNames) {
+  fn = expandVarArgs(fn, actualTypes->n);
 
   if (!fn)
     return;
 
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
-  int num_actuals = actual_types->n;
+  int num_actuals = actualTypes->n;
   int num_formals = fn->numFormals();
 
   Vec<Type*> formal_actuals;
   Vec<Symbol*> formal_params;
   bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params,
                                       actual_formals, num_actuals,
-                                      num_formals, actual_types,
-                                      actual_params, actual_names);
+                                      num_formals, actualTypes,
+                                      actualParams, actualNames);
   if (!valid) {
     delete actual_formals;
     return;
@@ -617,7 +602,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualParams, actualNames);
     }
     delete actual_formals;
     return;
@@ -726,16 +711,16 @@ build_order_wrapper(FnSymbol* fn,
 
 static FnSymbol*
 build_coercion_wrapper(FnSymbol* fn,
-                       Vec<Type*>* actual_types,
-                       Vec<Symbol*>* actual_params) {
+                       Vec<Type*>* actualTypes,
+                       Vec<Symbol*>* actualParams) {
   ASTMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
   bool coerce = false;
   for_formals(formal, fn) {
     j++;
-    Type* actual_type = actual_types->v[j];
-    Symbol* actual_param = actual_params->v[j];
+    Type* actual_type = actualTypes->v[j];
+    Symbol* actual_param = actualParams->v[j];
     if (actual_type != formal->type) {
       if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type)) {
         subs.put(formal, actual_type->symbol);
@@ -754,8 +739,8 @@ build_coercion_wrapper(FnSymbol* fn,
 
 static FnSymbol*
 build_promotion_wrapper(FnSymbol* fn,
-                        Vec<Type*>* actual_types,
-                        Vec<Symbol*>* actual_params,
+                        Vec<Type*>* actualTypes,
+                        Vec<Symbol*>* actualParams,
                         bool isSquare) {
   if (!strcmp(fn->name, "="))
     return fn;
@@ -764,8 +749,8 @@ build_promotion_wrapper(FnSymbol* fn,
   int j = -1;
   for_formals(formal, fn) {
     j++;
-    Type* actual_type = actual_types->v[j];
-    Symbol* actual_param = actual_params->v[j];
+    Type* actual_type = actualTypes->v[j];
+    Symbol* actual_param = actualParams->v[j];
     bool require_scalar_promotion = false;
     if (canDispatch(actual_type, actual_param, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
@@ -843,8 +828,8 @@ disambiguate_by_scope(SymScope* scope, Vec<FnSymbol*>* candidateFns) {
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-                      Vec<Type*>* actual_types,
-                      Vec<Symbol*>* actual_params,
+                      Vec<Type*>* actualTypes,
+                      Vec<Symbol*>* actualParams,
                       Vec<ArgSymbol*>** ret_afs) {
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
@@ -869,8 +854,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             else {
               bool require_scalar_promotion1;
               bool require_scalar_promotion2;
-              canDispatch(actual_types->v[k], actual_params->v[k], arg->type, best, &require_scalar_promotion1);
-              canDispatch(actual_types->v[k], actual_params->v[k], arg2->type, best, &require_scalar_promotion2);
+              canDispatch(actualTypes->v[k], actualParams->v[k], arg->type, best, &require_scalar_promotion1);
+              canDispatch(actualTypes->v[k], actualParams->v[k], arg2->type, best, &require_scalar_promotion2);
               promotion1 |= require_scalar_promotion1;
               promotion2 |= require_scalar_promotion2;
               if (require_scalar_promotion1 && !require_scalar_promotion2)
@@ -894,11 +879,11 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                              arg2->instantiatedFrom==dtAny) {
                     as_good = false;
                   } else {
-                    if (actual_types->v[k] == arg2->type &&
-                        actual_types->v[k] != arg->type) {
+                    if (actualTypes->v[k] == arg2->type &&
+                        actualTypes->v[k] != arg->type) {
                       better = true;
-                    } else if (actual_types->v[k] == arg->type &&
-                               actual_types->v[k] != arg2->type) {
+                    } else if (actualTypes->v[k] == arg->type &&
+                               actualTypes->v[k] != arg2->type) {
                       as_good = false;
                     } else if (moreSpecific(best, arg2->type, arg->type) && 
                                arg2->type != arg->type) {
@@ -945,24 +930,24 @@ static const char* type2string(Type* type) {
 
 static const char* call2string(CallExpr* call,
                                const char* name,
-                               Vec<Type*>& atypes,
-                               Vec<Symbol*>& aparams,
-                               Vec<const char*>& anames) {
+                               Vec<Type*>& actualTypes,
+                               Vec<Symbol*>& actualParams,
+                               Vec<const char*>& actualNames) {
   bool method = false;
   bool _this = false;
   const char *str = "";
-  if (atypes.n > 1)
-    if (atypes.v[0] == dtMethodToken)
+  if (actualTypes.n > 1)
+    if (actualTypes.v[0] == dtMethodToken)
       method = true;
   if (!strcmp("this", name)) {
     _this = true;
     method = false;
   }
   if (method) {
-    if (aparams.v[1] && aparams.v[1]->isTypeVariable)
-      str = stringcat(str, type2string(atypes.v[1]), ".");
+    if (actualParams.v[1] && actualParams.v[1]->isTypeVariable)
+      str = stringcat(str, type2string(actualTypes.v[1]), ".");
     else
-      str = stringcat(str, ":", type2string(atypes.v[1]), ".");
+      str = stringcat(str, ":", type2string(actualTypes.v[1]), ".");
   }
   if (!strncmp("_construct_", name, 11)) {
     str = stringcat(str, name+11);
@@ -977,22 +962,22 @@ static const char* call2string(CallExpr* call,
     start = 2;
   if (_this)
     start = 2;
-  for (int i = start; i < atypes.n; i++) {
+  for (int i = start; i < actualTypes.n; i++) {
     if (!first)
       first = true;
     else
       str = stringcat(str, ", ");
-    if (anames.v[i])
-      str = stringcat(str, anames.v[i], "=");
-    VarSymbol* var = toVarSymbol(aparams.v[i]);
+    if (actualNames.v[i])
+      str = stringcat(str, actualNames.v[i], "=");
+    VarSymbol* var = toVarSymbol(actualParams.v[i]);
     char buff[512];
-    if (aparams.v[i] && aparams.v[i]->isTypeVariable)
-      str = stringcat(str, type2string(atypes.v[i]));
+    if (actualParams.v[i] && actualParams.v[i]->isTypeVariable)
+      str = stringcat(str, type2string(actualTypes.v[i]));
     else if (var && var->immediate) {
       sprint_imm(buff, *var->immediate);
       str = stringcat(str, buff);
     } else
-      str = stringcat(str, ":", type2string(atypes.v[i]));
+      str = stringcat(str, ":", type2string(actualTypes.v[i]));
   }
   if (!call->methodTag)
     str = stringcat(str, ")");
@@ -1060,12 +1045,84 @@ explainCallMatch(CallExpr* call) {
 }
 
 
+static CallExpr*
+userCall(CallExpr* call) {
+  if (call->getModule()->modTag == MOD_STANDARD) {
+    for (int i = callStack.n-1; i >= 0; i--) {
+      if (callStack.v[i]->getModule()->modTag != MOD_STANDARD)
+        return callStack.v[i];
+    }
+  }
+  return call;
+}
+
+
+static void
+printResolutionError(const char* error,
+                     Vec<FnSymbol*>& candidates,
+                     CallExpr* call,
+                     const char *name,
+                     Vec<Type*>* actualTypes,
+                     Vec<Symbol*>* actualParams,
+                     Vec<const char*>* actualNames) {
+  if (!strcmp("_cast", name)) {
+    USR_FATAL(userCall(call), "illegal cast from %s to %s",
+              type2string(actualTypes->v[1]),
+              type2string(actualTypes->v[0]));
+  } else if (!strcmp("_construct__tuple", name)) {
+    SymExpr* sym = toSymExpr(call->get(1));
+    if (!sym || !sym->isParam()) {
+      USR_FATAL(userCall(call), "tuple size must be static");
+    } else {
+      USR_FATAL(userCall(call), "invalid tuple");
+    }
+  } else if (!strcmp("=", name)) {
+    if (actualTypes->v[1] == dtNil) {
+      USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
+                type2string(actualTypes->v[0]));
+    } else {
+      USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
+                type2string(actualTypes->v[1]),
+                type2string(actualTypes->v[0]));
+    }
+  } else if (!strcmp("this", name)) {
+    USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'", error,
+                   type2string(actualTypes->v[1]),
+                   call2string(call, name, *actualTypes, *actualParams, *actualNames));
+    USR_STOP();
+  } else {
+    const char* str = call2string(call, name, *actualTypes, *actualParams, *actualNames);
+    USR_FATAL_CONT(userCall(call), "%s call '%s'", error, str);
+    if (candidates.n > 0) {
+      if (developer) {
+        for (int i = callStack.n-1; i>=0; i--) {
+          CallExpr* cs = callStack.v[i];
+          FnSymbol* f = cs->getFunction();
+          if (f->instantiatedFrom)
+            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+          else
+            break;
+        }
+      }
+      bool printed_one = false;
+      forv_Vec(FnSymbol, fn, candidates) {
+        USR_PRINT(fn, "%s %s",
+                  printed_one ? "               " : "candidates are:",
+                  fn2string(fn));
+        printed_one = true;
+      }
+    }
+    USR_STOP();
+  }
+}
+
+
 static FnSymbol*
 resolve_call(CallExpr* call,
              const char *name,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<const char*>* actual_names) {
+             Vec<Type*>* actualTypes,
+             Vec<Symbol*>* actualParams,
+             Vec<const char*>* actualNames) {
   Vec<FnSymbol*> visibleFns;                    // visible functions
 
   Vec<FnSymbol*> candidateFns;
@@ -1078,8 +1135,8 @@ resolve_call(CallExpr* call,
 
   if (explainLine && explainCallMatch(call)) {
     USR_PRINT(call, "call: %s",
-              call2string(call, name, *actual_types,
-                          *actual_params, *actual_names));
+              call2string(call, name, *actualTypes,
+                          *actualParams, *actualNames));
     if (visibleFns.n == 0)
       USR_PRINT(call, "no visible functions found");
     bool first = true;
@@ -1096,7 +1153,7 @@ resolve_call(CallExpr* call,
     if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 actual_types, actual_params, actual_names);
+                 actualTypes, actualParams, actualNames);
   }
 
   if (explainLine && explainCallMatch(call)) {
@@ -1114,14 +1171,14 @@ resolve_call(CallExpr* call,
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
   best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                               actual_types, actual_params,
+                               actualTypes, actualParams,
                                &actual_formals);
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
     disambiguate_by_scope(call->parentScope, &candidateFns);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 actual_types, actual_params,
+                                 actualTypes, actualParams,
                                  &actual_formals);
   }
 
@@ -1130,33 +1187,22 @@ resolve_call(CallExpr* call,
   }
 
   if (!best && candidateFns.n > 0) {
-    for (int i = 0; i < candidateFns.n; i++) {
-      if (candidateFns.v[i]) {
-        resolve_call_error_candidates.add(candidateFns.v[i]);
-      }
-    }
-    resolve_call_error = CALL_AMBIGUOUS;
+    printResolutionError("ambiguous", candidateFns, call, name, actualTypes, actualParams, actualNames);
     best = NULL;
   } else if (call->partialTag && (!best || !best->noParens)) {
-    resolve_call_error = CALL_PARTIAL;
     best = NULL;
   } else if (!best) {
-    for (int i = 0; i < visibleFns.n; i++) {
-      if (visibleFns.v[i]) {
-        resolve_call_error_candidates.add(visibleFns.v[i]);
-      }
-    }
-    resolve_call_error = CALL_UNKNOWN;
+    printResolutionError("unresolved", visibleFns, call, name, actualTypes, actualParams, actualNames);
     best = NULL;
   } else {
     best = build_default_wrapper(best, actual_formals);
     best = build_order_wrapper(best, actual_formals);
-    best = build_coercion_wrapper(best, actual_types, actual_params);
+    best = build_coercion_wrapper(best, actualTypes, actualParams);
 
-    FnSymbol* promoted = build_promotion_wrapper(best, actual_types, actual_params, call->square);
+    FnSymbol* promoted = build_promotion_wrapper(best, actualTypes, actualParams, call->square);
     if (promoted != best) {
       if (fWarnPromotion) {
-        const char* str = call2string(call, name, *actual_types, *actual_params, *actual_names);
+        const char* str = call2string(call, name, *actualTypes, *actualParams, *actualNames);
         USR_WARN(call, "promotion on %s", str);
       }
       best = promoted;
@@ -1171,26 +1217,26 @@ resolve_call(CallExpr* call,
 
 static void
 computeActuals(CallExpr* call,
-               Vec<Type*>* atypes,
-               Vec<Symbol*>* aparams,
-               Vec<const char*>* anames) {
+               Vec<Type*>* actualTypes,
+               Vec<Symbol*>* actualParams,
+               Vec<const char*>* actualNames) {
   for_actuals(actual, call) {
     Type* t = actual->typeInfo();
-    atypes->add(t);
+    actualTypes->add(t);
     if (t == dtUnknown || t->isGeneric)
       INT_FATAL(call, "actual type is unknown or generic");
     SymExpr* symExpr;
     if (NamedExpr* named = toNamedExpr(actual)) {
-      anames->add(named->name);
+      actualNames->add(named->name);
       symExpr = toSymExpr(named->actual);
     } else {
-      anames->add(NULL);
+      actualNames->add(NULL);
       symExpr = toSymExpr(actual);
     }
     if (symExpr)
-      aparams->add(symExpr->var);
+      actualParams->add(symExpr->var);
     else
-      aparams->add(NULL);
+      actualParams->add(NULL);
   }
 }
 
@@ -1225,18 +1271,6 @@ resolve_type_expr(Expr* expr) {
   if (t == dtUnknown)
     INT_FATAL(expr, "Unable to resolve type expression");
   return t;
-}
-
-
-static CallExpr*
-userCall(CallExpr* call) {
-  if (call->getModule()->modTag == MOD_STANDARD) {
-    for (int i = callStack.n-1; i >= 0; i--) {
-      if (callStack.v[i]->getModule()->modTag != MOD_STANDARD)
-        return callStack.v[i];
-    }
-  }
-  return call;
 }
 
 
@@ -1305,14 +1339,14 @@ resolveCall(CallExpr* call) {
       }
     }
 
-    Vec<Type*> atypes;
-    Vec<Symbol*> aparams;
-    Vec<const char*> anames;
-    computeActuals(call, &atypes, &aparams, &anames);
+    Vec<Type*> actualTypes;
+    Vec<Symbol*> actualParams;
+    Vec<const char*> actualNames;
+    computeActuals(call, &actualTypes, &actualParams, &actualNames);
 
     SymExpr* base = toSymExpr(call->baseExpr);
     const char* name = base->var->name;
-    FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
+    FnSymbol* resolvedFn = resolve_call(call, name, &actualTypes, &actualParams, &actualNames);
     if (call->partialTag) {
       if (!resolvedFn)
         return;
@@ -1323,7 +1357,7 @@ resolveCall(CallExpr* call) {
       if (!elt_type)
         INT_FATAL(call, "Unexpected substitution of ddata class");
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                type2string(atypes.v[3]), type2string(elt_type));
+                type2string(actualTypes.v[3]), type2string(elt_type));
     }
     if (resolvedFn &&
         !strcmp("=", resolvedFn->name) &&
@@ -1332,62 +1366,7 @@ resolveCall(CallExpr* call) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 type2string(resolvedFn->getFormal(1)->type));
     if (!resolvedFn) {
-      if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
-        if (!strcmp("_cast", name)) {
-          USR_FATAL(userCall(call), "illegal cast from %s to %s",
-                    type2string(atypes.v[1]),
-                    type2string(atypes.v[0]));
-        } else if (!strcmp("_construct__tuple", name)) {
-          SymExpr* sym = toSymExpr(call->get(1));
-          if (!sym || !sym->isParam()) {
-            USR_FATAL(userCall(call), "tuple size must be static");
-          } else {
-            USR_FATAL(userCall(call), "invalid tuple");
-          }
-        } else if (!strcmp("=", name)) {
-          if (atypes.v[1] == dtNil) {
-            USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
-                      type2string(atypes.v[0]));
-          } else {
-            USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                      type2string(atypes.v[1]),
-                      type2string(atypes.v[0]));
-          }
-        } else if (!strcmp("this", name)) {
-          USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'",
-                         (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
-                         type2string(atypes.v[1]),
-                         call2string(call, name, atypes, aparams, anames));
-          USR_STOP();
-        } else {
-          const char* str = call2string(call, name, atypes, aparams, anames);
-          USR_FATAL_CONT(userCall(call), "%s call '%s'",
-                         (resolve_call_error == CALL_AMBIGUOUS) ? "ambiguous" : "unresolved",
-                         str);
-          if (resolve_call_error_candidates.n > 0) {
-            if (developer) {
-              for (int i = callStack.n-1; i>=0; i--) {
-                CallExpr* cs = callStack.v[i];
-                FnSymbol* f = cs->getFunction();
-                if (f->instantiatedFrom)
-                  USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-                else
-                  break;
-              }
-            }
-            bool printed_one = false;
-            forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
-              USR_PRINT(fn, "%s %s",
-                        printed_one ? "               " : "candidates are:",
-                        fn2string(fn));
-              printed_one = true;
-            }
-          }
-          USR_STOP();
-        }
-      } else {
-        INT_FATAL(call, "Error in resolve_call");
-      }
+      INT_FATAL(call, "Error in resolve_call");
     }
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
@@ -1599,7 +1578,7 @@ formalRequiresTemp(ArgSymbol* formal) {
   if (formal->intent == INTENT_PARAM ||
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
-      formal->name == _this ||
+      !strcmp("this", formal->name) ||
       formal->isTypeVariable ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken)
@@ -1609,9 +1588,11 @@ formalRequiresTemp(ArgSymbol* formal) {
 
 static void
 insertFormalTemps(FnSymbol* fn) {
-  if (fn->name == _pass || fn->name == _init ||
-      fn->name == _assign || fn->name == _copy ||
-      fn->name == _set_field ||
+  if (!strcmp(fn->name, "_pass") ||
+      !strcmp(fn->name, "_init") ||
+      !strcmp(fn->name, "_copy") ||
+      !strcmp(fn->name, "=") ||
+      !strcmp(fn->name, "_set_field") ||
       fn->hasPragma("ref"))
     return;
   ASTMap formals2vars;
@@ -2848,13 +2829,6 @@ resolve() {
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
-
-  _init = astr("_init");
-  _pass = astr("_pass");
-  _copy = astr("_copy");
-  _set_field = astr("_set_field");
-  _this = astr("this");
-  _assign = astr("=");
 
   bool changed = true;
   while (changed) {
