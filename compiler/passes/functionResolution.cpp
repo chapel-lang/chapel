@@ -10,6 +10,39 @@
 #include "symscope.h"
 #include "../ifa/prim_data.h"
 
+
+class CallInfo {
+ public:
+  CallExpr*        call;        // call expression
+  const char*      name;        // function name
+  Vec<Symbol*>     actualSyms;  // symbols of actuals
+  Vec<Type*>       actualTypes; // types of actuals
+  Vec<const char*> actualNames; // named arguments
+  CallInfo(CallExpr* icall);
+};
+
+
+CallInfo::CallInfo(CallExpr* icall) : call(icall) {
+  name = toSymExpr(call->baseExpr)->var->name;
+  for_actuals(actual, call) {
+    Type* t = actual->typeInfo();
+    if (t == dtUnknown || t->isGeneric)
+      INT_FATAL(call, "actual type is unknown or generic");
+    actualTypes.add(t);
+    if (NamedExpr* named = toNamedExpr(actual)) {
+      actualNames.add(named->name);
+      actual = named->actual;
+    } else {
+      actualNames.add(NULL);
+    }
+    if (SymExpr* se = toSymExpr(actual))
+      actualSyms.add(se->var);
+    else
+      actualSyms.add(NULL);
+  }
+}
+
+
 Map<Symbol*,Symbol*> paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -38,11 +71,7 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 // e.g.  foo(arg1=12, "hi");
 //  types = int, string
 //  names = arg1, NULL
-static FnSymbol* resolve_call(CallExpr* call,
-                              const char *name,
-                              Vec<Type*>* actualTypes,
-                              Vec<Symbol*>* actualParams,
-                              Vec<const char*>* actualNames);
+static FnSymbol* resolve_call(CallInfo* info);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
@@ -67,19 +96,13 @@ static void makeRefType(Type* type) {
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
     return;
 
-  Vec<Type*> actualTypes;
-  Vec<Symbol*> actualParams;
-  Vec<const char*> actualNames;
-  actualTypes.add(type);
-  actualParams.add(NULL);
-  actualNames.add(NULL);
-  CallExpr* call = new CallExpr("_construct__ref", type->symbol);
-  chpl_main->insertAtHead(call); // add call to AST temporarily
-  FnSymbol* fn = resolve_call(call, "_construct__ref",
-                              &actualTypes, &actualParams, &actualNames);
+  DefExpr* def = new DefExpr(new VarSymbol("tmp", type));
+  CallInfo info(new CallExpr("_construct__ref", def->sym));
+  chpl_main->insertAtHead(info.call); // add call to AST temporarily
+  FnSymbol* fn = resolve_call(&info);
+  info.call->remove();
   type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
-  call->remove();
 }
 
 
@@ -350,7 +373,7 @@ computeActualFormalMap(FnSymbol* fn,
                        int num_actuals,
                        int num_formals,
                        Vec<Type*>* actualTypes,
-                       Vec<Symbol*>* actualParams,
+                       Vec<Symbol*>* actualSyms,
                        Vec<const char*>* actualNames) {
   for (int i = 0; i < num_formals; i++) {
     formal_actuals->add(NULL);
@@ -368,7 +391,7 @@ computeActualFormalMap(FnSymbol* fn,
           match = true;
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actualTypes->v[i];
-          formal_params->v[j] = actualParams->v[i];
+          formal_params->v[j] = actualSyms->v[i];
           break;
         }
       }
@@ -388,7 +411,7 @@ computeActualFormalMap(FnSymbol* fn,
           match = true;
           actual_formals->v[i] = formal;
           formal_actuals->v[j] = actualTypes->v[i];
-          formal_params->v[j] = actualParams->v[i];
+          formal_params->v[j] = actualSyms->v[i];
           break;
         }
       }
@@ -573,7 +596,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
              FnSymbol* fn,
              Vec<Type*>* actualTypes,
-             Vec<Symbol*>* actualParams,
+             Vec<Symbol*>* actualSyms,
              Vec<const char*>* actualNames) {
   fn = expandVarArgs(fn, actualTypes->n);
 
@@ -590,7 +613,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params,
                                       actual_formals, num_actuals,
                                       num_formals, actualTypes,
-                                      actualParams, actualNames);
+                                      actualSyms, actualNames);
   if (!valid) {
     delete actual_formals;
     return;
@@ -602,7 +625,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualParams, actualNames);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualSyms, actualNames);
     }
     delete actual_formals;
     return;
@@ -712,7 +735,7 @@ build_order_wrapper(FnSymbol* fn,
 static FnSymbol*
 build_coercion_wrapper(FnSymbol* fn,
                        Vec<Type*>* actualTypes,
-                       Vec<Symbol*>* actualParams) {
+                       Vec<Symbol*>* actualSyms) {
   ASTMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
@@ -720,7 +743,7 @@ build_coercion_wrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     j++;
     Type* actual_type = actualTypes->v[j];
-    Symbol* actual_param = actualParams->v[j];
+    Symbol* actual_param = actualSyms->v[j];
     if (actual_type != formal->type) {
       if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type)) {
         subs.put(formal, actual_type->symbol);
@@ -740,7 +763,7 @@ build_coercion_wrapper(FnSymbol* fn,
 static FnSymbol*
 build_promotion_wrapper(FnSymbol* fn,
                         Vec<Type*>* actualTypes,
-                        Vec<Symbol*>* actualParams,
+                        Vec<Symbol*>* actualSyms,
                         bool isSquare) {
   if (!strcmp(fn->name, "="))
     return fn;
@@ -750,7 +773,7 @@ build_promotion_wrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     j++;
     Type* actual_type = actualTypes->v[j];
-    Symbol* actual_param = actualParams->v[j];
+    Symbol* actual_param = actualSyms->v[j];
     bool require_scalar_promotion = false;
     if (canDispatch(actual_type, actual_param, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
@@ -829,7 +852,7 @@ static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
                       Vec<Type*>* actualTypes,
-                      Vec<Symbol*>* actualParams,
+                      Vec<Symbol*>* actualSyms,
                       Vec<ArgSymbol*>** ret_afs) {
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
@@ -854,8 +877,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             else {
               bool require_scalar_promotion1;
               bool require_scalar_promotion2;
-              canDispatch(actualTypes->v[k], actualParams->v[k], arg->type, best, &require_scalar_promotion1);
-              canDispatch(actualTypes->v[k], actualParams->v[k], arg2->type, best, &require_scalar_promotion2);
+              canDispatch(actualTypes->v[k], actualSyms->v[k], arg->type, best, &require_scalar_promotion1);
+              canDispatch(actualTypes->v[k], actualSyms->v[k], arg2->type, best, &require_scalar_promotion2);
               promotion1 |= require_scalar_promotion1;
               promotion2 |= require_scalar_promotion2;
               if (require_scalar_promotion1 && !require_scalar_promotion2)
@@ -920,7 +943,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
-static const char* type2string(Type* type) {
+static const char* toString(Type* type) {
   if (type->symbol->hasPragma("ref"))
     return getValueType(type)->symbol->name;
   else
@@ -928,33 +951,29 @@ static const char* type2string(Type* type) {
 }
 
 
-static const char* call2string(CallExpr* call,
-                               const char* name,
-                               Vec<Type*>& actualTypes,
-                               Vec<Symbol*>& actualParams,
-                               Vec<const char*>& actualNames) {
+static const char* toString(CallInfo* info) {
   bool method = false;
   bool _this = false;
   const char *str = "";
-  if (actualTypes.n > 1)
-    if (actualTypes.v[0] == dtMethodToken)
+  if (info->actualTypes.n > 1)
+    if (info->actualTypes.v[0] == dtMethodToken)
       method = true;
-  if (!strcmp("this", name)) {
+  if (!strcmp("this", info->name)) {
     _this = true;
     method = false;
   }
   if (method) {
-    if (actualParams.v[1] && actualParams.v[1]->isTypeVariable)
-      str = stringcat(str, type2string(actualTypes.v[1]), ".");
+    if (info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable)
+      str = stringcat(str, "type ", toString(info->actualTypes.v[1]), ".");
     else
-      str = stringcat(str, ":", type2string(actualTypes.v[1]), ".");
+      str = stringcat(str, toString(info->actualTypes.v[1]), ".");
   }
-  if (!strncmp("_construct_", name, 11)) {
-    str = stringcat(str, name+11);
+  if (!strncmp("_construct_", info->name, 11)) {
+    str = stringcat(str, info->name+11);
   } else if (!_this) {
-    str = stringcat(str, name);
+    str = stringcat(str, info->name);
   }
-  if (!call->methodTag)
+  if (!info->call->methodTag)
     str = stringcat(str, "(");
   bool first = false;
   int start = 0;
@@ -962,30 +981,30 @@ static const char* call2string(CallExpr* call,
     start = 2;
   if (_this)
     start = 2;
-  for (int i = start; i < actualTypes.n; i++) {
+  for (int i = start; i < info->actualTypes.n; i++) {
     if (!first)
       first = true;
     else
       str = stringcat(str, ", ");
-    if (actualNames.v[i])
-      str = stringcat(str, actualNames.v[i], "=");
-    VarSymbol* var = toVarSymbol(actualParams.v[i]);
+    if (info->actualNames.v[i])
+      str = stringcat(str, info->actualNames.v[i], "=");
+    VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
     char buff[512];
-    if (actualParams.v[i] && actualParams.v[i]->isTypeVariable)
-      str = stringcat(str, type2string(actualTypes.v[i]));
+    if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
+      str = stringcat(str, "type ", toString(info->actualTypes.v[i]));
     else if (var && var->immediate) {
       sprint_imm(buff, *var->immediate);
       str = stringcat(str, buff);
     } else
-      str = stringcat(str, ":", type2string(actualTypes.v[i]));
+      str = stringcat(str, toString(info->actualTypes.v[i]));
   }
-  if (!call->methodTag)
+  if (!info->call->methodTag)
     str = stringcat(str, ")");
   return str;
 }
 
 
-static const char* fn2string(FnSymbol* fn) {
+static const char* toString(FnSymbol* fn) {
   char* str;
   int start = 0;
   if (fn->instantiatedFrom)
@@ -994,10 +1013,10 @@ static const char* fn2string(FnSymbol* fn) {
     str = stringcat(fn->name+11);
   } else if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
-      str = stringcat(":", type2string(fn->getFormal(2)->type));
+      str = stringcat(toString(fn->getFormal(2)->type));
       start = 1;
     } else {
-      str = stringcat(":", type2string(fn->getFormal(2)->type), ".", fn->name);
+      str = stringcat(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
   } else
@@ -1023,7 +1042,7 @@ static const char* fn2string(FnSymbol* fn) {
     } else if (arg->type == dtAny) {
       str = stringcat(str, arg->name);
     } else
-      str = stringcat(str, arg->name, ": ", type2string(arg->type));
+      str = stringcat(str, arg->name, ": ", toString(arg->type));
     if (arg->variableExpr)
       str = stringcat(str, " ...");
   }
@@ -1060,39 +1079,36 @@ userCall(CallExpr* call) {
 static void
 printResolutionError(const char* error,
                      Vec<FnSymbol*>& candidates,
-                     CallExpr* call,
-                     const char *name,
-                     Vec<Type*>* actualTypes,
-                     Vec<Symbol*>* actualParams,
-                     Vec<const char*>* actualNames) {
-  if (!strcmp("_cast", name)) {
-    USR_FATAL(userCall(call), "illegal cast from %s to %s",
-              type2string(actualTypes->v[1]),
-              type2string(actualTypes->v[0]));
-  } else if (!strcmp("_construct__tuple", name)) {
-    SymExpr* sym = toSymExpr(call->get(1));
+                     CallInfo* info) {
+  CallExpr* call = userCall(info->call);
+  if (!strcmp("_cast", info->name)) {
+    USR_FATAL(call, "illegal cast from %s to %s",
+              toString(info->actualTypes.v[1]),
+              toString(info->actualTypes.v[0]));
+  } else if (!strcmp("_construct__tuple", info->name)) {
+    SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->isParam()) {
-      USR_FATAL(userCall(call), "tuple size must be static");
+      USR_FATAL(call, "tuple size must be static");
     } else {
-      USR_FATAL(userCall(call), "invalid tuple");
+      USR_FATAL(call, "invalid tuple");
     }
-  } else if (!strcmp("=", name)) {
-    if (actualTypes->v[1] == dtNil) {
-      USR_FATAL(userCall(call), "type mismatch in assignment of nil to %s",
-                type2string(actualTypes->v[0]));
+  } else if (!strcmp("=", info->name)) {
+    if (info->actualTypes.v[1] == dtNil) {
+      USR_FATAL(call, "type mismatch in assignment of nil to %s",
+                toString(info->actualTypes.v[0]));
     } else {
-      USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                type2string(actualTypes->v[1]),
-                type2string(actualTypes->v[0]));
+      USR_FATAL(call, "type mismatch in assignment from %s to %s",
+                toString(info->actualTypes.v[1]),
+                toString(info->actualTypes.v[0]));
     }
-  } else if (!strcmp("this", name)) {
-    USR_FATAL_CONT(userCall(call), "%s access of '%s' by '%s'", error,
-                   type2string(actualTypes->v[1]),
-                   call2string(call, name, *actualTypes, *actualParams, *actualNames));
+  } else if (!strcmp("this", info->name)) {
+    USR_FATAL_CONT(call, "%s access of '%s' by '%s'", error,
+                   toString(info->actualTypes.v[1]),
+                   toString(info));
     USR_STOP();
   } else {
-    const char* str = call2string(call, name, *actualTypes, *actualParams, *actualNames);
-    USR_FATAL_CONT(userCall(call), "%s call '%s'", error, str);
+    const char* str = toString(info);
+    USR_FATAL_CONT(call, "%s call '%s'", error, str);
     if (candidates.n > 0) {
       if (developer) {
         for (int i = callStack.n-1; i>=0; i--) {
@@ -1108,7 +1124,7 @@ printResolutionError(const char* error,
       forv_Vec(FnSymbol, fn, candidates) {
         USR_PRINT(fn, "%s %s",
                   printed_one ? "               " : "candidates are:",
-                  fn2string(fn));
+                  toString(fn));
         printed_one = true;
       }
     }
@@ -1118,32 +1134,28 @@ printResolutionError(const char* error,
 
 
 static FnSymbol*
-resolve_call(CallExpr* call,
-             const char *name,
-             Vec<Type*>* actualTypes,
-             Vec<Symbol*>* actualParams,
-             Vec<const char*>* actualNames) {
+resolve_call(CallInfo* info) {
+  CallExpr* call = info->call;
+
   Vec<FnSymbol*> visibleFns;                    // visible functions
 
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
   if (!call->isResolved())
-    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
+    call->parentScope->getVisibleFunctions(&visibleFns, info->name);
   else
     visibleFns.add(call->isResolved());
 
   if (explainLine && explainCallMatch(call)) {
-    USR_PRINT(call, "call: %s",
-              call2string(call, name, *actualTypes,
-                          *actualParams, *actualNames));
+    USR_PRINT(call, "call: %s", toString(info));
     if (visibleFns.n == 0)
       USR_PRINT(call, "no visible functions found");
     bool first = true;
     forv_Vec(FnSymbol, visibleFn, visibleFns) {
       USR_PRINT(visibleFn, "%s %s",
                 first ? "visible functions are:" : "                      ",
-                fn2string(visibleFn));
+                toString(visibleFn));
       first = false;
     }
   }
@@ -1153,7 +1165,7 @@ resolve_call(CallExpr* call,
     if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 actualTypes, actualParams, actualNames);
+                 &info->actualTypes, &info->actualSyms, &info->actualNames);
   }
 
   if (explainLine && explainCallMatch(call)) {
@@ -1163,7 +1175,7 @@ resolve_call(CallExpr* call,
     forv_Vec(FnSymbol, candidateFn, candidateFns) {
       USR_PRINT(candidateFn, "%s %s",
                 first ? "candidates are:" : "               ",
-                fn2string(candidateFn));
+                toString(candidateFn));
       first = false;
     }
   }
@@ -1171,38 +1183,38 @@ resolve_call(CallExpr* call,
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
   best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                               actualTypes, actualParams,
+                               &info->actualTypes, &info->actualSyms,
                                &actual_formals);
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
     disambiguate_by_scope(call->parentScope, &candidateFns);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 actualTypes, actualParams,
+                                 &info->actualTypes, &info->actualSyms,
                                  &actual_formals);
   }
 
   if (best && explainLine && explainCallMatch(call)) {
-    USR_PRINT(best, "best candidate is: %s", fn2string(best));
+    USR_PRINT(best, "best candidate is: %s", toString(best));
   }
 
   if (!best && candidateFns.n > 0) {
-    printResolutionError("ambiguous", candidateFns, call, name, actualTypes, actualParams, actualNames);
+    printResolutionError("ambiguous", candidateFns, info);
     best = NULL;
   } else if (call->partialTag && (!best || !best->noParens)) {
     best = NULL;
   } else if (!best) {
-    printResolutionError("unresolved", visibleFns, call, name, actualTypes, actualParams, actualNames);
+    printResolutionError("unresolved", visibleFns, info);
     best = NULL;
   } else {
     best = build_default_wrapper(best, actual_formals);
     best = build_order_wrapper(best, actual_formals);
-    best = build_coercion_wrapper(best, actualTypes, actualParams);
+    best = build_coercion_wrapper(best, &info->actualTypes, &info->actualSyms);
 
-    FnSymbol* promoted = build_promotion_wrapper(best, actualTypes, actualParams, call->square);
+    FnSymbol* promoted = build_promotion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
     if (promoted != best) {
       if (fWarnPromotion) {
-        const char* str = call2string(call, name, *actualTypes, *actualParams, *actualNames);
+        const char* str = toString(info);
         USR_WARN(call, "promotion on %s", str);
       }
       best = promoted;
@@ -1213,31 +1225,6 @@ resolve_call(CallExpr* call,
     delete candidateActualFormals.v[i];
 
   return best;
-}
-
-static void
-computeActuals(CallExpr* call,
-               Vec<Type*>* actualTypes,
-               Vec<Symbol*>* actualParams,
-               Vec<const char*>* actualNames) {
-  for_actuals(actual, call) {
-    Type* t = actual->typeInfo();
-    actualTypes->add(t);
-    if (t == dtUnknown || t->isGeneric)
-      INT_FATAL(call, "actual type is unknown or generic");
-    SymExpr* symExpr;
-    if (NamedExpr* named = toNamedExpr(actual)) {
-      actualNames->add(named->name);
-      symExpr = toSymExpr(named->actual);
-    } else {
-      actualNames->add(NULL);
-      symExpr = toSymExpr(actual);
-    }
-    if (symExpr)
-      actualParams->add(symExpr->var);
-    else
-      actualParams->add(NULL);
-  }
 }
 
 static Type*
@@ -1339,14 +1326,10 @@ resolveCall(CallExpr* call) {
       }
     }
 
-    Vec<Type*> actualTypes;
-    Vec<Symbol*> actualParams;
-    Vec<const char*> actualNames;
-    computeActuals(call, &actualTypes, &actualParams, &actualNames);
+    CallInfo info(call);
 
-    SymExpr* base = toSymExpr(call->baseExpr);
-    const char* name = base->var->name;
-    FnSymbol* resolvedFn = resolve_call(call, name, &actualTypes, &actualParams, &actualNames);
+    FnSymbol* resolvedFn = resolve_call(&info);
+
     if (call->partialTag) {
       if (!resolvedFn)
         return;
@@ -1357,14 +1340,14 @@ resolveCall(CallExpr* call) {
       if (!elt_type)
         INT_FATAL(call, "Unexpected substitution of ddata class");
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                type2string(actualTypes.v[3]), type2string(elt_type));
+                toString(info.actualTypes.v[3]), toString(elt_type));
     }
     if (resolvedFn &&
         !strcmp("=", resolvedFn->name) &&
         isRecordType(resolvedFn->getFormal(1)->type) &&
         resolvedFn->getFormal(2)->type == dtNil)
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-                type2string(resolvedFn->getFormal(1)->type));
+                toString(resolvedFn->getFormal(1)->type));
     if (!resolvedFn) {
       INT_FATAL(call, "Error in resolve_call");
     }
@@ -1505,7 +1488,7 @@ resolveCall(CallExpr* call) {
         if (field->type == dtUnknown)
           field->type = t;
         if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", type2string(t), type2string(field->type));
+          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", toString(t), toString(field->type));
         found = true;
       }
     }
@@ -1554,7 +1537,7 @@ resolveCall(CallExpr* call) {
     ClassType* ct = toClassType(lhsType);
     if (rhsType == dtNil && lhsType != dtNil && (!ct || ct->classTag != CLASS_CLASS))
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-                type2string(lhsType));
+                toString(lhsType));
     Type* lhsBaseType = lhsType;
     if (isReference(lhsBaseType))
       lhsBaseType = getValueType(lhsBaseType);
@@ -1565,7 +1548,7 @@ resolveCall(CallExpr* call) {
         rhsBaseType != lhsBaseType &&
         !isDispatchParent(rhsBaseType, lhsBaseType))
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                type2string(rhsType), type2string(lhsType));
+                toString(rhsType), toString(lhsType));
     if (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType)) {
       rhs->remove();
       call->insertAtTail(new CallExpr(PRIMITIVE_CAST, lhsBaseType->symbol, rhs));
@@ -2708,8 +2691,8 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             if (signature_match(pfn, icfn)) {
               resolveFns(icfn);
               if (icfn->retType != pfn->retType) {
-                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
-                USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", fn2string(icfn), icfn->retType->symbol->name);
+                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
+                USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", toString(icfn), icfn->retType->symbol->name);
                 USR_STOP();
               }
               Vec<FnSymbol*>* fns = ddf.get(pfn);
@@ -2736,8 +2719,8 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
           if (signature_match(pfn, cfn)) {
             resolveFns(cfn);
             if (cfn->retType != pfn->retType) {
-              USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", fn2string(pfn), pfn->retType->symbol->name);
-              USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", fn2string(cfn), cfn->retType->symbol->name);
+              USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
+              USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", toString(cfn), cfn->retType->symbol->name);
               USR_STOP();
             }
             Vec<FnSymbol*>* fns = ddf.get(pfn);
@@ -2867,9 +2850,9 @@ resolve() {
     printf("dynamic dispatch functions:\n");
     for (int i = 0; i < ddf.n; i++) {
       if (ddf.v[i].key) {
-        printf("  %s\n", fn2string(ddf.v[i].key));
+        printf("  %s\n", toString(ddf.v[i].key));
         for (int j = 0; j < ddf.v[i].value->n; j++) {
-          printf("    %s\n", fn2string(ddf.v[i].value->v[j]));
+          printf("    %s\n", toString(ddf.v[i].value->v[j]));
         }
       }
     }
@@ -3304,32 +3287,10 @@ setFieldTypes(FnSymbol* fn) {
   ClassType* ct = toClassType(fn->retType);
   if (!ct)
     INT_FATAL(fn, "Constructor has no class type");
-  //  for_formals(formal, fn) {
-//     Type* t = formal->type;
-//     if (t == dtUnknown && formal->defPoint->exprType)
-//       t = formal->defPoint->exprType->typeInfo();
-//     if (t == dtUnknown)
-//       INT_FATAL(formal, "Unable to resolve field type");
-//     if (t == dtNil)
-//       USR_FATAL(formal, "unable to determine type of field from nil");
-//     bool found = false;
-//     if (!strcmp(formal->name, "_mt")) {
-//       continue;
-//     }
-//     if (!strcmp(formal->name, "this")) {
-//       continue;
-//     }
   for_fields(field, ct) {
-    //    if (!strcmp(field->name, formal->name)) {
-      //        field->type = t;
-      //        found = true;
-      if (!strcmp(field->name, "_promotionType"))
-        ct->scalarPromotionType = field->type;
-      //    }
+    if (!strcmp(field->name, "_promotionType"))
+      ct->scalarPromotionType = field->type;
   }
-    //    if (!found)
-    //      INT_FATAL(formal, "Unable to find field in constructor");
-    //  }
   fixTypeNames(ct);
 }
 
