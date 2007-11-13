@@ -20,7 +20,7 @@ module M1 {
 
 module M {
   def main() {
-    use M1, M2, M3;
+    use M1.M2.M3;
     foo();
   }
 }

@@ -1,7 +1,5 @@
 use Time;
 
-param bitsPerByte = 8;
-
 type tableElem = uint(64);
 
 config const totMemSizeInBytes = 1000;

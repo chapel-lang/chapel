@@ -4,8 +4,7 @@ use Random;
 
 // constants related to memory
 param MB = 1024**2,
-      GB = 1024*MB,
-      bitsPerByte = 8;
+      GB = 1024*MB;
 
 // constants and config constants used to compute the problem size
 param numVectors = 3;
