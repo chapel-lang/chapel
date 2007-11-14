@@ -2,8 +2,15 @@
 Setting up your environment for Chapel
 ======================================
 
-To get started, there are four environment settings that you should
-make in order to use this release effectively:
+To get started with Chapel, there are four environment settings that
+are strongly recommended for effective use of the release, and a
+few other optional settings that are useful for cross-compiling or
+overriding the default settings.
+
+
+--------------------
+Recommended Settings
+--------------------
 
 1) Set the CHPL_HOME environment variable to point to the location of
    the chapel/ directory that was created when you unpacked the
@@ -12,13 +19,14 @@ make in order to use this release effectively:
         setenv CHPL_HOME ~/chapel
 
 
-2) Set the CHPL_HOST_PLATFORM environment variable to the string
-   returned by the $CHPL_HOME/util/platform.pl script.  For example:
+2) Set the CHPL_HOST_PLATFORM environment variable to the string that
+   represents the platform on which you're working.  The best way to
+   determine this platform is by running the
+   $CHPL_HOME/util/platform.pl script.  For example:
 
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
 
-   This script returns a string uniquely representing the platform in
-   question, which is used to read platform-specific settings from
+   This value is used to read platform-specific settings from
    Makefiles and to create platform-specific subdirectories for
    storing binaries during the build process.  The strings for our
    currently-supported platforms are as follows:
@@ -28,53 +36,24 @@ make in order to use this release effectively:
         linux   : 32-bit Linux platforms
         linux64 : 64-bit Linux platforms
         sunos   : SunOS platforms
-        unknown : other platforms
 
    The Chapel Makefiles and sources are designed to work for any
    UNIX-compatible environment that supports a GNU-compatible make
-   utility.  The list above represents those platforms that we have
-   access to and test.  We are interested in making our code framework
-   portable to other platforms -- if you are working on a platform
-   other than the ones listed above, please contact us at:
+   utility.  The list above represents those platforms that we access
+   and test frequently.  We are interested in making our code
+   framework portable to other platforms -- if you are working on a
+   platform other than the ones listed above, please contact us at:
    chapel_info@cray.com
 
 
-3) If you are cross-compiling for a platform other than
-   $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
-   variable to describe that platform.  Common cross-compilation
-   target platforms include:
-
-        mta    : Cray MTA
-        x1     : Cray X1
-        x2     : Cray X2
-        xmp    : Cray XMP
-        xt-cnl : Cray XT running Compute Node Linux
-
-
-4) Optionally, set the CHPL_THREADS environment variable to indicate
-   what threading layer you want to use to implement tasks.  Current
-   options are:
-
-        none     : no runtime tasks
-        pthreads : use POSIX threading (the default)
-
-
-5) Optionally, set the CHPL_COMM environment variable to indicate what
-   communication layer you want to use to implement inter-locale
-   communication.  Current options are:
-
-        none   : only supports single-locale execution (the default)
-        gasnet : use the Berkeley GASNet-based runtime
-
-
-6) Set your path to include the directory
+3) Set your path to include the directory
    $CHPL_HOME/bin/$CHPL_HOST_PLATFORM which is created when you build
    the compiler.  For example:
 
         set path = ($path $CHPL_HOME/bin/$CHPL_HOST_PLATFORM)
 
 
-7) Set your man path to include the directory $CHPL_HOME/man.  For
+4) Set your man path to include the directory $CHPL_HOME/man.  For
    example:
 
         setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
@@ -83,6 +62,78 @@ make in order to use this release effectively:
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
 lines that make these settings for various shells when they are
 sourced from the $CHPL_HOME directory.  For frequent Chapel users,
-these lines can be inserted into a shell's dotfile by hard-coding the
-definition of $CHPL_HOME and removing the check to see that the script
-is being run from the chapel/ directory.
+these lines should be inserted into a shell's dotfile by hard-coding
+the definition of $CHPL_HOME and removing the check to see that the
+script is being run from the chapel/ directory.
+
+
+-----------------
+Optional Settings
+-----------------
+
+1) If you are cross-compiling for a platform other than
+   $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
+   variable to describe that platform.  Currently supported
+   cross-compilation target platforms include:
+
+        mta    : Cray MTA
+        x1     : Cray X1
+        x2     : Cray X2
+        xmt    : Cray XMT
+        xt-cnl : Cray XT running Compute Node Linux
+
+   If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
+   be the same as $CHPL_HOST_PLATFORM.
+
+
+2) Optionally, you can set CHPL_HOST_COMPILER and/or
+   CHPL_TARGET_COMPILER to indicate the compiler suite that should be
+   used to build the sources.  CHPL_HOST_COMPILER is the compiler used
+   to build the Chapel compiler itself to run on CHPL_HOST_PLATFORM.
+   CHPL_TARGET_COMPILER is the compiler used to build the runtime
+   libraries and generated code for CHPL_TARGET_PLATFORM.  Current
+   values and defaults are as follows:
+
+        gnu               : the GNU compiler suite -- gcc and g++
+        intel             : the Intel compiler suite -- icc and icpc
+        cray-mta          : the Cray compiler for multithreaded architectures
+        cray-vec          : the Cray compiler for vector architectures
+        cray-xt-gnu       : the Cray XT compiler using the GNU backend
+        cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
+        cray-xt-pgi       : the Cray XT compiler using the PGI backend
+
+   If not set, these variables each default to a value based on the
+   corresponding platform variable:
+
+        platform      compiler
+        --------      --------
+        mta, xmt  ->  cray-mta
+        x1, x2    ->  cray-vec
+        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv module)
+        other     ->  gnu
+
+
+3) Optionally, set the CHPL_THREADS environment variable to indicate
+   what threading layer you want to use to implement parallelism.
+   Current options are:
+
+        none     : no runtime tasks
+        pthreads : use POSIX threading
+
+   If unset, CHPL_THREADS defaults to a value based on
+   $CHPL_TARGET_PLATFORM:
+
+        platform      threads
+        --------      -------
+        mta       ->  none        
+        other     ->  pthreads
+
+
+4) Optionally, set the CHPL_COMM environment variable to indicate what
+   communication layer you want to use to implement inter-locale
+   communication.  Current options are:
+
+        none   : only supports single-locale execution
+        gasnet : use the Berkeley GASNet-based runtime
+
+   If unset, CHPL_COMM defaults to "none".
