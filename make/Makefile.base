@@ -110,7 +110,7 @@ EXE_SUFFIX =
 
 
 #
-# include platform-specific settings
+# include compiler- and platform-specific settings
 #
--include $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 -include $(CHAPEL_ROOT)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
+-include $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
