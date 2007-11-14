@@ -7,10 +7,10 @@ $utildirname = dirname($0);
 $preset_threads=$ENV{'CHPL_THREADS'};
 
 if ($preset_threads eq "") {
-    $platform = `$utildirname\platform.pl --target`;
+    $platform = `$utildirname/platform.pl --target`;
     chomp($platform);
-    if ($platform eq "mta") {
-	$threads = "mta";
+    if ($platform eq "mta" || $platform eq "xmt") {
+	$threads = "none";
     } else {
 	$threads = "pthreads";
     }
