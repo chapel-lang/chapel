@@ -1019,3 +1019,14 @@ def $Array$.numElements: this.domain.dim_type
 \begin{protobody}
 Returns the number of elements in the array.
 \end{protobody}
+
+\begin{protohead}
+def reshape(A: $Array$, D: $Domain$): $Array$
+\end{protohead}
+\begin{protobody}
+Returns a copy of the array containing the same values but in the
+shape of the new domain.  The number of indices in the domain must
+equal the number of elements in the array.  The elements of the array
+are copied into the new array using the default iteration orders over
+both arrays.
+\end{protobody}

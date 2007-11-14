@@ -533,3 +533,10 @@ pragma "inline" def _chpl_swap(x: domain, y: domain) {
   x = y;
 }
 */
+
+def reshape(A: [], D: domain) {
+  var B: [D] A.eltType;
+  for (i,a) in (D,A) do
+    B(i) = a;
+  return B;
+}
