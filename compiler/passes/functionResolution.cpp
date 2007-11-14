@@ -78,7 +78,7 @@ static void resolveCall(CallExpr* call);
 static void resolveFns(FnSymbol* fn);
 
 static bool canDispatch(Type* actualType,
-                        Symbol* actualParam,
+                        Symbol* actualSym,
                         Type* formalType,
                         FnSymbol* fn = NULL,
                         bool* require_scalar_promotion = NULL);
@@ -235,18 +235,18 @@ canInstantiate(Type* actualType, Type* formalType) {
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 static bool
-canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion = NULL) {
+canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion = NULL) {
   if (actualType->symbol->hasPragma( "sync")) {
     if (actualType->isGeneric) {
       return false;
     } else {
       Type *base_type = (Type*)(actualType->substitutions.v[0].value);
-      return canDispatch(base_type, actualParam, formalType, fn, require_scalar_promotion);
+      return canDispatch(base_type, actualSym, formalType, fn, require_scalar_promotion);
     }
   }
 
   if (actualType->symbol->hasPragma("ref"))
-    return canDispatch(getValueType(actualType), actualParam, formalType, fn, require_scalar_promotion);
+    return canDispatch(getValueType(actualType), actualSym, formalType, fn, require_scalar_promotion);
 
   if (is_int_type(formalType)) {
     if (toEnumType(actualType))
@@ -260,7 +260,7 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn,
         get_width(actualType) < get_width(formalType))
       return true;
     if (get_width(formalType) < 64)
-      if (VarSymbol* var = toVarSymbol(actualParam))
+      if (VarSymbol* var = toVarSymbol(actualSym))
         if (var->immediate)
           if (fits_in_int(get_width(formalType), var->immediate))
             return true;
@@ -271,7 +271,7 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn,
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
       return true;
-    if (VarSymbol* var = toVarSymbol(actualParam))
+    if (VarSymbol* var = toVarSymbol(actualSym))
       if (var->immediate)
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
@@ -316,7 +316,7 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn,
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 static bool
-canDispatch(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
+canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -329,17 +329,17 @@ canDispatch(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* f
         return true;
   if (actualType->refType == formalType)
     return true;
-  if (canCoerce(actualType, actualParam, formalType, fn, require_scalar_promotion))
+  if (canCoerce(actualType, actualSym, formalType, fn, require_scalar_promotion))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, actualParam, formalType, fn, require_scalar_promotion)) {
+    if (parent == formalType || canDispatch(parent, actualSym, formalType, fn, require_scalar_promotion)) {
       return true;
     }
   }
   if (fn &&
       strcmp(fn->name, "=") && 
       actualType->scalarPromotionType && 
-      (canDispatch(actualType->scalarPromotionType, actualParam, formalType, fn))) {
+      (canDispatch(actualType->scalarPromotionType, actualSym, formalType, fn))) {
     if (require_scalar_promotion)
       *require_scalar_promotion = true;
     return true;
@@ -367,20 +367,20 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalMap(FnSymbol* fn,
-                       Vec<Type*>* formal_actuals,
-                       Vec<Symbol*>* formal_params,
-                       Vec<ArgSymbol*>* actual_formals,
+                       Vec<Type*>* formalActuals,
+                       Vec<Symbol*>* formalSyms,
+                       Vec<ArgSymbol*>* actualFormals,
                        int num_actuals,
                        int num_formals,
                        Vec<Type*>* actualTypes,
                        Vec<Symbol*>* actualSyms,
                        Vec<const char*>* actualNames) {
   for (int i = 0; i < num_formals; i++) {
-    formal_actuals->add(NULL);
-    formal_params->add(NULL);
+    formalActuals->add(NULL);
+    formalSyms->add(NULL);
   }
   for (int i = 0; i < num_actuals; i++)
-    actual_formals->add(NULL);
+    actualFormals->add(NULL);
   for (int i = 0; i < num_actuals; i++) {
     if (actualNames->v[i]) {
       bool match = false;
@@ -389,9 +389,9 @@ computeActualFormalMap(FnSymbol* fn,
         j++;
         if (!strcmp(actualNames->v[i], formal->name)) {
           match = true;
-          actual_formals->v[i] = formal;
-          formal_actuals->v[j] = actualTypes->v[i];
-          formal_params->v[j] = actualSyms->v[i];
+          actualFormals->v[i] = formal;
+          formalActuals->v[j] = actualTypes->v[i];
+          formalSyms->v[j] = actualSyms->v[i];
           break;
         }
       }
@@ -407,11 +407,11 @@ computeActualFormalMap(FnSymbol* fn,
         if (formal->variableExpr)
           return (fn->isGeneric) ? true : false;
         j++;
-        if (!formal_actuals->v[j]) {
+        if (!formalActuals->v[j]) {
           match = true;
-          actual_formals->v[i] = formal;
-          formal_actuals->v[j] = actualTypes->v[i];
-          formal_params->v[j] = actualSyms->v[i];
+          actualFormals->v[i] = formal;
+          formalActuals->v[j] = actualTypes->v[i];
+          formalSyms->v[j] = actualSyms->v[i];
           break;
         }
       }
@@ -426,15 +426,15 @@ computeActualFormalMap(FnSymbol* fn,
 static void
 computeGenericSubs(ASTMap &subs,
                    FnSymbol* fn,
-                   Vec<Type*>* formal_actuals,
-                   Vec<Symbol*>* formal_params) {
+                   Vec<Type*>* formalActuals,
+                   Vec<Symbol*>* formalSyms) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formal_params->v[i] && formal_params->v[i]->isParam()) {
+      if (formalSyms->v[i] && formalSyms->v[i]->isParam()) {
         if (!formal->type->isGeneric ||
-            canInstantiate(formal_actuals->v[i], formal->type))
-          subs.put(formal, formal_params->v[i]);
+            canInstantiate(formalActuals->v[i], formal->type))
+          subs.put(formal, formalSyms->v[i]);
       } else if (formal->defaultExpr) {
 
         // break because default expression may reference generic
@@ -451,13 +451,13 @@ computeGenericSubs(ASTMap &subs,
           INT_FATAL(fn, "unable to handle default parameter");
       }
     } else if (formal->type->isGeneric) {
-      if (formal_actuals->v[i]) {
-        if (canInstantiate(formal_actuals->v[i], formal->type)) {
-          subs.put(formal, formal_actuals->v[i]);
-        } else if (Type* st = formal_actuals->v[i]->scalarPromotionType) {
+      if (formalActuals->v[i]) {
+        if (canInstantiate(formalActuals->v[i], formal->type)) {
+          subs.put(formal, formalActuals->v[i]);
+        } else if (Type* st = formalActuals->v[i]->scalarPromotionType) {
           if (canInstantiate(st, formal->type))
             subs.put(formal, st);
-        } else if (Type* vt = getValueType(formal_actuals->v[i])) {
+        } else if (Type* vt = getValueType(formalActuals->v[i])) {
           if (canInstantiate(vt, formal->type))
             subs.put(formal, vt);
           else if (Type* st = vt->scalarPromotionType)
@@ -603,31 +603,31 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   if (!fn)
     return;
 
-  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
+  Vec<ArgSymbol*>* actualFormals = new Vec<ArgSymbol*>();
 
   int num_actuals = actualTypes->n;
   int num_formals = fn->numFormals();
 
-  Vec<Type*> formal_actuals;
-  Vec<Symbol*> formal_params;
-  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params,
-                                      actual_formals, num_actuals,
+  Vec<Type*> formalActuals;
+  Vec<Symbol*> formalSyms;
+  bool valid = computeActualFormalMap(fn, &formalActuals, &formalSyms,
+                                      actualFormals, num_actuals,
                                       num_formals, actualTypes,
                                       actualSyms, actualNames);
   if (!valid) {
-    delete actual_formals;
+    delete actualFormals;
     return;
   }
 
   if (fn->isGeneric) {
     ASTMap subs;
-    computeGenericSubs(subs, fn, &formal_actuals, &formal_params);
+    computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs);
       if (inst_fn)
         addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualSyms, actualNames);
     }
-    delete actual_formals;
+    delete actualFormals;
     return;
   }
 
@@ -641,47 +641,47 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     j++;
     if (!strcmp(fn->name, "=")) {
       if (j == 0) {
-        if (formal_actuals.v[j] != formal->type &&
-            getValueType(formal_actuals.v[j]) != formal->type) {
-          delete actual_formals;
+        if (formalActuals.v[j] != formal->type &&
+            getValueType(formalActuals.v[j]) != formal->type) {
+          delete actualFormals;
           return;
         }
       }
     }
-    if (formal_actuals.v[j] &&
-        !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn)) {
-      delete actual_formals;
+    if (formalActuals.v[j] &&
+        !canDispatch(formalActuals.v[j], formalSyms.v[j], formal->type, fn)) {
+      delete actualFormals;
       return;
     }
-    if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable) {
-      delete actual_formals;
+    if (formalSyms.v[j] && formalSyms.v[j]->isTypeVariable && !formal->isTypeVariable) {
+      delete actualFormals;
       return;
    }
-    if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && !formal_params.v[j]->isConstructor && formal->isTypeVariable) {
-      delete actual_formals;
+    if (formalSyms.v[j] && !formalSyms.v[j]->isTypeVariable && !formalSyms.v[j]->isConstructor && formal->isTypeVariable) {
+      delete actualFormals;
       return;
     }
-    if (!formal_actuals.v[j] && !formal->defaultExpr) {
-      delete actual_formals;
+    if (!formalActuals.v[j] && !formal->defaultExpr) {
+      delete actualFormals;
       return;
     }
   }
   candidateFns->add(fn);
-  candidateActualFormals->add(actual_formals);
+  candidateActualFormals->add(actualFormals);
 }
 
 
 static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
-                      Vec<ArgSymbol*>* actual_formals) {
+                      Vec<ArgSymbol*>* actualFormals) {
   FnSymbol* wrapper = fn;
-  int num_actuals = actual_formals->n;
+  int num_actuals = actualFormals->n;
   int num_formals = fn->numFormals();
   if (num_formals > num_actuals) {
     Vec<Symbol*> defaults;
     for_formals(formal, fn) {
       bool used = false;
-      forv_Vec(ArgSymbol, arg, *actual_formals) {
+      forv_Vec(ArgSymbol, arg, *actualFormals) {
         if (arg == formal)
           used = true;
       }
@@ -690,13 +690,13 @@ build_default_wrapper(FnSymbol* fn,
     }
     wrapper = fn->default_wrapper(&defaults, &paramMap);
 
-    // update actual_formals for use in build_order_wrapper
+    // update actualFormals for use in build_order_wrapper
     int j = 1;
     for_formals(formal, fn) {
-      for (int i = 0; i < actual_formals->n; i++) {
-        if (actual_formals->v[i] == formal) {
+      for (int i = 0; i < actualFormals->n; i++) {
+        if (actualFormals->v[i] == formal) {
           ArgSymbol* newFormal = wrapper->getFormal(j);
-          actual_formals->v[i] = newFormal;
+          actualFormals->v[i] = newFormal;
           j++;
         }
       }
@@ -708,7 +708,7 @@ build_default_wrapper(FnSymbol* fn,
 
 static FnSymbol*
 build_order_wrapper(FnSymbol* fn,
-                    Vec<ArgSymbol*>* actual_formals) {
+                    Vec<ArgSymbol*>* actualFormals) {
   bool order_wrapper_required = false;
   Map<Symbol*,Symbol*> formals_to_formals;
   int i = 0;
@@ -716,12 +716,12 @@ build_order_wrapper(FnSymbol* fn,
     i++;
 
     int j = 0;
-    forv_Vec(ArgSymbol, af, *actual_formals) {
+    forv_Vec(ArgSymbol, af, *actualFormals) {
       j++;
       if (af == formal) {
         if (i != j)
           order_wrapper_required = true;
-        formals_to_formals.put(formal, actual_formals->v[i-1]);
+        formals_to_formals.put(formal, actualFormals->v[i-1]);
       }
     }
   }
@@ -742,15 +742,15 @@ build_coercion_wrapper(FnSymbol* fn,
   bool coerce = false;
   for_formals(formal, fn) {
     j++;
-    Type* actual_type = actualTypes->v[j];
-    Symbol* actual_param = actualSyms->v[j];
-    if (actual_type != formal->type) {
-      if (canCoerce(actual_type, actual_param, formal->type, fn) || isDispatchParent(actual_type, formal->type)) {
-        subs.put(formal, actual_type->symbol);
+    Type* actualType = actualTypes->v[j];
+    Symbol* actualSym = actualSyms->v[j];
+    if (actualType != formal->type) {
+      if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
+        subs.put(formal, actualType->symbol);
         coercions.put(formal,true);
         coerce = true;
       } else {
-        subs.put(formal, actual_type->symbol);
+        subs.put(formal, actualType->symbol);
       }
     }
   }
@@ -772,13 +772,13 @@ build_promotion_wrapper(FnSymbol* fn,
   int j = -1;
   for_formals(formal, fn) {
     j++;
-    Type* actual_type = actualTypes->v[j];
-    Symbol* actual_param = actualSyms->v[j];
+    Type* actualType = actualTypes->v[j];
+    Symbol* actualSym = actualSyms->v[j];
     bool require_scalar_promotion = false;
-    if (canDispatch(actual_type, actual_param, formal->type, fn, &require_scalar_promotion)){
+    if (canDispatch(actualType, actualSym, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
         promotion_wrapper_required = true;
-        promoted_subs.put(formal, actual_type->symbol);
+        promoted_subs.put(formal, actualType->symbol);
       }
     }
   }
@@ -855,21 +855,21 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Symbol*>* actualSyms,
                       Vec<ArgSymbol*>** ret_afs) {
   FnSymbol* best = NULL;
-  Vec<ArgSymbol*>* actual_formals = 0;
+  Vec<ArgSymbol*>* actualFormals = 0;
   for (int i = 0; i < candidateFns->n; i++) {
     if (candidateFns->v[i]) {
       best = candidateFns->v[i];
-      actual_formals = candidateActualFormals->v[i];
+      actualFormals = candidateActualFormals->v[i];
       for (int j = 0; j < candidateFns->n; j++) {
         if (i != j && candidateFns->v[j]) {
           bool better = false;
           bool as_good = true;
           bool promotion1 = false;;
           bool promotion2 = false;
-          Vec<ArgSymbol*>* actual_formals2 = candidateActualFormals->v[j];
-          for (int k = 0; k < actual_formals->n; k++) {
-            ArgSymbol* arg = actual_formals->v[k];
-            ArgSymbol* arg2 = actual_formals2->v[k];
+          Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
+          for (int k = 0; k < actualFormals->n; k++) {
+            ArgSymbol* arg = actualFormals->v[k];
+            ArgSymbol* arg2 = actualFormals2->v[k];
             if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam)
               as_good = false;
             else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
@@ -938,7 +938,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         break;
     }
   }
-  *ret_afs = actual_formals;
+  *ret_afs = actualFormals;
   return best;
 }
 
@@ -1181,17 +1181,17 @@ resolve_call(CallInfo* info) {
   }
 
   FnSymbol* best = NULL;
-  Vec<ArgSymbol*>* actual_formals = 0;
+  Vec<ArgSymbol*>* actualFormals = 0;
   best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                &info->actualTypes, &info->actualSyms,
-                               &actual_formals);
+                               &actualFormals);
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
     disambiguate_by_scope(call->parentScope, &candidateFns);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  &info->actualTypes, &info->actualSyms,
-                                 &actual_formals);
+                                 &actualFormals);
   }
 
   if (best && explainLine && explainCallMatch(call)) {
@@ -1207,8 +1207,8 @@ resolve_call(CallInfo* info) {
     printResolutionError("unresolved", visibleFns, info);
     best = NULL;
   } else {
-    best = build_default_wrapper(best, actual_formals);
-    best = build_order_wrapper(best, actual_formals);
+    best = build_default_wrapper(best, actualFormals);
+    best = build_order_wrapper(best, actualFormals);
     best = build_coercion_wrapper(best, &info->actualTypes, &info->actualSyms);
 
     FnSymbol* promoted = build_promotion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
