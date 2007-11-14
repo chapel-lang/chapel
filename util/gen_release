@@ -42,6 +42,9 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "util/setchplenv.csh",
        "util/setchplenv.sh",
        "util/platform.pl",
+       "util/compiler.pl",
+       "util/threads.pl",
+       "util/comm.pl",
        "util/chplmake"
 );
 
@@ -74,7 +77,7 @@ system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/test && cp start_test start_clean ../examples/");
 system("cd chapel/examples && mkdir Bin");
 system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.pl filterSuppressions.pl ../../examples/Bin/");
-system("cd chapel/examples && rmdir hpcc06");
+system("cd chapel/examples && rm -r hpcc06");
 
 print "Building the man page...\n";
 system("cd chapel && make man");
