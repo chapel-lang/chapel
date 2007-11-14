@@ -58,7 +58,7 @@ endif
 default: all
 
 printplatform:
-	@echo "CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)"
+	@echo "for $(CHPL_MAKE_HOST_TARGET)..."
 	@echo "CHPL_MAKE_PLATFORM    = $(CHPL_MAKE_PLATFORM)"
 	@echo "CHPL_MAKE_COMPILER    = $(CHPL_MAKE_COMPILER)"
 	@echo "CHPL_MAKE_THREADS     = $(CHPL_MAKE_THREADS)"
