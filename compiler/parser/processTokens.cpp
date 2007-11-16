@@ -50,7 +50,7 @@ char* eatStringLiteral(const char* startChar) {
   
   newString();
   while (1) {
-    while ((c = getNextYYChar()) != *startChar && c != EOF) {
+    while ((c = getNextYYChar()) != *startChar && c != 0) {
       if (*startChar == '\'' && c == '\"') {
         addChar('\\');
       }
@@ -58,12 +58,12 @@ char* eatStringLiteral(const char* startChar) {
       addChar(c);
       if (c == '\\') {
         c = getNextYYChar();
-        if (c != EOF) {
+        if (c != 0) {
           goto FORCE_NEXT;
         }
       }
     } /* eat up string */
-    if (c == EOF) {
+    if (c == 0) {
       yyerror("EOF in string");
     }
     break;
@@ -78,11 +78,11 @@ void processSingleLineComment(void) {
   newString();
   countCommentLine();
   while (1) {
-    while ( (c = getNextYYChar()) != '\n' && c != EOF && c != 0 ) {
+    while ( (c = getNextYYChar()) != '\n' && c != 0) {
       addChar(c);
     }    /* eat up text of comment */
     countSingleLineComment(stringBuffer);
-    if (c != EOF && c != 0) {
+    if (c != 0) {
       processNewline();
     }
     break;
@@ -96,7 +96,7 @@ void processMultiLineComment(void) {
   newString();
   countCommentLine();
   while (1) {
-    while ((c = getNextYYChar()) != '*' && c != EOF ) {
+    while ((c = getNextYYChar()) != '*' && c != 0) {
       if (c == '\n') {
         countMultiLineComment(stringBuffer);
         processNewline();

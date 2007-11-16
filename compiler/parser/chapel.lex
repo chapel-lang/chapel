@@ -179,14 +179,9 @@ yield           processToken(TYIELD);
 // it to other files in a controlled way
 
 int getNextYYChar() {
-  return yyinput();
+  int retval = yyinput();
+  if (retval == EOF) {
+    retval = 0;
+  }
+  return retval;
 }
-
-/*
-AList<Stmt>* parse_string(char* string) {
-  yyblock = NULL;
-  yy_scan_string(string);
-  yyparse();
-  return yyblock;
-}
-*/
