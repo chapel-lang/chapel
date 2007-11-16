@@ -78,11 +78,11 @@ void processSingleLineComment(void) {
   newString();
   countCommentLine();
   while (1) {
-    while ( (c = getNextYYChar()) != '\n' && c != EOF ) {
+    while ( (c = getNextYYChar()) != '\n' && c != EOF && c != 0 ) {
       addChar(c);
     }    /* eat up text of comment */
     countSingleLineComment(stringBuffer);
-    if (c != EOF) {
+    if (c != EOF && c != 0) {
       processNewline();
     }
     break;
