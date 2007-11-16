@@ -1,2 +1,2 @@
 intents-error.chpl:23: In function 'callblank':
-intents-error.chpl:25: error: Assigning to a constant expression
+intents-error.chpl:25: error: illegal lvalue in assignment

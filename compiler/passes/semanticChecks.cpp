@@ -155,39 +155,8 @@ checkNormalized(void) {
 }
 
 
-static void
-check_resolved_syms(Symbol* var) {
-  if (!var->isConst() && !var->isParam())
-    return;
-  if (VarSymbol* vs = toVarSymbol(var))
-    if (vs->immediate)
-      return;
-  if (var->defs.n > 1)
-    USR_FATAL_CONT(var->defs.v[var->defs.n-1],
-                   "Assigning to a constant expression");
-  // need something like below to check constant assignment via refs
-  forv_Vec(SymExpr, use, var->uses) {
-    if (CallExpr* call = toCallExpr(use->parentExpr))
-      if (call->isPrimitive(PRIMITIVE_SET_REF))
-        if (CallExpr* move = toCallExpr(call->parentExpr))
-          if (move->isPrimitive(PRIMITIVE_MOVE))
-            if (SymExpr* lhs = toSymExpr(move->get(1)))
-              if (lhs->var->defs.n > 1)
-                USR_FATAL_CONT(lhs->var->defs.v[lhs->var->defs.n-1], "Assigning to a constant expression");
-  }
-}
-
-
 void
 checkResolved(void) {
-  compute_sym_uses();
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (toVarSymbol(ast) || toArgSymbol(ast))
-      check_resolved_syms(toSymbol(ast));
-  }
-
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = toEnumType(type->type)) {
       for_enums(def, et) {

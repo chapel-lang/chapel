@@ -1359,10 +1359,11 @@ resolveCall(CallExpr* call) {
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (se->var->isExprTemp || se->var->isConst() || se->var->isParam()) {
-            if (formal->intent == INTENT_OUT)
+            if (formal->intent == INTENT_OUT) {
               USR_FATAL(se, "non-lvalue actual passed to out argument");
-            else
+            } else {
               USR_FATAL(se, "non-lvalue actual passed to inout argument");
+            }
           }
         }
       }
@@ -2039,20 +2040,27 @@ preFold(Expr* expr) {
       if (call->get(1)->typeInfo()->symbol->hasPragma("ref")) {
         result = call->get(1)->remove();
         call->replace(result);
-      } else if (CallExpr* move = toCallExpr(call->parentExpr)) {
-        // check legal var function return
-        if (move->isPrimitive(PRIMITIVE_MOVE)) {
-          SymExpr* lhs = toSymExpr(move->get(1));
-          FnSymbol* fn = move->getFunction();
-          if (lhs->var == fn->getReturnSymbol()) {
-            SymExpr* ret = toSymExpr(call->get(1));
-            INT_ASSERT(ret);
-            if (!fn->isWrapper && !fn->hasPragma("valid var")) {
-              if (ret->var->defPoint->getFunction() == move->getFunction())
-                USR_FATAL(ret, "illegal return expression in var function");
-              if (ret->var->isConst() || ret->var->isParam())
-                USR_FATAL(ret, "var function returns constant value");
+      } else {
+        FnSymbol* fn = call->getFunction();
+        if (!fn->isWrapper && !fn->hasPragma("valid var")) {
+          // check legal var function return
+          if (CallExpr* move = toCallExpr(call->parentExpr)) {
+            if (move->isPrimitive(PRIMITIVE_MOVE)) {
+              SymExpr* lhs = toSymExpr(move->get(1));
+              if (lhs->var == fn->getReturnSymbol()) {
+                SymExpr* ret = toSymExpr(call->get(1));
+                INT_ASSERT(ret);
+                if (ret->var->defPoint->getFunction() == move->getFunction())
+                  USR_FATAL(ret, "illegal return expression in var function");
+                if (ret->var->isConst() || ret->var->isParam())
+                  USR_FATAL(ret, "var function returns constant value");
+              }
             }
+          }
+          // check legal lvalue
+          if (SymExpr* rhs = toSymExpr(call->get(1))) {
+            if (rhs->var->isExprTemp || rhs->var->isConst() || rhs->var->isParam())
+              USR_FATAL(call, "illegal lvalue in assignment");
           }
         }
       }
@@ -2216,7 +2224,7 @@ postFold(Expr* expr) {
         SymExpr* lhs = toSymExpr(call->get(1));
         if (!lhs)
           INT_FATAL(call, "unexpected case");
-        if (lhs->var->isExprTemp)
+        if (lhs->var->isExprTemp || lhs->var->isConst() || lhs->var->isParam())
           USR_FATAL(call, "illegal lvalue in assignment");
       }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
@@ -3036,10 +3044,9 @@ pruneResolvedTree() {
           baseType = getValueType(baseType);
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
-        if ((sym->isTypeVariable &&
-             !sym->type->symbol->hasPragma("array")) ||
-            sym->isParam() ||
-            !strcmp(sym->name, "_promotionType"))
+        if ((sym->isTypeVariable && !sym->type->symbol->hasPragma("array")) ||
+            !strcmp(sym->name, "_promotionType") ||
+            sym->isParam())
           call->getStmtExpr()->remove();
         else
           call->get(2)->replace(new SymExpr(sym));

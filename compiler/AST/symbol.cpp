@@ -481,7 +481,10 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConst(void) {
-  return intent == INTENT_BLANK || intent == INTENT_CONST;
+  return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
+    !isReference(type) &&
+    !type->symbol->hasPragma("array") &&
+    !type->symbol->hasPragma("domain");
 }
 
 

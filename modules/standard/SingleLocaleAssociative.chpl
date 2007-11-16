@@ -62,7 +62,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     return this; // stopgap measure given old implementation
 
   def setIndices(b: SingleLocaleAssociativeDomain) {
-    this = oldAssignHelper(this, b);
+    oldAssignHelper(this, b);
   }
 
   def buildEmptyDomain()
@@ -324,7 +324,6 @@ def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociative
     }
     inds_pos += 1;
   }
-  return a;  // WAW: YAH, "a" instead of "b" because we want to match keys, not do a deep copy (e.g., _arrs2)
 }
 
 

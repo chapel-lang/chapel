@@ -958,8 +958,9 @@ pragma "c for loop increment" def _cfor_inc(inout i, s) {
 }
 
 pragma "inline" def _set_field(x, y) {
-  x = y;
-  return x;
+  var xx: x.type;
+  xx = y;
+  return xx;
 }
 
 pragma "inline" pragma "sync" def _set_field(x: _syncvar, y: _syncvar) {
@@ -974,6 +975,7 @@ pragma "inline" pragma "sync" def _set_field(x: _syncvar, y) {
 pragma "inline" pragma "sync" def _set_field(x: _singlevar, y: _singlevar) {
   return y;
 }
+
 pragma "inline" pragma "sync" def _set_field(x: _singlevar, y) {
   x = y;
   return x;
