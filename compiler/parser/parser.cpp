@@ -44,6 +44,7 @@ containsOnlyModules(BlockStmt* block) {
   return true;
 }
 
+
 ModuleSymbol* ParseFile(char* filename, ModTag moduletype) {
   ModuleSymbol* newModule = NULL;
   yyfilename = filename;
@@ -64,7 +65,7 @@ ModuleSymbol* ParseFile(char* filename, ModTag moduletype) {
 
   closeInputFile(yyin);
 
-  if (!containsOnlyModules(yyblock)) {
+  if (!yyblock->body.head || !containsOnlyModules(yyblock)) {
     char* modulename = filenameToModulename(filename);
     newModule = build_module(modulename, moduletype, yyblock);
   }

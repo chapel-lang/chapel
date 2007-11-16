@@ -251,6 +251,8 @@ static void build_chpl_main(void) {
       chpl_main->retType = dtVoid;
       module->block->insertAtTail(new DefExpr(chpl_main));
       normalize(chpl_main);
+    } else if (rootUserModuleCount <= 0) {
+      INT_FATAL("non-positive number of user-modules");
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
     }
