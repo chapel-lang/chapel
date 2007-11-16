@@ -1,0 +1,1 @@
+// This test makes sure that our single-line comments can end with an EOF

@@ -1,0 +1,7 @@
+bug: empty module results in "multiple modules, no main" error
+
+This may be Mac-specific, but it seems that when a file
+contains no executable code, it results in a multiple
+modules, no main error.  I'd expect this to work and
+generate a no-op program, or at least to generate a
+message that doesn't suggest there are multiple modules.
