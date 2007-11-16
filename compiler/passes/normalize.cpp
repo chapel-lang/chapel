@@ -352,10 +352,8 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND) ||
-      call->isPrimitive(PRIMITIVE_TUPLE_AND_EXPAND) ||
       call->isPrimitive(PRIMITIVE_GET_IC_TYPE) ||
-      call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-      call->isPrimitive(PRIMITIVE_GETCID))
+      call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE))
     return;
 
   if (CallExpr* parentCall = toCallExpr(call->parentExpr))

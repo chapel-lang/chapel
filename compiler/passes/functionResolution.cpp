@@ -2875,12 +2875,17 @@ resolve() {
           if_fn->addPragma("inline");
           VarSymbol* _ret = new VarSymbol("_ret_if_fn_dd", key->retType);
           _ret->isCompilerTemp = true;
+          VarSymbol* cid = new VarSymbol("tmp", dtBool);
+          cid->isCompilerTemp = true;
+          if_fn->insertAtTail(new DefExpr(cid));
+          if_fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
+                                new CallExpr(PRIMITIVE_GETCID,
+                                             call->get(2)->copy(),
+                                             type->symbol)));
           if_fn->insertAtTail(new DefExpr(_ret));
           if_fn->insertAtTail(
             new CondStmt(
-              new CallExpr(PRIMITIVE_GETCID,
-                           call->get(2)->copy(),
-                           type->symbol),
+              new SymExpr(cid),
               new CallExpr(PRIMITIVE_MOVE, _ret, subcall),
               new CallExpr(PRIMITIVE_MOVE, _ret, tmp)));
           if_fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, _ret));
