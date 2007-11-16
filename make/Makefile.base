@@ -88,7 +88,7 @@ $(OBJ_SUBDIR_TIMESTAMP):
 	@echo linking $(OBJ_SUBDIR) subdirectory to store platform-specific files
 	@mkdir -p $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(OBJ_SUBDIR)
 	@rm -f $(OBJ_SUBDIR)
-	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(OBJ_SUBDIR) .
+	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
 	@-touch $(OBJ_SUBDIR_TIMESTAMP)
 endif
 

@@ -62,7 +62,7 @@ CLEAN_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(OBJ_SUBDIR) \
+	./$(CHPL_MAKE_PLATFORM) \
 	*~
 
 
