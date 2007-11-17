@@ -186,12 +186,12 @@ void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-bool Symbol::isConst(void) {
+bool Symbol::isConstant(void) {
   return false;
 }
 
 
-bool Symbol::isParam(){
+bool Symbol::isParameter(){
   return false;
 }
 
@@ -279,12 +279,11 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 
 
 VarSymbol::VarSymbol(const char *init_name,
-                     Type    *init_type,
-                     bool init_isConfig,
-                     ConstTag init_constTag) :
+                     Type    *init_type) :
   Symbol(SYMBOL_VAR, init_name, init_type),
-  isConfig(init_isConfig),
-  constTag(init_constTag),
+  isConfig(false),
+  isParam(false),
+  isConst(false),
   immediate(NULL)
 { }
 
@@ -305,7 +304,10 @@ void VarSymbol::verify() {
 
 VarSymbol*
 VarSymbol::copyInner(ASTMap* map) {
-  VarSymbol* newVarSymbol = new VarSymbol(name, type, isConfig, constTag);
+  VarSymbol* newVarSymbol = new VarSymbol(name, type);
+  newVarSymbol->isConfig = isConfig;
+  newVarSymbol->isParam = isParam;
+  newVarSymbol->isConst = isConst;
   newVarSymbol->cname = cname;
   newVarSymbol->isUserAlias = isUserAlias;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
@@ -326,13 +328,13 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-bool VarSymbol::isConst(void) {
-  return (constTag == VAR_CONST);
+bool VarSymbol::isConstant(void) {
+  return isConst;
 }
 
 
-bool VarSymbol::isParam(void){
-  return (constTag == VAR_PARAM) || immediate;
+bool VarSymbol::isParameter(void){
+  return isParam || immediate;
 }
 
 
@@ -392,7 +394,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
     return;
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
-  if (0 && (constTag == VAR_CONST)) {
+  if (0 && isConst) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
@@ -478,7 +480,7 @@ bool ArgSymbol::requiresCPtr(void) {
 }
 
 
-bool ArgSymbol::isConst(void) {
+bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReference(type) &&
     !type->symbol->hasPragma("array") &&
@@ -1614,7 +1616,7 @@ EnumSymbol::copyInner(ASTMap* map) {
   return new EnumSymbol(name);
 }
 
-bool EnumSymbol::isParam(void) { return true; }
+bool EnumSymbol::isParameter(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
 

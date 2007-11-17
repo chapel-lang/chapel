@@ -681,12 +681,13 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 void
-setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, ConstTag constag) {
+setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        var->constTag = constag;
         var->isConfig = isConfig;
+        var->isParam = isParam;
+        var->isConst = isConst;
         continue;
       }
     }

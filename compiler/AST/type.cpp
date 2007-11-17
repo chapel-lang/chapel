@@ -452,9 +452,10 @@ createPrimitiveType(const char *name, const char *cname) {
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
                                    0.0, 0.0, COMPLEX_SIZE_ ## width)
 
-#define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
-  gSym = new VarSymbol (name, primType, false, VAR_CONST);         \
-  rootScope->define(gSym);                                              \
+#define CREATE_DEFAULT_SYMBOL(primType, gSym, name) \
+  gSym = new VarSymbol (name, primType);            \
+  toVarSymbol(gSym)->isConst = true;                \
+  rootScope->define(gSym);                          \
   primType->defaultValue = gSym
 
 
@@ -496,7 +497,8 @@ void initPrimitiveTypes(void) {
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
 
-  gTrue = new VarSymbol("true", dtBool, false, VAR_CONST);
+  gTrue = new VarSymbol("true", dtBool);
+  gTrue->isConst = true;
   // SJD: Should intrinsics have DefExprs?
   rootScope->define(gTrue);
   gTrue->immediate = new Immediate;
@@ -505,7 +507,8 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool, false, VAR_CONST);
+  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
+  gBoundsChecking->isConst = true;
   rootScope->define(gBoundsChecking);
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;

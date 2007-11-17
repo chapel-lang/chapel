@@ -865,7 +865,6 @@ void lowerIterator(FnSymbol* fn) {
       insertSetMember(fn, t1, field, local);
     }
   }
-  fn->addPragma("first member sets");
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
 }

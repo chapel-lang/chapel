@@ -245,7 +245,7 @@ static void normalize_returns(FnSymbol* fn) {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
     if (fn->retTag == RET_PARAM)
-      retval->constTag = VAR_PARAM;
+      retval->isParam = true;
     if (fn->retExprType && fn->retTag != RET_VAR)
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("_init", fn->retExprType->copy())));
     fn->insertAtHead(new DefExpr(retval));
@@ -362,7 +362,7 @@ static void insert_call_temps(CallExpr* call) {
       return;
 
   Expr* stmt = call->getStmtExpr();
-  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, false, VAR_VAR);
+  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown);
   tmp->isCompilerTemp = true;
   tmp->isExprTemp = true;
   tmp->canParam = true;
@@ -421,7 +421,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->constTag == VAR_CONST) {
+  if (var->isConst) {
     constTemp = new VarSymbol("_constTmp");
     constTemp->isCompilerTemp = true;
     stmt->insertBefore(new DefExpr(constTemp));
@@ -431,7 +431,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert code to initialize config variable from the command line
   //
-  if (var->isConfig && var->constTag != VAR_PARAM) {
+  if (var->isConfig && !var->isParam) {
     Expr* noop = new CallExpr(PRIMITIVE_NOOP);
     ModuleSymbol* module = var->getModule();
     CallExpr* strToValExpr =
@@ -455,7 +455,7 @@ fix_def_expr(VarSymbol* var) {
 
     stmt = noop; // insert regular definition code in then block
   }
-  if (var->isConfig && var->constTag == VAR_PARAM) {
+  if (var->isConfig && var->isParam) {
     if (const char* value = configParamMap.get(canonicalize_string(var->name))) {
       usedConfigParams.add(canonicalize_string(var->name));
       if (SymExpr* symExpr = toSymExpr(init)) {
@@ -491,7 +491,7 @@ fix_def_expr(VarSymbol* var) {
     //
     // use cast for parameters to avoid multiple parameter assignments
     //
-    if (init && var->constTag == VAR_PARAM) {
+    if (init && var->isParam) {
       stmt->insertAfter(
         new CallExpr(PRIMITIVE_MOVE, var,
           new CallExpr("_cast", type->remove(), init->remove())));

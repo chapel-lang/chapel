@@ -431,7 +431,7 @@ computeGenericSubs(ASTMap &subs,
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalSyms->v[i] && formalSyms->v[i]->isParam()) {
+      if (formalSyms->v[i] && formalSyms->v[i]->isParameter()) {
         if (!formal->type->isGeneric ||
             canInstantiate(formalActuals->v[i], formal->type))
           subs.put(formal, formalSyms->v[i]);
@@ -445,7 +445,7 @@ computeGenericSubs(ASTMap &subs,
 
         resolve_type_expr(formal->defaultExpr);
         if (SymExpr* se = toSymExpr(formal->defaultExpr)) {
-          if (se->var->isParam())
+          if (se->var->isParameter())
             subs.put(formal, se->var);
         } else
           INT_FATAL(fn, "unable to handle default parameter");
@@ -1087,7 +1087,7 @@ printResolutionError(const char* error,
               toString(info->actualTypes.v[0]));
   } else if (!strcmp("_construct__tuple", info->name)) {
     SymExpr* sym = toSymExpr(info->call->get(1));
-    if (!sym || !sym->isParam()) {
+    if (!sym || !sym->isParameter()) {
       USR_FATAL(call, "tuple size must be static");
     } else {
       USR_FATAL(call, "invalid tuple");
@@ -1358,7 +1358,7 @@ resolveCall(CallExpr* call) {
     for_formals_actuals(formal, actual, call) {
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
         if (SymExpr* se = toSymExpr(actual)) {
-          if (se->var->isExprTemp || se->var->isConst() || se->var->isParam()) {
+          if (se->var->isExprTemp || se->var->isConstant() || se->var->isParameter()) {
             if (formal->intent == INTENT_OUT) {
               USR_FATAL(se, "non-lvalue actual passed to out argument");
             } else {
@@ -1587,7 +1587,7 @@ insertFormalTemps(FnSymbol* fn) {
            formal->intent == INTENT_CONST) &&
           !formal->type->symbol->hasPragma("domain") &&
           !formal->type->symbol->hasPragma("array"))
-        tmp->constTag = VAR_CONST;
+        tmp->isConst = true;
       tmp->isCompilerTemp = true;
       formals2vars.put(formal, tmp);
     }
@@ -2052,14 +2052,14 @@ preFold(Expr* expr) {
                 INT_ASSERT(ret);
                 if (ret->var->defPoint->getFunction() == move->getFunction())
                   USR_FATAL(ret, "illegal return expression in var function");
-                if (ret->var->isConst() || ret->var->isParam())
+                if (ret->var->isConstant() || ret->var->isParameter())
                   USR_FATAL(ret, "var function returns constant value");
               }
             }
           }
           // check legal lvalue
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
-            if (rhs->var->isExprTemp || rhs->var->isConst() || rhs->var->isParam())
+            if (rhs->var->isExprTemp || rhs->var->isConstant() || rhs->var->isParameter())
               USR_FATAL(call, "illegal lvalue in assignment");
           }
         }
@@ -2224,13 +2224,13 @@ postFold(Expr* expr) {
         SymExpr* lhs = toSymExpr(call->get(1));
         if (!lhs)
           INT_FATAL(call, "unexpected case");
-        if (lhs->var->isExprTemp || lhs->var->isConst() || lhs->var->isParam())
+        if (lhs->var->isExprTemp || lhs->var->isConstant() || lhs->var->isParameter())
           USR_FATAL(call, "illegal lvalue in assignment");
       }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
       bool set = false;
       if (SymExpr* lhs = toSymExpr(call->get(1))) {
-        if (lhs->var->canParam || lhs->var->isParam()) {
+        if (lhs->var->canParam || lhs->var->isParameter()) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
@@ -2248,7 +2248,7 @@ postFold(Expr* expr) {
               set = true;
             } 
           }
-          if (!set && lhs->var->isParam())
+          if (!set && lhs->var->isParameter())
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
         }
         if (!set) {
@@ -2286,7 +2286,7 @@ postFold(Expr* expr) {
         baseType = getValueType(baseType);
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
-      if (sym->isParam()) {
+      if (sym->isParameter()) {
         Vec<BaseAST*> keys;
         baseType->substitutions.get_keys(keys);
         forv_Vec(BaseAST, key, keys) {
@@ -3046,7 +3046,7 @@ pruneResolvedTree() {
         Symbol* sym = baseType->getField(memberName);
         if ((sym->isTypeVariable && !sym->type->symbol->hasPragma("array")) ||
             !strcmp(sym->name, "_promotionType") ||
-            sym->isParam())
+            sym->isParameter())
           call->getStmtExpr()->remove();
         else
           call->get(2)->replace(new SymExpr(sym));
@@ -3205,7 +3205,7 @@ pruneResolvedTree() {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
           if (field->isTypeVariable ||
-              field->isParam() ||
+              field->isParameter() ||
               !strcmp(field->name, "_promotionType"))
             field->defPoint->remove();
         }

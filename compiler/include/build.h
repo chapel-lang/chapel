@@ -41,8 +41,7 @@ FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);
 
 void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,
-                            bool isConfig,
-                            ConstTag constag);
+                            bool isConfig, bool isParam, bool isConst);
 
 DefExpr* build_class(const char* name, Type* type, BlockStmt* decls);
 DefExpr*

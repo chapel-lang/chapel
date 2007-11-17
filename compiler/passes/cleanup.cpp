@@ -320,7 +320,7 @@ static void build_constructor(ClassType* ct) {
     currentFilename = field->filename;
 
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-    if (field->constTag == VAR_PARAM)
+    if (field->isParam)
       arg->intent = INTENT_PARAM;
     fieldNamesSet.set_add(field->name);
     Expr* exprType = field->defPoint->exprType->remove();
@@ -332,7 +332,7 @@ static void build_constructor(ClassType* ct) {
         exprType = init->copy();
         arg->initUsingCopy = true;
       }
-    } else if (exprType && !field->isTypeVariable && field->constTag != VAR_PARAM) {
+    } else if (exprType && !field->isTypeVariable && !field->isParam) {
       init = new CallExpr("_init", exprType->copy());
       arg->initUsingCopy = true;
     }

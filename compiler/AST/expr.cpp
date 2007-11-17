@@ -83,12 +83,12 @@ Type* Expr::typeInfo(void) {
 }
 
 
-bool Expr::isConst(void) {
+bool Expr::isConstant(void) {
   return false;
 }
 
 
-bool Expr::isParam(void){
+bool Expr::isParameter(void){
   return false;
 }
 
@@ -240,13 +240,13 @@ Type* SymExpr::typeInfo(void) {
 }
 
 
-bool SymExpr::isConst(void) {
-  return var->isConst();
+bool SymExpr::isConstant(void) {
+  return var->isConstant();
 }
 
 
-bool SymExpr::isParam(void){
-  return var->isParam();
+bool SymExpr::isParameter(void){
+  return var->isParameter();
 }
 
 

@@ -161,7 +161,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
-  if (field->isParam())
+  if (field->isParameter())
     fn->retTag = RET_PARAM;
   else if (field->isTypeVariable)
     fn->retTag = RET_TYPE;
@@ -453,7 +453,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   for_fields(tmp, ct) {
-    if (!tmp->isTypeVariable && !tmp->isParam() && strcmp(tmp->name, "_promotionType"))
+    if (!tmp->isTypeVariable && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));

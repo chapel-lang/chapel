@@ -35,8 +35,8 @@ class Expr : public BaseAST {
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
-  virtual bool isParam(void);
-  virtual bool isConst(void);
+  virtual bool isParameter(void);
+  virtual bool isConstant(void);
 
   Expr* getStmtExpr();
 
@@ -78,8 +78,8 @@ class SymExpr : public Expr {
   virtual void verify(); 
 
   Type* typeInfo(void);
-  virtual bool isConst(void);
-  virtual bool isParam(void);
+  virtual bool isConstant(void);
+  virtual bool isParameter(void);
   void codegen(FILE* outfile);
 };
 

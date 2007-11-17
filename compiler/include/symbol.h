@@ -22,12 +22,6 @@ enum FnTag {
   FN_ITERATOR
 };
 
-enum ConstTag {
-  VAR_VAR,
-  VAR_CONST,
-  VAR_PARAM
-};
-
 enum RetTag {
   RET_VALUE,
   RET_VAR,
@@ -81,8 +75,8 @@ class Symbol : public BaseAST {
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  virtual bool isConst(void);
-  virtual bool isParam(void);
+  virtual bool isConstant(void);
+  virtual bool isParameter(void);
   bool isThis(void);
 
   virtual void codegen(FILE* outfile);
@@ -110,20 +104,19 @@ class UnresolvedSymbol : public Symbol {
 class VarSymbol : public Symbol {
  public:
   bool isConfig;
-  ConstTag     constTag;
+  bool isParam;
+  bool isConst;
   Immediate   *immediate;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
-  VarSymbol(const char* init_name, Type* init_type = dtUnknown,
-            bool init_isConfig = false,
-            ConstTag init_constTag = VAR_VAR);
+  VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   ~VarSymbol();
   virtual void verify(); 
   COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  bool isConst(void);
-  bool isParam(void);
+  bool isConstant(void);
+  bool isParameter(void);
 
   void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
@@ -148,7 +141,7 @@ class ArgSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool requiresCPtr(void);
-  bool isConst(void);
+  bool isConstant(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
@@ -250,7 +243,7 @@ class EnumSymbol : public Symbol {
   virtual void verify(); 
   COPY_DEF(EnumSymbol);
   void codegenDef(FILE* outfile);
-  bool isParam(void);
+  bool isParameter(void);
 };
 
 

@@ -137,7 +137,7 @@ localCopyPropagationCore(BasicBlock* bb,
           if (SymExpr* lhs = toSymExpr(call->get(1)))
             if (lhs->var != rhs->var)
               if (defSet.set_in(lhs))
-                if (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate())
+                if (useSet.set_in(rhs) || rhs->var->isConstant() || rhs->var->isImmediate())
                   makeAvailable(available, reverseAvailable, lhs->var, rhs->var);
   }
 }
@@ -290,7 +290,7 @@ void globalCopyPropagation(FnSymbol* fn) {
             if (SymExpr* rhs = toSymExpr(call->get(2)))
               if (lhs->var != rhs->var &&
                   defSet.set_in(lhs) &&
-                  (useSet.set_in(rhs) || rhs->var->isConst() || rhs->var->isImmediate())) {
+                  (useSet.set_in(rhs) || rhs->var->isConstant() || rhs->var->isImmediate())) {
                 _LHS.add(lhs);
                 _RHS.add(rhs);
               }

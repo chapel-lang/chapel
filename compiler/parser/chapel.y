@@ -73,7 +73,6 @@ Is this "while x"(i); or "while x(i)";?
   RetTag retTag;
 
   bool b;
-  ConstTag ct;
   IntentTag pt;
 
   Expr* pexpr;
@@ -182,7 +181,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TSEMI
 
 %type <b> is_config
-%type <ct> var_const_tag
  
 %type <pt> formal_tag
 
@@ -799,7 +797,11 @@ var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
 | TDOTDOTDOT TQUESTION identifier
-    { $$ = new DefExpr(new VarSymbol($3, dtUnknown, false, VAR_PARAM)); }
+    {
+      VarSymbol* var = new VarSymbol($3, dtUnknown);
+      var->isParam = true;
+      $$ = new DefExpr(var);
+    }
 ;
 
 
@@ -996,9 +998,21 @@ typevar_decl_stmt:
 
 
 var_decl_stmt:
-  is_config var_const_tag var_decl_stmt_inner_ls TSEMI
+  is_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      setVarSymbolAttributes($3, $1, $2);
+      setVarSymbolAttributes($3, $1, true, false);
+      backPropagateInitsTypes($3);
+      $$ = $3;
+    }
+| is_config TCONST var_decl_stmt_inner_ls TSEMI
+    {
+      setVarSymbolAttributes($3, $1, false, true);
+      backPropagateInitsTypes($3);
+      $$ = $3;
+    }
+| is_config TVAR var_decl_stmt_inner_ls TSEMI
+    {
+      setVarSymbolAttributes($3, $1, false, false);
       backPropagateInitsTypes($3);
       $$ = $3;
     }
@@ -1649,16 +1663,6 @@ is_config:
     { $$ = false; }
 | TCONFIG
     { $$ = true; }
-;
-
-
-var_const_tag:
-  TVAR
-    { $$ = VAR_VAR; }
-| TCONST
-    { $$ = VAR_CONST; }
-| TPARAM
-    { $$ = VAR_PARAM; }
 ;
 
 

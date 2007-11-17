@@ -67,7 +67,7 @@ check_functions(FnSymbol* fn) {
 
 static void
 check_parsed_vars(VarSymbol* var) {
-  if (var->isParam() && !var->immediate)
+  if (var->isParameter() && !var->immediate)
     if (!var->defPoint->init &&
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)) &&
@@ -76,12 +76,12 @@ check_parsed_vars(VarSymbol* var) {
   if (var->isConfig &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
-    switch (var->constTag) {
-      case VAR_VAR:   varType = "variables"; break;
-      case VAR_CONST: varType = "constants"; break;
-      case VAR_PARAM: varType = "parameters"; break;
-      default: INT_FATAL("Illegal constant class.");
-    }
+    if (var->isParam)
+      varType = "parameters";
+    else if (var->isConst)
+      varType = "constants";
+    else
+      varType = "variables";
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s only allowed at module scope.", varType);
   }
@@ -162,7 +162,7 @@ checkResolved(void) {
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
-          if (!sym || (toVarSymbol(sym->var)->constTag != VAR_PARAM &&
+          if (!sym || (!toVarSymbol(sym->var)->isParam &&
                        !toVarSymbol(sym->var)->immediate))
             USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }
