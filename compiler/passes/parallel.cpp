@@ -25,6 +25,9 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
 
   compute_sym_uses();
 
+  Map<Symbol*,Symbol*> refcMap;
+  Map<Symbol*,Symbol*> refcMutexMap;
+
   // Find all the args that should be heap allocated -> heapList
   forv_Vec(BlockStmt, block, blocks) {
     if (block->blockTag == BLOCK_BEGIN) {
@@ -50,7 +53,8 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                 use->var = var;
                 move->remove();
 
-                if (!var->refc) { // no reference counter associated yet
+                // no reference counter associated yet
+                if (!refcMap.get(var)) {
                   INT_ASSERT(var->type->refType);
                   
                   forv_Vec(SymExpr, se, var->uses) {
@@ -75,18 +79,16 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                                                   false,
                                                   VAR_VAR);
                   def->insertBefore(new DefExpr(refc));
-                  var->refc = refc;
                     
                   // create reference counter mutex
-                  VarSymbol *m = new VarSymbol(astr("_", var->name, "_refcmutex"),
-                                               dtMutex_p,
-                                               false,
-                                               VAR_VAR);
-                  def->insertBefore(new DefExpr(m));
-                  var->refcMutex = m;
+                  VarSymbol *refcMutex = new VarSymbol(astr("_", var->name, "_refcmutex"),
+                                                       dtMutex_p,
+                                                       false,
+                                                       VAR_VAR);
+                  def->insertBefore(new DefExpr(refcMutex));
 
                   def->insertBefore(
-                    new CallExpr(PRIMITIVE_SET_HEAPVAR, m,
+                    new CallExpr(PRIMITIVE_SET_HEAPVAR, refcMutex,
                       new CallExpr(PRIMITIVE_CHPL_ALLOC, dtMutex->symbol, 
                         new_StringSymbol("alloc begin heap"))));
                   def->insertBefore(
@@ -97,15 +99,20 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                     new CallExpr(PRIMITIVE_SET_HEAPVAR, var,
                       new CallExpr(PRIMITIVE_CHPL_ALLOC, getValueType(var->type)->symbol, 
                         new_StringSymbol("alloc begin heap"))));
+                  refcMap.put(var, refc);
+                  refcMutexMap.put(var, refcMutex);
                 }
 
-                call->insertAtTail(var->refc);
-                call->insertAtTail(var->refcMutex);
+                Symbol* refc = refcMap.get(var);
+                Symbol* refcMutex = refcMutexMap.get(var);
+
+                call->insertAtTail(refc);
+                call->insertAtTail(refcMutex);
                 ArgSymbol *rc_arg = new ArgSymbol( INTENT_BLANK, 
-                                                   var->refc->name, 
+                                                   refc->name, 
                                                    dtInt[INT_SIZE_32]->refType);
                 ArgSymbol *rcm_arg = new ArgSymbol(INTENT_BLANK, 
-                                                   var->refcMutex->name, 
+                                                   refcMutex->name, 
                                                    dtMutex_p);
                 FnSymbol  *fn = call->isResolved();
                 fn->insertFormalAtTail(new DefExpr( rc_arg));
@@ -113,32 +120,32 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
                 
                 def->insertAfter( new CallExpr( PRIMITIVE_REFC_TOUCH, 
                                                 var,
-                                                var->refc,
-                                                var->refcMutex));
+                                                refc,
+                                                refcMutex));
                 def->insertAfter( new CallExpr( PRIMITIVE_REFC_INIT, 
                                                 var,
-                                                var->refc,
-                                                var->refcMutex));
+                                                refc,
+                                                refcMutex));
                 BlockStmt *mainfb = toBlockStmt(def->parentExpr);
                 Expr      *laststmt = mainfb->body.last();
                 CallExpr* ret = toCallExpr(laststmt);
                 if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
                   laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                                         var,
-                                                        var->refc,
-                                                        var->refcMutex));
+                                                        refc,
+                                                        refcMutex));
                   } else {
                   laststmt->insertAfter( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                                        var,
-                                                       var->refc,
-                                                       var->refcMutex));
+                                                       refc,
+                                                       refcMutex));
                 }
                   
                 // add touch + release for the begin block
                 block->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
                                                    var,
-                                                   var->refc,
-                                                   var->refcMutex));
+                                                   refc,
+                                                   refcMutex));
                 fn->insertBeforeReturn(new CallExpr(PRIMITIVE_REFC_RELEASE,
                                                     actual_to_formal(use),
                                                     rc_arg,

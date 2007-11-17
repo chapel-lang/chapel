@@ -112,8 +112,6 @@ class VarSymbol : public Symbol {
   bool isConfig;
   ConstTag     constTag;
   Immediate   *immediate;
-  VarSymbol   *refc;         // number of outstanding references to
-  VarSymbol   *refcMutex;    // guard refc
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown,

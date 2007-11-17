@@ -285,9 +285,7 @@ VarSymbol::VarSymbol(const char *init_name,
   Symbol(SYMBOL_VAR, init_name, init_type),
   isConfig(init_isConfig),
   constTag(init_constTag),
-  immediate(NULL),
-  refc(NULL),
-  refcMutex(NULL)
+  immediate(NULL)
 { }
 
 
