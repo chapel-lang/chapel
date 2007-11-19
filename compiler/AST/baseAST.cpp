@@ -228,7 +228,9 @@ void cleanAst() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (Symbol* sym = toSymbol(ast)) {
       if (isLive(sym)) {
-        gAsts.v[iasts++] = ast;
+        if (sym->astTag == SYMBOL_TYPE)
+          gAsts.v[iasts++] = sym->type;
+        gAsts.v[iasts++] = sym;
       } else {
         if (sym->astTag == SYMBOL_TYPE)
           delete sym->type;
