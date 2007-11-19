@@ -53,6 +53,14 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
   return pthread_mutex_destroy(mutex);
 }
 
+int _chpl_sync_lock(_chpl_sync_aux_t *s) {
+  return _chpl_mutex_lock(s->lock);
+}
+
+int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
+  return _chpl_mutex_unlock(s->lock);
+}
+
 
 // Condition variables
 
@@ -72,18 +80,47 @@ int _chpl_condvar_destroy(_chpl_condvar_p cond) {
   return pthread_cond_destroy(cond);
 }
 
-int _chpl_condvar_signal(_chpl_condvar_p cond) {
-  return pthread_cond_signal(cond);
+int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+  s->is_full = true;
+  return pthread_cond_signal(s->cv_full);
+}
+
+int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+  s->is_full = false;
+  return pthread_cond_signal(s->cv_empty);
 }
 
 int _chpl_condvar_broadcast(_chpl_condvar_p cond) {
   return pthread_cond_broadcast(cond);
 }
 
-int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex) {
-  return pthread_cond_wait(cond, mutex);
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s) {
+  int return_value = _chpl_mutex_lock(s->lock);
+  while (!s->is_full) {
+    return_value = pthread_cond_wait(s->cv_full, s->lock);
+  }
+  return return_value;
 }
 
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s) {
+  int return_value = _chpl_mutex_lock(s->lock);
+  while (s->is_full) {
+    return_value = pthread_cond_wait(s->cv_empty, s->lock);
+  }
+  return return_value;
+}
+
+int _chpl_sync_is_full(_chpl_sync_aux_t *s) {
+  return s->is_full;
+}
+
+
+void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
+  s->is_full = false;
+  s->lock = _chpl_mutex_new();
+  s->cv_empty = _chpl_condvar_new();
+  s->cv_full = _chpl_condvar_new();
+}
 
 
 void _chpl_serial_delete(_bool *p) {
@@ -113,7 +150,7 @@ void exitChplThreads() {
   _chpl_mutex_lock(&_chpl_begin_cnt_lock);
   if (_chpl_begin_cnt > 0) {
     // block until everyone else is finished
-    _chpl_condvar_wait(&_chpl_can_exit, &_chpl_begin_cnt_lock);
+    pthread_cond_wait(&_chpl_can_exit, &_chpl_begin_cnt_lock);
   }
   _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
 
@@ -204,7 +241,7 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
   _chpl_mutex_lock(&_chpl_begin_cnt_lock);
   _chpl_begin_cnt--;
   if (_chpl_begin_cnt == 0) {
-    _chpl_condvar_signal(&_chpl_can_exit);
+    pthread_cond_signal(&_chpl_can_exit);
   }
   _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
 

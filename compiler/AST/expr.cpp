@@ -1162,20 +1162,25 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_SYNC_LOCK:
-      fprintf( outfile, "_chpl_mutex_lock((");
+    case PRIMITIVE_SYNC_INIT:
+      fprintf( outfile, "_chpl_init_sync_aux(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ")->sync_aux))");
+      break;
+    case PRIMITIVE_SYNC_LOCK:
+      fprintf( outfile, "_chpl_sync_lock(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_UNLOCK:
-      fprintf(outfile, "_chpl_mutex_unlock((");
+      fprintf(outfile, "_chpl_sync_unlock(&((");
       get(1)->codegen( outfile);
-      fprintf(outfile, ")->lock)");
+      fprintf(outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_SIGNAL_FULL:
-      fprintf(outfile, "_chpl_condvar_signal((");
+      fprintf(outfile, "_chpl_sync_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
-      fprintf(outfile, ")->cv_full)");
+      fprintf(outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_BROADCAST_FULL:
       fprintf( outfile, "_chpl_condvar_broadcast((");
@@ -1183,16 +1188,14 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")->cv_full)");
       break;
     case PRIMITIVE_SYNC_WAIT_FULL:
-      fprintf( outfile, "_chpl_condvar_wait((");
+      fprintf( outfile, "_chpl_sync_wait_full_and_lock(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_full, (");
-      get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_SIGNAL_EMPTY:
-      fprintf( outfile, "_chpl_condvar_signal((");
+      fprintf( outfile, "_chpl_sync_mark_and_signal_empty(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_empty)");
+      fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_BROADCAST_EMPTY:
       fprintf( outfile, "_chpl_condvar_broadcast((");
@@ -1200,11 +1203,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")->cv_empty)");
       break;
     case PRIMITIVE_SYNC_WAIT_EMPTY:
-      fprintf( outfile, "_chpl_condvar_wait((");
+      fprintf( outfile, "_chpl_sync_wait_empty_and_lock(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_empty, (");
-      get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_MUTEX_NEW:
       fprintf( outfile, "_chpl_mutex_new()");
@@ -1223,6 +1224,71 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     }
+    case PRIMITIVE_WRITEEF:
+      fprintf( outfile, "_chpl_write_EF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value, ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_WRITEFE:
+      fprintf( outfile, "_chpl_write_FE((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value, ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_WRITEFF:
+      fprintf( outfile, "_chpl_write_FF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value, ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_WRITEXF:
+      fprintf( outfile, "_chpl_write_XF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value, ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_WRITEXE:
+      fprintf( outfile, "_chpl_write_XE((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value, ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_WRITEXE0:
+      fprintf( outfile, "_chpl_write_XE0((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value)");
+      break;
+    case PRIMITIVE_READFE:
+      fprintf( outfile, "_chpl_read_FE((");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")->value)");
+      break;
+    case PRIMITIVE_READFF:
+      fprintf( outfile, "_chpl_read_FF((");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")->value)");
+      break;
+    case PRIMITIVE_READXF:
+      fprintf( outfile, "_chpl_read_XF((");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")->value)");
+      break;
+    case PRIMITIVE_READXX:
+      fprintf( outfile, "_chpl_read_XX((");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")->value)");
+      break;
+    case PRIMITIVE_ISFULL:
+      fprintf( outfile, "_chpl_sync_is_full(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->sync_aux))");
+      break;
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_struct = false;
       CallExpr *parent_call = (CallExpr*) toCallExpr(parentExpr);

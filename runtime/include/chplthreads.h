@@ -17,7 +17,17 @@ int _chpl_condvar_init(_chpl_condvar_p cond);
 int _chpl_condvar_destroy(_chpl_condvar_p cond);
 int _chpl_condvar_signal(_chpl_condvar_p cond);
 int _chpl_condvar_broadcast(_chpl_condvar_p cond);
-int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex);
+int _chpl_condvar_wait_full(_chpl_condvar_p cond, _chpl_mutex_p mutex, volatile _bool *is_full);
+int _chpl_condvar_wait_empty(_chpl_condvar_p cond, _chpl_mutex_p mutex, volatile _bool *is_full);
+
+void _chpl_init_sync_aux(_chpl_sync_aux_t *);
+int _chpl_sync_lock(_chpl_sync_aux_t *);
+int _chpl_sync_unlock(_chpl_sync_aux_t *);
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *);
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *);
+int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);
+int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);
+int _chpl_sync_is_full(_chpl_sync_aux_t *);
 
 // Chapel system thread control
 void    initChplThreads(void);             // main thread init's thread support

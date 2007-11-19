@@ -315,19 +315,36 @@ initPrimitive() {
   prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
 
   // operations on sync/single vars
+  prim_def(PRIMITIVE_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_signal_full", returnInfoVoid, true);
+  //prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_signal_full", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_BROADCAST_FULL,"sync_broadcast_full",returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_signal_empty", returnInfoVoid, true);
+  //prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true);
+  //prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_signal_empty", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_BROADCAST_EMPTY,"sync_broadcast_empty",returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty", returnInfoVoid, true);
+  //prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true);
   // sync/single var support
   prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP, true);
   prim_def(PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid, true);
   prim_def(PRIMITIVE_CONDVAR_NEW, "condvar_new", returnInfoCondVarP, true);
   prim_def(PRIMITIVE_CONDVAR_DESTROY, "condvar_destroy", returnInfoVoid, true);
+
+  prim_def(PRIMITIVE_WRITEEF, "write_EF", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEFE, "write_FE", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEFF, "write_FF", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEXF, "write_XF", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEXE, "write_XE", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEXE0, "write_XE0", returnInfoVoid, true);
+  prim_def(PRIMITIVE_READFE, "read_FE", returnInfoFirst, true);
+  prim_def(PRIMITIVE_READFF, "read_FF", returnInfoFirst, true);
+  prim_def(PRIMITIVE_READXF, "read_XF", returnInfoFirst, true);
+  prim_def(PRIMITIVE_READXX, "read_XX", returnInfoFirst, true);
+  prim_def(PRIMITIVE_ISFULL, "is_full", returnInfoBool, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
