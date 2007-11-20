@@ -278,11 +278,7 @@ def file.lockWrite() {
 }
 
 def file.unlockWrite() {
-  // Perhaps it's not necessary to reset to zero?
-  // Alternatively, perhaps the purge() generic function should somehow be called?
-  //writeFE(_lock, 0); // this can also be 'writeXE' since _lock is full
-  writeXF(_lock, 0:uint(64));
-  readFE(_lock);
+  writeXE0(_lock);
 }
 
 class Writer {
