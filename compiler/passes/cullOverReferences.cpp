@@ -123,7 +123,7 @@ void cullOverReferences() {
                            // value functions
 
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->defPoint && fn->defPoint->parentSymbol && !fn->hasPragma("ref")) {
+    if (fn->hasPragma("valid var") && fn->defPoint && fn->defPoint->parentSymbol && !fn->hasPragma("ref")) {
       if (Type* vt = getValueType(fn->retType)) {
         if (vt->symbol->hasPragma("array") ||
             vt->symbol->hasPragma("domain") ||
