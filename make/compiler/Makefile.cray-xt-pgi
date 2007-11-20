@@ -1,5 +1,5 @@
 # put XT cross-compilation pgi-specific settings here
 
-XT_GEN_CFLAGS = -Kieee
+XT_GEN_CFLAGS = -Kieee --diag_suppress177
 
 include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
