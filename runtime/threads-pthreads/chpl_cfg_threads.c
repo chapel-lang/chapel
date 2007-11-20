@@ -25,24 +25,20 @@ static pthread_key_t   _chpl_serial;         // per-thread serial state
 
 // Mutex
 
-_chpl_mutex_p _chpl_mutex_new(void) {
+int _chpl_mutex_init(_chpl_mutex_p mutex) {
+  // WAW: how to explicitly specify blocking-type?
+  return pthread_mutex_init(mutex, NULL);
+}
+
+static _chpl_mutex_p _chpl_mutex_new(void) {
   _chpl_mutex_p m;
   m = (_chpl_mutex_p) _chpl_alloc(sizeof(_chpl_mutex_t), "mutex", 0, 0);
   _chpl_mutex_init(m);
   return m;
 }
 
-int _chpl_mutex_init(_chpl_mutex_p mutex) {
-  // WAW: how to explicitly specify blocking-type?
-  return pthread_mutex_init(mutex, NULL);
-}
-
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
   return pthread_mutex_lock(mutex);
-}
-
-int _chpl_mutex_trylock(_chpl_mutex_p mutex) {
-  return pthread_mutex_trylock(mutex);
 }
 
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
@@ -64,20 +60,11 @@ int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
 
 // Condition variables
 
-_chpl_condvar_p _chpl_condvar_new(void) {
+static _chpl_condvar_p _chpl_condvar_new(void) {
   _chpl_condvar_p cv;
   cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
-  _chpl_condvar_init(cv);
+  pthread_cond_init(cv, NULL);
   return cv;
-}
-
-int _chpl_condvar_init (_chpl_condvar_p cond) {
-  // WAW: attributes?
-  return pthread_cond_init(cond, NULL);
-}
-
-int _chpl_condvar_destroy(_chpl_condvar_p cond) {
-  return pthread_cond_destroy(cond);
 }
 
 int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
@@ -88,10 +75,6 @@ int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
 int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   s->is_full = false;
   return pthread_cond_signal(s->cv_empty);
-}
-
-int _chpl_condvar_broadcast(_chpl_condvar_p cond) {
-  return pthread_cond_broadcast(cond);
 }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s) {
@@ -135,7 +118,7 @@ void _chpl_serial_delete(_bool *p) {
 void initChplThreads() {
   _chpl_mutex_init(&_chpl_begin_cnt_lock);
   _chpl_begin_cnt = 0;                          // only main thread running
-  _chpl_condvar_init(&_chpl_can_exit);
+  pthread_cond_init(&_chpl_can_exit, NULL);
 
   _chpl_mutex_init(&_memtrack_lock);
   _chpl_mutex_init(&_memstat_lock);

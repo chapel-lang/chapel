@@ -744,14 +744,14 @@ class _singlevar {
   type base_type;
   var  value: base_type;     // actual data
   var  is_full: bool;
-  var  lock: _mutex_p;       // need to acquire before accessing this record
-  var  cv_full: _condvar_p;  // wait for full
+  //var  lock: _mutex_p;       // need to acquire before accessing this record
+  //var  cv_full: _condvar_p;  // wait for full
   pragma "omit from constructor" var  sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
 
   def initialize() {
     is_full = false; 
-    lock = __primitive( "mutex_new");
-    cv_full = __primitive( "condvar_new");
+    //lock = __primitive( "mutex_new");
+    //cv_full = __primitive( "condvar_new");
     __primitive( "init_sync_aux", this);
   }
 }
