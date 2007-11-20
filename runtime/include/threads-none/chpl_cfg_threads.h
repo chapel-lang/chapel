@@ -9,6 +9,8 @@ typedef _chpl_mutex_t *_chpl_mutex_p;
 typedef int _chpl_condvar_t;
 typedef _chpl_condvar_t *_chpl_condvar_p;
 
+typedef _bool _chpl_sync_aux_t;            // only needs to store the full/empty bit
+
 // thread-related
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
 typedef void* _chpl_threadarg_t;           // function argument

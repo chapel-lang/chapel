@@ -16,7 +16,9 @@ int _chpl_condvar_init (_chpl_condvar_p cond) { return 0; }
 int _chpl_condvar_destroy(_chpl_condvar_p cond) { return 0; }
 int _chpl_condvar_signal(_chpl_condvar_p cond) { return 0; }
 int _chpl_condvar_broadcast(_chpl_condvar_p cond) { return 0; }
+#if 0
 int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex) { return 0; }
+#endif
 
 void _chpl_serial_delete(_bool *p) { }
 void initChplThreads() { }
