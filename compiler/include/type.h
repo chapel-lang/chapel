@@ -168,7 +168,6 @@ TYPE_EXTERN PrimitiveType* dtFile;
 TYPE_EXTERN PrimitiveType* dtTimer; 
 TYPE_EXTERN PrimitiveType* dtMutex;
 TYPE_EXTERN PrimitiveType* dtMutex_p;
-TYPE_EXTERN PrimitiveType* dtCondVar_p;        // condition variable
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 
 void initPrimitiveTypes(void);

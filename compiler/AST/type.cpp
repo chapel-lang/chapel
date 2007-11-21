@@ -555,8 +555,6 @@ void initPrimitiveTypes(void) {
   dtMutex = createPrimitiveType( "_mutex", "_chpl_mutex_t"); 
   dtMutex_p = createPrimitiveType( "_mutex_p", "_chpl_mutex_p"); 
   CREATE_DEFAULT_SYMBOL (dtMutex_p, gMutex_p, "NULL");
-  dtCondVar_p = createPrimitiveType( "_condvar_p", "_chpl_condvar_p"); 
-  CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "NULL");
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "_chpl_sync_aux_t");
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "NULL");
 

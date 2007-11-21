@@ -520,8 +520,6 @@ def _pass(r: _ref) return r;
 
 pragma "inline" def _init( cv: _mutex_p) return __primitive( "mutex_new");
 pragma "inline" def =( a: _mutex_p, b: _mutex_p) return b;
-pragma "inline" def _init( cv: _condvar_p) return __primitive( "condvar_new");
-pragma "inline" def =( a: _condvar_p, b: _condvar_p) return b;
 
 pragma "sync"
 pragma "no default functions"
@@ -539,9 +537,9 @@ class _syncvar {
 // Returns whether an object of type t occupies a 64-bit word on MTA
 def isSimpleSyncBaseType (type t) /*param*/ {
   return false; // The read/write primitives are not yet implemented for pthreads!
-  if (t == int(64) || t == uint(64))
-    return true;
-  else return false;
+  //if (t == int(64) || t == uint(64))
+    //return true;
+  //else return false;
 }
 
 pragma "sync" 
@@ -561,12 +559,11 @@ def _init( sv:_syncvar) {
 
 // The operations are:
 //  = (i.e., write_wait_empty_leave_full)
-//  writeFE - wait for full, leave empty
-//  writeXF - ignore F/E, leave full
-//  writeXE - ignore F/E, leave empty
+//  writeFF  - wait for full, leave full
+//  writeXF  - ignore F/E, leave full
+//  writeXE0 - ignore F/E, write zero, leave empty
 //  readFE - wait for full, leave empty
 //  readFF - wait for full, leave full
-//  readXF - ignore F/E, leave full
 //  readXX - ignore F/E, leave F/E unchanged
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
@@ -581,20 +578,6 @@ def =( sv:_syncvar, value:sv.base_type) {
     __primitive( "sync_unlock", sv);
   }
   return sv;
-}
-
-// Wait for full, set and signal empty.
-pragma "sync" 
-def writeFE( sv:_syncvar, value:sv.base_type) {
-  compilerError( "writeFE not implemented!");
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_FE", sv, value);
-  } else {
-    __primitive( "sync_wait_full_and_lock", sv);
-    sv.value = value;
-    __primitive( "sync_mark_and_signal_empty", sv);
-    __primitive( "sync_unlock", sv);
-  }
 }
 
 // Wait for full, set and signal full.
@@ -619,21 +602,6 @@ def writeXF( sv:_syncvar, value:sv.base_type) {
     __primitive( "sync_lock", sv);
     sv.value = value;
     __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
-  }
-}
-
-// Ignore F/E, set and signal empty. One use of this is with using 
-// sync var as a lock.
-pragma "sync" 
-def writeXE( sv:_syncvar, value:sv.base_type) {
-  compilerError( "writeXE not implemented!");
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_XE", sv, value);
-  } else {
-    __primitive( "sync_lock", sv);
-    sv.value = value;
-    __primitive( "sync_mark_and_signal_empty", sv);
     __primitive( "sync_unlock", sv);
   }
 }
@@ -674,22 +642,6 @@ def readFF( sv:_syncvar) {
     ret = __primitive( "read_FF", ret, sv);
   } else {
     __primitive( "sync_wait_full_and_lock", sv);
-    ret = sv.value;
-    __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
-  }
-  return ret;
-}
-
-// Ignore F/E, set and signal full.
-pragma "sync" 
-def readXF( sv:_syncvar) {
-  compilerError( "readXF not implemented!");
-  var ret: sv.base_type;
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive( "read_XF", ret, sv);
-  } else {
-    __primitive( "sync_lock", sv);
     ret = sv.value;
     __primitive( "sync_mark_and_signal_full", sv);
     __primitive( "sync_unlock", sv);
