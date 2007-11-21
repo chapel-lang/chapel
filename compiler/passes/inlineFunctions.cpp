@@ -107,8 +107,16 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 //
 void
 inlineFunctions(void) {
-  if (fNoInline || fBaseline)
+  if (fBaseline)
     return;
+
+  if (fNoInline) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      collapseBlocks(fn->body);
+      removeUnnecessaryGotos(fn);
+    }
+    return;
+  }
 
   compute_call_sites();
 
