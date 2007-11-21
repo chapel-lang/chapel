@@ -392,7 +392,7 @@ void scalarReplace() {
     }
   }
 
-  if (!fNoScalarReplaceArrayWrappers) {
+  if (0 && !fNoScalarReplaceArrayWrappers) {
     forv_Vec(TypeSymbol, ts, gTypes) {
       if (ts->hasPragma("domain") || ts->hasPragma("array")) {
         scalarReplaceArrayDomainWrapper(toClassType(ts->type));

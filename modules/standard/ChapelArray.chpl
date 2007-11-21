@@ -137,8 +137,9 @@ record _domain {
   def initialize() {
     if _value == nil {
       var x = buildEmptyDomain();
-      _value = x._value;
+      return x;
     }
+    return this;
   }
 
   def these() {

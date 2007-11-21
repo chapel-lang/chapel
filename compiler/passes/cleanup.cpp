@@ -407,16 +407,32 @@ static void build_constructor(ClassType* ct) {
     ct->outer = outer;
   }
 
+  bool hasReturn = false;
   forv_Vec(FnSymbol, method, ct->methods) {
     if (method && !strcmp(method->name, "initialize")) {
       if (method->numFormals() == 2) {
-        fn->insertAtTail(new CallExpr("initialize"));
+        Vec<BaseAST*> asts;
+        collect_asts(&asts, method);
+        forv_Vec(BaseAST, ast, asts) {
+          if (CallExpr* call = toCallExpr(ast)) {
+            if (call->isPrimitive(PRIMITIVE_RETURN)) {
+              SymExpr* se = toSymExpr(call->get(1));
+              if (se->var != gVoid)
+                hasReturn = true;
+            }
+          }
+        }
+        if (hasReturn)
+          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("initialize")));
+        else
+          fn->insertAtTail(new CallExpr("initialize"));
         break;
       }
     }
   }
 
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, myThis));
+  if (!hasReturn)
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, myThis));
   fn->retType = ct;
 }
 

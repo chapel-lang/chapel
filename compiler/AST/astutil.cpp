@@ -128,13 +128,15 @@ void compute_sym_uses(BaseAST* base) {
             continue;
           } else if (call->isResolved()) {
             ArgSymbol* arg = actual_to_formal(a);
-            if (arg->intent == INTENT_OUT) {
+            if (arg->intent == INTENT_REF ||
+                arg->intent == INTENT_INOUT ||
+                arg->type->symbol->hasPragma("array") || // pass by reference
+                arg->type->symbol->hasPragma("domain")) { // pass by reference
+              a->var->defs.add(a); // also use
+            } else if (arg->intent == INTENT_OUT) {
               a->var->defs.add(a);
               continue;
             }
-            if (arg->intent == INTENT_REF ||
-                arg->intent == INTENT_INOUT)
-              a->var->defs.add(a); // also use
           }
         }
         a->var->uses.add(a);
