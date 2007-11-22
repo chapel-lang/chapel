@@ -535,11 +535,11 @@ class _syncvar {
 }
 
 // Returns whether an object of type t occupies a 64-bit word on MTA
-def isSimpleSyncBaseType (type t) /*param*/ {
-  return false; // The read/write primitives are not yet implemented for pthreads!
-  //if (t == int(64) || t == uint(64))
-    //return true;
-  //else return false;
+def isSimpleSyncBaseType (type t) param {
+  if (t == int(64) || t == uint(64))
+    //return false; // The read/write primitives are not yet implemented for pthreads!
+    return true;
+  else return false;
 }
 
 pragma "sync" 

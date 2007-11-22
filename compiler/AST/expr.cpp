@@ -1208,43 +1208,43 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_WRITEEF:
       fprintf( outfile, "_chpl_write_EF((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->value, ");
+      fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_WRITEFF:
       fprintf( outfile, "_chpl_write_FF((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->value, ");
+      fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_WRITEXF:
       fprintf( outfile, "_chpl_write_XF((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->value, ");
+      fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_WRITEXE0:
       fprintf( outfile, "_chpl_write_XE0((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->value)");
+      fprintf( outfile, "))");
       break;
     case PRIMITIVE_READFE:
       fprintf( outfile, "_chpl_read_FE((");
       get(2)->codegen( outfile);
-      fprintf( outfile, ")->value)");
+      fprintf( outfile, "))");
       break;
     case PRIMITIVE_READFF:
       fprintf( outfile, "_chpl_read_FF((");
       get(2)->codegen( outfile);
-      fprintf( outfile, ")->value)");
+      fprintf( outfile, "))");
       break;
     case PRIMITIVE_READXX:
       fprintf( outfile, "_chpl_read_XX((");
       get(2)->codegen( outfile);
-      fprintf( outfile, ")->value)");
+      fprintf( outfile, "))");
       break;
     case PRIMITIVE_ISFULL:
       fprintf( outfile, "_chpl_sync_is_full(&((");

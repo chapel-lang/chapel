@@ -41,15 +41,12 @@ typedef struct {
 #define _chpl_condvar_wait_empty(x,y,z) /*0*/
 #endif
 
-#define _chpl_write_EF(x,y) writeef(&(x), (y))
-//#define _chpl_write_FE(x,y) writefe(&(x), (y))
-#define _chpl_write_FF(x,y) writeff(&(x), (y))
-#define _chpl_write_XF(x,y) writexf(&(x), (y))
-//#define _chpl_write_XE(x,y) writexe(&(x), (y))
-#define _chpl_write_XE0(x) purge(&(x))
-#define _chpl_read_FE(x) readfe(&(x))
-#define _chpl_read_FF(x) readff(&(x))
-//#define _chpl_read_XF(x) readxf(&(x))
-#define _chpl_read_XX(x) readxx(&(x))
+#define _chpl_write_EF(x,y) writeef(&((x)->value), (y))
+#define _chpl_write_FF(x,y) writeff(&((x)->value), (y))
+#define _chpl_write_XF(x,y) writexf(&((x)->value), (y))
+#define _chpl_write_XE0(x) purge(&((x)->value))
+#define _chpl_read_FE(x) readfe(&((x)->value))
+#define _chpl_read_FF(x) readff(&((x)->value))
+#define _chpl_read_XX(x) readxx(&((x)->value))
 
 #endif
