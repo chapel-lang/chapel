@@ -16,6 +16,9 @@ class SingleLocaleDistribution {
                         parentDom: BaseArithmeticDomain)
     return SingleLocaleSparseDomain(rank=rank, idxType=idxType,
                                     parentDom=parentDom);
+
+  def buildOpaqueDomain()
+    return SingleLocaleOpaqueDomain(rank=1);
 }
 
 var Block = SingleLocaleDistribution();

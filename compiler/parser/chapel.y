@@ -120,6 +120,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TNIL
 %token TOF
 %token TON
+%token TOPAQUE
 %token TORDERED
 %token TOTHERWISE
 %token TOUT
@@ -1227,6 +1228,8 @@ type:
     { $$ = new CallExpr("_build_subdomain_type", $3); }
 | TDOMAIN
     { $$ = new SymExpr("_domain"); }
+| TOPAQUE TDOMAIN distributed_expr
+    { $$ = new CallExpr("_build_opaque_domain_type", $3); }
 | TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
     {
       CallExpr* call = new CallExpr("_build_sparse_subdomain_type", $6);

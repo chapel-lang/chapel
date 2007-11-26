@@ -66,6 +66,7 @@ module          processToken(TMODULE);
 nil             processToken(TNIL);
 of              processToken(TOF);
 on              processToken(TON);
+opaque          processToken(TOPAQUE);
 ordered         processToken(TORDERED);
 otherwise       processToken(TOTHERWISE);
 out             processToken(TOUT);

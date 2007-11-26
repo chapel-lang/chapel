@@ -9,6 +9,7 @@ use SingleLocaleArithmetic;
 use SingleLocaleAssociative;
 use SingleLocaleSparse;
 use SingleLocaleEnum;
+use SingleLocaleOpaque;
 use ChapelUtil;
 
 use Types;

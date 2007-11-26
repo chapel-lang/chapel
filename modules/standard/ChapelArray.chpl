@@ -17,6 +17,9 @@ def _build_sparse_subdomain_type(dist, parentDom)
                                         parentDom._value.idxType,
                                         parentDom._value));
 
+def _build_opaque_domain_type(dist) type
+  return _domain(1, dist.buildOpaqueDomain());
+
 // record _ArrayTypeInfo {
 //   type eltType;
 //   var dom: _domain;
@@ -189,6 +192,12 @@ record _domain {
 
   def clear() {
     _value.clear();
+  }
+
+  def new() {
+    if _value.idxType != _OpaqueIndex then
+      compilerError("domain.new only applies to opaque domains");
+    return _value.new();
   }
 
   def add(i) {
@@ -474,6 +483,10 @@ class BaseArithmeticDomain : BaseDomain {
 class BaseSparseArithmeticDomain : BaseArithmeticDomain {
 }
 
+//
+// index for all opaque domains
+//
+class _OpaqueIndex { }
 
 pragma "inline" def _pass(ic: _iteratorClass)
   return ic;

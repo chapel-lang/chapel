@@ -32,6 +32,7 @@ static void parseStandardModules(void) {
     parseStandardModule("SingleLocaleAssociative.chpl");
     parseStandardModule("SingleLocaleSparse.chpl");
     parseStandardModule("SingleLocaleEnum.chpl");
+    parseStandardModule("SingleLocaleOpaque.chpl");
 
     parseStandardModule("Types.chpl");
     parseStandardModule("Math.chpl");
