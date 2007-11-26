@@ -306,23 +306,14 @@ static void build_constructor(ClassType* ct) {
     if (!field)
       continue;
 
-    if (!strcmp(field->name, "_promotionType")) {
+    if ((!strcmp(field->name, "_promotionType")) ||
+        (field->hasPragma("omit from constructor"))) {
       Expr* exprType = field->defPoint->exprType->remove();
       fn->insertAtTail(
         new BlockStmt(
           new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
             new_StringSymbol(field->name),
             new CallExpr("_init", exprType)), BLOCK_TYPE));
-      continue;
-    }
-
-    if (field->hasPragma("omit from constructor")) {
-      Expr* exprType = field->defPoint->exprType->remove();
-      fn->insertAtTail(
-        new BlockStmt(
-          new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                       new_StringSymbol(field->name),
-                       new CallExpr("_init", exprType->copy())), BLOCK_TYPE));
       continue;
     }
 
