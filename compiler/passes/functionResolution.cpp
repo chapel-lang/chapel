@@ -2677,6 +2677,8 @@ collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
 static void
 add_to_ddf(FnSymbol* pfn, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
+    if (cfn->instantiatedFrom)
+      continue;
     if (cfn && possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
         ASTMap subs;
@@ -2715,7 +2717,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
-            INT_FATAL(arg, "unhandled case");
+            subs.put(arg, paramMap.get(pfn->getFormal(i)));
           } else if (arg->type->isGeneric) {
             subs.put(arg, pfn->getFormal(i)->type);
           }
