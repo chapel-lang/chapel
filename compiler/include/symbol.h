@@ -203,10 +203,9 @@ class FnSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs, bool isSquare);
-  FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
-  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions);
-  FnSymbol* default_wrapper(Vec<Symbol*>* defaults, 
-                            Map<Symbol*,Symbol*>* paramMap);
+  FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals, bool isSquare);
+  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions, bool isSquare);
+  FnSymbol* default_wrapper(Vec<Symbol*>* defaults, Map<Symbol*,Symbol*>* paramMap, bool isSquare);
   FnSymbol* instantiate_generic(ASTMap* substitutions, 
                                 Map<Symbol*,Symbol*>* paramMap);
   void codegenHeader(FILE* outfile);

@@ -1,4 +1,0 @@
-unimplemented feature: tensor promotion
-
-It appears that tensor promotion currently isn't supported for
-function calls, only for loops.

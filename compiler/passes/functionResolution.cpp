@@ -673,7 +673,8 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
 static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
-                      Vec<ArgSymbol*>* actualFormals) {
+                      Vec<ArgSymbol*>* actualFormals,
+                      bool isSquare) {
   FnSymbol* wrapper = fn;
   int num_actuals = actualFormals->n;
   int num_formals = fn->numFormals();
@@ -688,7 +689,7 @@ build_default_wrapper(FnSymbol* fn,
       if (!used)
         defaults.add(formal);
     }
-    wrapper = fn->default_wrapper(&defaults, &paramMap);
+    wrapper = fn->default_wrapper(&defaults, &paramMap, isSquare);
 
     // update actualFormals for use in build_order_wrapper
     int j = 1;
@@ -708,7 +709,8 @@ build_default_wrapper(FnSymbol* fn,
 
 static FnSymbol*
 build_order_wrapper(FnSymbol* fn,
-                    Vec<ArgSymbol*>* actualFormals) {
+                    Vec<ArgSymbol*>* actualFormals,
+                    bool isSquare) {
   bool order_wrapper_required = false;
   Map<Symbol*,Symbol*> formals_to_formals;
   int i = 0;
@@ -726,7 +728,7 @@ build_order_wrapper(FnSymbol* fn,
     }
   }
   if (order_wrapper_required) {
-    fn = fn->order_wrapper(&formals_to_formals);
+    fn = fn->order_wrapper(&formals_to_formals, isSquare);
   }
   return fn;
 }
@@ -735,7 +737,8 @@ build_order_wrapper(FnSymbol* fn,
 static FnSymbol*
 build_coercion_wrapper(FnSymbol* fn,
                        Vec<Type*>* actualTypes,
-                       Vec<Symbol*>* actualSyms) {
+                       Vec<Symbol*>* actualSyms,
+                       bool isSquare) {
   ASTMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
@@ -755,7 +758,7 @@ build_coercion_wrapper(FnSymbol* fn,
     }
   }
   if (coerce)
-    fn = fn->coercion_wrapper(&subs, &coercions);
+    fn = fn->coercion_wrapper(&subs, &coercions, isSquare);
   return fn;  
 }
 
@@ -1207,9 +1210,9 @@ resolve_call(CallInfo* info) {
     printResolutionError("unresolved", visibleFns, info);
     best = NULL;
   } else {
-    best = build_default_wrapper(best, actualFormals);
-    best = build_order_wrapper(best, actualFormals);
-    best = build_coercion_wrapper(best, &info->actualTypes, &info->actualSyms);
+    best = build_default_wrapper(best, actualFormals, call->square);
+    best = build_order_wrapper(best, actualFormals, call->square);
+    best = build_coercion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
 
     FnSymbol* promoted = build_promotion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
     if (promoted != best) {

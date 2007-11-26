@@ -712,7 +712,9 @@ build_empty_wrapper(FnSymbol* fn) {
 
 
 FnSymbol*
-FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions) {
+FnSymbol::coercion_wrapper(ASTMap* coercion_map,
+                           Map<ArgSymbol*,bool>* coercions,
+                           bool isSquare) {
   // return cached if we already created this coercion wrapper
   if (FnSymbol* cached = checkMapCache(&cw_cache, this, coercion_map))
     return cached;
@@ -720,6 +722,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
+  call->square = isSquare;
   for_formals(formal, this) {
     Symbol* wrapper_formal = formal->copy();
     if (_this == formal)
@@ -778,7 +781,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map, Map<ArgSymbol*,bool>* coercions
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
-                                    Map<Symbol*,Symbol*>* paramMap) {
+                                    Map<Symbol*,Symbol*>* paramMap,
+                                    bool isSquare) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(this);
@@ -786,6 +790,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     wrapper->retType = retType;
   wrapper->cname = stringcat("_default_wrap_", cname);
   CallExpr* call = new CallExpr(this);
+  call->square = isSquare;
   ASTMap copy_map;
   for_formals(formal, this) {
     if (!defaults->in(formal)) {
@@ -863,10 +868,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
 }
 
 
-FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
+FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
+                                  bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_order_wrap_", cname);
   CallExpr* call = new CallExpr(this);
+  call->square = isSquare;
   ASTMap copy_map;
   for_formals(formal, this) {
     Symbol* wrapper_formal = formal->copy();
