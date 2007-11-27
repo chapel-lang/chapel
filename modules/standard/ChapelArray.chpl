@@ -20,17 +20,8 @@ def _build_sparse_subdomain_type(dist, parentDom)
 def _build_opaque_domain_type(dist) type
   return _domain(1, dist.buildOpaqueDomain());
 
-// record _ArrayTypeInfo {
-//   type eltType;
-//   var dom: _domain;
-// }
-
-// def _init(a: _ArrayTypeInfo)
-//   return a.dom.buildArray(a.eltType);
-
 def _build_array_type(dom, type eltType) type
   return dom.buildArray(eltType);
-// was:  return _ArrayTypeInfo(eltType, dom);
 
 def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
@@ -266,7 +257,6 @@ def _isDomain(x: _domain) param return true;
 def _isDomain(x) param return false;
 
 def =(a: _domain, b: _domain) {
-  //  if a == nil then return b; // stopgap: why? --sjd
   for e in a._value._arrs do
     e.reallocate(b);
   a._value.setIndices(b._value.getIndices());
@@ -382,8 +372,6 @@ record _array {
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    type xDimIndexType = x.idxType;       // BLC: hacks to get around
-    type xIndexType = rank*xDimIndexType;  // inflexibility of tuple syntax
     return _array(x.idxType, eltType, rank, x);
   }
 
@@ -537,17 +525,15 @@ pragma "inline" def _chpl_swap(x: [], y: []) {
     x(i) <=> y(j);
 }
 
-
-/*  This might be preferable for domains, but it doesn't work because
-    domains apparently can't be modified once sent into a function!? 
-
 pragma "inline" def _chpl_swap(x: domain, y: domain) {
   const t = y;
   y = x;
-  x = y;
+  x = t;
 }
-*/
 
+//
+// reshape function
+//
 def reshape(A: [], D: domain) {
   var B: [D] A.eltType;
   for (i,a) in (D,A) do
