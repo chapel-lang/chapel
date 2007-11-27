@@ -49,16 +49,16 @@ string_concat(_string x, _string y) {
 }
 
 _string
-string_strided_select(_string x, int low, int high, int stride) {
+string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename) {
   _int64 length = string_length(x);
   char* result = NULL;
   char* dst = NULL;
   _string src = stride > 0 ? x + low - 1 : x + high - 1;
   int size = high - low >= 0 ? high - low : 0;
   if (low < 1 || low > length || high > length) {
-    _printError("String access out-of-bounds", 0, 0);
+    _printError("string index out of bounds", lineno, filename);
   }
-  result = _chpl_malloc(size + 2, sizeof(char), "_chpl_string_strided_select temp", 0, 0);
+  result = _chpl_malloc(size + 2, sizeof(char), "_chpl_string_strided_select temp", lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {
@@ -76,13 +76,15 @@ string_strided_select(_string x, int low, int high, int stride) {
 }
 
 _string
-string_select(_string x, int low, int high) {
-  return string_strided_select(x, low, high, 1);
+string_select(_string x, int low, int high, _int32 lineno, _string filename) {
+  return string_strided_select(x, low, high, 1, lineno, filename);
 }
 
 _string
-string_index(_string x, int i) {
+string_index(_string x, int i, _int32 lineno, _string filename) {
   char buffer[2];
+  if (i-1 < 0 || i-1 >= string_length(x))
+    _printError("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return _glom_strings(1, buffer);
 }

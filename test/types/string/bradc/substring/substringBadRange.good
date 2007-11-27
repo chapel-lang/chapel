@@ -1,1 +1,1 @@
-error: String access out-of-bounds
+substringBadRange.chpl:3: error: string index out of bounds

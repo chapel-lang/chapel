@@ -78,9 +78,9 @@ char* _glom_strings(int numstrings, ...);
 
 _bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y);
-_string string_index(_string x, int i);
-_string string_select(_string x, int low, int high);
-_string string_strided_select(_string x, int low, int high, int stride);
+_string string_index(_string x, int i, _int32 lineno, _string filename);
+_string string_select(_string x, int low, int high, _int32 lineno, _string filename);
+_string string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename);
 _bool string_equal(_string x, _string y);
 _int64 string_length(_string x);
 
