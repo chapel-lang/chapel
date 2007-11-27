@@ -108,36 +108,119 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
 }
 
 
-Symbol*
-SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnModules) {
-  if (!alreadyVisited) {
-    Vec<SymScope*> scopes;
-    return lookup(name, &scopes, returnModules);
+static void buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current, Vec<Vec<ModuleSymbol*>*> &queue, Vec<ModuleSymbol*>* alreadySeen = NULL) {
+  Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
+  if (!alreadySeen) {
+    Vec<ModuleSymbol*> seen;
+    return buildBreadthFirstUseTree(current, queue, &seen);
   }
-
-  Symbol* sym = lookupLocal(name, alreadyVisited, returnModules);
-  if (sym && (!toModuleSymbol(sym) || returnModules))
-    return sym;
-  if (FnSymbol* fn = toFnSymbol(astParent)) {
-    if (fn->_this) {
-      ClassType* ct = toClassType(fn->_this->type);
-      if (ct) {
-        Symbol* sym = ct->structScope->lookupLocal(name, alreadyVisited, returnModules);
-        if (sym && (!toModuleSymbol(sym) || returnModules))
-          return sym;
-        Type* outerType = ct->symbol->defPoint->parentSymbol->type;
-        if (ClassType* ot = toClassType(outerType)) {
-          // Nested class.  Look at the scope of the outer class
-          Symbol* sym = ot->structScope->lookup(name, alreadyVisited, returnModules);
-          if (sym && (!toModuleSymbol(sym) || returnModules))
-            return sym;
+  queue.add(current);
+  forv_Vec(ModuleSymbol, module, *current) {
+    Vec<ModuleSymbol*>* modules = module->block->blkScope->getModuleUses();
+    if (modules) {
+      forv_Vec(ModuleSymbol, mod, *modules) {
+        if (!alreadySeen->set_in(mod)) {
+          next->add(mod);
+          alreadySeen->set_add(mod);
         }
       }
     }
   }
-  if (parent)
-    return parent->lookup(name, alreadyVisited, returnModules);
-  return NULL;
+  if (next->n > 0) {
+    buildBreadthFirstUseTree(next, queue, alreadySeen);
+  }
+}
+
+
+Symbol*
+SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnModules, bool scanModuleUses) {
+  Vec<SymScope*> nestedscopes;
+  if (!alreadyVisited) {
+    return lookup(name, &nestedscopes, returnModules, scanModuleUses);
+  }
+  if (!scanModuleUses) {
+    nestedscopes.copy(*alreadyVisited);
+    alreadyVisited = &nestedscopes;
+  }
+
+  if (alreadyVisited->set_in(this))
+    return NULL;
+  alreadyVisited->set_add(this);
+
+  Vec<Symbol*> symbols;
+  Symbol* sym = NULL;
+  sym = table.get(name);
+  if (sym && (returnModules || !toModuleSymbol(sym))) {
+    symbols.set_add(sym);
+  }
+  if (symbols.n == 0 && scanModuleUses) {
+    Vec<ModuleSymbol*>* modules = getModuleUses();  
+    if (modules && modules->n > 0) {
+      Vec<Vec<ModuleSymbol*>*> moduleQueue;
+      buildBreadthFirstUseTree(modules, moduleQueue);
+      forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
+        forv_Vec(ModuleSymbol, mod, *layer) {
+          sym = mod->initFn->body->blkScope->lookup(name, alreadyVisited, returnModules, false);
+          if (sym && (returnModules || !toModuleSymbol(sym))) {
+            symbols.set_add(sym);
+          }
+        }
+        if (symbols.n > 0)
+          break;
+      }
+      bool first = true;
+      forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
+        if (first) {
+          first = false;
+          continue;
+        }
+        delete layer;
+      }
+    }
+  }
+  if (scanModuleUses && symbols.n == 0) {
+    if (parent) {
+      if (astParent && astParent->getModule()->block == astParent) {
+        ModuleSymbol* mod = astParent->getModule();
+        sym = mod->initFn->body->blkScope->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+        if (sym && (returnModules || !toModuleSymbol(sym)))
+          symbols.set_add(sym);
+
+        if (symbols.n == 0 && parent) {
+          sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+          if (sym && (returnModules || !toModuleSymbol(sym)))
+            symbols.set_add(sym);
+        }
+
+      } else {
+        FnSymbol* fn = toFnSymbol(astParent);
+        if (fn && fn->_this && toClassType(fn->_this->type)) {
+          ClassType* ct = toClassType(fn->_this->type);
+          sym = ct->structScope->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+          if (sym && (returnModules || !toModuleSymbol(sym)))
+            symbols.set_add(sym);
+          else {
+            sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+            if (sym && (!toModuleSymbol(sym) || returnModules))
+              symbols.set_add(sym);
+          }
+        } else {
+          sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+          if (sym && (!toModuleSymbol(sym) || returnModules))
+            symbols.set_add(sym);
+        }
+      }
+    }
+  }
+  if (symbols.n > 1) {
+    if (!toFnSymbol(symbols.v[0]))
+      USR_FATAL(symbols.v[0], "Symbol %s multiply defined", name);
+  }
+  if (symbols.n == 0) {
+    return NULL;
+  } else {
+    return symbols.v[0];
+  }
 }
 
 

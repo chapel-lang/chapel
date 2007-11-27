@@ -21,7 +21,8 @@ class SymScope {
                       bool returnModules = true);
   Symbol* lookup(const char* name,
                  Vec<SymScope*>* alreadyVisited = NULL,
-                 bool returnModules = true);
+                 bool returnModules = true,
+                 bool scanModuleUses = true);
 
   void addModuleUse(ModuleSymbol* mod);
   Vec<ModuleSymbol*>* getModuleUses();
