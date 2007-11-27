@@ -1,3 +1,1 @@
-D is: [1..10, 1..10, 1..10]
-D[2.., ..n-1, n/2] is: [2..10, 1..9]
-sliceAllDegenerate.chpl:7: error: domain slicing cannot result in rank 0 domain
+sliceAllDegenerate.chpl:7: error: domain slice requires a range in at least one dimension
