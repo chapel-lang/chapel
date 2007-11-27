@@ -1,4 +1,4 @@
-var D: opaque domain;
+var D: domain(opaque);
 var A: [D] index(D);
 
 var root = D.new();

@@ -1,4 +1,4 @@
-var D: opaque domain;
+var D: domain(opaque);
 var i1 = D.new();
 var i2 = D.new();
 var A: [D] int;

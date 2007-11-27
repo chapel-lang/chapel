@@ -852,16 +852,12 @@ otherwise returns \chpl{false}.
 \index{domains!opaque}
 \index{arrays!opaque}
 
-\begin{status}
-Opaque domains are not yet implemented.
-\end{status}
-
 An opaque domain is a form of associative domain where there is no
 algebra on the types of the indices.  The indices are, in essence,
 opaque.  The opaque domain type is given by the following syntax:
 \begin{syntax}
 opaque-domain:
-  `opaque' `domain'
+  `domain' ( `opaque' )
 \end{syntax}
 
 New index values for opaque domains are explicitly requested via a
