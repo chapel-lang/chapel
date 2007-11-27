@@ -1210,6 +1210,10 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_WRITEFF:
@@ -1217,6 +1221,10 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_WRITEXF:
@@ -1234,12 +1242,20 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_READFE:
       fprintf( outfile, "_chpl_read_FE((");
       get(2)->codegen( outfile);
-      fprintf( outfile, "))");
+      fprintf( outfile, "), ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_READFF:
       fprintf( outfile, "_chpl_read_FF((");
       get(2)->codegen( outfile);
-      fprintf( outfile, "))");
+      fprintf( outfile, "), ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_READXX:
       fprintf( outfile, "_chpl_read_XX((");

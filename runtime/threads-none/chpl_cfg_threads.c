@@ -9,6 +9,15 @@ int _chpl_mutex_lock(_chpl_mutex_p mutex) { return 0; }
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return 0; }
 int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return 0; }
 
+_bool _chpl_sync_is_full(_chpl_sync_aux_t *s) {
+  return *s;
+}
+
+void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
+  *s = false;
+}
+
+
 void _chpl_serial_delete(_bool *p) { }
 void initChplThreads() { }
 void exitChplThreads() { }

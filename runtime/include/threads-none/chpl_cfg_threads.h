@@ -5,11 +5,41 @@
 typedef int _chpl_mutex_t;
 typedef _chpl_mutex_t *_chpl_mutex_p;
 
-// bogus condition variable type (no condition variables)
-typedef int _chpl_condvar_t;
-typedef _chpl_condvar_t *_chpl_condvar_p;
-
 typedef _bool _chpl_sync_aux_t;            // only needs to store the full/empty bit
+
+#define _chpl_write_EF(x,y,lineno,filename) \
+  do {if ((x)->sync_aux) \
+        _printError("sync var full (running in single-threaded threaded mode)", lineno, filename); \
+      else { \
+        (x)->value = (y); \
+        (x)->sync_aux = true;} \
+     } while (0)
+
+#define _chpl_write_FF(x,y,lineno,filename) \
+  do {if (!(x)->sync_aux) \
+        _printError("sync var empty (running in single-threaded threaded mode)", lineno, filename); \
+      else (x)->value = (y); \
+     } while (0)
+
+#define _chpl_write_XF(x,y) \
+  do {(x)->value = (y); \
+      (x)->sync_aux = true; \
+     } while (0)
+
+#define _chpl_write_XE0(x)  \
+  do {(x)->value = 0; \
+      (x)->sync_aux = false; \
+     } while (0)
+
+#define _chpl_read_FE(x,lineno,filename) \
+  ((x)->sync_aux ? (((x)->sync_aux = false), (x)->value) : \
+   _printError("sync var empty (running in single-threaded threaded mode)", lineno, filename))
+
+#define _chpl_read_FF(x,lineno,filename) \
+  ((x)->sync_aux ? (x)->value : \
+   _printError("sync var empty (running in single-threaded threaded mode)", lineno, filename))
+
+#define _chpl_read_XX(x) (x)->value
 
 // thread-related
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
