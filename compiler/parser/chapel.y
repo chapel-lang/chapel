@@ -756,6 +756,8 @@ fn_decl_stmt_inner:
 ret_class:
 /* none */
     { $$ = RET_VALUE; }
+| TCONST
+    { $$ = RET_VALUE; }
 | TVAR
     { $$ = RET_VAR; }
 | TPARAM

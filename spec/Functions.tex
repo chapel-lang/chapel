@@ -51,6 +51,7 @@ formal-tag: one of
 
 var-param-clause:
   `var'
+  `const'
   `param'
 
 where-clause:
@@ -82,7 +83,9 @@ discussed in~\rsec{Variable_Length_Argument_Lists}.
 
 The optional \sntx{var-param-clause} defines a variable function,
 discussed in~\rsec{Variable_Functions}, or a parameter function,
-discussed in~\rsec{Parameter_Functions}.
+discussed in~\rsec{Parameter_Functions}.  By default, a function call
+cannot be treated as an lvalue and is constant.  This may be
+explicitly specified via the keyword~\chpl{const}.
 
 The optional where clause is only applicable if the function is
 generic.  It is discussed in~\rsec{Where_Expressions}.
