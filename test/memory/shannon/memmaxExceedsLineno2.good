@@ -1,1 +1,1 @@
-memmaxExceedsLineno2.chpl, line2:  ***Error: Exceeded memory limit***
+memmaxExceedsLineno2.chpl:2: error: Exceeded memory limit

@@ -303,7 +303,7 @@ _define_string_to_type(complex, 128)
   _string type##_to_string(type x) {            \
     char buffer[256];                           \
     sprintf(buffer, format, x);                 \
-    return string_copy(buffer);                 \
+    return _glom_strings(1, buffer);            \
   }
 
 integral_to_string(_int8, "%d")
@@ -348,7 +348,7 @@ static void ensureDecimal(char* buffer) {
       char buffer[256];                       \
       sprintf(buffer, format, x);             \
       ensureDecimal(buffer);                  \
-      return string_copy(buffer);             \
+      return _glom_strings(1, buffer);        \
     }                                         \
   }
 

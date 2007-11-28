@@ -53,7 +53,7 @@ void addToConfigList(const char* currentArg, configSource argSource) {
   _chpl_free(description, 0, 0);
 
   arg->argSource = argSource;
-  arg->input = string_copy(currentArg);
+  arg->input = _glom_strings(1, currentArg);
   
   if (firstArg == NULL) {
     firstArg = arg;
@@ -371,7 +371,7 @@ void initSetValue(char* varName, char* value, const char* moduleName) {
   if (configVar == NULL || configVar == ambiguousConfigVar) {
     _printInternalError("unknown config var case not handled appropriately");
   }
-  configVar->setValue = string_copy(value);
+  configVar->setValue = _glom_strings(1, value);
 }
 
 
@@ -409,7 +409,7 @@ void installConfigVar(const char* varName, const char* value,
     lastInTable->nextInstalled = configVar;
   }
   lastInTable = configVar;
-  configVar->varName = string_copy(varName);
-  configVar->moduleName = string_copy(moduleName);
-  configVar->defaultValue = string_copy(value);
+  configVar->varName = _glom_strings(1, varName);
+  configVar->moduleName = _glom_strings(1, moduleName);
+  configVar->defaultValue = _glom_strings(1, value);
 } 

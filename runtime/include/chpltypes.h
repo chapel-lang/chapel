@@ -72,12 +72,12 @@ typedef _int64              _symbol;
 
 #define ascii(s) ((_int8)(*s))
 
-#define string_copy(rhs) (_glom_strings(1, rhs))
+#define string_copy(rhs, lineno, filename) (string_concat(rhs, "", lineno, filename))
 
 char* _glom_strings(int numstrings, ...);
 
 _bool string_contains(_string x, _string y);
-_string string_concat(_string x, _string y);
+_string string_concat(_string x, _string y, _int32 lineno, _string filename);
 _string string_index(_string x, int i, _int32 lineno, _string filename);
 _string string_select(_string x, int low, int high, _int32 lineno, _string filename);
 _string string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename);

@@ -10,7 +10,7 @@ static void _fscan_error_check(int err, _int32 lineno, _string filename) {
   if (err == EOF)
     _printError("read failed: eof", lineno, filename);
   else if (err < 0)
-    _printError(string_concat("read failed: ", strerror(errno)),
+    _printError(string_concat("read failed: ", strerror(errno), lineno, filename),
                 lineno, filename);
   else if (err == 0)
     _printError("read failed: value not read", lineno, filename);
@@ -25,10 +25,10 @@ _string _fscan_string(FILE* fp, _int32 lineno, _string filename) {
   _fscan_error_check(err, lineno, filename);
   if (strlen(result) == (_default_string_length - 1)) {
     sprintf(dsl, "%d", _default_string_length);
-    _printError(string_concat("maximum string length is ", dsl),
+    _printError(string_concat("maximum string length is ", dsl, lineno, filename),
                 lineno, filename);
   }
-  return string_copy(result);
+  return _glom_strings(1, result);
 }
 
 _int32 _fscan_int32(FILE* fp, _int32 lineno, _string filename) {

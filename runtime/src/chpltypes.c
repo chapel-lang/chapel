@@ -44,9 +44,15 @@ char* _glom_strings(int numstrings, ...) {
 
 
 _string
-string_concat(_string x, _string y) {
-  return _glom_strings(2, x, y);
+string_concat(_string x, _string y, _int32 lineno, _string filename) {
+  char *z = (char*)_chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
+                                "string_concat", lineno, filename);
+  z[0] = '\0';
+  strcat(z, x);
+  strcat(z, y);
+  return z;
 }
+
 
 _string
 string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename) {

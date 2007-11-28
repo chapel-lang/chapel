@@ -439,9 +439,9 @@ initPrimitive() {
   prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("_readToEndOfLine", returnInfoVoid, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_copy", returnInfoString, true);
+  prim_def("string_copy", returnInfoString, true, true);
   prim_def("string_index", returnInfoString, true, true);
-  prim_def("string_concat", returnInfoString, true);
+  prim_def("string_concat", returnInfoString, true, true);
   prim_def("string_equal", returnInfoBool, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
