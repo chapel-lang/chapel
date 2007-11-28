@@ -1,6 +1,0 @@
-error message: domain dimensional type
-
-need a better error message for mixing dimensional index types
-
-Brad: Or should 1..7 implicitly coerce to range(uint) since they are
-parameters?  I.e., introduce concept of parameter range into compiler?

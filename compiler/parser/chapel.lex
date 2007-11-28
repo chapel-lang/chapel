@@ -8,14 +8,37 @@
 #include "chapel.tab.h"
 
 #ifndef processToken
-#define processToken(t) \
-  countToken(yytext);  \
+#define processToken(t)                         \
+  countToken(yytext);                           \
+  if (captureTokens) {                          \
+    if (t == TASSIGN ||                         \
+        t == TDOTDOTDOT)                        \
+      strcat(captureString, " ");               \
+    if (t != TLCBR)                             \
+      strcat(captureString, yytext);            \
+    if (t == TCOMMA ||                          \
+        t == TPARAM ||                          \
+        t == TTYPE ||                           \
+        t == TCONST ||                          \
+        t == TIN ||                             \
+        t == TINOUT ||                          \
+        t == TOUT ||                            \
+        t == TCOLON ||                          \
+        t == TASSIGN ||                         \
+        t == TRSBR)                             \
+      strcat(captureString, " ");               \
+  }                                             \
   return(t)
 #endif
 
-#define processStringLiteral(q)     \
-  yylval.pch = eatStringLiteral(q); \
+#define processStringLiteral(q)            \
+  yylval.pch = eatStringLiteral(q);        \
   countToken(stringcat(q, yylval.pch, q)); \
+  if (captureTokens) {                     \
+    strcat(captureString, yytext);         \
+    strcat(captureString, yylval.pch);     \
+    strcat(captureString, yytext);         \
+  }                                        \
   return(STRINGLITERAL)
 
 

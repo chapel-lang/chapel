@@ -1,5 +1,0 @@
-error message: formal argument missing parameterized tuple type
-
-This doesn't resolve as expected, but the error message is
-suboptimal since it doesn't give a type for the x argument.
-

@@ -30,6 +30,9 @@ def _build_domain(x: _domain)
   return x;
 
 def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
+  for param i in 2..rank do
+    if eltType(1) != eltType(2) then
+      compilerError("domain has mixed dimensional type");
   var d: domain(rank, eltType(1), _any_stridable(ranges));
   d.setIndices(ranges);
   return d;

@@ -52,6 +52,8 @@ Is this "while x"(i); or "while x(i)";?
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
   static bool atomic_warning = false;
+  int captureTokens;
+  char captureString[1024];
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)          \
   if (N) { \
@@ -768,16 +770,26 @@ ret_class:
 
 
 fn_decl_stmt:
-  TDEF fn_decl_stmt_inner ret_class opt_type where parsed_block_stmt
+  TDEF
     {
-      $2->retTag = $3;
-      if ($3 == RET_VAR)
-        $2->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      $2->retExprType = $4;
-      if ($5)
-        $2->where = new BlockStmt($5);
-      $2->insertAtTail($6);
-      $$ = build_chpl_stmt(new DefExpr($2));
+      captureTokens = 1;
+      captureString[0] = '\0';
+    }
+  fn_decl_stmt_inner
+    {
+      captureTokens = 0;
+      $3->userString = astr(captureString);
+    }
+  ret_class opt_type where parsed_block_stmt
+    {
+      $3->retTag = $5;
+      if ($5 == RET_VAR)
+        $3->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+      $3->retExprType = $6;
+      if ($7)
+        $3->where = new BlockStmt($7);
+      $3->insertAtTail($8);
+      $$ = build_chpl_stmt(new DefExpr($3));
     }
 ;
 

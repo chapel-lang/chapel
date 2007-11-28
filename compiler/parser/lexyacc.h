@@ -12,4 +12,7 @@
 #include "type.h"
 #include "yy.h"
 
+extern int captureTokens;
+extern char captureString[1024];
+
 #endif

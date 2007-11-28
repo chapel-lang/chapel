@@ -436,6 +436,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);
+    if (fn->userString && fn->name != ts->name)
+      fn->userString = astr(ts->name, ".", fn->userString);
     if (ts->hasPragma("sync"))
       fn->addPragma("sync");
   }

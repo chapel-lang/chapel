@@ -1008,6 +1008,8 @@ static const char* toString(CallInfo* info) {
 
 
 static const char* toString(FnSymbol* fn) {
+  if (fn->userString)
+    return fn->userString;
   char* str;
   int start = 0;
   if (fn->instantiatedFrom)
@@ -1088,6 +1090,11 @@ printResolutionError(const char* error,
     USR_FATAL(call, "illegal cast from %s to %s",
               toString(info->actualTypes.v[1]),
               toString(info->actualTypes.v[0]));
+  } else if (info->actualTypes.n == 2 &&
+             info->actualTypes.v[0] == dtMethodToken &&
+             !strcmp("these", info->name)) {
+    USR_FATAL(call, "cannot iterate over values of type %s",
+              toString(info->actualTypes.v[1]));
   } else if (!strcmp("_construct__tuple", info->name)) {
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->isParameter()) {
@@ -2450,6 +2457,8 @@ postFold(Expr* expr) {
 static void
 resolveBody(Expr* body) {
   for_exprs_postorder(expr, body) {
+    currentLineno = expr->lineno;
+    currentFilename = expr->filename;
     if (SymExpr* sym = toSymExpr(expr))
       makeRefType(sym->var->type);
     expr = preFold(expr);

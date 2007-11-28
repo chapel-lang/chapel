@@ -1,9 +1,0 @@
-error message: no tuple iterators
-
-I mis-typed this program, thinking I was declaring an anonymous
-array of strings, when in fact I was declaring a tuple of strings.
-The error message was confusing, though -- it complains about
-there not being a these iterator for strings, when it should
-instead complain about not having an iterator for tuples (and
-preferably in a way that was targeted to this case and not a
-generic unresolved call error).

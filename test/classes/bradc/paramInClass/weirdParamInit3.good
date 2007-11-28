@@ -1,6 +1,2 @@
-c is: {x = 2}
-d is: {c = {x = 2}, y = 2}
-
-OR:
-
-weirdParamInit3.chpl:7: error: param initialized with non-param expression
+weirdParamInit3.chpl:6: error: unresolved call 'C()'
+weirdParamInit3.chpl:1: note: candidates are: C(param x: int)

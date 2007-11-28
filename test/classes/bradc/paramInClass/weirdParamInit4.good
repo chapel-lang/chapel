@@ -1,1 +1,2 @@
-error using generic type C message should go here
+weirdParamInit4.chpl:6: error: unresolved call 'C()'
+weirdParamInit4.chpl:1: note: candidates are: C(param x: int)
