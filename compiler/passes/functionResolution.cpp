@@ -2557,7 +2557,10 @@ resolveFns(FnSymbol* fn) {
         bool best = true;
         for (int j = 0; j < retTypes.n; j++) {
           if (retTypes.v[i] != retTypes.v[j]) {
-            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn))
+            bool requireScalarPromotion = false;
+            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn, &requireScalarPromotion))
+              best = false;
+            if (requireScalarPromotion)
               best = false;
           }
         }

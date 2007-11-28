@@ -1,8 +1,0 @@
-error message: Type inference failure results in an "internal error" rather than a more descriptive error
-
-The developer error message:
-recursive_return_oops-2.chpl:1: error: Unable to resolve return type [functionResolution.cpp:2566]
-
-The non-developer error message:
-recursive_return_oops-2.chpl:1: error: internal failure FUN2566 chpl Version 0.5.301
-
