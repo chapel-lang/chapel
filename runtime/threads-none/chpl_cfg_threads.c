@@ -9,6 +9,36 @@ int _chpl_mutex_lock(_chpl_mutex_p mutex) { return 0; }
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return 0; }
 int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return 0; }
 
+int _chpl_sync_lock(_chpl_sync_aux_t *s) { return 0; }
+int _chpl_sync_unlock(_chpl_sync_aux_t *s) { return 0; }
+
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+  if (*s)
+    return 0;
+  else {
+    _printError("sync var empty (running in single-threaded threaded mode)", lineno, filename);
+    return 1;
+  }
+}
+
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+  if (*s) {
+    _printError("sync var full (running in single-threaded threaded mode)", lineno, filename);
+    return 1;
+  }
+  else return 0;
+}
+
+int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+  *s = true;
+  return 0;
+}
+
+int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+  *s = false;
+  return 0;
+}
+
 _bool _chpl_sync_is_full(_chpl_sync_aux_t *s) {
   return *s;
 }

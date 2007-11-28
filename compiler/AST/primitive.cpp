@@ -315,8 +315,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
 

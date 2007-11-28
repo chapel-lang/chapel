@@ -12,8 +12,8 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex);
 
 int _chpl_sync_lock(_chpl_sync_aux_t *);
 int _chpl_sync_unlock(_chpl_sync_aux_t *);
-int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *);
-int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *);
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *, _int32, _string);
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *, _int32, _string);
 int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);
 int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);
 int _chpl_sync_is_full(_chpl_sync_aux_t *);

@@ -1185,23 +1185,31 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf(outfile, ")->sync_aux))");
       break;
+    case PRIMITIVE_SYNC_WAIT_FULL:
+      fprintf( outfile, "_chpl_sync_wait_full_and_lock(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->sync_aux), ");
+      get(2)->codegen(outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_SYNC_WAIT_EMPTY:
+      fprintf( outfile, "_chpl_sync_wait_empty_and_lock(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->sync_aux), ");
+      get(2)->codegen(outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
     case PRIMITIVE_SYNC_SIGNAL_FULL:
       fprintf(outfile, "_chpl_sync_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
       fprintf(outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SYNC_WAIT_FULL:
-      fprintf( outfile, "_chpl_sync_wait_full_and_lock(&((");
-      get(1)->codegen( outfile);
-      fprintf( outfile, ")->sync_aux))");
-      break;
     case PRIMITIVE_SYNC_SIGNAL_EMPTY:
       fprintf( outfile, "_chpl_sync_mark_and_signal_empty(&((");
-      get(1)->codegen( outfile);
-      fprintf( outfile, ")->sync_aux))");
-      break;
-    case PRIMITIVE_SYNC_WAIT_EMPTY:
-      fprintf( outfile, "_chpl_sync_wait_empty_and_lock(&((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->sync_aux))");
       break;
