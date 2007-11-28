@@ -342,9 +342,8 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def checkSlice(ranges) {
     for param i in 1..rank do
-      if ranges(i).boundedType == bounded then
-        if !dom.dim(i).member(ranges(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+      if !dom.dim(i).boundsCheck(ranges(i)) then
+        halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
   def slice(d: SingleLocaleArithmeticDomain) {
@@ -370,9 +369,8 @@ class SingleLocaleArithmeticArray: BaseArray {
 
     for param i in 1..args.size do
       if isRange(args(i)) then
-        if args(i).boundedType == bounded then
-          if !dom.dim(i).member(args(i)) then
-            halt("array slice out of bounds in dimension ", i, ": ", args(i));
+        if !dom.dim(i).boundsCheck(args(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
   def rankChange(param newRank: int, param newStridable: bool, args) {

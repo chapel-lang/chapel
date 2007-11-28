@@ -299,6 +299,28 @@ def range.member(i: eltType) {
 
 
 //
+// returns true if other is in bounds of this for all specified
+// bounds; this function is used to determine if an array slice is
+// valid
+//
+def range.boundsCheck(other: range(?e,?b,?s)) {
+  if other.boundedType == boundedNone then
+    return true;
+  var boundedOther: range(e,bounded,s);
+  if other._hasLow() then
+    boundedOther._low = other.low;
+  else
+    boundedOther._low = min(low, other.high);
+  if other._hasHigh() then
+    boundedOther._high = other.high;
+  else
+    boundedOther._high = max(high, other.low);
+  boundedOther._stride = other.stride;
+  return this(boundedOther) == boundedOther;
+}
+
+
+//
 // returns true if every i in other is in this range
 //
 def range.member(other: range(?e,?b,?s))

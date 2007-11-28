@@ -107,7 +107,8 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
       // Compute the k-th elimination step: 
       //   store multipliers...
-      A1[k+1.., k..k] /= pivot;
+      if k+1 <= A1.domain.high(1) then
+        A1[k+1.., k..k] /= pivot;
 
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
