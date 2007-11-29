@@ -575,7 +575,6 @@ def =( sv:_syncvar, value:sv.base_type) {
     __primitive( "sync_wait_empty_and_lock", sv);
     sv.value = value;
     __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
   }
   return sv;
 }
@@ -589,7 +588,6 @@ def writeFF( sv:_syncvar, value:sv.base_type) {
     __primitive( "sync_wait_full_and_lock", sv);
     sv.value = value;
     __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
   }
 }
 
@@ -602,7 +600,6 @@ def writeXF( sv:_syncvar, value:sv.base_type) {
     __primitive( "sync_lock", sv);
     sv.value = value;
     __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
   }
 }
 
@@ -615,7 +612,6 @@ def writeXE0( sv:_syncvar) {
     __primitive( "sync_lock", sv);
     sv.value = 0;
     __primitive( "sync_mark_and_signal_empty", sv);
-    __primitive( "sync_unlock", sv);
   }
 }
 
@@ -629,7 +625,6 @@ def readFE( sv:_syncvar) {
     __primitive( "sync_wait_full_and_lock", sv);
     ret = sv.value;
     __primitive( "sync_mark_and_signal_empty", sv);
-    __primitive( "sync_unlock", sv);
   }
   return ret;
 }
@@ -644,7 +639,6 @@ def readFF( sv:_syncvar) {
     __primitive( "sync_wait_full_and_lock", sv);
     ret = sv.value;
     __primitive( "sync_mark_and_signal_full", sv);
-    __primitive( "sync_unlock", sv);
   }
   return ret;
 }
@@ -734,7 +728,6 @@ def =( sv:_singlevar, value:sv.base_type) {
   sv.value = value;
   sv.is_full = true;
   __primitive( "sync_mark_and_signal_full", sv);
-  __primitive( "sync_unlock", sv);
   return sv;
 }
 
@@ -746,7 +739,6 @@ def readFF( sv:_singlevar) {
   __primitive( "sync_wait_full_and_lock", sv);
   ret = sv.value;
   __primitive( "sync_mark_and_signal_full", sv); // in case others are waiting
-  __primitive( "sync_unlock", sv);
   return ret;
 }
 

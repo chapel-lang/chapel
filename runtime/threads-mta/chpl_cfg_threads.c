@@ -7,15 +7,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if 1
+#if MTA_DEBUG
 #include <stdio.h>
 #endif
-
-
-typedef struct {
-  _chpl_threadfp_t  fun;                   // function to fork as a new thread
-  _chpl_threadarg_t arg;                   // argument for the created thread
-} _chpl_createarg_t;
 
 
 // The global vars are to synchronize with threads created with 
@@ -30,87 +24,58 @@ static pthread_key_t   _chpl_serial;         // per-thread serial state
 
 // Mutex
 
-_chpl_mutex_p _chpl_mutex_new(void) {
-#if 0
-  fprintf(stderr, "_chpl_mutex_new() not implemented!\n");
-  return 0;
-#else
-  _chpl_mutex_p m;
-  m = (_chpl_mutex_p) _chpl_alloc(sizeof(_chpl_mutex_t), "mutex", 0, 0);
-  _chpl_mutex_init(m);
-  return m;
-#endif
-}
-
 int _chpl_mutex_init(_chpl_mutex_p mutex) {
-#if 0
-  fprintf(stderr, "_chpl_mutex_init() not implemented!\n");
-  return 0;
-#else
   if (mutex) {
-    purge(mutex);                     // set to zero and mark as empty
+    purge(mutex);                     // set to zero and mark empty
     return 0;
   } else
     return 1;                         // mutex is null
-#endif
 }
 
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
-#if 0
-  fprintf(stderr, "_chpl_mutex_lock() not implemented!\n");
-  return 0;
-#else
   if (mutex) {
-#ifdef MTA_DEBUG
-    fprintf(stderr, "locking mutex %p\n", mutex);
-#endif
-    writeef(mutex, 1);                // set to one and mark as full
+    writeef(mutex, 1);                // set to one and mark full
     return 0;
   } else
     return 1;                         // mutex is null
-#endif
-}
-
-int _chpl_mutex_trylock(_chpl_mutex_p mutex) {
-#if 1
-  fprintf(stderr, "_chpl_mutex_trylock() not implemented!\n");
-  return 0;
-#else
-  return pthread_mutex_trylock(mutex);
-#endif
 }
 
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
-#if 0
-  fprintf(stderr, "_chpl_mutex_unlock() not implemented!\n");
-  return 0;
-#else
-#ifdef MTA_DEBUG
-  fprintf(stderr, "unlocking mutex %p\n", mutex);
-#endif
   return _chpl_mutex_init(mutex);
-#endif
 }
 
 int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
-#if 0
-  fprintf(stderr, "_chpl_mutex_destroy() not implemented!\n");
-  return 0;
-#else
-  if (mutex) {
-    _chpl_free(mutex, 0, 0);
-    return 0;
-  } else
-    return 1;                         // mutex is null
+  return _chpl_mutex_lock(mutex);     // lock it so no thread can use it
+}
+
+int _chpl_sync_lock(_chpl_sync_aux_t *s) {
+#ifdef MTA_DEBUG
+  fprintf(stderr, "In %s, s = %p\n", __func__, s);
 #endif
+  if (s) {
+    readfe(&(s->is_full));            // mark empty
+    return 0;
+  } else return 1;                    // s is null
+}
+
+int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
+#ifdef MTA_DEBUG
+  fprintf(stderr, "In %s, s = %p\n", __func__, s);
+#endif
+  if (s) {
+    _int64 is_full = readxx(&(s->is_full));
+    writeef(&(s->is_full), is_full);  // mark full
+    return 0;
+  } else return 1;                    // s is null
 }
 
 
+#if 0
 // Condition variables
 
 _chpl_condvar_p _chpl_condvar_new(void) {
-#if 0
-  fprintf(stderr, "_chpl_condvar_new() not implemented!\n");
+#if 1
+  fprintf(stderr, "%s() not implemented!\n", __func__);
   return 0;
 #else
   _chpl_condvar_p cv;
@@ -121,8 +86,8 @@ _chpl_condvar_p _chpl_condvar_new(void) {
 }
 
 int _chpl_condvar_init (_chpl_condvar_p cond) {
-#if 0
-  fprintf(stderr, "_chpl_condvar_init() not implemented!\n");
+#if 1
+  fprintf(stderr, "%s() not implemented!\n", __func__);
   return 0;
 #else
   if (cond) {
@@ -137,8 +102,8 @@ int _chpl_condvar_init (_chpl_condvar_p cond) {
 }
 
 int _chpl_condvar_destroy(_chpl_condvar_p cond) {
-#if 0
-  fprintf(stderr, "_chpl_condvar_destroy() not implemented!\n");
+#if 1
+  fprintf(stderr, "%s() not implemented!\n", __func__);
   return 0;
 #else
   if (cond) {
@@ -150,8 +115,8 @@ int _chpl_condvar_destroy(_chpl_condvar_p cond) {
 }
 
 int _chpl_condvar_signal(_chpl_condvar_p cond) {
-#if 0
-  fprintf(stderr, "_chpl_condvar_signal() not implemented!\n");
+#if 1
+  fprintf(stderr, "%s() not implemented!\n", __func__);
   return 0;
 #else
   if (cond) {
@@ -167,50 +132,88 @@ int _chpl_condvar_signal(_chpl_condvar_p cond) {
 
 int _chpl_condvar_broadcast(_chpl_condvar_p cond) {
 #if 1
-  fprintf(stderr, "_chpl_condvar_broadcast() not implemented!\n");
+  fprintf(stderr, "%s() not implemented!\n", __func__);
   return 0;
 #else
   return pthread_cond_broadcast(cond);
 #endif
 }
+#endif
 
-int _chpl_condvar_wait(_chpl_condvar_p cond, _chpl_mutex_p mutex) {
-#if 0
-  fprintf(stderr, "_chpl_condvar_wait() not implemented!\n");
-  return 0;
-#else
-  if (cond) {
-    int ready=0;
-#ifdef MTA_DEBUG
-  fprintf(stderr, "about to unlock mutex %p\n", mutex);
-#endif
-    _chpl_mutex_unlock(mutex);
-    do
-#ifdef MTA_DEBUG
-{  fprintf(stderr, "waiting for condvar %p using mutex %p\n", cond, mutex);
-#endif
-      // this will block until cond is marked full!
-      ready = readfe(cond);
-#ifdef MTA_DEBUG
-      fprintf(stderr, "ready = %d\n", ready);}
-#endif
-    while (!ready);
-#if 0 // unlocking needs to be done sooner!
-  fprintf(stderr, "about to unlock mutex %p\n", mutex);
-    _chpl_mutex_unlock(mutex);
-  fprintf(stderr, "About to return after waiting for condvar %p and unlocking mutex %p\n", cond, mutex);
-#endif
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+  if (_chpl_sync_lock(s)) {
+    _printError("invalid mutex", lineno, filename);  // s is null
+    return 1;
+  } else {
+    while (!readxx(&(s->is_full))) {
+      _chpl_sync_unlock(s);
+      readfe(&(s->signal_full));
+      _chpl_sync_lock(s);
+    }
     return 0;
-  } else
-    return 1;                         // cond is null
-#endif
+  }
 }
 
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+  if (_chpl_sync_lock(s)) {
+    _printError("invalid mutex", lineno, filename);   // s is null
+    return 1;
+  } else {
+    while (readxx(&(s->is_full))) {
+      _chpl_sync_unlock(s);
+      readfe(&(s->signal_empty));
+      _chpl_sync_lock(s);
+    }
+    return 0;
+  }
+}
+
+int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+  if (s) {
+    writexf(&(s->signal_full), true);                // signal full
+    writeef(&(s->is_full), true);                    // mark full and unlock
+    return 0;
+  } else {
+    _printError("invalid mutex", 0/*lineno*/, 0/*filename*/);  // s is null
+    return 1;
+  }
+}
+
+int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+  if (s) {
+    writexf(&(s->signal_empty), true);               // signal empty
+    writeef(&(s->is_full), false);                   // mark empty and unlock
+    return 0;
+  } else {
+    _printError("invalid mutex", 0/*lineno*/, 0/*filename*/);  // s is null
+    return 1;
+  }
+}
+
+int _chpl_sync_is_full(_chpl_sync_aux_t *s) {
+#if 1
+  _printError("_chpl_sync_is_full() not implemented!", 0, 0);
+#else
+  // If the sync var is a simple type, the implementation below won't work!
+  if (s)
+    return readxx(&(s->is_full));
+  else
+    _printError("invalid mutex", lineno, filename);  // s is null
+#endif
+  return -1;
+}
+
+
+void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
+  purge(&(s->is_full));
+  purge(&(s->signal_empty));
+  purge(&(s->signal_full));
+}
 
 
 void _chpl_serial_delete(_bool *p) {
 #if 1
-  fprintf(stderr, "_chpl_serial_delete() not implemented!\n");
+  _printError("_chpl_serial_delete() not implemented!", 0, 0);
 #else
   if (NULL != p) {
     _chpl_free(p, 0, 0);
@@ -224,7 +227,7 @@ void _chpl_serial_delete(_bool *p) {
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
 #ifdef MTA_DEBUG
-  fprintf(stderr, "Inside initChplThreads(), ");
+  fprintf(stderr, "Inside %s(), ", __func__);
 #endif
   _chpl_can_exit = 1;                      // mark full - no threads created yet
 
@@ -242,15 +245,15 @@ void initChplThreads() {
 void exitChplThreads() {
   int ready=0;
 #ifdef MTA_DEBUG
-  fprintf(stderr, "Inside exitChplThreads()\n");
+  fprintf(stderr, "Inside %s()\n", __func__);
 #endif
   do
     // this will block until _chpl_can_exit is marked full!
     ready = readff(&_chpl_can_exit);
   while (!ready);
 #ifdef MTA_DEBUG
-  fprintf(stderr, "About to return from exitChplThreads(); _chpl_can_exit=%d\n",
-          _chpl_can_exit);
+  fprintf(stderr, "About to return from %s(); _chpl_can_exit=%d\n",
+          __func__, _chpl_can_exit);
 #endif
 }
 
@@ -258,7 +261,7 @@ void exitChplThreads() {
 void _chpl_thread_init(void) {
 #if 1
 #ifdef MTA_DEBUG
-  fprintf(stderr, "_chpl_thread_init() not implemented!\n");
+  fprintf(stderr, "%s() not implemented!\n", __func__);
 #endif
 #else
   _bool *p;
@@ -275,7 +278,7 @@ void _chpl_thread_init(void) {
 _uint64 _chpl_thread_id(void) {
 #if 1
 #ifdef MTA_DEBUG
-  fprintf(stderr, "_chpl_thread_id() not implemented!\n");
+  fprintf(stderr, "%s() not implemented!\n", __func__);
 #endif
   return 0;
 #else
@@ -300,7 +303,7 @@ _bool _chpl_get_serial(void) {
 
 void _chpl_set_serial(_bool state) {
 #if 1
-  fprintf(stderr, "_chpl_set_serial() not implemented!\n");
+  _printError("_chpl_set_serial() not implemented!", 0, 0);
 #else
   _bool *p;
   p = (_bool*) pthread_getspecific(_chpl_serial);
@@ -318,11 +321,10 @@ int _chpl_cobegin (int                      nthreads,
   int               t, retv = 0;
   _int64            *finished;
 
-  if (_chpl_get_serial()) {
-#if 0   // _chpl_get_serial is not yet implemented correctly!
+  // _chpl_get_serial is not yet implemented correctly!
+  if (0 && _chpl_get_serial()) {
     for (t=0; t<nthreads; t++)
-      (*fps[t])(args[t]);
-#endif
+      (*fps[t])(args[t], t);
   } else if (finished = (_int64 *)_chpl_malloc(nthreads, sizeof(_int64),
                                                "finished", 0, 0)) {
     // create threads
@@ -344,7 +346,7 @@ int _chpl_cobegin (int                      nthreads,
     _chpl_free(finished, 0, 0);
   } else {
     retv = 1;
-    halt("Out of memory in _chpl_cobegin!\n");
+    halt("Out of memory in %s!\n", __func__);
   }
 
   return retv;
@@ -364,7 +366,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
     //future void thread$;
 
 #ifdef MTA_DEBUG
-    fprintf(stderr, "Inside _chpl_begin\n");
+    fprintf(stderr, "Inside %s\n", __func__);
 #endif
     purge(&_chpl_can_exit);                     // set to zero and mark as empty
     init_begin_cnt =
@@ -396,7 +398,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
   }
 
 #ifdef MTA_DEBUG
-  fprintf(stderr, "About to return from _chpl_begin\n");
+  fprintf(stderr, "About to return from %s\n", __func__);
 #endif
   return 0;
 }

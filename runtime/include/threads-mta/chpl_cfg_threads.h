@@ -1,15 +1,9 @@
 #ifndef _chpl_cfg_threads_h_
 #define _chpl_cfg_threads_h_
 
-#include <stddef.h>
-
 // bogus mutex type (no mutexes)
 typedef int _chpl_mutex_t;
 typedef _chpl_mutex_t *_chpl_mutex_p;
-
-// bogus condition variable type (no condition variables)
-typedef int _chpl_condvar_t;
-typedef _chpl_condvar_t *_chpl_condvar_p;
 
 // thread-related
 typedef void* (*_chpl_threadfp_t)(void*, int);  // function pointer
@@ -23,30 +17,16 @@ typedef _chpl_thread_t _chpl_cobegin_wkspace_t;  // temporary work space
 
 typedef struct {
   sync _int64 is_full;      // also serves as lock - need to acquire before accessing corresponding _syncvar
-  _chpl_condvar_p cv_empty; // wait for empty; signal this when empty
-  _chpl_condvar_p cv_full;  // wait for full; signal this when full
+  sync _int64 signal_empty; // wait for empty; signal this when empty
+  sync _int64 signal_full;  // wait for full; signal this when full
 } _chpl_sync_aux_t;
 
-#if 0
-#define _chpl_mutex_new() NULL
-#define _chpl_mutex_init(x) 0
-#define _chpl_mutex_lock(x) /*0*/
-#define _chpl_mutex_unlock(x) /*0*/
-#define _chpl_mutex_destroy(x) 0
-#define _chpl_condvar_new(x) NULL
-#define _chpl_condvar_init(x) 0
-#define _chpl_condvar_destroy(x) 0
-#define _chpl_condvar_signal(x) /*0*/
-#define _chpl_condvar_wait_full(x,y,z) /*0*/
-#define _chpl_condvar_wait_empty(x,y,z) /*0*/
-#endif
-
-#define _chpl_write_EF(x,y) writeef(&((x)->value), (y))
-#define _chpl_write_FF(x,y) writeff(&((x)->value), (y))
+#define _chpl_write_EF(x,y,lineno,filename) writeef(&((x)->value), (y))
+#define _chpl_write_FF(x,y,lineno,filename) writeff(&((x)->value), (y))
 #define _chpl_write_XF(x,y) writexf(&((x)->value), (y))
 #define _chpl_write_XE0(x) purge(&((x)->value))
-#define _chpl_read_FE(x) readfe(&((x)->value))
-#define _chpl_read_FF(x) readff(&((x)->value))
+#define _chpl_read_FE(x,lineno,filename) readfe(&((x)->value))
+#define _chpl_read_FF(x,lineno,filename) readff(&((x)->value))
 #define _chpl_read_XX(x) readxx(&((x)->value))
 
 #endif
