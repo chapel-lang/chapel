@@ -155,8 +155,64 @@ checkNormalized(void) {
 }
 
 
+static int
+isDefinedAllPaths(Expr* expr, Symbol* ret) {
+  if (!expr)
+    return 0;
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIMITIVE_MOVE))
+      if (SymExpr* lhs = toSymExpr(call->get(1)))
+        if (lhs->var == ret)
+          return 1 + isDefinedAllPaths(expr->next, ret);
+    //
+    // should mark functions that exit rather than relying on string
+    //
+    if (call->isNamed("halt"))
+      return 1 + isDefinedAllPaths(expr->next, ret);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    if (!block->loopInfo ||
+        block->loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE))
+      if (int result = isDefinedAllPaths(block->body.head, ret))
+        return result;
+  } else if (isGotoStmt(expr)) {
+    return 0;
+  } else if (CondStmt* cond = toCondStmt(expr)) {
+    if (isDefinedAllPaths(cond->thenStmt, ret) &&
+        isDefinedAllPaths(cond->elseStmt, ret))
+      return 1;
+  }
+  return isDefinedAllPaths(expr->next, ret);
+}
+
+
+static void
+checkReturnPaths(FnSymbol* fn) {
+  if (fn->fnTag == FN_ITERATOR ||
+      fn->fnTag == FN_CONSTRUCTOR ||
+      !strcmp(fn->name, "=") ||
+      !strcmp(fn->name, "_build_array_type") ||
+      fn->retType == dtVoid ||
+      fn->retTag == RET_TYPE ||
+      fn->isExtern ||
+      fn->hasPragma("auto ii"))
+    return;
+  Symbol* ret = fn->getReturnSymbol();
+  if (VarSymbol* var = toVarSymbol(ret))
+    if (var->immediate)
+      return;
+  int result = isDefinedAllPaths(fn->body, ret);
+  if (!(result > 1 ||
+        (!fn->hasPragma("specified return type") && result > 0)))
+    USR_WARN(fn->body, "control reaches end of function that returns a value");
+}
+
+
 void
 checkResolved(void) {
+  forv_Vec(FnSymbol, fn, gFns) {
+      checkReturnPaths(fn);
+  }
+
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = toEnumType(type->type)) {
       for_enums(def, et) {

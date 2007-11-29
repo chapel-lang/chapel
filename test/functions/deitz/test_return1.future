@@ -1,4 +1,0 @@
-error message: returns along all control paths
-
-This function should result in some sort of error
-about how not every control path returns a value.

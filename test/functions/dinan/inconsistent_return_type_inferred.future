@@ -1,4 +1,0 @@
-error message: Function with inconsistent inferred return type compiles, produces bad binary
-
-This function returns an array for one value of its parameter and nothing
-otherwise.  This should result in a type inference error but does not.

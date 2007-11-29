@@ -246,8 +246,10 @@ static void normalize_returns(FnSymbol* fn) {
     retval->isCompilerTemp = true;
     if (fn->retTag == RET_PARAM)
       retval->isParam = true;
-    if (fn->retExprType && fn->retTag != RET_VAR)
+    if (fn->retExprType && fn->retTag != RET_VAR) {
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("_init", fn->retExprType->copy())));
+      fn->addPragma("specified return type");
+    }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
   }

@@ -697,7 +697,7 @@ build_empty_wrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
   wrapper->isWrapper = true;
   wrapper->visible = false;
-  wrapper->addPragmas(&fn->pragmas);
+  //  wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->noParens = fn->noParens;
   if (fn->fnTag != FN_ITERATOR) { // getValue is var, not iterator

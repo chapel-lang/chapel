@@ -1,1 +1,2 @@
-Error: Unable to resolve return type
+inconsistent_return_type_inferred.chpl:1: In function 'f':
+inconsistent_return_type_inferred.chpl:1: warning: control reaches end of function that returns a value

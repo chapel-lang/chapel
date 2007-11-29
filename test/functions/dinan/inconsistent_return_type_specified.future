@@ -1,4 +1,0 @@
-error message: function with user specified inconsistent return type does not produce an error
-
-In C this would get the warning:
-  warning: control reaches end of non-void function
