@@ -1,0 +1,6 @@
+semantic: accessing derived class fields from base class methods
+
+Fields in a derived class should be inaccessible from a method defined in the
+base class, but instead are preferred over fields in the base class. If the
+fields have different types, this could even cause the method's return type to
+change.
