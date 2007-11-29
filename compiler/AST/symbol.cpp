@@ -1341,12 +1341,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       t->dispatchChildren.add(clone->type);
     }
     if (clone->type->dispatchChildren.n)
-      INT_FATAL(this, "Generic type has subtypes");
+      INT_FATAL(this, "generic type has subtypes");
 
     clone->type->instantiatedFrom = retType;
 
-    if (count_instantiate_with_recursion(clone->type) >= 6)
-      USR_FATAL(clone->type, "Recursive type instantiation limit reached");
+    // this shouldn't be hard-coded...  do we even want it?? -SJD
+    if (count_instantiate_with_recursion(clone->type) >= 50)
+      USR_FATAL(clone->type, "recursive type instantiation limit reached");
 
     clone->type->substitutions.map_union(*generic_substitutions);
 
