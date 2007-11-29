@@ -239,6 +239,8 @@ def dfs_count(n: TreeNode, wasParallel: bool = false):int {
       }
       return count+1;
     }
+  } else {
+    return 0;
   }
 }
 
