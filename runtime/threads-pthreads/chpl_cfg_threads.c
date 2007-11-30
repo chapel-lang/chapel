@@ -70,7 +70,7 @@ static _chpl_condvar_p _chpl_condvar_new(void) {
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    return_value = pthread_cond_wait(s->cv_full, s->lock);
+    return_value = pthread_cond_wait(s->signal_full, s->lock);
   }
   if (return_value)
     _printError("invalid mutex", lineno, filename);
@@ -80,7 +80,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string fi
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
-    return_value = pthread_cond_wait(s->cv_empty, s->lock);
+    return_value = pthread_cond_wait(s->signal_empty, s->lock);
   }
   if (return_value)
     _printError("invalid mutex", lineno, filename);
@@ -90,13 +90,13 @@ int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string f
 int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
   s->is_full = true;
   _chpl_sync_unlock(s);
-  return pthread_cond_signal(s->cv_full);
+  return pthread_cond_signal(s->signal_full);
 }
 
 int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   s->is_full = false;
   _chpl_sync_unlock(s);
-  return pthread_cond_signal(s->cv_empty);
+  return pthread_cond_signal(s->signal_empty);
 }
 
 int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
@@ -107,8 +107,8 @@ int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
   s->is_full = false;
   s->lock = _chpl_mutex_new();
-  s->cv_empty = _chpl_condvar_new();
-  s->cv_full = _chpl_condvar_new();
+  s->signal_empty = _chpl_condvar_new();
+  s->signal_full = _chpl_condvar_new();
 }
 
 

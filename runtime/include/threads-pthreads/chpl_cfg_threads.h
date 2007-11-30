@@ -13,9 +13,9 @@ typedef _chpl_condvar_t  *_chpl_condvar_p;
 
 typedef struct {
   volatile _bool is_full;
-  _chpl_mutex_p lock;       // need to acquire before accessing corresponding _syncvar
-  _chpl_condvar_p cv_empty; // wait for empty; signal this when empty
-  _chpl_condvar_p cv_full;  // wait for full; signal this when full
+  _chpl_mutex_p lock;           // need to acquire before accessing corresponding _syncvar
+  _chpl_condvar_p signal_empty; // wait for empty; signal this when empty
+  _chpl_condvar_p signal_full;  // wait for full; signal this when full
 } _chpl_sync_aux_t;
 
 #define _chpl_write_EF(x,y,lineno,filename) \
