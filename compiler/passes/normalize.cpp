@@ -579,7 +579,7 @@ static void hack_resolve_types(Expr* expr) {
 
 
 static void tag_global(FnSymbol* fn) {
-  if (fn->global)
+  if (fn->global || fn->isWrapper)
     return;
   for_formals(formal, fn) {
     if (ClassType* ct = toClassType(formal->type))

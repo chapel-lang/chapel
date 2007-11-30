@@ -1,23 +1,2 @@
-bug: generic argument loses type in recursive calls (?)
+FIX: external snprintf requires a non-const string???
 
-(Sorry for the length of this test.  I wasn't able to recreate this
-problem outside of Madness.  I tried to condense the code to include
-only what was necessary, but it's still long.  I also don't know what
-to name the bug.)
-
-Starting on line 484 of MRAfail is the diff method for the Function
-class.  The diff method contains diffHelper, which has a tuple argument,
-curNode and a generic argument, result.  Diffhelper is called recursively
-and when it is, the type of the result argument seems to be lost.  
-
-Changing lines 492-493 and lines 510-511 from:
-
-diffHelper(child(1), result);
-diffHelper(child(2), result);
-
-to:
-
-diffHelper((n+1, 2*l), result);
-diffHelper((n+1, 2*l+1), result);
-
-then makes the test work.  
