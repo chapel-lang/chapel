@@ -6,6 +6,7 @@
 #include "error.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <machine/runtime.h>
 
 #if MTA_DEBUG
 #include <stdio.h>
@@ -48,6 +49,7 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
   return _chpl_mutex_lock(mutex);     // lock it so no thread can use it
 }
 
+
 int _chpl_sync_lock(_chpl_sync_aux_t *s) {
 #ifdef MTA_DEBUG
   fprintf(stderr, "In %s, s = %p\n", __func__, s);
@@ -68,77 +70,6 @@ int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
     return 0;
   } else return 1;                    // s is null
 }
-
-
-#if 0
-// Condition variables
-
-_chpl_condvar_p _chpl_condvar_new(void) {
-#if 1
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-  return 0;
-#else
-  _chpl_condvar_p cv;
-  cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
-  _chpl_condvar_init(cv);
-  return cv;
-#endif
-}
-
-int _chpl_condvar_init (_chpl_condvar_p cond) {
-#if 1
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-  return 0;
-#else
-  if (cond) {
-#ifdef MTA_DEBUG
-    fprintf(stderr, "creating condvar %p\n", cond);
-#endif
-    purge(cond);                      // set to zero and mark as empty
-    return 0;
-  } else
-    return 1;                         // cond is null
-#endif
-}
-
-int _chpl_condvar_destroy(_chpl_condvar_p cond) {
-#if 1
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-  return 0;
-#else
-  if (cond) {
-    _chpl_free(cond, 0, 0);
-    return 0;
-  } else
-    return 1;                         // cond is null
-#endif
-}
-
-int _chpl_condvar_signal(_chpl_condvar_p cond) {
-#if 1
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-  return 0;
-#else
-  if (cond) {
-#ifdef MTA_DEBUG
-    fprintf(stderr, "signaling condvar %p\n", cond);
-#endif
-    writexf(cond, 1);                 // set to one and mark as full
-    return 0;
-  } else
-    return 1;                         // cond is null
-#endif
-}
-
-int _chpl_condvar_broadcast(_chpl_condvar_p cond) {
-#if 1
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-  return 0;
-#else
-  return pthread_cond_broadcast(cond);
-#endif
-}
-#endif
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   if (_chpl_sync_lock(s)) {
@@ -190,16 +121,13 @@ int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   }
 }
 
-int _chpl_sync_is_full(_chpl_sync_aux_t *s) {
-#if 1
-  _printError("_chpl_sync_is_full() not implemented!", 0, 0);
-#else
-  // If the sync var is a simple type, the implementation below won't work!
-  if (s)
+int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+  if (simple_sync_var)
+    return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
+  else if (s)
     return readxx(&(s->is_full));
   else
-    _printError("invalid mutex", lineno, filename);  // s is null
-#endif
+    _printInternalError("null pointer in _chpl_sync_is_full");  // s is null
   return -1;
 }
 
@@ -265,7 +193,7 @@ void _chpl_thread_init(void) {
 #endif
 #else
   _bool *p;
-  p = pthread_getspecific(_chpl_serial);
+  p = mta_register_task_data(_chpl_serial);
   if (NULL == p) {
     p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
     *p = false;
@@ -276,41 +204,32 @@ void _chpl_thread_init(void) {
 
 
 _uint64 _chpl_thread_id(void) {
-#if 1
-#ifdef MTA_DEBUG
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-#endif
-  return 0;
-#else
-  return (intptr_t) pthread_self();
-#endif
+  return mta_get_threadid();
 }
 
 
 _bool _chpl_get_serial(void) {
-#if 1
-  return true;
-#else
-  _bool *p;
-  p = (_bool*) pthread_getspecific(_chpl_serial);
-  if (NULL == p) {
-    _printInternalError("serial state not created");
+  _bool *p = NULL;
+  p = (_bool*) mta_register_task_data(p);
+  if (p == NULL)
+    return false;
+  else {
+    mta_register_task_data(p); // Put back the value retrieved above.
+    return *p;
   }
-  return *p;
-#endif
 }
 
 
 void _chpl_set_serial(_bool state) {
-#if 1
-  _printError("_chpl_set_serial() not implemented!", 0, 0);
-#else
-  _bool *p;
-  p = (_bool*) pthread_getspecific(_chpl_serial);
-  if (NULL != p) {
+  _bool *p = NULL;
+  p = (_bool*) mta_register_task_data(p);
+  if (p == NULL)
+    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
+  if (p) {
     *p = state;
-  }
-#endif
+    mta_register_task_data(p);
+  } else
+    _printInternalError("out of memory while creating serial state");
 }
 
 
@@ -321,8 +240,7 @@ int _chpl_cobegin (int                      nthreads,
   int               t, retv = 0;
   _int64            *finished;
 
-  // _chpl_get_serial is not yet implemented correctly!
-  if (0 && _chpl_get_serial()) {
+  if (_chpl_get_serial()) {
     for (t=0; t<nthreads; t++)
       (*fps[t])(args[t], t);
   } else if (finished = (_int64 *)_chpl_malloc(nthreads, sizeof(_int64),
@@ -358,10 +276,8 @@ int _chpl_cobegin (int                      nthreads,
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
   if (_chpl_get_serial()) {
-#if 0   // _chpl_get_serial is not yet implemented correctly!
-    (*fp)(arg);
+    (*fp)(arg, 0);
   } else {
-#endif
     int init_begin_cnt;
     //future void thread$;
 

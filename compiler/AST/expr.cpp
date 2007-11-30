@@ -1273,7 +1273,11 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ISFULL:
       fprintf( outfile, "_chpl_sync_is_full(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->sync_aux))");
+      fprintf( outfile, ")->value), &((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->sync_aux), ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_struct = false;

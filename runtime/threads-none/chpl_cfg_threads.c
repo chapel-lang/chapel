@@ -4,13 +4,13 @@
 #include "chplmem.h"
 #include "error.h"
 
-int _chpl_mutex_init(_chpl_mutex_p mutex) { return 0; }
-int _chpl_mutex_lock(_chpl_mutex_p mutex) { return 0; }
-int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return 0; }
-int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return 0; }
+int _chpl_mutex_init(_chpl_mutex_p mutex) { return mutex == NULL; }
+int _chpl_mutex_lock(_chpl_mutex_p mutex) { return mutex == NULL; }
+int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return mutex == NULL; }
+int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return mutex == NULL; }
 
-int _chpl_sync_lock(_chpl_sync_aux_t *s) { return 0; }
-int _chpl_sync_unlock(_chpl_sync_aux_t *s) { return 0; }
+int _chpl_sync_lock(_chpl_sync_aux_t *s) { return s == NULL; }
+int _chpl_sync_unlock(_chpl_sync_aux_t *s) { return s == NULL; }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   if (*s)
@@ -39,7 +39,7 @@ int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   return 0;
 }
 
-_bool _chpl_sync_is_full(_chpl_sync_aux_t *s) {
+_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
   return *s;
 }
 

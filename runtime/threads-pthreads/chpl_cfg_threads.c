@@ -99,7 +99,7 @@ int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   return pthread_cond_signal(s->cv_empty);
 }
 
-int _chpl_sync_is_full(_chpl_sync_aux_t *s) {
+int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
   return s->is_full;
 }
 

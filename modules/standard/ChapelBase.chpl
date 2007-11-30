@@ -531,6 +531,9 @@ class _syncvar {
 
   def initialize() {
     __primitive( "init_sync_aux", this);
+    if (isSimpleSyncBaseType(this.base_type)) {
+      writeXE0(this);
+    }
   }
 }
 
@@ -660,10 +663,7 @@ def readXX( sv:_syncvar) {
 
 pragma "sync" 
 def isFull( sv:_syncvar) {
-  var isfull: bool;
-  //isfull = sv.is_full;
-  isfull = __primitive( "is_full", sv);
-  return isfull;
+  return __primitive( "is_full", sv, isSimpleSyncBaseType(sv.base_type));
 }
 
 //
