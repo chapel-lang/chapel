@@ -1,1 +1,1 @@
-hello world
+test_module_use4.chpl:12: error: Cannot find module 'M1'
