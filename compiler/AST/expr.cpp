@@ -1645,7 +1645,7 @@ void NamedExpr::verify() {
 
 NamedExpr*
 NamedExpr::copyInner(ASTMap* map) {
-  return new NamedExpr(stringcpy(name), COPY_INT(actual));
+  return new NamedExpr(astr(name), COPY_INT(actual));
 }
 
 

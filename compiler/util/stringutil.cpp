@@ -5,59 +5,73 @@
 #include "misc.h"
 #include "stringutil.h"
 
+static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
 
-char *
-dupstr(const char *s, const char *e) {
-  int l = e ? e-s : strlen(s);
-  char *ss = (char*)malloc(l+1);
-  memcpy(ss, s, l);
-  ss[l] = 0;
+const char*
+canonicalize_string(const char *s) {
+  const char* ss = chapelStringsTable.get(s);
+  if (!ss) {
+    chapelStringsTable.put(s, s);
+    return s;
+  }
   return ss;
 }
 
-
-
-int stringlen(const char* s1) {
-  if (s1 == NULL) {
-    return 0;
-  } else {
-    return strlen(s1);
-  }
-}
-
-
-int stringlen(const char* s1, const char* s2, const char* s3, const char* s4,
-              const char* s5) {
-  return stringlen(s1) + stringlen(s2) + stringlen(s3) + stringlen(s4) + 
-    stringlen(s5);
-}
-
-
-char* stringcpy(const char* s1) {
-  char* s = (char*)malloc(stringlen(s1) + 1);
+const char*
+astr(const char* s1, const char* s2, const char* s3, const char* s4) {
+  static int uid = 1;
+  int len;
+  len = strlen(s1);
+  if (s2)
+    len += strlen(s2);
+  if (s3)
+    len += strlen(s3);
+  if (s4)
+    len += strlen(s4);
+  char* s = (char*)malloc(len+1);
   strcpy(s, s1);
-  return s;
+  if (s2)
+    strcat(s, s2);
+  if (s3)
+    strcat(s, s3);
+  if (s4)
+    strcat(s, s4);
+  const char* t = canonicalize_string(s);
+  if (s != t)
+    free(s);
+  return t;
+}
+
+const char*
+istr(int i) {
+  char s[64];
+  if (sprintf(s, "%d", i) > 63)
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+//
+// returns a canonicalized substring that contains the first part of
+// 's' up to 'e'
+// note: e must be in s
+//
+const char* asubstr(const char* s, const char* e) {
+  char* ss = (char*)malloc(e-s+1);
+  strncpy(ss, s, e-s);
+  ss[e-s] = '\0';
+  const char* t = canonicalize_string(ss);
+  if (ss != t)
+    free(ss);
+  return t;
 }
 
 
-char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4,
-                const char* s5) {
-  char* s = (char*)malloc(stringlen(s1, s2, s3, s4, s5) + 1);
-  sprintf(s, "%s%s%s%s%s", s1, s2, s3, s4, s5);
-  return s;
-}
-
-
-char* stringinsert(const char* sorig, const char* pos, const char* insertme) {
-  return stringcat(dupstr(sorig, pos), insertme, dupstr(pos+1));
-}
-
-
-char* intstring(int i) {
-  char buf[64];
-  if (sprintf(buf, "%d", i) > 63)
-    INT_FATAL("intstring() buffer overflow");
-  return stringcpy(buf);
+void deleteStrings() {
+  Vec<const char*> keys;
+  chapelStringsTable.get_keys(keys);
+  forv_Vec(const char, key, keys) {
+    free((void*)key);
+  }
 }
 
 

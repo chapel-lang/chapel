@@ -162,7 +162,7 @@ void beautify(fileinfo* origfile) {
   char *cp;
   FILE *inputfile;
   FILE *outputfile;
-  char* command;
+  const char* command;
   int i;
   int new_line, indent;
   int zline;
@@ -173,7 +173,7 @@ void beautify(fileinfo* origfile) {
   char* znptr;
   fileinfo* tmpfile;
 
-  mysystem(stringcat("# beautifying ", origfile->filename),
+  mysystem(astr("# beautifying ", origfile->filename),
            "generating comment for --print-commands option");
 
   zline = -1;
@@ -261,7 +261,7 @@ void beautify(fileinfo* origfile) {
   closefile(tmpfile);
   closefile(origfile);
 
-  command = stringcat("mv ", tmpfile->pathname, " ", origfile->pathname);
+  command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
   mysystem(command, "moving beautified file");
   
   if (justification.n != 0) {

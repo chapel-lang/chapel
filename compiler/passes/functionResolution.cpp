@@ -548,8 +548,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             ArgSymbol* new_arg = toArgSymbol(new_arg_def->sym);
             new_arg->variableExpr = NULL;
             tupleCall->insertAtTail(new SymExpr(new_arg));
-            new_arg->name = astr("_e", intstring(i), "_", arg->name);
-            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
+            new_arg->name = astr("_e", istr(i), "_", arg->name);
+            new_arg->cname = astr("_e", istr(i), "_", arg->cname);
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
@@ -967,17 +967,17 @@ static const char* toString(CallInfo* info) {
   }
   if (method) {
     if (info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable)
-      str = stringcat(str, "type ", toString(info->actualTypes.v[1]), ".");
+      str = astr(str, "type ", toString(info->actualTypes.v[1]), ".");
     else
-      str = stringcat(str, toString(info->actualTypes.v[1]), ".");
+      str = astr(str, toString(info->actualTypes.v[1]), ".");
   }
   if (!strncmp("_construct_", info->name, 11)) {
-    str = stringcat(str, info->name+11);
+    str = astr(str, info->name+11);
   } else if (!_this) {
-    str = stringcat(str, info->name);
+    str = astr(str, info->name);
   }
   if (!info->call->methodTag)
-    str = stringcat(str, "(");
+    str = astr(str, "(");
   bool first = false;
   int start = 0;
   if (method)
@@ -988,21 +988,21 @@ static const char* toString(CallInfo* info) {
     if (!first)
       first = true;
     else
-      str = stringcat(str, ", ");
+      str = astr(str, ", ");
     if (info->actualNames.v[i])
-      str = stringcat(str, info->actualNames.v[i], "=");
+      str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
     char buff[512];
     if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
-      str = stringcat(str, "type ", toString(info->actualTypes.v[i]));
+      str = astr(str, "type ", toString(info->actualTypes.v[i]));
     else if (var && var->immediate) {
       sprint_imm(buff, *var->immediate);
-      str = stringcat(str, buff);
+      str = astr(str, buff);
     } else
-      str = stringcat(str, toString(info->actualTypes.v[i]));
+      str = astr(str, toString(info->actualTypes.v[i]));
   }
   if (!info->call->methodTag)
-    str = stringcat(str, ")");
+    str = astr(str, ")");
   return str;
 }
 
@@ -1010,49 +1010,49 @@ static const char* toString(CallInfo* info) {
 static const char* toString(FnSymbol* fn) {
   if (fn->userString)
     return fn->userString;
-  char* str;
+  const char* str;
   int start = 0;
   if (fn->instantiatedFrom)
     fn = fn->instantiatedFrom;
   if (!strncmp("_construct_", fn->name, 11)) {
-    str = stringcat(fn->name+11);
+    str = astr(fn->name+11);
   } else if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
-      str = stringcat(toString(fn->getFormal(2)->type));
+      str = astr(toString(fn->getFormal(2)->type));
       start = 1;
     } else {
-      str = stringcat(toString(fn->getFormal(2)->type), ".", fn->name);
+      str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
   } else
-    str = stringcat(fn->name);
+    str = astr(fn->name);
   if (!fn->noParens)
-    str = stringcat(str, "(");
+    str = astr(str, "(");
   bool first = false;
   for (int i = start; i < fn->numFormals(); i++) {
     ArgSymbol* arg = fn->getFormal(i+1);
     if (!first)
       first = true;
     else
-      str = stringcat(str, ", ");
+      str = astr(str, ", ");
     if (arg->intent == INTENT_PARAM)
-      str = stringcat(str, "param ");
+      str = astr(str, "param ");
     if (arg->isTypeVariable)
-      str = stringcat(str, "type ", arg->name);
+      str = astr(str, "type ", arg->name);
     else if (arg->type == dtUnknown) {
       if (SymExpr* sym = toSymExpr(arg->defPoint->exprType))
-        str = stringcat(str, arg->name, ": ", sym->var->name);
+        str = astr(str, arg->name, ": ", sym->var->name);
       else
-        str = stringcat(str, arg->name);
+        str = astr(str, arg->name);
     } else if (arg->type == dtAny) {
-      str = stringcat(str, arg->name);
+      str = astr(str, arg->name);
     } else
-      str = stringcat(str, arg->name, ": ", toString(arg->type));
+      str = astr(str, arg->name, ": ", toString(arg->type));
     if (arg->variableExpr)
-      str = stringcat(str, " ...");
+      str = astr(str, " ...");
   }
   if (!fn->noParens)
-    str = stringcat(str, ")");
+    str = astr(str, ")");
   return str;
 }
 
@@ -1592,7 +1592,7 @@ insertFormalTemps(FnSymbol* fn) {
   ASTMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
-      VarSymbol* tmp = new VarSymbol(stringcat("_formal_tmp_", formal->name));
+      VarSymbol* tmp = new VarSymbol(astr("_formal_tmp_", formal->name));
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
           !formal->type->symbol->hasPragma("domain") &&
@@ -2476,18 +2476,18 @@ resolveBody(Expr* body) {
             if (VarSymbol* var = toVarSymbol(sym->var)) {
               if (var->immediate &&
                   var->immediate->const_kind == CONST_KIND_STRING) {
-                str = stringcat(str, var->immediate->v_string);
+                str = astr(str, var->immediate->v_string);
                 continue;
               }
             }
             if (sym->var->isTypeVariable) {
-              str = stringcat(str, sym->var->type->symbol->name);
+              str = astr(str, sym->var->type->symbol->name);
               continue;
             }
           }
           if (CallExpr* call = toCallExpr(actual)) {
             if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
-              str = stringcat(str, call->get(1)->typeInfo()->symbol->name);
+              str = astr(str, call->get(1)->typeInfo()->symbol->name);
             }
           }
         }

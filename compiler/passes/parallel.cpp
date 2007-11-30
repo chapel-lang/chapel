@@ -177,7 +177,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         // create a new class to capture refs to locals
         const char* fname = (toSymExpr(fcall->baseExpr))->var->name;
         ClassType* ctype = new ClassType( CLASS_CLASS);
-        TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
+        TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
                                                       fname),
                                             ctype);
 
@@ -187,20 +187,20 @@ thread_args(Vec<BlockStmt*>& blocks) {
           SymExpr *s = toSymExpr(arg);
           Symbol  *var = s->var; // arg or var
           var->isConcurrent = true;
-          VarSymbol* field = new VarSymbol(astr("_", intstring(i), "_", var->name), var->type);
+          VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
           ctype->fields.insertAtTail(new DefExpr(field));
           i++;
         }
         mod->block->insertAtHead(new DefExpr(new_c));
         
         // create the class variable instance and allocate it
-        VarSymbol *tempc = new VarSymbol( stringcat( "_args_for", 
+        VarSymbol *tempc = new VarSymbol( astr( "_args_for", 
                                                      fname),
                                           ctype);
         b->insertBefore( new DefExpr( tempc));
         CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
                                               ctype->symbol,
-                                              new_StringSymbol( stringcat( "instance of class ", ctype->symbol->name)));
+                                              new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
         b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
                                        tempc,
                                        tempc_alloc));
@@ -219,7 +219,7 @@ thread_args(Vec<BlockStmt*>& blocks) {
         }
         
         // create wrapper-function that uses the class instance
-        FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
+        FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fname));
         DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
         ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
         wrap_fn->insertFormalAtTail( wrap_c);
@@ -303,7 +303,7 @@ insertWideReferences(void) {
             on->insertBefore(new DefExpr(tmp));
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(1), locale));
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(2), actual->remove()));
-            VarSymbol* field = new VarSymbol(astr("_f", intstring(i)), wide);
+            VarSymbol* field = new VarSymbol(astr("_f", istr(i)), wide);
             ct->fields.insertAtTail(new DefExpr(field));
             i++;
             on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ci, field, tmp));

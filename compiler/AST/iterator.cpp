@@ -56,7 +56,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo = ii;
 
   ii->classType = new ClassType(CLASS_CLASS);
-  char* className = astr("_ic_", fn->name);
+  const char* className = astr("_ic_", fn->name);
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
   TypeSymbol* cts = new TypeSymbol(className, ii->classType);

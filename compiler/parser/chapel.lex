@@ -33,7 +33,7 @@
 
 #define processStringLiteral(q)            \
   yylval.pch = eatStringLiteral(q);        \
-  countToken(stringcat(q, yylval.pch, q)); \
+  countToken(astr(q, yylval.pch, q)); \
   if (captureTokens) {                     \
     strcat(captureString, yytext);         \
     strcat(captureString, yylval.pch);     \

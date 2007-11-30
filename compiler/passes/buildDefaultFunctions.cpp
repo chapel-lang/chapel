@@ -181,7 +181,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   normalize(fn);
   ct->methods.add(fn);
   fn->isMethod = true;
-  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
+  fn->cname = astr("_", ct->symbol->cname, "_", fn->cname);
   fn->noParens = true;
   fn->_this = _this;
 }
@@ -194,7 +194,7 @@ static FnSymbol* chpl_main_exists(void) {
     ModuleSymbol* module = toModuleSymbol(progScope->table.get(mainModuleName));
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
-    Vec<FnSymbol*>* mainfns = module->block->blkScope->visibleFunctions.get(canonicalize_string("main"));
+    Vec<FnSymbol*>* mainfns = module->block->blkScope->visibleFunctions.get(astr("main"));
     if (!mainfns)
       return NULL;
     forv_Vec(FnSymbol, fn, *mainfns) {
@@ -602,7 +602,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("read");
-  fn->cname = stringcat("_auto_", ct->symbol->name, "_read");
+  fn->cname = astr("_auto_", ct->symbol->name, "_read");
   TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
@@ -666,7 +666,7 @@ static void buildDefaultReadFunction(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("read");
-  fn->cname = stringcat("_auto_", et->symbol->name, "_read");
+  fn->cname = astr("_auto_", et->symbol->name, "_read");
   TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
@@ -705,7 +705,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("writeThis");
-  fn->cname = stringcat("_auto_", ct->symbol->name, "_write");
+  fn->cname = astr("_auto_", ct->symbol->name, "_write");
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
   ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));

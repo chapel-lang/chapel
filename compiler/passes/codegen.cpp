@@ -52,9 +52,9 @@ setOrder(Map<ClassType*,int>& order, int& maxOrder,
 }
 
 
-#define STRSUB(x)                               \
-  sym->cname = stringinsert(sym->cname, ch, x); \
-  ch = sym->cname
+#define STRSUB(x)                                                       \
+  sym->cname = astr(strndup(sym->cname, ch-sym->cname), x, ch+1);       \
+  ch = sym->cname;
 
 static void legalizeCName(Symbol* sym) {
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
@@ -159,7 +159,7 @@ static void codegen_header(void) {
         if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
           varSymbols.add(var);
           if (!var->isExtern && cnames.get(var->cname))
-            var->cname = stringcat("_", var->cname, "_", intstring(var->id));
+            var->cname = astr("_", var->cname, "_", istr(var->id));
           cnames.put(var->cname, 1);
           globalNames.put(var->cname, 1);
         }
@@ -177,7 +177,7 @@ static void codegen_header(void) {
       Symbol* sym = def->sym;
 
       if (sym->name == sym->cname)
-        sym->cname = stringcpy(sym->name);
+        sym->cname = astr(sym->name);
 
       if (sym == chpl_main)
         sym->cname = astr("_chpl_main");
@@ -196,13 +196,13 @@ static void codegen_header(void) {
           !sym->isExtern &&
           !(toVarSymbol(sym) && sym->defPoint && toModuleSymbol(sym->defPoint->parentSymbol)) &&
           cnames.get(sym->cname))
-        sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
+        sym->cname = astr("_", sym->cname, "_", istr(sym->id));
 
       //
       // mangle formal argument names if they clash with global variables
       //
       if (toArgSymbol(sym) && globalNames.get(sym->cname))
-        sym->cname = stringcat("_", sym->cname, "_", intstring(sym->id));
+        sym->cname = astr("_", sym->cname, "_", istr(sym->id));
 
       cnames.put(sym->cname, 1);
     
@@ -214,7 +214,7 @@ static void codegen_header(void) {
           ChainHashMap<const char*, StringHashFns, int> field_names;
           for_fields(field, ct) {
             if (field_names.get(field->cname))
-              field->cname = stringcat("_", field->cname, "_", intstring(field->id));
+              field->cname = astr("_", field->cname, "_", istr(field->id));
             field_names.put(field->cname, 1);
           }
         }
@@ -225,7 +225,7 @@ static void codegen_header(void) {
         ChainHashMap<const char*, StringHashFns, int> formal_names;
         for_formals(formal, fnSymbol) {
           if (formal_names.get(formal->cname))
-            formal->cname = stringcat("_", formal->cname, "_", intstring(formal->id));
+            formal->cname = astr("_", formal->cname, "_", istr(formal->id));
           formal_names.put(formal->cname, 1);
         }
 
@@ -481,7 +481,7 @@ void codegen(void) {
 
   ChainHashMap<char*, StringHashFns, int> filenames;
   forv_Vec(ModuleSymbol, currentModule, allModules) {
-    mysystem(stringcat("# codegen-ing module", currentModule->name),
+    mysystem(astr("# codegen-ing module", currentModule->name),
              "generating comment for --print-commands option");
 
     // Macs are case-insensitive when it comes to files, so

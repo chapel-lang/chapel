@@ -9,52 +9,6 @@
 #include "type.h"
 #include "yy.h"
 
-ChainHashMap<char*, StringHashFns, char*> chapelStringsTable;
-
-char*
-canonicalize_string(const char *s) {
-  char buffer[1024];
-  strcpy(buffer, s);
-  char* ss = chapelStringsTable.get(buffer);
-  if (!ss) {
-    ss = strdup(s);
-    chapelStringsTable.put(ss, ss);
-  }
-  return ss;
-}
-
-char*
-astr(const char* s1, const char* s2, const char* s3, const char* s4) {
-  char s[1024];
-  int len;
-  len = strlen(s1);
-  if (s2)
-    len += strlen(s2);
-  if (s3)
-    len += strlen(s3);
-  if (s4)
-    len += strlen(s4);
-  if (len > 1024) {
-    sprintf(s, "_auto_truncate_");
-    return canonicalize_string(s);
-  }
-  strcpy(s, s1);
-  if (s2)
-    strcat(s, s2);
-  if (s3)
-    strcat(s, s3);
-  if (s4)
-    strcat(s, s4);
-  return canonicalize_string(s);
-}
-
-char*
-istr(int i) {
-  char s[64];
-  sprintf(s, "%d", i);
-  return canonicalize_string(s);
-}
-
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;
@@ -256,11 +210,6 @@ void cleanAst() {
 
 
 void destroyAst() {
-  Vec<char*> keys;
-  chapelStringsTable.get_keys(keys);
-  forv_Vec(char, key, keys) {
-    free(key);
-  }
   forv_Vec(BaseAST, ast, gAsts) {
     delete ast;
   }
@@ -324,12 +273,12 @@ void BaseAST::codegen(FILE* outfile) {
 }
 
 
-char* BaseAST::stringLoc(void) {
+const char* BaseAST::stringLoc(void) {
   const int tmpBuffSize = 64;
   char tmpBuff[tmpBuffSize];
 
   snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
-  return stringcpy(tmpBuff);
+  return astr(tmpBuff);
 }
 
 

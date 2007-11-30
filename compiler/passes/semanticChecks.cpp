@@ -25,7 +25,7 @@ check_redefinition(Symbol* sym) {
       for (Symbol* tmp = sym->overloadNext; tmp; tmp = tmp->overloadNext) {
         if (!tmp->getFnSymbol()) {
           redefinitionLocations =
-            stringcat(redefinitionLocations, "\n  ", tmp->stringLoc());
+            astr(redefinitionLocations, "\n  ", tmp->stringLoc());
         }
       }
       USR_FATAL(sym, "'%s' has multiple definitions, redefined at:%s",

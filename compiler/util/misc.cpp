@@ -27,6 +27,7 @@ clean_exit(int status) {
     gdbShouldBreakHere();
   }
   cleanup_for_exit();
+  deleteStrings();
   exit(status);
 }
 
@@ -46,7 +47,7 @@ static FnSymbol* err_fn = NULL;
 
 static const char* cleanFilename(BaseAST* ast) {
   if (strstr(ast->filename, "/modules/standard"))
-    return stringcat("$CHPL_HOME", strstr(ast->filename, "/modules/standard"));
+    return astr("$CHPL_HOME", strstr(ast->filename, "/modules/standard"));
   return ast->filename;
 }
 

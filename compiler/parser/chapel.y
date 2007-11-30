@@ -281,7 +281,7 @@ pragma_ls:
 
 pragma:
   TPRAGMA STRINGLITERAL
-    { $$ = canonicalize_string($2); }
+    { $$ = astr($2); }
 ;
 
 
@@ -372,7 +372,7 @@ label_stmt:
   TLABEL identifier stmt
     {
       $$ = build_chpl_stmt($3);
-      $$->insertAtTail(buildLabelStmt(stringcat("_post", $2)));
+      $$->insertAtTail(buildLabelStmt(astr("_post", $2)));
       $$->insertAtHead(buildLabelStmt($2));
     }
 ;
@@ -1130,7 +1130,7 @@ tuple_type:
 anon_record_type:
   TRECORD TLCBR class_body_stmt_ls TRCBR
     {
-      $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
+      $$ = build_class(astr("_anon_record", istr(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
 ;
 
@@ -1360,7 +1360,7 @@ literal:
 
 identifier:
   TIDENT
-    { $$ = canonicalize_string(yytext); }
+    { $$ = astr(yytext); }
 ;
 
 
@@ -1461,7 +1461,7 @@ expr:
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
@@ -1471,7 +1471,7 @@ expr:
       if ($2->length() != 1)
         USR_FATAL($4, "invalid loop expression");
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1494,7 +1494,7 @@ expr:
 | TFOR expr TIN expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
@@ -1502,7 +1502,7 @@ expr:
 | TFOR expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
@@ -1521,7 +1521,7 @@ expr:
 | TFORALL expr TIN expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
       forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
@@ -1529,7 +1529,7 @@ expr:
 | TFORALL expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
-        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }

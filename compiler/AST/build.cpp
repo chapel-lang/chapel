@@ -97,12 +97,12 @@ void createInitFn(ModuleSymbol* mod) {
   currentLineno = mod->lineno;
   currentFilename = mod->filename;
 
-  mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
+  mod->initFn = new FnSymbol(astr("__init_", mod->name));
   mod->initFn->retType = dtVoid;
 
   if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
-    VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime", intstring(moduleNumber++)));
+    VarSymbol* guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
     theProgram->initFn->insertAtHead(new DefExpr(guard, new SymExpr(gTrue)));
     mod->initFn->insertAtTail(
       new CondStmt(
@@ -162,7 +162,7 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   if (!e2)
     USR_FATAL("if-then expressions currently require an else-clause");
 
-  FnSymbol* ifFn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
+  FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
   ifFn->addPragma("inline");
   VarSymbol* tmp1 = new VarSymbol("_if_tmp1");
   VarSymbol* tmp2 = new VarSymbol("_if_tmp2");
@@ -194,7 +194,7 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
 
 FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
   fn->addPragma("inline");
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, expr));
@@ -204,8 +204,8 @@ FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr) {
 
 static void build_loop_labels(BlockStmt* body) {
   static int uid = 1;
-  body->pre_loop = new LabelSymbol(stringcat("_pre_loop", intstring(uid)));
-  body->post_loop = new LabelSymbol(stringcat("_post_loop", intstring(uid)));
+  body->pre_loop = new LabelSymbol(astr("_pre_loop", istr(uid)));
+  body->post_loop = new LabelSymbol(astr("_post_loop", istr(uid)));
   uid++;
 }
 
@@ -577,13 +577,13 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
       if (has_otherwise)
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
-      fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
+      fn = new FnSymbol(astr("_typeselect", istr(uid)));
       int lid = 1;
       for_alist(expr, *exprs) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
-                          stringcat("_t", intstring(lid++)),
+                          astr("_t", istr(lid++)),
                           dtAny)));
       }
       fn->retTag = RET_PARAM;
@@ -595,13 +595,13 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
     } else {
       if (conds->numActuals() != exprs->length())
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
-      fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
+      fn = new FnSymbol(astr("_typeselect", istr(uid)));
       int lid = 1;
       for_actuals(expr, conds) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
-                          stringcat("_t", intstring(lid++)),
+                          astr("_t", istr(lid++)),
                           dtUnknown), NULL, expr->copy()));
       }
       fn->retTag = RET_PARAM;
@@ -634,7 +634,7 @@ FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
     }
   }
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_reduce_scan", intstring(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
   fn->addPragma("inline");
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
@@ -739,8 +739,8 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     /* This is the top-level call to build_tuple_arg */
     Expr* tupleType = new SymExpr(new UnresolvedSymbol("_tuple"));
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
-                                         stringcat("_tuple_arg_tmp",
-                                                   intstring(uid++)),
+                                         astr("_tuple_arg_tmp",
+                                                   istr(uid++)),
                                          dtUnknown , NULL, NULL);
     argSymbol->isCompilerTemp = true;
     argSymbol->canParam = true;
@@ -803,7 +803,7 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
-  FnSymbol* fn = new FnSymbol(astr("_on_fn_", intstring(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
   Symbol* tmp = new VarSymbol("_tmp");

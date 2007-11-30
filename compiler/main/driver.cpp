@@ -171,12 +171,12 @@ static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
 
 static void 
 handleLibrary(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(stringcat("-l", libraryFilename));
+  addLibInfo(astr("-l", libraryFilename));
 }
 
 static void 
 handleLibPath(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(stringcat("-L", libraryFilename));
+  addLibInfo(astr("-L", libraryFilename));
 }
 
 static void
@@ -189,7 +189,7 @@ compile_all(void) {
 
 static void
 compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
-  char* argv0 = stringcpy(orig_argv0);
+  char* argv0 = strdup(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;
@@ -200,13 +200,13 @@ compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) 
     *name = lastslash+1;
     *loc = argv0;
   }
-  snprintf(chplhome, FILENAME_MAX, "%s", stringcat(*loc, "/../.."));
+  snprintf(chplhome, FILENAME_MAX, "%s", astr(*loc, "/../.."));
 }
 
 
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createGDBFile(argc, argv);
-  char* command = stringcat("gdb -q ", argv[0]," -x ", gdbCommandFilename);
+  const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
   int status = mysystem(command, "running gdb", 0);
 
   clean_exit(status);
@@ -218,7 +218,7 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
   // 2. name       -- set the boolean config param "name" to NOT("name")
   //                  if name is not type bool, set it to 0.
 
-  char *name = stringcpy(arg_unused);
+  const char *name = astr(arg_unused);
   char *value;
   value = strstr(name, "=");
   if (value) {
@@ -226,14 +226,14 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
     value++;
     if (value[0]) {
       // arg_unused was name=value
-      configParamMap.put(canonicalize_string(name), value);
+      configParamMap.put(astr(name), value);
     } else {
       // arg_unused was name=  <blank>
       USR_FATAL("Missing config param value");
     }
   } else {
     // arg_unused was just name
-    configParamMap.put(canonicalize_string(name), "");
+    configParamMap.put(astr(name), "");
   }
 }
 

@@ -31,10 +31,10 @@ void closefile(fileinfo* thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
-bool isChplSource(char* filename);
+bool isChplSource(const char* filename);
 void testInputFiles(int numFilenames, char* filename[]);
-char* nthFilename(int i);
-void addLibInfo(char* filename);
+const char* nthFilename(int i);
+void addLibInfo(const char* filename);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 

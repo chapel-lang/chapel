@@ -78,7 +78,7 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
   } else if (toUnresolvedSymbol(gotoStmt->label)) {
     const char* name = gotoStmt->label->name;
     if (gotoStmt->gotoTag == GOTO_BREAK)
-      name = stringcat("_post", name);
+      name = astr("_post", name);
     Vec<BaseAST*> asts;
     collect_asts(&asts, gotoStmt->parentSymbol);
     forv_Vec(BaseAST, ast, asts) {

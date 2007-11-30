@@ -109,7 +109,7 @@ static void initTokenCount(void) {
 }
 
 
-void startCountingFileTokens(char* filename) {
+void startCountingFileTokens(const char* filename) {
   static bool firstCall = true;
 
   if (firstCall) {
@@ -154,7 +154,7 @@ void finishCountingTokens(void) {
 }
 
 
-void countToken(char* text) {
+void countToken(const char* text) {
   if (countTokens) {
     if (printTokens) {
       sprintf(line, "%s %s", line, text);

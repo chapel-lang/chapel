@@ -10,11 +10,11 @@
 #include "runtime.h"
 
 static ModuleSymbol* parseStandardModule(const char* name) {
-  static char* modulePath = NULL;
+  static const char* modulePath = NULL;
   if (modulePath == NULL) {
-    modulePath = stringcat(chplhome, "/modules/standard/");
+    modulePath = astr(chplhome, "/modules/standard/");
   }
-  return ParseFile(stringcat(modulePath, name), MOD_STANDARD);
+  return ParseFile(astr(modulePath, name), MOD_STANDARD);
 }
 
 static void parseStandardModules(void) {
@@ -57,7 +57,7 @@ void parse(void) {
   parseStandardModules();
 
   int filenum = 0;
-  char* inputFilename = NULL;
+  const char* inputFilename = NULL;
 
   while ((inputFilename = nthFilename(filenum++))) {
     if (isChplSource(inputFilename)) {

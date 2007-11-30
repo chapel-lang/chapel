@@ -15,18 +15,14 @@ const char* yyfilename;
 int chplLineno;
 int yystartlineno;
 
-static char* filenameToModulename(char* filename) {
-  char* modulename = stringcpy(filename);
+static const char* filenameToModulename(const char* filename) {
+  const char* modulename = astr(filename);
   char* lastslash = strrchr(modulename, '/');
   if (lastslash) {
     modulename = lastslash+1;
   }
-  char* dot = strchr(modulename, '.');
-  if (dot) {
-    *dot = '\0';
-  }
-
-  return modulename;
+  const char* dot = strchr(modulename, '.');
+  return asubstr(modulename, dot);
 }
 
 static bool
@@ -45,7 +41,7 @@ containsOnlyModules(BlockStmt* block) {
 }
 
 
-ModuleSymbol* ParseFile(char* filename, ModTag moduletype) {
+ModuleSymbol* ParseFile(const char* filename, ModTag moduletype) {
   ModuleSymbol* newModule = NULL;
   yyfilename = filename;
   yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 0;
@@ -66,7 +62,7 @@ ModuleSymbol* ParseFile(char* filename, ModTag moduletype) {
   closeInputFile(yyin);
 
   if (!yyblock->body.head || !containsOnlyModules(yyblock)) {
-    char* modulename = filenameToModulename(filename);
+    const char* modulename = filenameToModulename(filename);
     newModule = build_module(modulename, moduletype, yyblock);
   }
   if (newModule) {

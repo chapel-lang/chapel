@@ -130,9 +130,9 @@ list_ast(BaseAST* ast, int indent = 0) {
 }
 
 
-static char*
+static const char*
 html_file_name( int pass, const char *module) {
-  return stringcat( "pass", intstring(pass), "_module_", module, ".html");
+  return astr( "pass", istr(pass), "_module_", astr(module, ".html"));
 }
 
 static void
@@ -565,7 +565,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
 void html_view(const char* passName) {
   static int uid = 1;
   FILE* html_file;
-  char* filename;
+  const char* filename;
   Vec<ModuleSymbol*> mods;
 
   fprintf(html_index_file, "<TR><TD>");
@@ -579,7 +579,7 @@ void html_view(const char* passName) {
   forv_Vec(ModuleSymbol, mod, mods) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
-    html_file = fopen(stringcat(log_dir, filename), "w");
+    html_file = fopen(astr(log_dir, filename), "w");
     fprintf(html_file, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(html_file, "<HTML>\n");
     fprintf(html_file, "<HEAD>\n");

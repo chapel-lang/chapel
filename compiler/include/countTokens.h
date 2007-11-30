@@ -8,11 +8,11 @@
 extern bool countTokens;
 extern bool printTokens;
 
-void startCountingFileTokens(char* filename);
+void startCountingFileTokens(const char* filename);
 void stopCountingFileTokens(void);
 void finishCountingTokens(void);
 
-void countToken(char* tokentext);
+void countToken(const char* tokentext);
 void countNewline(void);
 void countCommentLine(void);
 void countSingleLineComment(const char* comment);

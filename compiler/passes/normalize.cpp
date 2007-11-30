@@ -236,13 +236,13 @@ static void normalize_returns(FnSymbol* fn) {
   }
   SymExpr* retSym = toSymExpr(rets.v[0]->get(1));
   bool returns_void = retSym && retSym->var == gVoid;
-  LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
+  LabelSymbol* label = new LabelSymbol(astr("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
   if (returns_void) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   } else {
-    retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
+    retval = new VarSymbol(astr("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
     if (fn->retTag == RET_PARAM)
       retval->isParam = true;
@@ -450,7 +450,7 @@ fix_def_expr(VarSymbol* var) {
                        new_StringSymbol(module->name))),
         noop,
         new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
-    strToValExpr->filename = stringcat("<command line setting of '", var->name,
+    strToValExpr->filename = astr("<command line setting of '", var->name,
                                        "'>");
     strToValExpr->lineno = 0;
                      
@@ -458,8 +458,8 @@ fix_def_expr(VarSymbol* var) {
     stmt = noop; // insert regular definition code in then block
   }
   if (var->isConfig && var->isParam) {
-    if (const char* value = configParamMap.get(canonicalize_string(var->name))) {
-      usedConfigParams.add(canonicalize_string(var->name));
+    if (const char* value = configParamMap.get(astr(var->name))) {
+      usedConfigParams.add(astr(var->name));
       if (SymExpr* symExpr = toSymExpr(init)) {
         if (VarSymbol* varSymbol = toVarSymbol(symExpr->var)) {
           if (varSymbol->immediate) {
@@ -653,7 +653,7 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
           } else if (!sym || sym->var != gNil) {
-            VarSymbol* tmp = new VarSymbol(stringcat("_reindex_", parent->sym->name));
+            VarSymbol* tmp = new VarSymbol(astr("_reindex_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
                 if (sym->var == parent->sym)
@@ -674,7 +674,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           DefExpr* parent = toDefExpr(call->parentExpr);
           if (parent && toArgSymbol(parent->sym) && parent->exprType == call) {
             parent->exprType->replace(new SymExpr(chpl_array));
-            VarSymbol* tmp = new VarSymbol(stringcat("_reindex_", parent->sym->name));
+            VarSymbol* tmp = new VarSymbol(astr("_reindex_", parent->sym->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
                 if (sym->var == parent->sym)
@@ -936,7 +936,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
   fn->defPoint->remove();
-  fn->name = canonicalize_string(stringcat("_construct_", fn->name));
+  fn->name = astr(astr("_construct_", fn->name));
   ct->symbol->defPoint->insertBefore(fn->defPoint);
   fn->retType = ct;
   if (ct->defaultConstructor->visible) {

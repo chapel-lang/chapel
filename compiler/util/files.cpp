@@ -17,25 +17,25 @@ char ccflags[256] = "";
 char ldflags[256] = "";
 bool ccwarnings = false;
 
-static char* tmpdirname = NULL;
-static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
+static const char* tmpdirname = NULL;
+static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
 static const int MAX_CHARS_PER_PID = 32;
 
 static const char* intExeFilename;
 static int numLibFlags = 0;
-static char** libFlag = NULL;
+static const char** libFlag = NULL;
 
 
-void addLibInfo(char* libName) {
+void addLibInfo(const char* libName) {
   static int libSpace = 0;
 
   numLibFlags++;
   if (numLibFlags > libSpace) {
     libSpace = 2*numLibFlags;
-    libFlag = (char**)realloc(libFlag, libSpace*sizeof(char*));
+    libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
   }
-  libFlag[numLibFlags-1] = stringcpy(libName);
+  libFlag[numLibFlags-1] = astr(libName);
 }
 
 
@@ -62,7 +62,7 @@ static void createTmpDir(void) {
       userid = passwdinfo->pw_name;
     }
 
-    tmpdirname = stringcat(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
+    tmpdirname = astr(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
 
     intDirName = tmpdirname;
     commandExplanation = "making temporary directory";
@@ -72,7 +72,7 @@ static void createTmpDir(void) {
   }
 
   const char* mkdircommand = "mkdir -p ";
-  const char* command = stringcat(mkdircommand, intDirName);
+  const char* command = astr(mkdircommand, intDirName);
 
   mysystem(command, commandExplanation);
 }
@@ -94,7 +94,7 @@ void deleteTmpDir(void) {
       INT_FATAL("tmp directory name looks fishy");
     }
     const char* rmdircommand = "rm -r ";
-    char* command = stringcat(rmdircommand, tmpdirname);
+    const char* command = astr(rmdircommand, tmpdirname);
 
     mysystem(command, "removing temporary directory");
     tmpdirname = NULL;
@@ -112,29 +112,29 @@ static const char* genIntFilename(const char* filename) {
     createTmpDir();    
   }
 
-  char* newfilename = stringcat(intDirName, slash, filename);
+  const char* newfilename = astr(intDirName, slash, filename);
 
   return newfilename;
 }
 
 
-static char* stripdirectories(char* filename) {
-  char* filenamebase = strrchr(filename, '/');
+static const char* stripdirectories(char* filename) {
+  const char* filenamebase = strrchr(filename, '/');
 
   if (filenamebase == NULL) {
     filenamebase = filename;
   } else {
     filenamebase++;
   }
-  char* strippedname = stringcpy(filenamebase);
+  const char* strippedname = astr(filenamebase);
 
   return strippedname;
 }
 
 
-void genCFilenames(char* modulename, char** outfilename) {
+void genCFilenames(char* modulename, const char** outfilename) {
   static const char* outfilesuffix = ".c";
-  *outfilename = stringcat(modulename, outfilesuffix);
+  *outfilename = astr(modulename, outfilesuffix);
 }
 
 
@@ -144,7 +144,7 @@ static FILE* openfile(const char* filename, const char* mode = "w") {
   newfile = fopen(filename, mode);
   if (newfile == NULL) {
     const char* errorstr = "opening ";
-    const char* errormsg = stringcat(errorstr, filename, ": ", 
+    const char* errormsg = astr(errorstr, filename, ": ", 
                                      strerror(errno));
 
     USR_FATAL(errormsg);
@@ -157,7 +157,7 @@ static FILE* openfile(const char* filename, const char* mode = "w") {
 static void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
     const char* errorstr = "closing file: ";
-    const char* errormsg = stringcat(errorstr, strerror(errno));
+    const char* errormsg = astr(errorstr, strerror(errno));
 
     USR_FATAL(errormsg);
   }
@@ -176,9 +176,9 @@ void closefile(fileinfo* thefile) {
 
 void openCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
-    fi->filename = stringcat(name, ".", ext);
+    fi->filename = astr(name, ".", ext);
   else
-    fi->filename = stringcpy(name);
+    fi->filename = astr(name);
   fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
@@ -192,7 +192,7 @@ void closeCFile(fileinfo* fi) {
 fileinfo* openTmpFile(const char* tmpfilename) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
-  newfile->filename = stringcpy(tmpfilename);
+  newfile->filename = astr(tmpfilename);
   newfile->pathname = genIntFilename(tmpfilename);
   openfile(newfile, "w");
 
@@ -210,29 +210,29 @@ void closeInputFile(FILE* infile) {
 }
 
 
-static char** inputFilenames = {NULL};
+static const char** inputFilenames = {NULL};
 
 
-static bool checkSuffix(char* filename, const char* suffix) {
+static bool checkSuffix(const char* filename, const char* suffix) {
   char* dot;
   return ((dot = strrchr(filename, '.')) &&
           strcmp(dot+1, suffix) == 0);
 }
 
 
-static bool isCSource(char* filename) {
+static bool isCSource(const char* filename) {
   return checkSuffix(filename, "c");
 }
 
-static bool isCHeader(char* filename) {
+static bool isCHeader(const char* filename) {
   return checkSuffix(filename, "h");
 }
 
-static bool isObjFile(char* filename) {
+static bool isObjFile(const char* filename) {
   return checkSuffix(filename, "o");
 }
 
-bool isChplSource(char* filename) {
+bool isChplSource(const char* filename) {
   return checkSuffix(filename, "chpl");
 }
 
@@ -245,28 +245,28 @@ static bool isRecognizedSource(char* filename) {
 
 
 void testInputFiles(int numFilenames, char* filename[]) {
-  inputFilenames = (char**)malloc((numFilenames+1)*sizeof(char*));
+  inputFilenames = (const char**)malloc((numFilenames+1)*sizeof(char*));
   int i;
   char achar;
   for (i=0; i<numFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
-      USR_FATAL(stringcat("file '", filename[i], 
+      USR_FATAL(astr("file '", filename[i], 
                           "' does not have a recognized suffix"));
     }
     FILE* testfile = openInputFile(filename[i]);
     if (fscanf(testfile, "%c", &achar) != 1) {
-      USR_FATAL(stringcat("source file '", filename[i], 
+      USR_FATAL(astr("source file '", filename[i], 
                           "' is either empty or a directory"));
     }
     
     closeInputFile(testfile);
-    inputFilenames[i] = stringcpy(filename[i]);
+    inputFilenames[i] = astr(filename[i]);
   }
   inputFilenames[i] = NULL;
 }
 
 
-char* nthFilename(int i) {
+const char* nthFilename(int i) {
   return inputFilenames[i];
 }
 
@@ -325,8 +325,8 @@ const char* createGDBFile(int argc, char* argv[]) {
 
 void makeBinary(void) {
   if (chplmake[0] == '\0') {
-    char* tmpMakeNameFile = stringcat(intDirName, "/chplmake.out");
-    char* command = stringcat(chplhome, "/util/chplmake > ", tmpMakeNameFile);
+    const char* tmpMakeNameFile = astr(intDirName, "/chplmake.out");
+    const char* command = astr(chplhome, "/util/chplmake > ", tmpMakeNameFile);
     mysystem(command, "querying default make");
     FILE* makeNameFile = openfile(tmpMakeNameFile, "r");
     if (fscanf(makeNameFile, "%s", chplmake) != 1) {
@@ -335,7 +335,7 @@ void makeBinary(void) {
     closefile(makeNameFile);
   }
   const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-  char* command = stringcat(chplmake, " ", makeflags, intDirName, 
+  const char* command = astr(astr(chplmake, " "), makeflags, intDirName, 
                             "/Makefile");
   mysystem(command, "compiling generated source");
 }
@@ -344,7 +344,7 @@ void makeBinary(void) {
 static void genCFiles(FILE* makefile) {
   int filenum = 0;
   int first = 1;
-  while (char* inputFilename = nthFilename(filenum++)) {
+  while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       if (first) {
         fprintf(makefile, "CHPL_CL_C_SRCS = \\\n");
@@ -358,9 +358,9 @@ static void genCFiles(FILE* makefile) {
 
 static void genCFileBuildRules(FILE* makefile) {
   int filenum = 0;
-  while (char* inputFilename = nthFilename(filenum++)) {
+  while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
-      const char* objFilename = genIntFilename(stringcat(inputFilename, ".o"));
+      const char* objFilename = genIntFilename(astr(inputFilename, ".o"));
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
       fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
@@ -373,7 +373,7 @@ static void genCFileBuildRules(FILE* makefile) {
 static void genObjFiles(FILE* makefile) {
   int filenum = 0;
   int first = 1;
-  while (char* inputFilename = nthFilename(filenum++)) {
+  while (const char* inputFilename = nthFilename(filenum++)) {
     bool objfile = isObjFile(inputFilename);
     bool cfile = isCSource(inputFilename);
     if (objfile || cfile) {
@@ -384,7 +384,7 @@ static void genObjFiles(FILE* makefile) {
       if (objfile) {
         fprintf(makefile, "\t%s \\\n", inputFilename);
       } else {
-        const char* objFilename = genIntFilename(stringcat(inputFilename, ".o"));
+        const char* objFilename = genIntFilename(astr(inputFilename, ".o"));
         fprintf(makefile, "\t%s \\\n", objFilename);
       }
     }
@@ -395,7 +395,7 @@ static void genObjFiles(FILE* makefile) {
 
 void genIncludeCommandLineHeaders(FILE* outfile) {
   int filenum = 0;
-  while (char* inputFilename = nthFilename(filenum++)) {
+  while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCHeader(inputFilename)) {
       fprintf(outfile, "#include \"%s\"\n", inputFilename);
     }
@@ -406,11 +406,11 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 void codegen_makefile(fileinfo* mainfile) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
-  char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* strippedExeFilename = stripdirectories(executableFilename);
   intExeFilename = genIntFilename(strippedExeFilename);
   // BLC: This munging is done so that cp won't complain if the source
   // and destination are the same file (e.g., a.out and ./a.out)
-  intExeFilename = stringcat(intExeFilename, ".tmp");
+  intExeFilename = astr(intExeFilename, ".tmp");
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it

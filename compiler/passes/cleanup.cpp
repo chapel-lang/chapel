@@ -26,7 +26,7 @@ encapsulateBegins() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt *b = toBlockStmt(ast)) {
       if (b->blockTag == BLOCK_BEGIN) {
-        char *fname = astr("_begin_block", intstring(uid++));
+        const char *fname = astr("_begin_block", istr(uid++));
         FnSymbol *fn = new FnSymbol(fname);
         fn->retType = dtVoid;
         for_alist(stmt, b->body) {
@@ -37,7 +37,7 @@ encapsulateBegins() {
         b->insertAtTail(new CallExpr(fname));
       } else if (b->blockTag == BLOCK_COBEGIN) {
         for_alist(stmt, b->body) {
-          char *fname = astr("_cobegin_stmt", intstring(uid++));
+          const char *fname = astr("_cobegin_stmt", istr(uid++));
           FnSymbol *fn = new FnSymbol(fname);
           fn->retType = dtVoid;
           b->insertAtHead(new DefExpr(fn));
@@ -260,7 +260,7 @@ static void build_constructor(ClassType* ct) {
 
   if (ct->symbol->hasPragma("sync"))
     ct->defaultValue = NULL;
-  char* name;
+  const char* name;
   if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
     name = astr("_construct_", ct->symbol->name);
   } else {

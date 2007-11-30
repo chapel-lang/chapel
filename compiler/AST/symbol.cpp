@@ -124,7 +124,7 @@ add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
-  name(canonicalize_string(init_name)),
+  name(astr(init_name)),
   cname(name),
   type(init_type),
   defPoint(NULL),
@@ -721,7 +721,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
-  wrapper->cname = stringcat("_coerce_wrap_", cname);
+  wrapper->cname = astr("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
   for_formals(formal, this) {
@@ -789,7 +789,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   FnSymbol* wrapper = build_empty_wrapper(this);
   if (fnTag != FN_ITERATOR)
     wrapper->retType = retType;
-  wrapper->cname = stringcat("_default_wrap_", cname);
+  wrapper->cname = astr("_default_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
   ASTMap copy_map;
@@ -807,7 +807,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       // handle instantiated param formals
       call->insertAtTail(sym);
     } else {
-      char* temp_name = stringcat("_default_temp_", formal->name);
+      const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
       temp->isCompilerTemp = true;
       if (formal->isTypeVariable)
@@ -872,7 +872,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
 FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
                                   bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
-  wrapper->cname = stringcat("_order_wrap_", cname);
+  wrapper->cname = astr("_order_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
   ASTMap copy_map;
@@ -902,7 +902,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool square) {
   FnSymbol* wrapper = build_empty_wrapper(this);
-  wrapper->cname = stringcat("_promotion_wrap_", cname);
+  wrapper->cname = astr("_promotion_wrap_", cname);
   CallExpr* indicesCall = new CallExpr("_tuple"); // destructured in build
   CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
   CallExpr* actualCall = new CallExpr(this);
@@ -1071,7 +1071,7 @@ instantiate_tuple(FnSymbol* fn) {
   int64 size = toVarSymbol(tuple->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
-    char* name = stringcat("x", intstring(i));
+    const char* name = astr("x", istr(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
     fn->insertFormalAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
@@ -1089,9 +1089,9 @@ instantiate_tuple_get(FnSymbol* fn) {
     return fn;
   int64 index = var->immediate->int_value();
   if (index <= 0 || index >= toClassType(fn->_this->type)->fields.length()) {
-    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", intstring(index), ")")))));
+    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", istr(index), ")")))));
   } else {
-    char* name = stringcat("x", intstring(index));
+    const char* name = astr("x", istr(index));
     fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   }
   normalize(fn);
@@ -1292,7 +1292,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
     // compute instantiatedWith vector and rename instantiated type
     clone->name = astr(clone->name, "(");
-    clone->cname = stringcat(clone->cname, "_");
+    clone->cname = astr(clone->cname, "_");
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
@@ -1302,9 +1302,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
           }
           if (first) {
             clone->name = astr(clone->name, ",");
-            clone->cname = stringcat(clone->cname, "_");
+            clone->cname = astr(clone->cname, "_");
           }
-          clone->cname = stringcat(clone->cname, type->symbol->cname);
+          clone->cname = astr(clone->cname, type->symbol->cname);
           clone->name = astr(clone->name, type->symbol->name);
           if (!clone->type->instantiatedWith)
             clone->type->instantiatedWith = new Vec<Type*>();
@@ -1313,17 +1313,17 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
         } else if (Symbol* symbol = toSymbol(value)) {
           if (first) {
             clone->name = astr(clone->name, ",");
-            clone->cname = stringcat(clone->cname, "_");
+            clone->cname = astr(clone->cname, "_");
           }
           VarSymbol* var = toVarSymbol(symbol);
           if (var && var->immediate) {
             char imm[128];
             sprint_imm(imm, *var->immediate);
             clone->name = astr(clone->name, imm);
-            clone->cname = stringcat(clone->cname, imm);
+            clone->cname = astr(clone->cname, imm);
           } else {
             clone->name = astr(clone->name, symbol->cname);
-            clone->cname = stringcat(clone->cname, symbol->cname);
+            clone->cname = astr(clone->cname, symbol->cname);
           }
           first = true;
         }
@@ -1454,7 +1454,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
         if (se->var->astTag == SYMBOL_VAR) {
           if (se->var->defPoint && se->var->defPoint->parentSymbol == this) {
             if (!defSet.set_in(se->var)) {
-              se->var->cname = astr("T", intstring(i++));
+              se->var->cname = astr("T", istr(i++));
               defSet.set_add(se->var);
             }
           }
@@ -1705,7 +1705,7 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 VarSymbol *new_StringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
-  imm.v_string = canonicalize_string(str);
+  imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
@@ -1779,9 +1779,9 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtReal[size]);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtReal[size]);
   theProgram->block->blkScope->define(s);
-  s->cname = dupstr(n);
+  s->cname = astr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1802,9 +1802,9 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtImag[size]);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtImag[size]);
   theProgram->block->blkScope->define(s);
-  s->cname = dupstr(n);
+  s->cname = astr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1834,10 +1834,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtComplex[size]);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtComplex[size]);
   theProgram->block->blkScope->define(s);
   s->immediate = new Immediate;
-  s->cname = dupstr(n);
+  s->cname = astr(n);
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
@@ -1848,7 +1848,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   if (s)
     return s;
   PrimitiveType *t = immediate_type(imm);
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), t);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   s->immediate = new Immediate;
   char str[512];
   const char* ss = str;
@@ -1856,7 +1856,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
     ss = imm->v_string;
   else
     sprint_imm(str, *imm);
-  s->cname = dupstr(ss);
+  s->cname = astr(ss);
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
