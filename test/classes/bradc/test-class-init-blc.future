@@ -1,5 +1,0 @@
-bug: constructor results in internal error
-
-This is a variation on Mary Beth's test-class-init.chpl
-test which I wrote at some point, and which causes an
-internal error in the compiler.
