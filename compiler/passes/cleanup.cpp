@@ -70,7 +70,7 @@ flatten_scopeless_block(BlockStmt* block) {
 //
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   ModuleSymbol* mod = NULL;
-
+  Symbol* symbol = NULL;
   if (!useCall) {
     CallExpr* call = toCallExpr(expr);
     if (!call)
@@ -81,9 +81,13 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   }
 
   if (SymExpr* sym = toSymExpr(expr)) {
-    mod = toModuleSymbol(useCall->parentScope->lookup(sym->var->name));
-    if (!mod)
+    symbol = useCall->parentScope->lookup(sym->var->name);
+    mod = toModuleSymbol(symbol);
+    if (symbol && !mod) {
+      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+    } else if (!symbol) {
       USR_FATAL(useCall, "Cannot find module '%s'", sym->var->name);
+    }
   } else if(CallExpr* call = toCallExpr(expr)) {
     if (!call->isNamed("."))
       USR_FATAL(useCall, "Bad use statement in getUsedModule");
@@ -97,10 +101,13 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
 
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
-
-    mod = toModuleSymbol(lhs->lookup(rhsName));
-    if (!mod)
+    symbol = lhs->lookup(rhsName);
+    mod = toModuleSymbol(symbol);
+    if (symbol && !mod) {
+      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+    } else if (!symbol) {
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
+    }
   } else {
     INT_FATAL(useCall, "Bad use statement in getUsedModule");
   }
