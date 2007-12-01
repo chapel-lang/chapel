@@ -1,4 +1,4 @@
-semantic: Accessing a shadowed field in the base class
+unimplemented feature: shadowed fields
 
 This is attempting to shadow a field, then access the base version of it.
 It currently fails due to a bug (see test_shadowing.future), but the spec

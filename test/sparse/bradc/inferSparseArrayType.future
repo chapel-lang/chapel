@@ -1,4 +1,4 @@
-bug: array type inference
+bug: sparse array shape preserved in forall expr
 
 This test needs sparse array types to be inferred
 from forall loops in order to work properly.

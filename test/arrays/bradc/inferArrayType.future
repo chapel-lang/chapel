@@ -1,4 +1,4 @@
-bug: array type inference
+bug: array shape preserved in promotion
 
 This is a test that checks whether array types are
 inferred by printing out both the inferred array

@@ -1,3 +1,5 @@
+bug: forall array type in class
+
 bug: array in class/record gives internal error
 
 I'm not sure what's different between this test and other

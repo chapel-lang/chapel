@@ -1,3 +1,5 @@
+bug: array shape preserved in scan
+
 bug: array type inference
 
 As in other tests that we've seen, inferred types for scans

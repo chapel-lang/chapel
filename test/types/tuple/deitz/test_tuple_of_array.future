@@ -1,1 +1,1 @@
-bug: creating a tuple of an array does not copy the array
+bug: tuple constructor does not copy arrays

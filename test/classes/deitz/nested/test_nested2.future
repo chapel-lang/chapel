@@ -1,4 +1,4 @@
-bug: nested class construction
+bug: constructor method called in class body
 
 David: All three of these (test_nested1.chpl, test_nested2.chpl,
 test_type_in_class1.chpl) are futures due to classes setting member

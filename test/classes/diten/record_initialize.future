@@ -1,4 +1,4 @@
-bug: record initialize function called multiple times for single record
+bug: fields initialized more than once
 
 The BBB.initialize() function is called twice even though there is only one
 value of BBB type.

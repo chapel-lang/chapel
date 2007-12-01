@@ -1,4 +1,4 @@
-bug: shadowing a field with a different type causes error
+unimplemented feature: shadowed fields
 
 This test shadows an inherited string field with an int. It results in an error
 about not being able to assign an int into a string field, showing that the
