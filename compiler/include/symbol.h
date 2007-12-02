@@ -297,7 +297,7 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
 
 extern Symbol *gMutex_p;
-extern Symbol *gCondVar_p;
 extern Symbol *gSyncVarAuxFields;
+extern Symbol *gSingleVarAuxFields;
 
 #endif

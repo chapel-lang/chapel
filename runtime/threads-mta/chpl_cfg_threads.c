@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <machine/runtime.h>
 
-#if MTA_DEBUG
+#ifdef MTA_DEBUG
 #include <stdio.h>
 #endif
 
@@ -18,9 +18,6 @@
 // main thread can call exit for the process.
 static _int64          _chpl_begin_cnt;      // number of unjoined threads 
 static sync _int64     _chpl_can_exit;       // can main thread exit?
-#if 0
-static pthread_key_t   _chpl_serial;         // per-thread serial state
-#endif
 
 
 // Mutex
@@ -127,14 +124,65 @@ int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var
   else if (s)
     return readxx(&(s->is_full));
   else
-    _printInternalError("null pointer in _chpl_sync_is_full");  // s is null
+    _printInternalError("null pointer in _chpl_sync_is_full");
   return -1;
 }
-
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
   purge(&(s->is_full));
   purge(&(s->signal_empty));
+  purge(&(s->signal_full));
+}
+
+
+int _chpl_single_lock(_chpl_single_aux_t *s) {
+#ifdef MTA_DEBUG
+  fprintf(stderr, "In %s, s = %p\n", __func__, s);
+#endif
+  if (s) {
+    readfe(&(s->is_full));            // mark empty
+    return 0;
+  } else {
+    _printInternalError("null pointer in _chpl_single_lock");
+    return 1;
+  }
+}
+
+int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+  if (s) {
+    while (!readxx(&(s->is_full))) {
+      readff(&(s->signal_full));
+    }
+    return 0;
+  } else {
+    _printInternalError("null pointer in _chpl_single_wait_full");
+    return 1;
+  }
+}
+
+int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+  if (s) {
+    writeef(&(s->is_full), true);     // mark full and unlock
+    writexf(&(s->signal_full), true); // signal full
+    return 0;
+  } else {
+    _printInternalError("null pointer in _chpl_single_mark_and_signal_full");
+    return 1;
+  }
+}
+
+int _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+  if (simple_single_var)
+    return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
+  else if (s)
+    return readxx(&(s->is_full));
+  else
+    _printInternalError("null pointer in _chpl_single_is_full");
+  return -1;
+}
+
+void _chpl_init_single_aux(_chpl_single_aux_t *s) {
+  writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_full));
 }
 

@@ -14,10 +14,16 @@ int _chpl_sync_lock(_chpl_sync_aux_t *);
 int _chpl_sync_unlock(_chpl_sync_aux_t *);
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *, _int32, _string);
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *, _int32, _string);
-int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);
-int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);
+int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);     // also unlocks
+int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);    // also unlocks
 int _chpl_sync_is_full(void *, _chpl_sync_aux_t *, _bool);
 void _chpl_init_sync_aux(_chpl_sync_aux_t *);
+
+int _chpl_single_lock(_chpl_single_aux_t *);
+int _chpl_single_wait_full(_chpl_single_aux_t *);
+int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *); // also unlocks
+int _chpl_single_is_full(void *, _chpl_single_aux_t *, _bool);
+void _chpl_init_single_aux(_chpl_single_aux_t *);
 
 // Chapel system thread control
 void    initChplThreads(void);             // main thread init's thread support

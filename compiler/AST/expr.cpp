@@ -1213,6 +1213,26 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, ")->sync_aux))");
       break;
+    case PRIMITIVE_SINGLE_INIT:
+      fprintf( outfile, "_chpl_init_single_aux(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->single_aux))");
+      break;
+    case PRIMITIVE_SINGLE_LOCK:
+      fprintf( outfile, "_chpl_single_lock(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->single_aux))");
+      break;
+    case PRIMITIVE_SINGLE_WAIT_FULL:
+      fprintf( outfile, "_chpl_single_wait_full(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->single_aux))");
+      break;
+    case PRIMITIVE_SINGLE_SIGNAL_FULL:
+      fprintf(outfile, "_chpl_single_mark_and_signal_full(&((");
+      get(1)->codegen( outfile);
+      fprintf(outfile, ")->single_aux))");
+      break;
     case PRIMITIVE_WRITEEF:
       fprintf( outfile, "_chpl_write_EF((");
       get(1)->codegen( outfile);
@@ -1270,12 +1290,37 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_ISFULL:
+    case PRIMITIVE_SYNC_ISFULL:
       fprintf( outfile, "_chpl_sync_is_full(&((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->value), &((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->sync_aux), ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_SINGLE_WRITEEF:
+      fprintf( outfile, "_chpl_single_write_EF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), ");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_SINGLE_READFF:
+      fprintf( outfile, "_chpl_single_read_FF((");
+      get(2)->codegen( outfile);
+      fprintf( outfile, "))");
+      break;
+    case PRIMITIVE_SINGLE_ISFULL:
+      fprintf( outfile, "_chpl_single_is_full(&((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->value), &((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->single_aux), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;

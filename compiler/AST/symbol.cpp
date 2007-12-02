@@ -22,8 +22,8 @@ Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gTimer = NULL;
 Symbol *gMutex_p = NULL;
-Symbol *gCondVar_p = NULL;
 Symbol *gSyncVarAuxFields = NULL;
+Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;

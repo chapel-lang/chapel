@@ -16,14 +16,14 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string fi
   if (*s)
     return 0;
   else {
-    _printError("sync var empty (running in single-threaded threaded mode)", lineno, filename);
+    _printError("sync var empty (running in single-threaded mode)", lineno, filename);
     return 1;
   }
 }
 
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   if (*s) {
-    _printError("sync var full (running in single-threaded threaded mode)", lineno, filename);
+    _printError("sync var full (running in single-threaded mode)", lineno, filename);
     return 1;
   }
   else return 0;
@@ -44,6 +44,31 @@ _bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_v
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
+  *s = false;
+}
+
+
+int _chpl_single_lock(_chpl_single_aux_t *s) { return s == NULL; }
+
+int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+  if (*s)
+    return 0;
+  else {
+    _printError("single var empty (running in single-threaded mode)", 0, 0);
+    return 1;
+  }
+}
+
+int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+  *s = true;
+  return 0;
+}
+
+_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+  return *s;
+}
+
+void _chpl_init_single_aux(_chpl_single_aux_t *s) {
   *s = false;
 }
 

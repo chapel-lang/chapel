@@ -309,9 +309,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_SERIAL, "thread_get_serial", returnInfoBool);
   prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
 
-  // operations on sync/single vars
   prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP, true);
   prim_def(PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid, true);
+
+  // operations on sync/single vars
   prim_def(PRIMITIVE_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
@@ -319,6 +320,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SINGLE_INIT, "init_single_aux", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SINGLE_SIGNAL_FULL, "single_mark_and_signal_full", returnInfoVoid, true);
 
   // sync/single var support
   prim_def(PRIMITIVE_WRITEEF, "write_EF", returnInfoVoid, true, true);
@@ -328,7 +333,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_READFE, "read_FE", returnInfoFirst, true, true);
   prim_def(PRIMITIVE_READFF, "read_FF", returnInfoFirst, true, true);
   prim_def(PRIMITIVE_READXX, "read_XX", returnInfoFirst, true);
-  prim_def(PRIMITIVE_ISFULL, "is_full", returnInfoBool, true);
+  prim_def(PRIMITIVE_SYNC_ISFULL, "sync_is_full", returnInfoBool, true);
+  prim_def(PRIMITIVE_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
+  prim_def(PRIMITIVE_SINGLE_ISFULL, "single_is_full", returnInfoBool, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);

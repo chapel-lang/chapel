@@ -532,7 +532,8 @@ class _syncvar {
   def initialize() {
     __primitive( "init_sync_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {
-      writeXE0(this);
+      // The sync_aux field might not be used on some targets!
+      __primitive( "write_XE0", this);
     }
   }
 }
@@ -641,7 +642,7 @@ def readFF( sv:_syncvar) {
   } else {
     __primitive( "sync_wait_full_and_lock", sv);
     ret = sv.value;
-    __primitive( "sync_mark_and_signal_full", sv);
+    __primitive( "sync_mark_and_signal_full", sv); // in case others are waiting
   }
   return ret;
 }
@@ -663,7 +664,7 @@ def readXX( sv:_syncvar) {
 
 pragma "sync" 
 def isFull( sv:_syncvar) {
-  return __primitive( "is_full", sv, isSimpleSyncBaseType(sv.base_type));
+  return __primitive( "sync_is_full", sv, isSimpleSyncBaseType(sv.base_type));
 }
 
 //
@@ -689,16 +690,14 @@ pragma "no object"
 class _singlevar {
   type base_type;
   var  value: base_type;     // actual data
-  var  is_full: bool;
-  //var  lock: _mutex_p;       // need to acquire before accessing this record
-  //var  cv_full: _condvar_p;  // wait for full
-  pragma "omit from constructor" var  sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
+  pragma "omit from constructor" var  single_aux: _single_aux_t; // data structure for locking, signaling, etc.
 
   def initialize() {
-    is_full = false; 
-    //lock = __primitive( "mutex_new");
-    //cv_full = __primitive( "condvar_new");
-    __primitive( "init_sync_aux", this);
+    __primitive( "init_single_aux", this);
+    if (isSimpleSyncBaseType(this.base_type)) {
+      // The single_aux field might not be used on some targets!
+      __primitive( "write_XE0", this);
+    }
   }
 }
 
@@ -721,13 +720,16 @@ def _init( sv:_singlevar) {
 // Can only write once.  Otherwise, it is an error.
 pragma "sync" 
 def =( sv:_singlevar, value:sv.base_type) {
-  __primitive( "sync_lock", sv);
-  if (sv.is_full) {
-    halt( "single var already defined");
+  if (isSimpleSyncBaseType(sv.base_type)) {
+    __primitive( "single_write_EF", sv, value);
+  } else {
+    __primitive( "single_lock", sv);
+    if (__primitive( "single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
+      halt( "single var already defined");
+    }
+    sv.value = value;
+    __primitive( "single_mark_and_signal_full", sv);
   }
-  sv.value = value;
-  sv.is_full = true;
-  __primitive( "sync_mark_and_signal_full", sv);
   return sv;
 }
 
@@ -736,9 +738,15 @@ def =( sv:_singlevar, value:sv.base_type) {
 pragma "sync" 
 def readFF( sv:_singlevar) {
   var ret: sv.base_type;
-  __primitive( "sync_wait_full_and_lock", sv);
-  ret = sv.value;
-  __primitive( "sync_mark_and_signal_full", sv); // in case others are waiting
+  if (isSimpleSyncBaseType(sv.base_type)) {
+    ret = __primitive( "single_read_FF", ret, sv);
+  } else if (__primitive( "single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
+    ret = sv.value;
+  } else {
+    __primitive( "single_wait_full", sv);
+    ret = sv.value;
+    __primitive( "single_mark_and_signal_full", sv); // in case others are waiting
+  }
   return ret;
 }
 

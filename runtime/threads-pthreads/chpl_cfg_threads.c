@@ -103,11 +103,41 @@ int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var
   return s->is_full;
 }
 
-
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
   s->is_full = false;
   s->lock = _chpl_mutex_new();
+  s->signal_full = _chpl_condvar_new();
   s->signal_empty = _chpl_condvar_new();
+}
+
+
+int _chpl_single_lock(_chpl_single_aux_t *s) {
+  return _chpl_mutex_lock(s->lock);
+}
+
+int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+  int return_value = _chpl_mutex_lock(s->lock);
+  while (return_value == 0 && !s->is_full) {
+    return_value = pthread_cond_wait(s->signal_full, s->lock);
+  }
+  if (return_value)
+    _printInternalError("invalid mutex in _chpl_single_wait_full");
+  return return_value;
+}
+
+int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+  s->is_full = true;
+  _chpl_mutex_unlock(s->lock);
+  return pthread_cond_signal(s->signal_full);
+}
+
+int _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+  return s->is_full;
+}
+
+void _chpl_init_single_aux(_chpl_single_aux_t *s) {
+  s->is_full = false;
+  s->lock = _chpl_mutex_new();
   s->signal_full = _chpl_condvar_new();
 }
 
