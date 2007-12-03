@@ -52,29 +52,35 @@ setOrder(Map<ClassType*,int>& order, int& maxOrder,
 }
 
 
-#define STRSUB(x)                                                       \
-  sym->cname = astr(strndup(sym->cname, ch-sym->cname), x, ch+1);       \
-  ch = sym->cname;
+static const char*
+subChar(Symbol* sym, const char* ch, const char* x) {
+  char* tmp = (char*)malloc(ch-sym->cname+1);
+  strncpy(tmp, sym->cname, ch-sym->cname);
+  tmp[ch-sym->cname] = '\0';
+  sym->cname = astr(tmp, x, ch+1); 
+  free(tmp);
+  return sym->cname;
+}
 
 static void legalizeCName(Symbol* sym) {
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
-    case '>': STRSUB("_GREATER_"); break;
-    case '<': STRSUB("_LESS_"); break;
-    case '=': STRSUB("_EQUAL_"); break;
-    case '*': STRSUB("_ASTERISK_"); break;
-    case '/': STRSUB("_SLASH_"); break;
-    case '%': STRSUB("_PERCENT_"); break;
-    case '+': STRSUB("_PLUS_"); break;
-    case '-': STRSUB("_HYPHEN_"); break;
-    case '^': STRSUB("_CARET_"); break;
-    case '&': STRSUB("_AMPERSAND_"); break;
-    case '|': STRSUB("_BAR_"); break;
-    case '!': STRSUB("_EXCLAMATION_"); break;
-    case '#': STRSUB("_POUND_"); break;
-    case '?': STRSUB("_QUESTION_"); break;
-    case '$': STRSUB("_DOLLAR_"); break;
-    case '~': STRSUB("_TILDA_"); break;
+    case '>': ch = subChar(sym, ch, "_GREATER_"); break;
+    case '<': ch = subChar(sym, ch, "_LESS_"); break;
+    case '=': ch = subChar(sym, ch, "_EQUAL_"); break;
+    case '*': ch = subChar(sym, ch, "_ASTERISK_"); break;
+    case '/': ch = subChar(sym, ch, "_SLASH_"); break;
+    case '%': ch = subChar(sym, ch, "_PERCENT_"); break;
+    case '+': ch = subChar(sym, ch, "_PLUS_"); break;
+    case '-': ch = subChar(sym, ch, "_HYPHEN_"); break;
+    case '^': ch = subChar(sym, ch, "_CARET_"); break;
+    case '&': ch = subChar(sym, ch, "_AMPERSAND_"); break;
+    case '|': ch = subChar(sym, ch, "_BAR_"); break;
+    case '!': ch = subChar(sym, ch, "_EXCLAMATION_"); break;
+    case '#': ch = subChar(sym, ch, "_POUND_"); break;
+    case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
+    case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
+    case '~': ch = subChar(sym, ch, "_TILDA_"); break;
     default: break;
     }
   }
