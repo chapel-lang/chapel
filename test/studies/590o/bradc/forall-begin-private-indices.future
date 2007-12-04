@@ -1,0 +1,6 @@
+bug: private for+begin indices
+
+This is the same issue as the coforall-private-indices future --
+because loop indices aren't being privatized, their use in a
+begin statement is causing them to refer to newly updated
+values.
