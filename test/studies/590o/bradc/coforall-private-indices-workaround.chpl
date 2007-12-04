@@ -21,11 +21,9 @@ def main {
   }
 
   var A: [AllPairs] real;
-  for (x,y) in [StartIndices, EndIndices] {
-    begin {
-      if (x <= y) {
-         A[x, y] = x + y/10.0;
-      }	 
+  coforall xy in [StartIndices, EndIndices] do {
+    if (xy(1) <= xy(2)) {
+      A[xy(1), xy(2)] = xy(1) + xy(2)/10.0;
     }
   }
   writeln("A is:\n", A);
