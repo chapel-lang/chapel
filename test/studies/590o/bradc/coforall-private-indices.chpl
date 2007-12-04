@@ -19,12 +19,7 @@ def main {
       z+1;
     }
   }
-  var D: sparse subdomain(AllPairs);
-  for x in StartIndices {
-    for y in EndIndices {
-      D += (x, y);
-    }
-  }
+
   var A: [AllPairs] real;
   coforall (x,y) in [StartIndices, EndIndices] do {
     if (x <= y) {
