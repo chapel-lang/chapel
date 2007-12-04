@@ -129,7 +129,7 @@ int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
-  purge(&(s->is_full));
+  writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_empty));
   purge(&(s->signal_full));
 }
@@ -162,7 +162,7 @@ int _chpl_single_wait_full(_chpl_single_aux_t *s) {
 
 int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   if (s) {
-    writeef(&(s->is_full), true);     // mark full and unlock
+    writexf(&(s->is_full), true);     // mark full and unlock
     writexf(&(s->signal_full), true); // signal full
     return 0;
   } else {
@@ -285,37 +285,55 @@ int _chpl_cobegin (int                      nthreads,
                    _chpl_threadfp_t        *fps,
                    _chpl_threadarg_t       *args, 
                    _chpl_cobegin_wkspace_t *twrk) {
-  int               t, retv = 0;
-  _int64            *finished;
+  int               t;
 
   if (_chpl_get_serial()) {
     for (t=0; t<nthreads; t++)
       (*fps[t])(args[t], t);
-  } else if (finished = (_int64 *)_chpl_malloc(nthreads, sizeof(_int64),
-                                               "finished", 0, 0)) {
+  } else {
+    _int64 can_exit, *can_exit_p = &can_exit;
+    _int64 begin_cnt = 0, *begin_cnt_p = &begin_cnt;
+#ifdef MTA_DEBUG
+    fprintf(stderr, "Inside %s\n", __func__);
+#endif
     // create threads
     for (t=0; t<nthreads; t++, fps++, args++) {
-      future void thread$;
-      _int64 *fin = &finished[t];
 
-      purge(fin);           // set to zero and mark empty
-      future thread$(fps, args, fin, t) {
-        (**fps)(*args, t);
-        *fin = 1;           // set to one and mark full
+      int_fetch_add(begin_cnt_p, 1);       // assume begin will succeed
+      purge(can_exit_p);
+#ifdef MTA_DEBUG
+      fprintf(stderr, "About to create future no. %d\n", t+1);
+#endif
+      future (fps, args, begin_cnt_p, can_exit_p) {
+        int prev_count = *begin_cnt_p;
+#ifdef MTA_DEBUG
+        fprintf(stderr, "Inside future no. %d\n", prev_count);
+#endif
+        (**fps)(*args, prev_count);
+#ifdef MTA_DEBUG
+        fprintf(stderr, "About to exit future no. %d\n", prev_count);
+#endif
+        // decrement begin thread count and see if we can signal Chapel exit
+        prev_count = int_fetch_add(begin_cnt_p, -1);
+#ifdef MTA_DEBUG
+        fprintf(stderr, "prev_count = %d\n", prev_count);
+#endif
+        if (prev_count == 1)               // i.e., begin_cnt is now zero
+          writeef(can_exit_p, 1);          // mark this variable full
       }
+#ifdef MTA_DEBUG
+      fprintf(stderr, "Finished creating future no. %d\n", t+1);
+#endif
     }
+#ifdef MTA_DEBUG
+    fprintf(stderr, "Finished creating all futures!\n");
+#endif
 
     // wait on those threads
-    for (t=0; t<nthreads; t++)
-      retv += finished[t];  // block until the corresponding thread finishes
-    retv = nthreads - retv; // return zero if all threads finished
-    _chpl_free(finished, 0, 0);
-  } else {
-    retv = 1;
-    halt("Out of memory in %s!\n", __func__);
+    readfe(can_exit_p);      // block until all threads have finished executing
   }
 
-  return retv;
+  return 0;
 }
 
 
