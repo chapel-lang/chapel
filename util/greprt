@@ -7,6 +7,6 @@ endif
 
 cd $CHPL_HOME/runtime
 
-$grep  -e "$argv" include/*.h include/*/*.h src/*.c comm-none/*.c comm-gasnet/*.c threads-none/*.c threads-pthreads/*.c
+$grep  -e "$argv" include/*.h include/*/*.h src/*.c comm-none/*.c comm-gasnet/*.c threads-none/*.c threads-mta/*.c threads-pthreads/*.c
 
 cd -
