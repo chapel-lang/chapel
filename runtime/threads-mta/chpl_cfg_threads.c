@@ -26,8 +26,10 @@ int _chpl_mutex_init(_chpl_mutex_p mutex) {
   if (mutex) {
     purge(mutex);                     // set to zero and mark empty
     return 0;
-  } else
-    return 1;                         // mutex is null
+  } else {
+    _printInternalError("null pointer in _chpl_mutex_init");
+    return 1;
+  }
 }
 
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
@@ -35,7 +37,8 @@ int _chpl_mutex_lock(_chpl_mutex_p mutex) {
     writeef(mutex, 1);                // set to one and mark full
     return 0;
   } else
-    return 1;                         // mutex is null
+    _printInternalError("null pointer in _chpl_mutex_lock");
+    return 1;
 }
 
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
@@ -48,24 +51,24 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
 
 
 int _chpl_sync_lock(_chpl_sync_aux_t *s) {
-#ifdef MTA_DEBUG
-  fprintf(stderr, "In %s, s = %p\n", __func__, s);
-#endif
   if (s) {
     readfe(&(s->is_full));            // mark empty
     return 0;
-  } else return 1;                    // s is null
+  } else {
+    _printInternalError("null pointer in _chpl_sync_lock");
+    return 1;
+  }
 }
 
 int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
-#ifdef MTA_DEBUG
-  fprintf(stderr, "In %s, s = %p\n", __func__, s);
-#endif
   if (s) {
     _int64 is_full = readxx(&(s->is_full));
     writeef(&(s->is_full), is_full);  // mark full
     return 0;
-  } else return 1;                    // s is null
+  } else {
+    _printInternalError("null pointer in _chpl_sync_unlock");
+    return 1;
+  }
 }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
@@ -102,7 +105,7 @@ int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
     writeef(&(s->is_full), true);                    // mark full and unlock
     return 0;
   } else {
-    _printError("invalid mutex", 0/*lineno*/, 0/*filename*/);  // s is null
+    _printInternalError("null pointer in _chpl_sync_mark_and_signal_full");
     return 1;
   }
 }
@@ -113,7 +116,7 @@ int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
     writeef(&(s->is_full), false);                   // mark empty and unlock
     return 0;
   } else {
-    _printError("invalid mutex", 0/*lineno*/, 0/*filename*/);  // s is null
+    _printInternalError("null pointer in _chpl_sync_mark_and_signal_empty");
     return 1;
   }
 }
@@ -123,9 +126,10 @@ int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var
     return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
   else if (s)
     return readxx(&(s->is_full));
-  else
+  else {
     _printInternalError("null pointer in _chpl_sync_is_full");
-  return -1;
+    return -1;
+  }
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
@@ -136,9 +140,6 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 
 
 int _chpl_single_lock(_chpl_single_aux_t *s) {
-#ifdef MTA_DEBUG
-  fprintf(stderr, "In %s, s = %p\n", __func__, s);
-#endif
   if (s) {
     readfe(&(s->is_full));            // mark empty
     return 0;
@@ -176,9 +177,10 @@ int _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_sing
     return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
   else if (s)
     return readxx(&(s->is_full));
-  else
+  else {
     _printInternalError("null pointer in _chpl_single_is_full");
-  return -1;
+    return -1;
+  }
 }
 
 void _chpl_init_single_aux(_chpl_single_aux_t *s) {
@@ -187,68 +189,30 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 }
 
 
-void _chpl_serial_delete(_bool *p) {
-#if 1
-  _printError("_chpl_serial_delete() not implemented!", 0, 0);
-#else
-  if (NULL != p) {
-    _chpl_free(p, 0, 0);
-  }
-#endif
-}
-
-
 // Threads
 
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
-#ifdef MTA_DEBUG
-  fprintf(stderr, "Inside %s(), ", __func__);
-#endif
   _chpl_can_exit = 1;                      // mark full - no threads created yet
 
-#if 0
   _chpl_mutex_init(&_memtrack_lock);
   _chpl_mutex_init(&_memstat_lock);
   _chpl_mutex_init(&_memtrace_lock);
 
-  pthread_key_create(&_chpl_serial, (void(*)(void*))_chpl_serial_delete);
   _chpl_thread_init();
-#endif
 }
 
 
 void exitChplThreads() {
   int ready=0;
-#ifdef MTA_DEBUG
-  fprintf(stderr, "Inside %s()\n", __func__);
-#endif
   do
     // this will block until _chpl_can_exit is marked full!
     ready = readff(&_chpl_can_exit);
   while (!ready);
-#ifdef MTA_DEBUG
-  fprintf(stderr, "About to return from %s(); _chpl_can_exit=%d\n",
-          __func__, _chpl_can_exit);
-#endif
 }
 
 
-void _chpl_thread_init(void) {
-#if 1
-#ifdef MTA_DEBUG
-  fprintf(stderr, "%s() not implemented!\n", __func__);
-#endif
-#else
-  _bool *p;
-  p = mta_register_task_data(_chpl_serial);
-  if (NULL == p) {
-    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
-    *p = false;
-    pthread_setspecific(_chpl_serial, p);
-  }
-#endif
-}
+void _chpl_thread_init(void) {}  // No need to do anything!
 
 
 _uint64 _chpl_thread_id(void) {
@@ -287,31 +251,30 @@ int _chpl_cobegin (int                      nthreads,
                    _chpl_cobegin_wkspace_t *twrk) {
   int               t;
 
-  if (_chpl_get_serial()) {
+  if (_chpl_get_serial())
     for (t=0; t<nthreads; t++)
-      (*fps[t])(args[t], t);
-  } else {
+      (*fps[t])(args[t]);
+
+  else {
     _int64 can_exit, *can_exit_p = &can_exit;
     _int64 begin_cnt = 0, *begin_cnt_p = &begin_cnt;
-#ifdef MTA_DEBUG
-    fprintf(stderr, "Inside %s\n", __func__);
-#endif
+
     // create threads
     for (t=0; t<nthreads; t++, fps++, args++) {
 
       int_fetch_add(begin_cnt_p, 1);       // assume begin will succeed
       purge(can_exit_p);
 #ifdef MTA_DEBUG
-      fprintf(stderr, "About to create future no. %d\n", t+1);
+      fprintf(stderr, "About to create future no. %d\n", t);
 #endif
-      future (fps, args, begin_cnt_p, can_exit_p) {
-        int prev_count = *begin_cnt_p;
+      future (fps, args, begin_cnt_p, can_exit_p, t) {
+        int prev_count;
 #ifdef MTA_DEBUG
-        fprintf(stderr, "Inside future no. %d\n", prev_count);
+        fprintf(stderr, "Inside future no. %d\n", t);
 #endif
-        (**fps)(*args, prev_count);
+        (**fps)(*args);
 #ifdef MTA_DEBUG
-        fprintf(stderr, "About to exit future no. %d\n", prev_count);
+        fprintf(stderr, "About to exit future no. %d\n", t);
 #endif
         // decrement begin thread count and see if we can signal Chapel exit
         prev_count = int_fetch_add(begin_cnt_p, -1);
@@ -322,7 +285,7 @@ int _chpl_cobegin (int                      nthreads,
           writeef(can_exit_p, 1);          // mark this variable full
       }
 #ifdef MTA_DEBUG
-      fprintf(stderr, "Finished creating future no. %d\n", t+1);
+      fprintf(stderr, "Finished creating future no. %d\n", t);
 #endif
     }
 #ifdef MTA_DEBUG
@@ -341,36 +304,29 @@ int _chpl_cobegin (int                      nthreads,
 // thread.  Also we only expect one thread to launch with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
-  if (_chpl_get_serial()) {
-    (*fp)(arg, 0);
-  } else {
-    int init_begin_cnt;
-    //future void thread$;
 
-#ifdef MTA_DEBUG
-    fprintf(stderr, "Inside %s\n", __func__);
-#endif
-    purge(&_chpl_can_exit);                     // set to zero and mark as empty
-    init_begin_cnt =
+  if (_chpl_get_serial())
+    (*fp)(arg);
+
+  else {
+    int init_begin_cnt =
       int_fetch_add(&_chpl_begin_cnt, 1);       // assume begin will succeed
+    purge(&_chpl_can_exit);                     // set to zero and mark as empty
 
     // Will call the real begin statement function. Only purpose of this
     // thread is to wait on that function and coordinate the exiting
     // of the main Chapel thread.
-    future /*thread$*/(fp, arg, init_begin_cnt) {
+    future (fp, arg, init_begin_cnt) {
       _int64         begin_cnt;
 
 #ifdef MTA_DEBUG
       fprintf(stderr, "Inside future no. %d\n", init_begin_cnt);
 #endif
-      (*fp)(arg, init_begin_cnt);
+      (*fp)(arg);
 
       // decrement begin thread count and see if we can signal Chapel exit
       begin_cnt = int_fetch_add(&_chpl_begin_cnt, -1);
-#ifdef MTA_DEBUG
-      fprintf(stderr, "begin_cnt = %d\n", begin_cnt);
-#endif
-      if (begin_cnt == 1)  // i.e., _chpl_begin_cnt is now zero
+      if (begin_cnt == 1)   // i.e., _chpl_begin_cnt is now zero
         _chpl_can_exit = 1; // mark this variable as being full
 #ifdef MTA_DEBUG
       fprintf(stderr, "About to exit future no. %d; begin_cnt = %d\n",
@@ -379,8 +335,5 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
     }
   }
 
-#ifdef MTA_DEBUG
-  fprintf(stderr, "About to return from %s\n", __func__);
-#endif
   return 0;
 }
