@@ -83,10 +83,9 @@ _bool _chpl_get_serial(void) { return true; }
 void _chpl_set_serial(_bool state) { }
 
 int
-_chpl_cobegin(int                      nthreads, 
-              _chpl_threadfp_t        *fp, 
-              _chpl_threadarg_t       *a, 
-              _chpl_cobegin_wkspace_t *twrk) {
+_chpl_cobegin(int                      nthreads,
+              _chpl_threadfp_t        *fp,
+              _chpl_threadarg_t       *a) {
   int t;
 
   for (t=0; t<nthreads; t++) {

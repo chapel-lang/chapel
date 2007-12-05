@@ -142,10 +142,14 @@ codegenCobegin( FILE* outfile, AList* body) {
     }
   }
   fprintf (outfile, "};\n");
-      
+
+#if 0      
   fprintf (outfile, "_chpl_cobegin_wkspace_t wksp[%d];\n", num_stmts);
   fprintf (outfile, "_chpl_cobegin (%d, %s, %s, %s);\n",
            num_stmts, "fpv", "av", "wksp");
+#endif
+  fprintf (outfile, "_chpl_cobegin (%d, %s, %s);\n",
+           num_stmts, "fpv", "av");
 
 }
 

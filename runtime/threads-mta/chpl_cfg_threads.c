@@ -245,10 +245,9 @@ void _chpl_set_serial(_bool state) {
 }
 
 
-int _chpl_cobegin (int                      nthreads, 
+int _chpl_cobegin (int                      nthreads,
                    _chpl_threadfp_t        *fps,
-                   _chpl_threadarg_t       *args, 
-                   _chpl_cobegin_wkspace_t *twrk) {
+                   _chpl_threadarg_t       *args) {
   int               t;
 
   if (_chpl_get_serial())

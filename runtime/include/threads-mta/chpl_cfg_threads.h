@@ -8,7 +8,6 @@ typedef _chpl_mutex_t *_chpl_mutex_p;
 // thread-related
 typedef void* (*_chpl_threadfp_t)(void*);      // function pointer
 typedef void* _chpl_threadarg_t;               // function argument
-typedef int _chpl_cobegin_wkspace_t;           // temporary work space - not actually used!
 
 #define _chpl_thread_create(thread, attr, fun, arg) \
   (*fun)(arg)

@@ -212,13 +212,15 @@ void _chpl_set_serial(_bool state) {
 }
 
 
-int _chpl_cobegin (int                      nthreads, 
-                   _chpl_threadfp_t        *fp, 
-                   _chpl_threadarg_t       *a, 
-                   _chpl_cobegin_wkspace_t *twrk) {
-  int               t, retv;
+int _chpl_cobegin (int                      nthreads,
+                   _chpl_threadfp_t        *fp,
+                   _chpl_threadarg_t       *a) {
+  int               t, retv = 0;
   void             *fn_retv;                         // drop?
-  retv = 0;
+  struct {                                   // temporary work space
+    _chpl_thread_t thread;                   // thread handle for join/wait
+    int            error;                    // to store fork error code
+  } twrk[nthreads];
 
   if (_chpl_get_serial()) {
     for (t=0; t<nthreads; t++) {

@@ -65,8 +65,7 @@ void    _chpl_serial_delete(_bool *p);
 int
 _chpl_cobegin (int                      nthreads, // number of threads
                _chpl_threadfp_t        *fp,       // ptrs to functions to fork
-               _chpl_threadarg_t       *a,        // function args
-               _chpl_cobegin_wkspace_t *twrk);    // temporary work space
+               _chpl_threadarg_t       *a);       // function args
 
 // Fork one thread.  Do not wait. Used to implement Chapel's begin statement.
 // Return thread creation error.
