@@ -1,3 +1,7 @@
+bug: destructured indices used in parallel contexts
+
+This bug has to do with the destructured indices not being put on the heap.
+
 bug: private coforall indices
 
 It seems that in a coforall, we have a race in which multiple iterations

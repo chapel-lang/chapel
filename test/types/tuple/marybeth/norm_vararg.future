@@ -1,3 +1,5 @@
+semantic: query type of variable number of args
+
 bug: when querying the type of the tuple in a variable length
 argument list, a tuple type is given, not the type of the tuple
 elements

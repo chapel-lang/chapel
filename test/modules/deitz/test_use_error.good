@@ -1,1 +1,1 @@
-error message needs to be updated
+test_use_error.chpl:2: error: Symbol x multiply defined
