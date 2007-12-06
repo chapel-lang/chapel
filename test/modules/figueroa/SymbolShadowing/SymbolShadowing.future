@@ -1,3 +1,5 @@
+error message: use before def in module use statement
+
 error message: message unclear when using imported symbol before use statement
 In this test case, the same symbol, arraySize, is declared in two different
 modules.  There is a writeln statement that uses arraySize before the use
