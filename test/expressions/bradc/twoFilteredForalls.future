@@ -1,5 +1,0 @@
-bug: two filtered foralls
-
-When a program contains two filtered foralls,
-the internal things that are created conflict
-with each other in name.

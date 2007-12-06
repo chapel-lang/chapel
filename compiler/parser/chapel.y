@@ -1479,7 +1479,7 @@ expr:
     {
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, new CallExpr("_cond_test", $7)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
@@ -1487,7 +1487,7 @@ expr:
     {
       if ($2->length() != 1)
         USR_FATAL($5, "invalid index expression");
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $7, new CallExpr("_cond_test", $5)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
@@ -1508,13 +1508,13 @@ expr:
     }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
@@ -1535,13 +1535,13 @@ expr:
     }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
-      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
       forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
