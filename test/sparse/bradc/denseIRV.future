@@ -1,4 +1,4 @@
-error message: internal/impossible candidate functions
+error message: array method candidates
 
 At the time of this writing, this test yields the following output:
 

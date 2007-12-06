@@ -1,4 +1,4 @@
-error message: type assignment in constructors
+error message: constructor error 
 
 The question here was whether to allow assignment of types within a
 user-supplied constructor.  The answer was "no", but that a similar

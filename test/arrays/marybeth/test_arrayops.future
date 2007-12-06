@@ -1,4 +1,4 @@
-error message: iterator sugaring
+error message: iterator class error
 
 This test doesn't work under our current semantics due to the
 fact that array arguments are passed by reference and we don't

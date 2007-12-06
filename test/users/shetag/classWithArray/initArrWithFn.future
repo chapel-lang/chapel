@@ -1,3 +1,7 @@
+bug: method called in class body
+
+This should be legal.
+
 error message: constructor calling method
 
 This test tries to call a method within a constructor, which

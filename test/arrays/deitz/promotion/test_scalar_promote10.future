@@ -1,4 +1,4 @@
-error message: indexing into iterator call
+error message: iterator class error
 
 A better error message to say that you cannot index into an interator.
 This can be captured in a temporary array though.

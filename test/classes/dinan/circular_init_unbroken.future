@@ -1,1 +1,1 @@
-error message: Circular dependence in initialization results in an internal failure
+error message: use before def in class body
