@@ -1,4 +1,4 @@
-warning message: "++var" has no effect.
+error message: warn that statement has no effect
 
 Requesting a warning or error message.  This is an easy mistake for C, C++,
 Java, etc programmers that is often difficult to spot once it's been made.  It

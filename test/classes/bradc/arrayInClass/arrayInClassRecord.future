@@ -1,4 +1,4 @@
-bug: forall array type in class
+bug: forall array type in class body
 
 bug: array in class/record gives internal error
 
