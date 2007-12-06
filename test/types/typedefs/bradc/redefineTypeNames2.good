@@ -1,2 +1,1 @@
-a is: 3.4
-b is: 5.0
+redefineTypeNames2.chpl:4: error: type alias is recursive

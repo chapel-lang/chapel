@@ -1,5 +1,2 @@
-a is: 3.4
-b is: 3.4i
-c is: maybe
-d is: 1.2 + 3.4i
-e is: false
+redefineTypeNames3.chpl:1: In function 'main':
+redefineTypeNames3.chpl:6: error: unresolved call 'bool(128)'

@@ -169,7 +169,19 @@ void scopeResolve(void) {
             symExpr->var = sym;
           if (type)
             if (UserType* ut = toUserType(type->type)) {
-              Expr* e = ut->typeExpr->copy();
+              ASTMap map;
+              Expr* e = ut->typeExpr->copy(&map);
+
+              // detect recursively defined type aliases
+              Vec<BaseAST*> asts;
+              map.get_values(asts);
+              forv_Vec(BaseAST, ast, asts) {
+                if (SymExpr* se = toSymExpr(ast))
+                  if (TypeSymbol* ts = toTypeSymbol(se->var))
+                    if (isUserType(ts->type))
+                      USR_FATAL(se, "type alias is recursive");
+              }
+
               symExpr->replace(e);
               continue;
             }
