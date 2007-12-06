@@ -10,7 +10,7 @@ if ($preset_threads eq "") {
     $platform = `$utildirname/platform.pl --target`;
     chomp($platform);
     if ($platform eq "mta" || $platform eq "xmt") {
-	$threads = "none";
+	$threads = "mta";
     } else {
 	$threads = "pthreads";
     }
