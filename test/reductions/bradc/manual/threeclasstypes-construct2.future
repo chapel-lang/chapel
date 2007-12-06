@@ -1,4 +1,4 @@
-unimplemented feature: constructing generic classes
+bug: user-defined generic constructors
 
 Would be nice to be able to write constructors like this --
 something similar is supported for default constructors, so

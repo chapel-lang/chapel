@@ -1,1 +1,1 @@
-unimplemented feature: Can't return const from a var function in the getter context
+bug: return const in var function if setter is false

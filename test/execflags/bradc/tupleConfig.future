@@ -1,4 +1,4 @@
-unimplemented feature: configs of tuples (string-to-value)
+error message: config vars of non-primitive types
 
 A future showing that config vars of tuples are not
 currently permitted (and that the error message is

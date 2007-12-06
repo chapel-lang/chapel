@@ -1,4 +1,4 @@
-unimplemented feature: slicing sparse domain with dense
+bug: slice sparse domain by dense domain
 
 You should be able to slice a sparse domain with a dense one.  This
 doesn't currently work.

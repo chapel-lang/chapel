@@ -1,3 +1,5 @@
+bug: slice strided domain by unstrided domain
+
 unimplemented feature: slicing strided domains/arrays
 
 See types/range/bradc/strideRangeSlice2.future

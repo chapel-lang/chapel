@@ -1,4 +1,4 @@
-unimplemented feature: Not able to override these() in a subclass
+unimplemented feature: overriding iterators
 
 Overriding these() in a subclass results in a type conflict:
 
