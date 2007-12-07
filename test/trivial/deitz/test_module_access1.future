@@ -1,4 +1,4 @@
-semantic: direct module access for un-use-d module
+semantic: module variable access for unused module
 
 Does a module need to be used before it is used for a member access?
 If not, when is its initializer executed?  Are there challenges in

@@ -1,4 +1,4 @@
-semantic: implicit floating point parameter coercion
+semantic: implicit real parameter coercion
 
 sjd: If we allow parameter real(64) to be implicitly coerced to real(32),
 since we don't allow folding over any operators, this wouldn't apply

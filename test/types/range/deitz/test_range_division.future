@@ -1,4 +1,4 @@
-semantic: should ranges be snapped
+semantic: should ranges be snapped?
 
 Should (1..10 by 2) / 2 contain 0 1 2 3 4 or 0 1 2 3 4 5?
 

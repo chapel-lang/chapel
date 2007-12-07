@@ -1,4 +1,4 @@
-semantic: formal array argument with indefinite reindexing
+semantic: reindexing array argument with unbounded domains 
 
 I think it is a semantic future if Brad can't figure out where
 to draw the line...

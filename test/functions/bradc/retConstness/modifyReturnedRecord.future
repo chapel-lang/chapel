@@ -1,3 +1,5 @@
+error message: const records
+
 semantic: return values should be const by default?
 
 Since we allow functions to be labeled as var, param, and type,
