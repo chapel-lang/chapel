@@ -1,0 +1,8 @@
+bug: int64 single variables don't compile
+
+Using int(64) single variables (and presumably sync
+variables and other isSimpleSyncBaseType() types)
+results in a compilation error due to a conditional
+expression which returns a value along one path
+and not the other.
+
