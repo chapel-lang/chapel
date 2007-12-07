@@ -430,9 +430,9 @@ pragma "inline" def _cond_test(x) {
 //  bug?  in setters, parameterize real argument over complex bit width
 //
 pragma "inline" pragma "ref this"
-def complex.re var return __primitive( "complex_get_real", this);
+def complex.re var return __primitive("complex_get_real", this);
 pragma "inline" pragma "ref this"
-def complex.im var return __primitive( "complex_get_imag", this);
+def complex.im var return __primitive("complex_get_imag", this);
 
 //
 // helper functions
@@ -451,13 +451,13 @@ pragma "inline" def _string_contains(a: string, b: string) return __primitive("s
 //
 // identity functions (for reductions)
 //
-pragma "inline" def _prod_id( type t) return __primitive( "_prod_id", t);
-pragma "inline" def _land_id( type t) return __primitive( "_land_id", t);
-pragma "inline" def _lor_id( type t) return __primitive( "_lor_id", t);
-pragma "inline" def _lxor_id( type t) return __primitive( "_lxor_id", t);
-pragma "inline" def _band_id( type t) return __primitive( "_band_id", t);
-pragma "inline" def _bor_id( type t) return __primitive( "_bor_id", t);
-pragma "inline" def _bxor_id( type t) return __primitive( "_bxor_id", t);
+pragma "inline" def _prod_id(type t) return __primitive("_prod_id", t);
+pragma "inline" def _land_id(type t) return __primitive("_land_id", t);
+pragma "inline" def _lor_id(type t) return __primitive("_lor_id", t);
+pragma "inline" def _lxor_id(type t) return __primitive("_lxor_id", t);
+pragma "inline" def _band_id(type t) return __primitive("_band_id", t);
+pragma "inline" def _bor_id(type t) return __primitive("_bor_id", t);
+pragma "inline" def _bxor_id(type t) return __primitive("_bxor_id", t);
 
 //
 // min and max
@@ -492,7 +492,7 @@ class _ddata {
     __primitive("array_init", this, eltType, size);
     init_elts(this, size, eltType);
   }
-  pragma "inline" def init( d: eltType) {
+  pragma "inline" def init(d: eltType) {
     __primitive("array_init", this, eltType, size);
     [i in 0..size-1] __primitive("array_set_first", this, i, d);
   }
@@ -518,8 +518,8 @@ def _copy(r: _ref) return _copy(__primitive("get ref", r));
 pragma "inline" pragma "ref"
 def _pass(r: _ref) return r;
 
-pragma "inline" def _init( cv: _mutex_p) return __primitive( "mutex_new");
-pragma "inline" def =( a: _mutex_p, b: _mutex_p) return b;
+pragma "inline" def _init(cv: _mutex_p) return __primitive("mutex_new");
+pragma "inline" def =(a: _mutex_p, b: _mutex_p) return b;
 
 pragma "sync"
 pragma "no default functions"
@@ -530,10 +530,10 @@ class _syncvar {
   pragma "omit from constructor" var  sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
 
   def initialize() {
-    __primitive( "init_sync_aux", this);
+    __primitive("init_sync_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {
       // The sync_aux field might not be used on some targets!
-      __primitive( "write_XE0", this);
+      __primitive("write_XE0", this);
     }
   }
 }
@@ -546,19 +546,16 @@ def isSimpleSyncBaseType (type t) param {
   else return false;
 }
 
-pragma "sync" 
-def _copy( sv:_syncvar) {
+def _copy(sv: sync) {
   return readFE(sv);
 }
 
-pragma "sync" 
-def _pass( sv:_syncvar) {
+def _pass(sv: sync) {
   return sv;
 }
 
-pragma "sync" 
-def _init( sv:_syncvar) {
-  return _syncvar( sv.value.type); 
+def _init(sv: sync) {
+  return _syncvar(sv.value.type); 
 }
 
 // The operations are:
@@ -571,100 +568,92 @@ def _init( sv:_syncvar) {
 //  readXX - ignore F/E, leave F/E unchanged
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
-pragma "sync" 
-def =( sv:_syncvar, value:sv.base_type) {
+def =(sv: sync, value:sv.base_type) {
   if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_EF", sv, value);
+    __primitive("write_EF", sv, value);
   } else {
-    __primitive( "sync_wait_empty_and_lock", sv);
+    __primitive("sync_wait_empty_and_lock", sv);
     sv.value = value;
-    __primitive( "sync_mark_and_signal_full", sv);
+    __primitive("sync_mark_and_signal_full", sv);
   }
   return sv;
 }
 
 // Wait for full, set and signal full.
-pragma "sync" 
-def writeFF( sv:_syncvar, value:sv.base_type) {
+def writeFF(sv: sync, value:sv.base_type) {
   if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_FF", sv, value);
+    __primitive("write_FF", sv, value);
   } else {
-    __primitive( "sync_wait_full_and_lock", sv);
+    __primitive("sync_wait_full_and_lock", sv);
     sv.value = value;
-    __primitive( "sync_mark_and_signal_full", sv);
+    __primitive("sync_mark_and_signal_full", sv);
   }
 }
 
 // Ignore F/E, set and signal full.
-pragma "sync" 
-def writeXF( sv:_syncvar, value:sv.base_type) {
+def writeXF(sv: sync, value:sv.base_type) {
   if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_XF", sv, value);
+    __primitive("write_XF", sv, value);
   } else {
-    __primitive( "sync_lock", sv);
+    __primitive("sync_lock", sv);
     sv.value = value;
-    __primitive( "sync_mark_and_signal_full", sv);
+    __primitive("sync_mark_and_signal_full", sv);
   }
 }
 
 // Ignore F/E, set to zero and signal empty.
-pragma "sync" 
-def writeXE0( sv:_syncvar) {
+def writeXE0(sv: sync) {
   if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "write_XE0", sv);
+    __primitive("write_XE0", sv);
   } else {
-    __primitive( "sync_lock", sv);
+    __primitive("sync_lock", sv);
     sv.value = 0;
-    __primitive( "sync_mark_and_signal_empty", sv);
+    __primitive("sync_mark_and_signal_empty", sv);
   }
 }
 
 // This is the default read on sync vars. Wait for full, set and signal empty. 
-pragma "sync" 
-def readFE( sv:_syncvar) {
+def readFE(sv: sync) {
   var ret: sv.base_type;
   if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive( "read_FE", ret, sv);
+    ret = __primitive("read_FE", ret, sv);
   } else {
-    __primitive( "sync_wait_full_and_lock", sv);
+    __primitive("sync_wait_full_and_lock", sv);
     ret = sv.value;
-    __primitive( "sync_mark_and_signal_empty", sv);
+    __primitive("sync_mark_and_signal_empty", sv);
   }
   return ret;
 }
 
 // Wait for full, set and signal full.
-pragma "sync" 
-def readFF( sv:_syncvar) {
+def readFF(sv: sync) {
   var ret: sv.base_type;
   if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive( "read_FF", ret, sv);
+    ret = __primitive("read_FF", ret, sv);
   } else {
-    __primitive( "sync_wait_full_and_lock", sv);
+    __primitive("sync_wait_full_and_lock", sv);
     ret = sv.value;
-    __primitive( "sync_mark_and_signal_full", sv); // in case others are waiting
+    __primitive("sync_mark_and_signal_full", sv); // in case others are waiting
   }
   return ret;
 }
 
 // Ignore F/E.  Read value.  No state change or signals.
-pragma "sync" 
-def readXX( sv:_syncvar) {
+def readXX(sv: sync) {
   var ret: sv.base_type;
   if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive( "read_XX", ret, sv);
+    ret = __primitive("read_XX", ret, sv);
   } else {
-    __primitive( "sync_lock", sv);
+    __primitive("sync_lock", sv);
     ret = sv.value;
-    __primitive( "sync_unlock", sv);
+    __primitive("sync_unlock", sv);
   }
   return ret;
 }
 
 
-pragma "sync" 
-def isFull( sv:_syncvar) {
-  return __primitive( "sync_is_full", sv, isSimpleSyncBaseType(sv.base_type));
+def isFull(sv: sync) {
+  return __primitive("sync_is_full", sv, isSimpleSyncBaseType(sv.base_type));
 }
 
 //
@@ -693,59 +682,54 @@ class _singlevar {
   pragma "omit from constructor" var  single_aux: _single_aux_t; // data structure for locking, signaling, etc.
 
   def initialize() {
-    __primitive( "init_single_aux", this);
+    __primitive("init_single_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {
       // The single_aux field might not be used on some targets!
-      __primitive( "write_XE0", this);
+      __primitive("write_XE0", this);
     }
   }
 }
 
-pragma "sync" 
-def _copy( sv:_singlevar) {
-  return readFF( sv);
+def _copy(sv: single) {
+  return readFF(sv);
 }
 
-pragma "sync" 
-def _pass( sv:_singlevar) {
+def _pass(sv: single) {
   return sv;
 }
 
-pragma "sync" 
-def _init( sv:_singlevar) {
-  return _singlevar( sv.value.type); 
+def _init(sv: single) {
+  return _singlevar(sv.value.type); 
 }
 
 
 // Can only write once.  Otherwise, it is an error.
-pragma "sync" 
-def =( sv:_singlevar, value:sv.base_type) {
+def =(sv: single, value:sv.base_type) {
   if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive( "single_write_EF", sv, value);
+    __primitive("single_write_EF", sv, value);
   } else {
-    __primitive( "single_lock", sv);
-    if (__primitive( "single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
-      halt( "single var already defined");
+    __primitive("single_lock", sv);
+    if (__primitive("single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
+      halt("single var already defined");
     }
     sv.value = value;
-    __primitive( "single_mark_and_signal_full", sv);
+    __primitive("single_mark_and_signal_full", sv);
   }
   return sv;
 }
 
 
 // Wait for full. Set and signal full.
-pragma "sync" 
-def readFF( sv:_singlevar) {
+def readFF(sv: single) {
   var ret: sv.base_type;
   if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive( "single_read_FF", ret, sv);
-  } else if (__primitive( "single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
+    ret = __primitive("single_read_FF", ret, sv);
+  } else if (__primitive("single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
     ret = sv.value;
   } else {
-    __primitive( "single_wait_full", sv);
+    __primitive("single_wait_full", sv);
     ret = sv.value;
-    __primitive( "single_mark_and_signal_full", sv); // in case others are waiting
+    __primitive("single_mark_and_signal_full", sv); // in case others are waiting
   }
   return ret;
 }
@@ -958,20 +942,20 @@ pragma "inline" def _set_field(x, y) {
   return xx;
 }
 
-pragma "inline" pragma "sync" def _set_field(x: _syncvar, y: _syncvar) {
+pragma "inline" def _set_field(x: sync, y: sync) {
   return y;
 }
 
-pragma "inline" pragma "sync" def _set_field(x: _syncvar, y) {
+pragma "inline" def _set_field(x: sync, y) {
   x.writeXE(y);
   return x;
 }
 
-pragma "inline" pragma "sync" def _set_field(x: _singlevar, y: _singlevar) {
+pragma "inline" def _set_field(x: single, y: single) {
   return y;
 }
 
-pragma "inline" pragma "sync" def _set_field(x: _singlevar, y) {
+pragma "inline" def _set_field(x: single, y) {
   x = y;
   return x;
 }
