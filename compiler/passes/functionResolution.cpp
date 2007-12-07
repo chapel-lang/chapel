@@ -1596,6 +1596,7 @@ insertFormalTemps(FnSymbol* fn) {
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
           !formal->type->symbol->hasPragma("domain") &&
+          !formal->type->symbol->hasPragma("sync") &&
           !formal->type->symbol->hasPragma("array"))
         tmp->isConst = true;
       tmp->isCompilerTemp = true;
