@@ -1,0 +1,6 @@
+a.out
+output
+*.tmp
+*.out
+fft
+chapel.hash

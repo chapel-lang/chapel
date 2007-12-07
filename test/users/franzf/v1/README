@@ -82,3 +82,10 @@ fft_512: 162776 ns = 0.142 Gflop/s
 fft_1024: 253733 ns = 0.202 Gflop/s
 fft_2048: 574722 ns = 0.196 Gflop/s
 
+---------------------------
+
+After some emails, we decided that there were a number of things that
+made Franz' experiments not be apples-to-apples comparisons, so we
+put the ball back in his court to clean these up.
+
+

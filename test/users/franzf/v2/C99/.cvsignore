@@ -1,0 +1,5 @@
+output
+*.tmp
+a.out
+fft
+*.out
