@@ -327,8 +327,8 @@ def readln() {
   stdin.readln();
 }
 
-//def read(type t)
-//  return stdin.read(t);
+def read(type t)
+  return stdin.read(t);
 
 def _tuple2string(t) {
   var s: string;

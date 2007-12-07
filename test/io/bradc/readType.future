@@ -1,7 +1,0 @@
-feature request: read(type t)
-
-Would like a standalone read() function that takes a type and returns
-a value of that type.  We support this on files, but to do so for
-standalone requires hacking the compiler or pulling the read() call
-out of the compiler -- since David plans on doing the latter anyway,
-that seems like the better time to get this working.
