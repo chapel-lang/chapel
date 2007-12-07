@@ -375,3 +375,7 @@ def _ddata.writeThis(f: Writer) {
     f.write(this(i), " ");
   f.write(this(size-1));
 }
+
+def format(fmt: string, x) {
+  return __primitive("_format", fmt, x);
+}

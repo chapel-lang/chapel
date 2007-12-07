@@ -43,6 +43,17 @@ char* _glom_strings(int numstrings, ...) {
 }
 
 
+_string _format(_string format, ...) {
+  va_list ap;
+  char z[128];
+
+  va_start(ap, format);
+  if (!vsnprintf(z, 127, format, ap))
+    _printError("overflow encountered in format", 0, 0);
+  return string_copy(z, 0, 0);
+}
+
+
 _string
 string_concat(_string x, _string y, _int32 lineno, _string filename) {
   char *z = (char*)_chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),

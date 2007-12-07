@@ -74,6 +74,11 @@ typedef _int64              _symbol;
 
 #define string_copy(rhs, lineno, filename) (string_concat(rhs, "", lineno, filename))
 
+//
+// stopgap formatting
+//
+_string _format(_string format, ...);
+
 char* _glom_strings(int numstrings, ...);
 
 _bool string_contains(_string x, _string y);

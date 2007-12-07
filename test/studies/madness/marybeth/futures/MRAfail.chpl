@@ -537,8 +537,8 @@ class Function {
     def evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.8f", Fval),
-                    "  f_analytic()=", toString("% 0.8f", fval), " err=", toString("% 0.1e", Fval-fval),
+            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
+                    "  f_analytic()=", format("% 0.8f", fval), " err=", format("% 0.1e", Fval-fval),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
@@ -776,14 +776,6 @@ def phi(x: real, k: int) {
     for n in 1..k-1 do
         p[n] = p[n]*phi_norms[n];
     return p;
-}
-
-_extern def snprintf(buf: string, size: int, fmt: string, vals...?numvals): string;
-
-def toString(fmt: string, x) {
-    var buf: string = "12345678901234567890123456789012345678901234567890";
-    snprintf(buf, 50, fmt, x);
-    return buf;
 }
 
 
