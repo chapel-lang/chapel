@@ -1,4 +1,4 @@
-bug: int64 single variables don't compile
+bug: 64-bit sync/single types
 
 Using int(64) single variables (and presumably sync
 variables and other isSimpleSyncBaseType() types)

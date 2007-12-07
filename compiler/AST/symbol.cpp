@@ -1191,6 +1191,12 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
       Symbol* arg = toSymbol(key);
       if (!arg || !arg->isTypeVariable) {
         // instantiation of a non-type formal of sync type loses sync
+
+        // unless sync is explicitly specified as the generic
+        if (Symbol* sym = toSymbol(key))
+          if (sym->type->symbol->hasPragma("sync"))
+            return t;
+
         Type* nt = toType(t->substitutions.v[0].value);
         return getNewSubType(fn, nt, key);
       }

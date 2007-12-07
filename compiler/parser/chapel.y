@@ -1252,6 +1252,10 @@ type:
     { $$ = new CallExpr( "_singlevar", $2); }
 | TSYNC type
     { $$ = new CallExpr( "_syncvar", $2); }
+| TSINGLE
+    { $$ = new SymExpr( "_singlevar"); }
+| TSYNC
+    { $$ = new SymExpr( "_syncvar"); }
 | TPRIMITIVE TLP expr_ls TRP
     {
       $$ = build_primitive_call($3);

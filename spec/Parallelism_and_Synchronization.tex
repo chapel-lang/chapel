@@ -472,6 +472,21 @@ to the variable and not to accesses of individual fields.  A record or
 class type may have synchronization variable fields to get
 synchronization semantics on individual field accesses.
 
+\subsubsection{Synchronization Formal Arguments}
+\label{Synchronization_Formal_Arguments}
+\index{synchronization variables|formal arguments}
+
+If an argument is a sync or single type, the actual is passed by
+reference and the argument itself is a valid lvalue.
+
+The unqualified types \chpl{sync} and \chpl{single} can also be used
+to specify a generic formal argument.  In this case, the actual must
+be a synchronization variable and it is passed by reference.  For
+generic formal arguments of any type, an actual that is \chpl{sync}
+or \chpl{single} is ``read'' before being passed to the function and
+the generic formal argument is not a \chpl{sync} or \chpl{single}
+type.
+
 \subsection{Memory Consistency Model}
 \label{Memory_Consistency}
 \index{memory consistency model}
