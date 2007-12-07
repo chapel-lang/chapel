@@ -416,11 +416,24 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
 }
 
 
-BlockStmt* build_param_for_stmt(const char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
+BlockStmt* build_param_for(const char* index, Expr* range, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts, BLOCK_PARAM_FOR);
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
   block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64)0)));
+  Expr *low, *high, *stride;
+  CallExpr* call = toCallExpr(range);
+  if (call && call->isNamed("by")) {
+    stride = call->get(2)->remove();
+    call = toCallExpr(call->get(1));
+  } else {
+    stride = new SymExpr(new_IntSymbol(1));
+  }
+  if (call && call->isNamed("_build_range")) {
+    low = call->get(1)->remove();
+    high = call->get(1)->remove();
+  } else
+    USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);

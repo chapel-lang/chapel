@@ -284,7 +284,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       str(dim) = dom.dim(dim)._stride;
     }
     blk(rank) = 1:idxType;
-    for dim in 1..rank-1 by -1 do
+    for param dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
     computeFactoredOffs();
     size = blk(1) * dom.dim(1).length;

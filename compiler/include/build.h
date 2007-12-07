@@ -31,7 +31,7 @@ BlockStmt* build_for_expr(BaseAST* indices,
                           Expr* iterator,
                           Expr* expr,
                           Expr* cond = NULL);
-BlockStmt* build_param_for_stmt(const char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
+BlockStmt* build_param_for(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);

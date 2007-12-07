@@ -1663,12 +1663,18 @@ static void fold_param_for(CallExpr* loop) {
   CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
   block->insertAfter(noop);
   Symbol* index = toSymExpr(index_expr)->var;
-  if (stride <= 0)
-    INT_FATAL("fix this");
-  for (int i = low; i <= high; i += stride) {
-    ASTMap map;
-    map.put(index, new_IntSymbol(i));
-    noop->insertBefore(block->copy(&map));
+  if (stride <= 0) {
+    for (int i = high; i >= low; i += stride) {
+      ASTMap map;
+      map.put(index, new_IntSymbol(i));
+      noop->insertBefore(block->copy(&map));
+    }
+  } else {
+    for (int i = low; i <= high; i += stride) {
+      ASTMap map;
+      map.put(index, new_IntSymbol(i));
+      noop->insertBefore(block->copy(&map));
+    }
   }
   block->replace(loop);
   makeNoop(loop);

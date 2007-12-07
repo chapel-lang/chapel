@@ -415,16 +415,10 @@ if_stmt:
 
 
 for_stmt:
-  TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
-    { $$ = build_param_for_stmt($3, $5, $7, new SymExpr(new_IntSymbol(1)), $9); }
-| TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
-    { $$ = build_param_for_stmt($3, $5, $7, new SymExpr(new_IntSymbol(1)), $8); }
-/*
-| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr TDO stmt
-    { $$ = build_param_for_stmt($3, $5, $7, $9, $11); }
-| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
-    { $$ = build_param_for_stmt($3, $5, $7, $9, $10); }
-*/
+  TFOR TPARAM identifier TIN expr TDO stmt
+    { $$ = build_param_for($3, $5, $7); }
+| TFOR TPARAM identifier TIN expr parsed_block_stmt
+    { $$ = build_param_for($3, $5, $6); }
 
 | TFOR expr TIN expr parsed_block_stmt
     { $$ = build_for_block(BLOCK_FOR, $2, $4, $5); }
