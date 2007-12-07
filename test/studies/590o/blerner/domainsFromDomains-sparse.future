@@ -1,0 +1,5 @@
+feature request: building domains from other domains
+
+This feature requests the ability to build new domains from
+existing domains.  This case captures the desire to build a
+sparse 2D domain from a pair of sparse 1D domains.
