@@ -1,3 +1,8 @@
+semantic: formal array argument with indefinite reindexing
+
+I think it is a semantic future if Brad can't figure out where
+to draw the line...
+
 feature request: formal array argument with indefinite reindexing
 
 This is a very advanced version of the twiddles function in

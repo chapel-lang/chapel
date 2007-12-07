@@ -1,3 +1,8 @@
+semantic: query syntax for array bounds of formal argument
+
+This is pushing it.  Seems at least like a semantic future.
+
+
 feature request: formal array argument bounds query
 
 This is a very advanced version of the twiddles function in

@@ -1,1 +1,1 @@
-feature request: Indefinite reindexing: var Y: [0.. ] => X;
+feature request: reindexing with unbounded domains

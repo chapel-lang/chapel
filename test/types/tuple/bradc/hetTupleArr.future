@@ -1,4 +1,4 @@
-feature request: general support for homogenous tuple types
+bug: first-class homogeneous tuple types
 
 This is similar to homogTupleArr, except that it uses
 heterogeneous tuple syntax, which is working much better.

@@ -1,3 +1,5 @@
+unimplemented feature: shadowed fields
+
 semantic: accessing derived class fields from base class methods
 
 Fields in a derived class should be inaccessible from a method defined in the

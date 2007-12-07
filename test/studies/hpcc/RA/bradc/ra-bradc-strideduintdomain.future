@@ -1,4 +1,4 @@
-feature request: uint stride
+semantic: uint stride
 
 The proposal here is to support a version of the by
 operator that takes a uint and makes sure it's in

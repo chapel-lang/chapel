@@ -1,1 +1,1 @@
-feature request: request for tuple generics of the form: def foo(x: (?T1, ?T2))
+feature request: query component types of tuple argument

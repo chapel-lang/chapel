@@ -1,3 +1,5 @@
+bug: return const in var function if setter is false
+
 feature request: var fns in getter mode can return consts
 
 We currently disallow var functions to return constants; however,

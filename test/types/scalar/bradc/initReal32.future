@@ -1,4 +1,15 @@
-feature request: implicit floating point parameter coercion
+semantic: implicit floating point parameter coercion
+
+sjd: If we allow parameter real(64) to be implicitly coerced to real(32),
+since we don't allow folding over any operators, this wouldn't apply
+to any kind of expression.  So
+
+  var r: real(32) = +2.4;
+
+would still not work.  I'm not opposed to this tact though.  What does
+C# do?  Do they have real(16) if real(32) is their default?
+
+-----------
 
 Unlike integers, floating point literals are not implicitly coerced
 down to smaller floating point sizes, implying that the initialization

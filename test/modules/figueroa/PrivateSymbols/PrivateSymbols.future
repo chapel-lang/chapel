@@ -1,4 +1,5 @@
-feature request: need a way to avoid exporting all symbols from a module
+feature request: private variables in modules
+
 RandomNumber.chpl defines arraySize and seed as configuration variables,
 but they are intended only for use within the main program defined in
 this source file.  Trying to make use of this module in some other program

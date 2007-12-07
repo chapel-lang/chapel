@@ -1,4 +1,4 @@
-feature request: general support for homogenous tuple types
+bug: first-class homogeneous tuple types
 
 I would like a homogeneous tuple type to be used anywhere
 that a type should legally appear.  This test demonstrates

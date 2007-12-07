@@ -1,3 +1,5 @@
+semantic: cobegin scope
+
 feature request: cobegins don't introduce new lexical scope
 
 This feature request asks that variables defined within a

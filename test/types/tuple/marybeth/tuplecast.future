@@ -1,3 +1,34 @@
+semantic: expand value into tuple
+
+sjd: I proposed doing this by writing
+
+  (x...3)
+
+which would be interpreted as
+
+  (x, x, x)
+
+and unifies the syntax of expanding tuples.
+
+Given t = (x, x, x) it is the case that
+
+  (...t)
+
+is expanded out to
+
+  x, x, x
+
+Alternatively, we can prototype a function
+
+  fill(x, 3)
+
+or something like that.
+
+This test is wrong as written because : binds tighter than *
+so it would need to be x:(3*real)
+
+
+
 feature request:  scalar-to-homogeneous-tuple cast
 
 It would be helpful to have a way to cast a scalar value
