@@ -43,6 +43,7 @@ bool fNoExpandIteratorsInlineOpt = false;
 bool fNoLiveVariablesIteratorClassOpt = false;
 bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoNilChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
 bool fSerial = false;
@@ -97,6 +98,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
+ {"no-nil-checks", ' ', NULL, "Disable nil checking", "F", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"serial", ' ', NULL, "Serialize program", "F", &fSerial, "CHPL_SERIAL", NULL},
 

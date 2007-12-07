@@ -3,6 +3,12 @@
 
 #include "chpltypes.h"
 
+#define _CHECK_NIL(x, lineno, filename)                                 \
+  do {                                                                  \
+    if (x == nil)                                                       \
+      _printError("attempt to dereference nil", lineno, filename);      \
+  } while (0)
+
 #define _timervalue struct timeval
 #define _init_timer(time)
 extern _timervalue* _now_timer_help(_timervalue* time);

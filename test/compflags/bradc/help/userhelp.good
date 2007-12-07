@@ -18,6 +18,7 @@ Optimization Control:
       --no-flow-analysis                 Disable optimizations requiring flow
                                          analysis
       --no-inline                        Do not inline functions
+      --no-nil-checks                    Disable nil checking
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
       --serial                           Serialize program

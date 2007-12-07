@@ -292,7 +292,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid, true);
-
+  prim_def(PRIMITIVE_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
 

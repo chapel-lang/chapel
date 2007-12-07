@@ -61,6 +61,28 @@ insertLineNumber(CallExpr* call) {
 void insertLineNumbers() {
   compute_call_sites();
 
+  // insert nil checks primitives in front of all member accesses
+  if (!fNoNilChecks) {
+    forv_Vec(BaseAST, ast, gAsts) {
+      if (CallExpr* call = toCallExpr(ast)) {
+        if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+            call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+            call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+            call->isPrimitive(PRIMITIVE_GET_MEMBER_REF_TO) ||
+            call->isPrimitive(PRIMITIVE_SET_MEMBER_REF_TO)) {
+          Expr* stmt = call->getStmtExpr();
+          currentLineno = stmt->lineno;
+          currentFilename = stmt->filename;
+          ClassType* ct = toClassType(call->get(1)->typeInfo());
+          if (ct && ct->classTag == CLASS_CLASS) {
+            stmt->insertBefore(
+              new CallExpr(PRIMITIVE_CHECK_NIL, call->get(1)->copy()));
+          }
+        }
+      }
+    }
+  }
+
   // loop over all primitives that require a line number and filename
   // and pass them an actual line number and filename
   forv_Vec(BaseAST, ast, gAsts) {

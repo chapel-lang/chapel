@@ -1087,6 +1087,20 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
+    case PRIMITIVE_CHECK_NIL:
+      {
+        ClassType* ct = toClassType(get(1)->typeInfo());
+        if (ct->classTag == CLASS_CLASS) {
+          fprintf(outfile, "_CHECK_NIL(");
+          get(1)->codegen(outfile);
+          fprintf(outfile, ", ");
+          get(2)->codegen(outfile);
+          fprintf(outfile, ", ");
+          get(3)->codegen(outfile);
+          fprintf(outfile, ")");
+        }
+      }
+      break;
     case PRIMITIVE_GET_REAL:
       fprintf(outfile, "&(");
       get(1)->codegen(outfile);

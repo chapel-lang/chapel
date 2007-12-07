@@ -94,7 +94,9 @@ OPTIONS
                     analysis, e.g., global copy propagation and dead
                     code elimination.
 
-  --no-inline       Turns off the inlining of functions.
+  --no-inline       Disables function inlining.
+
+  --no-nil-checks   Turns off dynamic checking for nil dereferences.
 
   --no-single-loop-iterator-opt   By default, the compiler aggressively
                     optimizes iterators that are defined in terms of a 

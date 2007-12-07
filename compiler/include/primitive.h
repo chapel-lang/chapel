@@ -50,6 +50,7 @@ enum PrimitiveTag {
   PRIMITIVE_SET_MEMBER,
   PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
   PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
+  PRIMITIVE_CHECK_NIL,
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
   PRIMITIVE_SET_HEAPVAR,               // used to alloc variables on heap
