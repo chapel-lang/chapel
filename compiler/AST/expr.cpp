@@ -1240,7 +1240,11 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SINGLE_WAIT_FULL:
       fprintf( outfile, "_chpl_single_wait_full(&((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->single_aux))");
+      fprintf( outfile, ")->single_aux), ");
+      get(2)->codegen(outfile);
+      fprintf( outfile, ", ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_SINGLE_SIGNAL_FULL:
       fprintf(outfile, "_chpl_single_mark_and_signal_full(&((");
@@ -1276,8 +1280,8 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_WRITEXE0:
-      fprintf( outfile, "_chpl_write_XE0((");
+    case PRIMITIVE_SYNC_RESET:
+      fprintf( outfile, "_chpl_sync_reset((");
       get(1)->codegen( outfile);
       fprintf( outfile, "))");
       break;
@@ -1324,10 +1328,19 @@ void CallExpr::codegen(FILE* outfile) {
       get(4)->codegen( outfile);
       fprintf( outfile, ")");
       break;
+    case PRIMITIVE_SINGLE_RESET:
+      fprintf( outfile, "_chpl_single_reset((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "))");
+      break;
     case PRIMITIVE_SINGLE_READFF:
       fprintf( outfile, "_chpl_single_read_FF((");
       get(2)->codegen( outfile);
-      fprintf( outfile, "))");
+      fprintf( outfile, "), ");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(4)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_SINGLE_ISFULL:
       fprintf( outfile, "_chpl_single_is_full(&((");

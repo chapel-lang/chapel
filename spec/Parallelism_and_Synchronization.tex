@@ -442,21 +442,25 @@ sync-type:
 \subsubsection{Additional Synchronization Variable Functions}
 \label{Functions_on_Synchronization_Variables}
 \index{synchronization variables!built-in functions on}
-\index{writeFF@\chpl{writeFF}}
-\index{writeXF@\chpl{writeXF}}
-\index{writeXE@\chpl{writeXE}}
+\index{readFE@\chpl{readFE}}
 \index{readFF@\chpl{readFF}}
 \index{readXX@\chpl{readXX}}
+\index{writeEF@\chpl{writeEF}}
+\index{writeFF@\chpl{writeFF}}
+\index{writeXF@\chpl{writeXF}}
+\index{reset@\chpl{reset}}
 
 Synchronization variables support additional methods that
 can be used to bypass their semantics to provide new ones. For
 sync variable \chpl{s}, the following functions are defined:
 \begin{chapel}
-writeFF(s, v) // wait for full, assign s=v, and leave full
-writeXF(s, v) // no wait, assign s=v, and leave full
-writeXE(s, v) // no wait, assign s=v, and leave empty
+readFE(s)     // wait for full, leave empty, and return s's value
 readFF(s)     // wait for full, leave full, and return s's value
 readXX(s)     // no wait, leave F/E unchanged, and return s's value
+writeEF(s, v) // wait for empty, assign s=v, and leave full
+writeFF(s, v) // wait for full, assign s=v, and leave full
+writeXF(s, v) // no wait, assign s=v, and leave full
+reset(s)      // no wait, assign s's default value, and leave empty
 \end{chapel}
 
 For single variables \chpl{s} only \chpl{readFF} is defined.

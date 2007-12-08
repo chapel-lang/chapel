@@ -50,6 +50,8 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
 }
 
 
+// Sync variables
+
 int _chpl_sync_lock(_chpl_sync_aux_t *s) {
   if (s) {
     readfe(&(s->is_full));            // mark empty
@@ -139,6 +141,8 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 }
 
 
+// Single variables
+
 int _chpl_single_lock(_chpl_single_aux_t *s) {
   if (s) {
     readfe(&(s->is_full));            // mark empty
@@ -149,7 +153,7 @@ int _chpl_single_lock(_chpl_single_aux_t *s) {
   }
 }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
   if (s) {
     while (!readxx(&(s->is_full))) {
       readff(&(s->signal_full));
@@ -291,7 +295,6 @@ int _chpl_cobegin (int                      nthreads,
     fprintf(stderr, "Finished creating all futures!\n");
 #endif
 
-    // wait on those threads
     readfe(can_exit_p);      // block until all threads have finished executing
   }
 

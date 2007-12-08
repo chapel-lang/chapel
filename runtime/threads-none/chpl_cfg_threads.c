@@ -4,10 +4,15 @@
 #include "chplmem.h"
 #include "error.h"
 
+// Mutex
+
 int _chpl_mutex_init(_chpl_mutex_p mutex) { return mutex == NULL; }
 int _chpl_mutex_lock(_chpl_mutex_p mutex) { return mutex == NULL; }
 int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return mutex == NULL; }
 int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return mutex == NULL; }
+
+
+// Sync variables
 
 int _chpl_sync_lock(_chpl_sync_aux_t *s) { return s == NULL; }
 int _chpl_sync_unlock(_chpl_sync_aux_t *s) { return s == NULL; }
@@ -48,13 +53,15 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 }
 
 
+// Single variables
+
 int _chpl_single_lock(_chpl_single_aux_t *s) { return s == NULL; }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
   if (*s)
     return 0;
   else {
-    _printError("single var empty (running in single-threaded mode)", 0, 0);
+    _printError("single var empty (running in single-threaded mode)", lineno, filename);
     return 1;
   }
 }
@@ -72,6 +79,8 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
   *s = false;
 }
 
+
+// Threads
 
 void _chpl_serial_delete(_bool *p) { }
 void initChplThreads() { }

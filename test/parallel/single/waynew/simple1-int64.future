@@ -1,8 +1,0 @@
-bug: 64-bit sync/single types
-
-Using int(64) single variables (and presumably sync
-variables and other isSimpleSyncBaseType() types)
-results in a compilation error due to a conditional
-expression which returns a value along one path
-and not the other.
-

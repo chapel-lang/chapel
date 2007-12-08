@@ -23,6 +23,16 @@ static _chpl_condvar_t _chpl_can_exit;       // can main thread exit?
 static pthread_key_t   _chpl_serial;         // per-thread serial state
 
 
+// Condition variables
+
+static _chpl_condvar_p _chpl_condvar_new(void) {
+  _chpl_condvar_p cv;
+  cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
+  pthread_cond_init(cv, NULL);
+  return cv;
+}
+
+
 // Mutex
 
 int _chpl_mutex_init(_chpl_mutex_p mutex) {
@@ -49,22 +59,15 @@ int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
   return pthread_mutex_destroy(mutex);
 }
 
+
+// Sync variables
+
 int _chpl_sync_lock(_chpl_sync_aux_t *s) {
   return _chpl_mutex_lock(s->lock);
 }
 
 int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
   return _chpl_mutex_unlock(s->lock);
-}
-
-
-// Condition variables
-
-static _chpl_condvar_p _chpl_condvar_new(void) {
-  _chpl_condvar_p cv;
-  cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
-  pthread_cond_init(cv, NULL);
-  return cv;
 }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
@@ -111,11 +114,13 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 }
 
 
+// Single variables
+
 int _chpl_single_lock(_chpl_single_aux_t *s) {
   return _chpl_mutex_lock(s->lock);
 }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     return_value = pthread_cond_wait(s->signal_full, s->lock);
@@ -142,14 +147,13 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 }
 
 
-void _chpl_serial_delete(_bool *p) {
+// Threads
+
+static void _chpl_serial_delete(_bool *p) {
   if (NULL != p) {
     _chpl_free(p, 0, 0);
   }
 }
-
-
-// Threads
 
 void initChplThreads() {
   _chpl_mutex_init(&_chpl_begin_cnt_lock);

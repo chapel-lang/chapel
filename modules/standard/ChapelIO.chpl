@@ -278,7 +278,7 @@ def file.lockWrite() {
 }
 
 def file.unlockWrite() {
-  writeXE0(_lock);
+  reset(_lock);
 }
 
 class Writer {
