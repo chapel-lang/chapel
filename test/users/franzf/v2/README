@@ -2,10 +2,10 @@
 Here's the newest version of the code from Franz.  He states that
 he's removed all of the apples-to-oranges comparison factors, and
 is seeing a large performance difference between Chapel and C99
-for gcc.  However, when I run, I'm seeing closer numbers for Intel
-(with Chapel generally winning) and a bigger gap for gcc (with
-Chapel still winning, particularly as problem sizes grow).  The
-*.pdf files in this directory show our respective performance
+for gcc.  However, when I run, I'm seeing gcc beating icc for
+Chapel-generated code, icc beating gcc for SPIRAL-generated code,
+and Chapel + gcc turning in the highest performance overall.
+The *.pdf files in this directory show our respective performance
 results.  Up is better in both graphs.
 
 From Franz' mail:
