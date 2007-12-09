@@ -421,7 +421,7 @@ BlockStmt* build_param_for(const char* index, Expr* range, BlockStmt* stmts) {
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
   block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64)0)));
-  Expr *low, *high, *stride;
+  Expr *low = NULL, *high = NULL, *stride;
   CallExpr* call = toCallExpr(range);
   if (call && call->isNamed("by")) {
     stride = call->get(2)->remove();
