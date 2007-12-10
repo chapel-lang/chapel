@@ -811,6 +811,12 @@ def _isFloatType(type t) param return
   (t == real(32)) | (t == real(64)) | (t == real(128)) |
   (t == imag(32)) | (t == imag(64)) | (t == imag(128));
 
+def _isRealType(type t) param return
+  (t == real(32)) | (t == real(64)) | (t == real(128));
+
+def _isImagType(type t) param return
+  (t == imag(32)) | (t == imag(64)) | (t == imag(128));
+
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
@@ -899,6 +905,18 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
     op = " - ";
   }
   return re + op + im + "i";
+}
+
+pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t) {
+  var y: t;
+  y = x.im:t;
+  return y;
+}
+
+pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) | _isIntegralType(t) {
+  var y: t;
+  y = x.re:t;
+  return y;
 }
 
 pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
