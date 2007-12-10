@@ -1,0 +1,28 @@
+
+I wrote a generic odd-square image filter applier in chapel.  It takes two
+input files: --inputfile="imagefile.dat" --filterfile="aafilter7x7.dat" (for
+instance).  I've included the source, a binary, 3 filters, and some input
+data.  It isn't terribly full featured, and doesn't actually do that much,
+but it took me about 4-5 hours  (including time to read your examples,
+config the compiler, debug, realize I'd not handled edge cases correctly
+etc).
+
+Using Chapel:  I thought generally the development process in Chapel was
+pretty smooth.  There were certain compiler errors which didn't have line
+numbers or involved symbol names in them, and made the debugging process
+pretty difficult (i'm sure they'll get better over time).  I love the ease
+w/ which I can define new iterators, that was one of the big things I
+noticed, and enjoyed. Also, the domain-range relationship is an intuitive
+one, and made doing things which otherwise would've looked way more obscure
+possible w/ less code that is more readable.  Even apart from the scientific
+computing world, this language seems to make it easy to assembly, even
+anonymously, complex data structures (you might not like to hear this, but
+it felt somewhat like perl, which i think shares this property [though
+chapel is more readable]).
+
+Anyhow, thanks for a really interesting quarter, I found it enlightening,
+not only to learn about chapel itself, but to hear something of the
+development process in general for a new language that does lots of cool
+stuff, and is still evolving rapidly.  I wish you guys luck w/ making more
+progress toward finishing it up.
+
