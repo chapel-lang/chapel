@@ -411,7 +411,10 @@ pragma "inline" def _pass(a) return _copy(a);
 
 //
 // _cond_test function supports statement bool conversions and sync
-//   variables in conditional statements
+//   variables in conditional statements; and checks for errors
+// _cond_invalid function checks a conditional expression for
+//   incorrectness; it is used to give better error messages for
+//   promotion of && and ||
 //
 pragma "inline" def _cond_test(x: object) return x != nil;
 pragma "inline" def _cond_test(x: bool) return x;
@@ -423,6 +426,13 @@ pragma "inline" def _cond_test(param x: integral) param return x != 0;
 pragma "inline" def _cond_test(x) {
   compilerError("illegal type '", x.type, "' used in if or while condition");
 }
+
+def _cond_invalid(x: object) param return false;
+def _cond_invalid(x: bool) param return false;
+def _cond_invalid(x: integral) param return false;
+def _cond_invalid(x) param return true;
+
+
 
 //
 // complex component methods re and im

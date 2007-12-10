@@ -1,3 +1,5 @@
+semantic: condition/&&/|| promotion
+
 unimplemented feature: short-circuiting promotion
 
 This relies on promotion over conditional expressions which

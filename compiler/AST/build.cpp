@@ -14,17 +14,31 @@ Expr* buildDot(BaseAST* base, const char* member) {
 
 
 Expr* buildLogicalAnd(BaseAST* left, BaseAST* right) {
-  FnSymbol* ifFn = build_if_expr(new CallExpr("isTrue", left),
+  VarSymbol* lvar = new VarSymbol("tmp");
+  lvar->isCompilerTemp = true;
+  lvar->canParam = true;
+  FnSymbol* ifFn = build_if_expr(new CallExpr("_cond_test",
+                                   new CallExpr("isTrue", lvar)),
                                  new CallExpr("isTrue", right),
                                  new SymExpr(gFalse));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting && operator"))));
+  ifFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, lvar, left));
+  ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));
 }
 
 
 Expr* buildLogicalOr(BaseAST* left, BaseAST* right) {
-  FnSymbol* ifFn = build_if_expr(new CallExpr("isTrue", left),
+  VarSymbol* lvar = new VarSymbol("tmp");
+  lvar->isCompilerTemp = true;
+  lvar->canParam = true;
+  FnSymbol* ifFn = build_if_expr(new CallExpr("_cond_test",
+                                   new CallExpr("isTrue", lvar)),
                                  new SymExpr(gTrue),
                                  new CallExpr("isTrue", right));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting || operator"))));
+  ifFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, lvar, left));
+  ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));
 }
 
@@ -553,10 +567,10 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
                                                    whenCond));
       }
       if (!condStmt) {
-        condStmt = new CondStmt(expr, when->thenStmt);
+        condStmt = new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
         top = condStmt;
       } else {
-        CondStmt* next = new CondStmt(expr, when->thenStmt);
+        CondStmt* next = new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
         condStmt->elseStmt = new BlockStmt(next);
         condStmt = next;
       }
