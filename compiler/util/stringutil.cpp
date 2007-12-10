@@ -7,7 +7,7 @@
 
 static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
 
-const char*
+static const char*
 canonicalize_string(const char *s) {
   const char* ss = chapelStringsTable.get(s);
   if (!ss) {
@@ -19,7 +19,6 @@ canonicalize_string(const char *s) {
 
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4) {
-  static int uid = 1;
   int len;
   len = strlen(s1);
   if (s2)

@@ -132,12 +132,6 @@ static const char* stripdirectories(char* filename) {
 }
 
 
-void genCFilenames(char* modulename, const char** outfilename) {
-  static const char* outfilesuffix = ".c";
-  *outfilename = astr(modulename, outfilesuffix);
-}
-
-
 static FILE* openfile(const char* filename, const char* mode = "w") {
   FILE* newfile;
 

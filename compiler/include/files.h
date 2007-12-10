@@ -19,8 +19,6 @@ void codegen_makefile(fileinfo* mainfile);
 
 void deleteTmpDir(void);
 
-void genCFilenames(char* modulename, char** outfilename);
-
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi);
 
