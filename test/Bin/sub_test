@@ -181,11 +181,7 @@ else
     endif
 endif
 
-if (-r ./USEMAKE) then
-    if ($perftest != 0) then
-	echo "[Skipping non-performance test: $localdir/Makefile]"
-	exit 0
-    endif
+if (-r ./USEMAKE && $perftest == 0) then
     if ($testfutures == 2) then
 	echo "[Skipping non-future test: $localdir/Makefile]"
 	exit 0
