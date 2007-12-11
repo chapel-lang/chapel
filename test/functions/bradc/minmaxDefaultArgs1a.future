@@ -1,0 +1,15 @@
+???: using argument names + default values min/max gives confusing error
+
+I'm not sure whether using argument names min and max with default
+values defined using min/max functions should be illegal (in which
+case this error message could be improved) or whether it should be
+legal and this test should work.  I would've guessed the latter -- 
+that an argument's default value is evaluated prior to the definition 
+of the argument symbol such that this should work.  But it isn't,
+currently, I get:
+
+genericIntArgs1a.chpl:1: In function 'foo':
+genericIntArgs1a.chpl:1: error: actual type is unknown or generic [functionResolution.cpp:30]
+
+See minmaxDefaultArgs.chpl to see how this works when the argument
+names don't conflict.
