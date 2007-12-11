@@ -463,7 +463,18 @@ writeXF(s, v) // no wait, assign s=v, and leave full
 reset(s)      // no wait, assign s's default value, and leave empty
 \end{chapel}
 
-For single variables \chpl{s} only \chpl{readFF} is defined.
+For single variables \chpl{s},
+only \chpl{readFF} and \chpl{writeEF} are defined.
+
+\begin{rationale}
+Although the \chpl{readFE}, \chpl{readFF}, and \chpl{writeEF} methods
+are implicitly called
+when referencing or assigning to sync or single variables,
+making these methods available supports programmers who wish to
+make the semantics of these operations more explicit.
+It might be desirable to have a compiler option
+that disables the implicit use of these methods.
+\end{rationale}
 
 \subsubsection{Synchronization Variables of Record and Class Types}
 \label{Synchronization_Variables_of_Record_Type}
