@@ -10,6 +10,13 @@ but because the sparse domain wasn't (and has value information)
 it was choking.  Other domain types don't have value information
 so don't require special-casing.
 
+While the buildEmptyDomain() can easily be specialized to
+work for sparseInClass.chpl (for example, by making the
+parentDom nil), this breaks in a test like this one that
+refers to the parentDom field -- that bogus nil entry gets
+propagated to the actual domain field rather than getting
+dropped on the floor like it should.
+
 -----------------
 
 Here are some general thoughts I have on this issue tonight:
