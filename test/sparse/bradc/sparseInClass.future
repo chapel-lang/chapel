@@ -1,0 +1,7 @@
+bug: sparse domains in classes no longer work
+
+This test worked in our last release (v0.5.608), but not in
+our current one due to a nil pointer dereference.  I'm not
+sure what's changed, though it seems related to the ongoing
+complications with the buildEmptyClass() method.  In this
+case it's called with a nil "this" pointer for some reason...
