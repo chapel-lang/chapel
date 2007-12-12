@@ -11,6 +11,7 @@
 // must be non-static to avoid dead-code elim. when compiling -O3
 
 void gdbShouldBreakHere(void) {
+  printf("%s", "");
 }
 
 
