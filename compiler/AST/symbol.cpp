@@ -744,9 +744,9 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
         } else {
           if (ts->hasPragma("single"))
-            call->insertAtTail(new CallExpr("readFF", wrapper_formal));
+            call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapper_formal));
           else
-            call->insertAtTail(new CallExpr("readFE", wrapper_formal));
+            call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapper_formal));
         }
       } else if (ts->hasPragma("ref")) {
         // && !formal->isTypeVariable) {  -- see note in resolution pruning

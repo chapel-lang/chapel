@@ -18,7 +18,7 @@ for i in 1..3 {
 }
 
 while !done {
-  if (readXX(count) == 3) {
+  if (count.readXX() == 3) {
     writeln(a);
     writeln(b);
     done = true;

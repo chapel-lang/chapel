@@ -200,7 +200,7 @@ def uts_showSearchParams() {
 def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
-    if (q.size > 2*chunkSize && readXX(thread_cnt) < MAX_THREADS) {
+    if (q.size > 2*chunkSize && thread_cnt.readXX() < MAX_THREADS) {
       if debug then writeln(" ** dequeue ", q.id, " splitting off ", chunkSize, " nodes");
 
       // Attempt to reduce thread creation overhead
@@ -275,14 +275,14 @@ def main() {
   writeln("Performing ", if parallel then "parallel" else "serial", " tree search...");
 
   t_create.start();
-  writeXF(thread_cnt, 1);
+  thread_cnt.writeXF(1);
   create_tree(queue);
   if parallel then while !terminated { } // Wait for termination
   t_create.stop();
 
   writeln();
   if !testMode then writeln("Threads spawned: ", threads_spawned);
-  writeln("Tree size = ", readXX(global_count), ", depth = ", readXX(global_maxDepth));
+  writeln("Tree size = ", global_count.readXX(), ", depth = ", global_maxDepth.readXX());
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
-          " (", readXX(global_count)/t_create.elapsed(), " nodes/sec)");
+          " (", global_count.readXX()/t_create.elapsed(), " nodes/sec)");
 }

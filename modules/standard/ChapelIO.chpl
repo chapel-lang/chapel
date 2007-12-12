@@ -270,15 +270,15 @@ def string.write(args ...?n) {
 
 def file.lockWrite() {
   var me: uint(64) = __primitive("thread_id");
-  if isFull(_lock) then
-    if readXX(_lock) == me then
+  if _lock.isFull then
+    if _lock.readXX() == me then
       return false;
   _lock = me;
   return true;
 }
 
 def file.unlockWrite() {
-  reset(_lock);
+  _lock.reset();
 }
 
 class Writer {

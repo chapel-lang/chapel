@@ -190,7 +190,7 @@ def uts_showSearchParams() {
 def requestThreads(n:int): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
-    if (readXX(thread_cnt) < MIN_THREADS) {
+    if (thread_cnt.readXX() < MIN_THREADS) {
       var thread_cnt_l = thread_cnt;
 
       // Try to get a ticket to run in parallel

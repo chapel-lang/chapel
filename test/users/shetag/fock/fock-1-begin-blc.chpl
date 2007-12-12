@@ -49,8 +49,8 @@ def buildjk() {
           task = bI;
           numTasksDone = numTasksDone + 1;
         //task = blockIndices(0,0,0,0,0,0,0,0);
-        //writeXF(task, bI);		
-        //writeXF(task, blockIndices(0,0,0,0,0,0,0,0));
+        //task.writeXF(bI);		
+        //task.writeXF(blockIndices(0,0,0,0,0,0,0,0));
         }
     
     {
@@ -68,7 +68,7 @@ def buildjk() {
     }
   }
   
-  while (readXX(numTasksDone) < nlocales) {
+  while (numTasksDone.readXX() < nlocales) {
   }
 
   cobegin {

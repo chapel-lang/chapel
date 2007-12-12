@@ -118,7 +118,7 @@ pragma "inline" def -(a: int(32)) return __primitive("u-", a);
 pragma "inline" def -(a: int(64)) return __primitive("u-", a);
 pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type); }
 pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
-pragma "inline" def -(a: imag(?w)) return __primitive("u-", a);
+pragma "inline" def -(a: imag(?w)) return __primitive("u-", a):imag(w);
 pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
 
 pragma "inline" def +(param a: int(32)) param return a;
@@ -185,8 +185,8 @@ pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
 pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", a, b));
 pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
 
-pragma "inline" def *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
-pragma "inline" def *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
+pragma "inline" def *(a: real(?w), b: imag(w)) return (a*_i2r(b)):imag(w);
+pragma "inline" def *(a: imag(?w), b: real(w)) return (_i2r(a)*b):imag(w);
 pragma "inline" def *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
 pragma "inline" def *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
 pragma "inline" def *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
@@ -202,8 +202,8 @@ pragma "inline" def /(a: complex(?w), b: complex(w))
   return let d = b.re*b.re+b.im*b.im in
     ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
 
-pragma "inline" def /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
-pragma "inline" def /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
+pragma "inline" def /(a: real(?w), b: imag(w)) return (-a/_i2r(b)):imag(w);
+pragma "inline" def /(a: imag(?w), b: real(w)) return (_i2r(a)/b):imag(w);
 pragma "inline" def /(a: real(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
     (a*b.re/d, -a*b.im/d):complex;
@@ -397,7 +397,7 @@ pragma "inline" def _init(x: bool) return false;
 pragma "inline" def _init(x: int(?w)) return 0:int(w);
 pragma "inline" def _init(x: uint(?w)) return 0:uint(w);
 pragma "inline" def _init(x: real(?w)) return 0.0:real(w);
-pragma "inline" def _init(x: imag(?w)) return _r2i(0.0:real(w));
+pragma "inline" def _init(x: imag(?w)) return 0.0:imag(w);
 pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
 pragma "inline" def _init(x: string) return "";
 pragma "inline" def _init(x) return nil:x.type;
@@ -447,8 +447,7 @@ def complex.im var return __primitive("complex_get_imag", this);
 //
 // helper functions
 //
-pragma "inline" def _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
-pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
+pragma "inline" def _i2r(a: imag(?w)) return a:real(w);
 
 //
 // primitive string functions and methods
@@ -532,6 +531,13 @@ def _pass(r: _ref) return r;
 pragma "inline" def _init(cv: _mutex_p) return __primitive("mutex_new");
 pragma "inline" def =(a: _mutex_p, b: _mutex_p) return b;
 
+// Returns whether an object of type t occupies a 64-bit word on MTA
+def isSimpleSyncBaseType (type t) param {
+  if (t == int(64) || t == uint(64))
+    return true;
+  else return false;
+}
+
 pragma "sync"
 pragma "no default functions"
 pragma "no object"
@@ -549,15 +555,8 @@ class _syncvar {
   }
 }
 
-// Returns whether an object of type t occupies a 64-bit word on MTA
-def isSimpleSyncBaseType (type t) param {
-  if (t == int(64) || t == uint(64))
-    return true;
-  else return false;
-}
-
 def _copy(sv: sync) {
-  return readFE(sv);
+  return sv.readFE();
 }
 
 def _pass(sv: sync) {
@@ -579,98 +578,98 @@ def _init(sv: sync) {
 //  reset - ignore F/E, write zero, leave empty
 //  isFull - query whether it is full
 
-// This is the default read on sync vars. Wait for full, set and signal empty. 
-def readFE(sv: sync) {
-  var ret: sv.base_type;
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive("read_FE", ret, sv);
+// This is the default read on sync vars. Wait for full, set and signal empty.
+def _syncvar.readFE() {
+  var ret: base_type;
+  if (isSimpleSyncBaseType(base_type)) {
+    ret = __primitive("read_FE", ret, this);
   } else {
-    __primitive("sync_wait_full_and_lock", sv);
-    ret = sv.value;
-    __primitive("sync_mark_and_signal_empty", sv);
+    __primitive("sync_wait_full_and_lock", this);
+    ret = value;
+    __primitive("sync_mark_and_signal_empty", this);
   }
   return ret;
 }
 
 // Wait for full, set and signal full.
-def readFF(sv: sync) {
-  var ret: sv.base_type;
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive("read_FF", ret, sv);
+def _syncvar.readFF() {
+  var ret: base_type;
+  if (isSimpleSyncBaseType(base_type)) {
+    ret = __primitive("read_FF", ret, this);
   } else {
-    __primitive("sync_wait_full_and_lock", sv);
-    ret = sv.value;
-    __primitive("sync_mark_and_signal_full", sv); // in case others are waiting
+    __primitive("sync_wait_full_and_lock", this);
+    ret = value;
+    __primitive("sync_mark_and_signal_full", this); // in case others are waiting
   }
   return ret;
 }
 
 // Ignore F/E.  Read value.  No state change or signals.
-def readXX(sv: sync) {
-  var ret: sv.base_type;
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive("read_XX", ret, sv);
+def _syncvar.readXX() {
+  var ret: base_type;
+  if (isSimpleSyncBaseType(base_type)) {
+    ret = __primitive("read_XX", ret, this);
   } else {
-    __primitive("sync_lock", sv);
-    ret = sv.value;
-    __primitive("sync_unlock", sv);
+    __primitive("sync_lock", this);
+    ret = value;
+    __primitive("sync_unlock", this);
   }
   return ret;
 }
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
-def writeEF(sv: sync, value:sv.base_type) {
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive("write_EF", sv, value);
+def _syncvar.writeEF(val:base_type) {
+  if (isSimpleSyncBaseType(base_type)) {
+    __primitive("write_EF", this, val);
   } else {
-    __primitive("sync_wait_empty_and_lock", sv);
-    sv.value = value;
-    __primitive("sync_mark_and_signal_full", sv);
+    __primitive("sync_wait_empty_and_lock", this);
+    value = val;
+    __primitive("sync_mark_and_signal_full", this);
   }
 }
 
-def =(sv: sync, value:sv.base_type) {
-  writeEF(sv, value);
+def =(sv: sync, val:sv.base_type) {
+  sv.writeEF(val);
   return sv;
 }
 
 // Wait for full, set and signal full.
-def writeFF(sv: sync, value:sv.base_type) {
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive("write_FF", sv, value);
+def _syncvar.writeFF(val:base_type) {
+  if (isSimpleSyncBaseType(base_type)) {
+    __primitive("write_FF", this, val);
   } else {
-    __primitive("sync_wait_full_and_lock", sv);
-    sv.value = value;
-    __primitive("sync_mark_and_signal_full", sv);
+    __primitive("sync_wait_full_and_lock", this);
+    value = val;
+    __primitive("sync_mark_and_signal_full", this);
   }
 }
 
 // Ignore F/E, set and signal full.
-def writeXF(sv: sync, value:sv.base_type) {
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive("write_XF", sv, value);
+def _syncvar.writeXF(val:base_type) {
+  if (isSimpleSyncBaseType(base_type)) {
+    __primitive("write_XF", this, val);
   } else {
-    __primitive("sync_lock", sv);
-    sv.value = value;
-    __primitive("sync_mark_and_signal_full", sv);
+    __primitive("sync_lock", this);
+    value = val;
+    __primitive("sync_mark_and_signal_full", this);
   }
 }
 
 // Ignore F/E, set to zero or default value and signal empty.
-def reset(sv: sync) {
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    // Reset sv to zero.
-    __primitive("sync_reset", sv);
+def _syncvar.reset() {
+  if (isSimpleSyncBaseType(base_type)) {
+    // Reset this's value to zero.
+    __primitive("sync_reset", this);
   } else {
-    const default_value: sv.base_type;
-    __primitive("sync_lock", sv);
-    sv.value = default_value;
-    __primitive("sync_mark_and_signal_empty", sv);
+    const default_value: base_type;
+    __primitive("sync_lock", this);
+    value = default_value;
+    __primitive("sync_mark_and_signal_empty", this);
   }
 }
 
-def isFull(sv: sync) {
-  return __primitive("sync_is_full", sv, isSimpleSyncBaseType(sv.base_type));
+def _syncvar.isFull {
+  return __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
 }
 
 
@@ -684,7 +683,7 @@ class _syncStack {
 def _pushSyncStack(s: _syncStack) return _syncStack(next=s);
 def _waitSyncStack(in s: _syncStack) {
   while s != nil {
-    readFE(s.v);
+    s.v.readFE();
     s = s.next;
   }
 }
@@ -710,7 +709,7 @@ class _singlevar {
 }
 
 def _copy(sv: single) {
-  return readFF(sv);
+  return sv.readFF();
 }
 
 def _pass(sv: single) {
@@ -723,37 +722,37 @@ def _init(sv: single) {
 
 
 // Wait for full. Set and signal full.
-def readFF(sv: single) {
-  var ret: sv.base_type;
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    ret = __primitive("single_read_FF", ret, sv);
-  } else if (__primitive("single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
-    ret = sv.value;
+def _singlevar.readFF() {
+  var ret: base_type;
+  if (isSimpleSyncBaseType(base_type)) {
+    ret = __primitive("single_read_FF", ret, this);
+  } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+    ret = value;
   } else {
-    __primitive("single_wait_full", sv);
-    ret = sv.value;
-    __primitive("single_mark_and_signal_full", sv); // in case others are waiting
+    __primitive("single_wait_full", this);
+    ret = value;
+    __primitive("single_mark_and_signal_full", this); // in case others are waiting
   }
   return ret;
 }
 
 
 // Can only write once.  Otherwise, it is an error.
-def writeEF(sv: single, value:sv.base_type) {
-  if (isSimpleSyncBaseType(sv.base_type)) {
-    __primitive("single_write_EF", sv, value);
+def _singlevar.writeEF(val:base_type) {
+  if (isSimpleSyncBaseType(base_type)) {
+    __primitive("single_write_EF", this, val);
   } else {
-    __primitive("single_lock", sv);
-    if (__primitive("single_is_full", sv, isSimpleSyncBaseType(sv.base_type))) {
+    __primitive("single_lock", this);
+    if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
       halt("single var already defined");
     }
-    sv.value = value;
-    __primitive("single_mark_and_signal_full", sv);
+    value = val;
+    __primitive("single_mark_and_signal_full", this);
   }
 }
 
 def =(sv: single, value:sv.base_type) {
-  writeEF(sv, value);
+  sv.writeEF(value);
   return sv;
 }
 
@@ -798,6 +797,7 @@ def _isPrimitiveType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) | (t == real(128)) |
+  (t == imag(32)) | (t == imag(64)) | (t == imag(128)) |
   (t == string);
 
 def _isIntegralType(type t) param return
@@ -829,6 +829,9 @@ pragma "inline" def _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
+pragma "inline" def _cast(type t, x: imag(?w)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
 pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
@@ -844,55 +847,47 @@ pragma "inline" def _cast(type t, x) where t:object & x:_nilType
 pragma "inline" def _cast(type t, x) where x:object & t:x & (x.type != t)
   return __primitive("dynamic_cast", t, x);
 
-pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
-  return nil;
-
 //
 // casts to complex
 //
-pragma "inline" def _cast(type t, x: bool) where _isComplexType(t)
-  return (x, 0):t;
+pragma "inline" def _cast(type t, x: bool) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
 
-pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t)
-  return (x, 0):t;
+pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
 
-pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t)
-  return (x, 0):t;
+pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x;
+  return y;
+}
 
-pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t)
-  return (x, 0):t;
+pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x:y.re.type;
+  return y;
+}
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t)
-  return (0, _i2r(x)):t;
+pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t) {
+  var y: t;
+  y.im = x:y.im.type;
+  return y;
+}
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t)
-  return (x.re, x.im):t;
+pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t) {
+  var y: t;
+  y.re = x.re:y.re.type;
+  y.im = x.im:y.im.type;
+  return y;
+}
 
 pragma "inline" def _cast(type t, x: string) where _isComplexType(t)
-  return __primitive("cast", t, x);
-
-//
-// casts to imag
-//
-pragma "inline" def _cast(type t, x: bool) where _isImagType(t)
-  return if x then 1i:t else 0i:t;
-
-pragma "inline" def _cast(type t, x: int(?w)) where _isImagType(t)
-  return 0i:t;
-
-pragma "inline" def _cast(type t, x: uint(?w)) where _isImagType(t)
-  return 0i:t;
-
-pragma "inline" def _cast(type t, x: real(?w)) where _isImagType(t)
-  return 0i:t;
-
-pragma "inline" def _cast(type t, x: imag(?w)) where _isImagType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t)
-  return let xim = x.im in __primitive("cast", t, xim);
-
-pragma "inline" def _cast(type t, x: string) where _isImagType(t)
   return __primitive("cast", t, x);
 
 //
@@ -912,23 +907,20 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
   return re + op + im + "i";
 }
 
+pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t) {
+  var y: t;
+  y = x.im:t;
+  return y;
+}
+
 pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) | _isIntegralType(t) {
   var y: t;
   y = x.re:t;
   return y;
 }
 
-//
-// casts from imag
-//
-pragma "inline" def _cast(type t, x: imag(?w)) where t == string
-  return __primitive("cast", t, x);
-
-pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) | _isIntegralType(t)
-  return 0:t;
-
-pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
-  return if x != 0i then true else false;
+pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
+  return nil;
 
 // handle default iterators
 pragma "inline" def _getIterator(ic: _iteratorClass)

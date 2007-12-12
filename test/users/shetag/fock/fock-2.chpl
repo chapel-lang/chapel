@@ -45,7 +45,7 @@ def buildjk() {
 			numLocsDone = numLocsDone+1;
 		}
 
-	while (readXX(numLocsDone) < numLocs) {
+	while (numLocsDone.readXX() < numLocs) {
 	}
 
 	cobegin {

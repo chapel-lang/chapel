@@ -23,7 +23,7 @@ for i in 1..n {
 }
 
 while ss != nil {
-  readFE(ss.v);
+  ss.v.readFE();
   ss = ss.next;
 }
 

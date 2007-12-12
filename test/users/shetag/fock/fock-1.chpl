@@ -42,7 +42,7 @@ def buildjk() {
       task = bI;
   }
   
-  while (readXX(numLocsDone) < numLocs) {
+  while (numLocsDone.readXX() < numLocs) {
   }
 
   cobegin {

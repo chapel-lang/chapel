@@ -46,8 +46,8 @@ def buildjk() {
           }
           task = bI;
         //task = blockIndices(0,0,0,0,0,0,0,0);
-        //writeXF(task, bI);		
-        //writeXF(task, blockIndices(0,0,0,0,0,0,0,0));
+        //task.writeXF(bI);		
+        //task.writeXF(blockIndices(0,0,0,0,0,0,0,0));
         }
     
     {
