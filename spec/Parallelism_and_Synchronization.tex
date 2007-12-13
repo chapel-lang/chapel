@@ -449,22 +449,90 @@ sync-type:
 \index{writeFF@\chpl{writeFF}}
 \index{writeXF@\chpl{writeXF}}
 \index{reset@\chpl{reset}}
+\index{isFull@\chpl{isFull}}
 
 Synchronization variables support additional methods that
-can be used to bypass their semantics to provide new ones. For
-sync variable \chpl{s}, the following functions are defined:
-\begin{chapel}
-readFE(s)     // wait for full, leave empty, and return s's value
-readFF(s)     // wait for full, leave full, and return s's value
-readXX(s)     // no wait, leave F/E unchanged, and return s's value
-writeEF(s, v) // wait for empty, assign s=v, and leave full
-writeFF(s, v) // wait for full, assign s=v, and leave full
-writeXF(s, v) // no wait, assign s=v, and leave full
-reset(s)      // no wait, assign s's default value, and leave empty
-\end{chapel}
+can be used to bypass their semantics to provide new ones.
+Let \chpl{sync_class} be a (compiler-generated) class
+for a sync variable \chpl{s} of arbitrary type \chpl{t}.
+The following methods are defined in this class:
+
+\begin{protohead}
+def $sync_class$.readFE(): t
+\end{protohead}
+\begin{protobody}
+Wait for full, leave empty, and return \chpl{s}'s value.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.readFF(): t
+\end{protohead}
+\begin{protobody}
+Wait for full, leave full, and return \chpl{s}'s value.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.readXX(): t
+\end{protohead}
+\begin{protobody}
+No wait, leave F/E unchanged, and return \chpl{s}'s value.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.writeEF(v: t)
+\end{protohead}
+\begin{protobody}
+Wait for empty, assign \chpl{s=v}, and leave full.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.writeFF(v: t)
+\end{protohead}
+\begin{protobody}
+Wait for full, assign \chpl{s=v}, and leave full.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.writeXF(v: t)
+\end{protohead}
+\begin{protobody}
+No wait, assign \chpl{s=v}, and leave full.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.reset()
+\end{protohead}
+\begin{protobody}
+No wait, assign to \chpl{s} \chpl{t}'s default value, and leave empty.
+\end{protobody}
+
+\begin{protohead}
+def $sync_class$.isFull: bool
+\end{protohead}
+\begin{protobody}
+No wait, returns \chpl{true} if \chpl{s} is full, \chpl{false} otherwise.
+\end{protobody}
 
 For single variables \chpl{s},
 only \chpl{readFF} and \chpl{writeEF} are defined.
+
+\begin{example}
+Given the following declarations
+\begin{chapel}
+var x: single int;
+var y: int;
+\end{chapel}
+the code
+\begin{chapel}
+x = 5;
+y = x;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+x.writeEF(5);
+y = x.readFF();
+\end{chapel}
+\end{example}
 
 \begin{rationale}
 Although the \chpl{readFE}, \chpl{readFF}, and \chpl{writeEF} methods
