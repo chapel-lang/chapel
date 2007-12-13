@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-STOPPED AT 10/11/07 17:27:23 -- deitz
+STOPPED AT 12/12/07 21:59:41 -- figueroa
 
 ===========
 version 0.6
@@ -38,6 +38,8 @@ Changes to Chapel Language:
 - added support for membership test on ranges
 - added ability for user to overload operators for uint(64)/int combinations
 - added support for defining type functions
+- changed supported functionality on sync and single variables
+- converted sync/single variable functions into methods
 
 Changes to Chapel Build Environment:
 ------------------------------------
@@ -53,22 +55,38 @@ Newly Implemented Features:
 - improved support for slicing using unbounded and degenerate ranges
 - relaxed requirements that slicer and slicee objects use the same integer type
 - initial support for "on" statements
-- improved tuple type orthogonality; they can now be used in most type contexts
-- improved nesting of modules and resolution of symbols defined in modules
+- improved tuple type orthogonality; they can now be used in all type contexts
+- improved support for nested modules and symbol resolution for external modules
 - support for overriding this() method in subclasses
 - added support for | and & reductions over booleans
 - improved legality checks for string-to-value conversions
 - added support for rank change slicing of domains and arrays
 - added support for a .clear() method on associative domains
 - added range checking for casts from integers to enumerated types
+- added support for instantiating types/functions using array types
+- improved support for copy collection for single-threaded codes
+- native support for task parallelism on Cray MTA/XMT platforms
+- support for arrays of arrays where the inner arrays are of the same size
+- improved support for user-defined class constructors
+- improved support for shadowing fields in subclasses
+- added support for arrays of domains (but not arrays of sparse subdomains)
+- implemented a reshape function for arrays
+- initial implementation of opaque domains and arrays
+- added support for strided param for loops
+- added support for generic function arguments over sync types
+  e.g., def foo(x: sync) { ... }
+- added support for runtime checks against nil class references
+- support for casts between complex and imaginary, real, and integral types
 
 Semantic Changes:
 -----------------
 - defined semantics of default functions as being "return a const"
+- user-defined constructors now prevent a default constructor from being created
 
 Syntactic/Naming Changes:
 -------------------------
 - added ability to tag a function as returning a const value for documentation
+- changed name of array of locales from Locale to Locales (as named in spec)
 
 Documentation:
 --------------
@@ -85,6 +103,7 @@ Compiler Flags:
 ---------------
 - improved parsing of command-line flags for compiler
 - better error checking for parsing config params
+- --no-nil-checks to disable runtime checks for nil class references
 - --main-module flag to select between multiple possible program entry points
 - --ldflags option to pass flags to the C link step
 - --serial flag to disable all parallelism in a program
@@ -109,14 +128,23 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - added more bounds checking to associative domain operations
 - default argument values specified via a function call now work properly
 - whole-array assignment of arrays of sync variables now works correctly
+- improved error checks for the use of values in a type context and vice-versa
+- improved error checks for string.substring() function
+- added check that actual arguments to inout or out formals are valid lvalues
+- improved checks preventing against assignment to const variables
+- fixed bugs in certain sync variable read/write functions
+- improved robustness of tensor function promotion
+- improved checking that a function returns a value along all control paths
 
 Error Message Improvements:
 ---------------------------
+- improved clarity of function resolution error messages
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
 - enabled copy propagation for complex types
 - added strength reduction for ** with an exponent of 0-6 and 8
+- improved the performance of the bitMatMultOr routine in the BitOps module
 
 Compiler Performance and Cleanup:
 ---------------------------------
