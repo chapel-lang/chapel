@@ -224,7 +224,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   // ...yield a subBlock of the domain per thread per locale
   def subBlocks {
     if (rank != 1) then halt("subBlocks not yet implemented for >1D domains");
-    for block in BlockSchedule(this, Locale(0).numCores) {
+    for block in BlockSchedule(this, Locales(0).numCores) {
       yield block;
     }
   }

@@ -5,7 +5,7 @@ def main {
   _debugWriteln(localeID(), " y=", y);
   x = x + 1;
   y = y + 1;
-  on Locale(1) {
+  on Locales(1) {
     _debugWriteln(localeID(), " x=", x);
     _debugWriteln(localeID(), " y=", y);
     x = x + 1;

@@ -14,7 +14,7 @@ def main {
   r.x2 = r.x2 + 2;
   r.x3 = r.x3 + 3;
 
-  on Locale(1) {
+  on Locales(1) {
     _debugWriteln(localeID(), ": ", r.x1, " ", r.x2, " ", r.x3);
     r.x1 = r.x1 + 1;
     r.x2 = r.x2 + 2;

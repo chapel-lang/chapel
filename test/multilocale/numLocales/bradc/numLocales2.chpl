@@ -1,5 +1,5 @@
 use Memory;
 
 writeln("numLocales = ", numLocales);
-writeln("LocaleDomain = ", LocaleDomain);
-writeln("Locale = ", Locale);
+writeln("LocalesDomain = ", LocalesDomain);
+writeln("Locales = ", Locales);

@@ -2,7 +2,7 @@ def main {
   var x: int;
   coforall i in 0..numLocales-1 {
     var y: int;
-    on Locale(i) {
+    on Locales(i) {
       y = i+3628800;
     }
     x += y;
