@@ -122,10 +122,40 @@ def file.readln(inout list ...?n) {
   __primitive("_readToEndOfLine",_fp);
 } 
 
+// Manually duplicating readln methods for each type.
+// This is done because the compiler doesn't yet
+// support overloading between generic and type
+// arguments.
+
 def file.readln(inout val: int) {
   read(val);
   __primitive("_readToEndOfLine",_fp);
-}  
+}
+
+def file.readln(inout val: uint) {
+  read(val);
+  __primitive("_readToEndOfLine",_fp);
+}
+
+def file.readln(inout val: real) {
+  read(val);
+  __primitive("_readToEndOfLine",_fp);
+}
+
+def file.readln(inout val: complex) {
+  read(val);
+  __primitive("_readToEndOfLine",_fp);
+}
+
+def file.readln(inout val: string) {
+  read(val);
+  __primitive("_readToEndOfLine",_fp);
+}
+
+def file.readln(inout val: bool) {
+  read(val);
+  __primitive("_readToEndOfLine",_fp);
+}
 
 def file.readln(type t) {
   var val: t;
