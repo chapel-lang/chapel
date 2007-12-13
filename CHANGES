@@ -2,12 +2,154 @@
 Release Changes List
 ====================
 
------------
+STOPPED AT 10/11/07 17:27:23 -- deitz
+
+===========
+version 0.6
+===========
+Third preliminary release of Chapel Compiler, December 2007
+
+
+High-Level Themes:
+------------------
+- single-locale, multiple threads
+- support for additional serial features
+- improved single-threaded performance, memory utilization
+- improved multi-threaded correctness, features
+- target audience: HPCS mission partners, select HPC users and centers
+
+Changes to Chapel Language:
+---------------------------
+- added support for a main() function per module, resolvable via --main-module
+- added support for $ in identifier names; by convention used to identify syncs
+- added support for arithmetic on ranges: +, -, *, /
+- added support for floating point literals with an exponent and integral base
+  e.g., 1e4 rather than 1.0e4
+- redefined range and domain slicing to result in intersection semantics
+- function resolution now favors a promoted argument over a generic one
+  e.g., foo(A) will favor "def foo(x: int)" over "def foo(x)" for A: [] int;
+- removed support for operations between scalars and tuples
+  e.g., (1, 2) + 3 is no longer supported; (1, 2) + (3, 4) still is
+- added support for for- and forall-expressions using keyword syntax
+  e.g., var A: [D] int = for i in D do foo(i);
+- added support for readln() function which skips to EOL after reading its args
+- added support for translate, interior, exterior, and expand methods on ranges
+- added support for bitwise operators on int/uint pairs of same size
+- added support for membership test on ranges
+- added ability for user to overload operators for uint(64)/int combinations
+- added support for defining type functions
+
+Changes to Chapel Build Environment:
+------------------------------------
+- added support for cross-compilation environments -- see doc/README.chplenv
+- lots of restructuring of Makefiles
+- added mechanisms for selecting between threading/communication libraries
+
+Newly Implemented Features:
+---------------------------
+- initial support for prototyping and calling C functions within Chapel code
+- implicit enum-to-string coercions and explicit string-to-enum conversions
+- improved handling of unifying multiple returns from a single function
+- improved support for slicing using unbounded and degenerate ranges
+- relaxed requirements that slicer and slicee objects use the same integer type
+- initial support for "on" statements
+- improved tuple type orthogonality; they can now be used in most type contexts
+- improved nesting of modules and resolution of symbols defined in modules
+- support for overriding this() method in subclasses
+- added support for | and & reductions over booleans
+- improved legality checks for string-to-value conversions
+- added support for rank change slicing of domains and arrays
+- added support for a .clear() method on associative domains
+- added range checking for casts from integers to enumerated types
+
+Semantic Changes:
+-----------------
+- defined semantics of default functions as being "return a const"
+
+Syntactic/Naming Changes:
+-------------------------
+- added ability to tag a function as returning a const value for documentation
+
+Documentation:
+--------------
+
+Example Codes:
+--------------
+- converted all HPCC example codes to use 64-bit indices for their domains
+- fixed a bug in the HPCC FFT calculation of GFlop/s
+
+Standard Modules:
+-----------------
+
+Compiler Flags:
+---------------
+- improved parsing of command-line flags for compiler
+- better error checking for parsing config params
+- --main-module flag to select between multiple possible program entry points
+- --ldflags option to pass flags to the C link step
+- --serial flag to disable all parallelism in a program
+- --local flag to optimize compilation for single locale execution
+- --no-scalar-replacement flag to disable scalar replacement optimization
+- added ability to specify .c, .o, and .h files for use in interfacing with C
+
+Generated Code Flags:
+---------------------
+-- improved parsing of command-line flags for generated code
+-- improved parsing of config const/var values
+- -nl #/--numLocales=# flags for setting the number of locales to execute on
+- -v/--verbose flags for increasing the verbosity of the generated code
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- return statements are now supported in type select statements
+- += and -= are now supported on sync variables
+- types used with op= assignments are now checked
+- fixed use of inout and out intents with variable-length argument lists
+- fixed a few bugs caused by deleting items from associative domains/arrays
+- added more bounds checking to associative domain operations
+- default argument values specified via a function call now work properly
+- whole-array assignment of arrays of sync variables now works correctly
+
+Error Message Improvements:
+---------------------------
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- enabled copy propagation for complex types
+- added strength reduction for ** with an exponent of 0-6 and 8
+
+Compiler Performance and Cleanup:
+---------------------------------
+- improved performance of scalar replacement, copy propagation optimizations
+- reduced memory requirements of compiler
+- eliminated many warnings for PGI, Pathscale, Intel, Cray, and GNU compilers
+- improved performance of compiling codes using complex types
+- removed extraneous threads created by uses of the begin statement
+
+
+Generated Code:
+---------------
+
+Testing System:
+---------------
+- added support for testing on multiple locales
+- added support for communication layer specific output
+- added support for Makefile-driven testing within a subdirectory
+- added the ability to suppress tests that are expected to fail
+- added support for the ability to specify a launch command to kick off testing
+- added support for "compilation only" testing to avoid running executables
+
+Internal:
+---------
+
+
+===========
 version 0.5
------------
+===========
 Second preliminary release of Chapel Compiler, June 29, 2007
 
 High-Level Themes:
+------------------
 - single-locale, multiple threads
 - support for additional serial features
 - improved single-threaded performance, memory utilization
@@ -16,6 +158,7 @@ High-Level Themes:
   select HPC users and centers
 
 Changes to Chapel Language:
+---------------------------
 - eliminated Chapel's sequence type
   - in the future, a standard List library will provide similar functionality
   - removed # and #= operators, since they were designed for sequences
@@ -69,6 +212,7 @@ Changes to Chapel Language:
   e.g., "var myint = infile.read(int);"
 
 Newly Implemented Features:
+---------------------------
 - support for sparse domains/arrays
   - assignment of aggregate index expressions to sparse domains
   - accumulation of indices into sparse domains using +=
@@ -92,6 +236,7 @@ Newly Implemented Features:
 - initial support for specifying a distribution class; interface still in flux
 
 Syntactic/Naming Changes:
+-------------------------
 - removed support for using "?" in identifier names
   - changed standard method member? to member
   - changed standard method true? to isTrue
@@ -102,6 +247,7 @@ Syntactic/Naming Changes:
 - renamed "indefinite domains/arrays" to "associative domains/arrays"
 
 Semantic Changes:
+-----------------
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
 - for/forall loops over arrays now result in references to elements, not copies
@@ -120,6 +266,7 @@ Semantic Changes:
 - replaced setter/getter functions with richer support for var functions
 
 Documentation:
+--------------
 - added man page for Chapel compiler (chpl)
 - added CHANGES file
 - added Quick Reference document
@@ -129,6 +276,7 @@ Documentation:
 - cleaned up README files a bit
 
 Example Codes:
+--------------
 - added README.features file to map Chapel features to examples that use them
 - several improvements to the HPCC benchmarks due to bug fixes, new features
 - added several new examples:
@@ -148,12 +296,14 @@ Example Codes:
 - added performance testing support for stream.chpl and ra.chpl
 
 Standard Modules:
+-----------------
 - Search: new standard module
 - Sort: new standard module
 - Types: numBits() and numBytes() are now param functions
 - Random: fillRandom() routines now work for arrays of arbitrary rank
 
 Compiler Flags:
+---------------
 - improved the formatting of the --help message
 - added -g flag for debugging generated code; turns on --cg-cpp-lines by default
 - added -O flag for optimizing generated code
@@ -169,11 +319,11 @@ Compiler Flags:
 - removed --no-gc used for a stopgap reference counting scheme
 
 Generated Code Flags:
+---------------------
 -- added a --gdb flag to make it easier to debug generated code
 
-
-
 Bug Fixes/New Semantic Checks (for old Semantics):
+--------------------------------------------------
 - test expressions in loops, conditionals restricted to bools, classes, integers
 - runtime checks added to ensure that zippered iterations are of equal size
 - fixed portability issues in flex lexer file, chapel.lex
@@ -203,6 +353,7 @@ Bug Fixes/New Semantic Checks (for old Semantics):
 - fixed an infinite loop bug in associative domains/arrays
 
 Error Message Improvements:
+---------------------------
 - added message to compiler warning that "atomic" is unimplemented when used
 - caused compiler to complain about non-module scope configuration variables
 - unified runtime and compiler error message formats
@@ -215,6 +366,7 @@ Error Message Improvements:
 - generally improved quality of compiler error messages
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
 - removed the insertion of all large sequence/array temporaries
 - extensive optimizations of iterators and loop generation
 - global/local copy propagation
@@ -225,6 +377,7 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - def-use and use-def chains
 
 Compiler Performance and Cleanup:
+---------------------------------
 - improvements to function resolution, vararg function instantiation
 - made compiler build with debugging off and optimizations on for non-developers
 - removed unused scalar replacement code
@@ -233,6 +386,7 @@ Compiler Performance and Cleanup:
 - optimized several passes to improve compile time
 
 Generated Code:
+---------------
 - now generating structured loops rather than gotos and labels
 - large reduction in lines of generated code
   e.g., ~40% reduction in lines of code for jacobi example (13275 -> 7753)
@@ -243,9 +397,11 @@ Generated Code:
 - initial support for cross-compiling to the XT
 
 Testing System:
+---------------
 - added support for doing performance-tracking experiments
 
 Internal:
+---------
 - new IR traversal mechanisms
 - flow analysis optimization framework
 - vararg functions handled within function resolution
@@ -259,9 +415,9 @@ Internal:
 - added reference types
 
 
------------
+===========
 version 0.4
------------
+===========
 Preliminary release of Chapel Compiler, December 15, 2006
 
 High-Level Themes:

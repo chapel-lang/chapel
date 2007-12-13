@@ -118,7 +118,6 @@ Bugs:
           but instead results in a 1D array
 - Arrays sliced with unbounded ranges are not bounds-checked
 - Records/classes with array members of recursive types do not work
-- Whole-array assignment does not work for arrays of sync variables
   Workaround: use an explicit loop and indexing
 - Mixing dimensional index types in a domain specification yields poor errors
     e.g., var m: uint, n: int;  ... [1..m, 1..n]
