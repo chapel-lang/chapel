@@ -15,7 +15,7 @@ General
 -------
 
 Unimplemented Features:
-- Many error messages continue to be incorrect/confusing/unhelpful
+- Some error messages continue to be incorrect/confusing/unhelpful
   Workaround: Please ask us for help interpreting any that you struggle with
 - Compiler and runtime errors don't always report useful line numbers
   Workaround: Please ask us for help finding the correct error location
@@ -29,7 +29,8 @@ Unimplemented Features:
 - Configuration variables of tuple types
 
 Bugs:
-- Const arrays can currently be assigned -- should result in a compiler error
+- Const arrays, records, and fields can currently be modified -- these
+  should result in a compiler error
 - General expressions can (incorrectly) be used as type expressions
 
 
@@ -42,7 +43,6 @@ Unimplemented Features:
 - Using modules in files not named on the compiler's command-line is unsupported
 
 Bugs:
-- symbol resolution for external modules is sometimes incorrect
 
 
 ---------
@@ -54,11 +54,6 @@ Unimplemented Features:
 - Array arguments cannot have both their domain and element types queried
 
 Bugs:
-- Actual arguments passed by inout intent are not always checked for legality
-- Analysis to find return statements along all paths in a function is incomplete
-- Promoting var functions can result in an incorrect compilation error
-- Var functions currently cannot return array slices
-- Varargs functions cannot query both element type and number of elements
 
 
 ----------------------------
@@ -73,16 +68,13 @@ Unimplemented Features:
   Workaround: try using the default constructor and initialize() function
 - Multiple inheritance is not implemented
 - Shadowing base class fields is not implemented
-- Garbage collection is implemented only at a prototype level
-- Assignment between classes and records is unimplemented
-- Anonymous record literals are not supported
+- Garbage collection is supported at a preliminary level
 - Type select on unions is not implemented
 
 Bugs:
 - Class fields initialized with conditional expressions fail to compile
 - Subclassing uninstantiated generic classes should be prohibited but is not
-- Where clauses in dynamic dispatch situations may not work properly
-- No error message generated when constructors/initializers call methods
+- Constructors/initializers can't reliably call methods
 
 
 -----------------------------
@@ -101,10 +93,7 @@ Arrays and Domains
 ------------------
 
 Unimplemented Features:
-- Arrays of arrays are not implemented
-- Opaque domains and arrays are not implemented
-- The transpose, spread, and reshape functions are not implemented
-- Short-circuiting functions and conditional expressions cannot be promoted
+- Arrays of sparse subdomains are not implemented
 - index(D) bounds checking is not implemented
 - Subdomain subset checking is not implemented
 - Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
@@ -116,12 +105,7 @@ Bugs:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
-- Arrays sliced with unbounded ranges are not bounds-checked
-- Records/classes with array members of recursive types do not work
-  Workaround: use an explicit loop and indexing
-- Mixing dimensional index types in a domain specification yields poor errors
-    e.g., var m: uint, n: int;  ... [1..m, 1..n]
-- Rank-change slicing a domain down to 0 dimensions causes problems
+- Records with array members of recursive types do not work
 
 
 --------
@@ -148,7 +132,6 @@ Unimplemented Features:
 - User-defined reductions and scans are not implemented
 
 Bugs:
-- Reductions/scans involving identifiers named 'r' can produce incorrect results
 
 
 --------------------------
@@ -156,8 +139,8 @@ Locality and Distributions
 --------------------------
 
 Unimplemented Features:
-- Executing general code using multiple locales
-- Distributions
+- Executing general code using multiple locales is not supported
+- Distribution specifications are ignored
 
 
 ----------------
@@ -166,7 +149,7 @@ Input and Output
 
 Unimplemented Features:
 - a mechanism for controlling the output precision/width of scalar values
-  Workaround: extern sprintf()
+  Workaround: contact us
 
 Bugs:
 - read()s of whole arrays are not working

@@ -77,8 +77,7 @@ Portability Blah blah blah:
 Semantic Changes:
 -----------------
 - defined casts between complex and imaginary/real/integral types
-- function resolution now favors a promoted argument over a generic one
-  TODO: fixme
+- function resolution now favors non-promoted functions as a tie-breaker
 - redefined range and domain slicing to use intersection semantics
 - defined semantics of default functions as being "return a const"
 - user-defined constructors now squelch the creation of a default constructor
