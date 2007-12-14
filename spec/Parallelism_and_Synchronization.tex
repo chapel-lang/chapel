@@ -453,61 +453,60 @@ sync-type:
 
 Synchronization variables support additional methods that
 can be used to bypass their semantics to provide new ones.
-Let \chpl{sync_class} be a (compiler-generated) class
-for a sync variable \chpl{s} of arbitrary type \chpl{t}.
-The following methods are defined in this class:
+For a sync variable \chpl{s} of arbitrary type \chpl{t},
+the following methods are defined in this class:
 
 \begin{protohead}
-def $sync_class$.readFE(): t
+def sync $t$.readFE(): t
 \end{protohead}
 \begin{protobody}
 Wait for full, leave empty, and return \chpl{s}'s value.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.readFF(): t
+def sync $t$.readFF(): t
 \end{protohead}
 \begin{protobody}
 Wait for full, leave full, and return \chpl{s}'s value.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.readXX(): t
+def sync $t$.readXX(): t
 \end{protohead}
 \begin{protobody}
 No wait, leave F/E unchanged, and return \chpl{s}'s value.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.writeEF(v: t)
+def sync $t$.writeEF(v: t)
 \end{protohead}
 \begin{protobody}
 Wait for empty, assign \chpl{s=v}, and leave full.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.writeFF(v: t)
+def sync $t$.writeFF(v: t)
 \end{protohead}
 \begin{protobody}
 Wait for full, assign \chpl{s=v}, and leave full.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.writeXF(v: t)
+def sync $t$.writeXF(v: t)
 \end{protohead}
 \begin{protobody}
 No wait, assign \chpl{s=v}, and leave full.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.reset()
+def sync $t$.reset()
 \end{protohead}
 \begin{protobody}
 No wait, assign to \chpl{s} \chpl{t}'s default value, and leave empty.
 \end{protobody}
 
 \begin{protohead}
-def $sync_class$.isFull: bool
+def sync $t$.isFull: bool
 \end{protohead}
 \begin{protobody}
 No wait, returns \chpl{true} if \chpl{s} is full, \chpl{false} otherwise.
