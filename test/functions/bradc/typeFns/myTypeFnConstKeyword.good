@@ -1,0 +1,1 @@
+myTypeFnConstKeyword:1: error: function declared const but returns types
