@@ -118,7 +118,7 @@ pragma "inline" def -(a: int(32)) return __primitive("u-", a);
 pragma "inline" def -(a: int(64)) return __primitive("u-", a);
 pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type); }
 pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
-pragma "inline" def -(a: imag(?w)) return __primitive("u-", a):imag(w);
+pragma "inline" def -(a: imag(?w)) return __primitive("u-", a);
 pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
 
 pragma "inline" def +(param a: int(32)) param return a;
@@ -185,8 +185,8 @@ pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
 pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", a, b));
 pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
 
-pragma "inline" def *(a: real(?w), b: imag(w)) return (a*_i2r(b)):imag(w);
-pragma "inline" def *(a: imag(?w), b: real(w)) return (_i2r(a)*b):imag(w);
+pragma "inline" def *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
+pragma "inline" def *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
 pragma "inline" def *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
 pragma "inline" def *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
 pragma "inline" def *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
@@ -202,8 +202,8 @@ pragma "inline" def /(a: complex(?w), b: complex(w))
   return let d = b.re*b.re+b.im*b.im in
     ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
 
-pragma "inline" def /(a: real(?w), b: imag(w)) return (-a/_i2r(b)):imag(w);
-pragma "inline" def /(a: imag(?w), b: real(w)) return (_i2r(a)/b):imag(w);
+pragma "inline" def /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
+pragma "inline" def /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
 pragma "inline" def /(a: real(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
     (a*b.re/d, -a*b.im/d):complex;
@@ -397,7 +397,7 @@ pragma "inline" def _init(x: bool) return false;
 pragma "inline" def _init(x: int(?w)) return 0:int(w);
 pragma "inline" def _init(x: uint(?w)) return 0:uint(w);
 pragma "inline" def _init(x: real(?w)) return 0.0:real(w);
-pragma "inline" def _init(x: imag(?w)) return 0.0:imag(w);
+pragma "inline" def _init(x: imag(?w)) return _r2i(0.0:real(w));
 pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
 pragma "inline" def _init(x: string) return "";
 pragma "inline" def _init(x) return nil:x.type;
@@ -447,7 +447,8 @@ def complex.im var return __primitive("complex_get_imag", this);
 //
 // helper functions
 //
-pragma "inline" def _i2r(a: imag(?w)) return a:real(w);
+pragma "inline" def _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
+pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 
 //
 // primitive string functions and methods
@@ -797,7 +798,6 @@ def _isPrimitiveType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) | (t == real(128)) |
-  (t == imag(32)) | (t == imag(64)) | (t == imag(128)) |
   (t == string);
 
 def _isIntegralType(type t) param return
@@ -829,9 +829,6 @@ pragma "inline" def _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
 pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
@@ -847,47 +844,55 @@ pragma "inline" def _cast(type t, x) where t:object & x:_nilType
 pragma "inline" def _cast(type t, x) where x:object & t:x & (x.type != t)
   return __primitive("dynamic_cast", t, x);
 
+pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
+  return nil;
+
 //
 // casts to complex
 //
-pragma "inline" def _cast(type t, x: bool) where _isComplexType(t) {
-  var y: t;
-  y.re = x;
-  return y;
-}
+pragma "inline" def _cast(type t, x: bool) where _isComplexType(t)
+  return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t) {
-  var y: t;
-  y.re = x;
-  return y;
-}
+pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t)
+  return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t) {
-  var y: t;
-  y.re = x;
-  return y;
-}
+pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t)
+  return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t) {
-  var y: t;
-  y.re = x:y.re.type;
-  return y;
-}
+pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t)
+  return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t) {
-  var y: t;
-  y.im = x:y.im.type;
-  return y;
-}
+pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t)
+  return (0, _i2r(x)):t;
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t) {
-  var y: t;
-  y.re = x.re:y.re.type;
-  y.im = x.im:y.im.type;
-  return y;
-}
+pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t)
+  return (x.re, x.im):t;
 
 pragma "inline" def _cast(type t, x: string) where _isComplexType(t)
+  return __primitive("cast", t, x);
+
+//
+// casts to imag
+//
+pragma "inline" def _cast(type t, x: bool) where _isImagType(t)
+  return if x then 1i:t else 0i:t;
+
+pragma "inline" def _cast(type t, x: int(?w)) where _isImagType(t)
+  return 0i:t;
+
+pragma "inline" def _cast(type t, x: uint(?w)) where _isImagType(t)
+  return 0i:t;
+
+pragma "inline" def _cast(type t, x: real(?w)) where _isImagType(t)
+  return 0i:t;
+
+pragma "inline" def _cast(type t, x: imag(?w)) where _isImagType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t)
+  return let xim = x.im in __primitive("cast", t, xim);
+
+pragma "inline" def _cast(type t, x: string) where _isImagType(t)
   return __primitive("cast", t, x);
 
 //
@@ -907,20 +912,23 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
   return re + op + im + "i";
 }
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t) {
-  var y: t;
-  y = x.im:t;
-  return y;
-}
-
 pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) | _isIntegralType(t) {
   var y: t;
   y = x.re:t;
   return y;
 }
 
-pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
-  return nil;
+//
+// casts from imag
+//
+pragma "inline" def _cast(type t, x: imag(?w)) where t == string
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) | _isIntegralType(t)
+  return 0:t;
+
+pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
+  return if x != 0i then true else false;
 
 // handle default iterators
 pragma "inline" def _getIterator(ic: _iteratorClass)
