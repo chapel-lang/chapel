@@ -431,13 +431,17 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
+param-iterator-expression:
+  range-literal
+  range-literal `by' integer-literal
+
 param-for-statement:
-  `for' `param' identifier `in' range-literal `do' statement
-  `for' `param' identifier `in' range-literal block-level-statement
+  `for' `param' identifier `in' param-iterator-expression `do' statement
+  `for' `param' identifier `in' param-iterator-expression block-level-statement
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
-the bounds of which must also be parameters.  The loop is then
-unrolled for each iteration.
+with an optional by expression where the bounds and stride must be
+parameters.  The loop is then unrolled for each iteration.
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}
