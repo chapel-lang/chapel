@@ -1,4 +1,4 @@
-def foo(a, (b, c): (_, int) {
+def foo(a, (b, c): (_, int)) {
   writeln("a is: ", a);
   writeln("b is: ", b);
   writeln("c is: ", c);
