@@ -26,11 +26,11 @@ Changes to Chapel Language:
 ---------------------------
 - added support for defining type functions
   e.g., def myint(param x: bool) type { return if x then int(32) else int(64); }
-- changed supported functionality for sync and single variables & made into methods
+- changed supported routines for sync/single variables and made into methods
   e.g., var x: sync int;  x.writeXF(2);  if (x.isFull) { ... }
 - added support for for- and forall-expressions using keyword syntax
   e.g., var A: [D] int = for i in D do foo(i);
-- added support for a main() function per module, resolvable via --main-module flag
+- added support for a main() function per module, resolvable via --main-module
 - added support for readln() function which skips to EOL after reading its args
 - added support for translate, interior, exterior, and expand methods on ranges
 - added support for membership test on ranges
@@ -114,13 +114,13 @@ Compiler Flags:
 - --serial flag to disable all parallelism in a program
 - --local flag to optimize compilation for single locale execution
 - --no-scalar-replacement flag to disable scalar replacement optimization
-- added ability to specify .c, .o, and .h files for use in interfacing with C code
+- added ability to specify .c, .o, and .h files for use in calling C routines
 
 Generated Code Flags:
 ---------------------
 -- improved parsing of command-line flags for generated code
 -- improved parsing of config const/var values
-- -nl #/--numLocales=# flags for setting the number of locales on which to execute
+- -nl #/--numLocales=# flags for specifying the number of locales to run on
 - -v/--verbose flags for increasing the verbosity of the generated code
 
 Bug Fixes/New Semantic Checks (for old semantics):
@@ -179,7 +179,7 @@ Testing System:
 - added support for communication-layer-specific output
 - added support for Makefile-driven testing within a subdirectory
 - added the ability to suppress tests that are expected to fail
-- added support for the ability to specify a launch command to kick off execution
+- added support for the ability to specify a launch command to begin execution
 - added support for "compilation only" testing to avoid running executables
 
 Internal:
