@@ -1,0 +1,4 @@
+bug: out-of-order resolution
+
+This test shows how to use a symbol from a module before that module's
+initialize function is resolved.
