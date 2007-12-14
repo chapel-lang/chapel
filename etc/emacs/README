@@ -2,12 +2,14 @@
 Chapel emacs mode
 =================
 
-This directory subtree contain versions of standard emacs e-lisp
-files, hacked to do simple formatting of Chapel code.  Chapel
-formatting is far from perfect, but also far better than having no
-formatting at all.  Version 22.0 is the main version that we are
-currently supporting -- the earlier versions are somewhat stale and
-likely to get more stale over time.
+This directory subtree contains emacs e-lisp files that perform simple
+formatting of Chapel code.  Support for Chapel formatting with these
+files is far from perfect, but also far better than having no
+formatting at all.  Versions 22.0/22.1 are the main version that we
+are currently supporting -- the earlier versions are somewhat stale
+and likely to only get staler over time.  Thanks to Steve Balensiefer
+for providing the initial version of the Chapel mode for these
+versions.
 
 The sources in this subdirectory are licensed under the GPL.  See the
 COPYING file in this directory for more information.
@@ -40,8 +42,8 @@ following lines to your standard .emacs file:
   )
 
 ; make sure that when chpl-mode is entered, (our modified) cc-mode is
-;  loaded
-(autoload 'chpl-mode "cc-mode" "Chpl enhanced cc-mode" t)
+; loaded
+(autoload 'chpl-mode "chpl-mode" "Chpl enhanced cc-mode" t)
 
 ; make loading files with a .chpl extension put emacs into chpl-mode
 (setq auto-mode-alist (cons '("\\.chpl$" . chpl-mode)
