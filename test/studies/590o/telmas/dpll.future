@@ -1,0 +1,3 @@
+bug: sparse domains in classes no longer work
+
+See sparse/bradc/sparseInClass*.future
