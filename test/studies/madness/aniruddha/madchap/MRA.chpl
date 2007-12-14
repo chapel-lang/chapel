@@ -109,7 +109,7 @@ class Function {
             var jphase = 1.0;
 
             for j in dcDom.dim(2) {
-                var gammaij = sqrt((2*i+1) * (2*j+1));
+                var gammaij = sqrt(((2*i+1) * (2*j+1)):real(64));
                 var Kij = if (i-j) > 0 && ((i-j) % 2) == 1 then
                         2.0 else 0.0;
                 r0[i,j] = 0.5*(1.0 - iphase*jphase - 2.0*Kij)*gammaij;

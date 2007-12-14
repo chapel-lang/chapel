@@ -48,6 +48,11 @@ returnInfoUInt64(CallExpr* call) {
 }
 
 static Type*
+returnInfoReal32(CallExpr* call) {
+  return dtReal[FLOAT_SIZE_32];
+}
+
+static Type*
 returnInfoReal64(CallExpr* call) {
   return dtReal[FLOAT_SIZE_64];
 }
@@ -437,6 +442,41 @@ initPrimitive() {
   prim_def("tanh", returnInfoReal64, true);
   prim_def("tgamma", returnInfoReal64, true);
   prim_def("trunc", returnInfoReal64, true);
+
+  prim_def("acosf", returnInfoReal32, true);
+  prim_def("acoshf", returnInfoReal32, true);
+  prim_def("asinf", returnInfoReal32, true);
+  prim_def("asinhf", returnInfoReal32, true);
+  prim_def("atanf", returnInfoReal32, true);
+  prim_def("atan2f", returnInfoReal32, true);  
+  prim_def("atanhf", returnInfoReal32, true);
+  prim_def("cbrtf", returnInfoReal32, true);
+  prim_def("ceilf", returnInfoReal32, true);
+  prim_def("cosf", returnInfoReal32, true);
+  prim_def("coshf", returnInfoReal32, true);
+  prim_def("expf", returnInfoReal32, true);
+  prim_def("exp2f", returnInfoReal32, true);
+  prim_def("erff", returnInfoReal32, true);
+  prim_def("erfcf", returnInfoReal32, true);
+  prim_def("expm1f", returnInfoReal32, true);
+  prim_def("fabsf", returnInfoReal32, true);
+  prim_def("floorf", returnInfoReal32, true);
+  prim_def("lgammaf", returnInfoReal32, true);
+  prim_def("logf", returnInfoReal32, true);
+  prim_def("log2f", returnInfoReal32, true);
+  prim_def("log10f", returnInfoReal32, true);
+  prim_def("log1pf", returnInfoReal32, true);
+  prim_def("nearbyintf", returnInfoReal32, true);
+  prim_def("rintf", returnInfoReal32, true);
+  prim_def("roundf", returnInfoReal32, true);
+  prim_def("sinf", returnInfoReal32, true);
+  prim_def("sinhf", returnInfoReal32, true);
+  prim_def("sqrtf", returnInfoReal32, true);
+  prim_def("tanf", returnInfoReal32, true);
+  prim_def("tanhf", returnInfoReal32, true);
+  prim_def("tgammaf", returnInfoReal32, true);
+  prim_def("truncf", returnInfoReal32, true);
+
   prim_def("fopen", returnInfoFile, true);
   prim_def("fclose", returnInfoInt32, true);
   prim_def("fprintf", returnInfoInt32, true);

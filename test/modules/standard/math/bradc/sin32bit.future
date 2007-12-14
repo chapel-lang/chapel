@@ -1,8 +1,0 @@
-unimplemented feature: 32-bit math routines
-
-We need to overload our standard math routines to support
-32-bit versions of the functions rather than promoting to
-the 64-bit versions.  To fix this future, the implementor
-should implement all 32-bit math functions that make sense
-and generate tests of them rather than simply fixing the
-sin() function.
