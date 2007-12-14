@@ -1,5 +1,5 @@
 def norm(x:?t...?n) {
-  var sum:t;
+  var sum:t(1);
 
   for i in 1..n {
     sum += x(i)*x(i);
