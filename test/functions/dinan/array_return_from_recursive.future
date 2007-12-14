@@ -1,4 +1,4 @@
-unimplemented feature: array return types
+semantic: array return types
 
 This test has a recursive function that returns an array.  This can't presently
 be done in Chapel since type inference breaks down on recursive functions and
