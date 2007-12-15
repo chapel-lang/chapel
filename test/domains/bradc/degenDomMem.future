@@ -1,0 +1,6 @@
+bug: arrays over degenerate domains require memory
+
+This bug shows that we don't check whether a domain is degenerate
+before we allocate its array's memory.  The result is that we end
+up requesting a ridiculous amount of memory (maxint?  negative?
+I'm not sure) and generate a runtime error.
