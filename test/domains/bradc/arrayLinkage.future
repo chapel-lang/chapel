@@ -1,0 +1,11 @@
+semantic: domain sharing via .domain
+
+This future asks the question whether declaring an array
+using Arr.domain from another array should cause the
+two arrays to share the domain, or whether the domain
+should be logically copied in declaring the second
+domain.  I don't currently have an opinion on this.
+Currently, the two arrays are linked.  I guess the
+question is whether the const-ness of Arr.domain suggests
+that the two arrays should not be linked since the
+second array's domain is "const".
