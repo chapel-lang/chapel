@@ -345,6 +345,26 @@ def _ddata.writeThis(f: Writer) {
   f.write(this(size-1));
 }
 
-def format(fmt: string, x) {
+def format(fmt: string, x:?t) where _isIntegralType(t) | _isFloatType(t) {
+  if fmt.substring(1) == "#" {
+    var fmt2 = _getoutputformat(fmt);
+    return __primitive("_format", fmt2, x:real);
+  } else 
+    return __primitive("_format", fmt, x);
+
+  def _getoutputformat(s: string):string {
+    var sn = length(s);
+    var afterdot = false;
+    var dplaces = 0;
+    for i in 1..sn {
+      if ((s.substring(i) == '#') & afterdot) then dplaces += 1;
+      if (s.substring(i) == '.') then afterdot=true;
+    }
+
+    return("%" + sn + "." + dplaces + "f");
+  }
+}
+
+def format(fmt: string, x: ?t) where !(_isIntegralType(t) | _isFloatType(t)) {
   return __primitive("_format", fmt, x);
 }
