@@ -20,7 +20,8 @@ class XmlTag : XmlElement {
   var attNames: domain(string);
   var attValues: [attNames] string;
   var numChildren: int;
-  var childrenValues: [1..2] XmlElement;
+  var childrenValueSpace: domain(1) = [1..2];
+  var childrenValues: [childrenValueSpace] XmlElement;
   def printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in [1..numChildren] do
@@ -148,7 +149,7 @@ def processTag(i,j) {
     } else {
       var curSize = elt.childrenValues.numElements;
       if curSize == elt.numChildren then
-        elt.childrenValues.domain = [1..curSize*2];
+        elt.childrenValueSpace = [1..curSize*2];
       elt.numChildren += 1;
       elt.childrenValues(elt.numChildren) = item;
       start += item.length;

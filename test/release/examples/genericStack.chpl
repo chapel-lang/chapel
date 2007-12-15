@@ -50,14 +50,15 @@ record ListStack {
 record ArrayStack {
   type itemType;            // type of items
   var numItems: int = 0;    // number of items in the stack
-  var data: [1..2] itemType; // array of items
+  var dataSpace: domain(1) = [1..2];
+  var data: [dataSpace] itemType; // array of items
 
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
   def push(item: itemType) {
     var height = data.numElements;
     if numItems == height then
-      data.domain = [1..height*2];
+      dataSpace = [1..height*2];
     data(numItems+1) = item;
     numItems += 1;
   }

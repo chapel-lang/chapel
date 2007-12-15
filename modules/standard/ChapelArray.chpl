@@ -318,8 +318,7 @@ record _array {
   var _value;
   var _promotionType : eltType;
 
-  pragma "valid var"
-  def _dom var
+  def _dom
     return _domain(rank, _value.dom);
 
   pragma "inline"

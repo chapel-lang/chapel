@@ -9,9 +9,11 @@ use Math;
 config const hg_inputfile = "hg_coeffs.dat";
 
 // FIXME: Module-Private Stuff
-var hg_MaxK   : int;
-var hg_coeffs : [0..-1, 0..-1, 0..-1] real;
-var phi_norms : [0..-1] real;
+var hg_MaxK        : int;
+var hg_coeff_space : domain(3) = [0..-1, 0..-1, 0..-1];
+var hg_coeffs      : [hg_coeff_space] real;
+var phi_norm_space : domain(1) = [0..-1];
+var phi_norms      : [phi_norm_space] real;
 var phi_initialized = false;
 
 
@@ -25,7 +27,7 @@ def hg_readCoeffs(inputfile) {
     coeffData.read(max_k);
     hg_MaxK = max_k;
 
-    hg_coeffs.domain = [0..max_k, 0..2*max_k-1, 0..2*max_k-1];
+    hg_coeff_space = [0..max_k, 0..2*max_k-1, 0..2*max_k-1];
 
     // hg_coeffs[0,..,..] is not used
     for i in 1..max_k {
@@ -103,8 +105,8 @@ def phi(x: real, k: int) {
     var order = k-1;
 
     if (!phi_initialized) {
-        phi_norms.domain = [0..100);
-        for n in phi_norms.domain do
+        phi_norm_space = [0..100);
+        for n in phi_norm_space do
             phi_norms[n] = sqrt(2.0*n+1);
     }
     

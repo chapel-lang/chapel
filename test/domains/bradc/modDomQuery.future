@@ -1,9 +1,0 @@
-unimplemented feature: domain queries are const
-
-We recently decided to make modification of domains through a
-query of the array illegal -- that domains can only be modified
-by assigning to a domain variable directly.  As I recall, this
-is partly to avoid confusion (e.g., why did modifying A's domain
-also modify B and C?) and so that anonymous domains are const.
-
-
