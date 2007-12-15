@@ -180,8 +180,8 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
-  CallExpr* visiblePoint; // point of instantiation is in visible lookup
-                          // global functions copied out see local functions
+  CallExpr* visiblePoint; // global functions copied out see local functions
+  SymScope* instantiationPoint; // point of instantiation
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,
                 // instantiated functions and wrappers
@@ -208,7 +208,8 @@ class FnSymbol : public Symbol {
   FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions, bool isSquare);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults, Map<Symbol*,Symbol*>* paramMap, bool isSquare);
   FnSymbol* instantiate_generic(ASTMap* substitutions, 
-                                Map<Symbol*,Symbol*>* paramMap);
+                                Map<Symbol*,Symbol*>* paramMap,
+                                CallExpr* call);
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   void codegenDef(FILE* outfile);

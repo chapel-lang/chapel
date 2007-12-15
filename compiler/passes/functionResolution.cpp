@@ -49,7 +49,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
-static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs);
+static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call);
 
 static void setFieldTypes(FnSymbol* fn);
 
@@ -597,7 +597,8 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              FnSymbol* fn,
              Vec<Type*>* actualTypes,
              Vec<Symbol*>* actualSyms,
-             Vec<const char*>* actualNames) {
+             Vec<const char*>* actualNames,
+             CallExpr* call) {
   fn = expandVarArgs(fn, actualTypes->n);
 
   if (!fn)
@@ -623,9 +624,9 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     ASTMap subs;
     computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
     if (subs.n) {
-      FnSymbol* inst_fn = instantiate(fn, &subs);
+      FnSymbol* inst_fn = instantiate(fn, &subs, call);
       if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualSyms, actualNames);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualSyms, actualNames, call);
     }
     delete actualFormals;
     return;
@@ -1008,8 +1009,12 @@ static const char* toString(CallInfo* info) {
 
 
 static const char* toString(FnSymbol* fn) {
-  if (fn->userString)
-    return fn->userString;
+  if (fn->userString) {
+    if (developer)
+      return astr(fn->userString, " [", istr(fn->id), "]");
+    else
+      return fn->userString;
+  }
   const char* str;
   int start = 0;
   if (fn->instantiatedFrom)
@@ -1053,6 +1058,8 @@ static const char* toString(FnSymbol* fn) {
   }
   if (!fn->noParens)
     str = astr(str, ")");
+  if (developer)
+    str = astr(str, " [", istr(fn->id), "]");
   return str;
 }
 
@@ -1175,7 +1182,8 @@ resolve_call(CallInfo* info) {
     if (call->methodTag && !visibleFn->noParens)
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 &info->actualTypes, &info->actualSyms, &info->actualNames);
+                 &info->actualTypes, &info->actualSyms, &info->actualNames,
+                 call);
   }
 
   if (explainLine && explainCallMatch(call)) {
@@ -2506,11 +2514,20 @@ resolveBody(Expr* body) {
         resolveFns(call->isResolved());
       callStack.pop();
     } else if (SymExpr* sym = toSymExpr(expr)) {
-      if (ClassType* ct = toClassType(sym->var->type)) {
-        if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
-          resolveFormals(ct->defaultConstructor);
-          if (resolvedFormals.set_in(ct->defaultConstructor))
-            resolveFns(ct->defaultConstructor);
+
+      // avoid record constructors via cast
+      //  should be fixed by out-of-order resolution
+      CallExpr* parent = toCallExpr(sym->parentExpr);
+      if (!parent ||
+          !parent->isPrimitive(PRIMITIVE_ISSUBTYPE) ||
+          !sym->var->isTypeVariable) {
+
+        if (ClassType* ct = toClassType(sym->var->type)) {
+          if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
+            resolveFormals(ct->defaultConstructor);
+            if (resolvedFormals.set_in(ct->defaultConstructor))
+              resolveFns(ct->defaultConstructor);
+          }
         }
       }
     }
@@ -2717,7 +2734,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
                 subs.put(arg, pfn->getFormal(i)->type);
             }
           }
-          FnSymbol* icfn = instantiate(cfn, &subs);
+          FnSymbol* icfn = instantiate(cfn, &subs, NULL);
           if (icfn) {
             resolveFormals(icfn);
             if (signature_match(pfn, icfn)) {
@@ -2745,7 +2762,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
           }
         }
         if (subs.n)
-          cfn = instantiate(cfn, &subs);
+          cfn = instantiate(cfn, &subs, NULL);
         if (cfn) {
           resolveFormals(cfn);
           if (signature_match(pfn, cfn)) {
@@ -3332,9 +3349,9 @@ setFieldTypes(FnSymbol* fn) {
 
 
 static FnSymbol*
-instantiate(FnSymbol* fn, ASTMap* subs) {
+instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
   static Vec<FnSymbol*> whereStack;
-  FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap);
+  FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap, call);
   ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
   if (!ifn->isGeneric && ifn->where) {
     forv_Vec(FnSymbol, where, whereStack) {

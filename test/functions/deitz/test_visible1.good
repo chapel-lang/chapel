@@ -1,1 +1,1 @@
-in bar
+test_visible1.chpl:14: error: unresolved call 'bar(C)'

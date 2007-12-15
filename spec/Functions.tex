@@ -427,10 +427,9 @@ A function is a visible function to a function call if the name of the
 function is the same as the name of the function call and the function
 is defined or used in a lexical outer scope.
 
-\index{functions!with class arguments}
-Additionally, functions that have arguments of class type are
-considered globally visible and so are always visible regardless of
-the location of their definition.
+\index{class methods!and visibility}
+Additionally, class methods are considered globally visible and so are
+always visible regardless of the location of their definition.
 
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
@@ -569,16 +568,15 @@ Nesting of functions may be done to arbitrary degrees, i.e., a
 function can be nested in a nested function.
 
 Nested functions are only visible to function calls within the scope
-in which they are defined.  An exception is to a function that has an
-argument that is a class type.  Such functions are globally visible.
+in which they are defined.  Class methods are exceptions; such methods
+are globally visible.
 
 \subsubsection{Accessing Outer Variables}
 \label{Accessing_Outer_Variables}
 
 Nested functions may refer to variables defined in the function in
-which they are nested.  If the function has class arguments, and is
-thus globally visible, it is a compiler error to refer to a variable
-in the outer function.
+which they are nested.  If the function is a class method, it is a
+compiler error to refer to a variable in the outer function.
 
 \begin{rationale}
 It may be too strict to make this a compiler error.  Are there

@@ -1,5 +1,5 @@
 // the number of locales on which to run the program
-config const numLocales = __primitive("_chpl_comm_default_num_locales");
+config const numLocales: int = __primitive("_chpl_comm_default_num_locales");
 
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");

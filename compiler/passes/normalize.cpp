@@ -579,34 +579,27 @@ static void hack_resolve_types(Expr* expr) {
 
 
 static void tag_global(FnSymbol* fn) {
-  if (fn->global || fn->isWrapper)
-    return;
-  for_formals(formal, fn) {
-    if (ClassType* ct = toClassType(formal->type))
+  if (!fn->global && !fn->isWrapper) {
+    if (ClassType* ct = toClassType(fn->_this)) {
       if (ct->classTag == CLASS_CLASS &&
           !ct->symbol->hasPragma("ref") &&
           !ct->symbol->hasPragma("domain") &&
-          !ct->symbol->hasPragma("array"))
+          !ct->symbol->hasPragma("array")) {
         fn->global = true;
-    if (SymExpr* sym = toSymExpr(formal->defPoint->exprType))
-      if (ClassType* ct = toClassType(sym->var->type))
-        if (ct->classTag == CLASS_CLASS &&
-            !ct->symbol->hasPragma("ref") &&
-            !ct->symbol->hasPragma("domain") &&
-            !ct->symbol->hasPragma("array"))
-          fn->global = true;
-  }
-  if (fn->global) {
-    fn->parentScope->removeVisibleFunction(fn);
-    theProgram->block->blkScope->addVisibleFunction(fn);
-    if (toFnSymbol(fn->defPoint->parentSymbol)) {
-      ModuleSymbol* mod = fn->getModule();
-      Expr* def = fn->defPoint;
-      CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
-      def->insertBefore(noop);
-      fn->visiblePoint = noop;
-      def->remove();
-      mod->block->insertAtTail(def);
+      }
+    }
+    if (fn->global) {
+      fn->parentScope->removeVisibleFunction(fn);
+      theProgram->block->blkScope->addVisibleFunction(fn);
+      if (toFnSymbol(fn->defPoint->parentSymbol)) {
+        ModuleSymbol* mod = fn->getModule();
+        Expr* def = fn->defPoint;
+        CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
+        def->insertBefore(noop);
+        fn->visiblePoint = noop;
+        def->remove();
+        mod->block->insertAtTail(def);
+      }
     }
   }
 }

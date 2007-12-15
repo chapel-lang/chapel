@@ -577,6 +577,7 @@ FnSymbol::FnSymbol(const char* initName) :
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
   visiblePoint(NULL),
+  instantiationPoint(NULL),
   visible(true),
   global(false),
   basicBlocks(NULL),
@@ -979,13 +980,15 @@ copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST
 
 static FnSymbol*
 instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
-                     Map<Symbol*,Symbol*>* paramMap) {
+                     Map<Symbol*,Symbol*>* paramMap, CallExpr* call) {
   ASTMap map;
 
   FnSymbol* clone = fn->copy(&map);
   clone->isGeneric = false;
   clone->visible = false;
   clone->instantiatedFrom = fn;
+  if (call)
+    clone->instantiationPoint = call->parentScope;
 
   FnSymbol* root = fn;
   while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
@@ -1212,7 +1215,8 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions, 
-                              Map<Symbol*,Symbol*>* paramMap) {
+                              Map<Symbol*,Symbol*>* paramMap,
+                              CallExpr* call) {
   Vec<BaseAST*> keys;
   generic_substitutions->get_keys( keys);
   forv_Vec(BaseAST, key, keys) {
@@ -1223,7 +1227,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       if (t != nt)
         generic_substitutions->put(key, nt);
     }
-
   }
 
   // return cached if we did this instantiation already
@@ -1358,14 +1361,14 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     clone->type->substitutions.map_union(*generic_substitutions);
 
     newfn = instantiate_function(this, generic_substitutions, clone->type,
-                                 paramMap);
+                                 paramMap, call);
     clone->type->defaultConstructor = newfn;
     newfn->retType = clone->type;
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
 
   } else {
-    newfn = instantiate_function(this, generic_substitutions, NULL, paramMap);
+    newfn = instantiate_function(this, generic_substitutions, NULL, paramMap, call);
 
     if (hasPragma("tuple get"))
       newfn = instantiate_tuple_get(newfn);

@@ -388,6 +388,10 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
     if (FnSymbol* fn = toFnSymbol(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
         fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
+      if (fn->instantiationPoint) {
+        fn->instantiationPoint->getVisibleFunctions(allVisibleFunctions, name, true);
+        return;
+      }
     }
     if (astParent->getModule()->block == astParent) {
       ModuleSymbol* mod = astParent->getModule();
