@@ -1,0 +1,5 @@
+unimplemented feature: extended-precision floating-point math functions
+
+We need to overload our standard math functions to support extended-precision
+floating-point versions of the functions to complement the 32- and 64-bit
+versions.
