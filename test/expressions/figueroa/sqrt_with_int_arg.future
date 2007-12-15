@@ -1,0 +1,15 @@
+semantic: default promotion of int(32) to floating-point
+
+This example calls the sqrt() function with an int(32) argument.  There are
+currently two versions of the sqrt() function: one taking a real(32) argument,
+and one taking a real(64) argument.  In the future, there may also be another
+version taking an extended-precision real argument.  Which of these three
+should the Chapel compiler invoke?  Currently, it invokes the one that takes
+a real(32) argument.  This is very unlikely to be what the programmer had in
+mind, especially since this can result in loss of precision.  A safer
+alternative would be to call the real(64) version.  An even safer alternative,
+especially for the naive numerical programmer, is to evaluate it using the
+widest precision available in hardware on the target platform.  There are
+pros and cons to each alternative, but in any case, the decision should be
+tied to how the Chapel language specifies that floating-point arithmetic
+expressions be evaluated.
