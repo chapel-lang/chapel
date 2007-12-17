@@ -153,6 +153,10 @@ static void codegen_header(void) {
   cnames.put("truncate", 1);
   cnames.put("int", 1);
   cnames.put("time", 1);
+  cnames.put("nearbyint", 1);
+  cnames.put("round", 1);
+  cnames.put("tgamma", 1);
+  cnames.put("trunc", 1);
 
   //
   // put global variables into varSymbols vector
