@@ -349,7 +349,7 @@ def format(fmt: string, x:?t) where _isIntegralType(t) | _isFloatType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
     if _isImagType(t) then
-      return (__primitive("_format", fmt2, x:real)+"i");
+      return (__primitive("_format", fmt2, _i2r(x))+"i");
     else
       return __primitive("_format", fmt2, x:real);
   } else 
