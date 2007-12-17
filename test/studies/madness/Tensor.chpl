@@ -11,8 +11,7 @@ def *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
     if V.domain.dim(1) != M.domain.dim(1) then
         halt("*: Vector and matrix dims must match");
 
-    for (i, j) in M.domain do
-        R[i] += V[j] * M[j, i];
+    [i in R.domain] R[i] = + reduce(V * M(..,i));
 
     return R;
 }
@@ -24,8 +23,7 @@ def *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
     if V.domain.dim(1) != M.domain.dim(2) then
         halt("*: Vector and matrix dims must match");
 
-    for (i, j) in M.domain do
-        R[i] += V[j] * M[i, j];
+    [i in R.domain] R[i] = + reduce(M(i,..) * V);
 
     return R;
 }
