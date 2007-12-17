@@ -519,6 +519,12 @@ range per dimension.  Square brackets should be used for
 multidimensional domains, while either square brackets or parenthesis
 can be used for 1D domains.  
 
+For multi-dimensional arithmetic domains, slicing with a rank change
+is supported by substituting integral values within a dimension's
+range for an actual range.  The resulting domain will have a rank less
+than the arithmetic domain's rank and equal to the number of ranges
+that are passed in to take the slice.
+
 The result is a subdomain of the domain being sliced, as described
 in~\rsec{Subdomains}, as defined by the intersection of the two
 domains.  Partially unbounded or completely unbounded ranges may be
@@ -566,10 +572,23 @@ equivalent.
 
 In addition to slicing an arithmetic array by an arithmetic domain,
 arithmetic arrays also support slicing by ranges directly.  If each
-dimension is indexed by an range, this is equivalent to slicing the
+dimension is indexed by a range, this is equivalent to slicing the
 domain by an arithmetic domain defined by those ranges.
 
-%TODO: insert description of rank-change slicing here
+For multi-dimensional arithmetic arrays, slicing with a rank change is
+supported by substituting integral values within a dimension's range
+for an actual range.  The resulting array will have a rank less than
+the arithmetic array's rank and equal to the number of ranges that are
+passed in to take the slice.
+
+\begin{example}
+Given an array
+\begin{chapel}
+var A: [1..n, 1..n] int;
+\end{chapel}
+the slice \chpl{A[1..n, 1]} is a one-dimensional array whose elements
+are the first column of \chpl{A}.
+\end{example}
 
 Array slices may also be expressed using partially unbounded or
 completely unbounded ranges.  This is equivalent to slicing the
