@@ -201,7 +201,8 @@ var x: A.eltType;
 \end{example}
 
 \begin{status}
-Arrays of arrays are not currently supported.
+Arrays of arrays where the inner array size is a function of the outer
+array's indices are not currently supported.
 \end{status}
 
 \subsubsection{Array Indexing}
@@ -568,14 +569,7 @@ arithmetic arrays also support slicing by ranges directly.  If each
 dimension is indexed by an range, this is equivalent to slicing the
 domain by an arithmetic domain defined by those ranges.
 
-\begin{status}
-It is currently required that each dimension be indexed by an range.
-There is an expectation that indexing some dimensions directly by
-values of integral type will result in an array slice of a different
-rank.  In the current implementation, doing so would result in a
-promotion of the array indexing function and would have similar
-semantics though with more restrictions.
-\end{status}
+%TODO: insert description of rank-change slicing here
 
 Array slices may also be expressed using partially unbounded or
 completely unbounded ranges.  This is equivalent to slicing the
@@ -909,6 +903,28 @@ For performance reasons, there is an expectation that a method will be
 added to domains to allow non-preserving assignment, \emph{i.e.}, all
 values in the arrays associated with the assigned domain will be lost.
 
+An array's domain can only be modified directly, via the domain's name
+or an alias created by passing it to a function via blank intent.  In
+particular, the domain may not be modified via the array's
+\chpl{.domain} method, nor by using the domain query syntax on a
+function's formal array argument
+(\rsec{Formal_Arguments_of_Generic_Array_Types}).
+
+\begin{rationale}
+When multiple arrays are declared using a single domain, modifying the
+domain affects all of the arrays.  Allowing an array's domain to be
+queried and then modified suggests that the change should only affect
+that array.  By requiring the domain to be modified directly, the user
+is encouraged to think in terms of the domain distinctly from a
+particular array.
+
+In addition, this choice has the beneficial effect that arrays
+declared via an anonymous domain have a constant domain.  Constant
+domains are considered a common case and have potential compilation
+benefits such as eliminating bounds checks.  Therefore making this
+convenient syntax support a common, optimizable case seems prudent.
+\end{rationale}
+
 \subsection{Subdomains}
 \label{Subdomains}
 \index{subdomains}
@@ -1008,6 +1024,15 @@ and as an index value for a multidimensional domain.
 
 There is an expectation that this list of predefined functions and
 methods will grow.
+
+\begin{protohead}
+def $Array$.domain: this.domain
+\end{protohead}
+\begin{protobody}
+Returns the domain of the given array.  This domain is constant,
+implying that the domain cannot be resized by assigning to its domain
+field, only by modifying the domain directly.
+\end{protobody}
 
 \begin{protohead}
 def $Array$.numElements: this.domain.dim_type
