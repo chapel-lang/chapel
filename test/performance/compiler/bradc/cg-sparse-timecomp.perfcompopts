@@ -1,1 +1,1 @@
-cg-makea.chpl -O --no-bounds-checks --print-passes
+cg-makea.chpl -O --no-checks --print-passes

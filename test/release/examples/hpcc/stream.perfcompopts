@@ -1,1 +1,1 @@
-probSize.chpl -O --no-bounds-checks
+probSize.chpl -O --no-checks
