@@ -36,14 +36,14 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 The implicit numeric conversions are as follows:
 \begin{itemize}
 \item From \chpl{bool} to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string}
-\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(64)} to \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(64)} to \chpl{real(32)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{int(64)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
+\item From \chpl{uint(64)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
 \item From \chpl{real(32)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
 \item From \chpl{real(64)} to \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
 \item From \chpl{real(128)} to \chpl{complex(256)} or \chpl{string}
@@ -56,10 +56,27 @@ The implicit numeric conversions are as follows:
 \end{itemize}
 
 The implicit numeric conversions do not result in any loss of
-information except for the conversions from any of the \chpl{int}
-and \chpl{uint} types to any of the \chpl{real} and \chpl{complex}
-types and from any of the \chpl{real}, \chpl{imag}, and \chpl{complex}
-types to \chpl{string} where there is a loss of precision.
+information except for the conversions from \chpl{int(64)}
+or \chpl{uint(64)} to \chpl{real(64)} or \chpl{complex(128)} and from
+any of the \chpl{real}, \chpl{imag}, or \chpl{complex} types
+to \chpl{string}.
+
+\begin{rationale}
+In C\#, implicit conversions from \chpl{int(32)} or \chpl{int(64)}
+to \chpl{real(32)} are supported and allow for a loss of precision.
+Since the default \chpl{real} size is 64 and the default \chpl{int}
+size is 32 in Chapel, we did not follow the lead of C\# in this regard
+since it seemed unfortunate to favor \chpl{real(32)} over \chpl{real}
+in the default case.  That is, given the \chpl{sqrt} function defined
+over \chpl{real(32)} and \chpl{real}, it is preferable to choose the
+version over \chpl{real} when calling with an actual of
+type \chpl{int} rather than lose precision and half of the bits to
+call the \chpl{real(32)} version.
+
+Additionally, we don't allow implicit conversions from \chpl{int(8)}
+or \chpl{int(16)} to \chpl{real(32)} either because to do so would
+result in an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
+\end{rationale}
 
 \subsubsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}

@@ -277,18 +277,16 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
           return true;
   }
   if (is_real_type(formalType)) {
-    if (is_int_type(actualType))
-      return true;
-    if (is_uint_type(actualType))
+    if ((is_int_type(actualType) || is_uint_type(actualType))
+        && get_width(formalType) >= 64)
       return true;
     if (is_real_type(actualType) && 
         get_width(actualType) < get_width(formalType))
       return true;
   }
   if (is_complex_type(formalType)) {
-    if (is_int_type(actualType))
-      return true;
-    if (is_uint_type(actualType))
+    if ((is_int_type(actualType) || is_uint_type(actualType))
+        && get_width(formalType) >= 128)
       return true;
     if (is_real_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)/2))
