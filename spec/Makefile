@@ -1,14 +1,18 @@
 all:
+	collect_syntax.pl
 	pdflatex -file-line-error -halt-on-error spec
 	makeindex spec
 	pdflatex -file-line-error -halt-on-error spec
+	collect_syntax.pl # again to show errors
 
 usedvi:
+	collect_syntax.pl
 	latex spec
 	makeindex spec
 	latex spec
 	dvips -P cmz -t letter -o spec.ps spec.dvi
 	ps2pdf spec.ps spec.pdf
+	collect_syntax.pl # again to show errors
 
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log

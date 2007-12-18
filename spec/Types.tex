@@ -181,7 +181,7 @@ hexadecimal-digits:
   hexadecimal-digit
   hexadecimal-digit hexadecimal-digits
 
-hexadecimal-digits: one of
+hexadecimal-digit: one of
   0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
 
 binary-digits:
@@ -335,14 +335,15 @@ Domains and arrays are defined in~\rsec{Domains_and_Arrays}.
 Type aliases are declared with the following syntax:
 \begin{syntax}
 type-alias-declaration-statement:
-  `type' type-alias-declaration ;
+  `type' type-alias-declaration-list ;
+
+type-alias-declaration-list:
+  type-alias-declaration
+  type-alias-declaration , type-alias-declaration-list
 
 type-alias-declaration:
-  identifier type-part[OPT]
-  identifier type-part[OPT] , type-alias-declaration
-
-type-part:
-  = type
+  identifier = type
+  identifier
 \end{syntax}
 A type alias is a symbol that aliases any type as specified in the
 \sntx{type-part}.  A use of a type alias has the same meaning as using
