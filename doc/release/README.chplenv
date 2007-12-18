@@ -94,13 +94,15 @@ Optional Settings
    libraries and generated code for CHPL_TARGET_PLATFORM.  Current
    values and defaults are as follows:
 
-        gnu               : the GNU compiler suite -- gcc and g++
-        intel             : the Intel compiler suite -- icc and icpc
         cray-mta          : the Cray compiler for multithreaded architectures
         cray-vec          : the Cray compiler for vector architectures
         cray-xt-gnu       : the Cray XT compiler using the GNU backend
         cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
+        gnu               : the GNU compiler suite -- gcc and g++
+        intel             : the Intel compiler suite -- icc and icpc
+	pathscale         : the Pathscale compiler suite -- pathCC and pathcc
+	pgi               : the PGI compiler suite -- pgCC and pgcc
 
    If not set, these variables each default to a value based on the
    corresponding platform variable:
