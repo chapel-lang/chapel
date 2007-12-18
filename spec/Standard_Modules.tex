@@ -68,7 +68,7 @@ bits to the right \chpl{shift} number of times.
 \index{standard modules!Math}
 
 The module \chpl{Math} defines routines for mathematical computations.
-This module is used by default; there is no need to explicitly used
+This module is used by default; there is no need to explicitly use
 this module.  The Math module defines routines that are derived from
 and implemented via the standard C routines defined in \chpl{math.h}.
 
@@ -78,6 +78,7 @@ and implemented via the standard C routines defined in \chpl{math.h}.
 def abs(i: int(?w)): int(w)
 def abs(i: uint(?w)): uint(w)
 def abs(x: real): real
+def abs(x: real(32)): real(32)
 def abs(x: complex): real
 \end{protohead}
 \begin{protobody}
@@ -86,6 +87,7 @@ Returns the absolute value of the argument.
 
 \begin{protohead}
 def acos(x: real): real
+def acos(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc cosine of the argument.  It is an error if \chpl{x} is
@@ -94,6 +96,7 @@ less than $-1$ or greater than $1$.
 
 \begin{protohead}
 def acosh(x: real): real
+def acosh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic cosine of the argument.  It is an error
@@ -102,6 +105,7 @@ if \chpl{x} is less than $1$.
 
 \begin{protohead}
 def asin(x: real): real
+def asin(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc sine of the argument.  It is an error if \chpl{x} is
@@ -110,6 +114,7 @@ less than $-1$ or greater than $1$.
 
 \begin{protohead}
 def asinh(x: real): real
+def asinh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic sine of the argument.
@@ -117,6 +122,7 @@ Returns the inverse hyperbolic sine of the argument.
 
 \begin{protohead}
 def atan(x: real): real
+def atan(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc tangent of the argument.
@@ -124,6 +130,7 @@ Returns the arc tangent of the argument.
 
 \begin{protohead}
 def atan2(y: real, x: real): real
+def atan2(y: real(32), x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc tangent of the two arguments.  This is equivalent to
@@ -133,6 +140,7 @@ and \chpl{x} are used to determine the quadrant of the result.
 
 \begin{protohead}
 def atanh(x: real): real
+def atanh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic tangent of the argument.  It is an error
@@ -141,6 +149,7 @@ if \chpl{x} is less than $-1$ or greater than $1$.
 
 \begin{protohead}
 def cbrt(x: real): real
+def cbrt(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the cube root of the argument.
@@ -148,6 +157,7 @@ Returns the cube root of the argument.
 
 \begin{protohead}
 def ceil(x: real): real
+def ceil(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of the argument rounded up to the nearest integer.
@@ -162,6 +172,7 @@ Returns the conjugate of \chpl{a}.
 
 \begin{protohead}
 def cos(x: real): real
+def cos(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the cosine of the argument.
@@ -169,6 +180,7 @@ Returns the cosine of the argument.
 
 \begin{protohead}
 def cosh(x: real): real
+def cosh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic cosine of the argument.
@@ -176,6 +188,7 @@ Returns the hyperbolic cosine of the argument.
 
 \begin{protohead}
 def erf(x: real): real
+def erf(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the error function of the argument defined as
@@ -185,6 +198,7 @@ for the argument $x$.
 
 \begin{protohead}
 def erfc(x: real): real
+def erfc(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the complementary error function of the argument.  This is
@@ -193,6 +207,7 @@ equivalent to \chpl{1.0 - erf(x)}.
 
 \begin{protohead}
 def exp(x: real): real
+def exp(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of $e$ raised to the power of the argument.
@@ -200,6 +215,7 @@ Returns the value of $e$ raised to the power of the argument.
 
 \begin{protohead}
 def exp2(x: real): real
+def exp2(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of $2$ raised to the power of the argument.
@@ -207,6 +223,7 @@ Returns the value of $2$ raised to the power of the argument.
 
 \begin{protohead}
 def expm1(x: real): real
+def expm1(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns one less than the value of $e$ raised to the power of the argument.
@@ -214,6 +231,7 @@ Returns one less than the value of $e$ raised to the power of the argument.
 
 \begin{protohead}
 def floor(x: real): real
+def floor(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of the argument rounded down to the nearest integer.
@@ -221,6 +239,7 @@ Returns the value of the argument rounded down to the nearest integer.
 
 \begin{protohead}
 def lgamma(x: real): real
+def lgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the natural logarithm of the absolute value of the gamma
@@ -229,6 +248,7 @@ function of the argument.
 
 \begin{protohead}
 def log(x: real): real
+def log(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the natural logarithm of the argument.  It is an error if the
@@ -237,6 +257,7 @@ argument is less than or equal to zero.
 
 \begin{protohead}
 def log10(x: real): real
+def log10(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the base 10 logarithm of the argument.  It is an error if the
@@ -245,15 +266,18 @@ argument is less than or equal to zero.
 
 \begin{protohead}
 def log1p(x: real): real
+def log1p(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
-Returns the natural logarithm of \chpl{x+1}.
+Returns the natural logarithm of \chpl{x+1}.  It is an error
+if \chpl{x} is less than or equal to $-1$.
 \end{protobody}
 
 \begin{protohead}
 def log2(i: int(?w)): int(w)
 def log2(i: uint(?w)): uint(w)
 def log2(x: real): real
+def log2(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
@@ -262,6 +286,7 @@ argument is less than or equal to zero.
 
 \begin{protohead}
 def nearbyint(x: real): real
+def nearbyint(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument determined by the
@@ -270,6 +295,7 @@ current rounding direction.
 
 \begin{protohead}
 def rint(x: real): real
+def rint(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument determined by the
@@ -278,6 +304,7 @@ current rounding direction.
 
 \begin{protohead}
 def round(x: real): real
+def round(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument.  Cases halfway
@@ -286,6 +313,7 @@ between two integral values are rounded towards zero.
 
 \begin{protohead}
 def sin(x: real): real
+def sin(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the sine of the argument.
@@ -293,6 +321,7 @@ Returns the sine of the argument.
 
 \begin{protohead}
 def sinh(x: real): real
+def sinh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic sine of the argument.
@@ -300,6 +329,7 @@ Returns the hyperbolic sine of the argument.
 
 \begin{protohead}
 def sqrt(x: real): real
+def sqrt(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the square root of the argument.  It is an error if the
@@ -308,6 +338,7 @@ argument is less than zero.
 
 \begin{protohead}
 def tan(x: real): real
+def tan(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the tangent of the argument.
@@ -315,6 +346,7 @@ Returns the tangent of the argument.
 
 \begin{protohead}
 def tanh(x: real): real
+def tanh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic tangent of the argument.
@@ -322,6 +354,7 @@ Returns the hyperbolic tangent of the argument.
 
 \begin{protohead}
 def tgamma(x: real): real
+def tgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the gamma function of the argument defined as
@@ -331,6 +364,7 @@ for the argument $x$.
 
 \begin{protohead}
 def trunc(x: real): real
+def trunc(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the nearest integral value to the argument that is not larger
