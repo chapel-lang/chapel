@@ -11,20 +11,23 @@ Code Size Statistics:
 Optimization Control:
       --baseline                         Disable almost all optimizations
       --local                            Compile program for a single locale
-      --no-bounds-checks                 Disable bounds checking
       --no-copy-propagation              Disable copy propagation
       --no-expand-iterators-inline-opt   Disable the expansion of iterators
                                          inlined around loop bodies
       --no-flow-analysis                 Disable optimizations requiring flow
                                          analysis
       --no-inline                        Do not inline functions
-      --no-nil-checks                    Disable nil checking
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
       --serial                           Serialize program
 
+Semantic Runtime Checks:
+      --no-checks                        Disable all following checks
+      --[no-]bounds-checks               Disable bounds checking
+      --[no-]nil-checks                  Disable nil checking
+
 Code Generation:
-      --[no-]cg-cpp-lines                Generate #line annotations
+      --[no-]cpp-lines                   Generate #line annotations
   -g, --[no-]debug                       Allow debugging of generated C code
   -O, --[no-]optimize                    Optimize generated C code
       --savec <directory>                Save generated C code in directory

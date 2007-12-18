@@ -34,21 +34,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "stringutil.h"
 
 /*
-static char *SPACES = "                                                                               ";
-static char *arg_types_keys = (char *)"IPSDfF+TLN";
-static char *arg_types_desc[] = {
-  (char *)"int     ",
-  (char *)"path    ",
-  (char *)"string  ",
-  (char *)"double  ",
-  (char *)"->false ",
-  (char *)"->true  ",
-  (char *)"incr    ",
-  (char *)"toggle  ",
-  (char *)"int64   ",
-  (char *)"->true  ",
-  (char *)"        "
-};
+Flag types:
+
+  I = int
+  P = path
+  S = string
+  D = double
+  f = set to false
+  F = set to true
+  + = increment
+  T = toggle
+  L = int64 (long)
+  N = --no-... flag, --no version sets to false
+  n = --no-... flag, --no version sets to true
 */
 
 static void 
@@ -72,8 +70,8 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   ArgumentDescription *desc = arg_state->desc;
   if (desc[i].type) {
     char type = desc[i].type[0];
-    if (type=='F'||type=='f'||type=='N')
-      *(bool *)desc[i].location = type!='f' ? true : false;
+    if (type=='F'||type=='f'||type=='N'||type=='n')
+      *(bool *)desc[i].location = (type=='F'||type=='N') ? true : false;
     else if (type=='T')
       *(int *)desc[i].location = !*(int *)desc[i].location;
     else if (type == '+') 
@@ -131,6 +129,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
         case 'f': 
         case 'F': 
         case 'N':
+        case 'n':
           *(bool *)desc[i].location = type!='f'?1:0; break;
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
@@ -168,7 +167,8 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
               *argv = end;
             process_arg(arg_state, i, &argv, currentFlag);
             break;
-          } else if (desc[i].type && desc[i].type[0] == 'N' &&
+          } else if (desc[i].type && 
+                     (desc[i].type[0] == 'N' || desc[i].type[0] == 'n') &&
                      len == flaglen+3 &&
                      !strncmp("no-", (*argv)+2, 3) &&
                      !strncmp(desc[i].name,(*argv)+5,len-3)) {
@@ -177,9 +177,17 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
               *argv += strlen(*argv) - 1;
             else
               *argv = end;
-            desc[i].type = "f";
+            if (desc[i].type[0] == 'N') {
+              desc[i].type = "f";
+            } else {
+              desc[i].type = "F";
+            }
             process_arg(arg_state, i, &argv, currentFlag);
-            desc[i].type = "N";
+            if (desc[i].type[0] == 'f') {
+              desc[i].type = "N";
+            } else {
+              desc[i].type = "n";
+            }              
           }
         }
       } else {
@@ -279,7 +287,8 @@ void usage(ArgumentState* arg_state, int status) {
     } else {
       nprinted = fprintf(stdout, "      --");
     }
-    if (desc[i].type && !strcmp(desc[i].type, "N"))
+    if (desc[i].type && 
+        (!strcmp(desc[i].type, "N") || !strcmp(desc[i].type, "n")))
       nprinted += fprintf(stdout, "[no-]");
     nprinted += fprintf(stdout, "%s", desc[i].name);
 

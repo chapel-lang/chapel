@@ -20,6 +20,7 @@ static void verifyIntSizes(ArgumentState* arg_state, char* arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
+static void turnOffChecks(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
@@ -44,6 +45,7 @@ bool fNoLiveVariablesIteratorClassOpt = false;
 bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoNilChecks = false;
+bool fNoChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
 bool fSerial = false;
@@ -81,6 +83,22 @@ static bool printLicense = false;
 static bool printVersion = false;
 static bool testIntSizes = false;
 
+/*
+Flag types:
+
+  I = int
+  P = path
+  S = string
+  D = double
+  f = set to false
+  F = set to true
+  + = increment
+  T = toggle
+  L = int64 (long)
+  N = --no-... flag, --no version sets to false
+  n = --no-... flag, --no version sets to true
+*/
+
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Traces", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
@@ -93,17 +111,20 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Optimization Control", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
  {"local", ' ', NULL, "Compile program for a single locale", "F", &fLocal, "CHPL_LOCAL", NULL},
- {"no-bounds-checks", ' ', NULL, "Disable bounds checking", "F", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
- {"no-nil-checks", ' ', NULL, "Disable nil checking", "F", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"serial", ' ', NULL, "Serialize program", "F", &fSerial, "CHPL_SERIAL", NULL},
 
+ {"", ' ', NULL, "Semantic Runtime Checks", NULL, NULL, NULL, NULL},
+ {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
+ {"bounds-checks", ' ', NULL, "Disable bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"nil-checks", ' ', NULL, "Disable nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
+
  {"", ' ', NULL, "Code Generation", NULL, NULL, NULL, NULL},
- {"cg-cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
+ {"cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
@@ -325,4 +346,10 @@ int main(int argc, char *argv[]) {
   free_args(&arg_state);
   clean_exit(0);
   return 0;
+}
+
+
+static void turnOffChecks(ArgumentState* arg, char* unused) {
+  fNoNilChecks = true;
+  fNoBoundsChecks = true;
 }
