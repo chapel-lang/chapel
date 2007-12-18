@@ -232,15 +232,11 @@ class instance.
 \label{The_Default_Constructor}
 
 A default constructor is automatically created for every class in the
-Chapel program.  This constructor is defined such that it has one
-argument for every field in the class.  Each of the arguments has a
-default value.
-
-The default constructor is very useful but its generality in terms of
-having one argument for each field all of which have default values
-makes it slightly difficult for the user to create their own
-constructor.  It is expected that in many simple cases, the default
-constructor will be all that is necessary.
+Chapel program that does not define any constructors.  This
+constructor is defined such that it has one argument for every field
+in the class.  Each of the non-generic fields has a default value.
+Actual values for each generic field must be passed to a constructor
+call.
 
 \begin{example}
 Given the class
