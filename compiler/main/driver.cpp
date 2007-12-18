@@ -14,14 +14,6 @@
 #include "primitive.h"
 
 
-static void setChapelDebug(ArgumentState* arg_state, char* arg_unused);
-static void verifySaveCDir(ArgumentState* arg_state, char* arg_unused);
-static void verifyIntSizes(ArgumentState* arg_state, char* arg_unused);
-static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
-static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
-static void readConfigParam(ArgumentState* arg_state, char* arg_unused);
-static void turnOffChecks(ArgumentState* arg_state, char* arg_unused);
-
 FILE* html_index_file = NULL;
 
 int fdump_html = 0;
@@ -63,7 +55,6 @@ int fNoStdIncs = 0;
 int num_constants_per_variable = 1;
 char defaultDistribution[256] = "SingleLocaleDistribution";
 int instantiation_limit = 256;
-//char configParamString[FILENAME_MAX] = "";
 char mainModuleName[256] = "";
 
 Map<const char*, const char*> configParamMap;
@@ -82,6 +73,102 @@ static bool printHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
 static bool testIntSizes = false;
+
+
+static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
+  printCppLineno = true;
+}
+
+static void 
+handleLibrary(ArgumentState* arg_state, char* arg_unused) {
+  addLibInfo(astr("-l", libraryFilename));
+}
+
+static void 
+handleLibPath(ArgumentState* arg_state, char* arg_unused) {
+  addLibInfo(astr("-L", libraryFilename));
+}
+
+static void
+compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
+  char* argv0 = strdup(orig_argv0);
+  char* lastslash = strrchr(argv0, '/');
+  if (lastslash == NULL) {
+    *name = argv0;
+    *loc = ".";   // BLC: this is inaccurate; we should search the path.  
+                  // It's no less accurate than what we did previously, though.
+  } else {
+    *lastslash = '\0';
+    *name = lastslash+1;
+    *loc = argv0;
+  }
+  snprintf(chplhome, FILENAME_MAX, "%s", astr(*loc, "/../.."));
+}
+
+
+static void runCompilerInGDB(int argc, char* argv[]) {
+  const char* gdbCommandFilename = createGDBFile(argc, argv);
+  const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
+  int status = mysystem(command, "running gdb", 0);
+
+  clean_exit(status);
+}
+
+
+static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
+  // Expect arg_unused to be a string of either of these forms:
+  // 1. name=value -- set the config param "name" to "value"
+  // 2. name       -- set the boolean config param "name" to NOT("name")
+  //                  if name is not type bool, set it to 0.
+
+  const char *name = astr(arg_unused);
+  char *value;
+  value = strstr(name, "=");
+  if (value) {
+    *value = '\0';
+    value++;
+    if (value[0]) {
+      // arg_unused was name=value
+      configParamMap.put(astr(name), value);
+    } else {
+      // arg_unused was name=  <blank>
+      USR_FATAL("Missing config param value");
+    }
+  } else {
+    // arg_unused was just name
+    configParamMap.put(astr(name), "");
+  }
+}
+
+
+static void verifySaveCDir(ArgumentState* arg, char* unused) {
+  if (saveCDir[0] == '-') {
+    USR_FATAL("--savec takes a directory name as its argument\n"
+              "       (you specified '%s', assumed to be another flag)",
+              saveCDir);
+  }
+}
+
+
+static void verifyIntSizes(ArgumentState* arg, char* unused) {
+  if (sizeof(int8) != 1 ||
+      sizeof(int16) != 2 ||
+      sizeof(int32) != 4 ||
+      sizeof(int64) != 8 ||
+      sizeof(uint8) != 1 ||
+      sizeof(uint16) != 2 ||
+      sizeof(uint32) != 4 ||
+      sizeof(uint64) != 8) {
+    INT_FATAL("compiler integer types not set up properly");
+  }
+}
+
+
+static void turnOffChecks(ArgumentState* arg, char* unused) {
+  fNoNilChecks = true;
+  fNoBoundsChecks = true;
+}
+
 
 /*
 Flag types:
@@ -188,78 +275,6 @@ static ArgumentState arg_state = {
   arg_desc
 };
 
-static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
-  printCppLineno = true;
-}
-
-static void 
-handleLibrary(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(astr("-l", libraryFilename));
-}
-
-static void 
-handleLibPath(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(astr("-L", libraryFilename));
-}
-
-static void
-compile_all(void) {
-  initPrimitive();
-  initPrimitiveTypes();
-  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
-  runPasses();
-}
-
-static void
-compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
-  char* argv0 = strdup(orig_argv0);
-  char* lastslash = strrchr(argv0, '/');
-  if (lastslash == NULL) {
-    *name = argv0;
-    *loc = ".";   // BLC: this is inaccurate; we should search the path.  
-                  // It's no less accurate than what we did previously, though.
-  } else {
-    *lastslash = '\0';
-    *name = lastslash+1;
-    *loc = argv0;
-  }
-  snprintf(chplhome, FILENAME_MAX, "%s", astr(*loc, "/../.."));
-}
-
-
-static void runCompilerInGDB(int argc, char* argv[]) {
-  const char* gdbCommandFilename = createGDBFile(argc, argv);
-  const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
-  int status = mysystem(command, "running gdb", 0);
-
-  clean_exit(status);
-}
-
-static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
-  // Expect arg_unused to be a string of either of these forms:
-  // 1. name=value -- set the config param "name" to "value"
-  // 2. name       -- set the boolean config param "name" to NOT("name")
-  //                  if name is not type bool, set it to 0.
-
-  const char *name = astr(arg_unused);
-  char *value;
-  value = strstr(name, "=");
-  if (value) {
-    *value = '\0';
-    value++;
-    if (value[0]) {
-      // arg_unused was name=value
-      configParamMap.put(astr(name), value);
-    } else {
-      // arg_unused was name=  <blank>
-      USR_FATAL("Missing config param value");
-    }
-  } else {
-    // arg_unused was just name
-    configParamMap.put(astr(name), "");
-  }
-}
-
 
 static void printStuff(void) {
   bool shouldExit = false;
@@ -302,26 +317,12 @@ static void printStuff(void) {
 }
 
 
-static void verifySaveCDir(ArgumentState* arg, char* unused) {
-  if (saveCDir[0] == '-') {
-    USR_FATAL("--savec takes a directory name as its argument\n"
-              "       (you specified '%s', assumed to be another flag)",
-              saveCDir);
-  }
-}
-
-
-static void verifyIntSizes(ArgumentState* arg, char* unused) {
-  if (sizeof(int8) != 1 ||
-      sizeof(int16) != 2 ||
-      sizeof(int32) != 4 ||
-      sizeof(int64) != 8 ||
-      sizeof(uint8) != 1 ||
-      sizeof(uint16) != 2 ||
-      sizeof(uint32) != 4 ||
-      sizeof(uint64) != 8) {
-    INT_FATAL("compiler integer types not set up properly");
-  }
+static void
+compile_all(void) {
+  initPrimitive();
+  initPrimitiveTypes();
+  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
+  runPasses();
 }
 
 
@@ -346,10 +347,4 @@ int main(int argc, char *argv[]) {
   free_args(&arg_state);
   clean_exit(0);
   return 0;
-}
-
-
-static void turnOffChecks(ArgumentState* arg, char* unused) {
-  fNoNilChecks = true;
-  fNoBoundsChecks = true;
 }

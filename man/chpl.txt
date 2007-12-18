@@ -119,7 +119,7 @@ OPTIONS
 
   Code Generation Options
 
-  --[no-]cg-cpp-lines   Causes the compiler to emit cpp #line directives
+  --[no-]cpp-lines   Causes the compiler to emit cpp #line directives
                     into the generated code in order to help map generated
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
