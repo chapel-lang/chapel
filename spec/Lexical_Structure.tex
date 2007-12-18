@@ -37,6 +37,9 @@ except of the case of the characters are still different.
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
+The productions in this section are lexical so the components are not
+delimited by white space.
+
 \subsubsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
@@ -45,6 +48,24 @@ An identifier in Chapel is a sequence of characters that must start
 with a letter, lower-case or upper-case, or an underscore, and can
 include lower-case letters, upper-case letters, digits, and the
 underscore.
+\begin{syntax}
+identifier:
+  legal-first-identifier-char legal-identifier-chars[OPT]
+
+legal-first-identifier-char: one of
+  _ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+legal-identifier-chars:
+  legal-identifier-char legal-identifier-chars[OPT]
+
+legal-identifier-char:
+  legal-first-identifier-char
+  digit
+
+digit: one of
+  0 1 2 3 4 5 6 7 8 9
+\end{syntax}
+
 \begin{example}
 The following are legal identifiers:
 \begin{chapel}
@@ -136,9 +157,108 @@ compilerError
 
 \subsubsection{Literals}
 \label{Literals}
+\label{Primitive_Type_Literals}
 
-Literal values for primitive types are described
-in~\ref{Primitive_Type_Literals}.
+\index{literals!primitive type}
+Bool literals are designated by the following syntax:
+\begin{syntax}
+bool-literal: one of
+  `true' `false'
+\end{syntax}
+
+Signed and unsigned integer literals are designated by the following
+syntax:
+\begin{syntax}
+integer-literal:
+  digits
+  0 'x' hexadecimal-digits
+  0 'b' binary-digits
+
+digits:
+  digit
+  digit digits
+
+hexadecimal-digits:
+  hexadecimal-digit
+  hexadecimal-digit hexadecimal-digits
+
+hexadecimal-digit: one of
+  0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+
+binary-digits:
+  binary-digit
+  binary-digit binary-digits
+
+binary-digit: one of
+  0 1
+\end{syntax}
+Suffixes, like those in C, are not necessary.  The type of an integer
+literal is the first type of the following that can hold the value of
+the digits: \chpl{int}, \chpl{int(64)}, \chpl{uint(64)}.  Explicit
+conversions are necessary to change the type of the literal to another
+integer size.
+
+Real literals are designated by the following syntax:
+\begin{syntax}
+real-literal:
+  digits[OPT] . digits exponent-part[OPT]
+  digits exponent-part
+
+exponent-part:
+  `e' sign[OPT] digits
+
+sign: one of
+  + -
+\end{syntax}
+The type of a real literal is \chpl{real}.  Explicit conversions are
+necessary to change the type of the literal to another real
+size.
+
+Note that real literals require that a digit follow the
+decimal point.  This is necessary to avoid an ambiguity in
+interpreting \chpl{2.e+2} that arises if a method called \chpl{e} is
+defined on integers.
+
+Imaginary literals are designated by the following syntax:
+\begin{syntax}
+imaginary-literal:
+  real-literal `i'
+  integer-literal `i'
+\end{syntax}
+
+A complex literal is specified by adding or subtracting an imaginary
+literal with a real literal.  Alternatively, a 2-tuple literal of
+expressions of integer or real type can be cast to a complex.  These
+expressions can be literals, but do not need to be.  To create a
+complex literal or parameter, they must be literals or parameters.
+
+\begin{example}
+The following codes represent the same complex literal:
+\begin{center}
+\chpl{2.0i}, \hspace{1pc} \chpl{0.0+2.0i}, \hspace{1pc}
+\chpl{(0.0,2.0):complex}.
+\end{center}
+\end{example}
+
+String literals are designated by the following syntax:
+\begin{syntax}
+string-literal:
+  " characters[OPT] "
+  ' characters[OPT] '
+
+characters:
+  character
+  character characters
+
+character:
+  any-character
+\end{syntax}
+
+\begin{status}
+Strings are currently restricted to ASCII characters.  In a future
+version of Chapel, strings will be defined over alphabets to allow for
+more exotic characters.
+\end{status}
 
 \subsubsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
