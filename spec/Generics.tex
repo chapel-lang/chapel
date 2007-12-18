@@ -358,6 +358,28 @@ the call foo(3) resolves to the first definition because when the
 second function is instantiated the where clause evaluates to false.
 \end{example}
 
+\subsection{User-Defined Compiler Errors}
+\label{User-Defined_Compiler_Errors}
+\index{compiler errors!user-defined}
+
+The special compiler error statement given by
+\begin{syntax}
+compiler-error-statement:
+  `compilerError' ( expression-list ) ;
+
+expression-list:
+  expression
+  expression , expression-list
+\end{syntax}
+invokes a compiler error if the function that the statement is located
+within may be called when the program is executed and the statement is
+not eliminated by parameter folding.
+
+The compiler error is defined by the expression list which can contain
+string literals and types.  The error points to the spot in the Chapel
+program where the function containing
+the \sntx{compiler-error-statement} is called from.
+
 \subsection{Example: A Generic Stack}
 \label{Example_Generic_Stack}
 
