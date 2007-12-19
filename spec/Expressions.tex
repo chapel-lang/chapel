@@ -77,6 +77,8 @@ The syntax to call a function is given by:
 \begin{syntax}
 call-expression:
   expression ( named-expression-list )
+  expression [ named-expression-list ]
+  parenthesesless-function-identifier
 
 named-expression-list:
   named-expression
@@ -85,11 +87,22 @@ named-expression-list:
 named-expression:
   expression
   identifier = expression
+
+parenthesesless-function-identifier:
+  identifier
 \end{syntax}
 
 A \sntx{call-expression} is resolved to a particular function
 according to the algorithm for function resolution described
 in~\rsec{Function_Resolution}.
+
+Functions can be called using either parentheses or brackets.  The
+only difference in the call has to do with promotion and is discussed
+in~\rsec{Tensor_Product_Promotion}.
+
+Functions that are defined without parentheses are called without
+parentheses where the symbol is resolved.  Functions with parentheses
+are discussed in~\rsec{Functions_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
 named.  The optional \sntx{identifier} represents a named actual
@@ -1111,11 +1124,10 @@ above for 0-based programming.
 
 \begin{openissue}
 This open-interval notation is a contentious issue and thoughts on
-whether this should remain in the language or not are encouraged.
-Besides the mismatched brackets and parentheses, which some editors
-warn about, this bracketing notation is different than other
-bracketing notations in that multiple copies of the brackets will have
-different semantics than a single one.  For example, \chpl{(((1..n)))}
-is identical to \chpl{(1..n)}, but \chpl{[[[1..n)))} is different
-than \chpl{[1..n)}.
+whether this should remain in the language or not are encouraged.  One
+issue is the lack of generality due to the lack of support for lower
+open intervals.  A second issue is the mismatch in parenthesis and
+brackets which generates warnings in some editors and is considered
+aesthetically awkward by many users.  There also remains a question as
+to how much this really simplifies the code.
 \end{openissue}
