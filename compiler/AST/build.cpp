@@ -841,3 +841,18 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   block->insertAtTail(new CallExpr(PRIMITIVE_ON, tmp, new CallExpr(fn)));
   return block;
 }
+
+
+CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
+  if (sign == '+') {
+    USR_WARN(expr, "++ is not a pre-increment");
+    return new CallExpr("+", new CallExpr("+", expr));
+  } else if (sign == '-') {
+    USR_WARN(expr, "-- is not a pre-decrement");
+    return new CallExpr("-", new CallExpr("-", expr));
+  } else {
+    INT_FATAL(expr, "Error in parser");
+  }
+  return NULL;
+}
+

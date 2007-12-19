@@ -162,6 +162,8 @@ yield           processToken(TYIELD);
 "*"             processToken(TSTAR);
 "/"             processToken(TDIVIDE);
 "%"             processToken(TMOD);
+"--"            processToken(TMINUSMINUS);
+"++"            processToken(TPLUSPLUS);
 
 "**"            processToken(TEXP);
 

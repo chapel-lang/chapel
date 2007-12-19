@@ -35,7 +35,7 @@ HPCC_LocalVectorSize( params: HPCC_Params,
   while (params.HPLMaxProcMem/size)/vecCnt >> flg2 do {
     flg2 += 1;
   }
-  --flg2;
+  flg2 -= 1;
 
   if flg2 <= maxIntBits2 {
     if pow2 then return 1 << flg2;

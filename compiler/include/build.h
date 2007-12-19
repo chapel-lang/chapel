@@ -50,5 +50,6 @@ Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
+CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 
 #endif

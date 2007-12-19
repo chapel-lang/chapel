@@ -257,6 +257,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TSTAR TDIVIDE TMOD
 %left TCOLON TNOTCOLON
 %right TUPLUS TUMINUS TBNOT
+%right TMINUSMINUS TPLUSPLUS
 %right TEXP
 %left TLP TLSBR
 %left TDOT
@@ -1573,6 +1574,10 @@ top_level_expr:
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS
     { $$ = new CallExpr("-", $2); }
+| TMINUSMINUS expr
+    { $$ = buildPreDecIncWarning($2, '-'); }
+| TPLUSPLUS expr
+    { $$ = buildPreDecIncWarning($2, '+'); }
 | TNOT expr
     { $$ = new CallExpr("!", $2); }
 | TBNOT expr

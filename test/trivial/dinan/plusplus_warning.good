@@ -1,1 +1,1 @@
-Warning: Expression has no effect
+plusplus_warning.chpl:3: warning: ++ is not a pre-increment
