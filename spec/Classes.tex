@@ -353,6 +353,15 @@ references a variable that has the derived class type.
 The identical signature requires that the names, types, and order of
 the formal arguments be identical.
 
+Methods without parentheses are not candidates for dynamic dispatch.
+\begin{rationale}
+Methods without parentheses are primarily used for field accessors of
+which a default is created if none is specified.  The field accessor
+should not dynamically dispatch in general since that would make it
+impossible to access a base field within a base method should that
+field be shadowed by a subclass.
+\end{rationale}
+
 \subsubsection{Inheriting from Multiple Classes}
 \label{Inheriting_from_Multiple_Classes}
 \index{multiple inheritance}
