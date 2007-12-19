@@ -63,7 +63,8 @@ typedef struct ArgumentState {
   ArgumentDescription *desc;
 } ArgumentState;
 
-void usage(ArgumentState *arg_state, int status);
+void usage(ArgumentState *arg_state, int status, bool printEnvHelp, 
+           bool printCurrentSettings);
 void process_args(ArgumentState *arg_state, int argc, char **argv);
 void free_args(ArgumentState *arg_state);
 

@@ -54,5 +54,7 @@ Miscellaneous Flags:
 Compiler Information:
       --copyright                        Show copyright
   -h, --help                             Help (show this list)
+      --help-env                         Environment variable help
+      --help-settings                    Current flag settings
       --license                          Show license
       --version                          Show version

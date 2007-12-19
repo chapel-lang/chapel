@@ -258,7 +258,8 @@ word_wrap_print(const char* text, int start_column, int end_column) {
 }
 
 
-void usage(ArgumentState* arg_state, int status) {
+void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
+           bool printCurrentSettings) {
   ArgumentDescription *desc = arg_state->desc;
   const int desc_start_col = 42, end_col = 79;
   int i, nprinted;
@@ -301,6 +302,67 @@ void usage(ArgumentState* arg_state, int status) {
       print_n_spaces(desc_start_col - nprinted - 1);
     }
     word_wrap_print(desc[i].description, desc_start_col, end_col);
+
+    if (printEnvHelp || printCurrentSettings) {
+      /* print environment variable stuff */
+      if (printEnvHelp) {
+        printf("          env var: ");
+        const char* envvar = desc[i].env;
+        if (envvar) {
+          const char* setting = getenv(envvar);
+          printf("%s", envvar);
+          if (setting) {
+            printf(" (set to '%s')", setting);
+          } else {
+            printf(" (not set)");
+          }
+        } else {
+          printf("<none>");
+        }
+        printf("\n");
+      }
+      /* print default setting stuff */
+      if (printCurrentSettings) {
+        printf("          currently: ");
+        char type = desc[i].type[0];
+        switch (type) {
+        case 'I':
+        case '+':
+          printf("%d", *(int*)desc[i].location);
+          break;
+        case 'P':
+        case 'S':
+          if (desc[i].location) {
+            printf("'%s'", (char*)desc[i].location);
+          } else {
+            printf("''");
+          }
+          break;
+        case 'D':
+          printf("%g", *(double*)desc[i].location);
+          break;
+        case 'f':
+        case 'F':
+        case 'T':
+          printf("%s", *(bool*)desc[i].location ? "selected" : "not selected");
+          break;
+        case 'L':
+          printf("%Ld", *(int64*)desc[i].location);
+          break;
+        case 'N':
+        case 'n':
+          printf("--%s%s", 
+                 (*(bool*)desc[i].location ^ type == 'N') ? "no-" : "",
+                 desc[i].name);
+          break;
+        default:
+          INT_FATAL("Unexpected case in usage()");
+          break;
+        }
+        printf("\n");
+      }
+      printf("\n");
+    }
   }
   exit(status);
 }

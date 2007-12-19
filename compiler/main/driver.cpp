@@ -70,6 +70,8 @@ Timer timer5;
 
 static bool printCopyright = false;
 static bool printHelp = false;
+static bool printEnvHelp = false;
+static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
 static bool testIntSizes = false;
@@ -170,6 +172,11 @@ static void turnOffChecks(ArgumentState* arg, char* unused) {
 }
 
 
+static void setHelpTrue(ArgumentState* arg, char* unused) {
+  printHelp = true;
+}  
+
+
 /*
 Flag types:
 
@@ -237,6 +244,8 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
  {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL},
+ {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
+ {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &printLicense, NULL},
  {"version", ' ', NULL, "Show version", "F", &printVersion, NULL},
 
@@ -304,7 +313,7 @@ static void printStuff(void) {
   }
   if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
-    usage(&arg_state, (printHelp == false));
+    usage(&arg_state, (printHelp == false), printEnvHelp, printSettingsHelp);
     shouldExit = true;
     printedSomething = true;
   }
