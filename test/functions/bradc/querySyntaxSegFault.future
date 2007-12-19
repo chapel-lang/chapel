@@ -1,0 +1,5 @@
+bug: questionable query syntax results in seg fault
+
+This test results in a seg fault.  Not sure if it should be
+supported syntax or not, but it shouldn't seg fault in any
+case.
