@@ -2808,7 +2808,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* pt) {
 static void
 build_ddf() {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->isWrapper || !resolvedFns.set_in(fn))
+    if (fn->isWrapper || !resolvedFns.set_in(fn) || fn->noParens)
       continue;
     if (fn->numFormals() > 1) {
       if (fn->getFormal(1)->type == dtMethodToken) {

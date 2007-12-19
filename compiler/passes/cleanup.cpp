@@ -397,7 +397,7 @@ static void build_constructor(ClassType* ct) {
     outerType->addDeclarations(fn->defPoint->remove(), true);
 
     // Save the pointer to the outer class
-    ct->fields.insertAtHead(new DefExpr(outer));
+    ct->fields.insertAtTail(new DefExpr(outer));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
                                   new SymExpr(myThis),
                                   new_StringSymbol("outer"),

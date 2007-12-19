@@ -1,10 +1,10 @@
 class P {
-    def f return "";
+    def f() return "";
 }
 
 class C: P {
     var n: int;
-    def f return "D";
+    def f() return "D";
 }
 
 class D {
@@ -16,4 +16,4 @@ var d = D();
 // OK: d.p = C(5):P;
 d.p = C(5);
 
-writeln(d.p.f);
+writeln(d.p.f());
