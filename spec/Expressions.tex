@@ -1110,9 +1110,12 @@ above for 0-based programming.
 \end{rationale}
 
 \begin{openissue}
-This bracketing notation is different than other bracketing notations
-in that multiple copies of the brackets will have different semantics
-than a single one.  For example, \chpl{(((1..n)))} is identical
-to \chpl{(1..n)}, but \chpl{[[[1..n)))} is different
+This open-interval notation is a contentious issue and thoughts on
+whether this should remain in the language or not are encouraged.
+Besides the mismatched brackets and parentheses, which some editors
+warn about, this bracketing notation is different than other
+bracketing notations in that multiple copies of the brackets will have
+different semantics than a single one.  For example, \chpl{(((1..n)))}
+is identical to \chpl{(1..n)}, but \chpl{[[[1..n)))} is different
 than \chpl{[1..n)}.
 \end{openissue}
