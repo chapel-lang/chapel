@@ -187,7 +187,8 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
               desc[i].type = "N";
             } else {
               desc[i].type = "n";
-            }              
+            }
+            break;
           }
         }
       } else {
