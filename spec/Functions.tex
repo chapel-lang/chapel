@@ -36,7 +36,7 @@ formal:
   formal-tag identifier formal-type[OPT] variable-argument-expression
 
 formal-type:
-  : type
+  : type-specifier
   : ? identifier
 
 default-expression:
@@ -47,12 +47,15 @@ variable-argument-expression:
   ... ? identifier
 
 formal-tag: one of
-  in out inout param type
+  `in' `out' `inout' `param' `type'
 
 var-param-clause:
   `var'
   `const'
   `param'
+
+return-type:
+  : type-specifier
 
 where-clause:
   `where' expression

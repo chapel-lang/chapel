@@ -9,6 +9,19 @@ class type.  Each call to the constructor creates a new data object
 and returns a reference to the object.  Storage is reclaimed
 automatically as described in~\rsec{Automatic_Memory_Management}.
 
+\subsection{Class Types}
+\label{Class_Types}
+
+The syntax of a class type is summarized as follows:
+\begin{syntax}
+class-type:
+  identifier
+  identifier ( named-expression-list )
+\end{syntax}
+For non-generic classes, the class name is sufficient to specify the
+type.  For generic classes, the generic fields must be specified and a
+call to the constructor is used to specify the type.
+
 \subsection{Class Declarations}
 \label{Class_Declarations}
 \index{classes!declarations}
@@ -16,12 +29,15 @@ automatically as described in~\rsec{Automatic_Memory_Management}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `class' identifier class-inherit-type-list[OPT] {
+  `class' identifier class-inherit-list[OPT] {
     class-statement-list }
 
-class-inherit-expression-list:
+class-inherit-list:
+  : class-type-list
+
+class-type-list:
   class-type
-  class-type , inherit-expression-list
+  class-type , class-type-list
 
 class-statement-list:
   class-statement
@@ -107,7 +123,7 @@ special syntax that is similar to a field access.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `def' type-binding function-name argument-list[OPT] var-clause[OPT]
+  `def' type-binding function-name argument-list[OPT] var-param-clause[OPT]
     return-type[OPT] where-clause[OPT] block-level-statement
 
 type-binding:

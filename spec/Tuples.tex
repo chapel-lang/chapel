@@ -42,11 +42,16 @@ tuple's type.  The syntax of a tuple type is given by:
 \begin{syntax}
 tuple-type:
   ( type-list )
+  homogeneous-tuple-type
 
 type-list:
-  type
-  type , type-list
+  type-specifier
+  type-specifier , type-list
 \end{syntax}
+
+The \sntx{homogeneous-tuple-type} is a special kind of tuple where the
+components all have the same types.  They are defined
+in~\rsec{Homogeneous_Tuples}.
 
 \begin{example}
 Given a tuple expression \chpl{(1, 2)}, the type of the tuple value is
@@ -162,7 +167,7 @@ restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
 A homogeneous tuple type may be specified with the following syntax:
 \begin{syntax}
 homogeneous-tuple-type:
-  integer-parameter-expression * type
+  integer-parameter-expression * type-specifier
 
 integer-parameter-expression:
   expression
@@ -181,12 +186,9 @@ The following types are equivalent:
 \label{Tuple_Indexing}
 \index{tuples!indexing}
 
-A tuple may be indexed into by an integer.  Indexing a tuple is given
-by the following syntax:
-\begin{syntax}
-tuple-indexing-expression:
-  expression ( integer-expression )
-\end{syntax}
+A tuple may be indexed into by an integer.  Indexing a tuple is
+accomplished by treating the tuple as a function and passing an
+integer to it as an argument.
 
 The result of indexing a tuple by integer $k$ is the value of the
 $k$th component.  If the tuple is not homogeneous, the tuple can only

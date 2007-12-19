@@ -5,7 +5,28 @@ Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
 classes, records, unions, tuples, ranges, domains, and arrays.
 This section defines the primitive types, enumerated types, and type
-aliases.
+aliases.  The syntax of a type is summarized by the following syntax:
+\begin{syntax}
+type-specifier:
+  primitive-type
+  enum-type
+  class-type
+  record-type
+  union-type
+  tuple-type
+  range-type
+  domain-type
+  array-type
+  sync-type
+  single-type
+  of-type
+  index-type
+\end{syntax}
+
+Sync and single types are discussed
+in~\rsec{Synchronization_Variables}.  The \sntx{of-type} is a
+syntactic sugar for collections and is defined
+in~\rsec{The_eltType_Type}.
 
 Programmers can define their own enumerated types, classes, records,
 unions, and type aliases in type declaration statements summarized by
@@ -24,7 +45,6 @@ in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
 discussed in~\rsec{Tuples}.  Ranges are discussed in~\rsec{Ranges}.
 Domains and arrays are discussed in~\rsec{Domains_and_Arrays}.
 
-
 \subsection{Primitive Types}
 \label{Primitive_Types}
 \index{types!primitive}
@@ -34,6 +54,21 @@ types: \chpl{bool}, \chpl{int}, \chpl{uint}, \chpl{real},
 \chpl{complex}, \chpl{imag}, \chpl{string}, and \chpl{locale}.
 These primitive types are defined in this section except for
 the \chpl{locale} type which is defined in~\rsec{The_Locale_Type}.
+The syntax of a primitive type is summarized by the following syntax:
+\begin{syntax}
+primitive-type:
+  `bool'
+  `int' primitive-type-parameter-part[OPT]
+  `uint' primitive-type-parameter-part[OPT]
+  `real' primitive-type-parameter-part[OPT]
+  `complex' primitive-type-parameter-part[OPT]
+  `imag' primitive-type-parameter-part[OPT]
+  `string'
+  `locale'
+
+primitive-type-parameter-part:
+  ( integer-parameter-expression )
+\end{syntax}
 
 \subsubsection{The Bool Type}
 \label{The_Bool_Type}
@@ -172,6 +207,13 @@ init-part:
   = expression
 \end{syntax}
 
+The enumerated type can then be specified with its name as summarized
+by the following syntax:
+\begin{syntax}
+enum-type:
+  identifier
+\end{syntax}
+
 An enumerated type defines a set of named constants.  These are
 associated with parameters of integral type.  Each enumerated type is
 a distinct type. If the \sntx{init-part} is omitted, the
@@ -179,7 +221,6 @@ a distinct type. If the \sntx{init-part} is omitted, the
 \sntx{enum-constant} in the enum, with the first having the value \chpl{1}.
 
 \subsection{Class Types}
-\label{Class_Types}
 
 The class type defines a type that contains variables and constants,
 called fields, and functions, called methods.  Classes are defined
@@ -188,14 +229,12 @@ parameters.  Such a class is generic and is defined
 in~\rsec{Generics}.
 
 \subsection{Record Types}
-\label{Record_Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  The difference
 between classes and records is elaborated on in~\rsec{Records}.
 
 \subsection{Union Types}
-\label{Union_Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
@@ -235,7 +274,7 @@ type-alias-declaration-list:
   type-alias-declaration , type-alias-declaration-list
 
 type-alias-declaration:
-  identifier = type
+  identifier = type-specifier
   identifier
 \end{syntax}
 A type alias is a symbol that aliases any type as specified in the

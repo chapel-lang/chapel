@@ -13,12 +13,15 @@ described in this section.
 A record is defined with the following syntax:
 \begin{syntax}
 record-declaration-statement:
-  `record' identifier inherit-type-list[OPT] {
+  `record' identifier record-inherit-list[OPT] {
     record-statement-list }
 
-record-inherit-expression-list:
+record-inherit-list:
+  : record-type-list
+
+record-type-list:
   record-type
-  record-type , inherit-expression-list
+  record-type , record-type-list
 
 record-statement-list:
   record-statement
@@ -31,6 +34,14 @@ record-statement:
 \end{syntax}
 The only difference between record and class declarations is that
 the \chpl{record} keyword replaces the \chpl{class} keyword.
+
+The record type is specified as a class type is and is summarized by
+the following syntax:
+\begin{syntax}
+record-type:
+  identifier
+  identifier ( named-expression-list )
+\end{syntax}
 
 \subsection{Class and Record Differences}
 \label{Class_and_Record_Differences}

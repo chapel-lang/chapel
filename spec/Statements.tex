@@ -10,6 +10,8 @@ They are as follows:
 statement:
   block-statement
   expression-statement
+  assignment-statement
+  swap-statement
   conditional-statement
   select-statement
   while-do-statement
@@ -20,32 +22,33 @@ statement:
   yield-statement
   module-declaration-statement
   function-declaration-statement
+  method-declaration-statement
   type-declaration-statement
   variable-declaration-statement
+  tuple-variable-declaration-statement
   use-statement
   type-select-statement
   empty-statement
-  cobegin-statement
-  begin-statement
-  serial-statement
-  atomic-statement
+  parallel-statement
   on-statement
+  compiler-error-statement
 \end{syntax}
 
 The declaration statements are discussed in the sections that define
 what they declare.  Module declaration statements are defined
 in~\rsec{Modules}.  Function declaration statements are defined
-in~\rsec{Functions}.  Type declaration statements are defined
+in~\rsec{Functions}.  Method declaration statements are defined
+in~\rsec{Class_Methods}.  Type declaration statements are defined
 in~\rsec{Types}.  Variable declaration statements are defined
-in~\rsec{Variables}.  Return statements are defined
-in~\rsec{The_Return_Statement}.  Yield statements are defined
-in~\rsec{The_Yield_Statement}.
-
-The \sntx{cobegin-statement} is defined in~\rsec{Cobegin}.
-The \sntx{begin-statement} is defined in~\rsec{Begin}.
-The \sntx{serial-statement} is defined in~\rsec{Serial}.
-The \sntx{atomic-statement} is defined in~\rsec{Atomic_Transactions}.
-The \sntx{on-statement} is defined in~\rsec{On}.
+in~\rsec{Variables}.  Tuple variable declaration statements are
+defined in ~\rsec{Variable_Declarations_in_a_Tuple}.  Return
+statements are defined in~\rsec{The_Return_Statement}.  Yield
+statements are defined in~\rsec{The_Yield_Statement}.
+The \sntx{parallel-statement} consists of statements that create or
+limit parallelism.  These statements are described
+in~\rsec{Parallelism_and_Synchronization}.  The \sntx{on-statement} is
+defined in~\rsec{On}.  The compiler error statement is defined
+in~\rsec{User_Defined_Compiler_Errors}.
 
 \subsection{Blocks}
 \label{Blocks}
@@ -499,8 +502,8 @@ expression-list:
   expression , expression-list
 
 type-list:
-  type
-  type , type-list
+  type-specifier
+  type-specifier , type-list
 \end{syntax}
 
 Call the expressions following the keyword \chpl{select}, the select

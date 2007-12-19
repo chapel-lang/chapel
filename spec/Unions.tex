@@ -8,6 +8,18 @@ execution.  Unions are safe so that an access to a field that does not
 contain data is a runtime error.  When a union is constructed, it is
 in an unset state so that no field contains data.
 
+\subsection{Union Types}
+\label{Union_Types}
+
+The syntax of a union type is summarized as follows:
+\begin{syntax}
+union-type:
+  identifier
+\end{syntax}
+The union type is specified by the name of the union type.  This
+simplification from class and record types is possible because generic
+unions are not supported.
+
 \subsection{Union Declarations}
 \label{Union_Declarations}
 

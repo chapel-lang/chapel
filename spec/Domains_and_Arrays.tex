@@ -59,6 +59,17 @@ index set.  The type of an associative domain is parameterized by the
 type of the index.  The type of an opaque domain is unique.  The type
 of an enumerated domain is parameterized by the enumerated type.
 
+The syntax of a domain type is summarized as follows:
+\begin{syntax}
+domain-type:
+  arithmetic-domain-type
+  associative-domain-type
+  opaque-domain-type
+  enumerated-domain-type
+  sparse-domain-type
+  subdomain-type
+\end{syntax}  
+
 \begin{example}
 In the code
 \begin{chapel}
@@ -170,7 +181,7 @@ it is declared over and the element type of the array.  Array types
 are given by the following syntax:
 \begin{syntax}
 array-type:
-  [ domain-expression ] type
+  [ domain-expression ] type-specifier
 
 domain-expression:
   expression
@@ -370,7 +381,7 @@ special-array-declaration:
   identifier-list indexed-array-type-part initialization-part
 
 indexed-array-type-part:
-  : array-type-forall-expression type
+  : array-type-forall-expression type-specifier
 
 array-type-forall-expression:
   [ identifier `in' domain-expression ]
@@ -406,7 +417,7 @@ alias operator \chpl{=>}.  The syntax for capturing an alias to an
 array requires a new variable declaration:
 \begin{syntax}
 array-alias-declaration:
-  `var' identifier reindexing-expression[OPT] => array-expression ;
+  identifier reindexing-expression[OPT] => array-expression ;
 
 reindexing-expression:
   [ domain-expression ]
@@ -449,19 +460,7 @@ square brackets.
 \label{Arithmetic_Domain_Literals}
 \index{domains!arithmetic literals}
 
-An arithmetic domain literal is specified by the following syntax:
-\begin{syntax}
-arithmetic-domain-literal:
-  [ range-expression-list ]
-
-range-expression-list:
-  range-expression
-  range-expression , range-expression-list
-
-range-expression:
-  expression
-\end{syntax}
-
+An arithmetic domain literal is a square tuple of ranges.
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
 domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
@@ -484,7 +483,11 @@ The arithmetic domain type is specified by the syntax of a function
 call to the keyword \chpl{domain} that takes at least an argument
 called \chpl{rank} that is a parameter of type \chpl{int} and
 optionally an integral type named \chpl{dim_type} and a boolean value
-named \chpl{stridable}.
+named \chpl{stridable}.  Its syntax is summarized as follows:
+\begin{syntax}
+arithmetic-domain-type:
+  `domain' ( named-expression-list )
+\end{syntax}
 
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
@@ -802,7 +805,7 @@ associative-domain-type:
   `domain' ( scalar-type )
 
 scalar-type:
-  type
+  type-specifier
 \end{syntax}
 A scalar type is any primitive type, tuple of scalar types, or class,
 record, or union where all of the fields have scalar types.
@@ -869,7 +872,7 @@ An opaque domain is a form of associative domain where there is no
 algebra on the types of the indices.  The indices are, in essence,
 opaque.  The opaque domain type is given by the following syntax:
 \begin{syntax}
-opaque-domain:
+opaque-domain-type:
   `domain' ( `opaque' )
 \end{syntax}
 
@@ -887,10 +890,16 @@ is rare.
 \index{arrays!enumerated}
 
 Enumerated domains are a special case of associative domains where the
-indices are the constants defined by an enumerated type.  Enumerated
-domains do not support the \chpl{add} or \chpl{remove} methods.  All
-of the constants defined by the enumerated type are indices into the
-enumerated domain.
+indices are the constants defined by an enumerated type.  The syntax
+of an enumerated domain type is summarized as follows:
+\begin{syntax}
+enumerated-domain-type:
+  `domain' ( enum-type )
+\end{syntax}
+
+Enumerated domains do not support the \chpl{add} or \chpl{remove}
+methods.  All of the constants defined by the enumerated type are
+indices into the enumerated domain.
 
 An enumerated domain is specified identically to the associative
 domain type, except that the type is an enumerated type rather than

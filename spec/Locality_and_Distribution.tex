@@ -94,8 +94,8 @@ running on the locale given by \chpl{Locales(1)}.
 Every variable \chpl{v} is associated with some locale which can be
 queried using the following syntax:
 \begin{syntax}
-locale-access:
-  expression . `locale'
+locale-access-expression:
+  variable-expression . `locale'
 \end{syntax}
 When the \sntx{expression} is a class type, the locale is where the
 object is located rather than where the \sntx{expression} may be

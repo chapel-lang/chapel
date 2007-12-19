@@ -2,9 +2,26 @@
 \label{Parallelism_and_Synchronization}
 
 Chapel is an explicitly parallel programming language.  Parallelism is
-introduced into a program by the user with the following three
-constructs: \chpl{forall}, \chpl{cobegin}, and \chpl{begin}.  In
-addition, some operations on arrays and domains, as well as
+introduced into a program by the user by parallel statements and
+parallel expressions.  The syntax for such statements and expressions
+is as follows:
+\begin{syntax}
+parallel-statement:
+  forall-statement
+  alternative-forall-statement
+  ordered-forall-statement
+  cobegin-statement
+  coforall-statement
+  begin-statement
+  serial-statement
+  atomic-statement
+
+parallel-expression:
+  forall-expression
+  ordered-expression
+\end{syntax}
+
+In addition, some operations on arrays and domains, as well as
 invocations of promotion, are executed in parallel.  Synchronization
 is provided with \emph{synchronization variables} and \emph{atomic}
 statements.  To avoid any unintended implications, the
@@ -333,7 +350,7 @@ single variable is specified with a single type given by the following
 syntax:
 \begin{syntax}
 single-type:
-  `single' type
+  `single' type-specifier
 \end{syntax}
 
 \begin{example}
@@ -436,7 +453,7 @@ A sync variable is specified with a sync type given by the following
 syntax:
 \begin{syntax}
 sync-type:
-  `sync' type
+  `sync' type-specifier
 \end{syntax}
 
 \subsubsection{Additional Synchronization Variable Functions}

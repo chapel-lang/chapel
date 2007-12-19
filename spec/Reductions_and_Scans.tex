@@ -26,10 +26,10 @@ The syntax for a reduction expression is given by:
 \begin{syntax}
 reduce-expression:
   reduce-scan-operator `reduce' expression
-  type `reduce' expression
+  class-type `reduce' expression
 
 reduce-scan-operator: one of
-  + * && || & | ^ min max minloc maxloc
+  + * && || & | ^ `min' `max' `minloc' `maxloc'
 \end{syntax}
 
 Chapel's built-in reduction operators are defined
@@ -84,7 +84,7 @@ The syntax for a scan expression is given by:
 \begin{syntax}
 scan-expression:
   reduce-scan-operator `scan' expression
-  type `scan' expression
+  class-type `scan' expression
 \end{syntax}
 
 The built-in scans are defined in \sntx{reduce-scan-operator}.  These

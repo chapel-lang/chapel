@@ -56,6 +56,12 @@ to optimize the implementation of domains and arrays defined using
 ranges.
 \end{rationale}
 
+The syntax of a range type is summarized as follows:
+\begin{syntax}
+range-type:
+  `range' ( named-expression-list )
+\end{syntax}
+
 \begin{example}
 As an example, the following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
@@ -249,20 +255,11 @@ var r2 = (r * 2) + 1;
 \index{ranges!slicing}
 
 Ranges can be \emph{sliced} using other ranges to create new
-sub-ranges.  Range slicing is accomplished using either square
-brackets or parenthesis using the following syntax:
-
-\begin{syntax}
-slice-expr:
-  expression [ expression ]
-  expression ( expression )
-\end{syntax}
-
-Where the first expression is the range being sliced and the second
-expression is the range expressing the slice.  The resulting range
-represents the intersection between the two ranges.  If the slicing
-range is unbounded in one or both directions, it inherits its missing
-bounds from the range being sliced.
+sub-ranges.  Range slicing is defined by using the range as a function
+in a call expression where the argument is another range.  The
+resulting range represents the intersection between the two ranges.
+If the slicing range is unbounded in one or both directions, it
+inherits its missing bounds from the range being sliced.
 
 \begin{example}
 In the following example, \chpl{r} represents the integers from 1 to
@@ -275,37 +272,6 @@ var r2 = r[3..];
 var r3 = r[1.. by 2];
 \end{chapel}
 \end{example}
-
-\subsubsection{Open Interval Notation}
-\label{Open_Interval}
-\index{ranges!open interval}
-
-Chapel's \emph{open interval notation} uses the following syntax:
-
-\begin{syntax}
-open-interval-expr:
-  [ expression )
-\end{syntax}
-
-This notation is a loose adaptation of mathematical notation for open
-(upper) intervals in which the upper bound is not included in the
-range.  For an argument range expression characterized by $l$, $h$,
-and $s$, this syntax produces a range characterized by $l$, $h-1$ and
-$s$.
-
-\begin{rationale}
-While this operator is pure syntactic sugar for subtracting one from a
-range's upper bound, it is provided as a concession to C programmers
-and others who prefer 0-based indexing to avoid having to write
-declare ranges (and domains) using \chpl{0..n-1} all the time.  In its
-place, [0..n) can be used.
-
-Open intervals are not supported on lower bounds or on both upper and
-lower bounds due to the syntactic ambiguities that they can result in
-combined with the fact that these cases are not as important as the
-above for 0-based programming.
-\end{rationale}
-
 
 \subsection{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}

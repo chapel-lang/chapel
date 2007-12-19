@@ -26,13 +26,15 @@ variable-declaration-list:
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
   identifier-list type-part
+  special-array-declaration
+  array-alias-declaration
 
 identifier-list:
   identifier
   identifier , identifier-list
 
 type-part:
-  : type
+  : type-specifier
 
 initialization-part:
   = expression
@@ -67,6 +69,11 @@ The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
 the \sntx{initialization-part} is omitted, the variable is initialized
 to a default value described in~\rsec{Default_Initialization}.
+
+The \sntx{special-array-declaration}
+and \sntx{array-alias-declaration} are defined
+in~\rsec{Domains_and_Arrays}.
+
 
 \subsubsection{Default Initialization}
 \label{Default_Initialization}

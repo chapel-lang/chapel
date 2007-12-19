@@ -19,8 +19,29 @@ expression:
   let-expression
   if-expression
   for-expression
-  forall-expression
+  open-interval-expression
+  parallel-expression
+  reduce-expression
+  scan-expression
+  module-access-expression
+  tuple-expression
+  tuple-destructuring-expression
+  locale-access-expression
 \end{syntax}
+
+The expressions that create and limit
+parallelism, \sntx{parallel-expression}, are discussed
+in~\rsec{Parallelism_and_Synchronization}.  Reductions and
+scans, \sntx{reduce-expression} and \sntx{scan-expression}, are
+defined in~\rsec{Reductions_and_Scans}.  Module access
+expressions, \sntx{module-access-expression}, are defined
+in~\rsec{Explicit_Naming}.  Tuple
+expressions, \sntx{tuple-expression}, are defined
+in~\rsec{Tuple_Expressions}.  Tuple destructuring
+expressions, \sntx{tuple-destructuring-expression}, are defined
+in~\rsec{Variable_Length_Argument_Lists}.  Locale access
+expressions, \sntx{locale-access-expression}, are defined
+in~\rsec{Querying_the_Locale_of_a_Variable}.
 
 \subsection{Literal Expressions}
 \label{Literal_Expressions}
@@ -36,7 +57,6 @@ literal-expression:
   imaginary-literal
   string-literal
   range-literal
-  domain-literal
 \end{syntax}
 
 \subsection{Variable Expressions}
@@ -139,7 +159,7 @@ places in the future.
 A cast is specified with the following syntax:
 \begin{syntax}
 cast-expression:
-  expression : type
+  expression : type-specifier
 \end{syntax}
 The expression is converted to the specified type.  Except for the
 casts listed below, casts are restricted to valid explicit
@@ -1014,7 +1034,7 @@ of that value.
 
 A conditional expression is given by the following syntax:
 \begin{syntax}
-conditional-expression:
+if-expression:
   `if' expression `then' expression `else' expression
   `if' expression `then' expression
 \end{syntax}
@@ -1053,3 +1073,46 @@ A conditional expression that is immediately enclosed in a for
 expression does not require an else-part.  Such a conditional
 expression filters the evaluated expressions and only returns an
 expression if the condition holds.
+
+\subsection{Open Interval Expressions}
+\label{Open_Interval}
+\index{ranges!open interval}
+
+%% move to section that discusses square tuples and domains when that
+%% section is written.
+
+Chapel's \emph{open interval notation} uses the following syntax:
+\begin{syntax}
+open-interval-expression:
+  [ expression )
+  [ expression-list )
+\end{syntax}
+
+This notation is a loose adaptation of mathematical notation for open
+(upper) intervals in which the upper bound is not included in the
+range.  For an argument range expression characterized by $l$, $h$,
+and $s$, this syntax produces a range characterized by $l$, $h-1$ and
+$s$.  For arithmetic domains or multiple ranges, the result is an
+arithmetic domain where each range defining the arithmetic domain has
+been truncated.
+
+\begin{rationale}
+While this operator is pure syntactic sugar for subtracting one from a
+range's upper bound, it is provided as a concession to C programmers
+and others who prefer 0-based indexing to avoid having to write
+declare ranges (and domains) using \chpl{0..n-1} all the time.  In its
+place, [0..n) can be used.
+
+Open intervals are not supported on lower bounds or on both upper and
+lower bounds due to the syntactic ambiguities that they can result in
+combined with the fact that these cases are not as important as the
+above for 0-based programming.
+\end{rationale}
+
+\begin{openissue}
+This bracketing notation is different than other bracketing notations
+in that multiple copies of the brackets will have different semantics
+than a single one.  For example, \chpl{(((1..n)))} is identical
+to \chpl{(1..n)}, but \chpl{[[[1..n)))} is different
+than \chpl{[1..n)}.
+\end{openissue}
