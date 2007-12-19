@@ -214,6 +214,12 @@ do {
     }
 } while ($#stack >= 0);
 
+foreach $prefix (keys %syn_cnt) {
+    if ($syn_cnt{$prefix} == 2) {
+        print "error: unreachable: $prefix\n";
+    }
+}
+
 close FILE;
 
 
