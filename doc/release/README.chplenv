@@ -139,3 +139,14 @@ Optional Settings
         gasnet : use the Berkeley GASNet-based runtime
 
    If unset, CHPL_COMM defaults to "none".
+
+
+----------------------------
+Command Line Option Defaults
+----------------------------
+
+Most of the compiler's command line options support setting a default
+value for the option via an environment variable.  To see a list of
+the environment variables supported for each option, run the compiler
+with the --help-env flag.  For boolean flags and toggles, setting the
+environment variable to any value selects that flag.

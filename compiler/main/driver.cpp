@@ -194,15 +194,15 @@ Flag types:
 */
 
 static ArgumentDescription arg_desc[] = {
- {"", ' ', NULL, "Compilation Traces", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "Print compiler passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
 
- {"", ' ', NULL, "Code Size Statistics", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Code Size Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "Count tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"print-code-size", ' ', NULL, "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
- {"", ' ', NULL, "Optimization Control", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
  {"local", ' ', NULL, "Compile program for a single locale", "F", &fLocal, "CHPL_LOCAL", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
@@ -212,27 +212,27 @@ static ArgumentDescription arg_desc[] = {
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
  {"serial", ' ', NULL, "Serialize program", "F", &fSerial, "CHPL_SERIAL", NULL},
 
- {"", ' ', NULL, "Semantic Runtime Checks", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Disable bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"nil-checks", ' ', NULL, "Disable nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
 
- {"", ' ', NULL, "Code Generation", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
- {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
- {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
  {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
- {"make", ' ', NULL, "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
 
- {"", ' ', NULL, "Linker Control", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
+ {"make", ' ', NULL, "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
+ {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
+ {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
 
- {"", ' ', NULL, "Miscellaneous Flags", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"chplhome", ' ', "<directory>", "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
@@ -241,7 +241,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfigParam},
 
- {"", ' ', NULL, "Compiler Information", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
  {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL},
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},

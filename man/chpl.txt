@@ -1,8 +1,8 @@
 NAME
   chpl - Cray Inc. compiler for the Chapel parallel language
 SYNOPSIS
-  chpl [-o outfile] [--no-bounds-checks] [-O]
-       [--savec dir] [-g] [--ccflags flags]
+  chpl [-o outfile] [--no-checks] [-O]
+       [--savec dir] [-g]
        [--print-passes] [--print-commands]
        [flags...] [source-files...]
 DESCRIPTION
@@ -29,11 +29,19 @@ OPTIONS
 
   Compiler Information Options
 
-  -h, --help      Print a brief list of the command line options, listing
-                  the arguments that they expect, and a summary of their 
+  --copyright     Print the compiler's copyright information.
+
+  -h, --help      Print a list of the command line options, indicating
+                  the arguments that they expect and a brief summary of their 
                   purpose.
 
-  --copyright     Print the compiler's copyright information.
+  --help-env      Print the command line option help message, listing
+                  the environment variable equivalent for each flag
+                  and its current value.
+
+  --help-settings   Print the command line option help message, listing
+                 the current setting of each option as specified by
+                 environment variables and other flags on the command line.
 
   --license       Print the compiler's license information.
 
@@ -42,14 +50,14 @@ OPTIONS
   Compilation Trace Options
 
   --print-commands  Prints the system commands that the compiler 
-                    executes in order to execute the program compilation.
+                    executes in order to compile the Chapel program.
 
   --print-passes    Prints the compiler passes during compilation and the
                     amount of wall clock time required for the pass.
 
   Code Size Options
 
-  --count-tokens    Prints out the number of static lexical tokens in 
+  --count-tokens    Prints the total number of static lexical tokens in 
                     the user's Chapel code.
 
   --print-code-size    Prints out the size of the user's code in great
@@ -80,7 +88,7 @@ OPTIONS
                     optimization which is on by default.
 
   --no-expand-iterators-inline-opt   By default, the compiler optimizes
-                    the invocation of an iterator to control a loop by
+                    the invocation of an iterator in a loop header by
                     inlining the iterator's definition around the loop 
                     body. This option turns off this optimization.
 
@@ -94,14 +102,13 @@ OPTIONS
                     optimizes iterators that are defined in terms of a 
                     single loop. This option turns off this optimization.
 
-  --serial          Optimize compilation of code for serial execution,
-                    changing forall, ordered forall, and coforall to
-                    for, changing begin, cobegin, and atomic blocks to
-                    regular blocks, and removing the serial keyword
-                    and evaluating its expression only for side
-                    effects.
+  --serial          Optimize compilation of code for serial execution.
+                    This changes forall- and coforall loops into
+                    for loops; changes begin, cobegin, and atomic blocks into
+                    regular block statements; and removes the serial keyword,
+                    evaluating its expression only for side effects.
 
-  Semantic Runtime Check Options
+  Run-time Semantic Check Options
 
   --no-checks       Turns off all of the runtime semantic checks in 
                     this section. It is currently typically necessary to
@@ -117,12 +124,37 @@ OPTIONS
 
 
 
-  Code Generation Options
+  C Code Generation Options
 
   --[no-]cpp-lines   Causes the compiler to emit cpp #line directives
                     into the generated code in order to help map generated
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
+
+  --savec <directory>    Saves the compiler-generated C code in the specified 
+                    directory, creating the directory if it does not already
+                    exist.
+
+  --short-names     Makes the variable names shorter when generating code at
+                    the expense of preserving names from the Chapel source.
+
+
+  C Code Compilation Options
+
+  --ccflags <flags>   Add the specified flags to the C compiler command line
+                     when compiling the generated code.
+
+  --ldflags <flags>  Add the specified flags to the C compiler link line
+                     when linking the generated code.
+
+  -l, --lib-linkage <library>   Specify a C library to link in on the C 
+                     compiler command line.
+
+  -L, --lib-search-path <path>   Specify a C library search path on the C
+                     compiler command line.
+
+  --make            Specify the gmake-compatible utility that should be 
+                    used when compiling the generated code.
 
   -g, --[no-]debug  Causes the generated C code to be compiled with debugging
                     turned on, and also turns on the --cg-cpp-lines option.
@@ -134,28 +166,10 @@ OPTIONS
 
   -O, --[no-]optimize  Causes the generated C code to be compiled with
                     optimizations turned on. The specific set of flags
-                    used by this option is platform-dependent. Use the
+                    used by this option is platform-dependent; use the
                     --print-commands option to view the C compiler command 
                     used. If you would like additional flags to be used
                     with the C compiler command, use the --ccflags option.
-
-  --savec <directory>    Saves the compiler-generated C code in the specified 
-                    directory, creating the directory if it does not already
-                    exist.
-
-  --short-names     Makes the variable names shorter when generating code at
-                    the expense of preserving names from the Chapel source.
-
-  Linker Control Options
-
-  --ccflags <flags>   Add the specified flags to the C compiler command line
-                     when compiling the generated code.
-
-  -l, --lib-linkage <library>   Specify a C library to link in on the C 
-                     compiler command line
-
-  -L, --lib-search-path <path>   Specify a C library search path on the C
-                     compiler command line
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
@@ -185,12 +199,18 @@ OPTIONS
                      maximum in the event that a legal instantiation
                      is being pruned too aggressively.
 
+  --main-module      For programs that supply multiple possible entry
+                     points, this option can be used to specify which
+                     module should serve as the entry point for program
+                     execution.
+
   --no-warnings      Turns off compiler warnings.
 
   -s, --set <config param>[=<value>]   Overrides the default value of
                      a configuration parameter in the code. For
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
+
 ENVIRONMENT
   CHPL_HOME           Specifies the location of the chapel/ installation directory
 
@@ -201,23 +221,31 @@ ENVIRONMENT
                          is to be run for the purposes of cross-compiling
                          (defaults to $CHPL_HOST_PLATFORM)
 
-  CHPL_THREADS        Specifies the thread layer to use for tasks (defaults
-                      to 'pthreads')
+  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
+                      to build the Chapel compiler (defaults to a best
+                      guess based on $CHPL_HOST_PLATFORM)
+
+  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
+                      to build the generated C code for a Chapel program
+                      and the Chapel runtime (defaults to a best guess 
+                      based on $CHPL_TARGET_PLATFORM)
+
+  CHPL_THREADS        Specifies the thread layer to use for implementing
+                      tasks (defaults to a best guess based on 
+                      $CHPL_TARGET_PLATFORM)
 
   CHPL_COMM           Specifies the communication layer to use for
                       inter-locale data tranfers (defaults to 'none')
 
-  See $CHPL_HOME/doc/README.chplenv for more information about
-  environment variable settings.
+  See $CHPL_HOME/doc/README.chplenv for further information about 
+  general environment variable settings and legal values.
 
-  In addition, most command-line compiler options have an environment
-  variable that can be used to set them by default. Command-line
-  options will always override environment variable settings in the event
-  of a conflict. Rather than list all of the environment variables here,
-  please grep $CHPL_HOME/compiler/main/driver.cpp for the flag name you
-  are interested in and look for the string on that same line that starts
-  with CHPL_...
-                     
+  Most compiler command-line options have an environment variable that can
+  be used to specify a default value. Use the --help-env option to list the 
+  environment variable equivalent for each option. Command-line options 
+  will always override environment variable settings in the event of a 
+  conflict.
+
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
   for instructions on reporting bugs.
