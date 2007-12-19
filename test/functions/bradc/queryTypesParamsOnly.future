@@ -1,0 +1,6 @@
+feature request: queries in formal arguments skip value fields
+
+It seems as though it would be helpful when using query syntax
+in a formal argument type to have the queries skip over any
+value fields given that those fields can't be queried anyway
+(is that right?)
