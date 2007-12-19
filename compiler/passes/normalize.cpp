@@ -872,14 +872,16 @@ fixup_query_formals(FnSymbol* fn) {
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
             for (int i = 0; i < args.n; i++) {
-              if (!strcmp(named->name, args.v[i]->name)) {
-                if (DefExpr* def = toDefExpr(named->actual)) {
-                  replace_query_uses(formal, def, args.v[i], asts);
-                } else {
-                  add_to_where_clause(formal, named->actual, args.v[i]);
+              if (args.v[i]) {
+                if (!strcmp(named->name, args.v[i]->name)) {
+                  if (DefExpr* def = toDefExpr(named->actual)) {
+                    replace_query_uses(formal, def, args.v[i], asts);
+                  } else {
+                    add_to_where_clause(formal, named->actual, args.v[i]);
+                  }
+                  args.v[i] = NULL;
+                  break;
                 }
-                args.v[i] = NULL;
-                break;
               }
             }
           }
