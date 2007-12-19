@@ -53,7 +53,7 @@ identifier:
   legal-first-identifier-char legal-identifier-chars[OPT]
 
 legal-first-identifier-char: one of
-  _ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z
+  `_' `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m' `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
 
 legal-identifier-chars:
   legal-identifier-char legal-identifier-chars[OPT]
@@ -63,7 +63,7 @@ legal-identifier-char:
   digit
 
 digit: one of
-  0 1 2 3 4 5 6 7 8 9
+  `0' `1' `2' `3' `4' `5' `6' `7' `8' `9'
 \end{syntax}
 
 \begin{example}
@@ -171,8 +171,8 @@ syntax:
 \begin{syntax}
 integer-literal:
   digits
-  0 'x' hexadecimal-digits
-  0 'b' binary-digits
+  `0' `x' hexadecimal-digits
+  `0' `b' binary-digits
 
 digits:
   digit
@@ -183,14 +183,14 @@ hexadecimal-digits:
   hexadecimal-digit hexadecimal-digits
 
 hexadecimal-digit: one of
-  0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+  `0' `1' `2' `3' `4' `5' `6' `7' `8' `9' `A' `B' `C' `D' `E' `F' `a' `b' `c' `d' `e' `f'
 
 binary-digits:
   binary-digit
   binary-digit binary-digits
 
 binary-digit: one of
-  0 1
+  `0' `1'
 \end{syntax}
 Suffixes, like those in C, are not necessary.  The type of an integer
 literal is the first type of the following that can hold the value of

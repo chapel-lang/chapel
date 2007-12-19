@@ -1,6 +1,15 @@
 #!/usr/bin/perl
 #
 
+#if ($#ARGV > -1) {
+#    if ($#ARGV == 0 && $ARGV[0] eq "verbose") {
+#        $verbose = 1;
+#    } else {
+#        die "usage: collect_syntax.pl [verbose]\n";
+#    }
+#}
+$verbose = 1;
+
 `rm -f Syntax.tex`;
 $i = 0;
 @texs = `ls *.tex`;
@@ -89,4 +98,45 @@ foreach $rule (sort values %rules) {
 }
 close FILE;
 
-print "Collected $i grammar rules in Syntax.tex\n";
+print "Collected $i grammar rules in Syntax.tex\n"; # counts duplicates
+
+if ($verbose) {
+    foreach $rule (values %lexes) {
+        $rules{$i++} = $rule;
+    }
+
+    foreach $rule (values %rules) {
+        if ($rule =~ m/^(.*):/) {
+            $counts{$1} = 1;
+        }
+    }
+
+    foreach $rule (sort values %rules) {
+        if ($rule =~ m/^(.*):/) {
+            $rule =~ s/\`.*\'//g;
+            $rule =~ s/\[OPT\]//g;
+            $rule =~ s/^.*://g;
+            $rule =~ s/one\ of//g;
+            $rule =~ s/[^\-\w\ ]//g;
+            $rule =~ s/\s-/\ /g;
+            $rule =~ s/\s+/\ /g;
+            $rule =~ s/^\s+//g;
+            @prefixes = split /\ /, $rule;
+            foreach $prefix (@prefixes) {
+                if ($counts{$prefix} < 1) {
+                    print "error: used but not defined: $prefix\n";
+                } else {
+                    $counts{$prefix} += 1;
+                }
+            }
+        }
+    }
+
+    foreach $prefix (sort keys %counts) {
+        $counts{$prefix}--;
+        if ($counts{$prefix} < 1) {
+            print "error: defined but not used: $prefix\n";
+        }
+#        print "$counts{$prefix}: $prefix\n";
+    }
+}
