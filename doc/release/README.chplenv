@@ -19,17 +19,17 @@ Recommended Settings
         setenv CHPL_HOME ~/chapel
 
 
-2) Set the CHPL_HOST_PLATFORM environment variable to the string that
-   represents the platform on which you're working.  The best way to
-   determine this platform is by running the
-   $CHPL_HOME/util/platform.pl script.  For example:
+2) Set the CHPL_HOST_PLATFORM environment variable to represent the
+   platform on which you're working.  The best way to determine this
+   value is by running the $CHPL_HOME/util/platform.pl script.  For
+   example:
 
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
 
    This value is used to read platform-specific settings from
-   Makefiles and to create platform-specific subdirectories for
-   storing binaries during the build process.  The strings for our
-   currently-supported platforms are as follows:
+   Makefiles and to create subdirectories for storing
+   platform-specific files during the build process.  The strings for
+   our currently-supported platforms are as follows:
 
         cygwin  : Cygwin (Windows) platforms
         darwin  : Macintosh OS X platforms
@@ -60,11 +60,11 @@ Recommended Settings
 
 
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-lines that make these settings for various shells when they are
-sourced from the $CHPL_HOME directory.  For frequent Chapel users,
-these lines should be inserted into a shell's dotfile by hard-coding
-the definition of $CHPL_HOME and removing the check to see that the
-script is being run from the chapel/ directory.
+lines that set up these variables for various shells when they are
+sourced from the $CHPL_HOME directory.  Frequent Chapel users can
+insert these lines into their shell's dotfile by hard-coding the
+definition of $CHPL_HOME and removing the check to see that the script
+is being run from the chapel/ directory.
 
 
 -----------------
@@ -76,9 +76,8 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        mta    : Cray MTA
+        mta    : Cray MTA-2
         x1     : Cray X1
-        x2     : Cray X2
         xmt    : Cray XMT
         xt-cnl : Cray XT running Compute Node Linux
 
@@ -99,8 +98,8 @@ Optional Settings
         cray-xt-gnu       : the Cray XT compiler using the GNU backend
         cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
-        gnu               : the GNU compiler suite -- gcc and g++
         intel             : the Intel compiler suite -- icc and icpc
+        gnu               : the GNU compiler suite -- gcc and g++
 	pathscale         : the Pathscale compiler suite -- pathCC and pathcc
 	pgi               : the PGI compiler suite -- pgCC and pgcc
 
@@ -110,35 +109,56 @@ Optional Settings
         platform      compiler
         --------      --------
         mta, xmt  ->  cray-mta
-        x1, x2    ->  cray-vec
-        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv module)
+        x1        ->  cray-vec
+        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-*-xc module)
         other     ->  gnu
 
 
-3) Optionally, set the CHPL_THREADS environment variable to indicate
+3) Optionally, set the CHPL_MAKE environment variable to indicate the
+   GNU-compatible make utility that you want the compiler back-end to
+   invoke when compiling the generated C code.  If not set, this will
+   default to a value based on $CHPL_HOST_PLATFORM:
+
+        platform            compiler
+        --------            --------
+        cygwin, darwin  ->  make
+        linux, linux64  ->  gmake if available, otherwise make
+        other           ->  gmake
+        
+
+4) Optionally, set the CHPL_THREADS environment variable to indicate
    what threading layer you want to use to implement parallelism.
    Current options are:
 
-        none     : no runtime tasks
-        pthreads : use POSIX threading
+        mta      : use Cray MTA threads (futures and sync vars)
+        none     : no threading (implies no support for multiple tasks)
+        pthreads : use POSIX threads (pthreads)
 
    If unset, CHPL_THREADS defaults to a value based on
    $CHPL_TARGET_PLATFORM:
 
         platform      threads
         --------      -------
-        mta       ->  none        
+        mta, xmt  ->  mta
         other     ->  pthreads
 
+   STATUS NOTE: The mta and none threading options are not officially
+   supported in this release, so use at your own risk.
 
-4) Optionally, set the CHPL_COMM environment variable to indicate what
+
+5) Optionally, set the CHPL_COMM environment variable to indicate what
    communication layer you want to use to implement inter-locale
    communication.  Current options are:
 
         none   : only supports single-locale execution
+        armci  : use the PNNL ARMCI-based runtime
         gasnet : use the Berkeley GASNet-based runtime
 
-   If unset, CHPL_COMM defaults to "none".
+   If unset, CHPL_COMM defaults to "none".  
+
+   STATUS NOTE: multi-locale parallelism is not a supported feature in
+   this release, therefore, use settings other than "none" at your own
+   risk.
 
 
 ----------------------------

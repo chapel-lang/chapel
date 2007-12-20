@@ -73,6 +73,7 @@ Newly Implemented Features:
 Portability of code base:
 -------------------------
 - added support for compiling with Intel, PGI, Pathscale, and Cray compilers
+- added initial support for compiling for Cray MTA/XMT, X1s, and XTs
 - improved portability of source and generated codes across compilers/platforms
 - refactored Makefiles to better separate compiler settings from platforms
 - added support for cross-compilation environments -- see doc/README.chplenv
