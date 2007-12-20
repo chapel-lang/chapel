@@ -34,15 +34,20 @@ exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
 
+weird math function interaction
+-------------------------------
+[Error matching compiler output for modules/standard/math/bradc/math32bits]
+
 
 ==========================
 sunos-specific regressions
 ==========================
 
-exp2/log2 not supported
------------------------
+exp2/log2/other math fns not supported
+--------------------------------------
 [Error matching compiler output for functions/dinan/exp2] 
 [Error matching compiler output for modules/standard/math/lg2] 
+[Error matching compiler output for modules/standard/math/bradc/sin32bit]
 
 numeric stability issues
 ------------------------
