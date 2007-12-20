@@ -20,6 +20,7 @@ config param STAT = false;  // enables/disables collecting statistics while sear
 config const FILENAME : string; // input file path
 
 config const MAXPROCS : int = 5; // maximum number of processors to be assigned search branches
+config const printTiming = true;
 
 /***************************************************
  * Global variables
@@ -829,11 +830,14 @@ def main() {
 		writeln("UNSAT");
 	writeln("Model: ");
 	glb_model.writeThis(stdout);
+        writeln();
 	
 	if STAT {
 		stats.writeThis(stdout);
 	}
-	writeln("\nElapsed time: ", timer.elapsed(), " seconds.");
+        if printTiming {
+          writeln("\nElapsed time: ", timer.elapsed(), " seconds.");
+        }
 	
 }
 /***************************************************

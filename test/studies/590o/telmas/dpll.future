@@ -1,3 +1,6 @@
-bug: sparse domains in classes no longer work
+???: nondeterministic output
 
-See sparse/bradc/sparseInClass*.future
+Fixed bug that this test was originally showing.  Now the
+problem is that the output is nondeterministic.  Working
+with the author to try to address this.
+
