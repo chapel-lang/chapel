@@ -565,7 +565,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
+              INT_FATAL("Can't ~ a 1-bit quantity"); \
             case INT_SIZE_8:  \
               imm->v_uint8 = _op im1.v_uint8; break; \
             case INT_SIZE_16: \
@@ -581,7 +581,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
-              imm->v_bool = _op im1.v_bool; break; \
+              INT_FATAL("Can't ~ a 1-bit quantity"); \
             case INT_SIZE_8:  \
               imm->v_int8 = _op im1.v_int8; break; \
             case INT_SIZE_16: \
