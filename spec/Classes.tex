@@ -30,7 +30,7 @@ A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
   `class' identifier class-inherit-list[OPT] {
-    class-statement-list }
+    class-statement-list[OPT] }
 
 class-inherit-list:
   : class-type-list
@@ -313,6 +313,12 @@ inheriting from multiple base classes, only one of the base classes
 may contain fields.  The other classes can only define methods.  Note
 that a class can still be derived from a class that contains fields
 which is itself derived from a class that contains fields.
+\subsubsection{The object Class}
+\label{The_object_Class}
+
+All classes are derived from the \chpl{object} class either directly, or
+through the classes they are derived from. A variable of type \chpl{object}
+can hold a reference to an object of any class type. 
 
 \subsubsection{Accessing Base Class Fields}
 \label{Accessing_Base_Class_Fields}
