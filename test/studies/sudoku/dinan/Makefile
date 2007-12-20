@@ -1,5 +1,5 @@
 CHPL      = chpl
-CHPLFLAGS = -O --no-bounds-checks
+CHPLFLAGS = -O --no-checks
 
 TARGETS   = sudoku sudoku-smart sudoku-simple
 

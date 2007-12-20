@@ -1,7 +1,7 @@
 
 CHPL = chpl
 
-CHPL_FLAGS = -O --no-bounds-checks
+CHPL_FLAGS = -O --no-checks
 
 TARGETS = \
 	stream \
