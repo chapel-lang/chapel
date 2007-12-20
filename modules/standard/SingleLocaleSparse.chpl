@@ -18,14 +18,25 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
 
   def numIndices return nnz;
 
-  def getIndices() return 0;
-  def setIndices(x);
+  // This isn't what getIndices/setIndices are supposed to do, but
+  // this interface doesn't really make sense for sparse domains.
+  // Doing the one piece that is easy to do -- copying the parent
+  // domain over.
+  def getIndices() { return parentDom; }
+  def setIndices(x) { parentDom = x; }
+
 
   def buildArray(type eltType)
     return SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
-  def buildEmptyDomain()
-    return SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
+  def buildEmptyDomain() {
+    // why would this ever be nil?  See comment in SingleLocaleArithmetic.chpl,
+    // or the CVSLOG message of 09/19/07 10:28:04 and then complain to Steve :)
+    if this != nil then
+        return SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
+    else
+        return SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=nil);
+  }
 
   def these() {
     for i in 1..nnz {
