@@ -1,0 +1,6 @@
+unimplemented feature: sparse domain assignment
+
+Assignment between sparse domains has never been implemented
+because the getIndices()/setIndices() interface isn't appropriate
+for sparse domains since the space required to enumerate the
+indices is prohibitive to pass in a functional interface.
