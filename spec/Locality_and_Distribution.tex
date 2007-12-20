@@ -70,22 +70,23 @@ value of the specified return type.
 \index{numLocales@\chpl{numLocales}}
 \index{execution environment}
 
-A predefined configuration variable defines the {\em execution
-environment} for a program.  This environment is defined by the
-following definitions:
+Chapel provides a predefined environment  
+that stores information about the locales used during program
+execution.  This {\em execution environment} contains 
+definitions for the \chpl{Locales} array, \chpl{numLocales}, and \chpl{Global}:
 \begin{chapel}
 config const numLocales: int;
-const Locales: [1..numLocales] locale;
+const Locales: [0..numLocales-1] locale;
 const Global: locale;
 \end{chapel}
-The environment consists of constants which are fixed when the program
-begins execution.  The variable \chpl{Global} holds a special value
-of \chpl{locale} type that can be distinct from the values stored
-in \chpl{Locales}. This value is used to denote an object or
-computation that has no defined affinity.
+The constants \chpl{numLocales} and \chpl{Global} and the constant
+\chpl{Locales} array are fixed when the program begins execution.  
+The variable \chpl{Global} holds a special value of \chpl{locale} type 
+that can be distinct from the values stored in \chpl{Locales}.  This value is 
+used to denote an object or computation that has no defined affinity.
 
 When a program starts, a single computation is executing.  It is
-running on the locale given by \chpl{Locales(1)}.
+running on the locale given by \chpl{Locales(0)}.
 
 \subsubsection{Querying the Locale of a Variable}
 \label{Querying_the_Locale_of_a_Variable}
