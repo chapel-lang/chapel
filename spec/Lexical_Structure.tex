@@ -45,15 +45,16 @@ delimited by white space.
 \index{identifiers}
 
 An identifier in Chapel is a sequence of characters that must start
-with a letter, lower-case or upper-case, or an underscore, and can
-include lower-case letters, upper-case letters, digits, and the
-underscore.
+with a letter, lower-case or upper-case, an underscore, or a dollar
+sign, and can include lower-case letters, upper-case letters, digits,
+and the underscore.
 \begin{syntax}
 identifier:
   legal-first-identifier-char legal-identifier-chars[OPT]
 
 legal-first-identifier-char: one of
-  `_' `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m' `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
+  `_' `$\mbox{{\bf \$}}$' `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m'
+                           `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
 
 legal-identifier-chars:
   legal-identifier-char legal-identifier-chars[OPT]
@@ -65,6 +66,14 @@ legal-identifier-char:
 digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9'
 \end{syntax}
+
+\begin{rationale}
+The inclusion of the \$ character is meant to assist programmers using
+sync and single variables by presenting a style (a \$ at the beginning
+of such variables) in order to help write properly synchronized code.
+It is felt that making such variables ``stand out'' is useful since
+such variables could result in deadlocks.
+\end{rationale}
 
 \begin{example}
 The following are legal identifiers:
