@@ -36,7 +36,7 @@ C Code Compilation Options:
       --ldflags <flags>                  Back-end C linker flags
   -l, --lib-linkage <library>            C library linkage
   -L, --lib-search-path <directory>      C library search path
-      --make                             Make utility for generated code
+      --make <make utility>              Make utility for generated code
   -g, --[no-]debug                       Allow debugging of generated C code
   -O, --[no-]optimize                    Optimize generated C code
   -o, --output <filename>                Name output executable
@@ -47,7 +47,7 @@ Miscellaneous Options:
       --explain-call <call>[:<module>][:<line>]
                                          Explain resolution of call
       --instantiate-max <max>            Limit number of instantiations
-      --main-module                      Specify module where main is located
+      --main-module <module>             Specify module where main is located
       --no-warnings                      Disable output of warnings
   -s, --set <name>[=<value>]             Set config param value
 
