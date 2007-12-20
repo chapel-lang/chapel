@@ -2,13 +2,11 @@
 Release Changes List
 ====================
 
-STOPPED AT 12/12/07 21:59:41 -- figueroa
-
 ===========
 version 0.6
 ===========
 
-Third preliminary release of Chapel Compiler, December 2007
+Third preliminary release of Chapel Compiler, December 21, 2007
 
 High-Level Themes:
 ------------------
@@ -19,19 +17,19 @@ High-Level Themes:
 - improved multi-threaded correctness, features
 - improved compiler performance and memory utilization
 - improved portability of compiler/runtime code and generated code
-- support for cross-compilation
+- support for cross-compilation environments
 - target audience: HPCS mission partners, select HPC users and centers
 
 Changes to Chapel Language:
 ---------------------------
 - added support for defining type functions
-  e.g., def myint(param x: bool) type { return if x then int(32) else int(64); }
-- changed supported routines for sync/single variables and made into methods
+  e.g., def myint(param x: bool) type { return if x then int(32) else int(64);}
+- changed routines supported on sync/single variables and made them methods
   e.g., var x: sync int;  x.writeXF(2);  if (x.isFull) { ... }
-- added support for for- and forall-expressions using keyword syntax
+- added support for expression-level for and forall loops using keyword syntax
   e.g., var A: [D] int = for i in D do foo(i);
-- added support for a main() function per module, resolvable via --main-module
 - added support for readln() function which skips to EOL after reading its args
+- added support for a main() function per module, resolvable via --main-module
 - added support for translate, interior, exterior, and expand methods on ranges
 - added support for membership test on ranges
   e.g., var r: range = ...;  if (r.member(3)) { ... }
@@ -39,61 +37,72 @@ Changes to Chapel Language:
   e.g., (1..10) + 1 == 2..11; (1..10) * 2 == 2..20 by 2
 - removed support for operations between scalars and tuples
   e.g., (1, 2) + 3 is no longer supported; (1, 2) + (3, 4) still is
-- added support for bitwise operators on int/uint pairs of same size
+- added support for bitwise operators on int/uint pairs of the same size
   e.g., int(32) & uint(32) => uint(32)
 
 Newly Implemented Features:
 ---------------------------
-- initial support for prototyping and calling C functions within Chapel code
-- implicit enum-to-string coercions and explicit string-to-enum conversions
-- support for slicing using unbounded and degenerate ranges
-- relaxed requirements that slicer and slicee objects use the same integer type
-- preliminary support for "on" statements with restricted functionality
-- improved tuple type orthogonality; they can now be used in most type contexts
-- improved support for nested modules and symbol resolution for external modules
-- added support for | and & reductions over booleans
-- added support for rank change slicing of domains and arrays
-  e.g., var V: [1..n] int;  V = A[n/2 + 1, 1..n];
-- added support for a clear() method on associative domains
+- added support for arrays of arrays whose inner arrays are of uniform size
+- added support for arrays of domains
 - added support for instantiating types/functions using array types
   e.g., class C { type t; ... }   type vect = [1..n] int;   var myC: C(vect);
-- improved support for copy collection for single-threaded codes
-- support for arrays of arrays with inner arrays of uniform size
-- improved support for user-defined class constructors
-- added support for arrays of domains
 - implemented a reshape function for arrays
 - initial implementation of opaque domains and arrays
-- added support for strided param for loops
+- added support for slicing using unbounded and degenerate ranges
+  e.g., for A: [1..n, 1..n] real, A[2.., ..] is equivalent to A[2..n, 1..n]
+- added support for rank change slicing of domains and arrays
+  e.g., var V: [1..n] int;  V = A[n/2 + 1, 1..n];
+- relaxed requirements that slicer and slicee objects use the same integer type
+- added support for | and & reductions over boolean aggregates
+- added support for a clear() method on associative domains
+- preliminary support for "on" statements with restricted functionality
+- improved support for user-defined class constructors
+- added support for runtime checks against nil class references
+  e.g., class C { ... }  var myC: C;   C.foo();  generates a nice error
+- improved support for nested modules
+- improved symbol resolution for external modules
+- implicit enum-to-string coercions and explicit string-to-enum conversions
+- initial support for controlling type-to-string formatting
+- initial support for prototyping and calling C functions within Chapel code
 - added support for generic function arguments of sync types
   e.g., def foo(x: sync) { ... }
-- added support for runtime checks against nil class references
+- improved support for copy collection in single-threaded codes
+- improved tuple type orthogonality; they can now be used in most type contexts
+- added support for strided param for loops
 
-Portability Blah blah blah:
----------------------------
-- native support for task parallelism on Cray MTA/XMT platforms
+Portability of code base:
+-------------------------
+- added support for compiling with Intel, PGI, Pathscale, and Cray compilers
+- improved portability of source and generated codes across compilers/platforms
+- refactored Makefiles to better separate compiler settings from platforms
 - added support for cross-compilation environments -- see doc/README.chplenv
 - added mechanisms for selecting threading/communication libraries -- see "
+- added native support for task parallelism on Cray MTA/XMT platforms
 
 Semantic Changes:
 -----------------
-- defined casts between complex and imaginary/real/integral types
-- function resolution now favors non-promoted functions as a tie-breaker
-- redefined range and domain slicing to use intersection semantics
-- defined semantics of default functions as being "return a const"
+- removed implicit coercions from integer types to real(32)
+- made queries of an array's domain via A.domain or A:[?D] constant
+- removed dynamic dispatch on method calls with no parenthesis
 - user-defined constructors now squelch the creation of a default constructor
+- redefined range and domain slicing to use intersection semantics
+- changed location of instantiated generics to be their definition point
+- defined semantics of default functions as being "return a const"
+- function resolution now favors non-promoted functions as a tie-breaker
+- better defined casts between complex, imaginary, real, and integral types
 
 Syntactic/Naming Changes:
 -------------------------
-- added ability to tag a function as returning a const value for documentation
-- changed name of array of locales from Locale to Locales (as described in spec)
 - added support for $ in identifier names; used by convention to identify syncs
 - allow floating point literals with an exponent to use an integral base
   e.g., can now write 1e4 rather than 1.0e4
+- changed locale array name from Locale to Locales (as described in spec)
+- added ability to tag a function as returning a const value for documentation
 
 Documentation:
 --------------
-- language spec updates
-TODO: check
+- updates to the language specification
+- refreshed READMEs, compiler --help message, man page
 
 Example Codes:
 --------------
@@ -102,90 +111,107 @@ Example Codes:
 
 Standard Modules:
 -----------------
-TODO: check
+- added support for 32-bit math routines
 
 Compiler Flags:
 ---------------
-- improved parsing of command-line flags for compiler
-- better error checking for parsing config params
-- --no-nil-checks to disable runtime checks for nil class references
-- --main-module flag to select between multiple possible program entry points
-- --ldflags option to pass flags to the C link step
-- --serial flag to disable all parallelism in a program
-- --local flag to optimize compilation for single locale execution
-- --no-scalar-replacement flag to disable scalar replacement optimization
-- added ability to specify .c, .o, and .h files for use in calling C routines
+- added new flags:
+  --help-env : prints environment variables for each compiler flag
+  --help-settings : prints current setting of each compiler flag
+  --no-nil-checks : disables runtime checks for nil class references
+  --no-checks : disables all runtime checks (currently nil & bounds checks)
+  --main-module : selects between multiple possible program entry points
+  --ldflags : supplies flags for the C link step
+  --serial : disables all parallelism in a program
+  --local : optimizes compilation for single-locale execution
+  --no-scalar-replacement : disables the scalar replacement optimization
+  --short-names : generates the C code using short variable names (T<#>)
+  --make : specifies the GNU-compatible make utility used by the back-end
+- removed flags:
+  --parallel : became the default and was redundant with --serial
+- added ability to specify .c, .o, and .h files for interfacing to C routines
+- improved error-reporting for incorrect compiler flags
+- compiler now parses all flags before any significant ones are acted upon
+- better error checking for parsing config param values
 
 Generated Code Flags:
 ---------------------
--- improved parsing of command-line flags for generated code
--- improved parsing of config const/var values
-- -nl #/--numLocales=# flags for specifying the number of locales to run on
-- -v/--verbose flags for increasing the verbosity of the generated code
+- added new flags:
+  -nl #/--numLocales=# flags for specifying the number of locales to use
+  -v/--verbose flags for increasing the verbosity of the generated code
+- improved error-reporting for incorrect flags
+- improved parsing of config const/var values
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
-- added ability for user to overload operators for uint(64)/int combinations
-- added legal-value checking for casts from integers to enumerated types
-- support for overriding this() method in subclasses
-- improved handling of unifying multiple returns from a single function
-- improved legality checks for string-to-value conversions
-- return statements are now supported in type select statements
-- += and -= are now supported on sync variables
-- type checking of LHS and RHS on op= assignments
-- fixed use of inout and out intents with variable-length argument lists
-- fixed associative domain/array bugs caused by removing indices
-- added more bounds checking to associative domain operations
-  TODO: which ones?
-- default argument values specified using a function call now work properly
-  e.g., def foo(x = bar()) ...
 - whole-array assignment of arrays of sync variables now works correctly
-- improved error checks for the use of values in a type context and vice-versa
+- += and -= are now supported on sync variables
+- fixed bugs in sync variable read/write functions
+- added checks for blocking sync var reads/writes when $CHPL_THREADS == none
+- fixed associative domain/array bugs caused by removing indices
+- added bounds checking for associative domain/array operations
+- improved bounds checking for array slicing
 - bounds checking for string.substring() arguments
-- added check that actual arguments to inout or out formals are valid lvalues
-- improved checks preventing against assignment to const variables
-- fixed bugs in certain sync variable read/write functions
+- improved legality checks for string-to-value conversions
+- added legal-value checking for casts from integers to enumerated types
 - improved robustness of tensor function promotion
   e.g., exp[A, B] where A and B are arrays
+- improved checks preventing against assignment to const variables
+- added check that actual arguments to inout or out formals are valid lvalues
+- added check against returning constants from var functions
+- added checks against assigning to consts and params
+- fixed use of inout and out intents with variable-length argument lists
+- default argument values specified using a function call now work properly
+  e.g., def foo(x = bar()) ...
+- improved handling of unifying multiple returns from a single function
 - improved checking that a function returns a value along all control paths
-- improved bounds checking for array slicing
+- return statements are now supported in type select statements
+- type checking of LHS and RHS on op= assignments
+- added ability for user to overload operators for uint(64)/int combinations
+- improved error checks for the use of values in a type context and vice-versa
+- support for overriding this() method in subclasses
+- improved error checks for legal expressions to iterate over
+- added semantic check for degenerate rank-change slicing
 
 Error Message Improvements:
 ---------------------------
-- improved clarity of function resolution error messages
 - added filename/line# information to many error messages
-TODO: recheck
+- improved notation for types in error messages from ": t" to "type t"
+- added warning when C-style ++ or -- are used; these are duplicated unary ops
+- improved clarity of function prototypes in function resolution errors
+- improved clarity of error for creating a domain with mixed integral types
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
 - improved performance for codes using type "complex"
-- added strength reduction for ** with an exponent of 0-6 or 8
+- removed extraneous threads created by uses of the begin statement
 - improved the performance of the bitMatMultOr routine in the BitOps module
+- added strength reduction for ** with an exponent of 0-6 or 8
+- added strength reduction for certain comparisons between uints and 0
 
 Compiler Performance and Cleanup:
 ---------------------------------
 - improved performance of scalar replacement, copy propagation passes
-- reduced memory requirements of compiler
-- eliminated many warnings for PGI, Pathscale, Intel, Cray, and GNU compilers
 - improved performance of compiling codes using type "complex"
-- removed extraneous threads created by uses of the begin statement
+- reduced memory requirements of compiler
 
 Generated Code:
 ---------------
+- added support for generating code using short variable names (--short-names)
 
 Testing System:
 ---------------
-- added support for testing on multiple locales
-- added support for communication-layer-specific output
 - added support for Makefile-driven testing within a subdirectory
-- added the ability to suppress tests that are expected to fail
-- added support for the ability to specify a launch command to begin execution
+- added support for testing on multiple locales
 - added support for "compilation only" testing to avoid running executables
+- added support for the ability to specify a launch command to begin execution
+- added the ability to suppress tests that are expected to fail
+- added support for communication-layer-specific .good files
 
 Internal:
 ---------
-- support for runtime array type information
-- lots of improvements to Makefile architecture
+- support for array type descriptor at runtime
+- many refactorings and improvements to the compiler and runtime sources
 
 
 ===========
@@ -211,7 +237,7 @@ Changes to Chapel Language:
     e.g., var A: [1..3] real = (0.1, 2.3, 4.5);
   - removed support for casting sequences to tuples and tuples to sequences
   - iterators in an expression context now result in a 1D, 1-based array
-    e.g., "iterator foo() { ... }  var A = foo();" creates a 1D array over [1..]
+    e.g., "iterator foo() {...}  var A = foo();" creates a 1D array over [1..]
 - added "range" type to language to replace old "arithmetic sequence" concept
   e.g., "lo..hi" or "lo..hi by str" are ranges
   - open interval syntax supported for ranges
@@ -231,7 +257,7 @@ Changes to Chapel Language:
   - enabled support for writing to strings using a write() method
     e.g., var s: string;  s.write("x is: ", x);
   - added a Writer class that enables user classes to be written to
-  - added writeThis() method to specify how a type should be written to a Writer
+  - added writeThis() method to specify how a type should be output to a Writer
 - added minloc and maxloc reductions that return min/max value and index
   e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
 - changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
@@ -350,10 +376,10 @@ Standard Modules:
 Compiler Flags:
 ---------------
 - improved the formatting of the --help message
-- added -g flag for debugging generated code; turns on --cg-cpp-lines by default
+- added -g flag for debugging generated code; turns on --cpp-lines by default
 - added -O flag for optimizing generated code
 - added -s/--set for setting config params
-- added --explain-call flag that helps determine how a function call is resolved
+- added --explain-call flag that helps describe how a function call is resolved
 - added --baseline flag to disable all compiler optimizations
 - added --no-flow-analysis flag that disables all flow-based optimizations
 - added --no-warnings flag to diable all compiler warnings
@@ -369,7 +395,7 @@ Generated Code Flags:
 
 Bug Fixes/New Semantic Checks (for old Semantics):
 --------------------------------------------------
-- test expressions in loops, conditionals restricted to bools, classes, integers
+- test expressions in loops/conditionals restricted to bools, classes, integers
 - runtime checks added to ensure that zippered iterations are of equal size
 - fixed portability issues in flex lexer file, chapel.lex
 - domains are now passed by reference by default
@@ -424,7 +450,7 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 Compiler Performance and Cleanup:
 ---------------------------------
 - improvements to function resolution, vararg function instantiation
-- made compiler build with debugging off and optimizations on for non-developers
+- made compiler build with debugging off/optimizations on for non-developers
 - removed unused scalar replacement code
 - renamed and refactored internal modules
 - removed old reference counting code
@@ -435,7 +461,7 @@ Generated Code:
 - now generating structured loops rather than gotos and labels
 - large reduction in lines of generated code
   e.g., ~40% reduction in lines of code for jacobi example (13275 -> 7753)
-- module functions generated in order, with comments to identify source location
+- module functions generated in order, with comments to identify source line #
 - _chpl_header.h file is generated in a cleaner manner
 - changed munging of variable names to improve gdb support and readability
 - using pragmas, generated code has been shown to vectorize on X1/thread on MTA
