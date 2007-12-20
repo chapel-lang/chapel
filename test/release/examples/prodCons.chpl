@@ -21,7 +21,7 @@ config const buffersize = 1024,        // size of the circular buffer
 // reads to these variables will block until they are "full", leaving
 // them "empty".  Writes will block until "empty", leaving "full".
 //
-var buff: [0..buffersize-1] sync int;
+var buff$: [0..buffersize-1] sync int;
 
 
 //
@@ -45,11 +45,11 @@ def main() {
 def producer() {
   for i in 1..numItems {
     const buffInd = (i-1) % buffersize;
-    buff(buffInd) = i;
+    buff$(buffInd) = i;
 
     if (verbose) then writeln("producer wrote value #", i);
   }
-  buff(numItems % buffersize) = -1;
+  buff$(numItems % buffersize) = -1;
 }
 
 
@@ -71,12 +71,12 @@ def consumer() {
 //
 def readFromBuff() {
   var ind = 0,              
-      nextVal = buff(0);
+      nextVal = buff$(0);
 
   while (nextVal != -1) {
     yield nextVal;
 
     ind = (ind + 1)%buffersize;
-    nextVal = buff(ind);
+    nextVal = buff$(ind);
   }
 }
