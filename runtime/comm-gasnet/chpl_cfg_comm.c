@@ -81,7 +81,7 @@ void _AM_fork_nb(gasnet_token_t token,
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_thread_create(&t, NULL, (_void_star_fun_p)_AM_fork_nb_wrapper, (void*)fork_info);
+  _chpl_thread_create(&t, NULL, (_chpl_threadfp_t)_AM_fork_nb_wrapper, (void*)fork_info);
 }
 
 
@@ -111,7 +111,7 @@ void _AM_fork(gasnet_token_t  token,
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_thread_create(&t, NULL, (_void_star_fun_p)_AM_fork_wrapper, (void*)fork_info);
+  _chpl_thread_create(&t, NULL, (_chpl_threadfp_t)_AM_fork_wrapper, (void*)fork_info);
 }
 
 

@@ -1,8 +1,6 @@
 #ifndef _chplthreads_h_
 #define _chplthreads_h_
 
-typedef void* (*_void_star_fun_p)(void*);  // Same as _chpl_threadfp_t below!
-
 #include "chpl_cfg_threads.h"
 
 // Mutexes
