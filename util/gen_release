@@ -28,6 +28,7 @@ $cvsignores = "CVS|RCS|.cvsignore";
 
 # explicit files to include
 @files = (
+       "AGREEMENT",
        "BUILD_VERSION",
        "CHANGES",
        "CONTRIBUTORS",
@@ -41,10 +42,10 @@ $cvsignores = "CVS|RCS|.cvsignore";
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
-       "util/platform.pl",
-       "util/compiler.pl",
-       "util/threads.pl",
        "util/comm.pl",
+       "util/compiler.pl",
+       "util/platform.pl",
+       "util/threads.pl",
        "util/chplmake"
 );
 

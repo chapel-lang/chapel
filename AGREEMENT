@@ -1,0 +1,51 @@
+================================================
+Chapel Preliminary Release (v0.6) User Agreement
+================================================
+
+This release is being distributed under the MIT License and the user
+agreement below.
+
+-----
+Goals 
+-----
+The goals of this release are as follows:
+
+* to demonstrate Chapel features in a multi-threaded, single-locale
+  (single-node) setting
+
+* to give HPCS mission partners and other interested parties an
+  opportunity to see the state and evolution of the Chapel
+  implementation first-hand
+
+* to get feedback on the Chapel language and its ongoing
+  implementation
+
+
+--------------
+User Agreement
+--------------
+
+Users of this release agree to the following statements:
+
+* I agree not to make the release URL, its contents, or my account
+  available to others.  Instead, I will direct such parties to
+  chapel_info@cray.com.
+
+* I understand that this release is being made available to me in
+  order to give me an early peek at Chapel.  I understand that the
+  implementation effort to date has focused primarily on demonstrating
+  Chapel's features and that the performance and memory utilization of
+  the current implementation are not likely to be indicative of what a
+  more mature Chapel compiler would be capable of.
+
+* In making any public comments characterizing Chapel on the basis of
+  my access to the release, I agree to be mindful of its preliminary
+  nature.
+
+* For any publications or talks about Chapel whose content is based on
+  my experiences with the release, I agree to run the material past
+  the Chapel team for comments and feedback prior to making it
+  publicly available.
+
+* I agree not to disclose performance/memory results for Chapel
+  without first obtaining permission from the Chapel team.
