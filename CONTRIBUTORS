@@ -5,30 +5,56 @@ Chapel Contributors
 The following people have contributed to the implementation of this
 release and the design of the Chapel language:
 
-     David Callahan
-     Brad Chamberlain
-     Steve Deitz
-     Roxana Diaconescu
-     James Dinan
-     Samuel Figueroa
-     Shannon Hoffswell
-     Mary Beth Hribar
-     David Iten
-     Mark James
-     Mackale Joyner
-     John Plevyak
-     Wayne Wong
-     Hans Zima
+
+Cray contributors
+-----------------
+David Callahan
+Brad Chamberlain
+Steve Deitz
+Samuel Figueroa
+Shannon Hoffswell
+Mary Beth Hribar
+David Iten
+John Plevyak
+Wayne Wong
 
 
-Thanks to the following individuals for helping us with testing Chapel
-releases:
+Chapel interns
+--------------
+Robert Bocchino
+James Dinan
+Mackale Joyner
 
-     Sarah Anderson
-     John Feo
-     Colin Lee
-     John Lewis
-     Dick Oswald
-     Kevin Peterson
-     Ron Pfaff
-     Greg Titus
+
+Academic/lab contributors
+-------------------------
+Dan Bonachea
+Daniel Chavarria
+Roxana Diaconescu
+Mark James
+Jarek Nieplocha
+Vinod Tipparaju
+Hans Zima
+
+
+Vocal users
+-----------
+Richard Barrett
+Franz Franchetti
+Aniruddha Shet
+Timothy Stitt
+Terry Suitor
+Michele Weiland
+the students and faculty of UW CSE 590o (Fall 2007)
+
+
+Release testing
+---------------
+Sarah Anderson
+John Feo
+Colin Lee
+John Lewis
+Dick Oswald
+Kevin Peterson
+Ron Pfaff
+Greg Titus
