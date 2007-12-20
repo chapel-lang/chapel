@@ -2,11 +2,11 @@
 Chapel Compiler Release: top-level README
 =========================================
 
-This is a preliminary release of the Chapel compiler, intended for
-release to a small audience for evaluation and feedback purposes.  See
-the LICENSE file for information about legal usage, and please also
-keep in mind any user agreement that you have agreed to regarding the
-intended use of this release.
+This is a preliminary release of the Chapel compiler, intended for use
+by a small audience for evaluation and feedback purposes.  See the
+LICENSE file for information about legal usage, and please also keep
+in mind any user agreement that you have made regarding the intended
+use of this release.
 
 
 -----------
@@ -36,11 +36,11 @@ Quick Start
      ...a bash-compatible shell (bash)            source util/setchplenv.bash
      ...the Bourne shell (sh)                     . util/setchplenv.sh
 
-   You should still be in the "chapel" directory in order for these
-   shell command scripts to work properly.
+   You must be in the "chapel" directory for these command scripts to
+   work properly.
 
    If you use a different shell, refer to doc/README.chplenv for
-   information on what needs to be set up in your environment to use
+   information about what environment settings you'll need to use
    Chapel satisfactorily (and if you're able to create an equivalent
    util/setchplenv.* script for your shell, please mail a copy of it
    to us at chapel_info@cray.com for inclusion in our next release).
@@ -60,18 +60,18 @@ What's next?
 
 For more detailed information about...      refer to...
 
-  ...Chapel's file and directory structure    ...README.files
-  ...prerequisites for using this release     ...doc/README.prereqs
-  ...building the compiler                    ...doc/README.building
-  ...setting up your environment              ...doc/README.chplenv
-  ...using the compiler                       ...doc/README.compiling
-  ...executing Chapel programs                ...doc/README.executing
-  ...implementation status                    ...STATUS
-  ...changes since the last release           ...CHANGES
-  ...reporting bugs                           ...doc/README.bugs
-  ...example Chapel programs                  ...examples/README
-  ...an overview of the Chapel language       ...doc/chapelLanguageSpec.pdf, Ch5
-  ...a quick reference for Chapel syntax      ...doc/quickReference.pdf
-  ...a tutorial using three HPCC benchmarks   ...doc/hpccTutorial.pdf
-  ...the Chapel language specification        ...doc/chapelLanguageSpec.pdf
-  ...notes for Cygwin users                   ...doc/README.cygwin
+  ...Chapel's file and directory structure   ...README.files
+  ...prerequisites for using this release    ...doc/README.prereqs
+  ...building the compiler                   ...doc/README.building
+  ...setting up your environment             ...doc/README.chplenv
+  ...using the compiler                      ...doc/README.compiling
+  ...executing Chapel programs               ...doc/README.executing
+  ...implementation status                   ...STATUS
+  ...changes since the last release          ...CHANGES
+  ...reporting bugs                          ...doc/README.bugs
+  ...example Chapel programs                 ...examples/README
+  ...an overview of the Chapel language      ...doc/chapelLanguageSpec.pdf, Ch5
+  ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
+  ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
+  ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
+  ...notes for Cygwin users                  ...doc/README.cygwin

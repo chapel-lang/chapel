@@ -2,9 +2,10 @@
 Chapel Compiler Release Directory Structure and Files
 =====================================================
 
-The following list gives an overview of $CHPL_HOME's structure.  Many
-subdirectories contain additional README files to provide further
-descriptions for the files and directories that they contain.
+The following list gives an overview of $CHPL_HOME's directory
+structure.  Many subdirectories contain additional README files to
+provide further information about the files and directories that they
+contain.
 
 ./
   README            : top-level README with quick-start information
@@ -24,9 +25,10 @@ descriptions for the files and directories that they contain.
     hpcc/           : source code for HPC Challenge benchmarks
   lib/
     $CHPL_TARGET_PLATFORM/
-      threads-$CHPL_THREADS/
-        comm-$CHPL_COMM/     : location of runtime libraries, once built
-  make/             : Makefile settings for various platforms
+      $CHPL_TARGET_COMPILER/
+        threads-$CHPL_THREADS/
+          comm-$CHPL_COMM/     : location of the runtime libraries, once built
+  make/             : Makefile settings for various compilers and platforms
   man/              : man pages for the Chapel compiler (chpl)
   modules/          : standard and internal Chapel modules
   runtime/          : source code for the runtime (see runtime/README.files)

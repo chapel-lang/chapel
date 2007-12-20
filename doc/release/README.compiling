@@ -9,13 +9,16 @@ you should be able to see the Chapel compiler's help message using:
      chpl --help
 
 This displays the compiler's command-line flags sorted by category.
-For each flag, the short one-letter form is given (if available)
+For each flag, the short one-letter form is given (if it exists),
 followed by the long form of the flag.  Next, the pattern for any
 arguments to the flag are given.  And finally a brief description of
-the flag is provided.
+the flag is provided.  You can get more information about each flag,
+including the environment variable used to set it and the flag's
+current setting, using the --help-env and --help-settings options,
+respectively.
 
-More detailed information about the compiler is also available on its
-man page, which is available via:
+More detailed information about the compiler and its command-line
+flags is also available on its man page, which you can read using:
 
      man chpl
 
@@ -29,9 +32,7 @@ We note some of the most useful flags here:
      -o <filename> : specify the filename of the generated executable,
                      otherwise ./a.out is used by default
 
-     -s <name>[=<value>] : set the value of a config param
-
-     --no-bounds-checks : turns off runtime bounds checks
+     --no-checks : turns off runtime semantic checks
 
      -O : turns on optimization of the generated C code
 
@@ -40,16 +41,23 @@ We note some of the most useful flags here:
 
      -g : support debugging of the generated C code
 
-     --ccflags <flags> : specify flags that should be used with the
-                         back-end C compiler
+     --ccflags <flags> : specify flags that should be used when invoking
+     --ldflags <flags> :   the back-end C compiler and linker
+
+     -s <name>[=<value>] : set the value of a config param
 
      --print-passes : print the compiler passes as they execute
 
-     --print-commands : print the system commands that the compiler
-                        executes
+     --print-commands : print the system commands that the compiler executes
 
      --print-code-size : prints some code size statistics about the
                          number of lexical tokens per line, as well as
                          the number of code, comment, and blank lines
 
      --version : print the Chapel compiler version number
+
+     --help : print a brief overview of the command-line options
+
+     --help-env : lists the environment variables for each command-line flag
+
+     --help-settings : lists the current setting of each command-line flag

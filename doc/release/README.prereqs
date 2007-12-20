@@ -15,5 +15,5 @@ for using Chapel:
 
 * You have access to standard C and C++ compilers.  We typically
   compile our code using gcc/g++, and have used the following versions
-  at various times on various platforms: egcs-2.91.66, 3.3.4, 3.4.4,
-  4.0.1, 4.1.1
+  at various times on various platforms: egcs-2.91.66, 3.3.3, 3.3.4,
+  3.4.4, 4.0.1, 4.1.1

@@ -6,7 +6,7 @@ This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
      hello.chpl             : simplest Chapel "Hello, world!" program
-     hello-module.chpl      : variation using a structured module
+     hello-module.chpl      : a variation using a more structured use of Chapel
 
 It also contains a number of more interesting examples that
 demonstrate various Chapel features:
@@ -50,11 +50,11 @@ for details.
 We provide Makefiles in each directory that can be used to build a
 single test in that directory by name:
 
-     make hello
+     gmake hello
 
 or to build all tests in that directory and its subdirectories:
 
-     make all
+     gmake all
 
 
 -----------

@@ -12,7 +12,7 @@ example:
 This flag lists all of the standard flags that can be used with a
 Chapel program, as well as a list of the configuration variables
 defined by the program and their types.  If the configuration variable
-is set on the command line, its value is also shown.
+has been set on the command line, its value is also shown.
 
 
 -------------------------------
@@ -68,6 +68,37 @@ Over time, we plan to improve our ability to debug the generated C
 code for a Chapel program.  If you find yourself debugging the
 generated code a lot and need help or have requests for better
 support, please let us know so that we can prioritize accordingly.
+
+
+-----------------------------
+Setting the Number of Locales
+-----------------------------
+
+We have added support for the ability to specify the number of locales
+on which to execute the program, which can be set using the -nl flag,
+or by assigning the built-in numLocales configuration constant using
+the normal mechanisms.  So, to execute on one locale, the user could
+use:
+
+    ./a.out -nl 1
+or: ./a.out --numLocales=1
+or: ./a.out -snumLocales=1
+
+For users running with $CHPL_COMM == none (the default for current
+users), only one locale can be used.  Chapel's multi-locale execution
+is currently under development, and we expect to have a prototype
+available in the next release.
+
+
+-----------------------
+Running in Verbose Mode
+-----------------------
+
+The compiler-generated executable supports a --verbose flag (-v for
+short) that will print out extra information not explicitly specified
+in the user's code.  Currently, this flag is only used to indicate the
+number of locales being used for program execution, but in the future
+we expect it to have broader impact.
 
 
 -------------------------

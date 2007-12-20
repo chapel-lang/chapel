@@ -25,19 +25,19 @@ Cygwin notes
 
 
 * For best results, avoid using WinZip to unpack the release -- doing
-  so can cause text files such as Makefiles to have their linefeeds
-  converted into carriage return/linefeed combinations, which will
-  break the build process.  For better results, use Cygwin's gunzip
-  and tar utilities to unpack the release in the traditional way:
+  so may cause text files such as Makefiles to have their linefeeds
+  converted into carriage return/linefeed combinations, which can
+  break the build process.  For best results, use Cygwin's gunzip and
+  tar utilities to unpack the release in the traditional way:
 
      gunzip chapel.tar.gz
      tar xvf chapel.tar
 
-  Or, if you've already used WinZip to unpack the release, you can run
-  the dos2unix utility to convert the files back into UNIX' bare
-  linefeed format:
+  If you've already used WinZip to unpack the release, you can run the
+  dos2unix utility to convert the files back into UNIX' bare linefeed
+  format:
 
-     (make certain you're in the home "chapel" directory)
+     (be *certain* you're in the $CHPL_HOME directory!!!)
      find . -name "*" -exec dos2unix {} \;
 
 

@@ -2,12 +2,13 @@
 Reporting Bugs for Chapel
 =========================
 
-The Chapel compiler is tested against a suite of over 1850 tests on a
-nightly basis on five platforms.  While these tests help us make
-monotonic progress in implementing the language, we know that there
-are still many bugs in our implementation.  If you encounter a bug or
-problem using the Chapel compiler, please do not hesitate to contact
-the Chapel development team at the following address:
+The Chapel compiler is tested using a suite of over 2300 tests on a
+nightly basis on ~8 platforms using ~6 C/C++ compilers.  While these
+tests help us make steady progress in implementing the language, we
+know that there are still many bugs in our implementation, some known
+to us, others not.  If you encounter a bug or problem using the Chapel
+compiler, please do not hesitate to contact the Chapel development
+team at the following address:
 
   chapel_bugs@cray.com
 
@@ -16,14 +17,14 @@ example:
 
   * the behavior you are seeing
   * the version number of your Chapel compiler (chpl --version)
-  * the platform you are running on
+  * the platform(s) you are running on and their OS versions
+  * the compiler(s) you are using and their versions
   * the values of any CHPL variables in your environment
-  * the version of gcc/g++ you are using (gcc --version)
   * the Chapel program that caused the problem (if possible)
 
-A partial list of unimplemented features and known bugs can be found
-in the STATUS file in your $CHPL_HOME directory.  Feel free to check
-any unexpected behavior against this file.  However, please also feel
-encouraged to email us with a report even if you run into a known
-issue.  We are more than happy to suggest workarounds or to prioritize
+A list of unimplemented features and known bugs can be found in
+$CHPL_HOME/STATUS.  Feel free to check any unexpected behavior against
+this file.  Even if you run into a known issue, we encourage you to
+email us a bug report so that we're aware it's a problem for your
+code.  We are more than happy to suggest workarounds or to prioritize
 a feature/bug that is holding you back.
