@@ -191,3 +191,30 @@ Unimplemented Features:
 - on some platforms, math library support may be incomplete based on C support
 
 Bugs:
+
+
+-----------------
+Memory Management
+-----------------
+
+Status:
+
+This release includes an initial draft version of a copying garbage
+collector.  When it is enabled via the --copy-collect flag, most
+objects are allocated onto a small, un-expandable, garbage-collected
+heap. This is very preliminary in nature, and should not be used in
+most cases. It is expected that in future releases additional support
+for automatic memory management will be included in the Chapel
+compiler and runtime.
+
+  What is properly garbage collected:
+  - Classes with references to them located on the program stack
+  - Classes with references to them in records on the stack
+  - Classes with references to them in class fields reachable from the stack
+
+  What isn't yet properly garbage collected:
+  - Arrays and domains
+  - Dynamically allocated array elements
+  - Multi-threaded or multi-locale programs
+  - Classes whose only references are fields in records that are class fields
+  - Strings

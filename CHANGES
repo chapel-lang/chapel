@@ -66,7 +66,7 @@ Newly Implemented Features:
 - initial support for prototyping and calling C functions within Chapel code
 - added support for generic function arguments of sync types
   e.g., def foo(x: sync) { ... }
-- improved support for copy collection in single-threaded codes
+- improved support for garbage collection in single-threaded codes (see STATUS)
 - improved tuple type orthogonality; they can now be used in most type contexts
 - added support for strided param for loops
 
