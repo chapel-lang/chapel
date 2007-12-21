@@ -9,6 +9,7 @@ test             Primary features it was designed to demonstrate
 --------------+---------------------------------------------------------------
 hello         : write() function; string literals; unstructured coding
 hello-module  : configuration vars; module structure; main() entry point
+arrays        : arithmetic domains and arrays; slicing; iteration; reallocation
 beer          : 1D domains and arrays; string manipulation; generic functions
 blockLU       : 2D domains and arrays; iterators; domain/array slicing, queries
 fileIO        : file I/O of scalars and arrays
@@ -17,6 +18,7 @@ iterators     : iterators of various styles
 jacobi        : 2D domains and arrays; stencil operations; reductions
 linkedList    : nested generic classes; iterators, writeThis methods
 norm          : reductions; function overloading and where clauses; modules
+opaque        : opaque domains and arrays; graph-based data structures
 prodCons      : synchronization variables; task parallelism using cobegin
 quicksort     : bounded task parallelism using cobegin and serial
 reductions    : minloc, maxloc, + and && array reductions
@@ -51,6 +53,7 @@ test           | read  | write | files | halt  | wrths | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
+arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
 blockLU        |   x   |   x   |   *   |   *   |       |       |       |
 fileIO         |   *   |   *   |   *   |       |       |       |       |
@@ -59,6 +62,7 @@ iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
 linkedList     |       |   x   |       |       |   *   |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
+opaque         |       |   x   |       |       |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
 reductions     |       |   x   |       |       |       |       |       |
@@ -87,6 +91,7 @@ test           | modls | stdmd | main  | funcs | iters | confg | these | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
+arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 blockLU        |       |       |   x   |   x   |   x   |   x   |       |
 fileIO         |       |       |   x   |   x   |       |   x   |       |
@@ -95,6 +100,7 @@ iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
 linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
 norm           |   *   |       |   x   |   x   |       |       |       |
+opaque         |       |   x   |       |   x   |       |   x   |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
 reductions     |       |   *   |       |       |       |   x   |       |
@@ -125,6 +131,7 @@ test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
+arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
 fileIO         |       |       |       |       |       |   x   |       |
@@ -133,6 +140,7 @@ iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
 linkedList     |       |       |       |   *   |   *   |   x   |       |
 norm           |       |       |       |       |       |   x   |   x   |
+opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
 quicksort      |       |       |       |       |       |   x   |       |
 reductions     |       |       |       |       |       |   x   |       |
@@ -161,14 +169,16 @@ test           | arith | spars | enum  | assoc | opque | subdm | index | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |       |       |       |       |       |
 fileIO         |   x   |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
 iterators      |       |       |       |       |       |       |       |
-jacobi         |   *   |       |       |       |       |       |       |
+jacobi         |   x   |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |    
 norm           |   x   |       |       |       |       |       |       |
+opaque         |       |       |       |       |   *   |       |   x   |   x
 prodCons       |   x   |       |       |       |       |       |       |
 quicksort      |   x   |       |       |       |       |       |       |
 reductions     |   x   |       |       |       |       |       |       |
@@ -198,6 +208,7 @@ test           | frall | prmte | slice | reind | reduc | scan  | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |   x   |   *   |   x   |       |       |
 fileIO         |       |       |       |       |   x   |       |       |
@@ -206,6 +217,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
 linkedList     |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
+opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
 reductions     |       |   *   |   *   |       |   x   |       |       |
@@ -234,6 +246,7 @@ test           | begin | cobeg | srial | sync  | atomc | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
@@ -242,6 +255,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
+opaque         |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |   *   |       |       |       |
 quicksort      |       |   *   |   *   |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
@@ -270,6 +284,7 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
@@ -278,6 +293,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
+opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |

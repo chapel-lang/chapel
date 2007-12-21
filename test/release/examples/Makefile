@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
+	arrays \
 	beer \
         blockLU \
 	fileIO \
@@ -14,6 +15,7 @@ TARGETS = \
 	jacobi \
 	linkedList \
 	norm \
+	opaque \
 	prodCons \
 	quicksort \
 	reductions \

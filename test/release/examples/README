@@ -11,6 +11,7 @@ get started with Chapel program structure:
 It also contains a number of more interesting examples that
 demonstrate various Chapel features:
 
+     arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
      beer.chpl              : computes lyrics to "99 bottles of beer"
      blockLU.chpl           : block LU factorization
      fileIO.chpl            : simple file I/O example using arrays
@@ -19,6 +20,7 @@ demonstrate various Chapel features:
      jacobi.chpl            : Jacobi iteration
      linkedList.chpl        : generic linked list example
      norm.chpl              : sample module for computing array norms
+     opaque.chpl            : tutorial for Chapel opaque arrays
      prodCons.chpl          : producer-consumer example using circular buffer
      quicksort.chpl         : parallel quick sort using cobegin and serial
      reductions.chpl        : applies several array reductions on a 2D array
