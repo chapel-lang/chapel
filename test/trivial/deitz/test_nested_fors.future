@@ -1,0 +1,4 @@
+bug: capturing nested for expressions
+
+This fails when you try to capture the result of the nested for expression into
+a variable.  I see: error: illegal cast from nil to _ic_+.
