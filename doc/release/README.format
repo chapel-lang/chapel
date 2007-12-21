@@ -58,6 +58,14 @@ function can currently be used in one of two forms:
    fall.  The second argument must be a numeric type -- integral,
    real, imaginary, or complex.
 
+   As an example:
+
+     var pi = 3.14159265;
+     var numItems = 32;
+
+     writeln("pi is: ", format("#.####", pi));
+     var myString: string = format("###", numItems);
+
 
 Future Directions
 -----------------
