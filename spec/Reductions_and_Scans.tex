@@ -79,7 +79,6 @@ resulting in an aggregate expression of the same size and shape.  The
 output values represent the result of the operator applied to all
 elements up to and including the corresponding element in the input.
 
-
 The syntax for a scan expression is given by:
 \begin{syntax}
 scan-expression:
@@ -97,13 +96,6 @@ that can be iterated over and to which the operator can be applied.
 User-defined scans are specified by preceding the keyword \chpl{scan}
 by the class type that implements the scan interface as described
 in~\rsec{udr}.
-
-\begin{status}
-Currently, variables of unspecified type that are initialized using a
-scan of a multidimensional array will cause the variable to be
-inferred to be a 1D array rather than preserving the size and shape of
-the input aggregate expression.
-\end{status}
 
 \subsection{User-Defined Reductions and Scans}
 \label{udr}

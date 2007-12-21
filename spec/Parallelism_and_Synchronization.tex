@@ -68,10 +68,6 @@ concurrency where each loop body iteration instance is executed in a
 separate computation, or somewhere in between.
 \end{example}
 
-\begin{status}
-The forall loop is currently executed serially.
-\end{status}
-
 \subsubsection{Alternative Forall Loop Syntax}
 \label{Alternative_Forall_Loop_Syntax}
 \index{forall loops!alternative syntax}
@@ -128,10 +124,6 @@ immediate children nodes.  The work on sibling nodes can be executed
 concurrently.
 \end{example}
 
-\begin{status}
-The ordered forall loop is currently executed serially.
-\end{status}
-
 \subsection{The Forall Expression}
 \label{Forall_Expressions}
 \index{forall expressions}
@@ -163,10 +155,6 @@ def ff() {
 ff();
 \end{chapel}
 \end{example}
-
-\begin{status}
-Forall expressions are evaluated serially.
-\end{status}
 
 \subsubsection{Filtering Predicates in Forall Expressions}
 \label{Filtering_Predicates_Forall}
@@ -252,10 +240,6 @@ return-statements.
 \subsection{The Ordered Expression}
 \label{Ordered_Expressions}
 \index{ordered@\chpl{ordered}}
-
-\begin{status}
-The ordered expression is not yet implemented.
-\end{status}
 
 The \chpl{ordered} keyword can be used as an unary operator to suppress
 parallel execution among instances of an expression that can involve
@@ -596,10 +580,6 @@ This section is forthcoming.
 \label{Atomic_Transactions}
 \index{atomic transactions}
 \index{atomic@\chpl{atomic}}
-
-\begin{status}
-Atomic statements are not yet implemented.
-\end{status}
 
 The atomic statement creates an atomic transaction of a statement. The
 statement is executed with transaction semantics in that the statement

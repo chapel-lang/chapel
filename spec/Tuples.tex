@@ -200,10 +200,10 @@ indexing expression is known at compile-time.
 
 \index{formal arguments!tuples}
 
-\begin{status}
-Formal arguments of tuple type are treated as if they were records.
-Conversions are not applied to the components.
-\end{status}
+This section of the specification is forthcoming.  In particular, it
+is expected that tuple arguments will allow for implicit conversions
+on the components rather than treating the arguments as if they are
+records.
 
 \subsubsection{Formal Argument Declarations in a Tuple}
 \label{Formal_Argument_Declarations_in_a_Tuple}
@@ -212,8 +212,3 @@ Conversions are not applied to the components.
 Formal argument declarations can be grouped into a tuple similarly to
 variable declarations to facilitate passing the result of a function that
 returns a tuple directly to another function.
-
-\begin{status}Formal arguments grouped in a tuple cannot be explicitly
-typed. A function with formal arguments grouped in a tuple is
-therefore generic.
-\end{status}

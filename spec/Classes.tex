@@ -372,10 +372,6 @@ field be shadowed by a subclass.
 \label{Inheriting_from_Multiple_Classes}
 \index{multiple inheritance}
 
-\begin{status}
-Multiple inheritance is not yet supported.
-\end{status}
-
 A class can be derived from multiple base classes provided that only
 one of the base classes contains fields either directly or from base
 classes that it is derived from.  The methods defined by the other
@@ -393,10 +389,6 @@ implicitly or explicitly with an \chpl{outer} reference.
 \subsection{Automatic Memory Management}
 \label{Automatic_Memory_Management}
 \index{automatic memory management}
-
-\begin{status}
-Memory allocated to store class objects is not yet reclaimed.
-\end{status}
 
 Memory associated with class instances is reclaimed automatically when
 there is no way for the current program to reference this memory.  The

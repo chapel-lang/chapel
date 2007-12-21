@@ -1130,7 +1130,6 @@ This code produces the output:
 \end{commandline}
 \end{example}
 
-
 \subsection{Parallelism}
 
 The Chapel language is designed to ease the challenges of parallel
@@ -1142,15 +1141,6 @@ Chapel supports both data parallelism and task parallelism.  To
 efficiently manage both types of parallelism a multi-processor system,
 users can specify how data and work is to be distributed across
 processors by using distribution and locality features.
-
-\begin{status}
-Currently, the Chapel compiler supports only single-locale features.
-Task parallel features will spawn computations only on one locale.
-Data parallel features execute sequentially on one locale.  
-
-More examples and discussion of parallel features will be added to
-the language specification when they are available in the compiler.
-\end{status}
 
 \paragraph{Data Parallelism}
 Data parallelism refers to work where the same operations can be

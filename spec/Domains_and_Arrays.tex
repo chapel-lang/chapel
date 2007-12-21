@@ -115,12 +115,6 @@ domain. It may therefore be less expensive to access arrays using
 values of appropriate index type rather than values of the more
 general type the domain is defined over.
 
-\begin{status}
-In the current implementation, the index type is not distinguished
-from the underlying type of the indices.  The index method is not yet
-implemented.
-\end{status}
-
 \subsubsection{Domain Assignment}
 \label{Domain_Assignment}
 \index{domains!assignment}
@@ -210,11 +204,6 @@ var A: [D] real;
 var x: A.eltType;
 \end{chapel}
 \end{example}
-
-\begin{status}
-Arrays of arrays where the inner array size is a function of the outer
-array's indices are not currently supported.
-\end{status}
 
 \subsubsection{Array Indexing}
 \label{Array_Indexing}
@@ -346,11 +335,6 @@ multiple arrays, the promoted function returns an array with a domain
 that is equal to the domain of the first argument to the function that
 enables promotion.  If the first argument is an iterator or a range,
 the result is a one-based one-dimensional array.
-
-\begin{status}
-In the current implementation, promotion always returns
-one-dimensional arrays.
-\end{status}
 
 \begin{example}
 Whole array operations is a special case of array promotion of scalar
@@ -638,12 +622,6 @@ value is commonly described as the ``zero value'', though we refer to
 it as the \emph{implicitly replicated value} or \emph{IRV} since it
 may be a value other than zero.
 
-\begin{status}
-The Chapel implementation currently only supports sparse arithmetic
-domains and arrays.  One could conceive of wanting sparse associative
-and opaque domains and arrays as well.
-\end{status}
-
 \subsubsection{Sparse Domain Types}
 
 A sparse domain type is specified by the syntax
@@ -743,12 +721,6 @@ As with other methods and operators, the \chpl{add}, \chpl{remove},
 \chpl{+=}, and \chpl{-=} operators can be invoked in a promoted manner
 by specifying an aggregate of indices rather than a single index at a
 time.
-
-\begin{status}
-The \chpl{remove} and \chpl{-=} capabilities are not yet implemented
-for sparse domains.
-\end{status}
-
 
 \subsubsection{Sparse Arrays}
 
@@ -971,13 +943,6 @@ ordering of the indices in the base domain.
 Subdomains are verified during execution even as domains are
 reassigned.  The indices in a subdomain are known to be indices in a
 domain, allowing for fast bounds-checking.
-
-\begin{status}
-The subdomain syntax is implemented, but subdomains are not yet
-semantically checked to ensure that they are proper subdomains
-of their parent domains.
-\end{status}
-
 
 \subsection{Predefined Functions and Methods on Domains}
 \index{domains!predefined functions}
