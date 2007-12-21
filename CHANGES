@@ -103,12 +103,19 @@ Syntactic/Naming Changes:
 Documentation:
 --------------
 - updates to the language specification
-- refreshed READMEs, compiler --help message, man page
+- updated CHANGES and STATUS files
+- refreshed READMEs
+- updated compiler man page and --help message
+- added AGREEMENT file listing user agreement
+- refreshed and refactored CONTRIBUTORS file
 
 Example Codes:
 --------------
+- added tutorial example for using arithmetic arrays (arrays.chpl)
+- added tutorial example for using opaque arrays (opaque.chpl)
 - converted all HPCC example codes to use 64-bit indices for their domains
 - fixed a bug in the HPCC FFT calculation of GFlop/s
+- renamed sync vars to use $ naming convention
 
 Standard Modules:
 -----------------
