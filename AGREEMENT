@@ -11,7 +11,7 @@ Goals
 The goals of this release are as follows:
 
 * to demonstrate Chapel features in a multi-threaded, single-locale
-  (single-node) setting
+  (single-node or shared-memory) setting
 
 * to give HPCS mission partners and other interested parties an
   opportunity to see the state and evolution of the Chapel
