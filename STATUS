@@ -15,23 +15,25 @@ General
 -------
 
 Unimplemented Features:
-- Some error messages continue to be incorrect/confusing/unhelpful
+- Some error messages continue to be confusing/unhelpful
   Workaround: Please ask us for help interpreting any that you struggle with
 - Compiler and runtime errors don't always report useful line numbers
   Workaround: Please ask us for help finding the correct error location
 
+Bugs:
+- Identifiers in the generated code may exceed a back-end compiler's limit
+- With the PGI back-end compiler, -0.0 floats may not be stored correctly
 
 --------------------------------
 Variables, Types and Expressions
 --------------------------------
 
 Unimplemented Features:
-- Configuration variables of tuple types
 
 Bugs:
 - Const arrays, records, and fields can currently be modified -- these
   should result in a compiler error
-- General expressions can (incorrectly) be used as type expressions
+- In some contexts, value expressions can be used as type specifiers
 
 
 -------
@@ -40,7 +42,6 @@ Modules
 
 Unimplemented Features:
 - The argv array is unimplemented
-- Using modules in files not named on the compiler's command-line is unsupported
 
 Bugs:
 
@@ -54,7 +55,8 @@ Unimplemented Features:
 - Array arguments cannot have both their domain and element types queried
 
 Bugs:
-
+- type functions not correctly declared as such do not generate an error
+- programs requiring non-linear function resolution may not work properly
 
 ----------------------------
 Classes, Records, and Unions
@@ -63,18 +65,18 @@ Classes, Records, and Unions
 Unimplemented Features:
 - Constructors are not particularly well-supported
   - chained constructors for derived classes are not implemented
-  - constructors for generic classes cause problems
   - constructing nested classes does not work consistently
   Workaround: try using the default constructor and initialize() function
-- Multiple inheritance is not implemented
-- Shadowing base class fields is not implemented
-- Garbage collection is supported at a preliminary level
+- Multiple inheritance is not supported
+- Shadowing base class fields does not work well
+- Garbage collection is only supported at a preliminary level
 - Type select on unions is not implemented
 
 Bugs:
 - Class fields initialized with conditional expressions fail to compile
-- Subclassing uninstantiated generic classes should be prohibited but is not
 - Constructors/initializers can't reliably call methods
+- Fields may be initialized more than once
+- Array fields declared using [<ind> in <domain>] syntax do not work
 
 
 -----------------------------
@@ -83,6 +85,7 @@ Tuples, Ranges, and Iterators
 
 Unimplemented Features:
 - Zipper iteration over var iterators is not yet supported
+- Iterators may not be overridden in subclasses
 
 Bugs:
 - nested var iterators can cause problems
@@ -93,24 +96,37 @@ Arrays and Domains
 ------------------
 
 Unimplemented Features:
-- Arrays of sparse subdomains are not implemented
-- index(D) bounds checking is not implemented
-- Subdomain subset checking is not implemented
-- Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
-- Sparse domains don't support remove/-= methods
-
-Bugs:
 - Array promotion/forall expressions evaluate to 1D arrays
     e.g., foo(A) where A promotes foo() should result in an array of type:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
+- Arrays of arrays where the inner arrays vary in size are not supported
+- Arrays of sparse subdomains are not implemented
+- Strided domains sliced by unstrided domains are not handled correctly
+- Sparse domains/arrays are incomplete:
+  - can't be sliced nor used to slice dense domains/arrays
+  - don't yet support remove methods or the -= operator
+  - assignment between sparse domains is not yet implemented
+- index(D) bounds checking is not implemented
+- subdomain(D) index subset checking is not implemented
+
+Bugs:
+- Degenerate arrays with fewer than 0 elements may cause allocation error
+- Opaque/associative arrays may be buggy when reallocated
+- Constant domains can incorrectly be modified if passed to functions
 - Records with array members of recursive types do not work
 
 
 --------
 Generics
 --------
+
+Unimplemented Features:
+- constructors for generic classes cause problems
+
+Bugs:
+- Subclassing uninstantiated generic classes should be prohibited but is not
 
 
 -------------------------------
@@ -119,10 +135,17 @@ Parallelism and Synchronization
 
 Unimplemented Features:
 - Atomic statements are not implemented
-- Data parallel concepts that should run concurrently are implemented serially
+- Data parallel concepts that should generate parallelism are run serially
     e.g., forall loops, promoted calls, reductions, scans
-- Tasks are not queued, so a program halts if there aren't sufficient threads
+- Tasks are not pooled, so a program halts if there are insufficient threads
 
+Bugs:
+- globals are not flagged as volatile; causes deadlock for some C compilers
+- detupled indices in coforall statements are not privatized
+  Workaround: write:
+                coforall (i,j) in ... { ... }
+              as:
+                coforall ij in ... { const (i,j) = ij; ... }
 
 --------------------
 Reductions and Scans
@@ -140,7 +163,9 @@ Locality and Distributions
 
 Unimplemented Features:
 - Executing general code using multiple locales is not supported
-- Distribution specifications are ignored
+- Distributed domains/arrays are not yet supported
+
+Bugs:
 
 
 ----------------
@@ -148,7 +173,7 @@ Input and Output
 ----------------
 
 Unimplemented Features:
-- a mechanism for controlling the output precision/width of scalar values
+- format control for the output precision/width of scalar values
   Workaround: contact us
 
 Bugs:
@@ -163,4 +188,6 @@ Standard Library
 -----------------
 
 Unimplemented Features:
-- 32-bit math routines are unimplemented, causing coercion to 64-bit versions
+- on some platforms, math library support may be incomplete based on C support
+
+Bugs:
