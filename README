@@ -74,4 +74,6 @@ For more detailed information about...      refer to...
   ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
   ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
   ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
+  ...setting up Chapel for cross-compilation ...doc/README.chplenv
+  ...using non-default C/C++ compilers, make ...doc/README.chplenv
   ...notes for Cygwin users                  ...doc/README.cygwin
