@@ -271,9 +271,9 @@ const offset = (1,1); // a 2-tuple offset
 
 writeln("After assigning F a shifted slice of B, it is:\n", F, "\n");
 
-[f in F] f = -f;
+[b in B] b = -b;
 
-writeln("After negating F, it is:\n", F, "\n");
+writeln("After negating B, it is:\n", B, "\n");
 
 //
 // Note that this shorthand resembles the array type definition in
