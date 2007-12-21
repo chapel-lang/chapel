@@ -63,7 +63,8 @@ Newly Implemented Features:
 - improved symbol resolution for external modules
 - implicit enum-to-string coercions and explicit string-to-enum conversions
 - initial support for controlling type-to-string formatting
-- initial support for prototyping and calling C functions within Chapel code
+- initial support for prototyping and calling extern C functions from Chapel
+  (see doc/README.extern for more details)
 - added support for generic function arguments of sync types
   e.g., def foo(x: sync) { ... }
 - improved support for garbage collection in single-threaded codes (see STATUS)

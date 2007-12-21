@@ -76,4 +76,5 @@ For more detailed information about...      refer to...
   ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
   ...setting up Chapel for cross-compilation ...doc/README.chplenv
   ...using non-default C/C++ compilers, make ...doc/README.chplenv
+  ...calling C routines from Chapel          ...doc/README.extern
   ...notes for Cygwin users                  ...doc/README.cygwin
