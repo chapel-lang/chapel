@@ -1,0 +1,8 @@
+bug: opaque domains/arrays can lead to seg fault
+
+This test attempts to build a random graph, and in doing
+so gets a seg fault.  The problem may lie in the associative
+domain/array code -- there is some indication that a
+reallocated array is not having its values initialized to
+the element's default value; though it could be some other
+problem masquerading as that.
