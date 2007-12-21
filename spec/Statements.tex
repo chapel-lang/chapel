@@ -17,6 +17,9 @@ statement:
   while-do-statement
   do-while-statement
   for-statement
+  label-statement
+  break-statement
+  continue-statement
   param-for-statement
   return-statement
   yield-statement
@@ -445,6 +448,36 @@ param-for-statement:
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
+
+\subsection{The Label, Break, and Continue Statements}
+\label{Label_Break_Continue}
+\index{label@\chpl{label}}
+\index{break@\chpl{break}}
+\index{continue@\chpl{continue}}
+
+The label-statement is used to apply a label to a specific loop which
+can then be the target of a break- or continue-statement.  If a break-
+or continue-statement has no label, the target is the lexically
+inner-most loop.
+
+The syntax for label, break, and continue statements is given by:
+\begin{syntax}
+label-statement:
+  `label' identifier statement
+
+break-statement:
+  `break' identifier[OPT] ;
+
+continue-statement:
+  `continue' identifier[OPT] ;
+\end{syntax}
+
+If a break-statement is encountered, control will be transferred to
+after the loop.  If a continue-statement is encountered, control will
+be transferred to the end of the loop, but still inside the loop.
+Break-statements cannot be used in parallel loops.  Neither break- nor
+continue-statements can be used in cobegin-, coforall-, or
+begin-statements.
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}
