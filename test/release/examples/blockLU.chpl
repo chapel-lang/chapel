@@ -51,7 +51,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
   // currently being factored and those that remain.
 
   for (UnfactoredInds, CurrentBlockInds, TrailingBlockInds) 
-        in generateBlockLURanges(D.dim(1), blk) {
+        in generateBlockLURanges(D, blk) {
 
     // Create array aliases for various submatrices of current block
     // iteration as follows:
@@ -87,7 +87,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
       //   identify largest magnitude element in kth column 
       //   (pivot), from the diagonal element downward 
       //   through all rows of A1
-      const pivotRow = computePivotRow(A1[k.., k..k]),
+      const pivotRow = computePivotRow(A1[UnfactoredInds(k..), k..k]),
             pivot = A1[pivotRow, k];
       
       // If kth row is not row of pivot, swap rows:
@@ -98,7 +98,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
         // swap values in rows k and pivotRow of the full
         // matrix A
-        A[k..k, ..] <=> A[pivotRow..pivotRow, ..];
+        A[k, ..] <=> A[pivotRow, ..];
       }
 
       // If pivot is zero, halt.  Matrix is singular and 
@@ -107,8 +107,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
       // Compute the k-th elimination step: 
       //   store multipliers...
-      if k+1 <= A1.domain.high(1) then
-        A1[k+1.., k..k] /= pivot;
+      A1[UnfactoredInds(k+1..), k] /= pivot;
 
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
@@ -158,10 +157,10 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
 
-def generateBlockLURanges(D:range, blksize) {
-  const end = D.high;
+def generateBlockLURanges(D:domain(2), blksize) {
+  const end = D.dim(1).high;
 
-  for i in D by blksize {
+  for i in D.dim(1) by blksize {
     const hi = min(i + blksize-1, end);
     yield (i..end, i..hi, hi+1..end); 
   }
