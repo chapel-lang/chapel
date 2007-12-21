@@ -174,7 +174,7 @@ Input and Output
 
 Unimplemented Features:
 - format control for the output precision/width of scalar values
-  Workaround: contact us
+  Workaround: see doc/README.format
 
 Bugs:
 - read()s of whole arrays are not working

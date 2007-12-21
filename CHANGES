@@ -62,7 +62,7 @@ Newly Implemented Features:
 - improved support for nested modules
 - improved symbol resolution for external modules
 - implicit enum-to-string coercions and explicit string-to-enum conversions
-- initial support for controlling type-to-string formatting
+- initial support for controlling type-to-string formatting (doc/README.format)
 - initial support for prototyping and calling extern C functions from Chapel
   (see doc/README.extern for more details)
 - added support for generic function arguments of sync types
