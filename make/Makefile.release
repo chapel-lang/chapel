@@ -1,3 +1,4 @@
+RELCHPLDIR = .
 RELCOMPDIR = compiler
 RELRTDIR = runtime
 RELMAKEDIR = make
