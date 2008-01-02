@@ -391,7 +391,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_IS_TUPLE, "isTupleType", returnInfoBool);
 
   prim_def(PRIMITIVE_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
-  prim_def(PRIMITIVE_GET_IC_TYPE, "get_ic_type", returnInfoICType);
 
   prim_def(PRIMITIVE_ON, "on", returnInfoVoid, true);
   prim_def(PRIMITIVE_NUM_LOCALES, "_chpl_comm_default_num_locales", returnInfoInt32, false, false);

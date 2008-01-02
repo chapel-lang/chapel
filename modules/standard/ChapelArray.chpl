@@ -484,27 +484,39 @@ pragma "inline" def _pass(ic: _iteratorClass)
   return ic;
 
 def _copy(ic: _iteratorClass) {
-  var capacity = 4, size = 0;
-  var data = _ddata(__primitive("get_ic_type", ic), capacity);
-  data.init();
+  return _ic_copy_help(_ic_copy_recursive(ic));
 
-  for e in ic {
-    if size == capacity {
-      capacity = capacity * 2;
-      var tmp = _ddata(__primitive("get_ic_type", ic), capacity);
-      tmp.init();
-      for i in 0..size-1 do
-        tmp(i) = data(i);
-      data = tmp;
-    }
-    data(size) = e;
-    size = size + 1;
+  def _ic_copy_recursive(ic) {
+    for e in ic do
+      yield _copy(e);
   }
 
-  var A: [1..size] __primitive("get_ic_type", ic);
-  for i in 0..size-1 do
-    A(i+1) = data(i);
-  return A;
+  def _ic_copy_help(ic) {
+    var c = ic.getHeadCursor();
+
+    var capacity = 4, size = 0;
+    var data = _ddata(ic.getValue(c).type, capacity);
+    data.init();
+
+    while ic.isValidCursor(c) do {
+      if size == capacity {
+        capacity = capacity * 2;
+        var tmp = _ddata(ic.getValue(c).type, capacity);
+        tmp.init();
+        for i in 0..size-1 do
+          tmp(i) = data(i);
+        data = tmp;
+      }
+      data(size) = ic.getValue(c);
+      size = size + 1;
+      c = ic.getNextCursor(c);
+    }
+
+    var A: [1..size] data.eltType;
+    for i in 0..size-1 do
+      A(i+1) = data(i);
+    return A;
+  }
 }
 
 //

@@ -136,8 +136,6 @@ enum PrimitiveTag {
 
   PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
 
-  PRIMITIVE_GET_IC_TYPE, // Return element type of iterator class
-
   PRIMITIVE_ON,           // invoke on statement by calling nested function
   PRIMITIVE_LOCALE_ID,    // return locale id
   PRIMITIVE_NUM_LOCALES,  // return number of locales

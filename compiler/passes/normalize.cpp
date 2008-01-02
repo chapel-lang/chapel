@@ -354,7 +354,6 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND) ||
-      call->isPrimitive(PRIMITIVE_GET_IC_TYPE) ||
       call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE))
     return;
 
