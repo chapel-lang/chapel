@@ -1,8 +1,0 @@
-bug: multiple coforalls generate conflicting symbol names
-
-It appears that when two coforall loops are used within the same
-symbol scope, the compiler generates a duplicate symbol with the
-same name:
-
-twoCoforalls.chpl:22: error: '_ss' has multiple definitions, redefined at:
-  twoCoforalls.chpl:31 [semanticChecks.cpp:31]

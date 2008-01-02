@@ -352,13 +352,17 @@ BlockStmt* build_for_block(BlockTag tag,
   if (tag == BLOCK_COFORALL) {
     BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
     VarSymbol* ss = new VarSymbol("_ss");
+    ss->isCompilerTemp = true;
     VarSymbol* me = new VarSymbol("_me");
-    block->insertAtHead(new DefExpr(ss, NULL, new SymExpr("_syncStack")));
+    me->isCompilerTemp = true;
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr("_init", new SymExpr("_syncStack"))));
+    block->insertAtHead(new DefExpr(ss));
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockTag = BLOCK_BEGIN;
     body->insertBefore(beginBlk);
     beginBlk->insertAtHead(body->remove());
-    beginBlk->insertBefore(new DefExpr(me, new CallExpr("_pushSyncStack", ss)));
+    beginBlk->insertBefore(new DefExpr(me));
+    beginBlk->insertBefore(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
     beginBlk->insertAtTail(new CallExpr("=",
                              new CallExpr(".", me,
                                new_StringSymbol("v")), gTrue));
