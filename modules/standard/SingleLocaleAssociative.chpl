@@ -355,6 +355,8 @@ class SingleLocaleAssociativeArray: BaseArray {
     data.init();
   }
 
+  // This method is unsatisfactory -- see bradc's CVSLOG entries of
+  // 01/02/08 around 14:30 for details
   def _purge( ind: int) {
     var d: eltType;
     data( ind) = d;
