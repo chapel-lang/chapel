@@ -263,7 +263,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         table(ind_pos) = _DELETED;
         
         for ia in _arrs2 do
-          ia.purge( table_i);
+          ia._purge( table_i);
       } else {
         halt("index not in domain: ", ind);
       }
@@ -355,7 +355,7 @@ class SingleLocaleAssociativeArray: BaseArray {
     data.init();
   }
 
-  def purge( ind: int) {
+  def _purge( ind: int) {
     var d: eltType;
     data( ind) = d;
   }
@@ -398,7 +398,7 @@ class SingleLocaleAssociativeArray: BaseArray {
 	if ind.valid {
 	  var i = td._map( ind.data);
 	  if (i < 0) then {
-	    purge( dom.table(dom._map( ind.data)));
+	    _purge( dom.table(dom._map( ind.data)));
 	  }
 	  inds_pos += 1;
 	}

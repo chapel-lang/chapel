@@ -440,7 +440,7 @@ class BaseArray {
     halt("reallocating not support for this array type");
   }
 
-  def purge( ind: int) {
+  def _purge( ind: int) {
     halt("purging not supported for this array type");
   }
 
