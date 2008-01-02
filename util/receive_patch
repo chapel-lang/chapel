@@ -1,4 +1,5 @@
 #!/bin/csh
 
+cd $CHPL_HOME
 cvs -q update -C
 patch -p0 < ~/$1.patch
