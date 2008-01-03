@@ -90,7 +90,7 @@ static void pruneResolvedTree();
 // build reference type
 //
 static void makeRefType(Type* type) {
-  if (type == dtMethodToken || type == dtUnknown)
+  if (!type || type == dtMethodToken || type == dtUnknown)
     return;
 
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))

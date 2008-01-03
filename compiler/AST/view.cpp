@@ -70,7 +70,7 @@ list_ast(BaseAST* ast, int indent = 0) {
     }
     if (GotoStmt* e = toGotoStmt(ast)) {
       printf("goto ");
-      if (e->label) {
+      if (e->label->var != gNil) {
         list_ast(e->label, indent+1);
       }
     } else if (toBlockStmt(ast)) {
@@ -151,7 +151,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf("%s", astTagName[expr->astTag]);
 
     if (GotoStmt *gs= toGotoStmt(ast)) {
-      if (gs->label) {
+      if (gs->label->var != gNil) {
         printf( " ");
         view_ast( gs->label, number, mark, indent+1);
       }
@@ -428,8 +428,8 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
       case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
       }
-      if (s->label)
-        html_print_symbol( html_file, pass, s->label, true);
+      if (s->label->var != gNil)
+        html_print_symbol(html_file, pass, s->label->var, true);
     } else if (toCondStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "<B>if</B> ");

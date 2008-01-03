@@ -65,18 +65,18 @@ find_outer_loop(Expr* stmt) {
 
 static void
 resolveGotoLabel(GotoStmt* gotoStmt) {
-  if (!gotoStmt->label) {
+  if (gotoStmt->label->var == gNil) {
     BlockStmt* loop = find_outer_loop(gotoStmt);
     if (!loop)
       USR_FATAL(gotoStmt, "break or continue is not in a loop");
     if (gotoStmt->gotoTag == GOTO_BREAK)
-      gotoStmt->label = loop->post_loop;
+      gotoStmt->label->replace(new SymExpr(loop->post_loop));
     else if (gotoStmt->gotoTag == GOTO_CONTINUE)
-      gotoStmt->label = loop->pre_loop;
+      gotoStmt->label->replace(new SymExpr(loop->pre_loop));
     else
       INT_FATAL(gotoStmt, "Unexpected goto type");
-  } else if (toUnresolvedSymbol(gotoStmt->label)) {
-    const char* name = gotoStmt->label->name;
+  } else if (toUnresolvedSymbol(gotoStmt->label->var)) {
+    const char* name = gotoStmt->label->var->name;
     if (gotoStmt->gotoTag == GOTO_BREAK)
       name = astr("_post", name);
     Vec<BaseAST*> asts;
@@ -84,7 +84,7 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
     forv_Vec(BaseAST, ast, asts) {
       if (LabelSymbol* ls = toLabelSymbol(ast)) {
         if (!strcmp(ls->name, name))
-          gotoStmt->label = ls;
+          gotoStmt->label->replace(new SymExpr(ls));
       }
     }
   }
@@ -136,6 +136,9 @@ void scopeResolve(void) {
           continue;
 
         if (!toUnresolvedSymbol(symExpr->var))
+          continue;
+
+        if (!symExpr->parentSymbol)
           continue;
 
         Symbol* sym = symExpr->parentScope->lookup(name, NULL, false);

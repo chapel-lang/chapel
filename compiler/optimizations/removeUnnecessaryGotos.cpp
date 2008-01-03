@@ -14,10 +14,10 @@ void removeUnnecessaryGotos(FnSymbol* fn) {
   forv_Vec(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
       DefExpr* def = toDefExpr(gotoStmt->next);
-      if (def && def->sym == gotoStmt->label)
+      if (def && def->sym == gotoStmt->label->var)
         gotoStmt->remove();
       else
-        labels.set_add(gotoStmt->label);
+        labels.set_add(gotoStmt->label->var);
     }
   }
 

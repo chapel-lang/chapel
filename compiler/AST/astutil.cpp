@@ -183,8 +183,6 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
       XSUB(sym_expr->var, Symbol);
     } else if (DefExpr* defExpr = toDefExpr(ast)) {
       XSUB(defExpr->sym->type, Type);
-    } else if (GotoStmt* goto_stmt = toGotoStmt(ast)) {
-      XSUB(goto_stmt->label, LabelSymbol);
     } else if (VarSymbol* ps = toVarSymbol(ast)) {
       XSUB(ps->type, Type);
     } else if (FnSymbol* ps = toFnSymbol(ast)) {

@@ -1782,7 +1782,6 @@ Expr* getFirstExpr(Expr* expr) {
   default:
     INT_FATAL(expr, "unexpected expr in getFirstExpr");
     return NULL;
-  case STMT_GOTO:
   case EXPR_SYM:
   case EXPR_DEF:
     return expr;
@@ -1792,6 +1791,9 @@ Expr* getFirstExpr(Expr* expr) {
     break;
   case STMT_COND:
     AST_RET_CHILD(CondStmt, condExpr);
+    break;
+  case STMT_GOTO:
+    AST_RET_CHILD(GotoStmt, label);
     break;
   case EXPR_CALL:
     AST_RET_CHILD(CallExpr, baseExpr);

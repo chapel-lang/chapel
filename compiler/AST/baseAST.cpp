@@ -450,6 +450,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     AST_ADD_CHILD(CondStmt, elseStmt);
     break;
   case STMT_GOTO:
+    AST_ADD_CHILD(GotoStmt, label);
     break;
   case SYMBOL:
     break;

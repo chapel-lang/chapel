@@ -397,7 +397,7 @@ void CondStmt::codegen(FILE* outfile) {
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag) :
   Expr(STMT_GOTO),
-  label(NULL),
+  label(new SymExpr(gNil)),
   gotoTag(init_gotoTag)
 {
 }
@@ -405,7 +405,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag) :
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Expr(STMT_GOTO),
-  label(init_label ? new UnresolvedSymbol(init_label) : NULL),
+  label(init_label ? new SymExpr(init_label) : new SymExpr(gNil)),
   gotoTag(init_gotoTag)
 {
 }
@@ -413,9 +413,22 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
   Expr(STMT_GOTO),
+  label(new SymExpr(init_label)),
+  gotoTag(init_gotoTag)
+{
+}
+
+
+GotoStmt::GotoStmt(GotoTag init_gotoTag, SymExpr* init_label) :
+  Expr(STMT_GOTO),
   label(init_label),
   gotoTag(init_gotoTag)
 {
+  if (!init_label)
+    INT_FATAL(this, "GotoStmt initialized with null label");
+
+  if (init_label->parentSymbol)
+    INT_FATAL(this, "GotoStmt initialized with label already in tree");
 }
 
 
@@ -424,12 +437,25 @@ void GotoStmt::verify() {
   if (astTag != STMT_GOTO) {
     INT_FATAL(this, "Bad GotoStmt::astTag");
   }
+  if (!label)
+    INT_FATAL(this, "GotoStmt has no label");
+  if (label->list)
+    INT_FATAL(this, "GotoStmt::label is a list");
 }
 
 
 GotoStmt*
 GotoStmt::copyInner(ASTMap* map) {
-  return new GotoStmt(gotoTag, label);
+  return new GotoStmt(gotoTag, label->copy());
+}
+
+
+void GotoStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == label) {
+    label = toSymExpr(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in GotoStmt::replaceChild");
+  }
 }
 
 

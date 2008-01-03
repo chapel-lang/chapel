@@ -94,7 +94,7 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       BB_THREAD(thenBottom, bottom);
       BB_THREAD(elseBottom, bottom);
     } else if (GotoStmt* s = toGotoStmt(stmt)) {
-      LabelSymbol* label = toLabelSymbol(s->label);
+      LabelSymbol* label = toLabelSymbol(s->label->var);
       if (BasicBlock* bb = labelMaps.get(label)) {
         BB_THREAD(basicBlock, bb);
       } else {
