@@ -1,6 +1,4 @@
-Makefile
-config.cache
-config.log
-config.status
-gasnet_config.h
-stamp-h1
+Makefile.in
+aclocal.m4
+configure
+gasnet_config.h.in
