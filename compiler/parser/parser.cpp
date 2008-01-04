@@ -72,7 +72,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag moduletype) {
       if (BlockStmt* block = toBlockStmt(stmt))
         stmt = block->body.first();
       if (DefExpr* defExpr = toDefExpr(stmt))
-        if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym)) {
+        if (toModuleSymbol(defExpr->sym)) {
           theProgram->block->insertAtTail(defExpr->remove());
         }
     }
