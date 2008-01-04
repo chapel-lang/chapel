@@ -121,12 +121,6 @@ returnInfoMove(CallExpr* call) {
   return t1;
 }
 
-static Type*
-returnInfoICType(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->typeInfo());
-  return ct->scalarPromotionType; // this is the element type
-}
-
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
 returnInfoNumericUp(CallExpr* call) {
