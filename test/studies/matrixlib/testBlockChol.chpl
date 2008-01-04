@@ -1,0 +1,78 @@
+use MatrixOps;
+
+//Blocked Cholesky method.  Default test matrix is generated
+//from the Matlab gallery - the lehmer matrix of order 10.
+
+config const inputfile = "blockChol-Mat.dat";
+config const upper = true;
+
+def main() {
+  var Adat = file(inputfile,path='./',mode='r');
+  Adat.open();
+
+  const n = readSize(Adat);
+  var blk = readBlk(Adat);
+  var factor: string;
+
+  // The blocksize cannot be less than 1.  Reset to 1 if this happens.
+  // The blocksize cannot exceed the size of n.  Reset to n if this happens.
+  blk = max(1,blk);
+  blk = min(blk,n);
+
+  var A1D = 1..n;
+  const A2D = [A1D,A1D]; 
+  var A: [A2D] real;
+  initA(A,Adat);
+  Adat.close();
+
+  factor = if (upper) then "U" else "L";
+  writeln("Unfactored Matrix:");
+  writeln(A);
+  writeln();
+
+  blockChol(A,blk,factor);
+
+  writeln("Factored Matrix:");
+  writeCholFactor(A,factor);
+  writeln();
+}
+
+def readSize(Adat) {
+  var n: int;
+
+  Adat.read(n);
+  return n;
+} 
+
+def readBlk(Adat) {
+  var blk: int;
+
+  Adat.read(blk);
+  return blk;
+} 
+
+def initA(A,Adat){
+  for ij in A.domain {
+    Adat.read(A(ij));
+  }
+}
+
+def writeCholFactor(A:[?D],fac:string) {
+  var G:[D] A.eltType;
+
+  if (fac == "U") {
+    for i in D.dim(1) {
+      for j in i..D.high(1){
+        G(i,j) = A(i,j);
+      }
+    }
+  }
+  else {
+    for j in D.dim(1) {
+      for i in j..D.high(1) {
+        G(i,j) = A(i,j);
+      }
+    }
+  }
+  writeln(G);
+} 
