@@ -1,0 +1,4 @@
+multilocale: on statement in on statement
+
+This should start working when all references are turned into wide
+references.
