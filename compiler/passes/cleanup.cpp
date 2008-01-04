@@ -81,12 +81,12 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   }
 
   if (SymExpr* sym = toSymExpr(expr)) {
-    symbol = useCall->parentScope->lookup(sym->var->name);
+    symbol = useCall->parentScope->lookup(sym->getName());
     mod = toModuleSymbol(symbol);
     if (symbol && !mod) {
       USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
     } else if (!symbol) {
-      USR_FATAL(useCall, "Cannot find module '%s'", sym->var->name);
+      USR_FATAL(useCall, "Cannot find module '%s'", sym->getName());
     }
   } else if(CallExpr* call = toCallExpr(expr)) {
     if (!call->isNamed("."))
@@ -244,7 +244,7 @@ static void destructure_tuple(CallExpr* call) {
     if (i > 1) {
       Expr *removed_expr = expr->remove();
       if (SymExpr *sym_expr = toSymExpr(removed_expr)) {
-        if (!strcmp(sym_expr->var->name, "_")) {
+        if (sym_expr->isNamed("_")) {
           i++;
           continue;
         }
@@ -376,9 +376,9 @@ static void build_constructor(ClassType* ct) {
   collect_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
-      if (isUnresolvedSymbol(se->var))
-        if (fieldNamesSet.set_in(se->var->name))
-          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->var->name)));
+      if (!se->var)
+        if (fieldNamesSet.set_in(se->unresolved))
+          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->unresolved)));
   }
 
   currentLineno = ct->lineno;
@@ -552,7 +552,7 @@ void cleanup(void) {
             s && 
             !arg->defPoint->exprType &&
             !arg->isTypeVariable) {
-          if (s->var->type != dtNil) {
+          if (s->unresolved || s->var->type != dtNil) {
             arg->defPoint->exprType = new CallExpr(PRIMITIVE_TYPEOF,
                                                    arg->defaultExpr->copy());
             insert_help(arg->defPoint->exprType, arg->defPoint, arg, fn->argScope);

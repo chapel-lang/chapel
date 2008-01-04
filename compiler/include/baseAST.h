@@ -41,7 +41,6 @@ enum AstTag {
   STMT_GOTO,
 
   SYMBOL,
-  SYMBOL_UNRESOLVED,
   SYMBOL_MODULE,
   SYMBOL_VAR,
   SYMBOL_ARG,
@@ -158,7 +157,6 @@ void registerModule(ModuleSymbol* mod);
 #define isSymbol(ast)                                                   \
   ((ast) && (ast)->astTag >= SYMBOL && (ast)->astTag <= SYMBOL_LABEL)
 
-#define isUnresolvedSymbol(ast) ((ast) && (ast)->astTag == SYMBOL_UNRESOLVED)
 #define isModuleSymbol(ast)     ((ast) && (ast)->astTag == SYMBOL_MODULE)
 #define isVarSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_VAR)
 #define isArgSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_ARG)
@@ -189,7 +187,6 @@ void registerModule(ModuleSymbol* mod);
 #define toGotoStmt(ast)  (isGotoStmt(ast)  ? ((GotoStmt*)(ast))  : NULL)
 
 #define toSymbol(ast)           (isSymbol(ast)           ? ((Symbol*)(ast))           : NULL)
-#define toUnresolvedSymbol(ast) (isUnresolvedSymbol(ast) ? ((UnresolvedSymbol*)(ast)) : NULL)
 #define toModuleSymbol(ast)     (isModuleSymbol(ast)     ? ((ModuleSymbol*)(ast))     : NULL)
 #define toVarSymbol(ast)        (isVarSymbol(ast)        ? ((VarSymbol*)(ast))        : NULL)
 #define toArgSymbol(ast)        (isArgSymbol(ast)        ? ((ArgSymbol*)(ast))        : NULL)

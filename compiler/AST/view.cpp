@@ -337,17 +337,15 @@ structuralTypeSymbol(Symbol *s) {
 
 static void
 html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
-  if (!toUnresolvedSymbol(sym)) {
-    if (def) {
-      fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
+  if (def) {
+    fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
+  } else {
+    if (sym->defPoint && sym->defPoint->parentSymbol && sym->defPoint->getModule()) {
+      fprintf(html_file, "<A HREF=\"%s#SYM%d\">",
+              html_file_name( pass, sym->defPoint->getModule()->name),
+              sym->id);
     } else {
-      if (sym->defPoint && sym->defPoint->parentSymbol && sym->defPoint->getModule()) {
-        fprintf(html_file, "<A HREF=\"%s#SYM%d\">",
-                html_file_name( pass, sym->defPoint->getModule()->name),
-                sym->id);
-      } else {
-        fprintf(html_file, "<A>");
-      }
+      fprintf(html_file, "<A>");
     }
   }
   if (toFnSymbol(sym)) {
@@ -359,9 +357,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
   }
   fprintf(html_file, "%s", sym->name);
   fprintf(html_file, "</FONT>");
-  if (!toUnresolvedSymbol(sym)) {
-    fprintf(html_file, "<FONT COLOR=\"grey\">[%d]</FONT>", sym->id);
-  }
+  fprintf(html_file, "<FONT COLOR=\"grey\">[%d]</FONT>", sym->id);
   fprintf(html_file, "</A>");
   if (def &&
       !toTypeSymbol(sym) &&
@@ -428,7 +424,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
       case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
       }
-      if (s->label->var != gNil)
+      if (s->label->var && s->label->var != gNil)
         html_print_symbol(html_file, pass, s->label->var, true);
     } else if (toCondStmt(expr)) {
       fprintf(html_file, "<DL>\n");
@@ -505,7 +501,10 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
         }
       } else if (SymExpr* e = toSymExpr(expr)) {
-        html_print_symbol( html_file, pass, e->var, false);
+        if (e->var)
+          html_print_symbol(html_file, pass, e->var, false);
+        else
+          fprintf(html_file, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
       } else if (NamedExpr* e = toNamedExpr(expr)) {
         fprintf(html_file, "(%s = ", e->name);
       } else if (CallExpr* e = toCallExpr(expr)) {

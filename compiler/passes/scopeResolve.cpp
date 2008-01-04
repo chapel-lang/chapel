@@ -75,8 +75,8 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
       gotoStmt->label->replace(new SymExpr(loop->pre_loop));
     else
       INT_FATAL(gotoStmt, "Unexpected goto type");
-  } else if (toUnresolvedSymbol(gotoStmt->label->var)) {
-    const char* name = gotoStmt->label->var->name;
+  } else if (!gotoStmt->label->var) {
+    const char* name = gotoStmt->label->unresolved;
     if (gotoStmt->gotoTag == GOTO_BREAK)
       name = astr("_post", name);
     Vec<BaseAST*> asts;
@@ -98,9 +98,10 @@ void scopeResolve(void) {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->_this && fn->_this->type == dtUnknown) {
       if (SymExpr* sym = toSymExpr(fn->_this->defPoint->exprType)) {
-        if (sym->var->type == dtUnknown) {
-          TypeSymbol* ts = toTypeSymbol(sym->lookup(sym->var->name));
+        if (!sym->var) {
+          TypeSymbol* ts = toTypeSymbol(sym->lookup(sym->unresolved));
           sym->var = ts;
+          sym->unresolved = NULL;
           sym->remove();
         }
         fn->_this->type = sym->var->type;
@@ -119,7 +120,7 @@ void scopeResolve(void) {
       SymExpr *base, *sym1, *sym2;
       ModuleSymbol *module;
       if ((base = toSymExpr(callExpr->baseExpr)) &&
-          (!strcmp(base->var->name, "."))                     &&
+          (base->isNamed("."))                   &&
           (sym1 = toSymExpr(callExpr->get(1)))   &&
           (module = toModuleSymbol(sym1->var))   &&
           (sym2 = toSymExpr(callExpr->get(2)))) {
@@ -130,12 +131,9 @@ void scopeResolve(void) {
     }
 
     if (SymExpr* symExpr = toSymExpr(ast)) {
-      if (toUnresolvedSymbol(symExpr->var)) {
-        const char* name = symExpr->var->name;
-        if (!strcmp(name, "."))
-          continue;
-
-        if (!toUnresolvedSymbol(symExpr->var))
+      if (symExpr->unresolved) {
+        const char* name = symExpr->unresolved;
+        if (symExpr->isNamed(".") || !symExpr->parentSymbol)
           continue;
 
         if (!symExpr->parentSymbol)
@@ -168,8 +166,10 @@ void scopeResolve(void) {
         FnSymbol* fn = toFnSymbol(sym);
         TypeSymbol* type = toTypeSymbol(sym);
         if (sym) {
-          if (!fn)
+          if (!fn) {
             symExpr->var = sym;
+            symExpr->unresolved = NULL;
+          }
           if (type)
             if (UserType* ut = toUserType(type->type)) {
               ASTMap map;
@@ -210,7 +210,8 @@ void scopeResolve(void) {
                       call->numActuals() >= 2 &&
                       toSymExpr(call->get(1)) &&
                       toSymExpr(call->get(1))->var == gMethodToken) {
-                    symExpr->var = new UnresolvedSymbol(name);
+                    symExpr->var = NULL;
+                    symExpr->unresolved = name;
                   } else {
                     ClassType* ct = toClassType(type);
                     int nestDepth = 0;

@@ -197,7 +197,8 @@ void Expr::insertAfter(Expr* new_ast) {
 
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(EXPR_SYM),
-  var(init_var)
+  var(init_var),
+  unresolved(NULL)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
@@ -206,8 +207,12 @@ SymExpr::SymExpr(Symbol* init_var) :
 
 SymExpr::SymExpr(const char* init_var) :
   Expr(EXPR_SYM),
-  var(new UnresolvedSymbol(init_var))
-{}
+  var(NULL),
+  unresolved(astr(init_var))
+{
+  if (!init_var)
+    INT_FATAL(this, "Bad call to SymExpr");
+}
 
 
 void 
@@ -221,9 +226,11 @@ SymExpr::verify() {
   Expr::verify();
   if (astTag != EXPR_SYM)
     INT_FATAL(this, "Bad SymExpr::astTag");
-  if (!var)
+  if (!var && !unresolved)
     INT_FATAL(this, "SymExpr::var is NULL");
-  if (var->defPoint && !var->defPoint->parentSymbol)
+  if (var && unresolved)
+    INT_FATAL(this, "SymExpr::var and SymExpr::unresolved are set");
+  if (var && var->defPoint && !var->defPoint->parentSymbol)
     if (var->astTag != SYMBOL_MODULE)
       INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
@@ -231,31 +238,56 @@ SymExpr::verify() {
 
 SymExpr*
 SymExpr::copyInner(ASTMap* map) {
-  return new SymExpr(var);
+  if (var)
+    return new SymExpr(var);
+  else
+    return new SymExpr(unresolved);
 }
 
 
 Type* SymExpr::typeInfo(void) {
+  if (!var)
+    return dtUnknown;
   return var->type;
 }
 
 
 bool SymExpr::isConstant(void) {
+  INT_ASSERT(var);
   return var->isConstant();
 }
 
 
 bool SymExpr::isParameter(void){
+  INT_ASSERT(var);
   return var->isParameter();
 }
 
 
 void SymExpr::codegen(FILE* outfile) {
+  INT_ASSERT(var);
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
-  var->codegen(outfile);
+  if (unresolved && !var)
+    fprintf(outfile, "%s /* unresolved symbol */", unresolved);
+  else
+    var->codegen(outfile);
   if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
+}
+
+
+bool SymExpr::isNamed(const char* name) {
+  return (var && !strcmp(var->name, name)) ||
+    (unresolved && !strcmp(unresolved, name));
+}
+
+
+const char* SymExpr::getName() {
+  if (var)
+    return var->name;
+  else
+    return unresolved;
 }
 
 
@@ -429,7 +461,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(name))),
+  baseExpr(new SymExpr(name)),
   argList(),
   primitive(NULL),
   partialTag(false),
@@ -493,7 +525,7 @@ CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
 
 CallExpr::CallExpr(const char* name, AList* args) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(name))),
+  baseExpr(new SymExpr(name)),
   argList(),
   primitive(NULL),
   partialTag(false),
@@ -592,7 +624,7 @@ FnSymbol* CallExpr::isResolved(void) {
 
 bool CallExpr::isNamed(const char* name) {
   SymExpr* base = toSymExpr(baseExpr);
-  if (base && !strcmp(base->var->name, name))
+  if (base && base->isNamed(name))
     return true;
   return false;
 }
@@ -612,9 +644,8 @@ FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
   if (SymExpr* variable = toSymExpr(baseExpr)) {
     fn = toFnSymbol(variable->var);
-    if (!fn)
-      if(toUnresolvedSymbol(variable->var))
-        return NULL;
+    if (!fn && !variable->var)
+      return NULL;
   }
   if (!fn) {
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");

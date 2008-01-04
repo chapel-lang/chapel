@@ -446,7 +446,7 @@ void GotoStmt::verify() {
 
 GotoStmt*
 GotoStmt::copyInner(ASTMap* map) {
-  return new GotoStmt(gotoTag, label->copy());
+  return new GotoStmt(gotoTag, COPY_INT(label));
 }
 
 

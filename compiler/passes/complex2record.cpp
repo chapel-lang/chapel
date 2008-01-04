@@ -55,8 +55,8 @@ complex2record() {
         if (is_complex_type(fn->retType))
           fn->retType = complex2rec(fn->retType);
     } else if (SymExpr* se = toSymExpr(ast)) {
-      if (is_complex_type(se->var->type)) {
-        if (VarSymbol* var = toVarSymbol(se->var)) {
+      if (VarSymbol* var = toVarSymbol(se->var)) {
+        if (is_complex_type(var->type)) {
           if (var->immediate) {
             ClassType* ct = complex2rec(se->var->type);
             VarSymbol* tmp = new VarSymbol("_tmp", ct);

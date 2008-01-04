@@ -50,12 +50,12 @@ checkUseBeforeDefs() {
               continue;
             if (toModuleSymbol(sym->var))
               USR_FATAL_CONT(call, "illegal use of module '%s'", sym->var->name);
-            if (call->baseExpr != sym && toUnresolvedSymbol(sym->var)) {
-              if (!undeclared.set_in(sym->var->name)) {
+            if (call->baseExpr != sym && sym->unresolved) {
+              if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                                 sym->var->name);
-                  undeclared.set_add(sym->var->name);
+                                 sym->unresolved);
+                  undeclared.set_add(sym->unresolved);
                 }
               }
             }

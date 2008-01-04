@@ -23,7 +23,7 @@ class CallInfo {
 
 
 CallInfo::CallInfo(CallExpr* icall) : call(icall) {
-  name = toSymExpr(call->baseExpr)->var->name;
+  name = toSymExpr(call->baseExpr)->getName();
   for_actuals(actual, call) {
     Type* t = actual->typeInfo();
     if (t == dtUnknown || t->isGeneric)
@@ -2473,7 +2473,8 @@ resolveBody(Expr* body) {
     currentLineno = expr->lineno;
     currentFilename = expr->filename;
     if (SymExpr* sym = toSymExpr(expr))
-      makeRefType(sym->var->type);
+      if (Type* type = sym->typeInfo())
+        makeRefType(type);
     expr = preFold(expr);
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
@@ -2520,7 +2521,7 @@ resolveBody(Expr* body) {
           !parent->isPrimitive(PRIMITIVE_ISSUBTYPE) ||
           !sym->var->isTypeVariable) {
 
-        if (ClassType* ct = toClassType(sym->var->type)) {
+        if (ClassType* ct = toClassType(sym->typeInfo())) {
           if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
             resolveFormals(ct->defaultConstructor);
             if (resolvedFormals.set_in(ct->defaultConstructor))

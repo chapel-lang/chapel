@@ -92,15 +92,6 @@ class Symbol : public BaseAST {
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 
-class UnresolvedSymbol : public Symbol {
- public:
-  UnresolvedSymbol(const char* init_name);
-  virtual void verify(); 
-  COPY_DEF(UnresolvedSymbol);
-  void codegen(FILE* outfile);
-};
-
-
 class VarSymbol : public Symbol {
  public:
   bool isConfig;

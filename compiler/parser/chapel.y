@@ -1132,7 +1132,7 @@ anon_record_type:
 
 variable_type:
   identifier
-    { $$ = new SymExpr(new UnresolvedSymbol($1)); }
+    { $$ = new SymExpr($1); }
 ;
 
 
@@ -1417,7 +1417,7 @@ memberaccess_expr:
 
 variable_expr:
   identifier
-    { $$ = new SymExpr(new UnresolvedSymbol($1)); }
+    { $$ = new SymExpr($1); }
 ;
 
 
@@ -1565,11 +1565,11 @@ top_level_expr:
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedLow"), $1); }
+    { $$ = new CallExpr("_build_range", new SymExpr("boundedLow"), $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedHigh"), $2); }
+    { $$ = new CallExpr("_build_range", new SymExpr("boundedHigh"), $2); }
 | TDOTDOT
-    { $$ = new CallExpr("_build_range", new UnresolvedSymbol("boundedNone")); }
+    { $$ = new CallExpr("_build_range", new SymExpr("boundedNone")); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS

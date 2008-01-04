@@ -305,7 +305,7 @@ destructureIndices(BlockStmt* block,
       for_actuals(actual, call) {
         if (i > 0) { // skip first (size parameter)
           if (SymExpr *sym_expr = toSymExpr(actual)) {
-            if (!strcmp(sym_expr->var->name, "_")) {
+            if (sym_expr->isNamed("_")) {
               i++;
               continue;
             }
@@ -317,8 +317,8 @@ destructureIndices(BlockStmt* block,
       }
     }
   } else if (SymExpr* sym = toSymExpr(indices)) {
-    if (toUnresolvedSymbol(sym->var)) {
-      VarSymbol* var = new VarSymbol(sym->var->name);
+    if (sym->unresolved) {
+      VarSymbol* var = new VarSymbol(sym->unresolved);
       var->isCompilerTemp = true;
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
       block->insertAtHead(new DefExpr(var));
@@ -657,11 +657,11 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
 
 FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
   if (SymExpr* sym = toSymExpr(red)) {
-    if (UnresolvedSymbol* us = toUnresolvedSymbol(sym->var)) {
-      if (!strcmp(us->name, "max"))
-        us->name = astr("_max");
-      else if (!strcmp(us->name, "min"))
-        us->name = astr("_min");
+    if (sym->unresolved) {
+      if (!strcmp(sym->unresolved, "max"))
+        sym->unresolved = astr("_max");
+      else if (!strcmp(sym->unresolved, "min"))
+        sym->unresolved = astr("_min");
     }
   }
   static int uid = 1;
@@ -768,7 +768,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
   if (!base) {
     /* This is the top-level call to build_tuple_arg */
-    Expr* tupleType = new SymExpr(new UnresolvedSymbol("_tuple"));
+    Expr* tupleType = new SymExpr("_tuple");
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
                                          astr("_tuple_arg_tmp",
                                                    istr(uid++)),

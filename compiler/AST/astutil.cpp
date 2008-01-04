@@ -121,7 +121,7 @@ void compute_sym_uses(BaseAST* base) {
   }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* a = toSymExpr(ast)) {
-      if (a->var->defPoint && def_set.set_in(a->var->defPoint)) {
+      if (a->var && a->var->defPoint && def_set.set_in(a->var->defPoint)) {
         if (CallExpr* call = toCallExpr(a->parentExpr)) {
           if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == a) {
             a->var->defs.add(a);
@@ -285,7 +285,7 @@ void insert_help(BaseAST* ast,
           USR_FATAL(mod, "Nested module is not defined at module level");
         def_expr->parentScope->define(def_expr->sym);
       } else {
-        if (def_expr->sym && !toUnresolvedSymbol(def_expr->sym)) {
+        if (def_expr->sym) {
           def_expr->parentScope->define(def_expr->sym);
         }
       }

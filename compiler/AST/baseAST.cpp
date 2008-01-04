@@ -38,7 +38,6 @@ void printStatistics(const char* pass) {
   decl_counters(DefExpr, EXPR_DEF);
   decl_counters(CallExpr, EXPR_CALL);
   decl_counters(NamedExpr, EXPR_NAMED);
-  decl_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
   decl_counters(ModuleSymbol, SYMBOL_MODULE);
   decl_counters(VarSymbol, SYMBOL_VAR);
   decl_counters(ArgSymbol, SYMBOL_ARG);
@@ -59,7 +58,6 @@ void printStatistics(const char* pass) {
       case_counters(DefExpr, EXPR_DEF);
       case_counters(CallExpr, EXPR_CALL);
       case_counters(NamedExpr, EXPR_NAMED);
-      case_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
       case_counters(ModuleSymbol, SYMBOL_MODULE);
       case_counters(VarSymbol, SYMBOL_VAR);
       case_counters(ArgSymbol, SYMBOL_ARG);
@@ -81,7 +79,6 @@ void printStatistics(const char* pass) {
   calc_counters(DefExpr, EXPR_DEF);
   calc_counters(CallExpr, EXPR_CALL);
   calc_counters(NamedExpr, EXPR_NAMED);
-  calc_counters(UnresolvedSymbol, SYMBOL_UNRESOLVED);
   calc_counters(ModuleSymbol, SYMBOL_MODULE);
   calc_counters(VarSymbol, SYMBOL_VAR);
   calc_counters(ArgSymbol, SYMBOL_ARG);
@@ -97,8 +94,8 @@ void printStatistics(const char* pass) {
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
   int nExpr = nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
-  int nSymbol = nUnresolvedSymbol+nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kUnresolvedSymbol+kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nUserType+nClassType;
   int kType = kPrimitiveType+kEnumType+kUserType+kClassType;
 
@@ -125,14 +122,14 @@ void printStatistics(const char* pass) {
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9d  Unres %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
-            nSymbol, nUnresolvedSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
+    fprintf(stderr, "  Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
+            nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9dK Unres %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
-            kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr, "  Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
+            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %6dK Unres %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
-            kSymbol, kUnresolvedSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr, "  Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
+            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "  Type %9d  Prim  %9d  Enum %9d  User  %9d  Class %9d\n",
@@ -148,8 +145,6 @@ void printStatistics(const char* pass) {
 
 static bool
 isLive(Symbol* sym) {
-  if (sym->astTag == SYMBOL_UNRESOLVED)
-    return true;
   if (sym == theProgram)
     return true;
   if (sym->parentScope == rootScope)
@@ -312,7 +307,7 @@ void BaseAST::copyPragmas(BaseAST* ast) {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  if (!this || toUnresolvedSymbol(this))
+  if (!this)
     return NULL;
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x;
@@ -329,7 +324,7 @@ ModuleSymbol* BaseAST::getModule() {
 
 
 FnSymbol* BaseAST::getFunction() {
-  if (!this || toUnresolvedSymbol(this))
+  if (!this)
     return NULL;
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
@@ -354,8 +349,12 @@ Symbol* BaseAST::lookup(const char* name) {
 }
 
 Symbol* BaseAST::lookup(BaseAST* ast) {
-  if (SymExpr* a = toSymExpr(ast))
-    return lookup(a->var->name);
+  if (SymExpr* a = toSymExpr(ast)) {
+    if (a->var)
+      return lookup(a->var->name);
+    else
+      return lookup(a->unresolved);
+  }
   INT_FATAL(ast, "Bad call to lookup");
   return NULL;
 }
@@ -397,7 +396,6 @@ const char* astTagName[BASE+1] = {
   "GotoStmt",
 
   "Symbol",
-  "UnresolvedSymbol",
   "ModuleSymbol",
   "VarSymbol",
   "ArgSymbol",
@@ -453,8 +451,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     AST_ADD_CHILD(GotoStmt, label);
     break;
   case SYMBOL:
-    break;
-  case SYMBOL_UNRESOLVED:
     break;
   case SYMBOL_MODULE:
     AST_ADD_CHILD(ModuleSymbol, block);

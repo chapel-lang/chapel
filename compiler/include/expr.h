@@ -71,6 +71,7 @@ class DefExpr : public Expr {
 class SymExpr : public Expr {
  public:
   Symbol* var;
+  const char* unresolved;
   SymExpr(Symbol* init_var);
   SymExpr(const char* init_var);
   COPY_DEF(SymExpr);
@@ -81,6 +82,8 @@ class SymExpr : public Expr {
   virtual bool isConstant(void);
   virtual bool isParameter(void);
   void codegen(FILE* outfile);
+  bool isNamed(const char*);
+  const char* getName();
 };
 
 

@@ -201,7 +201,6 @@ static void codegen_header(void) {
       // mangle symbol that is neither field nor formal if the symbol's
       // name has already been encountered
       if (!toArgSymbol(sym) &&
-          !toUnresolvedSymbol(sym) &&
           !toClassType(sym->parentScope->astParent) &&
           !sym->isExtern &&
           !(toVarSymbol(sym) && sym->defPoint && toModuleSymbol(sym->defPoint->parentSymbol)) &&

@@ -254,31 +254,6 @@ bool Symbol::isImmediate() {
 }
 
 
-UnresolvedSymbol::UnresolvedSymbol(const char* init_name) :
-  Symbol(SYMBOL_UNRESOLVED, init_name)
-{ }
-
-
-void UnresolvedSymbol::verify() {
-  Symbol::verify();
-  if (astTag != SYMBOL_UNRESOLVED) {
-    INT_FATAL(this, "Bad UnresolvedSymbol::astTag");
-  }
-}
-
-
-void UnresolvedSymbol::codegen(FILE* outfile) {
-  INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
-  fprintf(outfile, "%s /* unresolved */ ", name);
-}
-
-
-UnresolvedSymbol*
-UnresolvedSymbol::copyInner(ASTMap* map) {
-  return new UnresolvedSymbol(name);
-}
-
-
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   Symbol(SYMBOL_VAR, init_name, init_type),
