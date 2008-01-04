@@ -40,8 +40,8 @@ GEN_CFLAGS = -std=c99
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wno-unused -Wpointer-arith -Wwrite-strings -Wunused-function -Wunused-label -Wunused-value -Wunused-variable
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wunused-function -Wunused-label -Wunused-value -Wunused-variable
+WARN_CXXFLAGS = -Wall -Werror -Wunused -Wpointer-arith -Wwrite-strings
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement
 
 
 GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
