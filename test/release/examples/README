@@ -67,6 +67,8 @@ Other files
   Makefile        : Makefile for compiling the examples
   README.features : maps out which tests use which Chapel features
   README.testing  : provides an introduction to using the Chapel testing system
+  Arr.dat         : array input used by fileIO.chpl
+  blockLU-Mat.dat : matrix input used by blockLU.chpl
   start_test      : the main script for the Chapel testing system
   start_clean     : cleans up the result of a run of the testing system
   Bin/            : contains helper scripts for the testing system
