@@ -40,7 +40,7 @@ GEN_CFLAGS = -std=c99
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wunused -Wpointer-arith -Wwrite-strings
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement
 
 
