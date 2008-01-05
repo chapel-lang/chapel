@@ -1,0 +1,3 @@
+multilocale: on with begin
+
+in this second case, the begin continues after the function returns
