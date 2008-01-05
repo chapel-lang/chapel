@@ -51,7 +51,7 @@
 #   -futures
 #   -futuresonly
 #   -performance
-#   -comm [none|gasnet]
+#   -comm [none|gasnet]               ../util/comm.pl
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
 #
@@ -377,7 +377,6 @@ set user = `whoami`
 #
 unsetenv CHPL_HOME
 unsetenv CHPL_DEVELOPER
-unsetenv CHPL_COMM
 
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
@@ -424,7 +423,7 @@ set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
-set comm = "none"
+set comm = `../util/comm.pl`
 set suppressions = ""
 
 while ( $#argv > 0 )
