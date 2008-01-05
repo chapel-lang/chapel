@@ -14,6 +14,7 @@ void collapseBlocks(BlockStmt* block) {
       if (block->list &&
           !block->loopInfo &&
           block->blockTag != BLOCK_COBEGIN &&
+          block->blockTag != BLOCK_ON &&
           block->blockTag != BLOCK_BEGIN) {
         for_alist(expr, block->body)
           block->insertBefore(expr->remove());

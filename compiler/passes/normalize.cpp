@@ -358,8 +358,7 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   if (CallExpr* parentCall = toCallExpr(call->parentExpr))
-    if (parentCall->isPrimitive(PRIMITIVE_MOVE) ||
-        parentCall->isPrimitive(PRIMITIVE_ON))
+    if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
 
   Expr* stmt = call->getStmtExpr();

@@ -136,7 +136,6 @@ enum PrimitiveTag {
 
   PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
 
-  PRIMITIVE_ON,           // invoke on statement by calling nested function
   PRIMITIVE_LOCALE_ID,    // return locale id
   PRIMITIVE_NUM_LOCALES,  // return number of locales
   PRIMITIVE_COMM_GET,     // read remote address via fat pointer

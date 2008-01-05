@@ -226,6 +226,20 @@ void BlockStmt::codegen(FILE* outfile) {
     codegenCobegin(outfile, &body);
   } else if (blockTag == BLOCK_BEGIN) {
     codegenBegin(outfile, &body);
+  } else if (blockTag == BLOCK_ON) {
+    if (CallExpr* call = toCallExpr(body.only())) {
+      fprintf(outfile, "_chpl_comm_fork(");
+      call->get(1)->codegen(outfile);
+      fprintf(outfile, ", (func_p)");
+      call->baseExpr->codegen(outfile);
+      fprintf(outfile, ", ");
+      call->get(2)->codegen(outfile);
+      fprintf(outfile, ", sizeof(_");
+      call->get(2)->typeInfo()->symbol->codegen(outfile);
+      fprintf(outfile, "));\n");
+    } else {
+      INT_FATAL(this, "invalid on block");
+    }
   } else {
     body.codegen(outfile, "");
   }

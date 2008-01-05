@@ -1,5 +1,6 @@
-// This pass performs some transformations to enable parallel code
-// generation for begin and cobegin blocks.
+//
+// Transformations for begin, cobegin, and on statements
+//
 
 #include "astutil.h"
 #include "expr.h"
@@ -12,13 +13,16 @@
 #include "files.h"
 
 
-// Mark locals that should be heap allocated and insert a call to allocate
-// them on the heap.  This is for begin blocks where the forked child thread 
-// and parent thread may have different lifetimes.  The locals cannot live 
-// on a thread's stack.  
-//   In addition to moving these vars to the heap, we will also use
-// reference counting to garbage collect.  Will need a counter and mutex 
-// for each var.  Of course, those will be heap allocated also.
+//
+// Mark locals that should be heap allocated and insert a call to
+// allocate them on the heap.  This is for begin blocks where the
+// forked child thread and parent thread may have different lifetimes.
+// The locals cannot live on a thread's stack.
+//
+// In addition to moving these vars to the heap, we will also use
+// reference counting to garbage collect.  Will need a counter and
+// mutex for each var.  Of course, those will be heap allocated also.
+//
 static void
 begin_mark_locals(Vec<BlockStmt*>& blocks) {
   Vec<SymExpr*> heapList;
@@ -249,7 +253,6 @@ thread_args(Vec<BlockStmt*>& blocks) {
 }
 
 
-// Second pass of the parallel transformations for begin and cobegin blocks.
 void
 parallel(void) {
   Vec<BlockStmt*> blocks;
@@ -272,95 +275,101 @@ insertWideReferences(void) {
   Map<Type*,ClassType*> wideMap;
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* on = toCallExpr(ast)) {
-      if (on->isPrimitive(PRIMITIVE_ON)) {
-        if (CallExpr* call = toCallExpr(on->get(2))) {
-          ClassType* ct = new ClassType(CLASS_CLASS);
-          TypeSymbol* cts = new TypeSymbol("_on_arg_class", ct);
-          VarSymbol* locale = new VarSymbol("_tmp", dtInt[INT_SIZE_32]);
-          on->insertBefore(new DefExpr(locale));
-          on->insertBefore(new CallExpr(PRIMITIVE_MOVE, locale, new CallExpr(PRIMITIVE_LOCALE_ID)));
-          on->getModule()->block->insertAtHead(new DefExpr(cts));
-          VarSymbol* ci = new VarSymbol("_on_args", ct);
-          on->insertBefore(new DefExpr(ci));
-          on->insertBefore(new CallExpr(PRIMITIVE_MOVE, ci, new CallExpr(PRIMITIVE_CHPL_ALLOC, cts, new_StringSymbol("instance of on args class"))));
-          int i = 1;
-          FnSymbol* fn = call->isResolved();
-          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_on_args", ct);
-          compute_sym_uses(fn);
-          for_formals_actuals(formal, actual, call) {
-            ClassType* wide = wideMap.get(actual->typeInfo());
-            if (!wide) {
-              Type* base = actual->typeInfo();
-              wide = new ClassType(CLASS_RECORD);
-              TypeSymbol* ts =
-                new TypeSymbol(astr("_wide_", base->symbol->cname), wide);
-              theProgram->block->insertAtTail(new DefExpr(ts));
-              wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
-              wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", base)));
-            }
-            VarSymbol* tmp = new VarSymbol("_tmp", wide);
-            on->insertBefore(new DefExpr(tmp));
-            on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(1), locale));
-            on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(2), actual->remove()));
-            VarSymbol* field = new VarSymbol(astr("_f", istr(i)), wide);
-            ct->fields.insertAtTail(new DefExpr(field));
-            i++;
-            on->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ci, field, tmp));
-            Vec<SymExpr*> usedefs;
-            Vec<SymExpr*> defset;
-            usedefs.copy(formal->uses);
-            forv_Vec(SymExpr, def, formal->defs) {
-              usedefs.add_exclusive(def);
-              defset.set_add(def);
-            }
-            forv_Vec(SymExpr, se, usedefs) {
-              if (CallExpr* call = toCallExpr(se->parentExpr)) {
-                if (call->isPrimitive(PRIMITIVE_GET_REF)) {
-                  CallExpr* move = toCallExpr(call->parentExpr);
-                  if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
-                    INT_FATAL(call, "unexpected case");
-                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
-                  move->insertBefore(new DefExpr(tmp));
-                  move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
-                  move->replace(new CallExpr(PRIMITIVE_COMM_GET, move->get(1)->remove(), tmp));
-                  continue;
-                } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-                  CallExpr* move = toCallExpr(call->parentExpr);
-                  if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
-                    INT_FATAL(call, "unexpected case");
-                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
-                  move->insertBefore(new DefExpr(tmp));
-                  move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
-                  move->replace(new CallExpr(PRIMITIVE_COMM_GET_OFF, move->get(1)->remove(), tmp, getValueType(se->var->type)->symbol, call->get(2)->remove()));
-                  continue;
-                } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
-                           call->get(1) == se) {
-                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
-                  call->insertBefore(new DefExpr(tmp));
-                  call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
-                  call->replace(new CallExpr(PRIMITIVE_COMM_PUT_OFF, tmp, call->get(3)->remove(), getValueType(se->var->type)->symbol, call->get(2)->remove()));
-                  continue;
-                } else if (call->isPrimitive(PRIMITIVE_MOVE) &&
-                           call->get(1) == se) {
-                  VarSymbol* rhs = new VarSymbol("_tmp", getValueType(se->var->type));
-                  call->insertBefore(new DefExpr(rhs));
-                  call->insertBefore(new CallExpr(PRIMITIVE_MOVE, rhs, call->get(2)->remove()));
-                  VarSymbol* tmp = new VarSymbol("_tmp", wide);
-                  call->insertBefore(new DefExpr(tmp));
-                  call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
-                  call->replace(new CallExpr(PRIMITIVE_COMM_PUT, tmp, rhs));
-                  continue;
-                }
-              }
-              USR_FATAL(se, "support for on-statements is preliminary");
-            }
-            formal->defPoint->remove();
-          }
-          call->insertAtTail(ci);
-          fn->formals.insertAtTail(new DefExpr(arg));
-          on->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, ci));
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      if (block->blockTag == BLOCK_ON) {
+        CallExpr* call = toCallExpr(block->body.tail);
+        for_alist(expr, block->body) {
+          if (expr != call)
+            block->insertBefore(expr->remove());
         }
+
+        ClassType* ct = new ClassType(CLASS_CLASS);
+        TypeSymbol* cts = new TypeSymbol("_on_arg_class", ct);
+        VarSymbol* locale = new VarSymbol("_tmp", dtInt[INT_SIZE_32]);
+        block->insertBefore(new DefExpr(locale));
+        block->insertBefore(new CallExpr(PRIMITIVE_MOVE, locale, new CallExpr(PRIMITIVE_LOCALE_ID)));
+        block->getModule()->block->insertAtHead(new DefExpr(cts));
+        VarSymbol* ci = new VarSymbol("_on_args", ct);
+        block->insertBefore(new DefExpr(ci));
+        block->insertBefore(new CallExpr(PRIMITIVE_MOVE, ci, new CallExpr(PRIMITIVE_CHPL_ALLOC, cts, new_StringSymbol("instance of on args class"))));
+        int i = 1;
+        FnSymbol* fn = call->isResolved();
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_on_args", ct);
+        compute_sym_uses(fn);
+        for_formals_actuals(formal, actual, call) {
+          if (call->argList.head == actual)
+            continue; // skip first argument; contains locale
+          ClassType* wide = wideMap.get(actual->typeInfo());
+          if (!wide) {
+            Type* base = actual->typeInfo();
+            wide = new ClassType(CLASS_RECORD);
+            TypeSymbol* ts =
+              new TypeSymbol(astr("_wide_", base->symbol->cname), wide);
+            theProgram->block->insertAtTail(new DefExpr(ts));
+            wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+            wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", base)));
+          }
+          VarSymbol* tmp = new VarSymbol("_tmp", wide);
+          block->insertBefore(new DefExpr(tmp));
+          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(1), locale));
+          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, wide->getField(2), actual->remove()));
+          VarSymbol* field = new VarSymbol(astr("_f", istr(i)), wide);
+          ct->fields.insertAtTail(new DefExpr(field));
+          i++;
+          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ci, field, tmp));
+          Vec<SymExpr*> usedefs;
+          Vec<SymExpr*> defset;
+          usedefs.copy(formal->uses);
+          forv_Vec(SymExpr, def, formal->defs) {
+            usedefs.add_exclusive(def);
+            defset.set_add(def);
+          }
+          forv_Vec(SymExpr, se, usedefs) {
+            if (CallExpr* call = toCallExpr(se->parentExpr)) {
+              if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+                CallExpr* move = toCallExpr(call->parentExpr);
+                if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+                  INT_FATAL(call, "unexpected case");
+                VarSymbol* tmp = new VarSymbol("_tmp", wide);
+                move->insertBefore(new DefExpr(tmp));
+                move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+                move->replace(new CallExpr(PRIMITIVE_COMM_GET, move->get(1)->remove(), tmp));
+                continue;
+              } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+                CallExpr* move = toCallExpr(call->parentExpr);
+                if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+                  INT_FATAL(call, "unexpected case");
+                VarSymbol* tmp = new VarSymbol("_tmp", wide);
+                move->insertBefore(new DefExpr(tmp));
+                move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+                move->replace(new CallExpr(PRIMITIVE_COMM_GET_OFF, move->get(1)->remove(), tmp, getValueType(se->var->type)->symbol, call->get(2)->remove()));
+                continue;
+              } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                         call->get(1) == se) {
+                VarSymbol* tmp = new VarSymbol("_tmp", wide);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+                call->replace(new CallExpr(PRIMITIVE_COMM_PUT_OFF, tmp, call->get(3)->remove(), getValueType(se->var->type)->symbol, call->get(2)->remove()));
+                continue;
+              } else if (call->isPrimitive(PRIMITIVE_MOVE) &&
+                         call->get(1) == se) {
+                VarSymbol* rhs = new VarSymbol("_tmp", getValueType(se->var->type));
+                call->insertBefore(new DefExpr(rhs));
+                call->insertBefore(new CallExpr(PRIMITIVE_MOVE, rhs, call->get(2)->remove()));
+                VarSymbol* tmp = new VarSymbol("_tmp", wide);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, arg, field)));
+                call->replace(new CallExpr(PRIMITIVE_COMM_PUT, tmp, rhs));
+                continue;
+              }
+            }
+            USR_FATAL(se, "support for on-statements is preliminary");
+          }
+          formal->defPoint->remove();
+        }
+        call->insertAtTail(ci);
+        fn->formals.insertAtTail(new DefExpr(arg));
+        block->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, ci));
       }
     }
   }

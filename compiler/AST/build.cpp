@@ -835,6 +835,9 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
   FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
+  fn->addPragma("on block");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "locale", dtInt[INT_SIZE_32]);
+  fn->insertFormalAtTail(arg);
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
   Symbol* tmp = new VarSymbol("_tmp");
@@ -842,7 +845,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   block->insertAtTail(new DefExpr(tmp));
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_locale_to_id", expr)));
   block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new CallExpr(PRIMITIVE_ON, tmp, new CallExpr(fn)));
+  block->insertAtTail(new BlockStmt(new CallExpr(fn, tmp), BLOCK_ON));
   return block;
 }
 

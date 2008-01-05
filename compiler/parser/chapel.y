@@ -634,14 +634,14 @@ on_stmt:
       if (fLocal)
         $$ = build_chpl_stmt(new BlockStmt($4, BLOCK_NORMAL));
       else
-        $$ = build_chpl_stmt(buildOnStmt($2, $4));
+        $$ = buildOnStmt($2, $4);
     }
 | TON expr parsed_block_stmt
     {
       if (fLocal)
         $$ = build_chpl_stmt(new BlockStmt($3, BLOCK_NORMAL));
       else
-        $$ = build_chpl_stmt(buildOnStmt($2, $3));
+        $$ = buildOnStmt($2, $3);
     }
 ;
 

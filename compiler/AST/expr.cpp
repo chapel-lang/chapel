@@ -1566,20 +1566,6 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, "->_ref_count < 0)");
       break;
-    case PRIMITIVE_ON:
-      if (CallExpr* call = toCallExpr(get(2))) {
-        fprintf(outfile, "_chpl_comm_fork(");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ", (func_p)");
-        call->baseExpr->codegen(outfile);
-        fprintf(outfile, ", ");
-        call->get(1)->codegen(outfile);
-        fprintf(outfile, ", sizeof(_");
-        call->get(1)->typeInfo()->symbol->codegen(outfile);
-        fprintf(outfile, "))");
-      } else
-        USR_FATAL(this, "invalid on primitive");
-      break;
     case PRIMITIVE_LOCALE_ID:
       fprintf(outfile, "_localeID");
       break;
