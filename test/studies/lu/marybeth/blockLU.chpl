@@ -29,7 +29,7 @@ def main() {
   writeln(A);
   writeln();
 
-  blockLU(A, piv, blk);
+  blockLU(A, blk, piv);
 
   writeln("Factored Matrix:");
   writeln(A);
