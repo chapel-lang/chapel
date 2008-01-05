@@ -9,17 +9,17 @@ typedef _bool _chpl_sync_aux_t;            // only needs to store the full/empty
 typedef _chpl_sync_aux_t _chpl_single_aux_t;
 
 
-#define _chpl_read_FE(x,lineno,filename) \
-  ((x)->sync_aux ? (((x)->sync_aux = false), (x)->value) : \
-   _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
-     (x)->value)
+#define _chpl_read_FE(x,y,lineno,filename) \
+  (x) = (y)->sync_aux ? (((y)->sync_aux = false), (y)->value) \
+        : _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
+          (y)->value
 
-#define _chpl_read_FF(x,lineno,filename) \
-  ((x)->sync_aux ? (x)->value \
-   : _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
-     (x)->value)
+#define _chpl_read_FF(x,y,lineno,filename) \
+  (x) = (y)->sync_aux ? (y)->value \
+        : _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
+          (y)->value
 
-#define _chpl_read_XX(x) (x)->value
+#define _chpl_read_XX(x,y) (x) = (y)->value
 
 #define _chpl_write_EF(x,y,lineno,filename) \
   do {if ((x)->sync_aux) \
@@ -46,10 +46,10 @@ typedef _chpl_sync_aux_t _chpl_single_aux_t;
      } while (0)
 
 
-#define _chpl_single_read_FF(x,lineno,filename) \
-  ((x)->single_aux ? (x)->value \
-   : _printError("single var not yet defined (running in single-threaded mode)", lineno, filename), \
-     (x)->value)
+#define _chpl_single_read_FF(x,y,lineno,filename) \
+  (x) = (y)->single_aux ? (y)->value \
+        : _printError("single var not yet defined (running in single-threaded mode)", lineno, filename), \
+          (y)->value
 
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if ((x)->single_aux) \

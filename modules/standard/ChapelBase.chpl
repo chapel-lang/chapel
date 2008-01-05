@@ -534,7 +534,9 @@ pragma "inline" def =(a: _mutex_p, b: _mutex_p) return b;
 
 // Returns whether an object of type t occupies a 64-bit word on MTA
 def isSimpleSyncBaseType (type t) param {
-  if (t == int(64) || t == uint(64))
+  if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
+      || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
+      || t == real(64) || t == real(32) || t == imag(64)
     return true;
   else return false;
 }
@@ -583,7 +585,8 @@ def _init(sv: sync) {
 def _syncvar.readFE() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = __primitive("read_FE", ret, this);
+    ret = value;   // Force the Chapel compiler to create a temporary!
+    __primitive("read_FE", ret, this);
   } else {
     __primitive("sync_wait_full_and_lock", this);
     ret = value;
@@ -596,7 +599,8 @@ def _syncvar.readFE() {
 def _syncvar.readFF() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = __primitive("read_FF", ret, this);
+    ret = value;   // Force the Chapel compiler to create a temporary!
+    __primitive("read_FF", ret, this);
   } else {
     __primitive("sync_wait_full_and_lock", this);
     ret = value;
@@ -609,7 +613,8 @@ def _syncvar.readFF() {
 def _syncvar.readXX() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = __primitive("read_XX", ret, this);
+    ret = value;   // Force the Chapel compiler to create a temporary!
+    __primitive("read_XX", ret, this);
   } else {
     __primitive("sync_lock", this);
     ret = value;
@@ -726,7 +731,8 @@ def _init(sv: single) {
 def _singlevar.readFF() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = __primitive("single_read_FF", ret, this);
+    ret = value;   // Force the Chapel compiler to create a temporary!
+    __primitive("single_read_FF", ret, this);
   } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
     ret = value;
   } else {

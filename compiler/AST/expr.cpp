@@ -1318,6 +1318,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_READFE:
       fprintf( outfile, "_chpl_read_FE((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), (");
       get(2)->codegen( outfile);
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);
@@ -1327,6 +1329,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_READFF:
       fprintf( outfile, "_chpl_read_FF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), (");
       get(2)->codegen( outfile);
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);
@@ -1336,6 +1340,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_READXX:
       fprintf( outfile, "_chpl_read_XX((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), (");
       get(2)->codegen( outfile);
       fprintf( outfile, "))");
       break;
@@ -1366,6 +1372,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_SINGLE_READFF:
       fprintf( outfile, "_chpl_single_read_FF((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), (");
       get(2)->codegen( outfile);
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);

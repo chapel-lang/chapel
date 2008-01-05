@@ -25,25 +25,23 @@ typedef struct {
 } _chpl_single_aux_t;
 
 
-// The following macros take advantage of the fact that the various pthread functions
-// normally return 0.  They also depend on left-to-right evaluation of the "|"
-// operator, which is not guaranteed!
-#define _chpl_read_FE(x,lineno,filename) \
-  (_chpl_sync_wait_full_and_lock(&((x)->sync_aux),lineno,filename) \
-     ? _printInternalError("invalid mutex in _chpl_read_FE"), (x)->value \
-     : (x)->value | \
-       _chpl_sync_mark_and_signal_empty(&((x)->sync_aux)))
+#define _chpl_read_FE(x,y,lineno,filename) \
+  do {if (_chpl_sync_wait_full_and_lock(&((y)->sync_aux),lineno,filename) == 0) { \
+        (x) = (y)->value; \
+        _chpl_sync_mark_and_signal_empty(&((y)->sync_aux));} \
+     } while (0)
 
-#define _chpl_read_FF(x,lineno,filename) \
-  (_chpl_sync_wait_full_and_lock(&((x)->sync_aux),lineno,filename) \
-     ? _printInternalError("invalid mutex in _chpl_read_FF"), (x)->value \
-     : (x)->value | \
-       _chpl_sync_mark_and_signal_full(&((x)->sync_aux)))
+#define _chpl_read_FF(x,y,lineno,filename) \
+  do {if (_chpl_sync_wait_full_and_lock(&((y)->sync_aux),lineno,filename) == 0) { \
+        (x) = (y)->value; \
+        _chpl_sync_mark_and_signal_full(&((y)->sync_aux));} \
+     } while (0)
 
-#define _chpl_read_XX(x) \
-  (_chpl_sync_lock(&((x)->sync_aux)) \
-     ? _printInternalError("invalid mutex in _chpl_read_XX"), (x)->value \
-     : (x)->value | _chpl_sync_unlock(&((x)->sync_aux)))
+#define _chpl_read_XX(x,y) \
+  do {if (_chpl_sync_lock(&((y)->sync_aux)) == 0) { \
+        (x) = (y)->value; \
+        _chpl_sync_unlock(&((y)->sync_aux));} \
+     } while (0)
 
 #define _chpl_write_EF(x,y,lineno,filename) \
   do {if (_chpl_sync_wait_empty_and_lock(&((x)->sync_aux),lineno,filename) == 0) { \
@@ -74,11 +72,13 @@ typedef struct {
      } while (0)
 
 
-#define _chpl_single_read_FF(x,lineno,filename) \
-  (_chpl_single_is_full(&((x)->value),&((x)->single_aux),true) \
-     ? (x)->value \
-     : (_chpl_single_wait_full(&((x)->single_aux),lineno,filename) \
-        | (x)->value | _chpl_single_mark_and_signal_full(&((x)->single_aux))))
+#define _chpl_single_read_FF(x,y,lineno,filename) \
+  do {if (_chpl_single_is_full(&((y)->value),&((y)->single_aux),true)) \
+        (x) = (y)->value; \
+      else if (_chpl_single_wait_full(&((y)->single_aux),lineno,filename) == 0) { \
+        (x) = (y)->value; \
+        _chpl_single_mark_and_signal_full(&((y)->single_aux));} \
+     } while (0)
 
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if (_chpl_single_lock(&((x)->single_aux)) == 0) { \
