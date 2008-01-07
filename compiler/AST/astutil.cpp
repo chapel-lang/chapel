@@ -407,7 +407,7 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
         if (!fns.set_in(next))
           pruneVisit(next, fns, types);
     } else if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var->type && !types.set_in(se->var->type->symbol))
+      if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
         pruneVisit(se->var->type->symbol, fns, types);
     }
   }
