@@ -424,6 +424,9 @@ set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = `../util/comm.pl`
+if ($comm != "none") then
+    set numlocales = "1"
+endif
 set suppressions = ""
 
 while ( $#argv > 0 )
