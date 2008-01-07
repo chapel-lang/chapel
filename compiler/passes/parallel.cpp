@@ -24,134 +24,125 @@
 // mutex for each var.  Of course, those will be heap allocated also.
 //
 static void
-begin_mark_locals(Vec<BlockStmt*>& blocks) {
-  Vec<SymExpr*> heapList;
+heapAllocateLocals(BlockStmt* block) {
+  static Map<Symbol*,Symbol*> refcMap;
+  static Map<Symbol*,Symbol*> refcMutexMap;
 
-  compute_sym_uses();
-
-  Map<Symbol*,Symbol*> refcMap;
-  Map<Symbol*,Symbol*> refcMutexMap;
-
-  // Find all the args that should be heap allocated -> heapList
-  forv_Vec(BlockStmt, block, blocks) {
-    if (block->blockTag == BLOCK_BEGIN) {
-      CallExpr* call = toCallExpr(block->body.tail);
-      INT_ASSERT(call);
-      for_alist(expr, block->body) {
-        if (CallExpr* move = toCallExpr(expr)) {
-          if (move->isPrimitive(PRIMITIVE_MOVE)) {
-            if (CallExpr* ref = toCallExpr(move->get(2))) {
-              if (ref->isPrimitive(PRIMITIVE_SET_REF)) {
-                SymExpr* se = toSymExpr(ref->get(1));
-                INT_ASSERT(se);
-                VarSymbol* var = toVarSymbol(se->var);
-                INT_ASSERT(var);
-                DefExpr* def = var->defPoint;
-                
-                SymExpr* lse = toSymExpr(move->get(1));
-                INT_ASSERT(lse->var->uses.n == 1);
-                INT_ASSERT(lse->var->defs.n == 1);
+  CallExpr* call = toCallExpr(block->body.tail);
+  INT_ASSERT(call);
+  for_alist(expr, block->body) {
+    if (CallExpr* move = toCallExpr(expr)) {
+      if (move->isPrimitive(PRIMITIVE_MOVE)) {
+        if (CallExpr* ref = toCallExpr(move->get(2))) {
+          if (ref->isPrimitive(PRIMITIVE_SET_REF)) {
+            SymExpr* se = toSymExpr(ref->get(1));
+            INT_ASSERT(se);
+            VarSymbol* var = toVarSymbol(se->var);
+            INT_ASSERT(var);
+            DefExpr* def = var->defPoint;
+            
+            SymExpr* lse = toSymExpr(move->get(1));
+            INT_ASSERT(lse->var->uses.n == 1);
+            INT_ASSERT(lse->var->defs.n == 1);
  
-                SymExpr* use = lse->var->uses.v[0];
-                lse->var->defPoint->remove();
-                use->var = var;
-                move->remove();
+            SymExpr* use = lse->var->uses.v[0];
+            lse->var->defPoint->remove();
+            use->var = var;
+            move->remove();
 
-                // no reference counter associated yet
-                if (!refcMap.get(var)) {
-                  INT_ASSERT(var->type->refType);
-                  
-                  forv_Vec(SymExpr, se, var->uses) {
-                    if (!se->parentSymbol)
-                      continue;
-                    CallExpr* call = toCallExpr(se->parentExpr);
-                    if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
-                      call->replace(se->remove());
-                    } else if (!call || !(call->isPrimitive(PRIMITIVE_SET_MEMBER) || call->isPrimitive(PRIMITIVE_GET_MEMBER))) {
-                      VarSymbol* tmp = new VarSymbol("_tmp", var->type);
-                      se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                      se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, var)));
-                      se->var = tmp;
-                    }
-                  }
-
-                  var->type = var->type->refType;
-                    
-                  // create reference counter
-                  VarSymbol *refc = new VarSymbol(astr("_", var->name, "_refc"),
-                                                  dtInt[INT_SIZE_32]->refType);
-                  def->insertBefore(new DefExpr(refc));
-                    
-                  // create reference counter mutex
-                  VarSymbol *refcMutex = new VarSymbol(astr("_", var->name, "_refcmutex"),
-                                                       dtMutex_p);
-                  def->insertBefore(new DefExpr(refcMutex));
-
-                  def->insertBefore(
-                    new CallExpr(PRIMITIVE_SET_HEAPVAR, refcMutex,
-                      new CallExpr(PRIMITIVE_CHPL_ALLOC, dtMutex->symbol, 
-                        new_StringSymbol("alloc begin heap"))));
-                  def->insertBefore(
-                    new CallExpr(PRIMITIVE_SET_HEAPVAR, refc,
-                      new CallExpr(PRIMITIVE_CHPL_ALLOC, dtInt[INT_SIZE_32]->symbol, 
-                        new_StringSymbol("alloc begin heap"))));
-                  def->insertBefore(
-                    new CallExpr(PRIMITIVE_SET_HEAPVAR, var,
-                      new CallExpr(PRIMITIVE_CHPL_ALLOC, getValueType(var->type)->symbol, 
-                        new_StringSymbol("alloc begin heap"))));
-                  refcMap.put(var, refc);
-                  refcMutexMap.put(var, refcMutex);
+            // no reference counter associated yet
+            if (!refcMap.get(var)) {
+              INT_ASSERT(var->type->refType);
+              
+              forv_Vec(SymExpr, se, var->uses) {
+                if (!se->parentSymbol)
+                  continue;
+                CallExpr* call = toCallExpr(se->parentExpr);
+                if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+                  call->replace(se->remove());
+                } else if (!call || !(call->isPrimitive(PRIMITIVE_SET_MEMBER) || call->isPrimitive(PRIMITIVE_GET_MEMBER))) {
+                  VarSymbol* tmp = new VarSymbol("_tmp", var->type);
+                  se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, var)));
+                  se->var = tmp;
                 }
+              }
 
-                Symbol* refc = refcMap.get(var);
-                Symbol* refcMutex = refcMutexMap.get(var);
-
-                call->insertAtTail(refc);
-                call->insertAtTail(refcMutex);
-                ArgSymbol *rc_arg = new ArgSymbol( INTENT_BLANK, 
-                                                   refc->name, 
-                                                   dtInt[INT_SIZE_32]->refType);
-                ArgSymbol *rcm_arg = new ArgSymbol(INTENT_BLANK, 
-                                                   refcMutex->name, 
+              var->type = var->type->refType;
+                    
+              // create reference counter
+              VarSymbol *refc = new VarSymbol(astr("_", var->name, "_refc"),
+                                              dtInt[INT_SIZE_32]->refType);
+              def->insertBefore(new DefExpr(refc));
+              
+              // create reference counter mutex
+              VarSymbol *refcMutex = new VarSymbol(astr("_", var->name, "_refcmutex"),
                                                    dtMutex_p);
-                FnSymbol  *fn = call->isResolved();
-                fn->insertFormalAtTail(new DefExpr( rc_arg));
-                fn->insertFormalAtTail(new DefExpr( rcm_arg));
-                
-                def->insertAfter( new CallExpr( PRIMITIVE_REFC_TOUCH, 
-                                                var,
-                                                refc,
-                                                refcMutex));
-                def->insertAfter( new CallExpr( PRIMITIVE_REFC_INIT, 
-                                                var,
-                                                refc,
-                                                refcMutex));
-                BlockStmt *mainfb = toBlockStmt(def->parentExpr);
-                Expr      *laststmt = mainfb->body.last();
-                CallExpr* ret = toCallExpr(laststmt);
-                if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
-                  laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
-                                                        var,
-                                                        refc,
-                                                        refcMutex));
-                  } else {
-                  laststmt->insertAfter( new CallExpr( PRIMITIVE_REFC_RELEASE, 
-                                                       var,
-                                                       refc,
-                                                       refcMutex));
-                }
-                  
-                // add touch + release for the begin block
-                block->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+              def->insertBefore(new DefExpr(refcMutex));
+              
+              def->insertBefore(
+                new CallExpr(PRIMITIVE_SET_HEAPVAR, refcMutex,
+                  new CallExpr(PRIMITIVE_CHPL_ALLOC, dtMutex->symbol, 
+                    new_StringSymbol("alloc begin heap"))));
+              def->insertBefore(
+                new CallExpr(PRIMITIVE_SET_HEAPVAR, refc,
+                  new CallExpr(PRIMITIVE_CHPL_ALLOC, dtInt[INT_SIZE_32]->symbol, 
+                    new_StringSymbol("alloc begin heap"))));
+              def->insertBefore(
+                new CallExpr(PRIMITIVE_SET_HEAPVAR, var,
+                  new CallExpr(PRIMITIVE_CHPL_ALLOC, getValueType(var->type)->symbol, 
+                    new_StringSymbol("alloc begin heap"))));
+              refcMap.put(var, refc);
+              refcMutexMap.put(var, refcMutex);
+            }
+
+            Symbol* refc = refcMap.get(var);
+            Symbol* refcMutex = refcMutexMap.get(var);
+
+            call->insertAtTail(refc);
+            call->insertAtTail(refcMutex);
+            ArgSymbol *rc_arg = new ArgSymbol( INTENT_BLANK, 
+                                               refc->name, 
+                                               dtInt[INT_SIZE_32]->refType);
+            ArgSymbol *rcm_arg = new ArgSymbol(INTENT_BLANK, 
+                                               refcMutex->name, 
+                                               dtMutex_p);
+            FnSymbol  *fn = call->isResolved();
+            fn->insertFormalAtTail(new DefExpr( rc_arg));
+            fn->insertFormalAtTail(new DefExpr( rcm_arg));
+            
+            def->insertAfter( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+                                            var,
+                                            refc,
+                                            refcMutex));
+            def->insertAfter( new CallExpr( PRIMITIVE_REFC_INIT, 
+                                            var,
+                                            refc,
+                                            refcMutex));
+            BlockStmt *mainfb = toBlockStmt(def->parentExpr);
+            Expr      *laststmt = mainfb->body.last();
+            CallExpr* ret = toCallExpr(laststmt);
+            if (ret && ret->isPrimitive(PRIMITIVE_RETURN)) {
+              laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
+                                                    var,
+                                                    refc,
+                                                    refcMutex));
+            } else {
+              laststmt->insertAfter( new CallExpr( PRIMITIVE_REFC_RELEASE, 
                                                    var,
                                                    refc,
                                                    refcMutex));
-                fn->insertBeforeReturn(new CallExpr(PRIMITIVE_REFC_RELEASE,
-                                                    actual_to_formal(use),
-                                                    rc_arg,
-                                                    rcm_arg));
-              }
             }
+            
+            // add touch + release for the begin block
+            block->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+                                               var,
+                                               refc,
+                                               refcMutex));
+            fn->insertBeforeReturn(new CallExpr(PRIMITIVE_REFC_RELEASE,
+                                                actual_to_formal(use),
+                                                rc_arg,
+                                                rcm_arg));
           }
         }
       }
@@ -166,104 +157,110 @@ begin_mark_locals(Vec<BlockStmt*>& blocks) {
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
 static void
-thread_args(Vec<BlockStmt*>& blocks) {
-  forv_Vec(BlockStmt, b, blocks) {
-    ModuleSymbol* mod = b->getModule();
-    BlockStmt *newb = new BlockStmt();
-    newb->blockTag = b->blockTag;
-    for_alist(expr, b->body) {
-      CallExpr* fcall = toCallExpr(expr);
-      if (!fcall || !fcall->isResolved()) {
-        b->insertBefore(expr->remove());
-        continue;
-      } else {
-        
-        // create a new class to capture refs to locals
-        const char* fname = (toSymExpr(fcall->baseExpr))->var->name;
-        ClassType* ctype = new ClassType( CLASS_CLASS);
-        TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
-                                                      fname),
-                                            ctype);
-
-        // add the function args as fields in the class
-        int i = 1;
-        for_actuals(arg, fcall) {
-          SymExpr *s = toSymExpr(arg);
-          Symbol  *var = s->var; // arg or var
-          var->isConcurrent = true;
-          VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
-          ctype->fields.insertAtTail(new DefExpr(field));
-          i++;
-        }
-        mod->block->insertAtHead(new DefExpr(new_c));
-        
-        // create the class variable instance and allocate it
-        VarSymbol *tempc = new VarSymbol( astr( "_args_for", 
-                                                     fname),
+bundleArgs(BlockStmt* b) {
+  ModuleSymbol* mod = b->getModule();
+  BlockStmt *newb = new BlockStmt();
+  newb->blockTag = b->blockTag;
+  for_alist(expr, b->body) {
+    CallExpr* fcall = toCallExpr(expr);
+    if (!fcall || !fcall->isResolved()) {
+      b->insertBefore(expr->remove());
+      continue;
+    } else {
+      
+      // create a new class to capture refs to locals
+      const char* fname = (toSymExpr(fcall->baseExpr))->var->name;
+      ClassType* ctype = new ClassType( CLASS_CLASS);
+      TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
+                                               fname),
                                           ctype);
-        b->insertBefore( new DefExpr( tempc));
-        CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
-                                              ctype->symbol,
-                                              new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
-        b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
-                                       tempc,
-                                       tempc_alloc));
-        
-        // set the references in the class instance
-        i = 1;
-        for_actuals(arg, fcall) {
-          SymExpr *s = toSymExpr(arg);
-          Symbol  *var = s->var; // var or arg
-          CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER,
-                                      tempc,
-                                      ctype->getField(i),
-                                      var);
-          b->insertBefore( setc);
-          i++;
-        }
-        
-        // create wrapper-function that uses the class instance
-        FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fname));
-        DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
-        ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-        wrap_fn->insertFormalAtTail( wrap_c);
-        mod->block->insertAtTail(new DefExpr(wrap_fn));
-        newb->insertAtTail( new CallExpr( wrap_fn, tempc));
-        wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
-            
-        // translate the original cobegin function
-        CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-        for_fields(field, ctype) {  // insert args
-          new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                               wrap_c,
-                                               field));
-        }
-        
-        wrap_fn->retType = dtVoid;
-        fcall->remove();                     // rm orig. call
-        wrap_fn->insertAtHead(new_cofn);     // add new call
-        wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
-        fcall_def->remove();                 // move orig. def
-        mod->block->insertAtTail(fcall_def); // to top-level
-        normalize(wrap_fn);
+
+      // add the function args as fields in the class
+      int i = 1;
+      for_actuals(arg, fcall) {
+        SymExpr *s = toSymExpr(arg);
+        Symbol  *var = s->var; // arg or var
+        var->isConcurrent = true;
+        VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
+        ctype->fields.insertAtTail(new DefExpr(field));
+        i++;
       }
+      mod->block->insertAtHead(new DefExpr(new_c));
+        
+      // create the class variable instance and allocate it
+      VarSymbol *tempc = new VarSymbol( astr( "_args_for", 
+                                              fname),
+                                        ctype);
+      b->insertBefore( new DefExpr( tempc));
+      CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
+                                            ctype->symbol,
+                                            new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
+      b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
+                                     tempc,
+                                     tempc_alloc));
+      
+      // set the references in the class instance
+      i = 1;
+      for_actuals(arg, fcall) {
+        SymExpr *s = toSymExpr(arg);
+        Symbol  *var = s->var; // var or arg
+        CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER,
+                                    tempc,
+                                    ctype->getField(i),
+                                    var);
+        b->insertBefore( setc);
+        i++;
+      }
+      
+      // create wrapper-function that uses the class instance
+      FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fname));
+      DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
+      ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
+      wrap_fn->insertFormalAtTail( wrap_c);
+      mod->block->insertAtTail(new DefExpr(wrap_fn));
+      newb->insertAtTail( new CallExpr( wrap_fn, tempc));
+      wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
+      
+      // translate the original cobegin function
+      CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
+      for_fields(field, ctype) {  // insert args
+        new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                             wrap_c,
+                                             field));
+      }
+      
+      wrap_fn->retType = dtVoid;
+      fcall->remove();                     // rm orig. call
+      wrap_fn->insertAtHead(new_cofn);     // add new call
+      wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
+      fcall_def->remove();                 // move orig. def
+      mod->block->insertAtTail(fcall_def); // to top-level
+      normalize(wrap_fn);
     }
-    b->replace(newb);
   }
+  b->replace(newb);
 }
 
 
 void
 parallel(void) {
+  compute_sym_uses();
+
   Vec<BlockStmt*> blocks;
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt* block = toBlockStmt(ast))
-      if (block->blockTag == BLOCK_BEGIN || block->blockTag == BLOCK_COBEGIN)
-        blocks.add(block);
+      blocks.add(block);
   }
 
-  begin_mark_locals(blocks);
-  thread_args(blocks);
+  forv_Vec(BlockStmt, block, blocks) {
+    if (block->blockTag == BLOCK_BEGIN)
+      heapAllocateLocals(block);
+  }
+
+  forv_Vec(BlockStmt, block, blocks) {
+    if (block->blockTag == BLOCK_BEGIN || block->blockTag == BLOCK_COBEGIN)
+      bundleArgs(block);
+  }
 }
 
 
