@@ -424,9 +424,6 @@ set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = `../util/comm.pl`
-if ($comm != "none") then
-    set numlocales = "1"
-endif
 set suppressions = ""
 
 while ( $#argv > 0 )
@@ -526,9 +523,6 @@ while ( $#argv > 0 )
                 shift
                 set comm = $argv[1]
                 shift
-                if ($comm != "none") then
-                    set numlocales = "1"
-                endif
                 breaksw
         case -suppress:
         case --suppress:
@@ -568,6 +562,10 @@ while ( $#argv > 0 )
 		breaksw
 	endsw
 end
+
+if ($comm != "none") then
+    set numlocales = "1"
+endif
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
 echo \[pwd: \"$testdir\"\] |& $tee -a $logtmp
