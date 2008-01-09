@@ -87,7 +87,10 @@ list_ast(BaseAST* ast, int indent = 0) {
     } else if (toDefExpr(expr)) {
       printf("def ");
     } else if (SymExpr* e = toSymExpr(expr)) {
-      list_sym(e->var, false);
+      if (e->var)
+        list_sym(e->var, false);
+      else
+        printf("%s", e->unresolved);
     }
   }
 
@@ -177,7 +180,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
     if (SymExpr* sym = toSymExpr(expr)) {
       printf(" '");
-      if (sym->var->id == mark)
+      if (sym->var && sym->var->id == mark)
         printf("***");
       if (toFnSymbol(sym->var)) {
         printf("fn ");
@@ -186,14 +189,17 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       } else if (toTypeSymbol(sym->var)) {
         printf("type ");
       }
-      printf("%s", sym->var->name);
-      if (number)
+      if (sym->var)
+        printf("%s", sym->var->name);
+      else
+        printf("%s", sym->unresolved);
+      if (sym->var && number)
         printf("[%d]", sym->var->id);
       if (FnSymbol* fn = toFnSymbol(sym->var)) {
         printf(":%s", fn->retType->symbol->name);
         if (number)
           printf("[%d]", fn->retType->symbol->id);
-      } else if (sym->var->type && sym->var->type->symbol) {
+      } else if (sym->var && sym->var->type && sym->var->type->symbol) {
         printf(":%s", sym->var->type->symbol->name);
         if (number)
           printf("[%d]", sym->var->type->symbol->id);

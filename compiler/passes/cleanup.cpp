@@ -27,17 +27,7 @@ encapsulateBegins() {
     if (BlockStmt *b = toBlockStmt(ast)) {
       currentLineno = b->lineno;
       currentFilename = b->filename;
-      if (b->blockTag == BLOCK_BEGIN) {
-        const char *fname = astr("_begin_block", istr(uid++));
-        FnSymbol *fn = new FnSymbol(fname);
-        fn->retType = dtVoid;
-        for_alist(stmt, b->body) {
-          stmt->remove();
-          fn->insertAtTail(stmt);
-        }
-        b->insertAtTail(new DefExpr(fn));
-        b->insertAtTail(new CallExpr(fname));
-      } else if (b->blockTag == BLOCK_COBEGIN) {
+      if (b->blockTag == BLOCK_COBEGIN) {
         for_alist(stmt, b->body) {
           const char *fname = astr("_cobegin_stmt", istr(uid++));
           FnSymbol *fn = new FnSymbol(fname);

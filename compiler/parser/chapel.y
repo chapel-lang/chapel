@@ -623,7 +623,7 @@ block_stmt:
       if (fSerial)
         $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
       else
-        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_BEGIN));
+        $$ = buildBeginStmt($2);
     }
 ;
 

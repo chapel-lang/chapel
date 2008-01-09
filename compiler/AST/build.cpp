@@ -350,23 +350,23 @@ BlockStmt* build_for_block(BlockTag tag,
   checkIndices(indices);
 
   if (tag == BLOCK_COFORALL) {
-    BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
     VarSymbol* ss = new VarSymbol("_ss");
     ss->isCompilerTemp = true;
     VarSymbol* me = new VarSymbol("_me");
     me->isCompilerTemp = true;
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr("_init", new SymExpr("_syncStack"))));
-    block->insertAtHead(new DefExpr(ss));
+
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockTag = BLOCK_BEGIN;
-    body->insertBefore(beginBlk);
-    beginBlk->insertAtHead(body->remove());
-    beginBlk->insertBefore(new DefExpr(me));
-    beginBlk->insertBefore(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
+    beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("=",
                              new CallExpr(".", me,
                                new_StringSymbol("v")), gTrue));
-    beginBlk->insertAfter(new CallExpr("=", ss, me));
+    body = buildBeginStmt(beginBlk);
+    BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr("_init", new SymExpr("_syncStack"))));
+    block->insertAtHead(new DefExpr(ss));
+    body->insertBefore(new DefExpr(me));
+    body->insertBefore(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
+    body->insertAfter(new CallExpr("=", ss, me));
     block->insertAtTail(new CallExpr("_waitSyncStack", ss));
     return block;
   }
@@ -845,6 +845,19 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_locale_to_id", expr)));
   block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new BlockStmt(new CallExpr(fn, tmp), BLOCK_ON));
+  return block;
+}
+
+
+BlockStmt*
+buildBeginStmt(Expr* stmt) {
+  static int uid = 1;
+  BlockStmt* block = build_chpl_stmt();
+  FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
+  fn->retType = dtVoid;
+  fn->insertAtTail(stmt);
+  block->insertAtTail(new DefExpr(fn));
+  block->insertAtTail(new BlockStmt(new CallExpr(fn), BLOCK_BEGIN));
   return block;
 }
 

@@ -49,6 +49,7 @@ build_arg(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variab
 Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
+BlockStmt* buildBeginStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 
