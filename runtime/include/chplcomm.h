@@ -28,9 +28,6 @@ typedef void (*func_p)(void*);
   } while (0)
 
 #define _COMM_WIDE_PUT_OFF(type, wide, local, stype, sfield)            \
-  _chpl_comm_put_off((&(local)), ((wide).locale), ((wide).addr), stype, sfield)
-
-#define _COMM_WIDE_PUT_OFF_IMM(type, wide, local, stype, sfield)        \
   do {                                                                  \
     type imm = local;                                                   \
     _chpl_comm_put_off((&imm), ((wide).locale), ((wide).addr), stype, sfield); \

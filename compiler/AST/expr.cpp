@@ -1162,14 +1162,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_SET_MEMBER:
       if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
-        SymExpr* rhs = toSymExpr(get(3));
-        if (rhs &&
-            isVarSymbol(rhs->var) &&
-            toVarSymbol(rhs->var)->immediate)
-          fprintf(outfile, "_COMM_WIDE_PUT_OFF_IMM(");
-        else
-          fprintf(outfile, "_COMM_WIDE_PUT_OFF(");
-        fprintf(outfile, "%s, ", get(3)->typeInfo()->symbol->cname);
+        fprintf(outfile, "_COMM_WIDE_PUT_OFF(");
+        fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
@@ -1744,36 +1738,25 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  if (SymExpr* variable = toSymExpr(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_data_construct")) {
-      if (numActuals() == 0) {
-        fprintf(outfile, "0");
-        if (getStmtExpr() && getStmtExpr() == this)
-          fprintf(outfile, ";\n");
-        return;
-      }
+  FnSymbol* fn = isResolved();
+  INT_ASSERT(fn);
+
+  if (!strcmp(fn->cname, "_data_construct")) {
+    if (numActuals() == 0) {
+      fprintf(outfile, "0");
+      if (getStmtExpr() && getStmtExpr() == this)
+        fprintf(outfile, ";\n");
+      return;
     }
   }
 
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
 
-  /// KLUDGE for complex read and tostring functions
-  // runtime support for read, config, tostring require a cast of the
-  // compiler produced complex type to the runtime complex type;
-  // eventually there should be no runtime complex type
-  if (SymExpr* variable = toSymExpr(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
-      fprintf(outfile, "(_complex128**)");
-    }
-  }
-
-  if (SymExpr* variable = toSymExpr(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_data_construct")) {
-      ClassType* ct = toClassType(toFnSymbol(variable->var)->retType);
-      toDefExpr(ct->fields.get(2))->sym->type->codegen(outfile);
-      fprintf(outfile, ", ");
-    }
+  if (!strcmp(fn->cname, "_data_construct")) {
+    ClassType* ct = toClassType(fn->retType);
+    toDefExpr(ct->fields.get(2))->sym->type->codegen(outfile);
+    fprintf(outfile, ", ");
   }
 
   bool first_actual = true;
@@ -1782,10 +1765,14 @@ void CallExpr::codegen(FILE* outfile) {
       first_actual = false;
     else
       fprintf(outfile, ", ");
-    if (formal->requiresCPtr())
+    if (fn->isExtern && formal->type->symbol->hasPragma("wide"))
+      fprintf(outfile, "(");
+    else if (formal->requiresCPtr())
       fprintf(outfile, "&(");
     actual->codegen(outfile);
-    if (formal->requiresCPtr())
+    if (fn->isExtern && formal->type->symbol->hasPragma("wide"))
+      fprintf(outfile, ").addr");
+    else if (formal->requiresCPtr())
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");
