@@ -164,7 +164,8 @@ void initChplThreads() {
   _chpl_mutex_init(&_memstat_lock);
   _chpl_mutex_init(&_memtrace_lock);
 
-  pthread_key_create(&_chpl_serial, (void(*)(void*))_chpl_serial_delete);
+  if (pthread_key_create(&_chpl_serial, (void(*)(void*))_chpl_serial_delete))
+    _printInternalError("serial key not created");
   _chpl_thread_init();
 }
 
@@ -181,15 +182,7 @@ void exitChplThreads() {
 }
 
 
-void _chpl_thread_init(void) {
-  _bool *p;
-  p = pthread_getspecific(_chpl_serial);
-  if (NULL == p) {
-    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
-    *p = false;
-    pthread_setspecific(_chpl_serial, p);
-  }
-}
+void _chpl_thread_init(void) {}  // No need to do anything!
 
 
 _uint64 _chpl_thread_id(void) {
@@ -200,19 +193,21 @@ _uint64 _chpl_thread_id(void) {
 _bool _chpl_get_serial(void) {
   _bool *p;
   p = (_bool*) pthread_getspecific(_chpl_serial);
-  if (NULL == p) {
-    _printInternalError("serial state not created");
-  }
-  return *p;
+  return p == NULL ? false : *p;
 }
-
 
 void _chpl_set_serial(_bool state) {
   _bool *p;
   p = (_bool*) pthread_getspecific(_chpl_serial);
-  if (NULL != p) {
-    *p = state;
+  if (p == NULL) {
+    if (state) {
+      p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
+      *p = state;
+      if (pthread_setspecific(_chpl_serial, p))
+        _printInternalError("serial state not created");
+    }
   }
+  else *p = state;
 }
 
 
