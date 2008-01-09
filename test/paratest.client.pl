@@ -3,7 +3,7 @@
 # Client-side of the parallel testing script, paratest.server.pl.
 # Used remotely by paratest.server.pl to run start_test locally.
 #
-# Usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts]
+# Usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts] [comm]
 #  
 #  id - used to create a file to synchronize with paratest.server.pl
 #  chapeltestdir - root dir of Chapel test infrastructure
@@ -12,6 +12,7 @@
 #  futures - include .future tests (0=no, 1=yes)
 #  valgrind - run valgrind (0=no, 1=yes)
 #  compopts - optional Chapel compiler options
+#  comm - optional Chapel CHPL_COMM setting
 # 
 
 $debug = 0; # set $verbose=1 in server
@@ -35,7 +36,7 @@ sub main {
 
     if ($#ARGV < 5) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts]\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts] [comm]\n";
         exit (3);
     }
 
@@ -47,8 +48,11 @@ sub main {
     $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
 
     print "$id $workingdir $testdir $filedist $incl_futures $valgrind" if $debug;
-    if ($#ARGV==6) {
+    if ($#ARGV>=6) {
         $compopts = "-compopts \"" . $ARGV[6] . "\"";
+    }
+    if ($#ARGV>=7) {
+        $comm = "-comm \"" . $ARGV[7] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -78,7 +82,7 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts";
+    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $comm";
     if ($filedist) {
         $testarg = "$testarg -onetest $testdir";
     } else {

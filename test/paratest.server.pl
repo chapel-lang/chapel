@@ -3,6 +3,7 @@
 # Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] 
 #                            [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
 #   -compopts s: s is a string that is passed with -compopts to start_test.
+#   -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
 #   -filedist  : distribute work at the granularity of test files (directory
@@ -204,11 +205,13 @@ sub feed_nodes {
                 if ($node eq $localnode) {
                     $rem_exec_cmd = "";
                     $compopts = "\"$compopts\"";
+                    $comm = "\"$comm\"";
                 } else {
                     $rem_exec_cmd = "$rem_exe $node";
                     $compopts = "\\\"$compopts\\\"";
+                    $comm = "\\\"$comm\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts";
+                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts $comm";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -343,8 +346,9 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server.pl [-comm] [-compopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
+    print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
@@ -373,6 +377,14 @@ sub main {
                 $compopts = $ARGV[0];
             } else {
                 print "missing -compopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-comm/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $comm = $ARGV[0];
+            } else {
+                print "missing -comm arg\n";
                 exit (8);
             }
         } elsif (/^-filedist/) {
