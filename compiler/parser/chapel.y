@@ -603,8 +603,7 @@ block_stmt:
       if (fSerial)
         $$ = build_chpl_stmt($3);
       else {
-        $3->blockTag = BLOCK_COBEGIN;
-        $$ = build_chpl_stmt($3);
+        $$ = buildCobeginStmt($3);
       }
     }
 | TATOMIC stmt

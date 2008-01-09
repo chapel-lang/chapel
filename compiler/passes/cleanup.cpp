@@ -17,33 +17,6 @@
 
 
 //
-// Move statements in begin and cobegin blocks into nested functions
-//
-static void
-encapsulateBegins() {
-  int uid = 1;
-
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt *b = toBlockStmt(ast)) {
-      currentLineno = b->lineno;
-      currentFilename = b->filename;
-      if (b->blockTag == BLOCK_COBEGIN) {
-        for_alist(stmt, b->body) {
-          const char *fname = astr("_cobegin_stmt", istr(uid++));
-          FnSymbol *fn = new FnSymbol(fname);
-          fn->retType = dtVoid;
-          b->insertAtHead(new DefExpr(fn));
-          stmt->insertBefore(new CallExpr(fname));
-          stmt->remove();
-          fn->insertAtTail(stmt);
-        }
-      }
-    }
-  }
-}
-
-
-//
 // Move the statements in a block out of the block
 //
 static void
@@ -483,8 +456,6 @@ static void initializeOuterModules(ModuleSymbol* mod) {
 
 
 void cleanup(void) {
-  encapsulateBegins();
-
   initializeOuterModules(theProgram);
 
   Vec<BaseAST*> asts;

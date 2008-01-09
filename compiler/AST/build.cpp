@@ -862,6 +862,25 @@ buildBeginStmt(Expr* stmt) {
 }
 
 
+BlockStmt*
+buildCobeginStmt(Expr* stmt) {
+  static int uid = 1;
+  BlockStmt* block = toBlockStmt(stmt);
+  INT_ASSERT(block);
+  BlockStmt* cobegin = new BlockStmt();
+  cobegin->blockTag = BLOCK_COBEGIN;
+  for_alist(stmt, block->body) {
+    FnSymbol* fn = new FnSymbol(astr("_cobegin_fn_", istr(uid++)));    
+    stmt->insertBefore(new DefExpr(fn));
+    fn->retType = dtVoid;
+    fn->insertAtTail(stmt->remove());
+    cobegin->insertAtTail(new CallExpr(fn));
+  }
+  block->insertAtTail(cobegin);
+  return block;
+}
+
+
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   if (sign == '+') {
     USR_WARN(expr, "++ is not a pre-increment");
