@@ -1,5 +1,5 @@
 use Time;
-// Test single field using the read/write methods
+// Test single var using the read/write methods
 
 var done: sync bool = true;
 
