@@ -118,7 +118,7 @@ static const char* genIntFilename(const char* filename) {
 }
 
 
-static const char* stripdirectories(char* filename) {
+static const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
 
   if (filenamebase == NULL) {
@@ -354,7 +354,8 @@ static void genCFileBuildRules(FILE* makefile) {
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
-      const char* objFilename = genIntFilename(astr(inputFilename, ".o"));
+      const char* pathlessFilename = stripdirectories(inputFilename);
+      const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
       fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
@@ -378,7 +379,8 @@ static void genObjFiles(FILE* makefile) {
       if (objfile) {
         fprintf(makefile, "\t%s \\\n", inputFilename);
       } else {
-        const char* objFilename = genIntFilename(astr(inputFilename, ".o"));
+        const char* pathlessFilename = stripdirectories(inputFilename);
+        const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
         fprintf(makefile, "\t%s \\\n", objFilename);
       }
     }
