@@ -2,3 +2,6 @@ multilocale: on statement in on statement
 
 This should start working when all references are turned into wide
 references.
+
+1/8/2008: sjd: this doesn't work because global variable Locales is
+inaccessible on Locale 1 because global variables are not yet supported.
