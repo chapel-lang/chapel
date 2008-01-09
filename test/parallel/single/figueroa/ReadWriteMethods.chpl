@@ -18,17 +18,18 @@ def foo(type t, v: t, s) {
   d.writeEF(v);
 }
 
-foo(int(8), 4, "int(8)");
-foo(int(16), 4, "int(16)");
-foo(int(32), 4, "int(32)");
+foo(bool, true, "bool");
+foo(int(8), 1, "int(8)");
+foo(int(16), 2, "int(16)");
+foo(int(32), 3, "int(32)");
 foo(int(64), 4, "int(64)");
-foo(int, 4, "int");
-foo(uint, 4, "uint");
-foo(real, 4.0, "real");
-foo(real(32), 4.0: real(32), "real(32)");
-foo(real(64), 4.0, "real(64)");
-foo(complex(64), 4.0: complex(64), "complex(64)");
-foo(complex(128), 4.0: complex(128), "complex(128)");
-foo(string, "4.", "string");
+foo(int, 5, "int");
+foo(uint, 6, "uint");
+foo(real, 7.0, "real");
+foo(real(32), 8.0: real(32), "real(32)");
+foo(real(64), 9.0, "real(64)");
+foo(complex(64), 10.0: complex(64), "complex(64)");
+foo(complex(128), 11.0: complex(128), "complex(128)");
+foo(string, "Hello!", "string");
 type r = range;
 foo(r, 1..3, "range");
