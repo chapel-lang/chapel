@@ -1,5 +1,5 @@
 use Time;
-// Test sync var using mostly read methods
+// Test sync var using mostly read, reset, and isFull methods
 
 var done: sync bool;
 
@@ -22,12 +22,12 @@ def foo(type t, u: t, v: t, name) {
   }
   sleep(1);
   writeln("1: woke up. writing ", u);
-  s.writeEF(u);
-  if done then s.writeEF(v);
+  s = u;
+  if done then s = v;
   // This value written below should never be read (unless the last readXX above
   // is somehow delayed)!  The purpose of writing this value is to confirm that
   // the readFF and the readXX following it do not somehow make the sync var empty.
-  s.writeEF(u);
+  s = u;
 }
 
 foo(bool, true, false, "bool");
