@@ -230,7 +230,7 @@ bundleArgs(BlockStmt* block) {
       DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
       if (block->blockTag == BLOCK_ON) {
         wrap_fn->addPragma("on block");
-        ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "locale", dtInt[INT_SIZE_32]);
+        ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
         wrap_fn->insertFormalAtTail(locale);
       }
       ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
