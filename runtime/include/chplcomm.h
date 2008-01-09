@@ -9,6 +9,33 @@ extern _int32 _numLocales; // number of locales
 
 typedef void (*func_p)(void*);
 
+#define _SET_WIDE_REF(wide, ref) \
+  (wide).locale = _localeID; (wide).addr = ref
+
+#define _SET_WIDE_REF_OFF(wide1, wide2, stype, sfield)                  \
+  (wide1).locale = (wide2).locale; (wide1).addr = (&(((stype*)((wide2).addr))->sfield))
+
+#define _COMM_WIDE_GET(type, local, wide)                               \
+  _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(type))
+
+#define _COMM_WIDE_GET_OFF(type, local, wide, stype, sfield)            \
+  _chpl_comm_get_off((&(local)), ((wide).locale), ((wide).addr), stype, sfield)
+
+#define _COMM_WIDE_PUT(type, wide, local)                               \
+  do {                                                                  \
+    type _imm = local;                                                  \
+    _chpl_comm_put(&_imm, (wide).locale, (wide).addr, sizeof(type));    \
+  } while (0)
+
+#define _COMM_WIDE_PUT_OFF(type, wide, local, stype, sfield)            \
+  _chpl_comm_put_off((&(local)), ((wide).locale), ((wide).addr), stype, sfield)
+
+#define _COMM_WIDE_PUT_OFF_IMM(type, wide, local, stype, sfield)        \
+  do {                                                                  \
+    type imm = local;                                                   \
+    _chpl_comm_put_off((&imm), ((wide).locale), ((wide).addr), stype, sfield); \
+  } while (0)
+
 #define _chpl_comm_get_off(addr, locale, raddr, stype, sfield)   \
   _chpl_comm_get(addr, locale,                                         \
                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \

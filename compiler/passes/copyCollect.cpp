@@ -85,16 +85,23 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
       if (ClassType* classfield = toClassType(field->type)) {
         if (classfield->classTag == CLASS_CLASS) {
           if (!classfield->symbol->hasPragma("ref")) {
-            addToRootSet(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                             base->copy(),
-                                             new SymExpr(field)));
+            VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+            fn->insertAtHead(new DefExpr(tmp));
+            fn->insertAtHead(
+              new CallExpr(PRIMITIVE_MOVE, tmp,
+                new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->copy(),
+                  new SymExpr(field))));
+            addToRootSet(fn, new SymExpr(tmp));
             totalRoots++;
           }
         } else if (classfield->classTag == CLASS_RECORD) {
-          buildRootSetForFunction(fn, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                                   base->copy(),
-                                                   new SymExpr(field)),
-                                  field->defPoint);
+          VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+          fn->insertAtHead(new DefExpr(tmp));
+          fn->insertAtHead(
+            new CallExpr(PRIMITIVE_MOVE, tmp,
+              new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->copy(),
+                new SymExpr(field))));
+          buildRootSetForFunction(fn, new SymExpr(tmp), field->defPoint);
         }
       }
     }

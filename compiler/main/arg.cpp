@@ -116,6 +116,12 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
     argv[i] = _dupstr(aargv[i]);
   argv[i] = NULL;
   ArgumentDescription *desc = arg_state->desc;
+
+  /* Set --local according to CHPL_COMM */
+  char* chpl_comm = getenv("CHPL_COMM");
+  if (chpl_comm == NULL || !strcmp(chpl_comm, "none"))
+    fLocal = true;
+
   /* Grab Environment Variables */
   for (i = 0;; i++) {
     if (!desc[i].name)

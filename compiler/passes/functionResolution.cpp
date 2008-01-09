@@ -2415,10 +2415,6 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIMITIVE_RSH)) {
       FOLD_CALL2(P_prim_rsh);
-    } else if (call->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
-      insertValueTemp(call->parentExpr, call->get(2));
-      insertValueTemp(call->parentExpr, call->get(3));
-      insertValueTemp(call->parentExpr, call->get(4));
     } else if (call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
       BlockStmt* block = new BlockStmt();
       SymExpr* se = toSymExpr(call->get(1));
@@ -2444,6 +2440,20 @@ postFold(Expr* expr) {
       block->remove();
       wrapDomainMap.put(domainValueType, wrap->isResolved());
       buildArrayMap.put(call, build->isResolved());
+    } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT) ||
+               call->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
+               (call->primitive && 
+                (!strncmp("_fscan", call->primitive->name, 6) ||
+                 !strcmp("_readToEndOfLine", call->primitive->name) ||
+                 !strcmp("_now_timer", call->primitive->name) ||
+                 !strcmp("_format", call->primitive->name)))) {
+      //
+      // these primitives require temps to dereference actuals
+      //   why not do this to all primitives?
+      //
+      for_actuals(actual, call) {
+        insertValueTemp(call->getStmtExpr(), actual);
+      }
     }
   } else if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* val = paramMap.get(sym->var)) {

@@ -80,9 +80,11 @@ OPTIONS
   --baseline        Turns off almost all optimizations and generates naive C
                     code with many temporary variables.
 
-  --local           Optimize compilation of code for single locale
+  --[no]-local      Optimize compilation of code for single locale
                     execution, changing on blocks to normal blocks and
-                    optimizing away all remote references.
+                    optimizing away all remote references.  When
+                    CHPL_COMM is set to "none," this optimization is
+                    on by default; otherwise it is off.
 
   --no-copy-propagation   Turns off the compiler's copy propagation 
                     optimization which is on by default.

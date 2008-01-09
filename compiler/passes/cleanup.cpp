@@ -25,6 +25,8 @@ encapsulateBegins() {
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt *b = toBlockStmt(ast)) {
+      currentLineno = b->lineno;
+      currentFilename = b->filename;
       if (b->blockTag == BLOCK_BEGIN) {
         const char *fname = astr("_begin_block", istr(uid++));
         FnSymbol *fn = new FnSymbol(fname);

@@ -29,9 +29,12 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
   int i = 0;
   for_fields(field, ct) {
     if (ClassType* fct = toClassType(field->type)) {
-      if (!visit.set_in(fct) && fct->classTag != CLASS_CLASS)
-        setOrder(order, maxOrder, fct);
-      i = max(i, getOrder(order, maxOrder, fct, visit));
+      if (!visit.set_in(fct)) {
+        if (fct->classTag != CLASS_CLASS || fct->symbol->hasPragma("ref")) {
+          setOrder(order, maxOrder, fct);
+          i = max(i, getOrder(order, maxOrder, fct, visit));
+        }
+      }
     }
   }
   return i + (ct->classTag != CLASS_CLASS);
@@ -41,7 +44,8 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
 static void
 setOrder(Map<ClassType*,int>& order, int& maxOrder,
          ClassType* ct) {
-  if (ct->classTag == CLASS_CLASS || order.get(ct))
+  if (order.get(ct) || (ct->classTag == CLASS_CLASS &&
+                        !ct->symbol->hasPragma("ref")))
     return;
   int i;
   Vec<ClassType*> visit;
@@ -318,7 +322,7 @@ static void codegen_header(void) {
   for (int i = 1; i <= maxOrder; i++) {
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ClassType* ct = toClassType(ts->type))
-        if (order.get(ct) == i)
+        if (order.get(ct) == i && !ct->symbol->hasPragma("ref"))
           ts->codegenDef(outfile);
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {

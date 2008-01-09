@@ -1,3 +1,0 @@
-multilocale: immediate values in remote record assignments
-
-Cannot assign immediate values to remote locations in on clauses.

@@ -8,3 +8,4 @@
 --no-single-loop-iterator-opt --no-expand-iterators-inline-opt
 --no-scalar-replacement
 --no-scalar-replacement --no-inline
+--no-local

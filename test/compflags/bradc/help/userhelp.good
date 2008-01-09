@@ -10,7 +10,7 @@ Code Size Options:
 
 Optimization Control Options:
       --baseline                         Disable almost all optimizations
-      --local                            Compile program for a single locale
+      --[no-]local                       Compile program for a single locale
       --no-copy-propagation              Disable copy propagation
       --no-expand-iterators-inline-opt   Disable the expansion of iterators
                                          inlined around loop bodies

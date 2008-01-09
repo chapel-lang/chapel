@@ -1,6 +1,7 @@
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "error.h"
+#include <string.h>
 
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return 1;
@@ -37,12 +38,18 @@ void _chpl_comm_exit_any(int status) { }
 
 void _chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) { }
+void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
+  memcpy(raddr, addr, size);
+}
 
-void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size) { }
+void  _chpl_comm_get(void* addr, _int32 locale, void* raddr, _int32 size) {
+  memcpy(addr, raddr, size);
+}
 
-void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) { }
+void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
+  (*f)(arg);
+}
 
 void _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
-  (*f)(0);
+  (*f)(arg);
 }
