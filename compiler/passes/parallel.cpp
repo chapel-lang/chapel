@@ -301,6 +301,9 @@ parallel(void) {
 }
 
 
+//
+// change all references into wide references
+//
 void
 insertWideReferences(void) {
   if (fLocal)

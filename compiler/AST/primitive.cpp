@@ -386,12 +386,9 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIMITIVE_NUM_LOCALES, "_chpl_comm_default_num_locales", returnInfoInt32, false, false);
-  prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32, false, false);
-  prim_def(PRIMITIVE_COMM_GET, "_chpl_comm_get", returnInfoVoid, true);
-  prim_def(PRIMITIVE_COMM_PUT, "_chpl_comm_put", returnInfoVoid, true);
-  prim_def(PRIMITIVE_COMM_GET_OFF, "_chpl_comm_get_off", returnInfoVoid, true);
-  prim_def(PRIMITIVE_COMM_PUT_OFF, "_chpl_comm_put_off", returnInfoVoid, true);
+  prim_def(PRIMITIVE_NUM_LOCALES, "_chpl_comm_default_num_locales", returnInfoInt32);
+  prim_def(PRIMITIVE_GET_LOCALE, "_get_locale", returnInfoInt32);
+  prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 

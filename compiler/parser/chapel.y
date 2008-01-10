@@ -1406,7 +1406,12 @@ parenop_expr:
 
 memberaccess_expr:
   lvalue TDOT identifier
-    { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
+    {
+      if (!strcmp("locale", $3))
+        $$ = new CallExpr(PRIMITIVE_GET_LOCALE, $1);
+      else
+        $$ = new CallExpr(".", $1, new_StringSymbol($3));
+    }
 | lvalue TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
 | lvalue TDOT TDOMAIN

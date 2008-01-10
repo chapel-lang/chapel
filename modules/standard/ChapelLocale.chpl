@@ -2,6 +2,7 @@
 //const LocalesDomain: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocalesDomain: domain(1) = [0..numLocales-1];
 
+pragma "locale"
 class locale {
   const id: int;
 }
@@ -22,9 +23,3 @@ def locale.numCores {
 }
 
 def localeID() return __primitive("_localeID");
-
-def _locale_to_id(l: locale) return l.id;
-
-def _locale_to_id(l) {
-  compilerError("invalid on clause");
-}

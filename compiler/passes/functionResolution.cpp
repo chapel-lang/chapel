@@ -2093,6 +2093,18 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       }
+    } else if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+      //
+      // if .locale is applied to an expression of locale type,
+      // replace this primitive with an access of the id field
+      //
+      Type* type = call->get(1)->typeInfo();
+      if (type->symbol->hasPragma("ref"))
+        type = getValueType(type);
+      if (type->symbol->hasPragma("locale")) {
+        result = new CallExpr("id", gMethodToken, call->get(1)->remove());
+        call->replace(result);
+      }
     }
   }
   return result;

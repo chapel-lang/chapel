@@ -1666,65 +1666,19 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, "->_ref_count < 0)");
       break;
+    case PRIMITIVE_GET_LOCALE:
+      if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
+        fprintf(outfile, "(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ").locale");
+      } else
+        fprintf(outfile, "_localeID");
+      break;
     case PRIMITIVE_LOCALE_ID:
       fprintf(outfile, "_localeID");
       break;
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
-      break;
-    case PRIMITIVE_COMM_GET:
-      {
-        fprintf(outfile, "_chpl_comm_get(&");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ", ");
-        get(2)->codegen(outfile);
-        fprintf(outfile, ".locale, ");
-        get(2)->codegen(outfile);
-        fprintf(outfile, ".addr, sizeof(");
-        ClassType* ct = toClassType(get(2)->typeInfo());
-        getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
-        fprintf(outfile, "))");
-      }
-      break;
-    case PRIMITIVE_COMM_PUT:
-      {
-        fprintf(outfile, "_chpl_comm_put(&");
-        get(2)->codegen(outfile);
-        fprintf(outfile, ", ");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ".locale, ");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ".addr, sizeof(");
-        ClassType* ct = toClassType(get(1)->typeInfo());
-        getValueType(ct->getField(2)->typeInfo())->symbol->codegen(outfile);
-        fprintf(outfile, "))");
-      }
-      break;
-    case PRIMITIVE_COMM_GET_OFF:
-      fprintf(outfile, "_chpl_comm_get_off(&");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".locale, ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ".addr, ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(4)->codegen(outfile);
-      fprintf(outfile, ")");
-      break;
-    case PRIMITIVE_COMM_PUT_OFF:
-      fprintf(outfile, "_chpl_comm_put_off(&");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".locale, ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ".addr, ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(4)->codegen(outfile);
-      fprintf(outfile, ")");
       break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");
