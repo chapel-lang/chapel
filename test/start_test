@@ -522,6 +522,9 @@ while ( $#argv > 0 )
         case --comm:
                 shift
                 set comm = $argv[1]
+                if ($comm == "") then
+                    set comm = "none"
+                endif
                 shift
                 breaksw
         case -suppress:
