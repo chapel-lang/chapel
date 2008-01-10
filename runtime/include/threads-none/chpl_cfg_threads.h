@@ -3,21 +3,22 @@
 
 // bogus mutex type (no mutexes)
 typedef int _chpl_mutex_t;
-typedef _chpl_mutex_t *_chpl_mutex_p;
 
 typedef _bool _chpl_sync_aux_t;            // only needs to store the full/empty bit
 typedef _chpl_sync_aux_t _chpl_single_aux_t;
 
 
 #define _chpl_read_FE(x,y,lineno,filename) \
-  (x) = (y)->sync_aux ? (((y)->sync_aux = false), (y)->value) \
-        : _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
-          (y)->value
+  do {if ((y)->sync_aux) { \
+        (x) = (y)->value; \
+        (y)->sync_aux = false; } \
+      else _printError("sync var empty (running in single-threaded mode)", lineno, filename); \
+     } while (0)
 
 #define _chpl_read_FF(x,y,lineno,filename) \
-  (x) = (y)->sync_aux ? (y)->value \
-        : _printError("sync var empty (running in single-threaded mode)", lineno, filename), \
-          (y)->value
+  do {if ((y)->sync_aux) (x) = (y)->value; \
+      else _printError("sync var empty (running in single-threaded mode)", lineno, filename); \
+     } while (0)
 
 #define _chpl_read_XX(x,y) (x) = (y)->value
 
@@ -47,9 +48,9 @@ typedef _chpl_sync_aux_t _chpl_single_aux_t;
 
 
 #define _chpl_single_read_FF(x,y,lineno,filename) \
-  (x) = (y)->single_aux ? (y)->value \
-        : _printError("single var not yet defined (running in single-threaded mode)", lineno, filename), \
-          (y)->value
+  do {if ((y)->single_aux) (x) = (y)->value; \
+      else _printError("single var not yet defined (running in single-threaded mode)", lineno, filename); \
+     } while (0)
 
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if ((x)->single_aux) \

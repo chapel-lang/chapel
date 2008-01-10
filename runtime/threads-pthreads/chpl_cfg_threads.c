@@ -1,11 +1,11 @@
 // Pthread implementation
 
-#include <stdint.h>
-#include <pthread.h>
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "chplmem.h"
 #include "error.h"
+#include <pthread.h>
+#include <stdint.h>
 
 
 typedef struct {
@@ -28,16 +28,18 @@ static pthread_key_t   _chpl_serial;         // per-thread serial state
 static _chpl_condvar_p _chpl_condvar_new(void) {
   _chpl_condvar_p cv;
   cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
-  pthread_cond_init(cv, NULL);
+  if (pthread_cond_init(cv, NULL))
+    _printInternalError("pthread_cond_init() failed");
   return cv;
 }
 
 
 // Mutex
 
-int _chpl_mutex_init(_chpl_mutex_p mutex) {
+void _chpl_mutex_init(_chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
-  return pthread_mutex_init(mutex, NULL);
+  if (pthread_mutex_init(mutex, NULL))
+    _printInternalError("pthread_mutex_init() failed");
 }
 
 static _chpl_mutex_p _chpl_mutex_new(void) {
@@ -48,15 +50,20 @@ static _chpl_mutex_p _chpl_mutex_new(void) {
 }
 
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
-  return pthread_mutex_lock(mutex);
+  int return_value;
+  if ((return_value = pthread_mutex_lock(mutex)))
+    _printInternalError("pthread_mutex_lock() failed");
+  return return_value;
 }
 
-int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
-  return pthread_mutex_unlock(mutex);
+void _chpl_mutex_unlock(_chpl_mutex_p mutex) {
+  if (pthread_mutex_unlock(mutex))
+    _printInternalError("pthread_mutex_unlock() failed");
 }
 
-int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
-  return pthread_mutex_destroy(mutex);
+void _chpl_mutex_destroy(_chpl_mutex_p mutex) {
+  if (pthread_mutex_destroy(mutex))
+    _printInternalError("pthread_mutex_destroy() failed");
 }
 
 
@@ -66,43 +73,43 @@ int _chpl_sync_lock(_chpl_sync_aux_t *s) {
   return _chpl_mutex_lock(s->lock);
 }
 
-int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
-  return _chpl_mutex_unlock(s->lock);
+void _chpl_sync_unlock(_chpl_sync_aux_t *s) {
+  _chpl_mutex_unlock(s->lock);
 }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    return_value = pthread_cond_wait(s->signal_full, s->lock);
+    if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
+      _printInternalError("pthread_cond_wait() failed");
   }
-  if (return_value)
-    _printError("invalid mutex", lineno, filename);
   return return_value;
 }
 
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
-    return_value = pthread_cond_wait(s->signal_empty, s->lock);
+    if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
+      _printInternalError("pthread_cond_wait() failed");
   }
-  if (return_value)
-    _printError("invalid mutex", lineno, filename);
   return return_value;
 }
 
-int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
   s->is_full = true;
   _chpl_sync_unlock(s);
-  return pthread_cond_signal(s->signal_full);
+  if (pthread_cond_signal(s->signal_full))
+    _printInternalError("pthread_cond_signal() failed");
 }
 
-int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   s->is_full = false;
   _chpl_sync_unlock(s);
-  return pthread_cond_signal(s->signal_empty);
+  if (pthread_cond_signal(s->signal_empty))
+    _printInternalError("pthread_cond_signal() failed");
 }
 
-int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
   return s->is_full;
 }
 
@@ -123,20 +130,20 @@ int _chpl_single_lock(_chpl_single_aux_t *s) {
 int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    return_value = pthread_cond_wait(s->signal_full, s->lock);
+    if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
+      _printInternalError("invalid mutex in _chpl_single_wait_full");
   }
-  if (return_value)
-    _printInternalError("invalid mutex in _chpl_single_wait_full");
   return return_value;
 }
 
-int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   s->is_full = true;
   _chpl_mutex_unlock(s->lock);
-  return pthread_cond_signal(s->signal_full);
+  if (pthread_cond_signal(s->signal_full))
+    _printInternalError("pthread_cond_signal() failed");
 }
 
-int _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
   return s->is_full;
 }
 

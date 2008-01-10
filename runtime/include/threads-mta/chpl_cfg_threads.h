@@ -3,7 +3,6 @@
 
 // mutex type
 typedef int _chpl_mutex_t;
-typedef _chpl_mutex_t *_chpl_mutex_p;
 
 typedef struct {
   sync _int64 is_full;      // also serves as lock - need to acquire before accessing corresponding _syncvar

@@ -5,7 +5,6 @@
 
 // mutexes
 typedef pthread_mutex_t _chpl_mutex_t;
-typedef _chpl_mutex_t  *_chpl_mutex_p;
 
 // condition variables
 typedef pthread_cond_t    _chpl_condvar_t;
@@ -13,14 +12,14 @@ typedef _chpl_condvar_t  *_chpl_condvar_p;
 
 typedef struct {
   volatile _bool is_full;
-  _chpl_mutex_p lock;           // need to acquire before accessing corresponding _syncvar
+  _chpl_mutex_t *lock;          // need to acquire before accessing corresponding _syncvar
   _chpl_condvar_p signal_full;  // wait for full; signal this when full
   _chpl_condvar_p signal_empty; // wait for empty; signal this when empty
 } _chpl_sync_aux_t;
 
 typedef struct {
   volatile _bool is_full;
-  _chpl_mutex_p lock;           // need to acquire before writing to corresponding _singlevar
+  _chpl_mutex_t *lock;          // need to acquire before writing to corresponding _singlevar
   _chpl_condvar_p signal_full;  // wait for full; signal this when full
 } _chpl_single_aux_t;
 

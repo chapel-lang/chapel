@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "chplmem.h"
@@ -6,16 +5,16 @@
 
 // Mutex
 
-int _chpl_mutex_init(_chpl_mutex_p mutex) { return mutex == NULL; }
-int _chpl_mutex_lock(_chpl_mutex_p mutex) { return mutex == NULL; }
-int _chpl_mutex_unlock(_chpl_mutex_p mutex) { return mutex == NULL; }
-int _chpl_mutex_destroy(_chpl_mutex_p mutex) { return mutex == NULL; }
+void _chpl_mutex_init(_chpl_mutex_p mutex) { }
+int _chpl_mutex_lock(_chpl_mutex_p mutex) { return 0; }
+void _chpl_mutex_unlock(_chpl_mutex_p mutex) { }
+void _chpl_mutex_destroy(_chpl_mutex_p mutex) { }
 
 
 // Sync variables
 
 int _chpl_sync_lock(_chpl_sync_aux_t *s) { return s == NULL; }
-int _chpl_sync_unlock(_chpl_sync_aux_t *s) { return s == NULL; }
+void _chpl_sync_unlock(_chpl_sync_aux_t *s) { }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
   if (*s)
@@ -34,14 +33,12 @@ int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string f
   else return 0;
 }
 
-int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
   *s = true;
-  return 0;
 }
 
-int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   *s = false;
-  return 0;
 }
 
 _bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
@@ -66,9 +63,8 @@ int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filenam
   }
 }
 
-int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   *s = true;
-  return 0;
 }
 
 _bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
@@ -82,7 +78,6 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
-void _chpl_serial_delete(_bool *p) { }
 void initChplThreads() { }
 void exitChplThreads() { }
 void _chpl_thread_init(void) { }

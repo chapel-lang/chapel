@@ -4,7 +4,6 @@
 #include "chplthreads.h"
 #include "chplmem.h"
 #include "error.h"
-#include <stdint.h>
 #include <stdlib.h>
 #include <machine/runtime.h>
 
@@ -22,116 +21,71 @@ static sync _int64     _chpl_can_exit;       // can main thread exit?
 
 // Mutex
 
-int _chpl_mutex_init(_chpl_mutex_p mutex) {
-  if (mutex) {
-    purge(mutex);                     // set to zero and mark empty
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_mutex_init");
-    return 1;
-  }
+void _chpl_mutex_init(_chpl_mutex_p mutex) {
+  purge(mutex);                     // set to zero and mark empty
 }
 
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
-  if (mutex) {
-    writeef(mutex, 1);                // set to one and mark full
-    return 0;
-  } else
-    _printInternalError("null pointer in _chpl_mutex_lock");
-    return 1;
+  writeef(mutex, 1);                // set to one and mark full
+  return 0;
 }
 
-int _chpl_mutex_unlock(_chpl_mutex_p mutex) {
-  return _chpl_mutex_init(mutex);
+void _chpl_mutex_unlock(_chpl_mutex_p mutex) {
+  _chpl_mutex_init(mutex);
 }
 
-int _chpl_mutex_destroy(_chpl_mutex_p mutex) {
-  return _chpl_mutex_lock(mutex);     // lock it so no thread can use it
+void _chpl_mutex_destroy(_chpl_mutex_p mutex) {
+  _chpl_mutex_lock(mutex);     // lock it so no thread can use it
 }
 
 
 // Sync variables
 
 int _chpl_sync_lock(_chpl_sync_aux_t *s) {
-  if (s) {
-    readfe(&(s->is_full));            // mark empty
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_sync_lock");
-    return 1;
-  }
+  readfe(&(s->is_full));            // mark empty
+  return 0;
 }
 
-int _chpl_sync_unlock(_chpl_sync_aux_t *s) {
-  if (s) {
-    _int64 is_full = readxx(&(s->is_full));
-    writeef(&(s->is_full), is_full);  // mark full
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_sync_unlock");
-    return 1;
-  }
+void _chpl_sync_unlock(_chpl_sync_aux_t *s) {
+  _int64 is_full = readxx(&(s->is_full));
+  writeef(&(s->is_full), is_full);  // mark full
 }
 
 int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
-  if (_chpl_sync_lock(s)) {
-    _printError("invalid mutex", lineno, filename);  // s is null
-    return 1;
-  } else {
-    while (!readxx(&(s->is_full))) {
-      _chpl_sync_unlock(s);
-      readfe(&(s->signal_full));
-      _chpl_sync_lock(s);
-    }
-    return 0;
+  _chpl_sync_lock(s);
+  while (!readxx(&(s->is_full))) {
+    _chpl_sync_unlock(s);
+    readfe(&(s->signal_full));
+    _chpl_sync_lock(s);
   }
+  return 0;
 }
 
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
-  if (_chpl_sync_lock(s)) {
-    _printError("invalid mutex", lineno, filename);   // s is null
-    return 1;
-  } else {
-    while (readxx(&(s->is_full))) {
-      _chpl_sync_unlock(s);
-      readfe(&(s->signal_empty));
-      _chpl_sync_lock(s);
-    }
-    return 0;
+  _chpl_sync_lock(s);
+  while (readxx(&(s->is_full))) {
+    _chpl_sync_unlock(s);
+    readfe(&(s->signal_empty));
+    _chpl_sync_lock(s);
   }
+  return 0;
 }
 
-int _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
-  if (s) {
-    writexf(&(s->signal_full), true);                // signal full
-    writeef(&(s->is_full), true);                    // mark full and unlock
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_sync_mark_and_signal_full");
-    return 1;
-  }
+void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
+  writexf(&(s->signal_full), true);                // signal full
+  writeef(&(s->is_full), true);                    // mark full and unlock
 }
 
-int _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
-  if (s) {
-    writexf(&(s->signal_empty), true);               // signal empty
-    writeef(&(s->is_full), false);                   // mark empty and unlock
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_sync_mark_and_signal_empty");
-    return 1;
-  }
+void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
+  writexf(&(s->signal_empty), true);               // signal empty
+  writeef(&(s->is_full), false);                   // mark empty and unlock
 }
 
-int _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
   if (simple_sync_var)
     return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
-  else if (s)
+  else
     return readxx(&(s->is_full));
-  else {
-    _printInternalError("null pointer in _chpl_sync_is_full");
-    return -1;
-  }
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
@@ -144,47 +98,26 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 // Single variables
 
 int _chpl_single_lock(_chpl_single_aux_t *s) {
-  if (s) {
-    readfe(&(s->is_full));            // mark empty
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_single_lock");
-    return 1;
-  }
+  readfe(&(s->is_full));            // mark empty
+  return 0;
 }
 
 int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
-  if (s) {
-    while (!readxx(&(s->is_full))) {
-      readff(&(s->signal_full));
-    }
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_single_wait_full");
-    return 1;
-  }
+  while (!readxx(&(s->is_full)))
+    readff(&(s->signal_full));
+  return 0;
 }
 
-int _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
-  if (s) {
-    writexf(&(s->is_full), true);     // mark full and unlock
-    writexf(&(s->signal_full), true); // signal full
-    return 0;
-  } else {
-    _printInternalError("null pointer in _chpl_single_mark_and_signal_full");
-    return 1;
-  }
+void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
+  writexf(&(s->is_full), true);     // mark full and unlock
+  writexf(&(s->signal_full), true); // signal full
 }
 
-int _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
   if (simple_single_var)
     return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
-  else if (s)
+  else
     return readxx(&(s->is_full));
-  else {
-    _printInternalError("null pointer in _chpl_single_is_full");
-    return -1;
-  }
 }
 
 void _chpl_init_single_aux(_chpl_single_aux_t *s) {
