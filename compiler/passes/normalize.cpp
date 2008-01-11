@@ -99,11 +99,125 @@ flattenGlobalFunctions() {
 }
 
 
+static void insertHeapAllocate(CallExpr* move) {
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
+  move->insertBefore(new DefExpr(tmp));
+  move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
+  move->insertAtTail(new CallExpr("_construct__heap", tmp));
+}
+
+
+static void insertHeapAccess(SymExpr* se) {
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  tmp->isCompilerTemp = true;
+  Expr* stmt = se->getStmtExpr();
+  se->replace(new SymExpr(tmp));
+  stmt->insertBefore(new DefExpr(tmp));
+  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_val", gMethodToken, se)));
+}
+
+
+//
+// change local variables and arguments into _heap classes if they
+// should be allocated on the heap; do this for local variables and
+// arguments accessed in begin-statements
+//
+static void heapAllocateLocals() {
+  Vec<Symbol*> heapSet; // set of symbols that should be heap allocated
+
+  compute_sym_uses();
+
+  // for each nested begin function
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->hasPragma("begin")) {
+
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, fn);
+
+      // collect defs of all local variables
+      Vec<DefExpr*> defSet;
+      forv_Vec(BaseAST, ast, asts) {
+        if (DefExpr* def = toDefExpr(ast)) {
+          defSet.set_add(def);
+        }
+      }
+
+      // collect symbols that should be heap allocated
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+
+          // collect arguments
+          if (isArgSymbol(se->var))
+            heapSet.set_add(se->var);
+
+          // collect symbols defined in outer functions
+          if (isVarSymbol(se->var) &&
+              se->var->defPoint &&
+              !defSet.set_in(se->var->defPoint) &&
+              isFnSymbol(se->var->defPoint->parentSymbol))
+            heapSet.set_add(se->var);
+        }
+      }
+    }
+  }
+
+  // for each symbol that should be heap allocated
+  forv_Vec(Symbol, sym, heapSet) {
+
+    // allocate local variables 'v' on heap
+    //   replace first definition 'v = ...' with 'v = _heap(...)'
+    //   replace all other accesses 'v' with 'v._val'
+    if (isVarSymbol(sym)) {
+      bool first = true;
+      forv_Vec(SymExpr, se, sym->defs) {
+
+        // ack!! this is troublesome: we're assuming that the first
+        // definition in the defs vector is the initial definition
+
+        if (first) {
+          CallExpr* move = toCallExpr(se->parentExpr);
+          INT_ASSERT(move);
+          INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+          insertHeapAllocate(move);
+          first = false;
+        } else {
+          insertHeapAccess(se);
+        }
+      }
+      forv_Vec(SymExpr, se, sym->uses) {
+        insertHeapAccess(se);
+      }
+    }
+
+    // replace arguments 'a' with heap-allocated temporaries
+    //   insert definition at beginning of function 't = _heap(a)'
+    //   replace all accesses 'a' with 't._val'
+    if (isArgSymbol(sym)) {
+      FnSymbol* fn = sym->getFunction();
+      VarSymbol* tmp = new VarSymbol("_tmp");
+      tmp->isCompilerTemp = true;
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_construct__heap", sym)));
+      fn->insertAtHead(new DefExpr(tmp));
+      forv_Vec(SymExpr, se, sym->defs) {
+        se->var = tmp;
+        insertHeapAccess(se);
+      }
+      forv_Vec(SymExpr, se, sym->uses) {
+        se->var = tmp;
+        insertHeapAccess(se);
+      }
+    }
+  }
+}
+
+
 void normalize(void) {
   normalize(theProgram);
   normalized = true;
   checkUseBeforeDefs();
   flattenGlobalFunctions();
+  heapAllocateLocals();
 }
 
 void normalize(BaseAST* base) {
@@ -604,9 +718,6 @@ static void tag_global(FnSymbol* fn) {
 
 
 static void fixup_array_formals(FnSymbol* fn) {
-  if (fn->normalizedOnce)
-    return;
-  fn->normalizedOnce = true;
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, fn);
   Vec<BaseAST*> all_asts;

@@ -250,6 +250,9 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasPragma("ref"))
     fn->addPragma("ref");
 
+  if (ct->symbol->hasPragma("heap"))
+    fn->addPragma("heap");
+
   if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
@@ -316,7 +319,7 @@ static void build_constructor(ClassType* ct) {
     DefExpr* def = new DefExpr(arg, NULL, exprType);
     fn->insertFormalAtTail(def);
 
-    if (!ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
+    if (!ct->symbol->hasPragma("heap") && !ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
       if (hasType) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         fn->insertAtTail(new DefExpr(tmp));

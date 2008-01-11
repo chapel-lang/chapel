@@ -854,6 +854,7 @@ buildBeginStmt(Expr* stmt) {
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
+  fn->addPragma("begin");
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
   block->insertAtTail(new DefExpr(fn));

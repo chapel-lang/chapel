@@ -513,6 +513,15 @@ class _ddata {
 }
 
 //
+// heap class for allocating locals on the heap in support of begin-
+// and on-statements
+//
+pragma "heap"
+class _heap {
+  var _val;
+}
+
+//
 // internal reference type
 //
 pragma "ref"

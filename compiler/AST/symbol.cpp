@@ -558,7 +558,6 @@ FnSymbol::FnSymbol(const char* initName) :
   basicBlocks(NULL),
   calledBy(NULL),
   isWrapper(false),
-  normalizedOnce(false),
   userString(NULL)
 {
   substitutions.clear();
@@ -1162,6 +1161,7 @@ count_instantiate_with_recursion(Type* t) {
 static Type*
 getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
   if (t->symbol->hasPragma( "sync") &&
+      !fn->hasPragma("heap") &&
       !fn->hasPragma("ref")) {
     if (!fn->hasPragma("sync") ||
         (fn->isMethod && (t->instantiatedFrom != fn->_this->type))) {
