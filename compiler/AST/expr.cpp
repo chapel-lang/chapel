@@ -718,17 +718,6 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 }
 
 
-#define _REF_COUNT_LOCK(c)                      \
-  fprintf(outfile, "_chpl_mutex_lock( &(");     \
-  (c)->codegen(outfile);                        \
-  fprintf(outfile, "->_ref_count_lock));\n")
-
-#define _REF_COUNT_UNLOCK(c)                    \
-  fprintf(outfile, "_chpl_mutex_unlock( &(");   \
-  (c)->codegen(outfile);                        \
-  fprintf(outfile, "->_ref_count_lock));\n")
-
-
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   value->codegen(outfile);
   if (fCopyCollect) {
