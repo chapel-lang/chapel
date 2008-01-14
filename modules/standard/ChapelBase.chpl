@@ -538,9 +538,6 @@ def _copy(r: _ref) return _copy(__primitive("get ref", r));
 pragma "inline" pragma "ref"
 def _pass(r: _ref) return r;
 
-pragma "inline" def _init(cv: _mutex_p) return __primitive("mutex_new");
-pragma "inline" def =(a: _mutex_p, b: _mutex_p) return b;
-
 // Returns whether an object of type t occupies a 64-bit word on MTA
 def isSimpleSyncBaseType (type t) param {
   if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)

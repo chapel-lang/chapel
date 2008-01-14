@@ -75,11 +75,6 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 }
 
 static Type*
-returnInfoMutexP( CallExpr* call) {
-  return dtMutex_p;
-}
-
-static Type*
 returnInfoFirst(CallExpr* call) {
   return call->get(1)->typeInfo();
 }
@@ -300,9 +295,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64, true);  // 64-bit
   prim_def(PRIMITIVE_GET_SERIAL, "thread_get_serial", returnInfoBool);
   prim_def(PRIMITIVE_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
-
-  prim_def(PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP, true);
-  prim_def(PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid, true);
 
   // operations on sync/single vars
   prim_def(PRIMITIVE_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);

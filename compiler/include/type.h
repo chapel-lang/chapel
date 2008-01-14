@@ -166,8 +166,6 @@ TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
 TYPE_EXTERN PrimitiveType* dtTimer; 
-TYPE_EXTERN PrimitiveType* dtMutex;
-TYPE_EXTERN PrimitiveType* dtMutex_p;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 

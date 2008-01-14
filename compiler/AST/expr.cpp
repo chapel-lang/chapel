@@ -1223,14 +1223,6 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_MUTEX_NEW:
-      fprintf( outfile, "_chpl_mutex_new()");
-      break;
-    case PRIMITIVE_MUTEX_DESTROY:
-      fprintf( outfile, "_chpl_mutex_destroy( ");
-      get(1)->codegen( outfile);
-      fprintf(outfile, ")");
-      break;
     case PRIMITIVE_SYNC_INIT:
       fprintf( outfile, "_chpl_init_sync_aux(&((");
       get(1)->codegen( outfile);
