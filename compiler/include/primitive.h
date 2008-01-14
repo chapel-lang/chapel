@@ -48,15 +48,9 @@ enum PrimitiveTag {
   PRIMITIVE_GET_MEMBER,
   PRIMITIVE_GET_MEMBER_VALUE,
   PRIMITIVE_SET_MEMBER,
-  PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
-  PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
   PRIMITIVE_CHECK_NIL,
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
-  PRIMITIVE_SET_HEAPVAR,               // used to alloc variables on heap
-  PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
-  PRIMITIVE_REFC_TOUCH,                // touch reference-counted var
-  PRIMITIVE_REFC_RELEASE,              // dec ref-counter and maybe free var
 
   PRIMITIVE_THREAD_INIT,
   PRIMITIVE_THREAD_ID,

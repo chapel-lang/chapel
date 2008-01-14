@@ -295,13 +295,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
 
-  prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
-  prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", returnInfoMove, true);
-  prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid, true);
-  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid, true);
-  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid, true, true);
-
   // thread primitives
   prim_def(PRIMITIVE_THREAD_INIT, "thread_init", returnInfoVoid, true);
   prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64, true);  // 64-bit

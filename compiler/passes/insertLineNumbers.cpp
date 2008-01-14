@@ -67,9 +67,7 @@ void insertLineNumbers() {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
             call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-            call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-            call->isPrimitive(PRIMITIVE_GET_MEMBER_REF_TO) ||
-            call->isPrimitive(PRIMITIVE_SET_MEMBER_REF_TO)) {
+            call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           Expr* stmt = call->getStmtExpr();
           currentLineno = stmt->lineno;
           currentFilename = stmt->filename;

@@ -1178,25 +1178,6 @@ void CallExpr::codegen(FILE* outfile) {
         get(3)->codegen(outfile);
       }
       break;
-    case PRIMITIVE_GET_MEMBER_REF_TO:
-      fprintf( outfile, "*(");
-      codegen_member( outfile, get(1), get(2));
-      fprintf( outfile, ")");
-      break;
-    case PRIMITIVE_SET_MEMBER_REF_TO: {
-      codegen_member( outfile, get(1), get(2));
-      fprintf( outfile, " = ");
-      SymExpr *s = toSymExpr(get(3));
-      VarSymbol *vs;
-      if (s && (vs= toVarSymbol(s->var))) {
-        fprintf( outfile, "%s", vs->cname);
-      } else {
-        fprintf( outfile, "&(");
-        get(3)->codegen( outfile);
-        fprintf( outfile, ")");
-      }
-      break;
-    }
     case PRIMITIVE_CHECK_NIL:
       {
         ClassType* ct = toClassType(get(1)->typeInfo());
@@ -1226,63 +1207,6 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "->im)");
       else
         fprintf(outfile, ".im)");
-      break;
-    case PRIMITIVE_SET_HEAPVAR: {
-      // args: heap var, alloc expr
-      SymExpr *s = toSymExpr(get(1));
-      VarSymbol *vs;
-      if (s &&
-          (vs = toVarSymbol(s->var))) {
-        if (vs->type->symbol->hasPragma("wide"))
-          fprintf(outfile, "_SET_WIDE_REF(%s, ", vs->cname);
-        else
-          fprintf( outfile, "%s = ", vs->cname);
-        get(2)->codegen(outfile);
-        if (vs->type->symbol->hasPragma("wide"))
-          fprintf(outfile, ")");
-      } else {
-        INT_FATAL(get(1), "invalid variable passed to SET_HEAPVAR");
-      }
-      break;
-    }
-    case PRIMITIVE_REFC_INIT: // initialize reference-counted var
-      fprintf(outfile, "_CHPL_REFC_INIT(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      if (get(2)->typeInfo()->symbol->hasPragma("wide"))
-        fprintf(outfile, ".addr");
-      fprintf(outfile, ", ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ")");
-      break;
-    case PRIMITIVE_REFC_TOUCH: // touch reference-counted var
-      fprintf(outfile, "_CHPL_REFC_TOUCH(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      if (get(2)->typeInfo()->symbol->hasPragma("wide"))
-        fprintf(outfile, ".addr");
-      fprintf(outfile, ", ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ")");
-      break;
-    case PRIMITIVE_REFC_RELEASE: // possibly free reference-counted var
-      fprintf(outfile, "_CHPL_REFC_FREE(");
-      get(1)->codegen(outfile);
-      if (get(1)->typeInfo()->symbol->hasPragma("wide"))
-        fprintf(outfile, ".addr");
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      if (get(2)->typeInfo()->symbol->hasPragma("wide"))
-        fprintf(outfile, ".addr");
-      fprintf(outfile, ", ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(4)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(5)->codegen(outfile);
-      fprintf(outfile, ")");
       break;
     case PRIMITIVE_THREAD_INIT: {
       fprintf( outfile, "_chpl_thread_init()");
@@ -1484,18 +1408,14 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_struct = false;
-      CallExpr *parent_call = (CallExpr*) toCallExpr(parentExpr);
 
-      if (parent_call && parent_call->isPrimitive(PRIMITIVE_SET_HEAPVAR)) {
-        is_struct = false;
-      } else {
-        // if Chapel class or record
-        if (TypeSymbol *t = toTypeSymbol(typeInfo()->symbol)) {
-          if (toClassType(t->type)) {
-            is_struct = true;
-          }
+      // if Chapel class or record
+      if (TypeSymbol *t = toTypeSymbol(typeInfo()->symbol)) {
+        if (toClassType(t->type)) {
+          is_struct = true;
         }
       }
+
       // pointer cast
       fprintf( outfile, "(");
       typeInfo()->symbol->codegen( outfile);
