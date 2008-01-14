@@ -18,7 +18,7 @@
 $debug = 0; # set $verbose=1 in server
 $logdir = "Logs";
 $synchdir = "Logs/.synch";
-$testcmd = "nice start_test";
+$testcmd = "nice ./start_test";
 $publish_delay = 2;
 
 sub systemd {
