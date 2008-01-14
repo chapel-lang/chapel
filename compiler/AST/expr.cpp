@@ -1513,15 +1513,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_BUILD_ARRAY:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
-    case PRIMITIVE_CLASS_NULL:
-      //      if (SymExpr* sym = toSymExpr(get(1))) {
-        fprintf(outfile, "(");
-        get(1)->codegen(outfile);
-        fprintf(outfile, " == NULL)");
-        //        fprintf(outfile, "(((%s)==NULL)||((*%s)==NULL))", sym->var->cname, sym->var->cname);
-        //      } else
-        //INT_FATAL(this, "ill-formed primitive_ref_null");
-      break;
     case PRIMITIVE_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);
@@ -1544,39 +1535,6 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_GC_CLEANUP:
       fprintf(outfile, "_chpl_gc_cleanup()");
-      break;
-    case PRIMITIVE_GC_INIT:
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count = 0;");
-      fprintf(outfile, "_chpl_mutex_init( &(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count_lock))");
-      break;
-    case PRIMITIVE_GC_FREE:
-      _REF_COUNT_LOCK(get(1));
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count--;\n");
-      _REF_COUNT_UNLOCK(get(1));
-      break;
-    case PRIMITIVE_GC_TOUCH:
-      fprintf(outfile, "if (");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ") {");
-      _REF_COUNT_LOCK(get(1));
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count++;\n");
-      _REF_COUNT_UNLOCK(get(1));
-      fprintf(outfile, "}");
-      break;
-    case PRIMITIVE_GC_ISPOS:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count > 0)");
-      break;
-    case PRIMITIVE_GC_ISNEG:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "->_ref_count < 0)");
       break;
     case PRIMITIVE_GET_LOCALE:
       if (get(1)->typeInfo()->symbol->hasPragma("wide")) {

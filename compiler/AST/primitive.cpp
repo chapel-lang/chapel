@@ -359,13 +359,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
   prim_def(PRIMITIVE_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
 
-  prim_def(PRIMITIVE_CLASS_NULL, "_refnull", returnInfoBool);
-  prim_def(PRIMITIVE_GC_INIT, "_gc_init", returnInfoVoid);
-  prim_def(PRIMITIVE_GC_TOUCH, "_refup", returnInfoVoid);
-  prim_def(PRIMITIVE_GC_FREE, "_refdown", returnInfoVoid);
-  prim_def(PRIMITIVE_GC_ISPOS, "_refgzero", returnInfoBool);
-  prim_def(PRIMITIVE_GC_ISNEG, "_reflzero", returnInfoBool);
-
   prim_def(PRIMITIVE_IS_ENUM, "isEnumType", returnInfoBool);
   prim_def(PRIMITIVE_IS_TUPLE, "isTupleType", returnInfoBool);
 

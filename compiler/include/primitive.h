@@ -109,20 +109,12 @@ enum PrimitiveTag {
   PRIMITIVE_LOOP_C_FOR,
   PRIMITIVE_LOOP_INLINE, // inline iterator in place of loop
 
-  PRIMITIVE_CLASS_NULL, // check reference/class is NULL
-
   PRIMITIVE_GC_CC_INIT,       // Initialize heap for copy-collecting
   PRIMITIVE_GC_ADD_ROOT,      // Add a root variable for garbage collection
   PRIMITIVE_GC_ADD_NULL_ROOT, // Add a root and point it to NULL
   PRIMITIVE_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
   PRIMITIVE_GC_CLEANUP,       // Free GC heaps
 
-  PRIMITIVE_GC_INIT,  // set reference count to zero
-  PRIMITIVE_GC_TOUCH, // increase reference count
-  PRIMITIVE_GC_FREE,  // decrease reference count
-  PRIMITIVE_GC_ISPOS, // check reference count is greater than zero
-  PRIMITIVE_GC_ISNEG, // check reference count is less than zero
- 
   PRIMITIVE_IS_ENUM,   // True if argument is an enum
   PRIMITIVE_IS_TUPLE,  // True if argument is a tuple
 
