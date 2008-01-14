@@ -13,14 +13,21 @@ typedef struct {
   _chpl_threadarg_t arg;                   // argument for the created thread
 } _chpl_createarg_t;
 
+struct task_pool {
+  _chpl_createarg_t *nt;
+  struct task_pool  *next;
+};
+
 
 // The global vars are to synchronize with threads created with 
 // begin's which are not joined.  We need to wait on them before the
 // main thread can call exit for the process.
-static _chpl_mutex_t   _chpl_begin_cnt_lock; // protect _chpl_begin_cnt
-static int             _chpl_begin_cnt;      // number of unjoined threads 
-static _chpl_condvar_t _chpl_can_exit;       // can main thread exit?
-static pthread_key_t   _chpl_serial;         // per-thread serial state
+static _chpl_mutex_t     _chpl_begin_cnt_lock; // protect _chpl_begin_cnt
+static int               _chpl_begin_cnt;      // number of unjoined threads 
+static _chpl_condvar_t   _chpl_can_exit;       // can main thread exit?
+static pthread_key_t     _chpl_serial;         // per-thread serial state
+static struct task_pool *task_pool_head, *task_pool_tail;
+static unsigned int      task_pool_cnt;        // number of tasks in pool 
 
 
 // Condition variables
@@ -164,7 +171,8 @@ static void _chpl_serial_delete(_bool *p) {
 
 void initChplThreads() {
   _chpl_mutex_init(&_chpl_begin_cnt_lock);
-  _chpl_begin_cnt = 0;                          // only main thread running
+  _chpl_begin_cnt = task_pool_cnt = 0;          // only main thread running
+  task_pool_head = task_pool_tail = NULL;
   pthread_cond_init(&_chpl_can_exit, NULL);
 
   _chpl_mutex_init(&_memtrack_lock);
@@ -256,6 +264,43 @@ int _chpl_cobegin (int                      nthreads,
 }
 
 
+// Appends the given task to the end of the task pool.
+static void
+add_to_task_pool (_chpl_createarg_t *nt) {
+  struct task_pool *task =
+    (struct task_pool *) _chpl_malloc(1, sizeof(struct task_pool *), "task pool entry", 0, 0);
+  task->nt = nt;
+  task->next = NULL;
+  if (task_pool_tail) {
+    task_pool_tail->next = task;
+  } else {
+    task_pool_head = task;  // No tasks were in the task pool!
+  }
+  task_pool_tail = task;
+  task_pool_cnt++;
+}
+
+static void _chpl_begin_helper (_chpl_createarg_t *);
+
+// Returns true if next task from task pool was launched successfully, false otherwise.
+static _bool
+launch_next_task(void) {
+  _chpl_thread_t      thread;
+  struct task_pool *task = task_pool_head;
+  if (pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, task->nt))
+    return false;
+  else {
+    _chpl_begin_cnt++;
+    pthread_detach(thread);
+    if (task_pool_tail == task_pool_head)  // Only one task in task pool!
+      task_pool_tail = task_pool_head = NULL;
+    else task_pool_head = task_pool_head->next;
+    task_pool_cnt--;
+    _chpl_free(task, 0, 0);
+    return true;
+  }
+}
+
 // Will call the real begin statement function. Only purpose of this
 // helper thread is to wait on that function and coordinate the exiting
 // of the main Chapel thread.
@@ -263,17 +308,20 @@ static void
 _chpl_begin_helper (_chpl_createarg_t *nt) {
 
   (*nt->fun)(nt->arg);
+  _chpl_free(nt, 0, 0);
 
   // decrement begin thread count and see if we can signal Chapel exit
   _chpl_mutex_lock(&_chpl_begin_cnt_lock);
+
   _chpl_begin_cnt--;
-  if (_chpl_begin_cnt == 0) {
+  if (task_pool_cnt) {
+    if (!launch_next_task() && _chpl_begin_cnt == 0)  // No way to retry launching!
+      _printInternalError("unable to launch task from task pool");
+  } else if (_chpl_begin_cnt == 0) {
     pthread_cond_signal(&_chpl_can_exit);
   }
+
   _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
-
-  _chpl_free(nt, 0, 0);
-
 }
 
 
@@ -281,25 +329,25 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 // thread.  Also we only expect one thread to fork with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
-  int                 error;
   _chpl_thread_t      thread;
   _chpl_createarg_t  *nt;
 
-  error = 0;
   if (_chpl_get_serial()) {
     (*fp)(a);
   } else {
-    _chpl_mutex_lock(&_chpl_begin_cnt_lock);
-    _chpl_begin_cnt++;                     // assume begin will succeed
-    _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
-
     nt = (_chpl_createarg_t*) _chpl_malloc(1, sizeof(_chpl_createarg_t), "_chpl_begin helper arg", 0, 0);
     nt->fun = fp;
     nt->arg = a;
-    error |= pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt);
-    if (error)
-      _printInternalError("too many threads");
-    pthread_detach(thread);
+
+    _chpl_mutex_lock(&_chpl_begin_cnt_lock);
+    if (_chpl_begin_cnt > 10
+        || pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt))
+      add_to_task_pool(nt);
+    else {
+      _chpl_begin_cnt++;
+      pthread_detach(thread);
+    }
+    _chpl_mutex_unlock(&_chpl_begin_cnt_lock);
   }
-  return error;
+  return 0;
 }
