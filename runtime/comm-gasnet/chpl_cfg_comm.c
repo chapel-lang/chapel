@@ -183,17 +183,22 @@ char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
 
 static int gasnet_init_called = 0;
 
-void _chpl_comm_init(int *argc_p, char ***argv_p) {
-  gasnet_init(argc_p, argv_p);
-  gasnet_init_called = 1;
+void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
+  if (runInGDB == 0) {
+    gasnet_init(argc_p, argv_p);
+    gasnet_init_called = 1;
 
-  _localeID = gasnet_mynode();
-  _numLocales = gasnet_nodes();
+    _localeID = gasnet_mynode();
+    _numLocales = gasnet_nodes();
 
-  GASNET_Safe(gasnet_attach(ftable, 
-                            sizeof(ftable)/sizeof(gasnet_handlerentry_t),
-                            0,   // share everything
-                            0));
+    GASNET_Safe(gasnet_attach(ftable, 
+                              sizeof(ftable)/sizeof(gasnet_handlerentry_t),
+                              0,   // share everything
+                              0));
+  } else {
+    setenv("CHPL_COMM_USE_GDB", "true", 1);
+    _chpl_comm_init(argc_p, argv_p, 0);
+  }
 }
 
 void _chpl_comm_rollcall(void) {

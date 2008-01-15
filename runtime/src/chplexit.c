@@ -15,8 +15,8 @@ void gdbShouldBreakHere(void) {
 }
 
 
-static void cleanup_for_exit(void) {
-  removeGDBFile();
+void cleanup_for_exit(void) {
+  printf("%s", "");
 }
 
 

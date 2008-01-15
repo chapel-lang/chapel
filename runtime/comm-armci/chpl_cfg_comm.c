@@ -141,7 +141,7 @@ char** _chpl_comm_create_argcv(_int32 execNumLocales, int argc, char* argv[],
 static int armci_init_called = 0;
 
 //
-void _chpl_comm_init(int *argc_p, char ***argv_p) {
+void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   // This will probably be one of the trickiest routines to implement;
   // the details will depend on what sorts of mechanisms ARMCI
   // supports to create the multiple cooperating executables.  If, for
@@ -162,6 +162,10 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
   // I believe)
 
   int nprocs, me;
+
+  if (runInGDB) {
+    _printError("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
+  }
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());

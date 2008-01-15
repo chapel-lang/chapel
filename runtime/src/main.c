@@ -21,9 +21,7 @@ int main(int argc, char* argv[]) {
     //
     _int32 execNumLocales;
     parseArgs(argc, argv);
-    if (_runInGDB()) {
-      runInGDB(argc, argv);
-    }
+
     execNumLocales = getArgNumLocales();
     //
     // If the user did not specify a number of locales let the
@@ -47,14 +45,14 @@ int main(int argc, char* argv[]) {
       char** commArgv;
 
       commArgv = _chpl_comm_create_argcv(execNumLocales, argc, argv, &commArgc);
-      _chpl_comm_init(&commArgc, &commArgv);
+      _chpl_comm_init(&commArgc, &commArgv, _runInGDB());
     }
   } else {
     //
     // If it was not the user that invoked this program, let the comm
     // layer parse the arguments first, then the Chapel runtime
     //
-    _chpl_comm_init(&argc, &argv);
+    _chpl_comm_init(&argc, &argv, 0);
     parseArgs(argc, argv);
   }
   _chpl_comm_rollcall();
