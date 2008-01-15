@@ -368,6 +368,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_LOCALE, "_get_locale", returnInfoInt32);
   prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32);
 
+  prim_def(PRIMITIVE_MAX_THREADS, "_maxThreads", returnInfoInt32);
+
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_BUILD_ARRAY, "build_array", returnInfoFirst);

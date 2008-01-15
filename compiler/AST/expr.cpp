@@ -1539,6 +1539,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
+    case PRIMITIVE_MAX_THREADS:
+      fprintf(outfile, "_maxThreads()");
+      break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");
       break;

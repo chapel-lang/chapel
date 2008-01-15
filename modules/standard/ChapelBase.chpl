@@ -1,6 +1,9 @@
 // the number of locales on which to run the program
 config const numLocales: int = __primitive("_chpl_comm_default_num_locales");
 
+// the maximum number of threads that can be live at any given time
+config const maxThreads: int = __primitive("_maxThreads");
+
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
@@ -591,8 +594,8 @@ def _init(sv: sync) {
 def _syncvar.readFE() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = value;   // Force the Chapel compiler to create a temporary!
-    __primitive("read_FE", ret, this);
+    ret = value;                        // Force the Chapel compiler to create a temporary!
+    __primitive("read_FE", ret, this);  // This primitive modifies the value of ret!
   } else {
     __primitive("sync_wait_full_and_lock", this);
     ret = value;
@@ -605,8 +608,8 @@ def _syncvar.readFE() {
 def _syncvar.readFF() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = value;   // Force the Chapel compiler to create a temporary!
-    __primitive("read_FF", ret, this);
+    ret = value;                        // Force the Chapel compiler to create a temporary!
+    __primitive("read_FF", ret, this);  // This primitive modifies the value of ret!
   } else {
     __primitive("sync_wait_full_and_lock", this);
     ret = value;
@@ -619,8 +622,8 @@ def _syncvar.readFF() {
 def _syncvar.readXX() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = value;   // Force the Chapel compiler to create a temporary!
-    __primitive("read_XX", ret, this);
+    ret = value;                        // Force the Chapel compiler to create a temporary!
+    __primitive("read_XX", ret, this);  // This primitive modifies the value of ret!
   } else {
     __primitive("sync_lock", this);
     ret = value;
@@ -737,8 +740,8 @@ def _init(sv: single) {
 def _singlevar.readFF() {
   var ret: base_type;
   if (isSimpleSyncBaseType(base_type)) {
-    ret = value;   // Force the Chapel compiler to create a temporary!
-    __primitive("single_read_FF", ret, this);
+    ret = value;                               // Force the Chapel compiler to create a temporary!
+    __primitive("single_read_FF", ret, this);  // This primitive modifies the value of ret!
   } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
     ret = value;
   } else {

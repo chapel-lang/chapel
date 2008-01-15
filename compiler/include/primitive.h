@@ -124,6 +124,8 @@ enum PrimitiveTag {
   PRIMITIVE_LOCALE_ID,    // return locale id
   PRIMITIVE_NUM_LOCALES,  // return number of locales
 
+  PRIMITIVE_MAX_THREADS,  // return maximum number of threads
+
   PRIMITIVE_INT_ERROR,
 
   PRIMITIVE_BUILD_ARRAY,

@@ -268,7 +268,7 @@ int _chpl_cobegin (int                      nthreads,
 static void
 add_to_task_pool (_chpl_createarg_t *nt) {
   struct task_pool *task =
-    (struct task_pool *) _chpl_malloc(1, sizeof(struct task_pool *), "task pool entry", 0, 0);
+    (struct task_pool *) _chpl_malloc(1, sizeof(struct task_pool), "task pool entry", 0, 0);
   task->nt = nt;
   task->next = NULL;
   if (task_pool_tail) {
@@ -325,6 +325,8 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 }
 
 
+extern _int32 maxThreads;
+
 // Similar to _chpl_cobegin above, be we do not wait on the forked
 // thread.  Also we only expect one thread to fork with a begin block.
 int
@@ -340,7 +342,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
     nt->arg = a;
 
     _chpl_mutex_lock(&_chpl_begin_cnt_lock);
-    if (_chpl_begin_cnt > 10
+    if (_chpl_begin_cnt >= maxThreads
         || pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, nt))
       add_to_task_pool(nt);
     else {
