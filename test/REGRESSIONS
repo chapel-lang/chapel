@@ -20,6 +20,7 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
 
+
 ==============================
 pathscale-specific regressions
 ==============================
@@ -80,6 +81,13 @@ negative floating point 0.0 not supported
 ========================
 gasnet-specific failures
 ========================
+
+failing because locals are made into classes and classes don't work (1/14/08)
+-----------------------------------------------------------------------------
+[Error matching program output for multilocale/deitz/test_begin_then_on]
+[Error matching program output for multilocale/deitz/test_trivial1]
+[Error: Timed out executing program multilocale/diten/coforall_on]
+
 
 gdb doesn't work with GASNet yet
 --------------------------------
