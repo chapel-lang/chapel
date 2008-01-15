@@ -83,9 +83,9 @@ void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
 
 _bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
   if (simple_sync_var)
-    return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
+    return (_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
   else
-    return readxx(&(s->is_full));
+    return (_bool)readxx(&(s->is_full));
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
@@ -115,9 +115,9 @@ void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
 
 _bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
   if (simple_single_var)
-    return ((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0;
+    return (_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
   else
-    return readxx(&(s->is_full));
+    return (_bool)readxx(&(s->is_full));
 }
 
 void _chpl_init_single_aux(_chpl_single_aux_t *s) {

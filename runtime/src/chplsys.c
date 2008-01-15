@@ -55,7 +55,7 @@ _int32 _coresPerLocale(void) {
 
 _int32 _maxThreads(void) {
 #ifdef __MTA__
-  return _coresPerLocale * 100;
+  return _coresPerLocale() * 100;
 #else
   _int32 maxThreads = _coresPerLocale() - 1;
   return maxThreads <= 3 ? 3 : maxThreads;
