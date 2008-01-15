@@ -1,4 +1,4 @@
-./uts-rec -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
+./uts-rec -nl 1 -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5 --maxThreads=5
 UTS v2.1 - Unbalanced Tree Search (Parallel Chapel)
 Tree type: Geometric
 Tree shape parameters:
