@@ -495,7 +495,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     //
     int gdbargs = 0;
     if (getenv("CHPL_COMM_USE_GDB")) {
-      gdbargs = 4;
+      gdbargs = 6;
     }
     // setup a slave argv
     const char **slaveargv = (const char**)AMUDP_malloc(sizeof(const char*)*((*argc)+3+gdbargs));
@@ -504,7 +504,9 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       slaveargv[0] = "/usr/X11R6/bin/xterm";
       slaveargv[1] = "-e";
       slaveargv[2] = "gdb";
-      slaveargv[3] = "--args";
+      slaveargv[3] = "-ex";
+      slaveargv[4] = "break gdbShouldBreakHere";
+      slaveargv[5] = "--args";
     }
     slaveargv[0+gdbargs] = (*argv)[0];
     slaveargv[1+gdbargs] = (AMUDP_SilentMode?AMUDP_SPMDSLAVE_FLAG:AMUDP_SPMDSLAVE_FLAG_VERBOSE);
