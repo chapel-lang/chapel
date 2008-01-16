@@ -190,6 +190,21 @@ insertWideReferences(void) {
   if (fLocal)
     return;
 
+  //
+  // change dtNil into dtObject
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (fn->retType == dtNil)
+          fn->retType = dtObject;
+      } else if (!isTypeSymbol(def->sym)) {
+        if (def->sym->type == dtNil)
+          def->sym->type = dtObject;
+      }
+    }
+  }
+
   wideClassMap.clear();
 
   //
@@ -280,6 +295,28 @@ insertWideReferences(void) {
       } else if (!isTypeSymbol(def->sym)) {
         if (Type* wide = wideRefMap.get(def->sym->type))
           def->sym->type = wide;
+      }
+    }
+  }
+
+  //
+  // insert wide class temps for nil
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->var == gNil) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (call->isResolved()) {
+            if (Type* type = actual_to_formal(se)->typeInfo()) {
+              if (type->symbol->hasPragma("wide class")) {
+                VarSymbol* tmp = new VarSymbol("_tmp", type);
+                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                se->replace(new SymExpr(tmp));
+                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+              }
+            }
+          }
+        }
       }
     }
   }
