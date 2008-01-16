@@ -786,10 +786,8 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_ARRAY_GET:
-      help_codegen_fn(outfile, "_ARRAY_GET", get(1), get(2));
-      break;
     case PRIMITIVE_ARRAY_GET_VALUE:
-      help_codegen_fn(outfile, "_ARRAY_GET_VALUE", get(1), get(2));
+      fprintf(outfile, "/* uncaptured _data vector access not generated */");
       break;
     case PRIMITIVE_ARRAY_SET:
     case PRIMITIVE_ARRAY_SET_FIRST:
@@ -920,8 +918,12 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
             fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
-            break;
+          } else {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " = ");
+            help_codegen_fn(outfile, "_ARRAY_GET", call->get(1), call->get(2));
           }
+          break;
         }
         if (call->isPrimitive(PRIMITIVE_ARRAY_GET_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
@@ -937,8 +939,12 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
             fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
-            break;
+          } else {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " = ");
+            help_codegen_fn(outfile, "_ARRAY_GET_VALUE", call->get(1), call->get(2));
           }
+          break;
         }
         if (call->isPrimitive(PRIMITIVE_GETCID)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
