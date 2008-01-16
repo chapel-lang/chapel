@@ -72,7 +72,8 @@ void insertLineNumbers() {
           currentLineno = stmt->lineno;
           currentFilename = stmt->filename;
           ClassType* ct = toClassType(call->get(1)->typeInfo());
-          if (ct && ct->classTag == CLASS_CLASS) {
+          if (ct && (ct->classTag == CLASS_CLASS ||
+                     ct->symbol->hasPragma("wide class"))) {
             stmt->insertBefore(
               new CallExpr(PRIMITIVE_CHECK_NIL, call->get(1)->copy()));
           }

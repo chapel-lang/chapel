@@ -9,17 +9,67 @@ extern _int32 _numLocales; // number of locales
 
 typedef void (*func_p)(void*);
 
+#define _SET_WIDE_CLASS(wide, cls) \
+  (wide).locale = _localeID; (wide).addr = cls
+
+#define _WIDE_CLASS_EQ(wide1, wide2) \
+  (((wide1).locale == (wide2).locale) && ((wide1).addr == (wide2).addr))
+
+#define _WIDE_CLASS_NE(wide1, wide2) \
+  (((wide1).locale != (wide2).locale) && ((wide1).addr != (wide2).addr))
+
 #define _SET_WIDE_REF(wide, ref) \
   (wide).locale = _localeID; (wide).addr = ref
 
 #define _SET_WIDE_REF_OFF(wide1, wide2, stype, sfield)                  \
-  (wide1).locale = (wide2).locale; (wide1).addr = (&(((stype*)((wide2).addr))->sfield))
+  (wide1).locale = (wide2).locale; (wide1).addr = (&(((stype)((wide2).addr))->sfield))
+
+#define _COMM_SET_WIDE_REF_WIDE_ARRAY(type, wide, cls, ind, stype, sfield, etype) \
+  (wide).locale = (cls).locale;                                         \
+  _COMM_WIDE_CLASS_GET_OFF(type, (wide).addr, cls, stype, sfield);      \
+  (wide).addr += ind
+// used to multiply by sizeof(etype) but since (wide).addr is etype, not necessary
+//   (wide).addr += ind * sizeof(etype)
+
+#define _COMM_WIDE_ARRAY_GET(type, wide_type, local, cls, ind, stype, sfield, etype) \
+  do {                                                                  \
+    wide_type wide;                                                     \
+    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, wide, cls, ind, stype, sfield, etype); \
+    _COMM_WIDE_GET(etype, local, wide);                                 \
+  } while (0)
+
+#define _COMM_WIDE_ARRAY_SET(type, wide_type, cls, ind, stype, sfield, etype, val) \
+  do {                                                                  \
+    wide_type wide;                                                     \
+    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, wide, cls, ind, stype, sfield, etype); \
+    _COMM_WIDE_PUT(etype, wide, val);                                    \
+  } while (0)
 
 #define _COMM_WIDE_GET(type, local, wide)                               \
   _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(type))
 
 #define _COMM_WIDE_GET_OFF(type, local, wide, stype, sfield)            \
-  _chpl_comm_get_off((&(local)), ((wide).locale), ((wide).addr), stype, sfield)
+  _chpl_comm_get(&(local),                                              \
+                 (wide).locale,                                         \
+                 (char*)((wide).addr) +                                 \
+                 ((char*)(&(((stype*)(&(local)))->sfield)) -            \
+                  (char*)(&(local))),                                   \
+                 sizeof(((stype*)(&(local)))->sfield))
+
+#define _COMM_WIDE_CLASS_GET_OFF(type, local, wide, stype, sfield)      \
+  _chpl_comm_get(&(local),                                              \
+                 (wide).locale,                                         \
+                 (char*)((wide).addr) +                                 \
+                 ((char*)(&(((stype)(&(local)))->sfield)) -             \
+                  (char*)(&(local))),                                   \
+                 sizeof(((stype)(&(local)))->sfield))
+
+#define _COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype)               \
+  do {                                                                  \
+    _class_id _cid_tmp;                                                 \
+    _COMM_WIDE_CLASS_GET_OFF(_class_id, _cid_tmp, wide, stype, _cid);   \
+    local = _cid_tmp == cid;                                            \
+  } while (0)
 
 #define _COMM_WIDE_PUT(type, wide, local)                               \
   do {                                                                  \
@@ -30,18 +80,24 @@ typedef void (*func_p)(void*);
 #define _COMM_WIDE_PUT_OFF(type, wide, local, stype, sfield)            \
   do {                                                                  \
     type imm = local;                                                   \
-    _chpl_comm_put_off((&imm), ((wide).locale), ((wide).addr), stype, sfield); \
+    _chpl_comm_put(&imm,                                                \
+                   (wide).locale,                                       \
+                   (char*)((wide).addr) +                               \
+                   ((char*)(&(((stype*)(&imm))->sfield)) -              \
+                    (char*)(&imm)),                                     \
+                   sizeof(((stype*)(&imm))->sfield));                   \
   } while (0)
 
-#define _chpl_comm_get_off(addr, locale, raddr, stype, sfield)   \
-  _chpl_comm_get(addr, locale,                                         \
-                  (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
-                  sizeof(((stype*)addr)->sfield))
-
-#define _chpl_comm_put_off(addr, locale, raddr, stype, sfield)  \
-  _chpl_comm_put(addr, locale,                                        \
-                   (char*)raddr + ((char*)(&(((stype*)addr)->sfield))-(char*)addr), \
-                   sizeof(((stype*)addr)->sfield))
+#define _COMM_WIDE_CLASS_PUT_OFF(type, wide, local, stype, sfield)      \
+  do {                                                                  \
+    type imm = local;                                                   \
+    _chpl_comm_put(&imm,                                                \
+                   (wide).locale,                                       \
+                   (char*)((wide).addr) +                               \
+                   ((char*)(&(((stype)(&imm))->sfield)) -               \
+                    (char*)(&imm)),                                     \
+                   sizeof(((stype)(&imm))->sfield));                    \
+  } while (0)
 
 //
 // given the program arguments, returns whether the invocation of

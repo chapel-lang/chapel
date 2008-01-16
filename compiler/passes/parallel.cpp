@@ -38,6 +38,7 @@ bundleArgs(BlockStmt* block) {
       TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
                                                fn->name),
                                           ctype);
+      new_c->addPragma("no wide class");
 
       // add the function args as fields in the class
       int i = 1;
@@ -158,7 +159,30 @@ parallel(void) {
 }
 
 
+static void
+buildWideClass(Type* type) {
+  ClassType* wide = new ClassType(CLASS_RECORD);
+  TypeSymbol* wts = new TypeSymbol(astr("_wide_", type->symbol->cname), wide);
+  wts->addPragma("wide class");
+  theProgram->block->insertAtTail(new DefExpr(wts));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
+  wideClassMap.put(type, wide);
+
+  //
+  // build reference type for wide class type
+  //
+  ClassType* ref = new ClassType(CLASS_CLASS);
+  TypeSymbol* rts = new TypeSymbol(astr("_ref_wide_", type->symbol->cname), ref);
+  rts->addPragma("ref");
+  theProgram->block->insertAtTail(new DefExpr(rts));
+  ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+  wide->refType = ref;
+}
+
+
 //
+// change all classes into wide classes
 // change all references into wide references
 //
 void
@@ -166,20 +190,74 @@ insertWideReferences(void) {
   if (fLocal)
     return;
 
-  Map<Type*,Type*> wideMap; // reference -> wide reference
+  wideClassMap.clear();
+
+  //
+  // build wide class type for every class type
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    ClassType* ct = toClassType(ts->type);
+    if (ct && ct->classTag == CLASS_CLASS && !ts->hasPragma("ref") && !ts->hasPragma("no wide class")) {
+
+      //
+      // do not yet support remote sync and single variables
+      //
+      if (ts->hasPragma("sync") || ts->hasPragma("single"))
+        continue;
+
+      buildWideClass(ct);
+    }
+  }
+  buildWideClass(dtObject);
+
+  //
+  // change all classes into wide classes
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+
+      //
+      // do not change class field in wide class type
+      //
+      if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
+        if (ts->hasPragma("wide class"))
+          continue;
+
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (Type* wide = wideClassMap.get(fn->retType))
+          fn->retType = wide;
+      } else if (!isTypeSymbol(def->sym)) {
+        if (Type* wide = wideClassMap.get(def->sym->type))
+          def->sym->type = wide;
+      }
+    }
+  }
+
+  //
+  // change arrays of classes into arrays of wide classes
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->hasPragma("data class")) {
+      if (Type* nt = wideClassMap.get(toType(ts->type->substitutions.v[0].value))) {
+        ts->type->substitutions.v[0].value = nt;
+      }
+    }
+  }
+
+  wideRefMap.clear();
 
   //
   // build wide reference type for every reference type
   //
-  forv_Vec(TypeSymbol, ref, gTypes) {
-    if (ref->hasPragma("ref")) {
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->hasPragma("ref")) {
       ClassType* wide = new ClassType(CLASS_RECORD);
-      TypeSymbol* wts = new TypeSymbol(astr("_wide_", ref->cname), wide);
+      TypeSymbol* wts = new TypeSymbol(astr("_wide_", ts->cname), wide);
       wts->addPragma("wide");
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ref->type)));
-      wideMap.put(ref->type, wide);
+      wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
+      wideRefMap.put(ts->type, wide);
     }
   }
 
@@ -197,10 +275,10 @@ insertWideReferences(void) {
           continue;
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (Type* wide = wideMap.get(fn->retType))
+        if (Type* wide = wideRefMap.get(fn->retType))
           fn->retType = wide;
       } else if (!isTypeSymbol(def->sym)) {
-        if (Type* wide = wideMap.get(def->sym->type))
+        if (Type* wide = wideRefMap.get(def->sym->type))
           def->sym->type = wide;
       }
     }

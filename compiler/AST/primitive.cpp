@@ -88,6 +88,10 @@ returnInfoCast(CallExpr* call) {
         return dtUnknown;
     USR_FATAL(call, "Illegal cast to generic type");
   }
+  Type* t2 = call->get(2)->typeInfo();
+  if (t2->symbol->hasPragma("wide class"))
+    if (wideClassMap.get(t))
+      t = wideClassMap.get(t);
   return t;
 }
 
@@ -135,9 +139,13 @@ returnInfoNumericUp(CallExpr* call) {
 static Type*
 returnInfoArrayIndex(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(1));
-  if (!sym || !sym->var->type->substitutions.n)
+  INT_ASSERT(sym);
+  Type* type = sym->var->type;
+  if (type->symbol->hasPragma("wide class"))
+    type = type->getField("addr")->type;
+  if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return toType(sym->var->type->substitutions.v[0].value)->refType;
+  return toType(type->substitutions.v[0].value)->refType;
 }
 
 static Type*

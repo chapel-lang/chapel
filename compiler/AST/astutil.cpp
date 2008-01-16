@@ -429,6 +429,19 @@ prune() {
     if (!types.set_in(ts)) {
       if (toClassType(ts->type)) {
         //        printf("removing %s\n", ts->cname);
+
+        //
+        // do not delete class/record references
+        //
+        if (ts->hasPragma("ref") &&
+            toClassType(ts->type->getField("_val")->type))
+          continue;
+
+        //
+        // delete reference type if type is not used
+        //
+        if (ts->type->refType)
+          ts->type->refType->symbol->defPoint->remove();
         ts->defPoint->remove();
       }
     }

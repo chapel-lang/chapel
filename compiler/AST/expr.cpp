@@ -720,7 +720,16 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   value->codegen(outfile);
-  if (fCopyCollect) {
+  if (value->typeInfo()->symbol->hasPragma("wide class")) {
+
+    //
+    // ack!! assume local for dynamic dispatch
+    //
+    if (type->symbol->hasPragma("wide class"))
+      type = type->getField("addr")->type;
+    fprintf(outfile, ".addr->_cid == %s%s", "_e_", type->symbol->cname);
+
+  } else if (fCopyCollect) {
     fprintf(outfile, "->__class_id._cid == %s%s", "_e_", type->symbol->cname);
   } else {
     fprintf(outfile, "->_cid == %s%s", "_e_", type->symbol->cname);
@@ -768,30 +777,55 @@ void CallExpr::codegen(FILE* outfile) {
           first_actual = false;
         else
           fprintf(outfile, ", ");
-        if (!actual->typeInfo()->refType)
+        if (actual->typeInfo()->symbol->hasPragma("ref"))
           fprintf(outfile, "*");
         actual->codegen(outfile);
+        if (actual->typeInfo()->symbol->hasPragma("wide class"))
+          fprintf(outfile, ".addr");
       }
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_ARRAY_GET:
-      help_codegen_fn(outfile, "array_get", get(1), get(2));
+      help_codegen_fn(outfile, "_ARRAY_GET", get(1), get(2));
       break;
     case PRIMITIVE_ARRAY_GET_VALUE:
-      help_codegen_fn(outfile, "array_get_value", get(1), get(2));
+      help_codegen_fn(outfile, "_ARRAY_GET_VALUE", get(1), get(2));
       break;
     case PRIMITIVE_ARRAY_SET:
     case PRIMITIVE_ARRAY_SET_FIRST:
-      help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_COMM_WIDE_ARRAY_SET(");
+
+        fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        fprintf(outfile, "%s, ", wideRefMap.get(toType(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->refType)->symbol->cname);
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        fprintf(outfile, "_data, ");
+        fprintf(outfile, "%s, ", toType(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+        get(3)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else
+        help_codegen_fn(outfile, "_ARRAY_SET", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
-      help_codegen_fn(outfile, "array_init", get(1), get(1)->typeInfo()->substitutions.v[0].value, get(3), get(4), get(5));
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        help_codegen_fn(outfile, "_WIDE_ARRAY_INIT", get(1),
+                        get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
+                        get(3), get(4), get(5));
+      } else {
+        help_codegen_fn(outfile, "_ARRAY_INIT", get(1),
+                        get(1)->typeInfo()->substitutions.v[0].value,
+                        get(3), get(4), get(5));
+      }
       break;
     case PRIMITIVE_ARRAY_FREE:
-      help_codegen_fn(outfile, "array_free", get(1), get(2), get(3));
+      help_codegen_fn(outfile, "_ARRAY_FREE", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_FREE_ELTS:
-      help_codegen_fn(outfile, "array_free_elts", get(1), get(2), get(3));
+      help_codegen_fn(outfile, "_ARRAY_FREE_ELTS", get(1), get(2), get(3));
       break;
     case PRIMITIVE_NOOP:
       break;
@@ -818,7 +852,18 @@ void CallExpr::codegen(FILE* outfile) {
           break;
         }
         if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-          if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_COMM_WIDE_CLASS_GET_OFF(");
+            fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ")");
+          } else if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
             fprintf(outfile, "_COMM_WIDE_GET_OFF(");
             fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
             get(1)->codegen(outfile);
@@ -838,19 +883,84 @@ void CallExpr::codegen(FILE* outfile) {
           break;
         }
         if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-          if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
             fprintf(outfile, "_SET_WIDE_REF_OFF(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
-            fprintf(outfile, "%s", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+            fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ")");
+            break;
+          } else if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+            fprintf(outfile, "_SET_WIDE_REF_OFF(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            fprintf(outfile, "%s*", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
             fprintf(outfile, ", ");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
             break;
           }
         }
+        if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_COMM_SET_WIDE_REF_WIDE_ARRAY(");
+            fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            fprintf(outfile, "_data, ");
+            fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+            break;
+          }
+        }
+        if (call->isPrimitive(PRIMITIVE_ARRAY_GET_VALUE)) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_COMM_WIDE_ARRAY_GET(");
+            fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+            fprintf(outfile, "%s, ", wideRefMap.get(toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->refType)->symbol->cname);
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            fprintf(outfile, "_data, ");
+            fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+            break;
+          }
+        }
+        if (call->isPrimitive(PRIMITIVE_GETCID)) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_COMM_WIDE_CLASS_GET_CID(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", _e_%s, %s)",
+                    call->get(2)->typeInfo()->symbol->cname,
+                    call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            break;
+          }
+        }
+      }
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
+          !get(2)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_SET_WIDE_CLASS(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+        break;
       }
       if (get(1)->typeInfo()->symbol->hasPragma("wide") &&
           get(2)->typeInfo()->symbol->hasPragma("ref")) {
@@ -932,11 +1042,47 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_PTR_EQUAL:
     case PRIMITIVE_EQUAL:
-      help_codegen_op(outfile, "==", get(1), get(2));
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
+          get(2)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_WIDE_CLASS_EQ(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
+          get(2)->typeInfo() == dtNil) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, ".addr == nil");
+      } else if (get(2)->typeInfo()->symbol->hasPragma("wide class") &&
+                 get(1)->typeInfo() == dtNil) {
+        fprintf(outfile, "nil == ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ".addr");
+      } else {
+        help_codegen_op(outfile, "==", get(1), get(2));
+      }
       break;
     case PRIMITIVE_PTR_NOTEQUAL:
     case PRIMITIVE_NOTEQUAL:
-      help_codegen_op(outfile, "!=", get(1), get(2));
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
+          get(2)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_WIDE_CLASS_NE(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
+          get(2)->typeInfo() == dtNil) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, ".addr != nil");
+      } else if (get(2)->typeInfo()->symbol->hasPragma("wide class") &&
+                 get(1)->typeInfo() == dtNil) {
+        fprintf(outfile, "nil != ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ".addr");
+      } else {
+        help_codegen_op(outfile, "!=", get(1), get(2));
+      }
       break;
     case PRIMITIVE_LESSOREQUAL:
       help_codegen_op(outfile, "<=", get(1), get(2));
@@ -1103,7 +1249,13 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
     case PRIMITIVE_SETCID:
-      if (fCopyCollect) {
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(_class_id, ");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", _e_%s, %s, _cid)",
+                get(1)->typeInfo()->getField("addr")->type->symbol->cname,
+                get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+      } else if (fCopyCollect) {
         get(1)->codegen(outfile);
         fprintf(outfile, "->__class_id._padding_for_copy_collection_use = NULL;\n");
         get(1)->codegen(outfile);
@@ -1150,7 +1302,18 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "generated by PRIMITIVE_MOVE");
       break;
     case PRIMITIVE_SET_MEMBER:
-      if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(");
+        fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(3)->codegen(outfile);
+        fprintf(outfile, ", ");
+        fprintf(outfile, "%s", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
         fprintf(outfile, "_COMM_WIDE_PUT_OFF(");
         fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
         get(1)->codegen(outfile);
@@ -1168,18 +1331,15 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIMITIVE_CHECK_NIL:
-      {
-        ClassType* ct = toClassType(get(1)->typeInfo());
-        if (ct->classTag == CLASS_CLASS) {
-          fprintf(outfile, "_CHECK_NIL(");
-          get(1)->codegen(outfile);
-          fprintf(outfile, ", ");
-          get(2)->codegen(outfile);
-          fprintf(outfile, ", ");
-          get(3)->codegen(outfile);
-          fprintf(outfile, ")");
-        }
-      }
+      fprintf(outfile, "_CHECK_NIL(");
+      get(1)->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_REAL:
       fprintf(outfile, "&(");
@@ -1468,18 +1628,23 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_DYNAMIC_CAST: {
-      ClassType* ct = toClassType(typeInfo());
-      if (ct && ct->classTag == CLASS_CLASS) {
-        fprintf(outfile, "((");
-        codegenDynamicCastCheck(outfile, typeInfo(), get(2));
-        fprintf(outfile, ") ? ");
+      fprintf(outfile, "((");
+      codegenDynamicCastCheck(outfile, typeInfo(), get(2));
+      fprintf(outfile, ") ? ");
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        fprintf(outfile, "(*((");
+        typeInfo()->codegen(outfile);
+        fprintf(outfile, "*)(&(");
+        get(2)->codegen(outfile);
+        fprintf(outfile, "))))");
+      } else {
         fprintf(outfile, "((");
         typeInfo()->codegen(outfile);
         fprintf(outfile, ")(");
         get(2)->codegen(outfile);
-        fprintf(outfile, ")) : NULL)");
-      } else
-        INT_FATAL("illegal dynamic cast encountered in codegen");
+        fprintf(outfile, "))");
+      }
+      fprintf(outfile, " : NULL)");
       break;
     }
     case PRIMITIVE_ISSUBTYPE:

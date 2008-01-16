@@ -22,12 +22,25 @@ _int32 _now_month(void);
 _int32 _now_day(void);
 _real64 _now_time(void);
 
-#define array_get(x, i) (&((x)->_data[i]))
-#define array_get_value(x, i) ((x)->_data[i])
-#define array_set(x, i, v) ((x)->_data[i] = v)
-#define array_init(x, type, size, lineno, filename) (x)->_data = _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
-#define array_free_elts(x, i, call) for(i = 0; i < (x)->size; i++) call
-#define array_free(x, lineno, filename) _chpl_free((x)->_data, lineno, filename)
+#define _ARRAY_GET(x, i) (&((x)->_data[i]))
+#define _ARRAY_GET_VALUE(x, i) ((x)->_data[i])
+#define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
+
+#define _ARRAY_INIT(x, type, size, lineno, filename) \
+  (x)->_data = _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
+
+#define _WIDE_ARRAY_INIT(x, type, size, lineno, filename)              \
+  do {                                                                 \
+    if (x.locale != _localeID)                                         \
+      _printError("array vector data is not local", lineno, filename); \
+    _ARRAY_INIT((x).addr, type, size, lineno, filename);               \
+  } while (0)
+
+#define _ARRAY_FREE_ELTS(x, i, call) \
+  for(i = 0; i < (x)->size; i++) call
+
+#define _ARRAY_FREE(x, lineno, filename) \
+  _chpl_free((x)->_data, lineno, filename)
 
 #define _noop(x)
 
