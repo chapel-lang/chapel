@@ -20,11 +20,15 @@ clean: FORCE
 clobber: FORCE
 	rm -r $(GASNET_INSTALL_DIR)
 
-gasnet: FORCE
+gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
 	-cd $(GASNET_SUBDIR) && echo "n" | ./Bootstrap
 	cd $(GASNET_BUILD_DIR) && $(GASNET_SUBDIR)/configure --prefix=$(GASNET_INSTALL_DIR) --enable-segment-everything --enable-debug
+
+gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
+
+gasnet: gasnet-config gasnet-build
 
 FORCE:
