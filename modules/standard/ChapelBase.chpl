@@ -545,7 +545,7 @@ def _pass(r: _ref) return r;
 def isSimpleSyncBaseType (type t) param {
   if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
       || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
-      || t == real(64) || t == real(32) || t == imag(64)
+      || t == real(32) || t == real(64) || t == imag(32) || t == imag(64)
     return true;
   else return false;
 }
