@@ -16,7 +16,9 @@ def foo(type t, u: t, v: t, name) {
   writeln("value is now ", s);
   writeln("value has changed to ", s.readFF());
   s.writeXF(u);
-  writeln("The final value is ", s);
+  write  ("The final value is ", s);
+  s.reset();
+  writeln(", but it was reset to ", s.readXX());
 }
 
 foo(bool, true, false, "bool");
@@ -31,6 +33,7 @@ foo(real(32), 8.0: real(32), 12.0: real(32), "real(32)");
 foo(real(64), 9.0, 13.0, "real(64)");
 foo(complex(64), 10.0: complex(64), 14.0: complex(64), "complex(64)");
 foo(complex(128), 11.0: complex(128), 15.0: complex(128), "complex(128)");
+foo(imag, 12.0i, 16.0i, "imag");
 foo(string, "Hello,", "world!", "string");
 type r = range;
 foo(r, 1..3, 4..7, "range");

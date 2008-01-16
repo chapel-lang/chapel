@@ -1,11 +1,12 @@
 use Time;
 // Test sync var using mostly read, reset, and isFull methods
 
-var done: sync bool;
+var done: sync bool = true;
 
 def foo(type t, u: t, v: t, name) {
   var s: sync t;
 
+  if done then // wait until all prior invocations have finished
   writeln("1: going to sleep ... ");
   begin {
     writeln("2: initial value is ", s.readXX(), " of type ", name);
@@ -17,16 +18,13 @@ def foo(type t, u: t, v: t, name) {
     sleep(1);
     writeln("2: after sleeping, value is still ", s.readXX());
     s.reset();
-    var defval = s.readXX();
-    writeln("2: value has been reset to ", defval);
+    writeln("2: value has been reset to ", s.readFE());
+    done = true;
   }
   sleep(1);
   writeln("1: woke up. writing ", u);
   s = u;
   if done then s = v;
-  // This value written below should never be read (unless the last readXX above
-  // is somehow delayed)!  The purpose of writing this value is to confirm that
-  // the readFF and the readXX following it do not somehow make the sync var empty.
   s = u;
 }
 
@@ -42,6 +40,7 @@ foo(real(32), 8.0: real(32), 12.0: real(32), "real(32)");
 foo(real(64), 9.0, 13.0, "real(64)");
 foo(complex(64), 10.0: complex(64), 14.0: complex(64), "complex(64)");
 foo(complex(128), 11.0: complex(128), 15.0: complex(128), "complex(128)");
+foo(imag, 12.0i, 16.0i, "imag");
 foo(string, "Hello,", "world!", "string");
 type r = range;
 foo(r, 1..3, 4..7, "range");
