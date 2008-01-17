@@ -34,25 +34,24 @@ sub main {
     chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
-    if ($#ARGV < 5) {
+    if ($#ARGV < 4) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts] [comm]\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir futures valgrind [compopts] [comm]\n";
         exit (3);
     }
 
     $id = $ARGV[0];
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
-    $filedist = $ARGV[3];
-    $incl_futures = ($ARGV[4] == 1) ? "-futures" : "" ;
-    $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
+    $incl_futures = ($ARGV[3] == 1) ? "-futures" : "" ;
+    $valgrind = ($ARGV[4] == 1) ? "-valgrind" : "";
 
-    print "$id $workingdir $testdir $filedist $incl_futures $valgrind" if $debug;
-    if ($#ARGV>=6) {
-        $compopts = "-compopts \"" . $ARGV[6] . "\"";
+    print "$id $workingdir $testdir $incl_futures $valgrind" if $debug;
+    if ($#ARGV>=5) {
+        $compopts = "-compopts \"" . $ARGV[5] . "\"";
     }
-    if ($#ARGV>=7) {
-        $comm = "-comm \"" . $ARGV[7] . "\"";
+    if ($#ARGV>=6) {
+        $comm = "-comm \"" . $ARGV[6] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -83,11 +82,7 @@ sub main {
     unlink $logfile if (-e $logfile);
 
     $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $comm";
-    if ($filedist) {
-        $testarg = "$testarg -onetest $testdir";
-    } else {
-        $testarg = "$testarg -startdir $testdir -norecurse";
-    }
+    $testarg = "$testarg $testdir -norecurse";
     systemd ("$testcmd $testarg");
 
     sleep $publish_delay;

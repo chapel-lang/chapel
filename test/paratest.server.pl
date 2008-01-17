@@ -211,7 +211,7 @@ sub feed_nodes {
                     $compopts = "\\\"$compopts\\\"";
                     $comm = "\\\"$comm\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts $comm";
+                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $incl_futures $valgrind $compopts $comm";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {

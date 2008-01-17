@@ -269,7 +269,7 @@ if ($valgrind == 0) {
     $testflags = "$testflags -futures";
 }
 if ($examples == 1) {
-    $testflags = "$testflags -startdir release/examples";
+    $testflags = "$testflags release/examples";
 }
 if ($performance == 1) {
     $testflags = "$testflags -performance";

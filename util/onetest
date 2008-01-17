@@ -2,4 +2,4 @@
 
 $test = "$ARGV[0]";
 $test =~ s/^test\///;
-system("cd $ENV{'CHPL_HOME'}/test; ./start_test -onetest $test");
+system("cd $ENV{'CHPL_HOME'}/test; ./start_test $test");

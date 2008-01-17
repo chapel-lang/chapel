@@ -40,15 +40,14 @@ test's directory named perfdat/<machine_name>/<test_name>.dat.
 
 Some other useful ways to run the test system are:
 
-     start_test -startdir <directory>
-     start_test -onetest <foo.chpl>
+     ./start_test <list of files to test> <list of directories to test>
 
 These commands run the test system starting from a single directory,
 or on a single test, respectively.
 
 For a list of other test system options, use:
 
-     start_test -help
+     ./start_test -help
 
 
 --------------------
