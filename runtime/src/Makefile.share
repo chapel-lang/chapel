@@ -12,6 +12,7 @@ COMMON_SRCS = \
 	chpltypes.c \
 	config.c \
 	error.c \
+        gdb.c \
 
 MAIN_SRCS = \
 	main.c \

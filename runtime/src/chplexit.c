@@ -8,25 +8,12 @@
 
 #undef exit
 
-// must be non-static to avoid dead-code elim. when compiling -O3
-
-void gdbShouldBreakHere(void) {
-  printf("%s", "");
-}
-
-
-void cleanup_for_exit(void) {
-  printf("%s", "");
-}
-
-
 static void _chpl_exit_common(int status, int all) {
   fflush(stdout);
   fflush(stderr);
   if (status != 0) {
     gdbShouldBreakHere();
   }
-  cleanup_for_exit();
   if (all) {
     exitChplThreads();         // tear down the threads
   }
