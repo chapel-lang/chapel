@@ -3,6 +3,11 @@
 
 #include "chpl_cfg_threads.h"
 
+// Defined in the generated Chapel code:
+
+extern _int32 maxThreads;
+
+
 // Mutexes
 
 typedef _chpl_mutex_t  *_chpl_mutex_p;

@@ -320,8 +320,6 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 }
 
 
-extern _int32 maxThreads;
-
 // Similar to _chpl_cobegin above, be we do not wait on the forked
 // thread.  Also we only expect one thread to fork with a begin block.
 int
