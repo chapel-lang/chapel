@@ -191,8 +191,8 @@ if (-r ./USEMAKE && $perftest == 0) then
     set makeutil = `$testdir/../util/chplmake`
     set timeout = $globalTimeout
 
-    echo \[Executing: \"$makeutil test CHPL=$compiler\"\]
-    $timedexec $timeout "$makeutil test CHPL=$compiler" >& $makelog
+    echo \[Executing: \"$makeutil -B test CHPL=$compiler\"\]
+    $timedexec $timeout "$makeutil -B test CHPL=$compiler" >& $makelog
     set makestatus = $status
     if ($makestatus != 0) then
         if ($makestatus == 222) then
