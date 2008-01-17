@@ -718,18 +718,18 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 }
 
 
+static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
+  fprintf(outfile, "_tmp == _e_%s", type->symbol->name);
+  forv_Vec(Type, child, type->dispatchChildren) {
+    fprintf(outfile, " || ");
+    codegenWideDynamicCastCheck(outfile, child);
+  }
+}
+
+
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   value->codegen(outfile);
-  if (value->typeInfo()->symbol->hasPragma("wide class")) {
-
-    //
-    // ack!! assume local for dynamic dispatch
-    //
-    if (type->symbol->hasPragma("wide class"))
-      type = type->getField("addr")->type;
-    fprintf(outfile, ".addr->_cid == %s%s", "_e_", type->symbol->cname);
-
-  } else if (fCopyCollect) {
+  if (fCopyCollect) {
     fprintf(outfile, "->__class_id._cid == %s%s", "_e_", type->symbol->cname);
   } else {
     fprintf(outfile, "->_cid == %s%s", "_e_", type->symbol->cname);
@@ -965,6 +965,20 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             call->get(1)->typeInfo()->codegen(outfile);
             fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ")");
+            break;
+          }
+        }
+        if (call->isPrimitive(PRIMITIVE_DYNAMIC_CAST)) {
+          if (call->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_WIDE_CLASS_DYNAMIC_CAST(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->typeInfo()->getField("addr")->type->codegen(outfile);
+            fprintf(outfile, ", (");
+            codegenWideDynamicCastCheck(outfile, call->typeInfo()->getField("addr")->type);
+            fprintf(outfile, "), ");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
             break;
@@ -1614,7 +1628,7 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case PRIMITIVE_CAST: {
       if (typeInfo()->symbol->hasPragma("wide class"))
-        INT_FATAL(this, "wide class cast is not normalized");
+        INT_FATAL(this, "wide class cast is not normal");
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
       if (dst == src) {
@@ -1647,26 +1661,17 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-    case PRIMITIVE_DYNAMIC_CAST: {
+    case PRIMITIVE_DYNAMIC_CAST:
+      if (typeInfo()->symbol->hasPragma("wide class"))
+        INT_FATAL(this, "wide class dynamic cast is not normal");
       fprintf(outfile, "((");
       codegenDynamicCastCheck(outfile, typeInfo(), get(2));
-      fprintf(outfile, ") ? ");
-      if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
-        fprintf(outfile, "(*((");
-        typeInfo()->codegen(outfile);
-        fprintf(outfile, "*)(&(");
-        get(2)->codegen(outfile);
-        fprintf(outfile, "))))");
-      } else {
-        fprintf(outfile, "((");
-        typeInfo()->codegen(outfile);
-        fprintf(outfile, ")(");
-        get(2)->codegen(outfile);
-        fprintf(outfile, "))");
-      }
-      fprintf(outfile, " : NULL)");
+      fprintf(outfile, ") ? ((");
+      typeInfo()->codegen(outfile);
+      fprintf(outfile, ")(");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")) : NULL)");
       break;
-    }
     case PRIMITIVE_ISSUBTYPE:
     case PRIMITIVE_TYPEOF:
     case PRIMITIVE_USE:

@@ -21,6 +21,14 @@ typedef void (*func_p)(void*);
 #define _WIDE_CLASS_CAST(wide1, type, wide2) \
   (wide1).locale = (wide2).locale; (wide1).addr = (type)((wide2).addr)
 
+#define _WIDE_CLASS_DYNAMIC_CAST(wide1, type, cond, wide2)              \
+  do {                                                                  \
+    _class_id _tmp;                                                     \
+    _COMM_WIDE_CLASS_GET_OFF(_class_id, _tmp, wide2, type, _cid);       \
+    (wide1).locale = (wide2).locale;                                    \
+    (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
+  } while (0)
+
 #define _SET_WIDE_REF(wide, ref) \
   (wide).locale = _localeID; (wide).addr = ref
 
