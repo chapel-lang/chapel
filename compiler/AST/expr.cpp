@@ -958,6 +958,18 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+        if (call->isPrimitive(PRIMITIVE_CAST)) {
+          if (call->typeInfo()->symbol->hasPragma("wide class")) {
+            fprintf(outfile, "_WIDE_CLASS_CAST(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->typeInfo()->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ")");
+            break;
+          }
+        }
       }
       if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
           !get(2)->typeInfo()->symbol->hasPragma("wide class")) {
@@ -1601,6 +1613,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CAST: {
+      if (typeInfo()->symbol->hasPragma("wide class"))
+        INT_FATAL(this, "wide class cast is not normalized");
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
       if (dst == src) {

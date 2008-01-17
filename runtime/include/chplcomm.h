@@ -18,6 +18,9 @@ typedef void (*func_p)(void*);
 #define _WIDE_CLASS_NE(wide1, wide2) \
   (((wide1).locale != (wide2).locale) && ((wide1).addr != (wide2).addr))
 
+#define _WIDE_CLASS_CAST(wide1, type, wide2) \
+  (wide1).locale = (wide2).locale; (wide1).addr = (type)((wide2).addr)
+
 #define _SET_WIDE_REF(wide, ref) \
   (wide).locale = _localeID; (wide).addr = ref
 

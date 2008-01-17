@@ -320,4 +320,25 @@ insertWideReferences(void) {
       }
     }
   }
+
+  //
+  // insert cast temps if lhs type does not match cast type
+  //   allows separation of the remote put with the wide cast
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIMITIVE_CAST)) {
+        if (CallExpr* move = toCallExpr(call->parentExpr)) {
+          if (move->isPrimitive(PRIMITIVE_MOVE)) {
+            if (move->get(1)->typeInfo() != call->typeInfo()) {
+              VarSymbol* tmp = new VarSymbol("_tmp", call->typeInfo());
+              move->insertBefore(new DefExpr(tmp));
+              call->replace(new SymExpr(tmp));
+              move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
+            }
+          }
+        }
+      }
+    }
+  }
 }

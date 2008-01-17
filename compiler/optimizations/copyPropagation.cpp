@@ -558,12 +558,22 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
                 CallExpr* parent = toCallExpr(se->parentExpr);
                 if (parent == move)
                   continue;
-                if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
-                  parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
-                                               rhs->get(1)->copy(),
-                                               rhs->get(2)->copy(),
-                                               parent->get(2)->remove()));
-                else
+                if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                  if (SymExpr* se = toSymExpr(parent->get(2))) {
+                    parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+                                                 rhs->get(1)->copy(),
+                                                 rhs->get(2)->copy(),
+                                                 se->remove()));
+                  } else {
+                    VarSymbol* tmp = new VarSymbol("_tmp", parent->get(2)->typeInfo());
+                    parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                    parent->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, parent->get(2)->remove()));
+                    parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+                                                 rhs->get(1)->copy(),
+                                                 rhs->get(2)->copy(),
+                                                 tmp));
+                  }
+                } else
                   stillAlive = true;
               }
               if (!stillAlive) {
