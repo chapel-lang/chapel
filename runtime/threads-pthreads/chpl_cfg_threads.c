@@ -43,7 +43,7 @@ static _chpl_condvar_p _chpl_condvar_new(void) {
 
 // Mutex
 
-void _chpl_mutex_init(_chpl_mutex_p mutex) {
+static void _chpl_mutex_init(_chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init(mutex, NULL))
     _printInternalError("pthread_mutex_init() failed");
@@ -66,11 +66,6 @@ int _chpl_mutex_lock(_chpl_mutex_p mutex) {
 void _chpl_mutex_unlock(_chpl_mutex_p mutex) {
   if (pthread_mutex_unlock(mutex))
     _printInternalError("pthread_mutex_unlock() failed");
-}
-
-void _chpl_mutex_destroy(_chpl_mutex_p mutex) {
-  if (pthread_mutex_destroy(mutex))
-    _printInternalError("pthread_mutex_destroy() failed");
 }
 
 

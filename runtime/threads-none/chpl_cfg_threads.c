@@ -5,10 +5,8 @@
 
 // Mutex
 
-void _chpl_mutex_init(_chpl_mutex_p mutex) { }
 int _chpl_mutex_lock(_chpl_mutex_p mutex) { return 0; }
 void _chpl_mutex_unlock(_chpl_mutex_p mutex) { }
-void _chpl_mutex_destroy(_chpl_mutex_p mutex) { }
 
 
 // Sync variables

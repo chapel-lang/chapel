@@ -21,7 +21,7 @@ static sync _int64     _chpl_can_exit;       // can main thread exit?
 
 // Mutex
 
-void _chpl_mutex_init(_chpl_mutex_p mutex) {
+static void _chpl_mutex_init(_chpl_mutex_p mutex) {
   purge(mutex);                     // set to zero and mark empty
 }
 
@@ -32,10 +32,6 @@ int _chpl_mutex_lock(_chpl_mutex_p mutex) {
 
 void _chpl_mutex_unlock(_chpl_mutex_p mutex) {
   _chpl_mutex_init(mutex);
-}
-
-void _chpl_mutex_destroy(_chpl_mutex_p mutex) {
-  _chpl_mutex_lock(mutex);     // lock it so no thread can use it
 }
 
 

@@ -7,10 +7,8 @@
 
 typedef _chpl_mutex_t  *_chpl_mutex_p;
 
-void _chpl_mutex_init(_chpl_mutex_p);
 int _chpl_mutex_lock(_chpl_mutex_p);
 void _chpl_mutex_unlock(_chpl_mutex_p);
-void _chpl_mutex_destroy(_chpl_mutex_p);
 
 
 // Sync variables
