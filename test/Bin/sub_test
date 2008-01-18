@@ -39,6 +39,13 @@ set diffargs = ""
 # make sure can execute compiler
 
 set testdir = "$CHPL_HOME/test"
+if (! -d $testdir || ! -x $testdir) then
+    set testdir = "$CHPL_HOME/examples"
+endif
+if (! -d $testdir || ! -x $testdir) then
+    echo "Error: Cannot find $CHPL_HOME/test or $CHPL_HOME/examples"
+    exit 1
+endif
 set compiler = "$argv[1]"
 
 set platform = `$CHPL_HOME/util/platform.pl --target`
