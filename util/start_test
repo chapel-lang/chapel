@@ -397,6 +397,13 @@ else
 endif
 
 set testdir = "$CHPL_HOME/test"
+if (! -d $testdir || ! -x $testdir) then
+    set testdir = "$CHPL_HOME/examples"
+endif
+if (! -d $testdir || ! -x $testdir) then
+    echo "Error: Cannot find $CHPL_HOME/test or $CHPL_HOME/examples"
+    exit 1
+endif
 set logtmp = $testdir/Logs/$user.tmp.log
 set datestr = `date +"%y%m%d.%H%M%S"`
 
