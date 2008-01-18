@@ -7,6 +7,7 @@ extern int verbosity;
 
 void _printError(const char* message, _int32 lineno, _string filename);
 void _printInternalError(const char* message);
-void _chpl_msg(int verbose_level, const char* fmt, ...);
+void _chpl_msg(int verbose_level, const char* fmt, ...)
+  __attribute__((format(printf, 2, 3)));
 
 #endif

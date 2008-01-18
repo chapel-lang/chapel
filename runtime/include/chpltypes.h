@@ -77,7 +77,8 @@ typedef _int64              _symbol;
 //
 // stopgap formatting
 //
-_string _format(_string format, ...);
+_string _format(_string format, ...)
+  __attribute__((format(printf, 1, 2)));
 
 char* _glom_strings(int numstrings, ...);
 
