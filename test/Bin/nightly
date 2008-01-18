@@ -359,6 +359,7 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
+    $ENV{'CHPL_HOME'} = $chapeldir;
     $status = mysystem("cd $testdir && ../util/start_test $testflags", "running standard tests", 0, 0);
 
 
