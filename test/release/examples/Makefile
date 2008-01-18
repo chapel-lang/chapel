@@ -31,7 +31,6 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS)
 	cd hpcc && $(MAKE) clean
-	./start_clean
 
 hpcc: FORCE
 	cd hpcc && $(MAKE) all

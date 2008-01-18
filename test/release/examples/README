@@ -70,7 +70,6 @@ Other files
   Arr.dat         : array input used by fileIO.chpl
   blockLU-Mat.dat : matrix input used by blockLU.chpl
   start_test      : the main script for the Chapel testing system
-  start_clean     : cleans up the result of a run of the testing system
   Bin/            : contains helper scripts for the testing system
   Logs/           : directory created by the test system to store logs
   *.good          : these files are used by the Chapel testing system

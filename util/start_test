@@ -350,27 +350,13 @@
 # The Makefile mode of testing is fairly new; please send bugs and
 # feature requests to bradc@cray.com
 #
-# Also worth describing here is the start_clean script which walks
-# the directory structure in a similar manner and cleans up --
-# removing the generated executables, core files, and *.tmp files
-# which store any mismatching output.  The user can also specify
-# subdirectory-specific things to clean up using a CLEANFILES
-# file that lists other targets to remove (called with the -rf
-# flag, so subdirectories will work here as well).  The idea is
-# that after start_clean runs, the testing system should be left
-# in a state pretty close to what's checked into the CVS tree.
-#
 # Again, to see a sample run of the testing system, look through
 # the Samples/ directory, then run:
 #
 #     ./start_test Samples
 #
 # and inspect the Samples/ and Logs/ subdirectories to see what
-# was generated.  Then use:
-#
-#     ./start_clean Samples
-#
-# to clean back up again.
+# was generated.
 #
 
 set user = `whoami`
