@@ -24,17 +24,11 @@
 #    flags, respectively.
 
 
-# Check number of incoming arguments
-if ( $#argv != 1 ) then
-	echo usage\: sub_clean testdir
-	exit
-endif
-
 # commenting this out for now
 ## set umask such that other testers can modify files also
 #umask 002
 
-set testdir = "$argv[1]"
+set testdir = "$CHPL_HOME/test"
 
 # build a string representing the local directory
 # strip off $testdir

@@ -359,7 +359,7 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    $status = mysystem("cd $testdir && ./start_test $testflags", "running standard tests", 0, 0);
+    $status = mysystem("cd $testdir && ../util/start_test $testflags", "running standard tests", 0, 0);
 
 
 

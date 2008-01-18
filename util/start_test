@@ -38,21 +38,21 @@
 #
 #   option     argument               default value
 #   ---------  ---------------------  -------------
-#              [list of directories]  .
+#              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
 #              [list of tests]        ""
-#   -compiler  <compiler executable>  ../bin/<platform>/chpl
+#   -compiler  <compiler executable>  $CHPL_HOME/bin/<platform>/chpl
 #   -compopts  <option list>          ""
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
 #   -norecurse
 #   -componly
-#   -logfile   <log filename>         ./Logs/<username>.<platform>.log
+#   -logfile   <log filename>         $CHPL_HOME/test/Logs/<username>.<platform>.log
 #   -valgrind
 #   -notee
 #   -futures
 #   -futuresonly
 #   -performance
-#   -comm [none|gasnet]               ../util/comm.pl
+#   -comm [none|gasnet]               $CHPL_HOME/util/comm.pl
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
 #
@@ -378,7 +378,6 @@ set user = `whoami`
 #
 # unset things that users may have set in their environment
 #
-unsetenv CHPL_HOME
 unsetenv CHPL_DEVELOPER
 
 # Commented this out, because it only seems useful in shared environments:
@@ -387,16 +386,27 @@ unsetenv CHPL_DEVELOPER
 #umask 002
 
 #
-if (! -e ./Logs) then
-   mkdir ./Logs
+if ($?CHPL_HOME) then
+    if (! -d $CHPL_HOME || ! -x $CHPL_HOME) then
+        echo "Error: CHPL_HOME must be a legal directory"
+        exit 1
+    endif
+else
+    echo "Error: CHPL_HOME must be set in order to run start_test"
+    exit 1
 endif
-set logtmp = ./Logs/$user.tmp.log
+
+set testdir = "$CHPL_HOME/test"
+set logtmp = $testdir/Logs/$user.tmp.log
 set datestr = `date +"%y%m%d.%H%M%S"`
 
-# remember what directory to return to (the current working directory)
-set testdir = $cwd
+if (! -e $testdir/Logs) then
+   mkdir $testdir/Logs
+endif
 
-set platform = `../util/platform.pl`
+
+
+set platform = `$CHPL_HOME/util/platform.pl`
 
 #
 # some sets to get locale, environment reasonable
@@ -425,7 +435,7 @@ set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
-set comm = `../util/comm.pl`
+set comm = `$CHPL_HOME/util/comm.pl`
 set suppressions = ""
 
 while ( $#argv > 0 )
@@ -525,8 +535,8 @@ while ( $#argv > 0 )
 	case -help:
         case --help
 		echo Usage and defaults\:
-		echo "     start_test"
-		echo "          -compiler ../bin/$platform/chpl"
+		echo "     start_test [file list] [directory list]"
+		echo "          -compiler $CHPL_HOME/bin/$platform/chpl"
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
                 echo "          -launchcmd" \"\"
@@ -541,7 +551,7 @@ while ( $#argv > 0 )
                 echo "          -comm [none|gasnet]"
                 echo "          -suppress <filename>"
 #                echo "          -interpret (or -i)"
-		echo "          -logfile ./Logs/$user.$platform.log"
+		echo "          -logfile $CHPL_HOME/test/Logs/$user.$platform.log"
 		echo "          -h, -help"
 		exit 0
 		breaksw
@@ -568,8 +578,11 @@ if ($comm != "none") then
     set numlocales = "1"
 endif
 
+set invocationDir = "$cwd"
+
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
-echo \[pwd: \"$testdir\"\] |& $tee -a $logtmp
+echo \[starting directory: \"$invocationDir\"] |& $tee -a $logtmp
+echo \[test directory: \"$testdir\"\] |& $tee -a $logtmp
 
 echo \[platform: $platform\] |& $tee -a $logtmp
 # see if valgrind is on.  If it is, reset the compiler
@@ -594,7 +607,7 @@ else
 endif
 
 if ($compiler == "") then
-  set compiler = "../bin/$platform/chpl"
+  set compiler = "$CHPL_HOME/bin/$platform/chpl"
 endif
 
 if ($interpret) then
@@ -643,7 +656,14 @@ else
 endif
 
 if ("$dirlist" == "" && "$testlist" == "") then
-    set dirlist = "."
+    pushd $CHPL_HOME >& /dev/null
+    set chplhome = $cwd
+    popd >& /dev/null
+    if ("$cwd" == "$chplhome") then
+        set dirlist = "test"
+    else
+        set dirlist = "."
+    endif
 endif
 
 # get absolute path for each directory
@@ -706,16 +726,18 @@ else
     setenv CHPL_TEST_NOTESTS 0
 endif
 
+#
+# test all of the tests that the user listed (if any)
+#
+
 foreach test ($testlist)
     set basedir = `dirname $test`
     set testname = `basename $test`
-    set recurse = 0
 
     pushd $basedir >& /dev/null
     echo " " |& $tee -a $logfile
     echo "[Working on file $test]" |& $tee -a $logfile
 
-    set sub_test = $testdir/Bin/sub_test
     if (-x ./sub_test) then
         set sub_test = ./sub_test
     else
@@ -734,21 +756,24 @@ foreach test ($testlist)
     setenv CHPL_ONETEST "$testname"
     echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
-    $sub_clean "$testdir" |& $tee -a $logfile
-    $sub_test "$compiler" "$testdir" |& $tee -a $logfile
+    $sub_clean |& $tee -a $logfile
+    $sub_test "$compiler" |& $tee -a $logfile
 
     unsetenv CHPL_ONETEST
 
     popd >& /dev/null
 end
 
+#
+# test all of the directories that the user specified
+#
+
 foreach absdir ($absdirs)
     # if specified to start in a specific directory, start there
-    set basedir = $testdir
-    if ( $absdir != $cwd ) then
-	set basedir = $absdir
-	cd $basedir
-    endif
+    set basedir = $absdir
+    cd $basedir
+
+    echo "[Working from directory $absdir]"
 
     # execute script that is located in each directory
     #   Recursively list all directories (have a : in the line)
@@ -806,16 +831,16 @@ foreach absdir ($absdirs)
             setenv LAUNCHCMD "$launchcmd"
 	    echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
-	    $sub_clean "$testdir" |& $tee -a $logfile
-	    $sub_test "$compiler" "$testdir" |& $tee -a $logfile
+	    $sub_clean |& $tee -a $logfile
+	    $sub_test "$compiler" |& $tee -a $logfile
 	else
 	    echo \["No tests in directory " $dir\] |& $tee -a $logfile
 	endif
     end
 end
 
-# return to directory where we started and remove lock
-cd $testdir
+# return to where we started
+cd $invocationDir
 
 echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& $tee -a $logfile
 echo " " |& $tee -a $logfile

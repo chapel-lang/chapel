@@ -131,7 +131,7 @@ foreach dir ($dirs)
 		endif
 		echo ""
 		echo "[Starting $sub_clean `date`]"
-		$sub_clean "$testdir" |& tee -a $logfile
+		$sub_clean |& tee -a $logfile
 		echo " "
 	else
 		echo \["No tests in directory " $dir\] |& \

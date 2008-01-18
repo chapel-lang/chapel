@@ -25,8 +25,8 @@
 
 
 # Check number of incoming arguments
-if ( $#argv != 2 ) then
-	echo usage\: sub_test compiler testdir
+if ( $#argv != 1 ) then
+	echo usage\: sub_test compiler
 	exit
 endif
 
@@ -38,10 +38,10 @@ set diffargs = ""
 
 # make sure can execute compiler
 
+set testdir = "$CHPL_HOME/test"
 set compiler = "$argv[1]"
-set testdir = "$argv[2]"
 
-set platform = `$testdir/../util/platform.pl --target`
+set platform = `$CHPL_HOME/util/platform.pl --target`
 set machine = `uname -n | awk 'BEGIN {FS = "."}{print $1}'`
 
 if ( ! -f $compiler || ! -x $compiler ) then
@@ -142,7 +142,7 @@ if ($?CHPL_VALGRIND_OPTS == 0) then
 endif
 
 if ($CHPL_TEST_VGRND_COMP == "on") then
-  set valgrndcomp = "valgrind $CHPL_VALGRIND_OPTS --gen-suppressions=all --suppressions=$testdir/../compiler/etc/valgrind.suppressions -q "
+  set valgrndcomp = "valgrind $CHPL_VALGRIND_OPTS --gen-suppressions=all --suppressions=$CHPL_HOME/compiler/etc/valgrind.suppressions -q "
 else
   set valgrndcomp = ""
 endif
@@ -188,7 +188,7 @@ if (-r ./USEMAKE && $perftest == 0) then
     endif
     set checkfile = make.good
     set makelog = make.out.tmp
-    set makeutil = `$testdir/../util/chplmake`
+    set makeutil = `$CHPL_HOME/util/chplmake`
     set timeout = $globalTimeout
 
     echo \[Executing: \"$makeutil -B test CHPL=$compiler\"\]
