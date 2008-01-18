@@ -40,8 +40,8 @@ GEN_CFLAGS = -std=c99
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wmissing-format-attribute
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 
 
 #
@@ -50,5 +50,5 @@ WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstr
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
-GEN_CFLAGS += $(WARN_CFLAGS)
+GEN_CFLAGS += $(WARN_CFLAGS) -Wno-unused
 endif
