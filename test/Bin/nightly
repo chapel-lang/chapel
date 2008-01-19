@@ -33,14 +33,16 @@ while (@ARGV) {
         $baseline = 1;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
-    } elsif ($flag eq "-gasnet") {
-        $gasnet = 1;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
     } else {
         $printusage = 1;
         last;
     }
+}
+
+if ($ENV{'CHPL_COMM'} eq "gasnet") {
+    $gasnet = 1;
 }
 
 $statdate = `date +%D`; chomp($statdate);
@@ -59,7 +61,6 @@ if ($printusage == 1) {
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
     print "\t-baseline    : run baseline tests\n";
-    print "\t-gasnet      : run gasnet regressions\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
     exit 1;
 }
@@ -117,30 +118,29 @@ $utildir = "$testbindirname/../../util";
 #
 # platform variables
 #
-$platform = `$utildir/platform.pl`;
+$hostplatform = `$utildir/platform.pl --host`; chomp($hostplatform);
+$targetplatform = `$utildir/platform.pl --target`; chomp($targetplatform);
+$hostcompiler = `$utildir/compiler.pl --host`; chomp($hostcompiler);
+$targetcompiler = `$utildir/compiler.pl --target`; chomp($targetcompiler);
+$threads = `$utildir/threads.pl`; chomp($threads);
+$comm = `$utildir/comm.pl`; chomp($comm);
 
-chomp($platform);
-$fullplatform = "$platform";
-$chpltargetplatform = `$utildir/platform.pl --target`;
-chomp($chpltargetplatform);
-if ($chpltargetplatform ne "" && $chpltargetplatform ne $fullplatform) {
-    $fullplatform = "$chpltargetplatform-$fullplatform";
+$fullplatform = "$targetplatform-$targetcompiler-$comm-$threads";
+if ($hostplatform ne $targetplatform) {
+    $fullplatform = "$fullplatform:$hostplatform";
+    if ($hostcompiler ne $targetcompiler) {
+        $fullplatform = "$fullplatform-$hostcompiler";
+    }
 }
-if ($chpltargetplatform eq "xt-cnl") {
-  $compilername = $ENV{'PE_ENV'};
-  chomp($compilername);
-  if ($compilername ne "") {
-    $fullplatform = "$fullplatform-\L$compilername";
-  }
-}
+
+#print "fullplatform is: $fullplatform\n";
+#exit 0;
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
 if ($debug == 1) {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
-    } elsif ($gasnet == 1) {
-        $statfile = "$statdir/nightly-gasnet.$fullplatform-debug.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
     } else {
@@ -149,8 +149,6 @@ if ($debug == 1) {
 } else {
     if ($performance == 1) {
         $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
-    } elsif ($gasnet == 1) {
-        $statfile = "$statdir/nightly-gasnet.$fullplatform-cron.dat";
     } elsif ($baseline == 1) {
         $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
     } else {
@@ -161,8 +159,6 @@ if ($debug == 1) {
 
 if ($performance == 1) {
     $subjectid = "Perf";
-} elsif ($gasnet == 1) {
-    $subjectid = "GASNet";
 } elsif ($baseline == 1) {
     $subjectid = "Baseline";
 } elsif ($runtests == 0) {
@@ -173,6 +169,15 @@ if ($performance == 1) {
     $subjectid = "";
 }
 
+if ($debug == 1) {
+    $subjectid = "$subjectid Debug";
+    $recipient = $debugmail;
+} else {
+    $subjectid = "$subjectid Nightly";
+    $recipient = "chapel_cronmail\@cray.com";
+}
+
+
 
 if ($valgrind == 1) {
     if ($interpret == 1) {
@@ -181,9 +186,6 @@ if ($valgrind == 1) {
     } elsif ($performance == 1) {
         $threechars = "vgp";
         $morechars = "perf+vgrnd";
-    } elsif ($gasnet == 1) {
-        $threechars = "vgs";
-        $morechars = "gasnet+vgrnd";
     } elsif ($baseline == 1) {
         $threechars = "vgn";
         $morechars + "baseline+vgrnd";
@@ -197,9 +199,6 @@ if ($valgrind == 1) {
 } elsif ($performance == 1) {
     $threechars = "prf";
     $morechars = "performance";
-} elsif ($gasnet == 1) {
-    $threechars = "gas";
-    $morechars = "gasnet";
 } elsif ($baseline == 1) {
     $threechars = "npt";
     $morechars = "baseline";
@@ -269,7 +268,7 @@ mysystem("cd $tmpdir && cvs -d $cvsroot checkout nightly", "cvs checkout", 1, 1)
 #
 # make cache of UW distribution
 #
-if ($debug == 0 && $platform eq "linux" && $user eq "bradc") {
+if ($debug == 0 && $hostplatform eq "linux" && $user eq "bradc") {
   $todaydate = `date +%m%d%y`;
   chomp($todaydate);
   $lastmonth = `date -d"1 month ago" +%m%d%y`;
@@ -285,7 +284,7 @@ if ($debug == 0 && $platform eq "linux" && $user eq "bradc") {
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
-if ($platform eq "cygwin") {
+if ($hostplatform eq "cygwin") {
     mysystem("cd $chapeldir && find . -name FILES -exec rm {} \\;");
 }
 
@@ -323,9 +322,6 @@ if ($examples == 1) {
 if ($performance == 1) {
     $testflags = "$testflags -performance";
 }
-if ($gasnet == 1) {
-    $testflags = "$testflags -comm gasnet";
-}
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
 }
@@ -341,13 +337,9 @@ if ($componly == 1) {
 
 if ($runtests == 0) {
     $shortstatus = "Passed";
-    if ($debug == 1) {
-        $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
-        $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-    } else {
-        $mailsubject = "Chapel $subjectid Nightly ($fullplatform): $shortstatus";
-        $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
-    }
+
+    $mailsubject = "Chapel $subjectid ($fullplatform): $shortstatus";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
     
@@ -419,17 +411,8 @@ if ($runtests == 0) {
         $shortstatus = "build/test failed";
     }
 
-    if ($debug == 1) {
-        $mailsubject = "Chapel $subjectid Debug ($fullplatform): $shortstatus";
-    } else {
-        $mailsubject = "Chapel $subjectid Nightly ($fullplatform): $shortstatus";
-    }
-    
-    if ($debug == 1) {
-        $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-    } else {
-        $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
-    }
+    $mailsubject = "Chapel $subjectid ($fullplatform): $shortstatus";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
     
@@ -535,13 +518,8 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            if ($debug == 1) {
-                $mailsubject = "Chapel: $subjectid Debug ($fullplatform): Failure notice";
-                $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-            } else {
-                $mailsubject = "Chapel: $subjectid Nightly ($fullplatform): Failure notice";
-                $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
-            }
+            $mailsubject = "Chapel: $subjectid ($fullplatform): Failure notice";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
@@ -570,7 +548,7 @@ sub commitstats {
     if ($makeplotunexe) {
         print "skipping makeplot step\n";
     } else {
-        if ($platform eq "linux") {
+        if ($hostplatform eq "linux") {
             `cd $statdir && ./makeplot`;
         }
     }
