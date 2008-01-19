@@ -36,7 +36,7 @@ foreach $opt (@OPTS) {
     system("echo \"\" | tee -a $home/.opt_testing.tmp");
     system("echo \"OPTIMIZATION FLAGS: $opt\" | tee -a $home/.opt_testing.tmp");
     system("echo \"\" | tee -a $home/.opt_testing.tmp");
-    system("cd $home && start_test release/examples --compopts \"$opt\" | tee -a .opt_testing.tmp");
+    system("cd $home && ../util/start_test release/examples --compopts \"$opt\" | tee -a .opt_testing.tmp");
 }
 
 @lines = `cat $home/.opt_testing.tmp`;
