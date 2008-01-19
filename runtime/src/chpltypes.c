@@ -152,44 +152,39 @@ object2int( _chpl_object o) {
 
 
 _timervalue* _now_timer_help(_timervalue* time) {
-  struct timezone tz;
-  gettimeofday(time, &tz);
+  gettimeofday(time, NULL);
   return time;
 }
 _timervalue _default_timer;
 
 _int32 _now_year(void) {
   struct tm * now;
-  struct timezone tz;
   _timervalue t;
-  gettimeofday(&t, &tz);
+  gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return now->tm_year;
 }
 
 _int32 _now_month(void) {
   struct tm * now;
-  struct timezone tz;
   _timervalue t;
-  gettimeofday(&t, &tz);
+  gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return now->tm_mon;
 }
 
 _int32 _now_day(void) {
   struct tm * now;
-  struct timezone tz;
   _timervalue t;
-  gettimeofday(&t, &tz);
+  gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return now->tm_mday;
 }
 
 _real64 _now_time(void) {
   struct tm * now;
-  struct timezone tz;
   _timervalue t;
-  gettimeofday(&t, &tz);
+  gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return (_real64)(now->tm_hour)*3600.0e+6 +
     (_real64)(now->tm_min)*60.0e+6 +
