@@ -19,6 +19,7 @@
 #include "chplcomm.h"
 #include "chplcopygc.h"
 #include "chplexit.h"
+#include <chplfp.h>
 #include "chplio.h"
 #include "chplmath.h"
 #include "chplmem.h"
