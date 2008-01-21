@@ -21,6 +21,58 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 
 
+
+==========================
+intel-specific regressions
+==========================
+
+Warning about unused labels
+---------------------------
+[Error matching program output for arrays/deitz/jacobi-unoptimized]
+
+Warning about using a variable before its value is set
+------------------------------------------------------
+[Error matching program output for classes/deitz/test_empty_record]
+[Error matching program output for functions/jplevyak/scoping/visibility-1]
+[Error matching program output for types/tuple/diten/tupleComparisons]
+
+gdb breakpoint line number off by one
+-------------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+
+presumed to be floating point precision differences
+---------------------------------------------------
+[Error matching program output for npb/cg/bradc/cg-dense]
+[Error matching program output for studies/hpcc/FFT/bradc/fft]
+[Error matching program output for studies/hpcc/FFT/marybeth/fft]
+[Error matching make output for studies/madness/Makefile]
+[Error matching make output for studies/madness/dinan/mad_chapel/Makefile]
+[Error matching make output for studies/madness/marybeth/Makefile]
+[Error matching program output for studies/madness/marybeth/futures/MRAfail]
+[Error matching program output for users/rbarrett/diffuse2d-orig-blc]
+
+???
+---
+[Error matching program output for parallel/begin/waynew/simple2]
+
+timed out
+---------
+[Error: Timed out executing program parallel/cobegin/waynew/while]
+
+
+
+===========================
+darwin-specific regressions
+===========================
+
+gdb on the Mac is not 6.4 (assumed for good --gdb support)
+----------------------------------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+
+
+       
 ==============================
 pathscale-specific regressions
 ==============================
@@ -31,6 +83,10 @@ globals are not volatile:
 [Error: Timed out executing program parallel/cobegin/waynew/depend] 
 [Error: Timed out executing program parallel/cobegin/waynew/while] -- intermittent
 
+??? -- gdb incompatability?
+---------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2] 
+
 exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
@@ -38,6 +94,7 @@ exp2 not supported:
 weird math function interaction
 -------------------------------
 [Error matching compiler output for modules/standard/math/bradc/math32bits]
+
 
 
 ==========================
@@ -48,7 +105,7 @@ exp2/log2/other math fns not supported
 --------------------------------------
 [Error matching compiler output for functions/dinan/exp2] 
 [Error matching compiler output for modules/standard/math/lg2] 
-[Error matching compiler output for modules/standard/math/bradc/sin32bit]
+[Error matching compiler output for modules/standard/math/bradc/math32bits-more] 
 
 numeric stability issues
 ------------------------
@@ -56,6 +113,7 @@ numeric stability issues
 [Error matching make output for studies/madness/dinan/mad_chapel/Makefile] 
 [Error matching make output for studies/madness/marybeth/Makefile] 
 [Error matching program output for studies/madness/marybeth/futures/MRAfail] 
+
 
 
 ========================
@@ -72,9 +130,10 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
 
-???
----
-[Error: Timed out executing program parallel/single/waynew/simple1-int64] 
+??? -- gdb incompatability?
+---------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2] 
+
 
 
 
@@ -82,16 +141,20 @@ negative floating point 0.0 not supported
 gasnet-specific failures
 ========================
 
-failing because locals are made into classes and classes don't work (1/14/08)
------------------------------------------------------------------------------
-[Error matching program output for multilocale/deitz/test_begin_then_on]
-[Error matching program output for multilocale/deitz/test_trivial1]
-[Error: Timed out executing program multilocale/diten/coforall_on]
+??? -- many C compilation errors
+--------------------------------
+[Error matching compiler output for classes/diten/allocateManyObjects] 
 
+??? -- some C compilation errors
+--------------------------------
+[Error matching compiler output for classes/diten/allocateManyObjects] 
 
 gdb doesn't work with GASNet yet
 --------------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint] 
+[Error: Timed out executing program execflags/bradc/gdbddash/declint2] 
+[Error: Timed out executing program execflags/bradc/gdbddash/declint] 
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] 
+
 
 
 ========================
@@ -102,6 +165,8 @@ lg2/exp2
 --------
 [Error matching program output for functions/dinan/exp2] 
 [Error matching program output for modules/standard/math/lg2] 
+
+
 
 =======================
 x1/x2-specific failures
