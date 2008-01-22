@@ -1,8 +1,9 @@
-#include <stdio.h>
-#include <unistd.h>
 #include "chplrt.h"
 #include "chplsys.h"
 #include "error.h"
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/sysctl.h>
 
 #ifndef chplGetPageSize
 #define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
@@ -12,7 +13,7 @@ _uint64 _bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
   _printInternalError("sorry- bytesPerLocale not supported on this platform");
   return 0;
-#elif defined APPLE
+#elif defined __APPLE__
   _uint64 membytes;
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
@@ -35,12 +36,14 @@ _uint64 _bytesPerLocale(void) {
 _int32 _coresPerLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
-#elif defined APPLE
-  _uint64 numcores;
+#elif defined __APPLE__
+  _uint64 numcores = 0;
   size_t len = sizeof(numcores);
   if (sysctlbyname("hw.physicalcpu", &numcores, &len, NULL, 0))
     _printInternalError("query of number of cores failed");
-  return (_int32)numcores;
+  // If the call to sysctlbyname() above failed to modify numcores for some reason,
+  // return just 1 to be safe.
+  return numcores ? (_int32)numcores : 1;
 #elif defined __MTA__  // The following code may cause the MTA (to seem) to hang!
   int mib[2] = {CTL_HW, HW_NCPU}, numcores;
   size_t len = sizeof(numcores);

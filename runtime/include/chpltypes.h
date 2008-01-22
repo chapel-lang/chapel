@@ -19,7 +19,7 @@
 #define UINT32( i) (i ## UL)
 #define UINT64( i) (i ## ULL)
 
-typedef enum __bool {
+typedef enum ___bool {
   false = 0,
   true = 1
 } _bool;
