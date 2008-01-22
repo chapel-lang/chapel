@@ -1,5 +1,4 @@
 #include <ctype.h>
-#include <ieeefp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
