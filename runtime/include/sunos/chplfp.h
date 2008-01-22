@@ -4,6 +4,5 @@
 #include <ieeefp.h>
 
 #define isinf(x) (!finite(x) && !isnan(x))
-#define isnan(x) isnand(x)
 
 #endif
