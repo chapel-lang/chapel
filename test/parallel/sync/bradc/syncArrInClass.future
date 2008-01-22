@@ -1,0 +1,5 @@
+bug: sync array in class deadlocks in constructor
+
+It appears that sometime between v0.5 and now, having
+sync array members of classes result in deadlock during
+the construction of the class.
