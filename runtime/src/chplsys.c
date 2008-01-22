@@ -1,9 +1,11 @@
+#include <stdio.h>
+#include <unistd.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 #include "chplrt.h"
 #include "chplsys.h"
 #include "error.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/sysctl.h>
 
 #ifndef chplGetPageSize
 #define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
