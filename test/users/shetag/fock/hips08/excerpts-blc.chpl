@@ -8,7 +8,7 @@ class taskpool {
   var head, tail : sync int = 0;
   def add(blk: blockIndices) {
     const pos = tail;
-    tail = (pos+1)%poolSize; // assumes poolSize >= #producers/#consumers
+    tail = (pos+1)%poolSize;
     taskarr(pos) = blk;
   }
   def remove() {
@@ -21,8 +21,9 @@ class taskpool {
 /*-------------------------------------------------
 Code 6 Top-level driver for task pool - Chapel
 -------------------------------------------------*/
-config const numConsumers = numLocales;
-const t = taskpool(poolSize=numConsumers);
+config const numConsumers = numLocales * Locale(0).numCores,
+             poolSize = numConsumers;
+const t = taskpool(poolSize);
 cobegin {
   coforall loc in 1..numConsumers do
     consumer();
@@ -47,10 +48,10 @@ def genBlocks() {
     const lattop = if (kat==iat) then jat
                                  else kat;
     forall lat in 1..lattop do
-      yield blockIndices(...);
+      yield blockIndices(...);  // what is "..."?
   }
   forall loc in 1..numConsumers do
-    yield blockIndices(0,0,0,0,0,0,0,0);
+    yield blockIndices(0,0,0,0,0,0,0,0); // should/could this be four ranges?
 }
 
 
