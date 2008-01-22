@@ -6,7 +6,7 @@
 #include "chplcast.h"
 #include "chplrt.h"
 #include "chpltypes.h"
-#include "chplfp.h"
+#include <chplfp.h>
 #include "error.h"
 
 static int scanningNCounts(void) {

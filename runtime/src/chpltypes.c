@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
-#include "chplfp.h"
+#include <chplfp.h>
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
