@@ -4,7 +4,11 @@
 EXE_SUFFIX=.exe
 
 #
-# seemingly necessary to get things like strtoull()
+# seemingly necessary to get vnsprintf for the runtime libraries
 #
-GEN_CFLAGS += -U__STRICT_ANSI__
+RUNTIME_CFLAGS += -U__STRICT_ANSI__
 
+#
+# seemingly necessary to get INT64_MAX and the like
+#
+GEN_CFLAGS +=  -U__STRICT_ANSI__
