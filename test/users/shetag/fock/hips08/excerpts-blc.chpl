@@ -74,7 +74,7 @@ Code 10 Symmetrization of J and K - Chapel
 -------------------------------------------------*/
 
 cobegin {
-  [(i,j) in D] jmat2T(i,j) = jmat2(j,i);  // what is D?
+  [(i,j) in D] jmat2T(i,j) = jmat2(j,i);
   [(i,j) in D] kmat2T(i,j) = kmat2(j,i);
 }
 jmat2 = (jmat2+jmat2T)*2;
