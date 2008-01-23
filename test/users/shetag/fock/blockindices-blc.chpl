@@ -5,14 +5,14 @@ class blockIndices {
   const is, js, ks, ls: range(int);
 
   def blockIndices(iat, jat, kat, lat) {
-    is = bas_info(iat, 1)..bas_info(iat, 2);
-    js = bas_info(jat, 1)..bas_info(jat, 2);
-    ks = bas_info(kat, 1)..bas_info(kat, 2);
-    ls = bas_info(lat, 1)..bas_info(lat, 2);
+    is = bas_info(iat);
+    js = bas_info(jat);
+    ks = bas_info(kat);
+    ls = bas_info(lat);
   }
 
   // BLC: TODO -- this should have a better name
-  def genIndices {
+  def genIndices() {
     for i in is {
       const jtop = if (is.low==js.low) then i else js.high;
       for j in js.low..jtop {
@@ -35,6 +35,10 @@ class blockIndices {
     }
 
   }
+}
+
+def g(i,j,k,l) {
+  return 1.0/(i*j + k*l);
 }
 
 }

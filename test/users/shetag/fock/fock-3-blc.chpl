@@ -1,12 +1,12 @@
 module fock {
 use blockindices, taskpool;
 
-config const natom = 5;
-const n = (natom/2)*10 + ((natom+1)/2)*5;
-const bas_info : [(i,j) in [1..natom, 1..2]] int = 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
-
-
 type elemType = real(64);
+
+config const natom = 5;
+const bas_info : [i in 1..natom] range = (1..10/(i%2+1)) + 5*(i/2) + 10*((i-1)/2);
+
+const n = (natom/2)*10 + ((natom+1)/2)*5;
 const matD : domain(2) distributed(Block) = [1..n, 1..n]; 
 const dmat : [(i,j) in matD] elemType = 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
@@ -96,7 +96,7 @@ def buildjk_atom4(blk) {
       kjk : [jkD] elemType,
       kjl : [jlD] elemType;
 
-  for (i,j,k,l,gijkl) in blk.genIndices {
+  for (i,j,k,l,gijkl) in blk.genIndices() {
     jij(i,j) += dkl(k,l)*gijkl;
     jkl(k,l) += dij(i,j)*gijkl;
     kik(i,k) += djl(j,l)*gijkl;
@@ -113,10 +113,6 @@ def buildjk_atom4(blk) {
   atomic kmat2(jkD) += kjk;
   atomic kmat2(jlD) += kjl;
   oneAtATime = tmp;
-}
-
-def g(i,j,k,l) {
-  return 1.0/(i*j + k*l);
 }
 
 def main() {
