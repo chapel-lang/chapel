@@ -1,0 +1,6 @@
+bug: arr of sync classes wants 0-argument constructor
+
+For some reason an array of sync classes wants a 0-argument
+constructor.  It's not clear that it should need one.  If
+it does, this error message should be improved.
+

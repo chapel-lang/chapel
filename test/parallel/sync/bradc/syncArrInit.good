@@ -1,0 +1,7 @@
+made it past declaration of arr
+arr(1) = nil
+arr(1).isFull = false
+arr(2) = nil
+arr(2).isFull = false
+arr(3) = nil
+arr(3).isFull = false
