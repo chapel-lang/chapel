@@ -23,6 +23,7 @@ if ($cron) {
     `cd /tmp/opt_testing && cvs checkout nightly >& /dev/null`;
     `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
     $home = "/tmp/opt_testing/chapel/test";
+    $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";
 } else {
     $home = ".";
 }
