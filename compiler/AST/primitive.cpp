@@ -376,6 +376,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_LOCALE, "_get_locale", returnInfoInt32);
   prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32);
 
+  prim_def(PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true, true);
+
   prim_def(PRIMITIVE_MAX_THREADS, "_maxThreads", returnInfoInt32);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);

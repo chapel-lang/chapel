@@ -187,8 +187,14 @@ buildWideClass(Type* type) {
 //
 void
 insertWideReferences(void) {
-  if (fLocal)
+  FnSymbol* heapAllocateGlobals = new FnSymbol("_heapAllocateGlobals");
+  heapAllocateGlobals->retType = dtVoid;
+  theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
+
+  if (fLocal) {
+    heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
+  }
 
   //
   // change dtNil into dtObject
@@ -321,6 +327,29 @@ insertWideReferences(void) {
     }
   }
 
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->var == gNil) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (call->isPrimitive(PRIMITIVE_MOVE)) {
+            if (Type* wtype = call->get(1)->typeInfo()) {
+              if (wtype->symbol->hasPragma("wide")) {
+                if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
+                  if (wctype->symbol->hasPragma("wide class")) {
+                    VarSymbol* tmp = new VarSymbol("_tmp", wctype);
+                    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                    se->replace(new SymExpr(tmp));
+                    call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   //
   // insert cast temps if lhs type does not match cast type
   //   allows separation of the remote put with the wide cast
@@ -341,4 +370,77 @@ insertWideReferences(void) {
       }
     }
   }
+
+  //
+  // initialize global variables across locales
+  //
+  compute_sym_uses(); // for "ack!!" below
+
+  Vec<Symbol*> heapVars;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed("_heapAllocGlobal") ||
+          call->isNamed("_heapAllocConstGlobal")) {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move);
+        SymExpr* lhs = toSymExpr(move->get(1));
+        INT_ASSERT(lhs);
+
+        //
+        // ack!! check for tmp before global
+        // this can happen due to coercion wrappers
+        // this is a worrisome fix
+        //
+        if (lhs->var->isCompilerTemp) {
+          if (CallExpr* move2 = toCallExpr(move->next)) {
+            if (lhs->var->defs.n == 1 &&
+                lhs->var->uses.n == 1 &&
+                lhs->var->uses.v[0] == move2->get(2)) {
+              move2->get(2)->replace(call->remove());
+              move->remove();
+              move = move2;
+              lhs->var->defPoint->remove();
+              lhs = toSymExpr(move->get(1));
+            }
+          }
+        }
+
+        if (lhs->var->type->symbol->hasPragma("wide class")) {
+
+          //
+          // handle global variables on the heap
+          //
+          move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->remove(), lhs->var->type->getField("addr")->type->getField("_val"), call->get(1)->remove()));
+          heapVars.add(lhs->var);
+
+        } else {
+
+          //
+          // handle constant global variables not on the heap
+          //
+          call->replace(call->get(1)->remove());
+          move->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, lhs->var));
+        }
+      }
+    }
+  }
+
+  VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
+  tmp->isCompilerTemp = true;
+  heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_LOCALE_ID)));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, tmp, new_IntSymbol(0))));
+  BlockStmt* block = new BlockStmt();
+  forv_Vec(Symbol, sym, heapVars) {
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, sym, new CallExpr(PRIMITIVE_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, new_StringSymbol("global var heap allocation"))));
+    block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, sym));
+  }
+  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmp), block));
+  int i = 0;
+  forv_Vec(Symbol, sym, heapVars) {
+    heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
+  }
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  numGlobalsOnHeap = i;
 }

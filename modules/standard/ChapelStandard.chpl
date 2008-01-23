@@ -14,5 +14,3 @@ use ChapelUtil;
 
 use Types;
 use Math;
-
-_startTrackingMem();

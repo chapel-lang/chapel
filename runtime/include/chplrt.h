@@ -3,6 +3,8 @@
 
 #include "chpltypes.h"
 
+extern void _initModuleGuards(void);
+
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \

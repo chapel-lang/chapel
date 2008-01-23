@@ -1729,6 +1729,25 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
+    case PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR:
+      fprintf(outfile, "_HEAP_REGISTER_GLOBAL_VAR(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS:
+      fprintf(outfile, "_chpl_comm_broadcast_global_vars(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_PRIVATE_BROADCAST:
+      fprintf(outfile, "_chpl_comm_broadcast_private(&(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "), sizeof(");
+      get(1)->typeInfo()->codegen(outfile);
+      fprintf(outfile, "))");
+      break;
     case PRIMITIVE_MAX_THREADS:
       fprintf(outfile, "_maxThreads()");
       break;

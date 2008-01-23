@@ -524,6 +524,16 @@ class _heap {
   var _val;
 }
 
+pragma "heap" def _heapAlloc(x) return _heap(x);
+pragma "heap" def _heapAccess(x) var return x._val;
+
+pragma "heap" def _heapAllocGlobal(x) return _heap(x);
+
+pragma "heap" def _heapAllocConstGlobal(x) where _isSimpleScalarType(x.type) return x;
+pragma "heap" def _heapAllocConstGlobal(x) where !_isSimpleScalarType(x.type) return _heap(x);
+pragma "heap" def _heapAccessConstGlobal(x) where _isSimpleScalarType(x.type) return x;
+pragma "heap" def _heapAccessConstGlobal(x) where !_isSimpleScalarType(x.type) return x._val;
+
 //
 // internal reference type
 //
@@ -814,6 +824,9 @@ def _isPrimitiveType(type t) param return
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) | (t == real(128)) |
   (t == string);
+
+def _isSimpleScalarType(type t) param return
+  (t == bool) | _isIntegralType(t) | _isFloatType(t);
 
 def _isIntegralType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |

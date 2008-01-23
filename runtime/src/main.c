@@ -60,6 +60,8 @@ int main(int argc, char* argv[]) {
   initMemTable();            // get ready to start tracking memory
   CreateConfigVarTable();    // get ready to start tracking config vars
   initChplThreads();         // initialize the threads layer
+  _initModuleGuards();       // initialize _run_mod_firsttime vars
+  _heapAllocateGlobals();    // allocate global vars on heap for multilocale
 
   if (_localeID == 0)        // have locale #0 run the user's main function
     _chpl_main();

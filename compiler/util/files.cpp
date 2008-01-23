@@ -277,7 +277,7 @@ const char* createGDBFile(int argc, char* argv[]) {
     }
   }
   fprintf(gdbfile, "\n");
-  fprintf(gdbfile, "set $_exitcode = 's'\n");
+//   fprintf(gdbfile, "set $_exitcode = 's'\n");
 //   fprintf(gdbfile, "define hook-run\n");
 //   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
 //   fprintf(gdbfile, "    call cleanup_for_exit()\n");

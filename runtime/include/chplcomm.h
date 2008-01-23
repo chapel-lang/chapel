@@ -7,7 +7,13 @@
 extern _int32 _localeID;   // unique ID for each locale: 0, 1, 2, ...
 extern _int32 _numLocales; // number of locales
 
+extern void _heapAllocateGlobals(void);
+extern char* _global_vars_registry[];
+
 typedef void (*func_p)(void*);
+
+#define _HEAP_REGISTER_GLOBAL_VAR(i, wide) \
+  (wide).locale = 0; _global_vars_registry[i] = (char*)(&((wide).addr))
 
 #define _SET_WIDE_CLASS(wide, cls) \
   (wide).locale = _localeID; (wide).addr = cls
@@ -179,6 +185,28 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB);
 // displayed using the -v flag).
 //
 void _chpl_comm_rollcall(void);
+
+//
+// _global_vars_registry is an array of pointers to addresses; on
+// locale 0, these addresses point locally to a class; they are
+// uninitialized elsewhere.  This function makes it so that the
+// addresses on all other locales are the same as on locale 0.
+//
+// This function is called collectively.
+//
+// It is necessary to barrier across all locales when this functions
+// is called.
+//
+void _chpl_comm_broadcast_global_vars(int numGlobals);
+
+//
+// Broadcast the value at addr on the calling locale to the same
+// address on every other locale.  This is done to set up global
+// constants of simple scalar types
+//
+// Assumes global variables have the same addresses across locales.
+//
+void _chpl_comm_broadcast_private(void* addr, int size);
 
 //
 // barrier for synchronization between all processes; currently only

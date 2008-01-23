@@ -70,6 +70,10 @@ void _chpl_comm_rollcall(void) {
   _chpl_msg(2, "executing on a single locale\n");
 }
 
+void _chpl_comm_broadcast_global_vars(int numGlobals) { }
+
+void _chpl_comm_broadcast_private(void* addr, int size) { }
+
 void _chpl_comm_barrier(const char *msg) { }
 
 void _chpl_comm_exit_any(int status) { }

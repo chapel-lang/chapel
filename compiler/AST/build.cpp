@@ -106,6 +106,9 @@ static bool stmtIsGlob(Expr* stmt) {
 }
 
 
+static FnSymbol* initModuleGuards = NULL;
+
+
 void createInitFn(ModuleSymbol* mod) {
   static int moduleNumber = 0;
   currentLineno = mod->lineno;
@@ -114,15 +117,23 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn = new FnSymbol(astr("__init_", mod->name));
   mod->initFn->retType = dtVoid;
 
+  if (!initModuleGuards) {
+    initModuleGuards = new FnSymbol("_initModuleGuards");
+    theProgram->block->insertAtHead(new DefExpr(initModuleGuards));
+    theProgram->initFn->insertAtHead(new CallExpr(initModuleGuards));
+  }
+
   if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
-    VarSymbol* guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
-    theProgram->initFn->insertAtHead(new DefExpr(guard, new SymExpr(gTrue)));
+    mod->guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
+    mod->guard->addPragma("private"); // private = separate copy per locale
+    theProgram->initFn->insertAtHead(new DefExpr(mod->guard, new SymExpr(gTrue)));
+    initModuleGuards->insertAtTail(new CallExpr(PRIMITIVE_MOVE, mod->guard, gTrue));
     mod->initFn->insertAtTail(
       new CondStmt(
-        new CallExpr("!", guard),
+        new CallExpr("!", mod->guard),
         new CallExpr(PRIMITIVE_RETURN, gVoid)));
-    mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
+    mod->initFn->insertAtTail(new CallExpr("=", mod->guard, gFalse));
   }
 
   for_alist(stmt, mod->block->body) {
@@ -832,6 +843,11 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
+  if (fLocal) {
+    BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
+    block->insertAtHead(expr);
+    return build_chpl_stmt(block);
+  }
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
   FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));

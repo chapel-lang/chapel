@@ -68,6 +68,8 @@ Timer timer3;
 Timer timer4;
 Timer timer5;
 
+int numGlobalsOnHeap = 0;
+
 static bool printCopyright = false;
 static bool printHelp = false;
 static bool printEnvHelp = false;

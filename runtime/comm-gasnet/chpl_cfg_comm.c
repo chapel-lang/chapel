@@ -206,6 +206,27 @@ void _chpl_comm_rollcall(void) {
             _numLocales);
 }
 
+void _chpl_comm_broadcast_global_vars(int numGlobals) {
+  int i;
+  _chpl_comm_barrier("barrier before broadcasting globals");
+  for (i = 1; i < _numLocales; i++) {
+    for (i = 0; i < numGlobals; i++) {
+      _chpl_comm_get(_global_vars_registry[i],
+                     0, _global_vars_registry[i],
+                     sizeof(void*));
+    }
+  }
+}
+
+void _chpl_comm_broadcast_private(void* addr, int size) {
+  int i;
+  for (i = 0; i < _numLocales; i++) {
+    if (i != _localeID) {
+      _chpl_comm_put(addr, i, addr, size);
+    }
+  }
+}
+
 void _chpl_comm_barrier(const char *msg) {
   PRINTF(msg);
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
@@ -283,4 +304,3 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
   GASNET_BLOCKUNTIL(1==done);
 }
-

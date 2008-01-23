@@ -99,22 +99,43 @@ flattenGlobalFunctions() {
 }
 
 
-static void insertHeapAllocate(CallExpr* move) {
+static void insertHeapAllocate(CallExpr* move, bool global = false) {
+  currentLineno = move->lineno;
+  currentFilename = move->filename;
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   move->insertBefore(new DefExpr(tmp));
   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
-  move->insertAtTail(new CallExpr("_construct__heap", tmp));
+  if (global) {
+    if (move->get(1)->isConstant())
+      move->insertAtTail(new CallExpr("_heapAllocConstGlobal", tmp));
+    else 
+      move->insertAtTail(new CallExpr("_heapAllocGlobal", tmp));
+  } else
+    move->insertAtTail(new CallExpr("_heapAlloc", tmp));
 }
 
 
-static void insertHeapAccess(SymExpr* se) {
-  VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->isCompilerTemp = true;
+static void insertHeapAccess(SymExpr* se, bool global = false) {
+  currentLineno = se->lineno;
+  currentFilename = se->filename;
+  CallExpr* call =
+    new CallExpr((global && se->var->isConstant())
+                 ? "_heapAccessConstGlobal"
+                 : "_heapAccess");
   Expr* stmt = se->getStmtExpr();
-  se->replace(new SymExpr(tmp));
-  stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_val", gMethodToken, se)));
+  if (!stmt) {
+    se->replace(call);
+    call->insertAtTail(se);
+  } else {
+    VarSymbol* tmp = new VarSymbol("_tmp");
+    tmp->isCompilerTemp = true;
+    tmp->isExprTemp = true;
+    se->replace(new SymExpr(tmp));
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
+    call->insertAtTail(se);
+  }
 }
 
 
@@ -197,7 +218,7 @@ static void heapAllocateLocals() {
       FnSymbol* fn = sym->getFunction();
       VarSymbol* tmp = new VarSymbol("_tmp");
       tmp->isCompilerTemp = true;
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_construct__heap", sym)));
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_heapAlloc", sym)));
       fn->insertAtHead(new DefExpr(tmp));
       forv_Vec(SymExpr, se, sym->defs) {
         se->var = tmp;
@@ -212,11 +233,68 @@ static void heapAllocateLocals() {
 }
 
 
+//
+// change global variables into _heap classes
+//
+// for constants of scalar type, use replicated scalars
+//
+// insert PRIMITIVE_COMM_ALL call to make it so that _heap classes on
+// each locale point to the same data or, for replicated scalars, to
+// make it so that each replicated scalar contains the same value
+//
+static void heapAllocateGlobals() {
+  if (fLocal)
+    return;
+
+  compute_sym_uses();
+
+  //
+  // collect all global variables less parameters and compiler temps
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
+
+          //
+          // do not change parameters and private global variables
+          //
+          if (var->isParam || var->hasPragma("private"))
+            continue;
+
+          bool first = true;
+          forv_Vec(SymExpr, se, var->defs) {
+
+            // ack!! this is troublesome: we're assuming that the first
+            // definition in the defs vector is the initial definition
+
+            if (first) {
+              CallExpr* move = toCallExpr(se->parentExpr);
+              INT_ASSERT(move);
+              INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+              insertHeapAllocate(move, true);
+              first = false;
+            } else {
+              insertHeapAccess(se, true);
+            }
+          }
+          forv_Vec(SymExpr, se, var->uses) {
+            insertHeapAccess(se, true);
+          }
+
+        }
+      }
+    }
+  }
+}
+
+
 void normalize(void) {
   normalize(theProgram);
   normalized = true;
   checkUseBeforeDefs();
   flattenGlobalFunctions();
+  heapAllocateGlobals();
   heapAllocateLocals();
 }
 

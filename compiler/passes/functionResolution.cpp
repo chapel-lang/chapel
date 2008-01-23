@@ -2094,11 +2094,26 @@ preFold(Expr* expr) {
         call->replace(result);
       }
     } else if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+      Type* type = call->get(1)->typeInfo();
+
+      //
+      // if .locale is applied to an integral parameter,
+      // replace this primitive with that parameter
+      //
+      if (is_int_type(type) || is_uint_type(type)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          VarSymbol* var = toVarSymbol(se->var);
+          if ((var && var->immediate) || paramMap.get(se->var)) {
+            result = se->remove();
+            call->replace(result);
+          }
+        }
+      }
+
       //
       // if .locale is applied to an expression of locale type,
       // replace this primitive with an access of the id field
       //
-      Type* type = call->get(1)->typeInfo();
       if (type->symbol->hasPragma("ref"))
         type = getValueType(type);
       if (type->symbol->hasPragma("locale")) {
@@ -3285,7 +3300,7 @@ pruneResolvedTree() {
         if (FnSymbol* fn = call->isResolved()) {
           if (fn->retType != dtVoid) {
             CallExpr* parent = toCallExpr(call->parentExpr);
-            if (!parent) { // no use
+            if (!parent && !isDefExpr(call->parentExpr)) { // no use
               VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
               DefExpr* def = new DefExpr(tmp);
               call->insertBefore(def);

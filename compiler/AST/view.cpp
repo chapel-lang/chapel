@@ -303,9 +303,7 @@ void nprint_view_noline(BaseAST* ast) {
 
 
 BaseAST* ast(int id) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, a, asts)
+  forv_Vec(BaseAST, a, gAsts)
     if (a->id == id)
       return a;
   return NULL;

@@ -1,3 +1,7 @@
+multilocale: termination of multithreaded multilocale programs
+
+was:
+
 multilocale: local var in on statement in begin statement
 
 Try putting everything used in an on statement onto the heap rather

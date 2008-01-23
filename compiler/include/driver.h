@@ -66,4 +66,6 @@ extern Timer timer3;
 extern Timer timer4;
 extern Timer timer5;
 
+extern int numGlobalsOnHeap;
+
 #endif

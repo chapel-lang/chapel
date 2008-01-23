@@ -357,6 +357,12 @@ static void codegen_header(void) {
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
     varSymbol->codegenDef(outfile);
   }
+
+  if (numGlobalsOnHeap > 0)
+    fprintf(outfile, "\nchar* _global_vars_registry[%d];\n", numGlobalsOnHeap);
+  else
+    fprintf(outfile, "\nchar* _global_vars_registry[1];\n");
+
   closeCFile(&header);
   beautify(&header);
 }
@@ -464,7 +470,12 @@ codegen_config(FILE* outfile) {
       VarSymbol* var = toVarSymbol(def->sym);
       if (var && var->isConfig) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
-        fprintf(outfile, var->type->symbol->name);
+        Type* type = var->type;
+        if (type->symbol->hasPragma("wide class"))
+          type = type->getField("addr")->type;
+        if (type->symbol->hasPragma("heap"))
+          type = type->getField("_val")->type;
+        fprintf(outfile, type->symbol->name);
         fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
       }
     }
