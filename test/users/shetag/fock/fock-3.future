@@ -1,0 +1,6 @@
+bug: sync array in class deadlocks in constructor
+
+This test is not yet ready to test due to the future filed
+as parallel/sync/bradc/syncArrInClass.chpl.  Once that test
+is working, there is some chance that maxThreads will need
+to be increased to make this work.
