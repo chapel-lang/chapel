@@ -21,11 +21,11 @@ class taskpool {
 /*-------------------------------------------------
 Code 6 Top-level driver for task pool - Chapel
 -------------------------------------------------*/
-config const numConsumers = numLocales * Locales(0).numCores,
+config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),
              poolSize = numConsumers;
 const t = taskpool(poolSize);
 cobegin {
-  coforall loc in 1..numConsumers do
+  coforall cons in 1..numConsumers do
     consumer();
   producer();
 }
@@ -44,14 +44,15 @@ def producer() {
 Code 8 Fock index space iterator - Chapel
 -------------------------------------------------*/
 def genBlocks() {
-  forall (iat, jat, kat) in [1..natom, 1..iat, 1..iat] {
-    const lattop = if (kat==iat) then jat
-                                 else kat;
-    forall lat in 1..lattop do
-      yield blockIndices(...);  // what is "..."?
-  }
+  forall iat in 1..natom do
+    forall (jat, kat) in [1..iat, 1..iat] {
+      const lattop = if (kat==iat) then jat
+                                   else kat;
+      forall lat in 1..lattop do
+        yield blockIndices(iat, jat, kat, lat);
+    }
   forall loc in 1..numConsumers do
-    yield blockIndices(0,0,0,0,0,0,0,0); // should/could this be four ranges?
+    yield nil;
 }
 
 
@@ -60,7 +61,7 @@ Code 9 Consumer of integral blocks - Chapel
 -------------------------------------------------*/
 def consumer() {
   var blk = t.remove();
-  while (blk.ilo != 0) {
+  while (blk != nil) {
     const copyofblk = blk;
     cobegin {
       buildjk_atom4(copyofblk);
