@@ -18,7 +18,6 @@
 
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%lg + %lgi";
-const char* _default_format_write_complex256 = "%Lg + %Lgi";
 
 char* _glom_strings(int numstrings, ...) {
   va_list ap;

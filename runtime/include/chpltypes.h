@@ -34,10 +34,8 @@ typedef unsigned int        _uint32;
 typedef unsigned long long  _uint64;
 typedef float               _real32;
 typedef double              _real64;
-typedef long double         _real128;
 typedef float               _imag32;
 typedef double              _imag64;
-typedef long double         _imag128;
 typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
 typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
 typedef const char*         _string;
@@ -65,10 +63,8 @@ typedef _int64              _symbol;
 
 #define MIN_FLOAT32         (-FLT_MAX)
 #define MIN_FLOAT64         (-DBL_MAX)
-#define MIN_FLOAT128        (-LDBL_MAX)
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
-#define MAX_FLOAT128        LDBL_MAX
 
 #define ascii(s) ((_int8)(*s))
 

@@ -53,10 +53,8 @@ _string _uint32_to_string(_uint32 x);
 _string _uint64_to_string(_uint64 x);
 _string _real32_to_string(_real32 x);
 _string _real64_to_string(_real64 x);
-_string _real128_to_string(_real128 x);
 _string _imag32_to_string(_imag32 x);
 _string _imag64_to_string(_imag64 x);
-_string _imag128_to_string(_imag128 x);
 #define _bool_to_string(x) ((x) ? "true" : "false")
 
 #endif

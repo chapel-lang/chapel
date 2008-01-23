@@ -29,22 +29,18 @@ buildComplexRecord(const char* name, Type* real) {
 
 #define complex2rec(t)                                          \
   ((t == dtComplex[COMPLEX_SIZE_64]) ? complex64 :              \
-   ((t == dtComplex[COMPLEX_SIZE_128]) ? complex128 :           \
-    ((t == dtComplex[COMPLEX_SIZE_256]) ? complex256 : 0)))
+   ((t == dtComplex[COMPLEX_SIZE_128]) ? complex128 : 0))
 
 #define complex2real(t)                                                 \
   ((t == dtComplex[COMPLEX_SIZE_64]) ? dtReal[FLOAT_SIZE_32] :         \
-   ((t == dtComplex[COMPLEX_SIZE_128]) ? dtReal[FLOAT_SIZE_64] :       \
-    ((t == dtComplex[COMPLEX_SIZE_256]) ? dtReal[FLOAT_SIZE_128] : 0)))
+   ((t == dtComplex[COMPLEX_SIZE_128]) ? dtReal[FLOAT_SIZE_64] : 0))
 
 void
 complex2record() {
   ClassType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
   ClassType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
-  ClassType* complex256 = buildComplexRecord("_complex256", dtReal[FLOAT_SIZE_128]);
   complex64->refType = dtComplex[COMPLEX_SIZE_64]->refType;
   complex128->refType = dtComplex[COMPLEX_SIZE_128]->refType;
-  complex256->refType = dtComplex[COMPLEX_SIZE_256]->refType;
 
 
   forv_Vec(BaseAST, ast, gAsts) {

@@ -145,13 +145,6 @@ pragma "inline" def _cast(type t, x: _tuple) where (t == complex(128)) & (x.size
   return c;
 }
 
-pragma "inline" def _cast(type t, x: _tuple) where (t == complex(256)) & (x.size == 2) {
-  var c: complex(256);
-  c.re = x(1):real(128);
-  c.im = x(2):real(128);
-  return c;
-}
-
 pragma "inline" def +(a: _tuple) {
   return a;
 }

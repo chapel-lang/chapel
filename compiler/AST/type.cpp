@@ -107,8 +107,7 @@ bool Type::implementedUsingCVals(void) {
       this == dtUInt[INT_SIZE_32] ||
       this == dtUInt[INT_SIZE_64] ||
       this == dtReal[FLOAT_SIZE_32] ||
-      this == dtReal[FLOAT_SIZE_64] ||
-      this == dtReal[FLOAT_SIZE_128]) {
+      this == dtReal[FLOAT_SIZE_64]) {
     return true;
   } else {
     return false;
@@ -531,15 +530,12 @@ void initPrimitiveTypes(void) {
 
   INIT_PRIMITIVE_REAL( "real(32)", 32);
   INIT_PRIMITIVE_REAL( "real", 64);            // default size
-  INIT_PRIMITIVE_REAL( "real(128)", 128);
 
   INIT_PRIMITIVE_IMAG( "imag(32)", 32);
   INIT_PRIMITIVE_IMAG( "imag", 64);            // default size
-  INIT_PRIMITIVE_IMAG( "imag(128)", 128);
 
   INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
   INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size
-  INIT_PRIMITIVE_COMPLEX( "complex(256)", 256);
 
   dtString = createPrimitiveType( "string", "_string");
   dtString->defaultValue = new_StringSymbol("");
@@ -593,24 +589,21 @@ bool is_uint_type(Type *t) {
 bool is_real_type(Type *t) {
   return
     t == dtReal[FLOAT_SIZE_32] ||
-    t == dtReal[FLOAT_SIZE_64] ||
-    t == dtReal[FLOAT_SIZE_128];
+    t == dtReal[FLOAT_SIZE_64];
 }
 
 
 bool is_imag_type(Type *t) {
   return
     t == dtImag[FLOAT_SIZE_32] ||
-    t == dtImag[FLOAT_SIZE_64] ||
-    t == dtImag[FLOAT_SIZE_128];
+    t == dtImag[FLOAT_SIZE_64];
 }
 
 
 bool is_complex_type(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_64] ||
-    t == dtComplex[COMPLEX_SIZE_128] ||
-    t == dtComplex[COMPLEX_SIZE_256];
+    t == dtComplex[COMPLEX_SIZE_128];
 }
 
 
@@ -635,12 +628,8 @@ int get_width(Type *t) {
       t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_64])
     return 64;
-  if (t == dtReal[FLOAT_SIZE_128] ||
-      t == dtImag[FLOAT_SIZE_128] ||
-      t == dtComplex[COMPLEX_SIZE_128])
+  if (t == dtComplex[COMPLEX_SIZE_128])
     return 128;
-  if (t == dtComplex[COMPLEX_SIZE_256])
-    return 256;
   INT_FATAL(t, "Unknown bit width");
   return 0;
 }

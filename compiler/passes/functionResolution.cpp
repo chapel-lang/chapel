@@ -1841,7 +1841,6 @@ preFold(Expr* expr) {
                     switch (size) {
                     case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
                     case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
-                    case 128: tsize = dtReal[FLOAT_SIZE_128]->symbol; break;
                     default:
                       USR_FATAL( call, "illegal size %d for imag", size);
                     }
@@ -1851,7 +1850,6 @@ preFold(Expr* expr) {
                     switch (size) {
                     case 32:  tsize = dtImag[FLOAT_SIZE_32]->symbol;  break;
                     case 64:  tsize = dtImag[FLOAT_SIZE_64]->symbol;  break;
-                    case 128: tsize = dtImag[FLOAT_SIZE_128]->symbol; break;
                     default:
                       USR_FATAL( call, "illegal size %d for imag", size);
                     }
@@ -1861,7 +1859,6 @@ preFold(Expr* expr) {
                     switch (size) {
                     case 64:  tsize = dtComplex[COMPLEX_SIZE_64]->symbol;  break;
                     case 128: tsize = dtComplex[COMPLEX_SIZE_128]->symbol; break;
-                    case 256: tsize = dtComplex[COMPLEX_SIZE_256]->symbol; break;
                     default:
                       USR_FATAL( call, "illegal size %d for complex", size);
                     }

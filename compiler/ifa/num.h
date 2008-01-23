@@ -58,10 +58,8 @@ class Immediate { public:
     // uint128    v_uint128;
     float32    v_float32;
     float64    v_float64;
-    float128   v_float128;
     complex64  v_complex64;
     complex128 v_complex128;
-    complex256 v_complex256;
     const char *v_string;
   };
 

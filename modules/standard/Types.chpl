@@ -13,13 +13,10 @@ def numBits(type t) param where t == uint(32) return 32;
 def numBits(type t) param where t == uint(64) return 64;
 def numBits(type t) param where t == real(32) return 32;
 def numBits(type t) param where t == real(64) return 64;
-def numBits(type t) param where t == real(128) return 128;
 def numBits(type t) param where t == imag(32) return 32;
 def numBits(type t) param where t == imag(64) return 64;
-def numBits(type t) param where t == imag(128) return 128;
 def numBits(type t) param where t == complex(64) return 64;
 def numBits(type t) param where t == complex(128) return 128;
-def numBits(type t) param where t == complex(256) return 256;
 
 //
 // numBytes(type) -- returns the number of bytes in a type

@@ -822,7 +822,7 @@ def _isPrimitiveType(type t) param return
   (t == bool) |
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
-  (t == real(32)) | (t == real(64)) | (t == real(128)) |
+  (t == real(32)) | (t == real(64)) |
   (t == string);
 
 def _isSimpleScalarType(type t) param return
@@ -833,17 +833,17 @@ def _isIntegralType(type t) param return
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64));
 
 def _isComplexType(type t) param return
-  (t == complex(64)) | (t == complex(128)) | (t == complex(256));
+  (t == complex(64)) | (t == complex(128));
 
 def _isFloatType(type t) param return
-  (t == real(32)) | (t == real(64)) | (t == real(128)) |
-  (t == imag(32)) | (t == imag(64)) | (t == imag(128));
+  (t == real(32)) | (t == real(64)) |
+  (t == imag(32)) | (t == imag(64));
 
 def _isRealType(type t) param return
-  (t == real(32)) | (t == real(64)) | (t == real(128));
+  (t == real(32)) | (t == real(64));
 
 def _isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64)) | (t == imag(128));
+  (t == imag(32)) | (t == imag(64));
 
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);

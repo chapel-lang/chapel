@@ -26,9 +26,7 @@ typedef unsigned long long uint64;
 typedef uint32 uint;
 typedef float       float32;
 typedef double      float64;
-typedef long double float128;
 typedef struct { float32 r; float32 i; } complex64;
 typedef struct { float64 r; float64 i; } complex128;
-typedef struct { float128 r; float128 i; } complex256;
 
 #endif

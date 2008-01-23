@@ -66,8 +66,6 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return dtReal[FLOAT_SIZE_64]->refType;
-  } else if (t == dtComplex[COMPLEX_SIZE_256]) {
-    return dtReal[FLOAT_SIZE_128]->refType;
   } else {
     INT_FATAL( call, "unsupported complex size");
   }

@@ -354,7 +354,5 @@ static void ensureDecimal(char* buffer) {
 
 real_to_string(_real32, "%lg")
 real_to_string(_real64, "%lg")
-real_to_string(_real128, "%Lg")
 real_to_string(_imag32, "%lgi")
 real_to_string(_imag64, "%lgi")
-real_to_string(_imag128, "%Lgi")

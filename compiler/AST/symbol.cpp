@@ -1755,7 +1755,6 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
   case FLOAT_SIZE_64  : imm.v_float64  = b; break;
-  case FLOAT_SIZE_128 : imm.v_float128 = b; break;
   default:
     INT_FATAL( "unknown FLOAT_SIZE");
   }
@@ -1778,7 +1777,6 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
   case FLOAT_SIZE_64  : imm.v_float64  = b; break;
-  case FLOAT_SIZE_128 : imm.v_float128 = b; break;
   default:
     INT_FATAL( "unknown FLOAT_SIZE");
   }
@@ -1806,10 +1804,6 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   case COMPLEX_SIZE_128: 
     imm.v_complex128.r = r; 
     imm.v_complex128.i = i; 
-    break;
-  case COMPLEX_SIZE_256: 
-    imm.v_complex256.r = r; 
-    imm.v_complex256.i = i; 
     break;
   default:
     INT_FATAL( "unknown COMPLEX_SIZE for complex");

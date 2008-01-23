@@ -6,7 +6,7 @@
 #include "stringutil.h"
 
 static int 
-sprint_float_val(char* str, float128 val) {
+sprint_float_val(char* str, float64 val) {
   int numchars = sprintf(str, "%Lg", val);
   if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
     strcat(str, ".0");
@@ -17,7 +17,7 @@ sprint_float_val(char* str, float128 val) {
 }
 
 static int 
-sprint_complex_val(char* str, float128 real, float128 imm) {
+sprint_complex_val(char* str, float64 real, float64 imm) {
   int numchars = 0;
   numchars += sprintf(str+numchars, "(");
   numchars += sprint_float_val(str+numchars, real);
@@ -71,8 +71,6 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
           res = sprintf(str, control_string, imm.v_float32); break;
         case FLOAT_SIZE_64:
           res = sprintf(str, control_string, imm.v_float64); break;
-        case FLOAT_SIZE_128:
-          res = sprintf(str, control_string, imm.v_float128); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -85,10 +83,6 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
         case COMPLEX_SIZE_128:
           res = sprintf(str, control_string, 
                         imm.v_complex128.r, imm.v_complex128.i); 
-          break;
-        case COMPLEX_SIZE_256: 
-          res = sprintf(str, control_string, 
-                        imm.v_complex256.r, imm.v_complex256.i); 
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
@@ -144,8 +138,6 @@ sprint_imm(char *str, Immediate &imm) {
           res = sprint_float_val(str, imm.v_float32); break;
         case FLOAT_SIZE_64:
           res = sprint_float_val(str, imm.v_float64); break;
-        case FLOAT_SIZE_128:
-          res = sprint_float_val(str, imm.v_float128); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -156,9 +148,6 @@ sprint_imm(char *str, Immediate &imm) {
           break;
         case COMPLEX_SIZE_128:
           res = sprint_complex_val(str,imm.v_complex128.r,imm.v_complex128.i); 
-          break;
-        case COMPLEX_SIZE_256: 
-          res = sprint_complex_val(str,imm.v_complex256.r,imm.v_complex256.i); 
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
@@ -218,10 +207,6 @@ fprint_imm(FILE *fp, Immediate &imm) {
           res = sprint_float_val(str, imm.v_float64); 
           break;
         }
-        case FLOAT_SIZE_128: {
-          res = sprint_float_val(str, imm.v_float128); 
-          break;
-        }
         default: INT_FATAL("Unhandled case in switch statement");
       }
       fputs(str, fp);
@@ -238,13 +223,6 @@ fprint_imm(FILE *fp, Immediate &imm) {
           char str[160];
           res = sprint_complex_val(str, 
                                    imm.v_complex128.r, imm.v_complex128.i); 
-          fputs(str, fp);
-          break;
-        }
-        case COMPLEX_SIZE_256: {
-          char str[320];
-          res = sprint_complex_val(str, 
-                                   imm.v_complex256.r, imm.v_complex256.i); 
           fputs(str, fp);
           break;
         }
@@ -307,8 +285,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
             case FLOAT_SIZE_64: \
               imm->v_float64 = im1.v_float64 _op im2.v_float64; break; \
-            case FLOAT_SIZE_128: \
-              imm->v_float128 = im1.v_float128 _op im2.v_float128; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -459,8 +435,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
             case FLOAT_SIZE_64: \
               imm->v_bool = im1.v_float64 _op im2.v_float64; break; \
-            case FLOAT_SIZE_128: \
-              imm->v_bool = im1.v_float128 _op im2.v_float128; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -551,8 +525,6 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_float32 = _op im1.v_float32; break; \
             case FLOAT_SIZE_64: \
               imm->v_float64 =  _op im1.v_float64; break; \
-            case FLOAT_SIZE_128: \
-              imm->v_float128 =  _op im1.v_float128; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -832,8 +804,6 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
           imm->v_float32 = atof( str); break;
         case FLOAT_SIZE_64:
           imm->v_float64 = atof( str); break;
-        case FLOAT_SIZE_128:
-          imm->v_float128 = atof( str); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;

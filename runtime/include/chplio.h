@@ -8,7 +8,6 @@
 
 extern char* _default_format_write_complex64;
 extern char* _default_format_write_complex128;
-extern char* _default_format_write_complex256;
 
 #define _default_format_read_string       "%255s"   
 #define _default_format_write_string      "%s"
