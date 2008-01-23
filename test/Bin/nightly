@@ -160,26 +160,27 @@ if ($debug == 1) {
     }
 }
 
+#Cron (linux64-gnu-none-none): 0 new failures (39/105 total failures/futures)
 
 if ($performance == 1) {
-    $subjectid = "Perf";
+    $subjectid = " Perf";
 } elsif ($baseline == 1) {
-    $subjectid = "Baseline";
+    $subjectid = " Baseline";
 } elsif ($runtests == 0) {
-    $subjectid = "Build-only";
+    $subjectid = " Build-only";
 } elsif ($componly == 1) {
-    $subjectid = "Compile-only";
+    $subjectid = " Compile-only";
 } elsif ($valgrind == 1) {
-    $subjectid = "Valgrind";
+    $subjectid = " Valgrind";
 } else {
     $subjectid = "";
 }
 
 if ($debug == 1) {
-    $subjectid = "$subjectid Debug";
+    $subjectid = "Dbug$subjectid";
     $recipient = $debugmail;
 } else {
-    $subjectid = "$subjectid Nightly";
+    $subjectid = "Cron$subjectid";
     $recipient = "chapel_cronmail\@cray.com";
 }
 
@@ -350,7 +351,7 @@ if ($componly == 1) {
 if ($runtests == 0) {
     $shortstatus = "Passed";
 
-    $mailsubject = "Chapel $subjectid ($fullplatform): $shortstatus";
+    $mailsubject = "$subjectid ($fullplatform): $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -429,7 +430,7 @@ if ($runtests == 0) {
         $shortstatus = "build/test failed";
     }
 
-    $mailsubject = "Chapel $subjectid ($fullplatform): $shortstatus";
+    $mailsubject = "$subjectid ($fullplatform): $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -536,7 +537,7 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            $mailsubject = "Chapel: $subjectid ($fullplatform): Failure notice";
+            $mailsubject = "$subjectid ($fullplatform): Failure notice";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";
