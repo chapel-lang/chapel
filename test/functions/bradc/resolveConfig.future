@@ -1,0 +1,8 @@
+bug: array sized by external module config
+
+For some reason, it seems that if an array size is
+set using a config variable from a separate module,
+we get a problem in function resolution.  Not sure
+if this is a resolution problem or a function
+resolution problem.
+
