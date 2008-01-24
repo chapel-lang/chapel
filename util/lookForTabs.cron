@@ -3,7 +3,7 @@
 $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
-$mailcommand = "| Mail -s \"Chapel: Nightly TAB check\" $user\@cray.com";
+$mailcommand = "| Mail -s \"Cron Nightly TAB check\" $user\@cray.com";
 $tmpdir = "/tmp/chapel-tabsearch.$user.$pid.deleteme";
 $chpldir = "$tmpdir/chapel";
 
@@ -16,7 +16,7 @@ $matches = `wc -l $matchfile`;
 chomp($matches);
 if ($matches != 0) {
   print "matches!\n";
-  open(MAIL, "| Mail chapel_dev\@cray.com -s 'Chapel: Nightly TAB check'");
+  open(MAIL, "| Mail chapel_dev\@cray.com -s 'Cron Nightly TAB check'");
     open(MESSAGE, "<$matchfile");
     while (<MESSAGE>) {
       my($line) = $_;
@@ -25,7 +25,7 @@ if ($matches != 0) {
   close(MAIL);
 } else {
   print "no matches!\n";
-  open(MAIL, "| Mail bradc\@cray.com -s 'Chapel: Nightly TAB check'");
+  open(MAIL, "| Mail bradc\@cray.com -s 'Cron Nightly TAB check'");
     print MAIL "no TAB matches tonight";
   close(MAIL);
 }
