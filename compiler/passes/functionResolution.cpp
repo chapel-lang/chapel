@@ -1034,6 +1034,8 @@ static const char* toString(FnSymbol* fn) {
   bool first = false;
   for (int i = start; i < fn->numFormals(); i++) {
     ArgSymbol* arg = fn->getFormal(i+1);
+    if (arg->hasPragma("is meme"))
+      continue;
     if (!first)
       first = true;
     else
@@ -3066,15 +3068,21 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasPragma("ref"))
         if (ClassType* ct = toClassType(type->type))
-          if (!resolvedFns.set_in(ct->defaultConstructor))
+          if (!resolvedFns.set_in(ct->defaultConstructor)) {
+            if (ct->symbol->hasPragma("object class"))
+              dtObject = NULL;
             ct->symbol->defPoint->remove();
+          }
   }
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (type->hasPragma("ref"))
         if (ClassType* ct = toClassType(getValueType(type->type)))
-          if (!resolvedFns.set_in(ct->defaultConstructor))
+          if (!resolvedFns.set_in(ct->defaultConstructor)) {
+            if (ct->symbol->hasPragma("object class"))
+              dtObject = NULL;
             type->defPoint->remove();
+          }
   }
 
   compute_sym_uses();

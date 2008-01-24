@@ -1,6 +1,0 @@
-unimplemented feature: shadowed fields
-
-This test shadows an inherited string field with an int. It results in an error
-about not being able to assign an int into a string field, showing that the
-wrong version of the field is used. Also strange is that we usually allow this
-sort of int -> string automatic conversion.

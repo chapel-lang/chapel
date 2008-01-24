@@ -344,7 +344,35 @@ static void codegen_header(void) {
       continue;
     if (typeSymbol->hasPragma("ref"))
       continue;
+
+    if (ClassType* ct = toClassType(typeSymbol->type))
+      if (!ct->symbol->hasPragma("no object") || ct->symbol->hasPragma("object class"))
+        continue;
+
     typeSymbol->codegenDef(outfile);
+  }
+  /* Generate class definitions in breadth first order starting with
+     "object" and following its dispatch children. */
+
+  Vec<Type*> next, current;
+  Vec<Type*>* next_p = &next, *current_p = &current;
+  current_p->set_add(dtObject);
+  while (current_p->n != 0) {
+    forv_Vec(Type, t, *current_p) {
+      if (toClassType(t)) {
+        t->symbol->codegenDef(outfile);
+        forv_Vec(Type, child, t->dispatchChildren) {
+          if (child)
+            next_p->set_add(child);
+        }
+      } else {
+        INT_ASSERT(t == NULL);
+      }
+    }
+    Vec<Type*>* temp = next_p;
+    next_p = current_p;
+    current_p = temp;
+    next_p->clear();
   }
 
   fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");

@@ -129,6 +129,9 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     } else if (ct->classTag == CLASS_CLASS) {
       ct->dispatchParents.add(dtObject);
       dtObject->dispatchChildren.add(ct);
+      VarSymbol* super = new VarSymbol("super", dtObject);
+      super->addPragma("super class");
+      ct->fields.insertAtHead(new DefExpr(super));
     }
   }
 
@@ -152,9 +155,25 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
-    for_fields_backward(field, pt) {
-      if (toVarSymbol(field))
-        ct->fields.insertAtHead(field->defPoint->copy());
+    if (ct->classTag != CLASS_CLASS) {
+      for_fields_backward(field, pt) {
+        if (toVarSymbol(field) && !field->hasPragma("super class")) {
+          bool alreadyContainsField = false;
+          for_fields(myfield, ct) {
+            if (!strcmp(myfield->name, field->name)) {
+              alreadyContainsField = true;
+              break;
+            }
+          }
+          if (!alreadyContainsField) {
+            ct->fields.insertAtHead(field->defPoint->copy());
+          }
+        }
+      }
+    } else {
+      VarSymbol* super = new VarSymbol("super", pt);
+      super->addPragma("super class");
+      ct->fields.insertAtHead(new DefExpr(super));
     }
   }
 }
@@ -258,17 +277,55 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
   }
-
+  ArgSymbol* meme;
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtTail(new DefExpr(fn->_this));
-  if (ct->classTag == CLASS_CLASS)
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+  if (ct->classTag == CLASS_CLASS) {
+    if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
+      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
                        new CallExpr(PRIMITIVE_CHPL_ALLOC,
                          ct->symbol,
                          new_StringSymbol(astr("instance of class ",
                                                ct->symbol->name)))));
-  if (ct->classTag == CLASS_CLASS)
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
+    } else {
+      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, new SymExpr(gNil));
+      meme->addPragma("is meme");
+      BlockStmt* allocate = new BlockStmt();
+      allocate->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+                             new CallExpr(PRIMITIVE_CHPL_ALLOC,
+                             ct->symbol,
+                             new_StringSymbol(astr("instance of class ",
+                                                   ct->symbol->name)))));
+      allocate->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
+      CondStmt* cond = new CondStmt(
+        new CallExpr(PRIMITIVE_PTR_EQUAL, new SymExpr(gNil), new SymExpr(meme)),
+        allocate,
+        new CallExpr(PRIMITIVE_MOVE, fn->_this, new SymExpr(meme)));
+      fn->insertAtTail(cond);
+      if (ct->dispatchParents.n > 0) {
+       if (!ct->dispatchParents.v[0]->defaultConstructor)
+         build_constructor(toClassType(ct->dispatchParents.v[0]));
+       FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
+       CallExpr* superCall = new CallExpr(superCtor->name);
+       for_formals_backward(formal, superCtor) {
+         if (formal->hasPragma("is meme"))
+           continue;
+         DefExpr* superArg = formal->defPoint->copy();
+         fn->insertFormalAtHead(superArg);
+         superCall->insertAtHead(superArg->sym);
+       }
+       VarSymbol* tmp = new VarSymbol("_tmp");
+       superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
+       cond->insertAfter(superCall);
+       superCall->insertBefore(new DefExpr(tmp));
+       superCall->insertBefore(
+         new CallExpr(PRIMITIVE_MOVE, tmp,
+                      new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                   fn->_this, new_StringSymbol("super"))));
+      }
+    
+    }
+  }
 
   if (ct->classTag == CLASS_UNION)
     fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
@@ -280,6 +337,8 @@ static void build_constructor(ClassType* ct) {
     VarSymbol* field = toVarSymbol(tmp);
 
     if (!field)
+      continue;
+    if (field->hasPragma("super class"))
       continue;
 
     if ((!strcmp(field->name, "_promotionType")) ||
@@ -344,7 +403,7 @@ static void build_constructor(ClassType* ct) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = dynamic_cast<SymExpr*>(ast))
+    if (SymExpr* se = toSymExpr(ast))
       if (!se->var)
         if (fieldNamesSet.set_in(se->unresolved))
           se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->unresolved)));
@@ -397,7 +456,9 @@ static void build_constructor(ClassType* ct) {
       }
     }
   }
-
+  if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref") && !ct->symbol->hasPragma("sync")) {
+    fn->insertFormalAtTail(new DefExpr(meme));
+  }
   if (!hasReturn)
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, myThis));
   fn->retType = ct;

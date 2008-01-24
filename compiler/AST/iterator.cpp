@@ -61,6 +61,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
   TypeSymbol* cts = new TypeSymbol(className, ii->classType);
   cts->addPragma("iterator class");
+  cts->addPragma("no object");
   if (fn->retTag == RET_VAR)
     cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));

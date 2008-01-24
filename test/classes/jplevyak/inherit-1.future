@@ -1,0 +1,4 @@
+semantic: Need a way to inherit from a generic class.
+
+The super class should probably need to be instantiated at the declaration of
+point the subclass.

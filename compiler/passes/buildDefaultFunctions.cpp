@@ -165,7 +165,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->retTag = RET_PARAM;
   else if (field->isTypeVariable)
     fn->retTag = RET_TYPE;
-  else {
+  else if (field->hasPragma("super class")) {
+    fn->retTag = RET_VALUE;
+  } else {
     fn->retTag = RET_VAR;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
@@ -625,7 +627,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   fn->insertAtTail(readErrorCond);
   bool first = true;
   for_fields(tmp, ct) {
-    if (tmp->isTypeVariable)
+    if (tmp->isTypeVariable || tmp->hasPragma("super class"))
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
@@ -700,7 +702,32 @@ static void buildDefaultReadFunction(EnumType* et) {
   et->methods.add(fn);
 }
 
-
+static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Type* type, bool first=true) {
+  ClassType* ct = toClassType(type);
+  bool printedSomething = false;
+  if (!ct)
+    return false; // Maybe error out?
+  for_fields(tmp, ct) {
+    if (tmp->isTypeVariable)
+      continue;
+    if (tmp->hasPragma("super class")) {
+      printedSomething = buildWriteSuperClass(fileArg, fn, buildDot(dot, tmp->name), ct->dispatchParents.v[0], first);
+      if (printedSomething)
+        first = false;
+      continue;
+    }
+    if (!first) {
+      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
+    }
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
+    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"),
+                                    buildDot(dot->copy(), tmp->name)));
+    first = false;
+    printedSomething = true;
+  }
+  return printedSomething;
+}
 static void buildDefaultWriteFunction(ClassType* ct) {
   if (function_exists("writeThis", 3, dtMethodToken->symbol->name, ct->symbol->name, "Writer"))
     return;
@@ -744,6 +771,13 @@ static void buildDefaultWriteFunction(ClassType* ct) {
     for_fields(tmp, ct) {
       if (tmp->isTypeVariable)
         continue;
+      if (tmp->hasPragma("super class")) {
+        bool printedSomething =
+          buildWriteSuperClass(fileArg, fn, buildDot(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);
+        if (printedSomething)
+          first = false;
+        continue;
+      }
       if (!first) {
         fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
       }

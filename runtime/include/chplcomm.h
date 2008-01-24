@@ -30,7 +30,7 @@ typedef void (*func_p)(void*);
 #define _WIDE_CLASS_DYNAMIC_CAST(wide1, type, cond, wide2)              \
   do {                                                                  \
     _class_id _tmp;                                                     \
-    _COMM_WIDE_CLASS_GET_OFF(_class_id, _tmp, wide2, type, _cid);       \
+    _COMM_WIDE_CLASS_GET_OFF(_class_id, _tmp, wide2, object, _cid);     \
     (wide1).locale = (wide2).locale;                                    \
     (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
   } while (0)
@@ -72,6 +72,10 @@ typedef void (*func_p)(void*);
                  ((char*)(&(((stype*)(&(local)))->sfield)) -            \
                   (char*)(&(local))),                                   \
                  sizeof(((stype*)(&(local)))->sfield))
+
+#define _WIDE_CLASS_GET_SUPER(type, local, wide)                        \
+  (local).locale = (wide).locale;                                       \
+  (local).addr = (type)((wide).addr)
 
 #define _COMM_WIDE_CLASS_GET_OFF(type, local, wide, stype, sfield)      \
   _chpl_comm_get(&(local),                                              \

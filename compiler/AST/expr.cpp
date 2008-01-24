@@ -367,6 +367,11 @@ void DefExpr::codegen(FILE* outfile) {
 static void
 codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
   ClassType* ct = toClassType(base->typeInfo());
+  if (SymExpr* mem = toSymExpr(member)) {
+    if (mem->var->hasPragma("super class")) {
+      fprintf(outfile, "&(");
+    }
+  }
   if (ct->symbol->hasPragma("ref")) {
     ct = toClassType(getValueType(ct));
     fprintf(outfile, "(*");
@@ -382,6 +387,11 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
     fprintf(outfile, "_u.");
   }
   member->codegen(outfile);
+  if (SymExpr* mem = toSymExpr(member)) {
+    if (mem->var->hasPragma("super class")) {
+      fprintf(outfile, ")");
+    }
+  }
 }
 
 
@@ -728,11 +738,12 @@ static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
 
 
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
+  fprintf(outfile, "((object)");
   value->codegen(outfile);
   if (fCopyCollect) {
-    fprintf(outfile, "->__class_id._cid == %s%s", "_e_", type->symbol->cname);
+    fprintf(outfile, ")->__class_id._cid == %s%s", "_e_", type->symbol->cname);
   } else {
-    fprintf(outfile, "->_cid == %s%s", "_e_", type->symbol->cname);
+    fprintf(outfile, ")->_cid == %s%s", "_e_", type->symbol->cname);
   }
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
@@ -851,16 +862,27 @@ void CallExpr::codegen(FILE* outfile) {
         }
         if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
-            fprintf(outfile, "_COMM_WIDE_CLASS_GET_OFF(");
-            fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
-            get(1)->codegen(outfile);
-            fprintf(outfile, ", ");
-            call->get(1)->codegen(outfile);
-            fprintf(outfile, ", ");
-            fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
-            fprintf(outfile, ", ");
-            call->get(2)->codegen(outfile);
-            fprintf(outfile, ")");
+            SymExpr* se = toSymExpr(call->get(2));
+            INT_ASSERT(se);
+            if (se->var->hasPragma("super class")) {
+              fprintf(outfile, "_WIDE_CLASS_GET_SUPER(");
+              fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+              get(1)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(1)->codegen(outfile);
+              fprintf(outfile, ")");
+            } else {
+              fprintf(outfile, "_COMM_WIDE_CLASS_GET_OFF(");
+              fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+              get(1)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(1)->codegen(outfile);
+              fprintf(outfile, ", ");
+              fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+              fprintf(outfile, ", ");
+              call->get(2)->codegen(outfile);
+              fprintf(outfile, ")");
+            }
           } else if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
             fprintf(outfile, "_COMM_WIDE_GET_OFF(");
             fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
@@ -952,9 +974,8 @@ void CallExpr::codegen(FILE* outfile) {
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
-            fprintf(outfile, ", _e_%s, %s)",
-                    call->get(2)->typeInfo()->symbol->cname,
-                    call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+            fprintf(outfile, ", _e_%s, object)",
+                    call->get(2)->typeInfo()->symbol->cname);
             break;
           }
         }
@@ -1284,16 +1305,21 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
         fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(_class_id, ");
         get(1)->codegen(outfile);
-        fprintf(outfile, ", _e_%s, %s, _cid)",
-                get(1)->typeInfo()->getField("addr")->type->symbol->cname,
+        fprintf(outfile, ", _e_%s, object, _cid)",
                 get(1)->typeInfo()->getField("addr")->type->symbol->cname);
       } else if (fCopyCollect) {
+        fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
+        fprintf(outfile, ")");
         fprintf(outfile, "->__class_id._padding_for_copy_collection_use = NULL;\n");
+        fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
+        fprintf(outfile, ")");
         fprintf(outfile, "->__class_id._cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
       } else {
+        fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
+        fprintf(outfile, ")");
         fprintf(outfile, "->_cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
       }
       break;
@@ -1302,8 +1328,9 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "(0)");
         break;
       }
-      fprintf(outfile, "(");
+      fprintf(outfile, "(((object)");
       get(1)->codegen(outfile);
+      fprintf(outfile, ")");
       if (fCopyCollect) {
         fprintf(outfile, "->__class_id._cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
       } else {
@@ -1324,12 +1351,18 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_MEMBER:
-      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
+    {
+      bool isSuper = false;
+      if (SymExpr* sym = toSymExpr(get(2)))
+        if (sym->var->hasPragma("super class"))
+          isSuper = true;
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref") && !isSuper)
         fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));
-      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref") && !isSuper)
         fprintf(outfile, "))");
       break;
+    }
     case PRIMITIVE_GET_MEMBER_VALUE:
       INT_FATAL(this, "generated by PRIMITIVE_MOVE");
       break;

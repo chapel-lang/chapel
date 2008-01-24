@@ -38,6 +38,7 @@ bundleArgs(BlockStmt* block) {
       TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
                                                fn->name),
                                           ctype);
+      new_c->addPragma("no object");
       new_c->addPragma("no wide class");
 
       // add the function args as fields in the class
@@ -243,6 +244,11 @@ insertWideReferences(void) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
         if (ts->hasPragma("wide class"))
           continue;
+      //
+      // do not change super class field - it's really a record
+      //
+      if (def->sym->hasPragma("super class"))
+        continue;
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* wide = wideClassMap.get(fn->retType))
@@ -294,6 +300,11 @@ insertWideReferences(void) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
         if (ts->hasPragma("wide"))
           continue;
+      //
+      // do not change super field - it's really a record
+      //
+      if (def->sym->hasPragma("super class"))
+        continue;
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* wide = wideRefMap.get(fn->retType))

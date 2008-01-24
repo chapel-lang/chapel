@@ -151,7 +151,7 @@ TYPE_EXTERN Type* dtEnumerated;
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;
-TYPE_EXTERN PrimitiveType* dtObject;
+TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN PrimitiveType* dtValue;
 TYPE_EXTERN PrimitiveType* dtMethodToken;
 

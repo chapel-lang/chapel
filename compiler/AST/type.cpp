@@ -345,9 +345,25 @@ ClassType::isNominalType() {
 void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
+
+  if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
+    /* Add a comment to class definitions listing super classes */
+    bool first = true;
+    fprintf(outfile, " /* : ");
+    forv_Vec(Type, parent, dispatchParents) {
+      if (parent) {
+        if (!first) {
+          fprintf(outfile, ", ");
+        }
+        parent->symbol->codegen(outfile);
+        first = false;
+      }
+    }
+    fprintf(outfile, " */");
+  }
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
-  if (classTag == CLASS_CLASS) {
+  if (symbol->hasPragma("object class") && classTag == CLASS_CLASS) {
     if (fCopyCollect) {
       fprintf(outfile, "union {\n");
       fprintf(outfile, "_class_id _cid;\n");
@@ -402,11 +418,28 @@ bool ClassType::implementedUsingCVals(void) {
 
 
 Symbol* ClassType::getField(const char* name) {
-  for_fields(sym, this) {
-    if (!strcmp(sym->name, name))
-      return sym;
+  Vec<Type*> next, current;
+  Vec<Type*>* next_p = &next, *current_p = &current;
+  current_p->set_add(this);
+  while (current_p->n != 0) {
+    forv_Vec(Type, t, *current_p) {
+      if (ClassType* ct = toClassType(t)) {
+        for_fields(sym, ct) {
+          if (!strcmp(sym->name, name))
+            return sym;
+        }
+        forv_Vec(Type, parent, ct->dispatchParents) {
+          if (parent)
+            next_p->set_add(parent);
+        }
+      }
+    }
+    Vec<Type*>* temp = next_p;
+    next_p = current_p;
+    current_p = temp;
+    next_p->clear();
   }
-  INT_FATAL(this, "field '%s' not in class in getField", name);
+  //INT_FATAL(this, "field '%s' not in class in getField", name);
   return NULL;
 }
 
@@ -469,8 +502,10 @@ void initPrimitiveTypes(void) {
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtObject = createPrimitiveType("object", "_chpl_object");
-  dtObject->defaultValue = gNil;
+  DefExpr* objectDef = build_class("object", new ClassType(CLASS_CLASS), new BlockStmt());
+  objectDef->sym->addPragma("object class");
+  objectDef->sym->addPragma("no object");
+  dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
   dtBool = createPrimitiveType ("bool", "_bool");
@@ -488,6 +523,7 @@ void initPrimitiveTypes(void) {
     theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
                                        new SymExpr("ChapelStandard")));
 
+  theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;

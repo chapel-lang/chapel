@@ -14,7 +14,7 @@ class Extension : Base {
 
 def main() {
   var ext = Extension();
-  var base = ext: Base;
+  var base:Base = ext;
   writeln(ext.total);  // expect the total field from Extension
   ext.printTotal();    // expect the method from Extension
   writeln(base.total); // expect the total field from Base

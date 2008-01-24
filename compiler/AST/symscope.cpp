@@ -88,6 +88,14 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
   if (sym && (!toModuleSymbol(sym) || returnModules))
     return sym;
 
+  if (astParent) {
+    if (ClassType* ct = toClassType(astParent)) {
+      sym = ct->getField(name);
+      if (sym && (toModuleSymbol(sym) || returnModules))
+        return sym;
+    }
+  }
+
   if (astParent && astParent->getModule()->block == astParent) {
     ModuleSymbol* mod = astParent->getModule();
     sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, returnModules);
@@ -152,6 +160,13 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
   sym = table.get(name);
   if (sym && (returnModules || !toModuleSymbol(sym))) {
     symbols.set_add(sym);
+  }
+  if (astParent) {
+    if (ClassType* ct = toClassType(astParent)) {
+      sym = ct->getField(name);
+      if (sym && (toModuleSymbol(sym) || returnModules))
+        symbols.set_add(sym);
+    }
   }
   if (symbols.n == 0 && scanModuleUses) {
     Vec<ModuleSymbol*>* modules = getModuleUses();  

@@ -372,6 +372,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
   if (0 && isConst) {
     fprintf(outfile, "const ");
   }
+  if (this->hasPragma("super class"))
+    fprintf(outfile, "_");
   type->codegen(outfile);
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
